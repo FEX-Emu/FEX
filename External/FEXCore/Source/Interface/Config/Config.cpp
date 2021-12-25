@@ -416,7 +416,9 @@ namespace JSON {
     Meta->Load();
 
     // Do configuration option fix ups after everything is reloaded
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THREADS)) {
+    {
+      // Always fix up the number of threads and create the configuration
+      // Otherwise the application could receive zero as the number of threads
       FEX_CONFIG_OPT(Cores, THREADS);
       if (Cores == 0) {
         // When the number of emulated CPU cores is zero then auto detect
