@@ -770,7 +770,7 @@ int main(int argc, char **argv, char **const envp) {
   if (Args.size()) {
     auto Res = XXFileHash::HashFile(Args[0]);
     if (Res.first) {
-      fmt::print("{} has hash: 0x{:x}\n", Args[0], Res.second);
+      fmt::print("{} has hash: {:x}\n", Args[0], Res.second);
     }
     else {
       fmt::print("Couldn't generate hash for {}\n", Args[0]);
@@ -810,7 +810,7 @@ int main(int argc, char **argv, char **const envp) {
           if (Res.first == false ||
               Res.second != ExpectedHash) {
             std::string Text = fmt::format("Couldn't hash the rootfs or hash didn't match\n");
-            Text += fmt::format("Hash 0x{:x} != Expected Hash 0x{:x}\n", Res.second, ExpectedHash);
+            Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
             ExecWithInfo(Text);
             return -1;
           }
