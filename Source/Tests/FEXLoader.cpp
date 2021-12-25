@@ -234,33 +234,19 @@ int main(int argc, char **argv, char **const envp) {
   }
 #endif
 
-  FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
+  auto Program = FEX::Config::LoadConfig(
+    IsInterpreter,
+    true,
+    argc, argv, envp
+  );
 
-  if (IsInterpreter) {
-    FEX::ArgLoader::LoadWithoutArguments(argc, argv);
-  }
-  else {
-    FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
-  }
-
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
-  FEXCore::Config::Load();
-
-  auto Args = FEX::ArgLoader::Get();
-  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
-
-  if (Args.empty()) {
+  if (Program.empty()) {
     // Early exit if we weren't passed an argument
     return 0;
   }
 
-  std::string Program = Args[0];
-
-  // These layers load on initialization
-  auto ProgramName = std::filesystem::path(Program).filename();
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
+  auto Args = FEX::ArgLoader::Get();
+  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
@@ -367,6 +353,7 @@ int main(int argc, char **argv, char **const envp) {
     if (LDPath().empty() ||
         std::filesystem::exists(LDPath(), ec) == false) {
       fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
+      fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
     }
 #endif
     return -ENOEXEC;
@@ -552,7 +539,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Allocator::ClearHooks();
   FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
   // Allocator is now original system allocator
-
+  auto ProgramName = std::filesystem::path(Program).filename();
   FEXCore::Telemetry::Shutdown(ProgramName);
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;

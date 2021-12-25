@@ -1,8 +1,10 @@
+#include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 
 #include <FEXCore/Config/Config.h>
 
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <list>
@@ -38,4 +40,41 @@ namespace FEX::Config {
 		}
   }
 
+  std::string LoadConfig(
+    bool NoFEXArguments,
+    bool LoadProgramConfig,
+    int argc,
+    char **argv,
+    char **const envp) {
+    FEXCore::Config::Initialize();
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
+
+    if (NoFEXArguments) {
+      FEX::ArgLoader::LoadWithoutArguments(argc, argv);
+    }
+    else {
+      FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+    }
+
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
+    FEXCore::Config::Load();
+
+    auto Args = FEX::ArgLoader::Get();
+
+    if (LoadProgramConfig) {
+      if (Args.empty()) {
+        // Early exit if we weren't passed an argument
+        return {};
+      }
+
+      std::string Program = Args[0];
+
+      // These layers load on initialization
+      auto ProgramName = std::filesystem::path(Program).filename();
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
+      return Program;
+    }
+    return {};
+  }
 }
