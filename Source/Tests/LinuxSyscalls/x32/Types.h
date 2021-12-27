@@ -54,6 +54,7 @@ using compat_gid_t = uint16_t;
 using compat_old_sigset_t = uint32_t;
 using old_time32_t = int32_t;
 using compat_clock_t = int32_t;
+using fd_set32 = uint32_t;
 
 // Can't use using with aligned attributes, clang doesn't honour it
 typedef FEX_ALIGNED(4) uint64_t compat_uint64_t;
@@ -314,6 +315,57 @@ stack_t32 {
 
 static_assert(std::is_trivial<stack_t32>::value, "Needs to be trivial");
 static_assert(sizeof(stack_t32) == 12, "Incorrect size");
+
+struct
+// This does not match the glibc implementation of stat
+// Matches the definition of `struct compat_stat` in `arch/x86/include/asm/compat.h`
+FEX_ANNOTATE("fex-match")
+oldstat32 {
+  uint16_t st_dev;
+  uint16_t st_ino;
+  uint16_t st_mode;
+  uint16_t st_nlink;
+
+  uint16_t st_uid;
+  uint16_t st_gid;
+  uint16_t st_rdev;
+
+  uint32_t st_size;
+  uint32_t st_atime_;
+  uint32_t st_mtime_;
+  uint32_t st_ctime_;
+
+  oldstat32() = delete;
+
+  oldstat32(struct stat host) {
+    #define COPY(x) x = host.x
+    const uint32_t MINORBITS = 20;
+    const uint32_t MINORMASK = (1U << MINORBITS) - 1;
+    auto EncodeOld = [](dev_t dev) -> uint16_t {
+      // This is a bit weird
+      return ((dev >> MINORBITS) << 8) |
+        (dev & MINORMASK);
+    };
+
+    st_dev = EncodeOld(host.st_dev);
+    COPY(st_ino);
+    COPY(st_mode);
+    COPY(st_nlink);
+
+    COPY(st_uid);
+    COPY(st_gid);
+    st_rdev = EncodeOld(host.st_rdev);
+
+    COPY(st_size);
+
+    st_atime_ = host.st_atim.tv_sec;
+    st_mtime_ = host.st_mtime;
+    st_ctime_ = host.st_ctime;
+    #undef COPY
+  }
+};
+static_assert(std::is_trivial<oldstat32>::value, "Needs to be trivial");
+static_assert(sizeof(oldstat32) == 32, "Incorrect size");
 
 struct
 // This does not match the glibc implementation of stat
@@ -811,6 +863,38 @@ rusage_32 {
 };
 static_assert(std::is_trivial<rusage_32>::value, "Needs to be trivial");
 static_assert(sizeof(rusage_32) == 72, "Incorrect size");
+
+struct
+FEX_PACKED
+FEX_ANNOTATE("fex-match")
+OldGuestSigAction_32 {
+  FEX::HLE::x32::compat_ptr<void> handler_32;
+  uint32_t sa_mask;
+  uint32_t sa_flags;
+  FEX::HLE::x32::compat_ptr<void> restorer_32;
+
+  OldGuestSigAction_32() = delete;
+
+  operator FEXCore::GuestSigAction() const {
+    FEXCore::GuestSigAction action{};
+
+    action.sigaction_handler.handler = reinterpret_cast<decltype(action.sigaction_handler.handler)>(handler_32.Ptr);
+    action.sa_flags = sa_flags;
+    action.restorer = reinterpret_cast<decltype(action.restorer)>(restorer_32.Ptr);
+    action.sa_mask.Val = sa_mask;
+    return action;
+  }
+
+  OldGuestSigAction_32(FEXCore::GuestSigAction action)
+    : handler_32 {reinterpret_cast<void*>(action.sigaction_handler.handler)}
+    , restorer_32 {reinterpret_cast<void*>(action.restorer)} {
+    sa_flags = action.sa_flags;
+    sa_mask = action.sa_mask.Val;
+  }
+};
+
+static_assert(std::is_trivial<OldGuestSigAction_32>::value, "Needs to be trivial");
+static_assert(sizeof(OldGuestSigAction_32) == 16, "Incorrect size");
 
 // This definition isn't public
 // This is for rt_sigaction
@@ -1639,5 +1723,20 @@ shm_info_32 {
 
 static_assert(std::is_trivial<shm_info_32>::value, "Needs to be trivial");
 static_assert(sizeof(shm_info_32) == 24, "Incorrect size");
+
+struct
+FEX_ANNOTATE("fex-match")
+compat_select_args {
+  int nfds;
+  compat_ptr<fd_set32> readfds;
+  compat_ptr<fd_set32> writefds;
+  compat_ptr<fd_set32> exceptfds;
+  compat_ptr<struct timeval32> timeout;
+
+  compat_select_args() = delete;
+};
+
+static_assert(std::is_trivial_v<compat_select_args>, "Needs to be trivial");
+static_assert(sizeof(compat_select_args) == 20, "Incorrect size");
 
 }

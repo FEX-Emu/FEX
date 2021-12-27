@@ -33,17 +33,23 @@ $end_info$
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::stack_t32>, "%x")
 
 namespace FEX::HLE::x32 {
+  // The kernel only gives 32-bit userspace 3 TLS segments
+  // Depending on if the host kernel is 32-bit or 64-bit then the TLS index assigned is different
+  //
+  // Host kernel x86_64, valid TLS enries: 12,13,14
+  // Host kernel x86, valid TLS enries: 6,7,8
+  // Since we are claiming to be a 64-bit kernel, use the 64-bit range
+  //
+  // 6/12 = glibc
+  // 7/13 = wine fs
+  // 8/14 = etc
+  constexpr uint32_t TLS_NextEntry = 12;
+  constexpr uint32_t TLS_MaxEntry = TLS_NextEntry+3;
+
   uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {
     struct x32::user_desc* u_info = reinterpret_cast<struct x32::user_desc*>(tls);
-
-    // The kernel only gives 32-bit userspace 3 TLS segments
-    // 6 = glibc
-    // 7 = wine fs
-    // 8 = etc
-    constexpr uint32_t NextEntry = 6;
-    constexpr uint32_t MaxEntry = NextEntry+3;
     if (u_info->entry_number == -1) {
-      for (uint32_t i = NextEntry; i < MaxEntry; ++i) {
+      for (uint32_t i = TLS_NextEntry; i < TLS_MaxEntry; ++i) {
         auto GDT = &Frame->State.gdt[i];
         if (GDT->base == 0) {
           // If the base is zero then it isn't present with our setup
@@ -101,6 +107,34 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(set_thread_area, [](FEXCore::Core::CpuStateFrame *Frame, struct user_desc *u_info) -> uint64_t {
       return SetThreadArea(Frame, u_info);
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(get_thread_area, [](FEXCore::Core::CpuStateFrame *Frame, struct user_desc *u_info) -> uint64_t {
+      // Index to fetch comes from the user_desc
+      uint32_t Entry = u_info->entry_number;
+      if (Entry < TLS_NextEntry || Entry > TLS_MaxEntry) {
+        return -EINVAL;
+      }
+
+      const auto &GDT = &Frame->State.gdt[Entry];
+
+      memset(u_info, 0, sizeof(*u_info));
+
+      // FEX only stores base instead of the full GDT
+      u_info->base_addr = GDT->base;
+
+      // Fill the rest of the structure with expected data (even if wrong at the moment)
+      if (u_info->base_addr) {
+        u_info->limit = 0xF'FFFF;
+        u_info->seg_32bit = 1;
+        u_info->limit_in_pages = 1;
+        u_info->useable = 1;
+      }
+      else {
+        u_info->read_exec_only = 1;
+        u_info->seg_not_present = 1;
+      }
+      return 0;
     });
 
     REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {

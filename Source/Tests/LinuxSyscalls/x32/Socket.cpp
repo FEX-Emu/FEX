@@ -166,6 +166,83 @@ namespace FEX::HLE::x32 {
     SYSCALL_ERRNO();
   }
 
+  void ConvertHeaderToHost(std::vector<iovec> &iovec, struct msghdr *Host, const struct msghdr32 *Guest) {
+    size_t CurrentIOVecSize = iovec.size();
+    iovec.resize(CurrentIOVecSize + Guest->msg_iovlen);
+    for (size_t i = 0; i < Guest->msg_iovlen; ++i) {
+      iovec[CurrentIOVecSize + i] = Guest->msg_iov[i];
+    }
+
+    Host->msg_name = Guest->msg_name;
+    Host->msg_namelen = Guest->msg_namelen;
+
+    Host->msg_iov = &iovec[CurrentIOVecSize];
+    Host->msg_iovlen = Guest->msg_iovlen;
+
+    // XXX: This could result in a stack overflow
+    Host->msg_control = alloca(Guest->msg_controllen*2);
+    Host->msg_controllen = Guest->msg_controllen*2;
+
+    Host->msg_flags = Guest->msg_flags;
+  }
+
+  void ConvertHeaderToGuest(struct msghdr32 *Guest, struct msghdr *Host) {
+    for (size_t i = 0; i < Guest->msg_iovlen; ++i) {
+      Guest->msg_iov[i] = Host->msg_iov[i];
+    }
+
+    Guest->msg_namelen = Host->msg_namelen;
+    Guest->msg_controllen = Host->msg_controllen;
+    Guest->msg_flags = Host->msg_flags;
+
+    if (Host->msg_controllen) {
+      // Host and guest cmsg data structures aren't compatible.
+      // Copy them over now
+      void *CurrentGuestPtr = Guest->msg_control;
+      for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(Host);
+          cmsg != nullptr;
+          cmsg = CMSG_NXTHDR(Host, cmsg)) {
+        cmsghdr32 *CurrentGuest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
+
+        // Copy over the header first
+        // cmsg_len needs to be adjusted by the size of the header between host and guest
+        // Host is 16 bytes, guest is 12 bytes
+        CurrentGuest->cmsg_level = cmsg->cmsg_level;
+        CurrentGuest->cmsg_type = cmsg->cmsg_type;
+
+        // Now copy over the data
+        if (cmsg->cmsg_len) {
+          size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
+          CurrentGuest->cmsg_len = cmsg->cmsg_len - SizeIncrease;
+
+          // Controllen size also changes
+          Guest->msg_controllen -= SizeIncrease;
+
+          memcpy(CurrentGuest->cmsg_data, CMSG_DATA(cmsg), cmsg->cmsg_len - sizeof(struct cmsghdr));
+          CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + CurrentGuest->cmsg_len);
+          CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
+        }
+      }
+    }
+  }
+
+  static uint64_t RecvMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, struct timespec *timeout_ts) {
+    std::vector<iovec> Host_iovec;
+    std::vector<struct mmsghdr> HostMHeader(vlen);
+    for (size_t i = 0; i < vlen; ++i) {
+      ConvertHeaderToHost(Host_iovec, &HostMHeader[i].msg_hdr, &msgvec[i].msg_hdr);
+      HostMHeader[i].msg_len = msgvec[i].msg_len;
+    }
+    uint64_t Result = ::recvmmsg(sockfd, HostMHeader.data(), vlen, flags, timeout_ts);
+    if (Result != -1) {
+      for (size_t i = 0; i < Result; ++i) {
+        ConvertHeaderToGuest(&msgvec[i].msg_hdr, &HostMHeader[i].msg_hdr);
+        msgvec[i].msg_len = HostMHeader[i].msg_len;
+      }
+    }
+    SYSCALL_ERRNO();
+  }
+
   void RegisterSocket() {
     REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t call, uint32_t *Arguments) -> uint64_t {
       uint64_t Result{};
@@ -360,6 +437,27 @@ namespace FEX::HLE::x32 {
         }
       }
       SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(recvmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, timespec32 *timeout_ts) -> uint64_t {
+      struct timespec tp64{};
+      struct timespec *timed_ptr{};
+      if (timeout_ts) {
+        tp64 = *timeout_ts;
+        timed_ptr = &tp64;
+      }
+
+      uint64_t Result = RecvMMsg(sockfd, msgvec, vlen, flags, timed_ptr);
+
+      if (timeout_ts) {
+        *timeout_ts = tp64;
+      }
+
+      return Result;
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(recvmmsg_time64, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, struct timespec *timeout_ts) -> uint64_t {
+      return RecvMMsg(sockfd, msgvec, vlen, flags, timeout_ts);
     });
 
     REGISTER_SYSCALL_IMPL_X32(recvmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, struct msghdr32 *msg, int flags) -> uint64_t {
