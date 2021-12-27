@@ -41,6 +41,11 @@ namespace FEX::HLE {
         SYSCALL_ERRNO();
       });
 
+      REGISTER_SYSCALL_IMPL_PASS(fsmount, [](FEXCore::Core::CpuStateFrame *Frame, int fs_fd, uint32_t flags, uint32_t attr_flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(fsmount), fs_fd, flags, attr_flags);
+        SYSCALL_ERRNO();
+      });
+
       REGISTER_SYSCALL_IMPL_PASS(fspick, [](FEXCore::Core::CpuStateFrame *Frame, int dfd, const char *path, unsigned int flags) -> uint64_t {
         uint64_t Result = ::syscall(SYSCALL_DEF(fspick), dfd, path, flags);
         SYSCALL_ERRNO();
