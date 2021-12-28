@@ -33,6 +33,7 @@ namespace FEX::HLE::x32 {
   void RegisterFD();
   void RegisterFS();
   void RegisterInfo();
+  void RegisterIO();
   void RegisterMemory();
   void RegisterMsg();
   void RegisterNotImplemented();
@@ -40,6 +41,7 @@ namespace FEX::HLE::x32 {
   void RegisterSemaphore();
   void RegisterSignals();
   void RegisterSocket();
+  void RegisterStubs();
   void RegisterThread();
   void RegisterTime();
   void RegisterTimer();
@@ -136,6 +138,7 @@ namespace FEX::HLE::x32 {
     FEX::HLE::x32::RegisterFD();
     FEX::HLE::x32::RegisterFS();
     FEX::HLE::x32::RegisterInfo();
+    FEX::HLE::x32::RegisterIO();
     FEX::HLE::x32::RegisterMemory();
     FEX::HLE::x32::RegisterMsg();
     FEX::HLE::x32::RegisterNotImplemented();
@@ -143,6 +146,7 @@ namespace FEX::HLE::x32 {
     FEX::HLE::x32::RegisterSemaphore();
     FEX::HLE::x32::RegisterSignals();
     FEX::HLE::x32::RegisterSocket();
+    FEX::HLE::x32::RegisterStubs();
     FEX::HLE::x32::RegisterThread();
     FEX::HLE::x32::RegisterTime();
     FEX::HLE::x32::RegisterTimer();

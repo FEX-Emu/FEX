@@ -20,6 +20,7 @@ $end_info$
 #include <bits/types/struct_iovec.h>
 #include <cstdint>
 #include <fcntl.h>
+#include <limits>
 #include <poll.h>
 #include <signal.h>
 #include <stddef.h>
@@ -52,7 +53,6 @@ namespace FEX::HLE::x32 {
     return std::max(0, count);
   }
 
-  using fd_set32 = uint32_t;
 #ifdef _M_X86_64
   uint32_t ioctl_32(FEXCore::Core::CpuStateFrame*, int fd, uint32_t cmd, uint32_t args) {
     uint32_t Result{};
@@ -66,6 +66,191 @@ namespace FEX::HLE::x32 {
     return Result;
   }
 #endif
+  auto fcntlHandler = [](FEXCore::Core::CpuStateFrame *Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
+    // fcntl64 struct directly matches the 64bit fcntl op
+    // cmd just needs to be fixed up
+    // These are redefined to be their non-64bit tagged value on x86-64
+    constexpr int OP_GETLK64_32 = 12;
+    constexpr int OP_SETLK64_32 = 13;
+    constexpr int OP_SETLKW64_32 = 14;
+
+    void *lock_arg = (void*)arg;
+    struct flock tmp{};
+    int old_cmd = cmd;
+
+    switch (old_cmd) {
+      case OP_GETLK64_32: {
+        cmd = F_GETLK;
+        lock_arg = (void*)&tmp;
+        tmp = *reinterpret_cast<flock64_32*>(arg);
+        break;
+      }
+      case OP_SETLK64_32: {
+        cmd = F_SETLK;
+        lock_arg = (void*)&tmp;
+        tmp = *reinterpret_cast<flock64_32*>(arg);
+        break;
+      }
+      case OP_SETLKW64_32: {
+        cmd = F_SETLKW;
+        lock_arg = (void*)&tmp;
+        tmp = *reinterpret_cast<flock64_32*>(arg);
+        break;
+      }
+      case F_OFD_SETLK:
+      case F_OFD_GETLK:
+      case F_OFD_SETLKW: {
+        lock_arg = (void*)&tmp;
+        tmp = *reinterpret_cast<flock64_32*>(arg);
+        break;
+      }
+      case F_GETLK:
+      case F_SETLK:
+      case F_SETLKW: {
+        lock_arg = (void*)&tmp;
+        tmp = *reinterpret_cast<flock_32*>(arg);
+        break;
+      }
+
+      case F_SETFL:
+        lock_arg = reinterpret_cast<void*>(FEX::HLE::RemapFromX86Flags(arg));
+        break;
+      // Maps directly
+      case F_DUPFD:
+      case F_DUPFD_CLOEXEC:
+      case F_GETFD:
+      case F_SETFD:
+      case F_GETFL:
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled fcntl64: 0x{:x}", cmd);
+        break;
+    }
+
+    uint64_t Result = ::fcntl(fd, cmd, lock_arg);
+
+    if (Result != -1) {
+      switch (old_cmd) {
+        case OP_GETLK64_32: {
+          *reinterpret_cast<flock64_32*>(arg) = tmp;
+          break;
+        }
+        case F_OFD_GETLK: {
+          *reinterpret_cast<flock64_32*>(arg) = tmp;
+          break;
+        }
+        case F_GETLK: {
+          *reinterpret_cast<flock_32*>(arg) = tmp;
+          break;
+        }
+        break;
+        case F_DUPFD:
+        case F_DUPFD_CLOEXEC:
+          FEX::HLE::x32::CheckAndAddFDDuplication(fd, Result);
+          break;
+        case F_GETFL: {
+          Result = FEX::HLE::RemapToX86Flags(Result);
+          break;
+        }
+        default: break;
+      }
+    }
+    SYSCALL_ERRNO();
+  };
+
+  auto selectHandler = [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set32 *readfds, fd_set32 *writefds, fd_set32 *exceptfds, struct timeval32 *timeout) -> uint64_t {
+    struct timeval tp64{};
+    if (timeout) {
+      tp64 = *timeout;
+    }
+
+    fd_set Host_readfds;
+    fd_set Host_writefds;
+    fd_set Host_exceptfds;
+    FD_ZERO(&Host_readfds);
+    FD_ZERO(&Host_writefds);
+    FD_ZERO(&Host_exceptfds);
+
+    // Round up to the full 32bit word
+    uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
+
+    if (readfds) {
+      for (int i = 0; i < NumWords; ++i) {
+        uint32_t FD = readfds[i];
+        int32_t Rem = nfds - (i * 32);
+        for (int j = 0; j < 32 && j < Rem; ++j) {
+          if ((FD >> j) & 1) {
+            FD_SET(i * 32 + j, &Host_readfds);
+          }
+        }
+      }
+    }
+
+    if (writefds) {
+      for (int i = 0; i < NumWords; ++i) {
+        uint32_t FD = writefds[i];
+        int32_t Rem = nfds - (i * 32);
+        for (int j = 0; j < 32 && j < Rem; ++j) {
+          if ((FD >> j) & 1) {
+            FD_SET(i * 32 + j, &Host_writefds);
+          }
+        }
+      }
+    }
+
+    if (exceptfds) {
+      for (int i = 0; i < NumWords; ++i) {
+        uint32_t FD = exceptfds[i];
+        int32_t Rem = nfds - (i * 32);
+        for (int j = 0; j < 32 && j < Rem; ++j) {
+          if ((FD >> j) & 1) {
+            FD_SET(i * 32 + j, &Host_exceptfds);
+          }
+        }
+      }
+    }
+
+    uint64_t Result = ::select(nfds,
+      readfds ? &Host_readfds : nullptr,
+      writefds ? &Host_writefds : nullptr,
+      exceptfds ? &Host_exceptfds : nullptr,
+      timeout ? &tp64 : nullptr);
+    if (readfds) {
+      for (int i = 0; i < nfds; ++i) {
+        if (FD_ISSET(i, &Host_readfds)) {
+          readfds[i/32] |= 1 << (i & 31);
+        } else {
+          readfds[i/32] &= ~(1 << (i & 31));
+        }
+      }
+    }
+
+    if (writefds) {
+      for (int i = 0; i < nfds; ++i) {
+        if (FD_ISSET(i, &Host_writefds)) {
+          writefds[i/32] |= 1 << (i & 31);
+        } else {
+          writefds[i/32] &= ~(1 << (i & 31));
+        }
+      }
+    }
+
+    if (exceptfds) {
+      for (int i = 0; i < nfds; ++i) {
+        if (FD_ISSET(i, &Host_exceptfds)) {
+          exceptfds[i/32] |= 1 << (i & 31);
+        } else {
+          exceptfds[i/32] &= ~(1 << (i & 31));
+        }
+      }
+    }
+
+    if (timeout) {
+      *timeout = tp64;
+    }
+    SYSCALL_ERRNO();
+  };
 
   void RegisterFD() {
     REGISTER_SYSCALL_IMPL_X32_PASS(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
@@ -142,6 +327,54 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(lchown32, lchown, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uid_t owner, gid_t group) -> uint64_t {
       uint64_t Result = ::lchown(pathname, owner, group);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(oldstat, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, oldstat32 *buf) -> uint64_t {
+      struct stat host_stat;
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
+      if (Result != -1) {
+        if (host_stat.st_ino > std::numeric_limits<decltype(buf->st_ino)>::max()) {
+          return -EOVERFLOW;
+        }
+        if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
+          return -EOVERFLOW;
+        }
+
+        *buf = host_stat;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(oldfstat, [](FEXCore::Core::CpuStateFrame *Frame, int fd, oldstat32 *buf) -> uint64_t {
+      struct stat host_stat;
+      uint64_t Result = ::fstat(fd, &host_stat);
+      if (Result != -1) {
+        if (host_stat.st_ino > std::numeric_limits<decltype(buf->st_ino)>::max()) {
+          return -EOVERFLOW;
+        }
+        if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
+          return -EOVERFLOW;
+        }
+
+        *buf = host_stat;
+      }
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(oldlstat, [](FEXCore::Core::CpuStateFrame *Frame, const char *path, oldstat32 *buf) -> uint64_t {
+      struct stat host_stat;
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Lstat(path, &host_stat);
+      if (Result != -1) {
+        if (host_stat.st_ino > std::numeric_limits<decltype(buf->st_ino)>::max()) {
+          return -EOVERFLOW;
+        }
+        if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
+          return -EOVERFLOW;
+        }
+
+        *buf = host_stat;
+      }
       SYSCALL_ERRNO();
     });
 
@@ -241,98 +474,21 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(fcntl64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
-      // fcntl64 struct directly matches the 64bit fcntl op
-      // cmd just needs to be fixed up
-      // These are redefined to be their non-64bit tagged value on x86-64
-      constexpr int OP_GETLK64_32 = 12;
-      constexpr int OP_SETLK64_32 = 13;
-      constexpr int OP_SETLKW64_32 = 14;
+    // x86 32-bit fcntl syscall has a historical quirk that it uses the same handler as fcntl64
+    // This is in direct opposition to all other 32-bit architectures that use the compat_fcntl handler
+    // This quirk goes back to the start of the Linux 2.6.12-rc2 git history. Seeing history before
+    // that point to see when this quirk happened would be difficult
+    //
+    // For more reference, the compat_fcntl handler blocks a few commands:
+    // - F_GETLK64
+    // - F_SETLK64
+    // - F_SETLKW64
+    // - F_OFD_GETLK
+    // - F_OFD_SETLK
+    // - F_OFD_SETLKW
 
-      void *lock_arg = (void*)arg;
-      struct flock tmp{};
-      int old_cmd = cmd;
-
-      switch (old_cmd) {
-        case OP_GETLK64_32: {
-          cmd = F_GETLK;
-          lock_arg = (void*)&tmp;
-          tmp = *reinterpret_cast<flock64_32*>(arg);
-          break;
-        }
-        case OP_SETLK64_32: {
-          cmd = F_SETLK;
-          lock_arg = (void*)&tmp;
-          tmp = *reinterpret_cast<flock64_32*>(arg);
-          break;
-        }
-        case OP_SETLKW64_32: {
-          cmd = F_SETLKW;
-          lock_arg = (void*)&tmp;
-          tmp = *reinterpret_cast<flock64_32*>(arg);
-          break;
-        }
-        case F_OFD_SETLK:
-        case F_OFD_GETLK:
-        case F_OFD_SETLKW: {
-          lock_arg = (void*)&tmp;
-          tmp = *reinterpret_cast<flock64_32*>(arg);
-          break;
-        }
-        case F_GETLK:
-        case F_SETLK:
-        case F_SETLKW: {
-          lock_arg = (void*)&tmp;
-          tmp = *reinterpret_cast<flock_32*>(arg);
-          break;
-        }
-
-        case F_SETFL:
-          lock_arg = reinterpret_cast<void*>(FEX::HLE::RemapFromX86Flags(arg));
-          break;
-        // Maps directly
-        case F_DUPFD:
-        case F_DUPFD_CLOEXEC:
-        case F_GETFD:
-        case F_SETFD:
-        case F_GETFL:
-          break;
-
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled fcntl64: 0x{:x}", cmd);
-          break;
-      }
-
-      uint64_t Result = ::fcntl(fd, cmd, lock_arg);
-
-      if (Result != -1) {
-        switch (old_cmd) {
-          case OP_GETLK64_32: {
-            *reinterpret_cast<flock64_32*>(arg) = tmp;
-            break;
-          }
-          case F_OFD_GETLK: {
-            *reinterpret_cast<flock64_32*>(arg) = tmp;
-            break;
-          }
-          case F_GETLK: {
-            *reinterpret_cast<flock_32*>(arg) = tmp;
-            break;
-          }
-          break;
-          case F_DUPFD:
-          case F_DUPFD_CLOEXEC:
-            FEX::HLE::x32::CheckAndAddFDDuplication(fd, Result);
-            break;
-          case F_GETFL: {
-            Result = FEX::HLE::RemapToX86Flags(Result);
-            break;
-          }
-          default: break;
-        }
-      }
-      SYSCALL_ERRNO();
-    });
+    REGISTER_SYSCALL_IMPL_X32(fcntl, fcntlHandler);
+    REGISTER_SYSCALL_IMPL_X32(fcntl64, fcntlHandler);
 
     REGISTER_SYSCALL_IMPL_X32(dup, [](FEXCore::Core::CpuStateFrame *Frame, int oldfd) -> uint64_t {
       uint64_t Result = ::dup(oldfd);
@@ -516,98 +672,11 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(_newselect, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set32 *readfds, fd_set32 *writefds, fd_set32 *exceptfds, struct timeval32 *timeout) -> uint64_t {
-      struct timeval tp64{};
-      if (timeout) {
-        tp64 = *timeout;
-      }
-
-      fd_set Host_readfds;
-      fd_set Host_writefds;
-      fd_set Host_exceptfds;
-      FD_ZERO(&Host_readfds);
-      FD_ZERO(&Host_writefds);
-      FD_ZERO(&Host_exceptfds);
-
-      // Round up to the full 32bit word
-      uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
-
-      if (readfds) {
-        for (int i = 0; i < NumWords; ++i) {
-          uint32_t FD = readfds[i];
-          int32_t Rem = nfds - (i * 32);
-          for (int j = 0; j < 32 && j < Rem; ++j) {
-            if ((FD >> j) & 1) {
-              FD_SET(i * 32 + j, &Host_readfds);
-            }
-          }
-        }
-      }
-
-      if (writefds) {
-        for (int i = 0; i < NumWords; ++i) {
-          uint32_t FD = writefds[i];
-          int32_t Rem = nfds - (i * 32);
-          for (int j = 0; j < 32 && j < Rem; ++j) {
-            if ((FD >> j) & 1) {
-              FD_SET(i * 32 + j, &Host_writefds);
-            }
-          }
-        }
-      }
-
-      if (exceptfds) {
-        for (int i = 0; i < NumWords; ++i) {
-          uint32_t FD = exceptfds[i];
-          int32_t Rem = nfds - (i * 32);
-          for (int j = 0; j < 32 && j < Rem; ++j) {
-            if ((FD >> j) & 1) {
-              FD_SET(i * 32 + j, &Host_exceptfds);
-            }
-          }
-        }
-      }
-
-      uint64_t Result = ::select(nfds,
-        readfds ? &Host_readfds : nullptr,
-        writefds ? &Host_writefds : nullptr,
-        exceptfds ? &Host_exceptfds : nullptr,
-        timeout ? &tp64 : nullptr);
-      if (readfds) {
-        for (int i = 0; i < nfds; ++i) {
-          if (FD_ISSET(i, &Host_readfds)) {
-            readfds[i/32] |= 1 << (i & 31);
-          } else {
-            readfds[i/32] &= ~(1 << (i & 31));
-          }
-        }
-      }
-
-      if (writefds) {
-        for (int i = 0; i < nfds; ++i) {
-          if (FD_ISSET(i, &Host_writefds)) {
-            writefds[i/32] |= 1 << (i & 31);
-          } else {
-            writefds[i/32] &= ~(1 << (i & 31));
-          }
-        }
-      }
-
-      if (exceptfds) {
-        for (int i = 0; i < nfds; ++i) {
-          if (FD_ISSET(i, &Host_exceptfds)) {
-            exceptfds[i/32] |= 1 << (i & 31);
-          } else {
-            exceptfds[i/32] &= ~(1 << (i & 31));
-          }
-        }
-      }
-
-      if (timeout) {
-        *timeout = tp64;
-      }
-      SYSCALL_ERRNO();
+    REGISTER_SYSCALL_IMPL_X32(select, [](FEXCore::Core::CpuStateFrame *Frame, compat_select_args *arg) -> uint64_t {
+      return selectHandler(Frame, arg->nfds, arg->readfds, arg->writefds, arg->exceptfds, arg->timeout);
     });
+
+    REGISTER_SYSCALL_IMPL_X32(_newselect, selectHandler);
 
     REGISTER_SYSCALL_IMPL_X32(pselect6, [](FEXCore::Core::CpuStateFrame *Frame, int nfds, fd_set32 *readfds, fd_set32 *writefds, fd_set32 *exceptfds, timespec32 *timeout, compat_ptr<sigset_argpack32> sigmaskpack) -> uint64_t {
       struct timespec tp64{};
@@ -957,6 +1026,11 @@ namespace FEX::HLE::x32 {
       uint64_t Result = ::fallocate(fd, mode, Offset, Len);
       SYSCALL_ERRNO();
     });
-  }
 
+    REGISTER_SYSCALL_IMPL_X32(vmsplice, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
+      std::vector<iovec> Host_iovec(iov, iov + nr_segs);
+      uint64_t Result = ::vmsplice(fd, Host_iovec.data(), nr_segs, flags);
+      SYSCALL_ERRNO();
+    });
+  }
 }

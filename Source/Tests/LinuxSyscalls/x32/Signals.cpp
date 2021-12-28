@@ -71,6 +71,30 @@ namespace FEX::HLE::x32 {
   }
 
   void RegisterSignals() {
+
+    // Only gets the lower 32-bits of the signal mask
+    REGISTER_SYSCALL_IMPL_X32(sgetmask, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+      uint64_t Set{};
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(0, nullptr, &Set);
+      return Set & ~0U;
+    });
+
+    // Only controls the lower 32-bits of the signal mask
+    // Blocks the upper 32-bits
+    REGISTER_SYSCALL_IMPL_X32(ssetmask, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t New) -> uint64_t {
+      uint64_t Set{};
+      uint64_t NewSet = (~0ULL << 32) | New;
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(SIG_SETMASK, &NewSet, &Set);
+      return Set & ~0U;
+    });
+
+    // Only masks the lower 32-bits of the signal mask
+    // The upper 32-bits are still active (unmasked) and can signal the program
+    REGISTER_SYSCALL_IMPL_X32(sigsuspend, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t Mask) -> uint64_t {
+      uint64_t Mask64 = Mask;
+      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(&Mask64, 8);
+    });
+
     REGISTER_SYSCALL_IMPL_X32(sigpending, [](FEXCore::Core::CpuStateFrame *Frame, compat_old_sigset_t *set) -> uint64_t {
       uint64_t HostSet{};
       uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(&HostSet, 8);
@@ -87,6 +111,29 @@ namespace FEX::HLE::x32 {
       newact.sigaction_handler.handler = reinterpret_cast<decltype(newact.sigaction_handler.handler)>(handler);
       FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, &newact, &oldact);
       return static_cast<uint32_t>(reinterpret_cast<uint64_t>(oldact.sigaction_handler.handler));
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const OldGuestSigAction_32 *act, OldGuestSigAction_32 *oldact) -> uint64_t {
+      FEXCore::GuestSigAction *act64_p{};
+      FEXCore::GuestSigAction *old64_p{};
+
+      FEXCore::GuestSigAction act64{};
+      if (act) {
+        act64 = *act;
+        act64_p = &act64;
+      }
+      FEXCore::GuestSigAction old64{};
+
+      if (oldact) {
+        old64_p = &old64;
+      }
+
+      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
+      if (Result == 0 && oldact) {
+        *oldact = old64;
+      }
+
+      return Result;
     });
 
     REGISTER_SYSCALL_IMPL_X32(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const GuestSigAction_32 *act, GuestSigAction_32 *oldact, size_t sigsetsize) -> uint64_t {

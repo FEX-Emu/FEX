@@ -11,6 +11,7 @@ add_library(LinuxEmulation STATIC
     x32/FD.cpp
     x32/FS.cpp
     x32/Info.cpp
+    x32/IO.cpp
     x32/Memory.cpp
     x32/Msg.cpp
     x32/NotImplemented.cpp
@@ -18,6 +19,7 @@ add_library(LinuxEmulation STATIC
     x32/Sched.cpp
     x32/Signals.cpp
     x32/Socket.cpp
+    x32/Stubs.cpp
     x32/Thread.cpp
     x32/Time.cpp
     x32/Timer.cpp

@@ -13,9 +13,13 @@ $end_info$
 #include <bits/types/struct_rusage.h>
 #include <limits>
 #include <linux/sysinfo.h>
+#include <linux/utsname.h>
 #include <stdint.h>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
+#include <sys/utsname.h>
+
+#include <git_version.h>
 
 namespace FEXCore::Core {
   struct CpuStateFrame;
@@ -44,6 +48,56 @@ namespace FEX::HLE::x32 {
   static_assert(sizeof(sysinfo32) == 64, "Needs to be 64bytes");
 
   void RegisterInfo() {
+    REGISTER_SYSCALL_IMPL_X32(oldolduname, [](FEXCore::Core::CpuStateFrame *Frame, struct oldold_utsname *buf) -> uint64_t {
+      struct utsname Local{};
+
+      memset(buf, 0, sizeof(*buf));
+      if (::uname(&Local) == 0) {
+        memcpy(buf->nodename, Local.nodename, __OLD_UTS_LEN);
+      }
+      else {
+        strncpy(buf->nodename, "FEXCore", __OLD_UTS_LEN);
+        LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
+      }
+      strncpy(buf->sysname, "Linux", __OLD_UTS_LEN);
+      uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+      snprintf(buf->release, __OLD_UTS_LEN, "%d.%d.%d",
+        FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+
+      const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
+      strncpy(buf->version, version, __OLD_UTS_LEN);
+      // Tell the guest that we are a 64bit kernel
+      strncpy(buf->machine, "x86_64", __OLD_UTS_LEN);
+      return 0;
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(olduname, [](FEXCore::Core::CpuStateFrame *Frame, struct old_utsname *buf) -> uint64_t {
+      struct utsname Local{};
+
+      memset(buf, 0, sizeof(*buf));
+      if (::uname(&Local) == 0) {
+        memcpy(buf->nodename, Local.nodename, __NEW_UTS_LEN);
+      }
+      else {
+        strncpy(buf->nodename, "FEXCore", __NEW_UTS_LEN);
+        LogMan::Msg::EFmt("Couldn't determine host nodename. Defaulting to '{}'", buf->nodename);
+      }
+      strncpy(buf->sysname, "Linux", __NEW_UTS_LEN);
+      uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+      snprintf(buf->release, __NEW_UTS_LEN, "%d.%d.%d",
+        FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelMinor(GuestVersion),
+        FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
+
+      const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
+      strncpy(buf->version, version, __NEW_UTS_LEN);
+      // Tell the guest that we are a 64bit kernel
+      strncpy(buf->machine, "x86_64", __NEW_UTS_LEN);
+      return 0;
+    });
+
     REGISTER_SYSCALL_IMPL_X32(getrlimit, [](FEXCore::Core::CpuStateFrame *Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<true>> rlim) -> uint64_t {
       struct rlimit rlim64{};
       uint64_t Result = ::getrlimit(resource, &rlim64);
