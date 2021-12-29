@@ -283,13 +283,13 @@ ErrorResult SetupSquashFS(char **const envp) {
       // Child
       close(fds[0]); // Close read end of pipe
       const char *argv[5];
-      argv[0] = FEX_INSTALL_PREFIX "/bin/FEXMountDaemon";
+      argv[0] = "FEXMountDaemon";
       argv[1] = LDPath().c_str();
       argv[2] = TempFolder;
       argv[3] = PipeString.c_str();
       argv[4] = nullptr;
 
-      if (execve(argv[0], (char * const*)argv, envp) == -1) {
+      if (execvpe(argv[0], (char * const*)argv, envp) == -1) {
         // Let the parent know that we couldn't execute for some reason
         uint64_t error{1};
         write(fds[1], &error, sizeof(error));
