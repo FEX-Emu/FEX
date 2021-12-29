@@ -105,7 +105,6 @@ namespace FEX::HLE::x32 {
         int32_t cmd = third & 0xFF;
         compat_ptr<semun_32> semun(ptr);
         bool IPC64 = third & 0x100;
-#define UNHANDLED(x) case x: LOGMAN_MSG_A_FMT("Unhandled semctl cmd: " #x); break
         switch (cmd) {
           case IPC_SET: {
             struct semid_ds buf{};
@@ -172,7 +171,6 @@ namespace FEX::HLE::x32 {
             LOGMAN_MSG_A_FMT("Unhandled semctl cmd: {}", cmd);
             return -EINVAL;
         }
-#undef UNHANDLED
         break;
       }
       case OP_SEMTIMEDOP: {
@@ -237,9 +235,18 @@ namespace FEX::HLE::x32 {
         msgun_32 msgun{};
         msgun.val = ptr;
         bool IPC64 = second & 0x100;
-#define UNHANDLED(x) case x: LOGMAN_MSG_A_FMT("Unhandled msgctl cmd: " #x); break
         switch (cmd) {
-          UNHANDLED(IPC_SET);
+          case IPC_SET: {
+            struct msqid_ds buf{};
+            if (IPC64) {
+              buf = *msgun.buf64;
+            }
+            else {
+              buf = *msgun.buf32;
+            }
+            Result = ::msgctl(msqid, cmd, &buf);
+            break;
+          }
           case MSG_STAT:
           case MSG_STAT_ANY:
           case IPC_STAT: {
@@ -271,7 +278,6 @@ namespace FEX::HLE::x32 {
             LOGMAN_MSG_A_FMT("Unhandled msgctl cmd: {}", cmd);
             return -EINVAL;
         }
-#undef UNHANDLED
         break;
       }
       case OP_SHMAT: {

@@ -1557,6 +1557,22 @@ struct msqid_ds_32 {
   uint16_t msg_lrpid;
 
   msqid_ds_32() = delete;
+  operator struct msqid_ds() const {
+    struct msqid_ds val{};
+    // msg_first and msg_last are unused and untouched
+    val.msg_perm = msg_perm;
+    val.msg_stime = msg_stime;
+    val.msg_rtime = msg_rtime;
+    val.msg_ctime = msg_ctime;
+
+    val.msg_cbytes = msg_cbytes;
+    val.msg_qnum = msg_qnum;
+    val.msg_qbytes = msg_qbytes;
+    val.msg_lspid = msg_lspid;
+    val.msg_lrpid = msg_lrpid;
+    return val;
+  }
+
   msqid_ds_32(struct msqid_ds buf)
     : msg_perm {buf.msg_perm} {
     // msg_first and msg_last are unused and untouched
@@ -1608,6 +1624,29 @@ struct msqid_ds_64 {
   uint32_t _pad[2];
 
   msqid_ds_64() = delete;
+  operator struct msqid_ds() const {
+    struct msqid_ds val{};
+    val.msg_perm = msg_perm;
+    val.msg_stime = msg_stime_high;
+    val.msg_stime <<= 32;
+    val.msg_stime |= msg_stime;
+
+    val.msg_rtime = msg_rtime_high;
+    val.msg_rtime <<= 32;
+    val.msg_rtime |= msg_rtime;
+
+    val.msg_ctime = msg_ctime_high;
+    val.msg_ctime <<= 32;
+    val.msg_ctime |= msg_ctime;
+
+    val.msg_cbytes = msg_cbytes;
+    val.msg_qnum = msg_qnum;
+    val.msg_qbytes = msg_qbytes;
+    val.msg_lspid = msg_lspid;
+    val.msg_lrpid = msg_lrpid;
+    return val;
+  }
+
   msqid_ds_64(struct msqid_ds buf)
     : msg_perm {buf.msg_perm} {
     msg_stime = buf.msg_stime;
