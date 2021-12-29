@@ -24,6 +24,7 @@ struct X86ContextBackup {
   uint64_t GPRs[23];
   FEXCore::x86_64::_libc_fpstate FPRState;
   uint64_t sa_mask;
+  bool FaultToTopAndGeneratedException;
 
   // Guest state
   int Signal;
@@ -46,6 +47,7 @@ struct ArmContextBackup {
   uint32_t FPCR;
   __uint128_t FPRs[32];
   uint64_t sa_mask;
+  bool FaultToTopAndGeneratedException;
 
   // Guest state
   int Signal;

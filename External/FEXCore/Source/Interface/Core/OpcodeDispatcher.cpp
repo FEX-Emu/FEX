@@ -5074,8 +5074,9 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   break;
   }
 
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
   if (setRIP) {
-    const uint8_t GPRSize = CTX->GetGPRSize();
 
     BlockSetRIP = setRIP;
 
@@ -5093,6 +5094,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
 
+    auto NewRIP = GetDynamicPC(Op);
+    _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
     _Break(Reason, Literal);
 
     // Make sure to start a new block after ending this one
@@ -5296,6 +5299,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x60, 1, &OpDispatchBuilder::PUSHAOp},
     {0x61, 1, &OpDispatchBuilder::POPAOp},
+    {0xCE, 1, &OpDispatchBuilder::INTOp},
   };
 
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable_64[] = {

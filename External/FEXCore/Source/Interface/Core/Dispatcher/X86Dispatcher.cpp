@@ -286,6 +286,24 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   }
 
   {
+    // Guest Overflow handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    OverflowExceptionInstructionAddress = getCurr<uint64_t>();
+
+    // ud2 = SIGILL
+    // int3 = SIGTRAP
+    // hlt = SIGSEGV
+
+    mov(rax, reinterpret_cast<uint64_t>(&SynchronousFaultData));
+    add(byte [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, FaultToTopAndGeneratedException)], 1);
+    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, TrapNo)], X86State::X86_TRAPNO_OF);
+    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, err_code)], 0);
+    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, si_code)], 0x80);
+
+    hlt();
+  }
+
+  {
     ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();
 //  using CallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 

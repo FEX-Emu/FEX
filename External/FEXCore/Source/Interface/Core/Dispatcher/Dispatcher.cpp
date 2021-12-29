@@ -81,6 +81,10 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, vo
   Context->UContextLocation = 0;
   Context->SigInfoLocation = 0;
 
+  // Store fault to top status and then reset it
+  Context->FaultToTopAndGeneratedException = SynchronousFaultData.FaultToTopAndGeneratedException;
+  SynchronousFaultData.FaultToTopAndGeneratedException = false;
+
   return Context;
 }
 
@@ -118,7 +122,8 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
       [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
 
       // If the guest modified the RIP then we need to take special precautions here
-      if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP]) {
+      if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] ||
+          Context->FaultToTopAndGeneratedException) {
         // Hack! Go back to the top of the dispatcher top
         // This is only safe inside the JIT rather than anything outside of it
         ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
@@ -175,7 +180,8 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
       auto *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(Context->UContextLocation);
       [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(Context->SigInfoLocation);
       // If the guest modified the RIP then we need to take special precautions here
-      if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP]) {
+      if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] ||
+          Context->FaultToTopAndGeneratedException) {
         // Hack! Go back to the top of the dispatcher top
         // This is only safe inside the JIT rather than anything outside of it
         ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
@@ -394,8 +400,23 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = 0;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] = 0;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
+
+      // aarch64 and x86_64 siginfo_t matches. We can just copy this over
+      // SI_USER could also potentially have random data in it, needs to be bit perfect
+      // For guest faults we don't have a real way to reconstruct state to a real guest RIP
+      *guest_siginfo = *HostSigInfo;
+
+      if (ContextBackup->FaultToTopAndGeneratedException) {
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = SynchronousFaultData.TrapNo;
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = SynchronousFaultData.err_code;
+
+        // Overwrite si_code
+        guest_siginfo->si_code = SynchronousFaultData.si_code;
+      }
+      else {
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
+      }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_OLDMASK] = 0;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CR2] = 0;
 
@@ -440,11 +461,6 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_stack.ss_sp = GuestStack->ss_sp;
       guest_uctx->uc_stack.ss_size = GuestStack->ss_size;
 
-      // aarch64 and x86_64 siginfo_t matches. We can just copy this over
-      // SI_USER could also potentially have random data in it, needs to be bit perfect
-      // For guest faults we don't have a real way to reconstruct state to a real guest RIP
-      *guest_siginfo = *HostSigInfo;
-
       Frame->State.gregs[X86State::REG_RSI] = SigInfoLocation;
       Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
     }
@@ -481,8 +497,16 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES] = Frame->State.es;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
+      if (ContextBackup->FaultToTopAndGeneratedException) {
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = SynchronousFaultData.TrapNo;
+        guest_siginfo->si_code = SynchronousFaultData.si_code;
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = SynchronousFaultData.err_code;
+      }
+      else {
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
+        guest_siginfo->si_code = HostSigInfo->si_code;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
+      }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = 0;
@@ -530,7 +554,6 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       // These three elements are in every siginfo
       guest_siginfo->si_signo = HostSigInfo->si_signo;
       guest_siginfo->si_errno = HostSigInfo->si_errno;
-      guest_siginfo->si_code = HostSigInfo->si_code;
 
       switch (Signal) {
         case SIGSEGV:

@@ -49,12 +49,19 @@ public:
   uint64_t ExitFunctionLinkerAddress{};
   uint64_t SignalHandlerReturnAddress{};
   uint64_t UnimplementedInstructionAddress{};
+  uint64_t OverflowExceptionInstructionAddress{};
 
   uint64_t PauseReturnInstruction{};
 
   /**  @} */
 
   uint32_t SignalHandlerRefCounter{};
+  struct SynchronousFaultDataStruct {
+    bool FaultToTopAndGeneratedException{};
+    uint32_t TrapNo;
+    uint32_t err_code;
+    uint32_t si_code;
+  } SynchronousFaultData;
 
   uint64_t Start{};
   uint64_t End{};
