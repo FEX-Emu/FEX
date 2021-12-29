@@ -32,8 +32,11 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    // XXX: msqid_ds is definitely not correct for 32-bit
     REGISTER_SYSCALL_IMPL_PASS(msgctl, [](FEXCore::Core::CpuStateFrame *Frame, int msqid, int cmd, struct msqid_ds *buf) -> uint64_t {
+      // A quirk of this syscall
+      // On 32-bit this syscall ONLY supports IPC_64 msqid_ds encoding
+      // If an application want to use the old style encoding then it needs to use the ipc syscall with MSGCTL command
+      // ipc syscall supports both IPC_64 and old encoding
       uint64_t Result = ::msgctl(msqid, cmd, buf);
       SYSCALL_ERRNO();
     });
