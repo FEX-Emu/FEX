@@ -40,8 +40,12 @@ DEF_OP(Break) {
   switch (Op->Reason) {
     case FEXCore::IR::Break_Unimplemented: // Hard fault
     case FEXCore::IR::Break_Interrupt: // Guest ud2
-    case FEXCore::IR::Break_Overflow: // overflow
       hlt(4);
+      break;
+    case FEXCore::IR::Break_Overflow: // overflow
+      ResetStack();
+      LoadConstant(TMP1, ThreadSharedData.Dispatcher->OverflowExceptionInstructionAddress);
+      br(TMP1);
       break;
     case FEXCore::IR::Break_Halt: { // HLT
       // Time to quit

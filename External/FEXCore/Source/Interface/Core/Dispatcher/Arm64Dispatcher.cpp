@@ -340,6 +340,31 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
+    // Guest Overflow handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    OverflowExceptionInstructionAddress = GetCursorAddress<uint64_t>();
+
+    if (SRAEnabled)
+      SpillStaticRegs();
+
+    LoadConstant(x0, reinterpret_cast<uint64_t>(&SynchronousFaultData));
+    LoadConstant(w1, 1);
+    strb(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, FaultToTopAndGeneratedException)));
+    LoadConstant(w1, X86State::X86_TRAPNO_OF);
+    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, TrapNo)));
+    LoadConstant(w1, 0x80);
+    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, si_code)));
+    LoadConstant(x1, 0);
+    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, err_code)));
+
+    // hlt/udf = SIGILL
+    // brk = SIGTRAP
+    // ??? = SIGSEGV
+    // Force a SIGSEGV by loading zero
+    ldr(x1, MemOperand(x1));
+  }
+
+  {
     ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (SRAEnabled)
       SpillStaticRegs();

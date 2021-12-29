@@ -49,8 +49,12 @@ DEF_OP(Break) {
   switch (Op->Reason) {
     case FEXCore::IR::Break_Unimplemented: // Hard fault
     case FEXCore::IR::Break_Interrupt: // Guest ud2
-    case FEXCore::IR::Break_Overflow: // overflow
       ud2();
+      break;
+    case FEXCore::IR::Break_Overflow: // overflow
+      // Need to be outside of JIT cache space to ensure cache clearing correctness
+      mov(TMP1, ThreadSharedData.Dispatcher->OverflowExceptionInstructionAddress);
+      jmp(TMP1);
       break;
     case FEXCore::IR::Break_Halt: { // HLT
       // Time to quit

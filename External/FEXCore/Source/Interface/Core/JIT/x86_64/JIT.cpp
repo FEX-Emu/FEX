@@ -358,6 +358,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress;
     ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
+    ThreadSharedData.OverflowExceptionInstructionAddress = Dispatcher->OverflowExceptionInstructionAddress;
 
     ThreadSharedData.Dispatcher = Dispatcher.get();
 
