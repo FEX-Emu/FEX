@@ -627,13 +627,13 @@ int main(int argc, char **argv, char **envp) {
     // Child
     close(localfds[0]); // Close read side
     const char *argv[4];
-    argv[0] = "/usr/bin/squashfuse";
+    argv[0] = "squashfuse";
     argv[1] = SquashFSPath;
     argv[2] = MountPath;
     argv[3] = nullptr;
 
     // Try and execute squashfuse to mount our rootfs
-    if (execve(argv[0], (char * const*)argv, envp) == -1) {
+    if (execvpe(argv[0], (char * const*)argv, envp) == -1) {
       // Let the parent know that we couldn't execute for some reason
       uint64_t error{1};
       write(localfds[1], &error, sizeof(error));
@@ -651,7 +651,7 @@ int main(int argc, char **argv, char **envp) {
     // Parent
     close(localfds[1]); // Close the write side
     // Wait for the child to exit
-    // This will happen with execve of squashmount or exit on failure
+    // This will happen with execvpe of squashmount or exit on failure
     waitpid(pid, nullptr, 0);
 
     // Check the child pipe for messages
@@ -662,7 +662,7 @@ int main(int argc, char **argv, char **envp) {
     int Result = poll(&PollFD, 1, 0);
 
     if (Result == 1 && PollFD.revents & POLLIN) {
-      // Child couldn't execve for whatever reason
+      // Child couldn't execvpe for whatever reason
       // Remove the mount path and leave Just in case it was created
       rmdir(MountPath);
 
@@ -696,20 +696,16 @@ int main(int argc, char **argv, char **envp) {
 
     if (pid == 0) {
       const char *argv[5];
-      argv[0] = "/bin/fusermount";
+      argv[0] = "fusermount";
       argv[1] = "-u";
       argv[2] = "-q";
       argv[3] = MountPath;
       argv[4] = nullptr;
 
-      if (execve(argv[0], (char * const*)argv, envp) == -1) {
-        // Try another location
-        argv[0] = "/usr/bin/fusermount";
-        if (execve(argv[0], (char * const*)argv, envp) == -1) {
-          fprintf(stderr, "fusermount failed to execute. You may have an mount living at '%s' to clean up now\n", SquashFSPath);
-          fprintf(stderr, "Try `%s %s %s %s`\n", argv[0], argv[1], argv[2], argv[3]);
-          exit(1);
-        }
+      if (execvpe(argv[0], (char * const*)argv, envp) == -1) {
+        fprintf(stderr, "fusermount failed to execute. You may have an mount living at '%s' to clean up now\n", SquashFSPath);
+        fprintf(stderr, "Try `%s %s %s %s`\n", argv[0], argv[1], argv[2], argv[3]);
+        exit(1);
       }
     }
     else {

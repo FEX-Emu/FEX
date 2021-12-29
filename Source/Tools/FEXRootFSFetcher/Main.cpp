@@ -13,7 +13,7 @@ namespace Exec {
   int32_t ExecAndWaitForResponse(const char *path, char* const* args) {
     pid_t pid = fork();
     if (pid == 0) {
-      execv(path, args);
+      execvp(path, args);
       _exit(-1);
     }
     else {
@@ -45,7 +45,7 @@ namespace Exec {
       // We can now close the pipe since the duplications take care of the rest
       close(fd[1]);
 
-      execv(path, args);
+      execvp(path, args);
       _exit(-1);
     }
     else {
@@ -302,7 +302,7 @@ namespace Zenity {
   bool ExecWithQuestion(const std::string &Question) {
     std::string TextArg = "--text=" + Question;
     const char *Args[] = {
-      "/usr/bin/zenity",
+      "zenity",
       "--question",
       TextArg.c_str(),
       nullptr,
@@ -316,7 +316,7 @@ namespace Zenity {
   void ExecWithInfo(const std::string &Text) {
     std::string TextArg = "--text=" + Text;
     const char *Args[] = {
-      "/usr/bin/zenity",
+      "zenity",
       "--info",
       TextArg.c_str(),
       nullptr,
@@ -333,7 +333,7 @@ namespace Zenity {
     std::string TextArg = "--text=" + Text;
 
     std::vector<const char*> ExecveArgs = {
-      "/usr/bin/zenity",
+      "zenity",
       "--list",
       TextArg.c_str(),
       "--hide-header",
@@ -365,7 +365,7 @@ namespace Zenity {
     std::string TextArg = "--text=" + Text;
 
     std::vector<const char*> ExecveArgs = {
-      "/usr/bin/zenity",
+      "zenity",
       "--list",
       TextArg.c_str(),
     };
@@ -738,7 +738,7 @@ namespace UnSquash {
 
     if (Extract) {
       const std::vector<const char*> ExecveArgs = {
-        "/usr/bin/unsquashfs",
+        "unsquashfs",
         "-f",
         "-d",
         TargetFolder.c_str(),
