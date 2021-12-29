@@ -132,7 +132,6 @@ bool SendSocketPipe(std::string const &MountPath) {
   strncpy(addr.sun_path, SocketPath.data(), sizeof(addr.sun_path));
 
   if (connect(socket_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
-    LogMan::Msg::DFmt("Couldn't connect to AF_UNIX socket: {} {}", errno, strerror(errno));
     close(socket_fd);
     return false;
   }
@@ -214,11 +213,13 @@ std::string GetRootFSLockFile() {
   return LockPath;
 }
 
-bool Setup(char **const envp) {
-  // We need to setup the rootfs here
-  // If the configuration is set to use a folder then there is nothing to do
-  // If it is setup to use a squashfs then we need to do something more complex
+enum class ErrorResult {
+  ERROR_SUCCESS,
+  ERROR_FAIL,
+  ERROR_TRYAGAIN,
+};
 
+ErrorResult SetupSquashFS(char **const envp) {
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   // XXX: Disabled for now. Causing problems due to weird filesystem problems
   // Can reproduce by attempting to run an application under pressure-vessel
@@ -230,7 +231,7 @@ bool Setup(char **const envp) {
       // If we are inside of a rootfs/container then drop the rootfs path
       // Root is already our rootfs
       FEXCore::Config::Erase(FEXCore::Config::CONFIG_ROOTFS);
-      return true;
+      return ErrorResult::ERROR_SUCCESS;
     }
   }
 
@@ -243,8 +244,10 @@ bool Setup(char **const envp) {
     // If the lock file exists and we can send the process a pipe then nothing to do
     // Otherwise we need to spin up a new mount daemon
     std::string MountPath{};
-    if (CheckLockExists(LockPath, &MountPath) && SendSocketPipe(MountPath)) {
-      return true;
+    bool LockExists = CheckLockExists(LockPath, &MountPath);
+    bool SentSocketPipe = SendSocketPipe(MountPath);
+    if (LockExists && SentSocketPipe) {
+      return ErrorResult::ERROR_SUCCESS;
     }
 
     pid_t ParentTID = ::getpid();
@@ -254,21 +257,21 @@ bool Setup(char **const envp) {
     // Make the temporary mount folder
     if (mkdtemp(TempFolder) == nullptr) {
       LogMan::Msg::EFmt("Couldn't create temporary mount name: {}", TempFolder);
-      return false;
+      return ErrorResult::ERROR_FAIL;
     }
 
     // Change the permissions
     if (chmod(TempFolder, 0777) != 0) {
       LogMan::Msg::EFmt("Couldn't change permissions on temporary mount: {}", TempFolder);
       rmdir(TempFolder);
-      return false;
+      return ErrorResult::ERROR_FAIL;
     }
 
     // Open some pipes for communicating with the new processes
     int fds[2]{};
     if (pipe2(fds, 0) != 0) {
       LogMan::Msg::EFmt("Couldn't open pipe");
-      return false;
+      return ErrorResult::ERROR_FAIL;
     }
 
     // Convert the write pipe to a string to pass to the child process
@@ -318,13 +321,13 @@ bool Setup(char **const envp) {
 
       if (Result != sizeof(ChildResult)) {
         LogMan::Msg::DFmt("Spurious read error");
-        return false;
+        return ErrorResult::ERROR_FAIL;
       }
 
       if (ChildResult == 1) {
         // Error
         LogMan::Msg::DFmt("FEXMountDaemon couldn't mount child for some reason");
-        return false;
+        return ErrorResult::ERROR_FAIL;
       }
 
       // Open the lock to let the daemon know that it has an active user
@@ -332,7 +335,16 @@ bool Setup(char **const envp) {
 
       // Check if we have an directory inside our temp folder
       if (!SanityCheckPath(TempFolder)) {
-        return false;
+        if (!SentSocketPipe) {
+          // If the lock exists but we weren't able to send the socket pipe
+          // We can remove the lock and try again. This is likely due to a stale
+          // lock file due to unclean shutdown
+          unlink(LockPath.c_str());
+          return ErrorResult::ERROR_TRYAGAIN;
+        }
+        LogMan::Msg::DFmt("\tOpened RootFS lock file {} but RootFS doesn't exist", LockPath);
+        LogMan::Msg::DFmt("\tStale lock file or race on startup? Try `rm {}` and run again?", LockPath);
+        return ErrorResult::ERROR_FAIL;
       }
 
       // Send the new FEXMountDaemon a pipe to listen to
@@ -340,11 +352,27 @@ bool Setup(char **const envp) {
 
       // If everything has passed then we can now update the rootfs path
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, TempFolder);
-      return true;
+      return ErrorResult::ERROR_SUCCESS;
     }
   }
+  return ErrorResult::ERROR_SUCCESS;
+}
+
+bool Setup(char **const envp) {
+  // We need to setup the rootfs here
+  // If the configuration is set to use a folder then there is nothing to do
+  // If it is setup to use a squashfs then we need to do something more complex
 
   // Nothing to do
+  auto Result = SetupSquashFS(envp);
+  if (Result == ErrorResult::ERROR_FAIL) {
+    return false;
+  }
+  else if (Result == ErrorResult::ERROR_TRYAGAIN) {
+    return Setup(envp);
+  }
+
+  // ERROR_SUCCESS
   return true;
 }
 
