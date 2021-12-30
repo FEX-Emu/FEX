@@ -23,6 +23,7 @@ option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
+set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -331,33 +332,42 @@ if(ENABLE_WERROR OR ENABLE_STRICT_WERROR)
   endif()
 endif()
 
-if(_M_ARM_64)
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 999999.0)
-    # Clang 12.0 fixed the -mcpu=native bug with mixed big.little implementers
-    # Clang can not currently check for native Apple M1 type in hypervisor. Currently disabled
-    check_cxx_compiler_flag("-mcpu=native" COMPILER_SUPPORTS_CPU_TYPE)
-    if(COMPILER_SUPPORTS_CPU_TYPE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
+if (TUNE_CPU STREQUAL "native")
+  if(_M_ARM_64)
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 999999.0)
+      # Clang 12.0 fixed the -mcpu=native bug with mixed big.little implementers
+      # Clang can not currently check for native Apple M1 type in hypervisor. Currently disabled
+      check_cxx_compiler_flag("-mcpu=native" COMPILER_SUPPORTS_CPU_TYPE)
+      if(COMPILER_SUPPORTS_CPU_TYPE)
+        add_compile_options("-mcpu=native")
+      endif()
+    else()
+      # Due to an oversight in llvm, it declares any reasonably new Kryo CPU to only be ARMv8.0
+      # Manually detect newer CPU revisions until clang and llvm fixes their bug
+      # This script will either provide a supported CPU or 'native'
+      # Additionally -march doesn't work under AArch64+Clang, so you have to use -mcpu or -mtune
+      execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo" "${CMAKE_CXX_COMPILER_VERSION}"
+        OUTPUT_VARIABLE AARCH64_CPU)
+
+      string(STRIP ${AARCH64_CPU} AARCH64_CPU)
+
+      check_cxx_compiler_flag("-mcpu=${AARCH64_CPU}" COMPILER_SUPPORTS_CPU_TYPE)
+      if(COMPILER_SUPPORTS_CPU_TYPE)
+        add_compile_options("-mcpu=${AARCH64_CPU}")
+      endif()
     endif()
   else()
-    # Due to an oversight in llvm, it declares any reasonably new Kryo CPU to only be ARMv8.0
-    # Manually detect newer CPU revisions until clang and llvm fixes their bug
-    # This script will either provide a supported CPU or 'native'
-    # Additionally -march doesn't work under AArch64+Clang, so you have to use -mcpu or -mtune
-    execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo" "${CMAKE_CXX_COMPILER_VERSION}"
-      OUTPUT_VARIABLE AARCH64_CPU)
-
-    string(STRIP ${AARCH64_CPU} AARCH64_CPU)
-
-    check_cxx_compiler_flag("-mcpu=${AARCH64_CPU}" COMPILER_SUPPORTS_CPU_TYPE)
-    if(COMPILER_SUPPORTS_CPU_TYPE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=${AARCH64_CPU}")
+    check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+    if(COMPILER_SUPPORTS_MARCH_NATIVE)
+      add_compile_options("-march=native")
     endif()
   endif()
 else()
-  check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
-  if(COMPILER_SUPPORTS_MARCH_NATIVE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  check_cxx_compiler_flag("-mcpu=${TUNE_CPU}" COMPILER_SUPPORTS_CPU_TYPE)
+  if(COMPILER_SUPPORTS_CPU_TYPE)
+    add_compile_options("-mcpu=${TUNE_CPU}")
+  else()
+    message(FATAL_ERROR "Trying to compile cpu type '${TUNE_CPU}' but the compiler doesn't support this")
   endif()
 endif()
 
