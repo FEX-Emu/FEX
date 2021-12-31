@@ -23,7 +23,10 @@ option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
+
+# These options are meant for package management
 set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
+set (OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version in the format of <MMYY>{.<REV>}")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -519,43 +522,48 @@ set(FEX_VERSION_MAJOR "0")
 set(FEX_VERSION_MINOR "0")
 set(FEX_VERSION_PATCH "0")
 
-find_package(Git)
-if (GIT_FOUND)
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} describe --abbrev=0
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE GIT_DESCRIBE_STRING
-    RESULT_VARIABLE GIT_ERROR
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+if (OVERRIDE_VERSION STREQUAL "detect")
+  find_package(Git)
+  if (GIT_FOUND)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe --abbrev=0
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE GIT_DESCRIBE_STRING
+      RESULT_VARIABLE GIT_ERROR
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 
-  if (NOT ${GIT_ERROR} EQUAL 0)
-    # Likely built in a way that doesn't have tags
-    # Setup a version tag that is unknown
-    set(GIT_DESCRIBE_STRING "FEX-0000")
+    if (NOT ${GIT_ERROR} EQUAL 0)
+      # Likely built in a way that doesn't have tags
+      # Setup a version tag that is unknown
+      set(GIT_DESCRIBE_STRING "FEX-0000")
+    endif()
   endif()
+else()
+  set(GIT_DESCRIBE_STRING "FEX-${OVERRIDE_VERSION}")
+endif()
 
-  # Change something like `FEX-2106.1-76-<hash>` in to a list
-  string(REPLACE "-" ";" DESCRIBE_LIST ${GIT_DESCRIBE_STRING})
+# Parse the version here
+# Change something like `FEX-2106.1-76-<hash>` in to a list
+string(REPLACE "-" ";" DESCRIBE_LIST ${GIT_DESCRIBE_STRING})
 
-  # Extract the `2106.1` element
-  list(GET DESCRIBE_LIST 1 DESCRIBE_LIST)
+# Extract the `2106.1` element
+list(GET DESCRIBE_LIST 1 DESCRIBE_LIST)
 
-  # Change `2106.1` in to a list
-  string(REPLACE "." ";" DESCRIBE_LIST ${DESCRIBE_LIST})
+# Change `2106.1` in to a list
+string(REPLACE "." ";" DESCRIBE_LIST ${DESCRIBE_LIST})
 
-  # Calculate list size
-  list(LENGTH DESCRIBE_LIST LIST_SIZE)
+# Calculate list size
+list(LENGTH DESCRIBE_LIST LIST_SIZE)
 
-  # Pull out the major version
-  list(GET DESCRIBE_LIST 0 FEX_VERSION_MAJOR)
+# Pull out the major version
+list(GET DESCRIBE_LIST 0 FEX_VERSION_MAJOR)
 
-  # Minor version only exists if there is a .1 at the end
-  # eg: 2106 versus 2106.1
-  if (LIST_SIZE GREATER 1)
-    list(GET DESCRIBE_LIST 1 FEX_VERSION_MINOR)
-  endif()
+# Minor version only exists if there is a .1 at the end
+# eg: 2106 versus 2106.1
+if (LIST_SIZE GREATER 1)
+  list(GET DESCRIBE_LIST 1 FEX_VERSION_MINOR)
 endif()
 
 # Package creation
