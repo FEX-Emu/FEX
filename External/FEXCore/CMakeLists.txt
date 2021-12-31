@@ -37,27 +37,32 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Find our git hash
-find_package(Git)
-
 set(GIT_SHORT_HASH "Unknown")
 set(GIT_DESCRIBE_STRING "FEX-Unknown")
 
-if (GIT_FOUND)
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE GIT_SHORT_HASH
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  execute_process(
-    COMMAND ${GIT_EXECUTABLE} describe
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    OUTPUT_VARIABLE GIT_DESCRIBE_STRING
-    ERROR_QUIET
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+if (OVERRIDE_VERSION STREQUAL "detect")
+# Find our git hash
+  find_package(Git)
+
+  if (GIT_FOUND)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE GIT_SHORT_HASH
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      OUTPUT_VARIABLE GIT_DESCRIBE_STRING
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  endif()
+else()
+  set(GIT_SHORT_HASH "${OVERRIDE_VERSION}")
+  set(GIT_DESCRIBE_STRING "FEX-${OVERRIDE_VERSION}")
 endif()
 
 configure_file(
