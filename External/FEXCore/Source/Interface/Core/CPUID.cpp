@@ -908,7 +908,7 @@ constexpr char ProcessorBrand[32] = {
   GIT_DESCRIBE_STRING
 };
 
-constexpr size_t DESCRIBE_STR_SIZE = std::char_traits<char>::length(GIT_DESCRIBE_STRING);
+constexpr ssize_t DESCRIBE_STR_SIZE = std::char_traits<char>::length(GIT_DESCRIBE_STRING);
 static_assert(DESCRIBE_STR_SIZE < 32);
 
 //Processor brand string
@@ -926,14 +926,15 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
-  memcpy(&Res, &ProcessorBrand[0], sizeof(FEXCore::CPUID::FunctionResults));
+  memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
+  memcpy(&Res, &ProcessorBrand[0], DESCRIBE_STR_SIZE);
   return Res;
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
   memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
-  memcpy(&Res, &ProcessorBrand[16], DESCRIBE_STR_SIZE - 16);
+  memcpy(&Res, &ProcessorBrand[16], std::max(0L, DESCRIBE_STR_SIZE - 16));
   return Res;
 }
 
