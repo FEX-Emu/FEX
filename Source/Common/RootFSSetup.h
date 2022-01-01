@@ -12,6 +12,6 @@ namespace FEX::RootFS {
   std::string GetRootFSSocketFile(std::string const &MountPath);
   // Checks if the rootfs lock exists
   bool CheckLockExists(std::string const &LockPath, std::string *MountPath = nullptr);
-  bool Setup(char **const envp);
+  bool Setup(char **const envp, uint32_t TryCount = 0);
   void Shutdown();
 }
