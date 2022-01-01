@@ -358,10 +358,15 @@ ErrorResult SetupSquashFS(char **const envp) {
   return ErrorResult::ERROR_SUCCESS;
 }
 
-bool Setup(char **const envp) {
+bool Setup(char **const envp, uint32_t TryCount) {
   // We need to setup the rootfs here
   // If the configuration is set to use a folder then there is nothing to do
   // If it is setup to use a squashfs then we need to do something more complex
+
+  if (TryCount > 5) {
+    // Fail if we have retried too many times
+    return false;
+  }
 
   // Nothing to do
   auto Result = SetupSquashFS(envp);
@@ -369,7 +374,7 @@ bool Setup(char **const envp) {
     return false;
   }
   else if (Result == ErrorResult::ERROR_TRYAGAIN) {
-    return Setup(envp);
+    return Setup(envp, TryCount + 1);
   }
 
   // ERROR_SUCCESS
