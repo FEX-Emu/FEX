@@ -301,10 +301,10 @@ namespace FEX::HLE {
   void SignalDelegator::RegisterFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) {
     // Set up our signal alternative stack
     // This is per thread rather than per signal
-    ThreadData.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    ThreadData.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ * 16, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     stack_t altstack{};
     altstack.ss_sp = ThreadData.AltStackPtr;
-    altstack.ss_size = SIGSTKSZ;
+    altstack.ss_size = SIGSTKSZ * 16;
     altstack.ss_flags = 0;
     LOGMAN_THROW_A_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
 
@@ -319,7 +319,7 @@ namespace FEX::HLE {
   }
 
   void SignalDelegator::UninstallFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) {
-    FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ);
+    FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ * 16);
 
     ThreadData.AltStackPtr = nullptr;
 

@@ -389,8 +389,13 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Context::ExitReason Context::RunUntilExit() {
-    if(!StartPaused)
-      Run();
+    if(!StartPaused) {
+      // We will only have one thread at this point, but just in case run notify everything
+      std::lock_guard lk(ThreadCreationMutex);
+      for (auto &Thread : Threads) {
+        Thread->StartRunning.NotifyAll();
+      }
+    }
 
     ExecutionThread(ParentThread);
     while(true) {
