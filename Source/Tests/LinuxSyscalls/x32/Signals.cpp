@@ -6,6 +6,7 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
@@ -13,7 +14,11 @@ $end_info$
 #include <FEXCore/Core/UContext.h>
 #include <errno.h>
 #include <bits/types/siginfo_t.h>
+#include <signal.h>
 #include <stdint.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
 #include <time.h>
 
 namespace FEXCore::Core {
@@ -70,7 +75,7 @@ namespace FEX::HLE::x32 {
     }
   }
 
-  void RegisterSignals() {
+  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler) {
 
     // Only gets the lower 32-bits of the signal mask
     REGISTER_SYSCALL_IMPL_X32(sgetmask, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
@@ -191,5 +196,21 @@ namespace FEX::HLE::x32 {
       return Result;
     });
 
+    if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
+      REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, compat_ptr<FEXCore::x86::siginfo_t> info, unsigned int flags) -> uint64_t {
+        siginfo_t *InfoHost_ptr{};
+        siginfo_t InfoHost{};
+        if (info) {
+          InfoHost = *info;
+          InfoHost_ptr = &InfoHost;
+        }
+
+        uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_send_signal), pidfd, sig, InfoHost_ptr, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, UnimplementedSyscallSafe);
+    }
   }
 }

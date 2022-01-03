@@ -23,7 +23,7 @@ namespace FEX::HLE::x64 {
   void RegisterSched();
   void RegisterSocket();
   void RegisterSemaphore();
-  void RegisterSignals();
+  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
   void RegisterThread();
   void RegisterTime();
   void RegisterNotImplemented();
@@ -135,7 +135,7 @@ namespace FEX::HLE::x64 {
     FEX::HLE::x64::RegisterSched();
     FEX::HLE::x64::RegisterSocket();
     FEX::HLE::x64::RegisterSemaphore();
-    FEX::HLE::x64::RegisterSignals();
+    FEX::HLE::x64::RegisterSignals(this);
     FEX::HLE::x64::RegisterThread();
     FEX::HLE::x64::RegisterTime();
     FEX::HLE::x64::RegisterNotImplemented();

@@ -2,8 +2,11 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <signal.h>
 
 namespace FEXCore {
   namespace x86_64 {
@@ -151,6 +154,24 @@ namespace FEXCore {
           FEXCore::x86::sigval_t sigval;
         } _timer;
       } _sifields;
+
+      siginfo_t() = delete;
+
+      operator ::siginfo_t() const {
+        ::siginfo_t val{};
+        val.si_signo = si_signo;
+        val.si_errno = si_errno;
+        val.si_code = si_code;
+
+        // Host siginfo has a pad member that is set to zeros
+        val.__pad0 = 0;
+
+        // Copy over the union
+        // The union is different sizes on 64-bit versus 32-bit
+        memcpy(val._sifields._pad, _sifields.pad, std::min(sizeof(val._sifields._pad), sizeof(_sifields.pad)));
+
+        return val;
+      }
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
 
