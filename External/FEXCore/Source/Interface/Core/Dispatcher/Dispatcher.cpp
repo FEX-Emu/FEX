@@ -333,7 +333,10 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
         // This can also happen if we have put a signal on hold, then we just reenabled the signal
         // So we are in the syscall handler
         // Only throw a log message in this case
-        LogMan::Msg::EFmt("Signals in dispatcher have unsynchronized context");
+        if constexpr (false) {
+          // XXX: Messages in the signal handler can cause us to crash
+          LogMan::Msg::EFmt("Signals in dispatcher have unsynchronized context");
+        }
       }
     }
   }
