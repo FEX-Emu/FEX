@@ -927,7 +927,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
   memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
-  memcpy(&Res, &ProcessorBrand[0], DESCRIBE_STR_SIZE);
+  memcpy(&Res, &ProcessorBrand[0], std::min(16L, DESCRIBE_STR_SIZE));
   return Res;
 }
 
