@@ -4,7 +4,6 @@ conformance-interfaces-clock_getcpuclockid-2-1.testconformance-interfaces-clock-
 conformance-interfaces-munmap-2-1.test
 conformance-interfaces-sigqueue-12-1.test
 conformance-interfaces-sigqueue-3-1.test
-conformance-interfaces-sigqueue-7-1.test
 conformance-interfaces-sigqueue-9-1.test
 conformance-interfaces-sigtimedwait-5-1.test
 conformance-interfaces-sigwait-1-1.test
@@ -12,7 +11,6 @@ conformance-interfaces-sigwait-2-1.test
 conformance-interfaces-sigwait-3-1.test
 conformance-interfaces-sigwait-8-1.test
 conformance-interfaces-sigwaitinfo-1-1.test
-conformance-interfaces-sigwaitinfo-2-1.test
 conformance-interfaces-sigwaitinfo-5-1.test
 conformance-interfaces-sigwaitinfo-6-1.test
 conformance-interfaces-sigwaitinfo-9-1.test
