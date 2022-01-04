@@ -4,10 +4,25 @@ It has native support for a rootfs overlay, so you don't need to chroot, as well
 FEX presents a Linux 5.0 interface to the guest, and supports both AArch64 and x86-64 as hosts.
 FEX is very much work in progress, so expect things to change.
 
+
+## Quick start guide
+### For Ubuntu 20.04, 21.04, 21.10, 22.04
+Execute the following command in the terminal to install FEX through a PPA.
+
+`curl --silent https://raw.githubusercontent.com/FEX-Emu/FEX/main/Scripts/InstallFEX.py | python3`
+
+This command will walk you through installing FEX through a PPA, and downloading a RootFS for use with FEX.
+
+Ubuntu PPA is updated with our monthly releases.
+
+### For everyone else
+Follow the guide on the official FEX-Emu Wiki [Here](https://wiki.fex-emu.org/index.php/QuickStartGuide)
+
 ## Getting Started
 FEX has been tested to build and run on ARMv8.0, ARMv8.1+, and x86-64(AVX or newer) hardware.
 ARMv7 and older x86 hardware will not work.
 Expected operating system usage is Linux. FEX has been tested with Ubuntu 20.04, 20.10, and 21.04. Also Arch Linux.
+
 On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#RootFS-Generation).
 
 ### Navigating the Source
