@@ -1,4 +1,4 @@
-# FEX-2112
+# FEX-2201
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -213,45 +213,41 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### fex_malloc_symbols
 - [Host.cpp](../ThunkLibs/libfex_malloc_symbols/Host.cpp): Allows FEX to export allocation symbols
 
-#### vulkan
-- [Guest.cpp](../ThunkLibs/libvulkan_device/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libvulkan_device/Host.cpp)
-
 #### xcb
 - [libxcb_Guest.cpp](../ThunkLibs/libxcb/libxcb_Guest.cpp)
 - [libxcb_Host.cpp](../ThunkLibs/libxcb/libxcb_Host.cpp)
 
 #### xcb-dri2
-- [libxcb_dri2_Guest.cpp](../ThunkLibs/libxcb_dri2/libxcb_dri2_Guest.cpp)
-- [libxcb_dri2_Host.cpp](../ThunkLibs/libxcb_dri2/libxcb_dri2_Host.cpp)
+- [libxcb-dri2_Guest.cpp](../ThunkLibs/libxcb-dri2/libxcb-dri2_Guest.cpp)
+- [libxcb-dri2_Host.cpp](../ThunkLibs/libxcb-dri2/libxcb-dri2_Host.cpp)
 
 #### xcb-dri3
-- [libxcb_dri3_Guest.cpp](../ThunkLibs/libxcb_dri3/libxcb_dri3_Guest.cpp)
-- [libxcb_dri3_Host.cpp](../ThunkLibs/libxcb_dri3/libxcb_dri3_Host.cpp)
+- [libxcb-dri3_Guest.cpp](../ThunkLibs/libxcb-dri3/libxcb-dri3_Guest.cpp)
+- [libxcb-dri3_Host.cpp](../ThunkLibs/libxcb-dri3/libxcb-dri3_Host.cpp)
 
 #### xcb-glx
-- [Guest.cpp](../ThunkLibs/libxcb_glx/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb_glx/Host.cpp)
+- [Guest.cpp](../ThunkLibs/libxcb-glx/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb-glx/Host.cpp)
 
 #### xcb-present
-- [Guest.cpp](../ThunkLibs/libxcb_present/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb_present/Host.cpp)
+- [Guest.cpp](../ThunkLibs/libxcb-present/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb-present/Host.cpp)
 
 #### xcb-randr
-- [Guest.cpp](../ThunkLibs/libxcb_randr/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb_randr/Host.cpp)
+- [Guest.cpp](../ThunkLibs/libxcb-randr/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb-randr/Host.cpp)
 
 #### xcb-shm
-- [libxcb_shm_Guest.cpp](../ThunkLibs/libxcb_shm/libxcb_shm_Guest.cpp)
-- [libxcb_shm_Host.cpp](../ThunkLibs/libxcb_shm/libxcb_shm_Host.cpp)
+- [libxcb-shm_Guest.cpp](../ThunkLibs/libxcb-shm/libxcb-shm_Guest.cpp)
+- [libxcb-shm_Host.cpp](../ThunkLibs/libxcb-shm/libxcb-shm_Host.cpp)
 
 #### xcb-sync
-- [Guest.cpp](../ThunkLibs/libxcb_sync/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libxcb_sync/Host.cpp)
+- [Guest.cpp](../ThunkLibs/libxcb-sync/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libxcb-sync/Host.cpp)
 
 #### xcb-xfixes
-- [libxcb_xfixes_Guest.cpp](../ThunkLibs/libxcb_xfixes/libxcb_xfixes_Guest.cpp)
-- [libxcb_xfixes_Host.cpp](../ThunkLibs/libxcb_xfixes/libxcb_xfixes_Host.cpp)
+- [libxcb-xfixes_Guest.cpp](../ThunkLibs/libxcb-xfixes/libxcb-xfixes_Guest.cpp)
+- [libxcb-xfixes_Host.cpp](../ThunkLibs/libxcb-xfixes/libxcb-xfixes_Host.cpp)
 
 #### xshmfence
 - [Guest.cpp](../ThunkLibs/libxshmfence/Guest.cpp)
@@ -323,6 +319,7 @@ x86-32 specific syscall implementations
 - [EPoll.cpp](../Source/Tests/LinuxSyscalls/x32/EPoll.cpp)
 - [FD.cpp](../Source/Tests/LinuxSyscalls/x32/FD.cpp)
 - [FS.cpp](../Source/Tests/LinuxSyscalls/x32/FS.cpp)
+- [IO.cpp](../Source/Tests/LinuxSyscalls/x32/IO.cpp)
 - [Info.cpp](../Source/Tests/LinuxSyscalls/x32/Info.cpp)
 - [Memory.cpp](../Source/Tests/LinuxSyscalls/x32/Memory.cpp)
 - [Msg.cpp](../Source/Tests/LinuxSyscalls/x32/Msg.cpp)
@@ -331,6 +328,7 @@ x86-32 specific syscall implementations
 - [Semaphore.cpp](../Source/Tests/LinuxSyscalls/x32/Semaphore.cpp)
 - [Signals.cpp](../Source/Tests/LinuxSyscalls/x32/Signals.cpp)
 - [Socket.cpp](../Source/Tests/LinuxSyscalls/x32/Socket.cpp)
+- [Stubs.cpp](../Source/Tests/LinuxSyscalls/x32/Stubs.cpp)
 - [Syscalls.cpp](../Source/Tests/LinuxSyscalls/x32/Syscalls.cpp)
 - [Syscalls.h](../Source/Tests/LinuxSyscalls/x32/Syscalls.h)
 - [SyscallsEnum.h](../Source/Tests/LinuxSyscalls/x32/SyscallsEnum.h)
