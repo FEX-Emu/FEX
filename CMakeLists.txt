@@ -26,6 +26,7 @@ set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global d
 
 # These options are meant for package management
 set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
+set (TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
 set (OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version in the format of <MMYY>{.<REV>}")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
@@ -332,6 +333,15 @@ if(ENABLE_WERROR OR ENABLE_STRICT_WERROR)
   if (NOT ENABLE_STRICT_WERROR)
     # Disable some Werror that can add frustration when developing
     add_compile_options(-Wno-error=unused-variable)
+  endif()
+endif()
+
+if (NOT TUNE_ARCH STREQUAL "generic")
+  check_cxx_compiler_flag("-march=${TUNE_ARCH}" COMPILER_SUPPORTS_ARCH_TYPE)
+  if(COMPILER_SUPPORTS_ARCH_TYPE)
+    add_compile_options("-march=${TUNE_ARCH}")
+  else()
+    message(FATAL_ERROR "Trying to compile arch type '${TUNE_ARCH}' but the compiler doesn't support this")
   endif()
 endif()
 
