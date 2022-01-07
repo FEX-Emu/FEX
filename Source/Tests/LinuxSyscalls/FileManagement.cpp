@@ -421,7 +421,7 @@ uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int 
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0);
   if (!Path.empty()) {
     uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), dirfd, Path.c_str(), mode, flags);
     if (Result != -1)
@@ -594,7 +594,7 @@ uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0);
   if (!Path.empty()) {
     uint64_t Result = FHU::Syscalls::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
     if (Result != -1)
@@ -630,7 +630,7 @@ uint64_t FileManager::NewFSStatAt(int dirfd, const char *pathname, struct stat *
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0);
   if (!Path.empty()) {
     uint64_t Result = ::fstatat(dirfd, Path.c_str(), buf, flag);
     if (Result != -1) {
@@ -644,7 +644,7 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0);
   if (!Path.empty()) {
     uint64_t Result = ::fstatat64(dirfd, Path.c_str(), buf, flag);
     if (Result != -1) {
