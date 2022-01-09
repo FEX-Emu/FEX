@@ -809,6 +809,19 @@ int main(int argc, char **argv, char **const envp) {
     return 0;
   }
 
+  // Check if curl exists on the host
+  std::vector<const char*> ExecveArgs = {
+    "curl",
+    "-V",
+    nullptr,
+  };
+
+  int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+  if (Result == -1) {
+    ExecWithInfo("curl is required to use this tool. Please install curl before using.");
+    return -1;
+  }
+
   FEX_CONFIG_OPT(LDPath, ROOTFS);
 
   std::error_code ec;
