@@ -27,6 +27,37 @@ namespace Exec {
     return -1;
   }
 
+  int32_t ExecAndWaitForResponseRedirect(const char *path, char* const* args, int stdoutRedirect = STDOUT_FILENO, int stderrRedirect = STDERR_FILENO) {
+    pid_t pid = fork();
+    if (pid == 0) {
+      if (stdoutRedirect == -1) {
+        close(STDOUT_FILENO);
+      }
+      else if (stdoutRedirect != STDOUT_FILENO) {
+        close(STDOUT_FILENO);
+        dup2(stdoutRedirect, STDOUT_FILENO);
+      }
+      if (stderrRedirect == -1) {
+        close(STDERR_FILENO);
+      }
+      else if (stderrRedirect != STDOUT_FILENO) {
+        close(STDERR_FILENO);
+        dup2(stderrRedirect, STDERR_FILENO);
+      }
+      execvp(path, args);
+      _exit(-1);
+    }
+    else {
+      int32_t Status{};
+      waitpid(pid, &Status, 0);
+      if (WIFEXITED(Status)) {
+        return (int8_t)WEXITSTATUS(Status);
+      }
+    }
+
+    return -1;
+  }
+
   std::string ExecAndWaitForResponseText(const char *path, char* const* args) {
     int fd[2];
     pipe(fd);
