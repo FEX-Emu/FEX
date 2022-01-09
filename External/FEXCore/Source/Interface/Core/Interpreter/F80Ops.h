@@ -227,6 +227,8 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
   static X80SoftFloat handle(X80SoftFloat Src1) {
     bool Negative = Src1.Sign;
 
+    Src1 = X80SoftFloat::FRNDINT(Src1);
+
     // Clear the Sign bit
     Src1.Sign = 0;
 

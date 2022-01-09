@@ -323,7 +323,7 @@ DEF_OP(F80BCDLOAD) {
 
 DEF_OP(F80BCDSTORE) {
   auto Op = IROp->C<IR::IROp_F80BCDStore>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
+  X80SoftFloat Src1 = X80SoftFloat::FRNDINT(*GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]));
   bool Negative = Src1.Sign;
 
   // Clear the Sign bit
