@@ -333,7 +333,7 @@ namespace FEX::SocketLogging {
           while (CurrentOffset < CurrentRead) {
             Common::PacketHeader *Header = reinterpret_cast<Common::PacketHeader*>(&Data[CurrentOffset]);
             if (Header->PacketType == Common::PacketTypes::TYPE_MSG) {
-              Common::PacketMsg *Msg = reinterpret_cast<Common::PacketMsg*>(&Data[0]);
+              Common::PacketMsg *Msg = reinterpret_cast<Common::PacketMsg*>(&Data[CurrentOffset]);
 
               MsgHandler(Socket, Msg->Header.Timestamp, Msg->Header.PID, Msg->Header.TID, Msg->Level, Msg->Msg);
               CurrentOffset += sizeof(Common::PacketMsg) + strlen(Msg->Msg) + 1;
