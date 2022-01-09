@@ -20,7 +20,7 @@ namespace Exec {
       int32_t Status{};
       waitpid(pid, &Status, 0);
       if (WIFEXITED(Status)) {
-        return WEXITSTATUS(Status);
+        return (int8_t)WEXITSTATUS(Status);
       }
     }
 
