@@ -50,17 +50,5 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL(signalfd4, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const uint64_t *mask, size_t sigsetsize, int flags) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSignalFD(fd, mask, sigsetsize, flags);
     });
-
-    REGISTER_SYSCALL_IMPL_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *info) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(rt_sigqueueinfo), pid, sig, info);
-      SYSCALL_ERRNO();
-    });
-
-    // XXX: siginfo_t definitely isn't correct for 32-bit
-    REGISTER_SYSCALL_IMPL_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
-      uint64_t Result = ::syscall(SYSCALL_DEF(rt_tgsigqueueinfo), tgid, tid, sig, info);
-      SYSCALL_ERRNO();
-    });
-
   }
 }

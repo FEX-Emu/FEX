@@ -13,6 +13,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 
@@ -353,19 +354,32 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, siginfo_t *infop, int options, struct rusage_32 *rusage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, compat_ptr<FEXCore::x86::siginfo_t> info, int options, struct rusage_32 *rusage) -> uint64_t {
       struct rusage usage64{};
       struct rusage *usage64_p{};
+
+      siginfo_t info64{};
+      siginfo_t *info64_p{};
 
       if (rusage) {
         usage64 = *rusage;
         usage64_p = &usage64;
       }
 
-      uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, infop, options, usage64_p);
+      if (info) {
+        info64_p = &info64;
+      }
 
-      if (rusage) {
-        *rusage = usage64;
+      uint64_t Result = ::syscall(SYSCALL_DEF(waitid), which, upid, info64_p, options, usage64_p);
+
+      if (Result != -1) {
+        if (rusage) {
+          *rusage = usage64;
+        }
+
+        if (info) {
+          *info = info64;
+        }
       }
 
       SYSCALL_ERRNO();
