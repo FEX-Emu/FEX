@@ -172,6 +172,16 @@ namespace FEXCore {
 
         return val;
       }
+
+      siginfo_t(::siginfo_t val) {
+        si_signo = val.si_signo;
+        si_errno = val.si_errno;
+        si_code = val.si_code;
+
+        // Copy over the union
+        // The union is different sizes on 64-bit versus 32-bit
+        memcpy(val._sifields._pad, _sifields.pad, std::min(sizeof(val._sifields._pad), sizeof(_sifields.pad)));
+      }
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
 
