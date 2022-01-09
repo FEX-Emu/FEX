@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 import sys
 import subprocess
 
@@ -13,6 +14,7 @@ known_failures_file = sys.argv[1]
 expected_output_file = sys.argv[2]
 disabled_tests_file = sys.argv[3]
 test_name = sys.argv[4]
+fexecutable = sys.argv[5]
 
 known_failures = { }
 expected_output = { }
@@ -42,9 +44,16 @@ with open(disabled_tests_file) as dtf:
 # run with timeout to avoid locking up
 RunnerArgs = []
 
+RunnerArgs.append(fexecutable)
+
+ROOTFS_ENV = os.getenv("ROOTFS")
+if ROOTFS_ENV != None:
+    RunnerArgs.append("-R")
+    RunnerArgs.append(ROOTFS_ENV)
+
 # Add the rest of the arguments
-for i in range(len(sys.argv) - 5):
-    RunnerArgs.append(sys.argv[5 + i])
+for i in range(len(sys.argv) - 6):
+    RunnerArgs.append(sys.argv[6 + i])
 
 #print(RunnerArgs)
 
