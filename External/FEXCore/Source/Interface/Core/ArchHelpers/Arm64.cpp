@@ -535,7 +535,6 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
 }
 
 bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
   if (info->si_code != BUS_ADRALN) {

@@ -1115,8 +1115,6 @@ namespace {
         auto InterferenceNodeOpBeginIter = IR.at(InterferenceLiveRange->Begin);
         auto InterferenceNodeOpEndIter = IR.at(InterferenceLiveRange->End);
 
-        bool Found{};
-
         // If the nodes live range is entirely encompassed by the interference node's range
         // then spilling that range will /potentially/ lower RA
         // Will only lower register pressure if the interference node does NOT have a use inside of
@@ -1153,7 +1151,6 @@ namespace {
 
             const auto NextUseDistance = InterferenceNodeNextUse.ID().Value - CurrentLocation.Value;
             if (NextUseDistance >= InterferenceFarthestNextUse) {
-              Found = true;
               InterferenceIdToSpill = InterferenceNode;
               InterferenceFarthestNextUse = NextUseDistance;
             }

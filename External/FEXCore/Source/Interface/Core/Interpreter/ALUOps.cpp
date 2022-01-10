@@ -835,9 +835,8 @@ DEF_OP(Bfi) {
 
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
-  uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_A_FMT(OpSize <= 8, "OpSize is too large for BFE: {}", OpSize);
+  LOGMAN_THROW_A_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
   uint64_t SourceMask = (1ULL << Op->Width) - 1;
   if (Op->Width == 64)
     SourceMask = ~0ULL;
@@ -848,9 +847,8 @@ DEF_OP(Bfe) {
 
 DEF_OP(Sbfe) {
   auto Op = IROp->C<IR::IROp_Sbfe>();
-  uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_A_FMT(OpSize <= 8, "OpSize is too large for SBFE: {}", OpSize);
+  LOGMAN_THROW_A_FMT(IROp->Size <= 8, "OpSize is too large for SBFE: {}", IROp->Size);
   int64_t Src = *GetSrc<int64_t*>(Data->SSAData, Op->Header.Args[0]);
   uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
   uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
@@ -889,11 +887,10 @@ DEF_OP(Select) {
 
 DEF_OP(VExtractToGPR) {
   auto Op = IROp->C<IR::IROp_VExtractToGPR>();
-  uint8_t OpSize = IROp->Size;
 
   uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Header.Args[0]);
 
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "OpSize is too large for VExtractToGPR: {}", OpSize);
+  LOGMAN_THROW_A_FMT(IROp->Size <= 16, "OpSize is too large for VExtractToGPR: {}", IROp->Size);
 
   if (SourceSize == 16) {
     __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
