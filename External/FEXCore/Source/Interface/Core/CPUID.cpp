@@ -125,7 +125,8 @@ void CPUIDEmu::SetupHostHybridFlag() {
       // Only read 18 bytes for a 64bit value prefixed with 0x
       if (FEXCore::FileLoading::LoadFile(Data, MIDRPath, 18)) {
         uint64_t NewMIDR{};
-        if (FEXCore::StrConv::Conv(&Data.at(0), &NewMIDR)) {
+        std::string_view MIDRView(&Data.at(0), 18);
+        if (FEXCore::StrConv::Conv(MIDRView, &NewMIDR)) {
           if (MIDR != 0 && MIDR != NewMIDR) {
             // CPU mismatch, claim hybrid
             Hybrid = true;
