@@ -1402,10 +1402,9 @@ DEF_OP(VInsScalarElement) {
 
 DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
-  uint8_t OpSize = IROp->Size;
 
   uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Header.Args[0]);
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "OpSize is too large for VExtractElement: {}", OpSize);
+  LOGMAN_THROW_A_FMT(IROp->Size <= 16, "OpSize is too large for VExtractElement: {}", IROp->Size);
   if (SourceSize == 16) {
     __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
     uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;

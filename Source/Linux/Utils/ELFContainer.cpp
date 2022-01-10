@@ -877,7 +877,6 @@ void ELFContainer::PrintRelocationTable() const {
   }
   else {
     Elf64_Shdr const *RelaHeader{nullptr};
-    Elf64_Shdr const *GOTHeader {nullptr};
     Elf64_Shdr const *DynSymHeader {nullptr};
 
     Elf64_Shdr const *StrHeader = SectionHeaders.at(Header._64.e_shstrndx)._64;
@@ -897,7 +896,6 @@ void ELFContainer::PrintRelocationTable() const {
 
         if (RelaHeader->sh_info != 0) {
           LOGMAN_THROW_A_FMT(RelaHeader->sh_info < SectionHeaders.size(), "Rela header pointers to invalid GOT header");
-          GOTHeader = SectionHeaders.at(RelaHeader->sh_info)._64;
         }
 
         if (RelaHeader->sh_link != 0) {
@@ -966,7 +964,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
   }
   else {
     Elf64_Shdr const *RelaHeader{nullptr};
-    Elf64_Shdr const *GOTHeader {nullptr};
     Elf64_Shdr const *DynSymHeader {nullptr};
 
     Elf64_Shdr const *StringTableHeader{nullptr};
@@ -982,7 +979,6 @@ void ELFContainer::FixupRelocations(void *ELFBase, uint64_t GuestELFBase, Symbol
 
         if (RelaHeader->sh_info != 0) {
           LOGMAN_THROW_A_FMT(RelaHeader->sh_info < SectionHeaders.size(), "Rela header pointers to invalid GOT header");
-          GOTHeader = SectionHeaders.at(RelaHeader->sh_info)._64;
         }
 
         if (RelaHeader->sh_link != 0) {

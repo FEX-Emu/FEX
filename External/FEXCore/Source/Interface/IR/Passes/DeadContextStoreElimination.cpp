@@ -47,10 +47,12 @@ namespace {
     return (Type & ACCESS_TYPE_MASK) == ACCESS_READ;
   }
 
+  [[maybe_unused]]
   static bool IsInvalidAccess(LastAccessType Type) {
     return (Type & ACCESS_TYPE_MASK) == ACCESS_INVALID;
   }
 
+  [[maybe_unused]]
   static bool IsPartialAccess(LastAccessType Type) {
     return (Type & ACCESS_PARTIAL) == ACCESS_PARTIAL;
   }
@@ -254,7 +256,7 @@ namespace {
     });
 
 
-    size_t ClassifiedStructSize{};
+    [[maybe_unused]] size_t ClassifiedStructSize{};
     ContextClassificationInfo->Lookup.reserve(sizeof(FEXCore::Core::CPUState));
     for (auto &it : *ContextClassification) {
       LOGMAN_THROW_A_FMT(it.Class.Offset == ContextClassificationInfo->Lookup.size(), "Offset mismatch (offset={})", it.Class.Offset);

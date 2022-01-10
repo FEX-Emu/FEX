@@ -970,7 +970,8 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(const std::string &packet
 GdbServer::HandledPacketType GdbServer::handleBreakpoint(const std::string &packet) {
   auto ss = std::istringstream(packet);
 
-  bool Set{};
+  // Don't do anything with set breakpoints yet
+  [[maybe_unused]] bool Set{};
   uint64_t Addr;
   uint64_t Type;
   Set = ss.get() == 'Z';
