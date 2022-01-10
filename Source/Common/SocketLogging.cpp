@@ -108,7 +108,7 @@ namespace FEX::SocketLogging {
     static std::unique_ptr<ClientConnector> Client{};
 
     void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
-      Client->MsgHandler(Level, false, Message);
+      Client->MsgHandler(Level, Level == LogMan::DebugLevels::ASSERT, Message);
     }
 
     void AssertHandler(char const *Message) {
