@@ -18,7 +18,7 @@ foreach(TEST ${TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Disabled_Tests"
     "${TEST_NAME}"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "--no-silent" "-c" "irjit" "-n" "500" "-R" $ENV{ROOTFS} "--"
+    "--no-silent" "-c" "irjit" "-n" "500" "--"
     "${TEST}")
 
 endforeach()
