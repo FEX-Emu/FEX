@@ -2,6 +2,8 @@
 #include <chrono>
 #include <csetjmp>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
+#include <FEXHeaderUtils/Syscalls.h>
+
 #include <thread>
 #include <signal.h>
 
@@ -62,7 +64,7 @@ void WaitThreadLongJump(
   int32_t *TID) {
 
   // Store the TID
-  *TID = ::gettid();
+  *TID = FHU::Syscalls::gettid();
 
   // Setup a long jump signal handler
   struct sigaction sa{};
@@ -106,7 +108,7 @@ TEST_CASE("SignaledWaitLongJumpNoSignal") {
     // Wait for the thread to signal that it is ready to receive signal
     WaitMutex.WaitFor(std::chrono::milliseconds(500));
     // Send the signal to the thread
-    tgkill(::getpid(), TID, SIGUSR1);
+    FHU::Syscalls::tgkill(::getpid(), TID, SIGUSR1);
   }
 
   // Wait for thread join
@@ -138,7 +140,7 @@ TEST_CASE("SignaledWaitLongJumpSignal") {
     WaitMutex.WaitFor(std::chrono::milliseconds(500));
 
     // Send the signal to the thread
-    tgkill(::getpid(), TID, SIGUSR1);
+    FHU::Syscalls::tgkill(::getpid(), TID, SIGUSR1);
   }
 
   // Notify the thread's mutex now
