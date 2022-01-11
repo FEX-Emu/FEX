@@ -225,7 +225,7 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
             NumElements /= ElementSize;
           }
 
-          *out << "%ssa" << ID;
+          *out << "%ssa" << std::dec << ID;
 
           if (RAData) {
             auto PhyReg = RAData->GetNodeRegister(ID);
@@ -265,7 +265,7 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
             NumElements = IROp->Size / ElementSize;
           }
 
-          *out << "(%ssa" << ID << ' ';
+          *out << "(%ssa" << std::dec << ID << ' ';
           *out << 'i' << std::dec << (ElementSize * 8);
           if (NumElements > 1) {
             *out << 'v' << std::dec << NumElements;
