@@ -20,7 +20,38 @@ namespace Exec {
       int32_t Status{};
       waitpid(pid, &Status, 0);
       if (WIFEXITED(Status)) {
-        return WEXITSTATUS(Status);
+        return (int8_t)WEXITSTATUS(Status);
+      }
+    }
+
+    return -1;
+  }
+
+  int32_t ExecAndWaitForResponseRedirect(const char *path, char* const* args, int stdoutRedirect = STDOUT_FILENO, int stderrRedirect = STDERR_FILENO) {
+    pid_t pid = fork();
+    if (pid == 0) {
+      if (stdoutRedirect == -1) {
+        close(STDOUT_FILENO);
+      }
+      else if (stdoutRedirect != STDOUT_FILENO) {
+        close(STDOUT_FILENO);
+        dup2(stdoutRedirect, STDOUT_FILENO);
+      }
+      if (stderrRedirect == -1) {
+        close(STDERR_FILENO);
+      }
+      else if (stderrRedirect != STDOUT_FILENO) {
+        close(STDERR_FILENO);
+        dup2(stderrRedirect, STDERR_FILENO);
+      }
+      execvp(path, args);
+      _exit(-1);
+    }
+    else {
+      int32_t Status{};
+      waitpid(pid, &Status, 0);
+      if (WIFEXITED(Status)) {
+        return (int8_t)WEXITSTATUS(Status);
       }
     }
 
@@ -776,6 +807,19 @@ int main(int argc, char **argv, char **const envp) {
       fmt::print("Couldn't generate hash for {}\n", Args[0]);
     }
     return 0;
+  }
+
+  // Check if curl exists on the host
+  std::vector<const char*> ExecveArgs = {
+    "curl",
+    "-V",
+    nullptr,
+  };
+
+  int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+  if (Result == -1) {
+    ExecWithInfo("curl is required to use this tool. Please install curl before using.");
+    return -1;
   }
 
   FEX_CONFIG_OPT(LDPath, ROOTFS);
