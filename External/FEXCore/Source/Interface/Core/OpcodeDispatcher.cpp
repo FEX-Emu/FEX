@@ -78,6 +78,9 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     LogMan::Msg::DFmt("Unhandled OSABI syscall");
   }
 
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   const uint8_t GPRSize = CTX->GetGPRSize();
   auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
@@ -114,6 +117,9 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
   uint8_t *sha256 = (uint8_t *)(Op->PC + 2);
@@ -163,6 +169,12 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
+    // Deferred flags are invalidated now
+    InvalidateDeferredFlags();
+  }
+  else {
+    // Calculate flags early.
+    CalculateDeferredFlags();
   }
 
   auto Constant = _Constant(GPRSize);
@@ -202,6 +214,9 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     DecodeFailure = true;
     return;
   }
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
@@ -376,6 +391,9 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::ADCOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   uint8_t Size = GetDstSize(Op);
 
@@ -404,6 +422,9 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::SBBOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   auto Size = GetDstSize(Op);
 
@@ -706,6 +727,12 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
+    // Deferred flags are invalidated now
+    InvalidateDeferredFlags();
+  }
+  else {
+    // Calculate flags early.
+    CalculateDeferredFlags();
   }
 
   auto ConstantPC = GetRelocatedPC(Op);
@@ -732,6 +759,9 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   BlockSetRIP = true;
 
@@ -986,6 +1016,9 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
 }
 
 void OpDispatchBuilder::SETccOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
@@ -995,6 +1028,9 @@ void OpDispatchBuilder::SETccOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -1004,6 +1040,9 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   BlockSetRIP = true;
 
   auto TakeBranch = _Constant(1);
@@ -1076,6 +1115,9 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   BlockSetRIP = true;
   uint8_t JcxGPRSize = CTX->GetGPRSize();
   JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
@@ -1136,6 +1178,9 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LoopOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   bool CheckZF = Op->OP != 0xE2;
   bool ZFTrue = Op->OP == 0xE1;
 
@@ -1212,6 +1257,9 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   BlockSetRIP = true;
 
   // Jump instruction only uses up to 32-bit signed displacement
@@ -1264,6 +1312,9 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   BlockSetRIP = true;
   // This is just an unconditional jump
   // This uses ModRM to determine its location
@@ -1475,6 +1526,9 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     Type = OpType::Set;
   break;
   }
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   OrderedNode *Result{};
   switch (Type) {
@@ -1760,6 +1814,9 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -1805,13 +1862,15 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   }
   GenerateFlags_ShiftLeft(Op, Res, Dest, Shift);
 
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   auto Jump = _Jump();
   auto NextJumpTarget = CreateNewCodeBlockAfter(JumpTarget);
   SetJumpTarget(Jump, NextJumpTarget);
   SetTrueJumpTarget(CondJump, NextJumpTarget);
   SetCurrentCodeBlock(NextJumpTarget);
 }
-
 
 void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -1853,6 +1912,10 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
+  // Calculate flags early.
+  // This instruction conditionally generates flags so we need to insure sane state going in.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -1895,6 +1958,9 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
     Res = _Bfe(Size, 0, Res);
   }
   GenerateFlags_ShiftRight(Op, Res, Dest, Shift);
+  // Calculate deferred flags immediately.
+  // This block is ending so it needs to serialize
+  CalculateDeferredFlags();
 
   auto Jump = _Jump();
   auto NextJumpTarget = CreateNewCodeBlockAfter(JumpTarget);
@@ -2206,31 +2272,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
 
-  // Handle flag setting.
-  //
-  // All that matters primarily for this instruction is
-  // that we only set the ZF flag properly.
-  //
-  // Every other flag is considered undefined after a
-  // BEXTR instruction, but we opt to reliably clear them.
-  //
-  SetRFLAG<X86State::RFLAG_AF_LOC>(_Constant(0));
-  SetRFLAG<X86State::RFLAG_SF_LOC>(_Constant(0));
-  SetRFLAG<X86State::RFLAG_CF_LOC>(_Constant(0));
-  SetRFLAG<X86State::RFLAG_OF_LOC>(_Constant(0));
-
-  // PF
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    SetRFLAG<X86State::RFLAG_PF_LOC>(_Constant(0));
-  }
-
-  // ZF
-  auto ZeroOp = _Select(IR::COND_EQ,
-                        Dest, _Constant(0),
-                        _Constant(1), _Constant(0));
-  SetRFLAG<X86State::RFLAG_ZF_LOC>(ZeroOp);
+  GenerateFlags_BEXTR(Op, Dest);
 }
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
@@ -2243,84 +2285,22 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
 
-  // Now for the flags:
-  //
-  // Only CF, SF, ZF and OF are defined as being updated
-  // CF is cleared if Src is zero, otherwise it's set.
-  // SF is set to the value of the most significant operand bit of Result.
-  // OF is always cleared
-  // ZF is set, as usual, if Result is zero or not.
-  //
-  // AF and PF are documented as being in an undefined state after
-  // a BLSI operation, however, we choose to reliably clear them.
-
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
-  }
-
-  // ZF
-  {
-    auto ZFOp = _Select(IR::COND_EQ,
-                        Result, Zero,
-                        One, Zero);
-    SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFOp);
-  }
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_EQ,
-                        Src, Zero,
-                        Zero, One);
-    SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
-  }
-
-  // SF
-  {
-    auto SignBit = _Constant(GetSrcBitSize(Op) - 1);
-    auto SFOp = _Lshr(Result, SignBit);
-
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
-  }
+  GenerateFlags_BLSI(Op, Result);
 }
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) ^ Src
-
-  auto Zero = _Constant(0);
   auto One = _Constant(1);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Result = _Xor(_Sub(Src, One), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-
-  // Now for the flags.
-  SetRFLAG<X86State::RFLAG_ZF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
-  }
-
-  auto CFOp = _Select(IR::COND_EQ,
-                      Src, Zero,
-                      Zero, One);
-  SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
+  GenerateFlags_BLSMSK(Op, Src);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) & Src
-
-  auto Zero = _Constant(0);
   auto One = _Constant(1);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -2328,38 +2308,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Result, -1);
 
-  // Now for flags.
-  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
-  }
-
-  // ZF
-  {
-    auto ZFOp = _Select(IR::COND_EQ,
-                        Result, Zero,
-                        One, Zero);
-    SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFOp);
-  }
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_EQ,
-                        Src, Zero,
-                        Zero, One);
-    SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
-  }
-
-  // SF
-  {
-    auto SignBit = _Constant(GetSrcBitSize(Op) - 1);
-    auto SFOp = _Lshr(Result, SignBit);
-
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
-  }
+  GenerateFlags_BLSR(Op, Result, Src);
 }
 
 void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
@@ -2417,40 +2366,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Result, -1);
 
-  // Now for the flags
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
-  if (CTX->Config.ABINoPF) {
-    _InvalidateFlags(1UL << X86State::RFLAG_PF_LOC);
-  } else {
-    SetRFLAG<X86State::RFLAG_PF_LOC>(Zero);
-  }
-
-  // ZF
-  {
-    auto ZFOp = _Select(IR::COND_EQ,
-                        Result, Zero,
-                        One, Zero);
-    SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFOp);
-  }
-
-  // CF
-  {
-    auto CFOp = _Select(IR::COND_UGT,
-                        MaskedIndex, Bounds,
-                        One, Zero);
-    SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
-  }
-
-  // SF
-  {
-    auto SFOp = _Lshr(Result, Bounds);
-
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
-  }
+  GenerateFlags_BZHI(Op, Result, MaskedIndex);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
@@ -2496,6 +2412,9 @@ void OpDispatchBuilder::PEXT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   // Handles ADCX and ADOX
 
   const bool IsADCX = Op->OP == 0x1F6;
@@ -2530,6 +2449,9 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
@@ -2573,6 +2495,9 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
@@ -2603,6 +2528,9 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     RCRSmallerOp(Op);
     return;
   }
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -2666,6 +2594,9 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
@@ -2712,6 +2643,9 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   const auto Size = GetSrcBitSize(Op);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
@@ -2743,6 +2677,9 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     RCLSmallerOp(Op);
     return;
   }
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -2808,6 +2745,9 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
@@ -2873,6 +2813,9 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   } else {
@@ -2928,6 +2871,9 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -3004,6 +2950,9 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
   } else {
@@ -3074,6 +3023,9 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
 
   if (Op->Src[SrcIndex].IsGPR()) {
     Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, -1);
@@ -3352,19 +3304,8 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   Src = _Popcount(Src);
   StoreResult(GPRClass, Op, Src, -1);
-  // Set ZF
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
 
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
+  GenerateFlags_POPCOUNT(Op, Src);
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
@@ -3525,6 +3466,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
   if (Size < 32) {
     Result = _Bfe(Size, 0, Result);
   }
+
   GenerateFlags_SUB(Op, Result, Dest, OneConst, false);
 }
 
@@ -3562,15 +3504,16 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     OrderedNode *TailDest = _LoadContext(GPRSize, GPROffset(X86State::REG_RDI), GPRClass);
     TailDest = _Add(TailDest, PtrDir);
     _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RDI), TailDest);
-
   }
   else {
+    // Calculate deffered flags.
+    // This block is ending and it needs flag status
+    CalculateDeferredFlags();
+
     // Create all our blocks
     auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
     auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
     auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
-
-
 
     // At the time this was written, our RA can't handle accessing nodes across blocks.
     // So we need to re-load and re-calculate essential values each iteration of the loop.
@@ -3649,6 +3592,9 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   auto PtrDir = _Select(FEXCore::IR::COND_EQ, DF,  _Constant(0), SizeConst, NegSizeConst);
 
   if (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) {
+    // Calculate flags early. because end of block
+    CalculateDeferredFlags();
+
     // Create all our blocks
     auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
     auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
@@ -3766,6 +3712,9 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RSI), Dest_RSI);
   }
   else {
+    // Calculate flags early.
+    CalculateDeferredFlags();
+
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
     // read DF once
@@ -3808,6 +3757,9 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         Result = _Bfe(Size * 8, 0, Result);
 
       GenerateFlags_SUB(Op, Result, Src2, Src1);
+
+      // Calculate flags early.
+      CalculateDeferredFlags();
 
       OrderedNode *TailCounter = _LoadContext(GPRSize, GPROffset(X86State::REG_RCX), GPRClass);
 
@@ -3875,6 +3827,9 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RSI), TailDest_RSI);
   }
   else {
+    // Calculate flags early. because end of block
+    CalculateDeferredFlags();
+
     // XXX: Theoretically LODS could be optimized to
     // RSI += {-}(RCX * Size)
     // RAX = [RSI - Size]
@@ -3960,7 +3915,6 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     OrderedNode* Result = _Sub(Src1, Src2);
     if (Size < 4)
       Result = _Bfe(Size * 8, 0, Result);
-
     GenerateFlags_SUB(Op, Result, Src1, Src2);
 
     auto SizeConst = _Constant(Size);
@@ -3977,6 +3931,9 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RDI), TailDest_RDI);
   }
   else {
+    // Calculate flags early. because end of block
+    CalculateDeferredFlags();
+
     bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
     // read DF once
@@ -4019,6 +3976,9 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         Result = _Bfe(Size * 8, 0, Result);
 
       GenerateFlags_SUB(Op, Result, Src1, Src2);
+
+      // Calculate flags early.
+      CalculateDeferredFlags();
 
       OrderedNode *TailCounter = _LoadContext(GPRSize, GPROffset(X86State::REG_RCX), GPRClass);
       OrderedNode *TailDest_RDI = _LoadContext(GPRSize, GPROffset(X86State::REG_RDI), GPRClass);
@@ -4251,20 +4211,15 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   auto Result = _FindLSB(Src);
 
   auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
 
   // If Src was zero then the destination doesn't get modified
   auto SelectOp = _Select(FEXCore::IR::COND_EQ,
       Src, ZeroConst,
       Dest, Result);
 
-  // ZF is set to 1 if the source was zero
-  auto ZFSelectOp = _Select(FEXCore::IR::COND_EQ,
-      Src, ZeroConst,
-      OneConst, ZeroConst);
-
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
+
+  GenerateFlags_BITSELECT(Op, Src);
 }
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
@@ -4277,20 +4232,15 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   auto Result = _FindMSB(Src);
 
   auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
 
   // If Src was zero then the destination doesn't get modified
   auto SelectOp = _Select(FEXCore::IR::COND_EQ,
       Src, ZeroConst,
       Dest, Result);
 
-  // ZF is set to 1 if the source was zero
-  auto ZFSelectOp = _Select(FEXCore::IR::COND_EQ,
-      Src, ZeroConst,
-      OneConst, ZeroConst);
-
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
+
+  GenerateFlags_BITSELECT(Op, Src);
 }
 
 void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
@@ -4426,6 +4376,9 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   const uint8_t GPRSize = CTX->GetGPRSize();
   // REX.W used to determine if it is 16byte or 8byte
   // Unlike CMPXCHG, the destination can only be a memory location
@@ -4515,9 +4468,14 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Fronten
   auto Block = GetNewJumpBlock(RIP);
   SetCurrentCodeBlock(Block);
   IRHeader.first->Blocks = Block->Wrapped(DualListData.ListBegin());
+
+  LOGMAN_THROW_A_FMT(IsDeferredFlagsStored(), "Something failed to calculate flags and now we began with invalid state");
 }
 
 void OpDispatchBuilder::Finalize() {
+  // Calculate flags early.
+  // This usually doesn't emit any IR but in the case of hitting the block instruction limit it will
+  CalculateDeferredFlags();
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // Node 0 is invalid node
@@ -5103,6 +5061,9 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   break;
   }
 
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   if (setRIP) {
@@ -5143,14 +5104,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   Src = _FindTrailingZeros(Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
-
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, 0, Src));
+  GenerateFlags_TZCNT(Op, Src);
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
@@ -5158,15 +5112,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   auto Res = _CountLeadingZeroes(Src);
   StoreResult(GPRClass, Op, Res, -1);
-
-  auto Zero = _Constant(0);
-  auto ZFResult = _Select(FEXCore::IR::COND_EQ,
-      Src,  Zero,
-      _Constant(1), Zero);
-
-  // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, GetSrcBitSize(Op) - 1, Src));
+  GenerateFlags_LZCNT(Op, Src);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
@@ -5231,6 +5177,9 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
+  // Ensure flags are calculated on invalid op.
+  CalculateDeferredFlags();
+
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // We don't actually support this instruction
@@ -5244,6 +5193,9 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
+  // Ensure flags are calculated on invalid op.
+  CalculateDeferredFlags();
+
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // We don't actually support this instruction

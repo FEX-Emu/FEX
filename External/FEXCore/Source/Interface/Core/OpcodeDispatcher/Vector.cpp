@@ -1425,18 +1425,7 @@ void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
     (1 << FCMP_FLAG_LT) |
     (1 << FCMP_FLAG_UNORDERED));
 
-  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
-
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(HostFlag_CF);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(HostFlag_ZF);
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(HostFlag_Unordered);
-
-  auto ZeroConst = _Constant(0);
-  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+  GenerateFlags_FCMP(Op, Res, Src1, Src2);
 
   flagsOp = SelectionFlag::FCMP;
   flagsOpDest = Src1;
@@ -2198,6 +2187,9 @@ template
 void OpDispatchBuilder::VectorVariableBlend<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PTestOp(OpcodeArgs) {
+  // Invalidate deferred flags early
+  InvalidateDeferredFlags();
+
   auto Size = GetSrcSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
