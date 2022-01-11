@@ -177,7 +177,9 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return LoadBase;
   }
 
-  std::string ResolveRootfsFile(std::string File, std::string RootFS) {
+  public:
+
+  static std::string ResolveRootfsFile(std::string const &File, std::string RootFS) {
     // If the path is relative then just run that
     if (std::filesystem::path(File).is_relative()) {
       return File;
@@ -201,7 +203,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return RootFSLink;
   }
 
-  public:
   struct LoadedSection {
     uintptr_t ElfBase;
     uintptr_t Base;
