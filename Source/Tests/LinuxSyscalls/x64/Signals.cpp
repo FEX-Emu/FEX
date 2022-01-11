@@ -40,6 +40,16 @@ namespace FEX::HLE::x64 {
     else {
       REGISTER_SYSCALL_IMPL_X64(pidfd_send_signal, UnimplementedSyscallSafe);
     }
+
+    REGISTER_SYSCALL_IMPL_X64_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, siginfo_t *info) -> uint64_t {
+      uint64_t Result = ::syscall(SYSCALL_DEF(rt_sigqueueinfo), pid, sig, info);
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, siginfo_t *info) -> uint64_t {
+      uint64_t Result = ::syscall(SYSCALL_DEF(rt_tgsigqueueinfo), tgid, tid, sig, info);
+      SYSCALL_ERRNO();
+    });
   }
 }
 
