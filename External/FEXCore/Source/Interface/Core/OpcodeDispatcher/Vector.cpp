@@ -2233,8 +2233,14 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   Test2 = _Select(FEXCore::IR::COND_EQ,
       Test2, ZeroConst, OneConst, ZeroConst);
 
+  // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Test1);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Test2);
+
+  SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(ZeroConst);
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(ZeroConst);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(ZeroConst);
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(ZeroConst);
 }
 
 void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
