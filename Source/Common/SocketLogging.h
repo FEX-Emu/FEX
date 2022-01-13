@@ -1,6 +1,11 @@
 #pragma once
+
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
+
+#include <functional>
+#include <memory>
+#include <string>
 
 namespace FEX::SocketLogging {
   // Client side
