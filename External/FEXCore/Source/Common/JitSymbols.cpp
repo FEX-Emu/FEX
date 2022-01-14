@@ -23,7 +23,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    fmt::print(fp.get(), "{:x} {:x} JIT_0x{:x}_{:x}\n", HostAddr, CodeSize, GuestAddr, HostAddr);
+    fmt::print(fp.get(), "{} {:x} JIT_0x{:x}_{}\n", HostAddr, CodeSize, GuestAddr, HostAddr);
   }
 
   void JITSymbols::Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name) {
@@ -31,7 +31,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    fmt::print(fp.get(), "{:x} {:x} {}_{:x}\n", HostAddr, CodeSize, Name, HostAddr);
+    fmt::print(fp.get(), "{} {:x} {}_{}\n", HostAddr, CodeSize, Name, HostAddr);
   }
 
   void JITSymbols::RegisterNamedRegion(const void *HostAddr, uint32_t CodeSize, std::string_view Name) {
@@ -39,7 +39,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    fmt::print(fp.get(), "{:x} {:x} {}\n", HostAddr, CodeSize, Name);
+    fmt::print(fp.get(), "{} {:x} {}\n", HostAddr, CodeSize, Name);
   }
 
   void JITSymbols::RegisterJITSpace(const void *HostAddr, uint32_t CodeSize) {
@@ -47,7 +47,7 @@ namespace FEXCore {
 
     // Linux perf format is very straightforward
     // `<HostPtr> <Size> <Name>\n`
-    fmt::print(fp.get(), "{:x} {:x} FEXJIT\n", HostAddr, CodeSize);
+    fmt::print(fp.get(), "{} {:x} FEXJIT\n", HostAddr, CodeSize);
   }
 
 } // namespace FEXCore

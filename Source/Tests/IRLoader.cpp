@@ -61,13 +61,13 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message)
     break;
   }
 
-  fmt::format("[{}] {}\n", CharLevel, Message);
+  fmt::print("[{}] {}\n", CharLevel, Message);
   fflush(stdout);
 }
 
 void AssertHandler(char const *Message)
 {
-  fmt::format("[ASSERT] {}\n", Message);
+  fmt::print("[ASSERT] {}\n", Message);
   fflush(stdout);
 }
 
