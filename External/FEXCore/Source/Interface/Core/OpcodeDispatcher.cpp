@@ -1011,9 +1011,24 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   auto SrcCond = SelectCC(Op->OP & 0xF, TakeBranch, DoNotTakeBranch);
 
+  // Jump instruction only uses up to 32-bit signed displacement
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
+  uint64_t InstRIP = Op->PC + Op->InstSize;
+  uint64_t Target = InstRIP + TargetOffset;
 
-  uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
+  if (CTX->GetGPRSize() == 4) {
+    // If the GPRSize is 4 then we need to be careful about PC wrapping
+    if (TargetOffset < 0 && -TargetOffset > InstRIP) {
+      // Invert the signed value if we are underflowing
+      TargetOffset = 0x1'0000'0000ULL + TargetOffset;
+    }
+    else if (TargetOffset >= 0 && Target >= 0x1'0000'0000ULL) {
+      // We are overflowing, wrap around
+      TargetOffset = TargetOffset - 0x1'0000'0000ULL;
+    }
+    Target &= 0xFFFFFFFFU;
+  }
 
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
@@ -1034,7 +1049,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, Op->Src[0].Data.Literal.Value);
+      auto NewRIP = GetDynamicPC(Op, TargetOffset);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1199,13 +1214,31 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
 void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   BlockSetRIP = true;
 
+  // Jump instruction only uses up to 32-bit signed displacement
+  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
+  int64_t TargetOffset = Op->Src[0].Data.Literal.Value;
+  uint64_t InstRIP = Op->PC + Op->InstSize;
+  uint64_t TargetRIP = InstRIP + TargetOffset;
+
+  if (CTX->GetGPRSize() == 4) {
+    // If the GPRSize is 4 then we need to be careful about PC wrapping
+    if (TargetOffset < 0 && -TargetOffset > InstRIP) {
+      // Invert the signed value if we are underflowing
+      TargetOffset = 0x1'0000'0000ULL + TargetOffset;
+    }
+    else if (TargetOffset >= 0 && TargetRIP >= 0x1'0000'0000ULL) {
+      // We are overflowing, wrap around
+      TargetOffset = TargetOffset - 0x1'0000'0000ULL;
+    }
+
+    TargetRIP &= 0xFFFFFFFFU;
+  }
+
   // This is just an unconditional relative literal jump
   if (Multiblock) {
-    LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
-    uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
-    auto JumpBlock = JumpTargets.find(Target);
+    auto JumpBlock = JumpTargets.find(TargetRIP);
     if (JumpBlock != JumpTargets.end()) {
-      _Jump(GetNewJumpBlock(Target));
+      _Jump(GetNewJumpBlock(TargetRIP));
     }
     else {
       // If the block isn't a jump target then we need to create an exit block
@@ -1215,18 +1248,15 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
-      _ExitFunction(GetDynamicPC(Op, Op->Src[0].Data.Literal.Value));
+      _ExitFunction(GetDynamicPC(Op, TargetOffset));
     }
     return;
   }
 
   // Fallback
   {
-    // This source is a literal
-    auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-
     auto RIPTargetConst = GetDynamicPC(Op);
-    auto NewRIP = _Add(RIPOffset, RIPTargetConst);
+    auto NewRIP = _Add(_Constant(TargetOffset), RIPTargetConst);
 
     // Store the new RIP
     _ExitFunction(NewRIP);
