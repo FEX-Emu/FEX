@@ -54,7 +54,7 @@ DEF_OP(AESDecLast) {
 DEF_OP(AESKeyGenAssist) {
 	auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
 
-  aarch64::Label Constant;
+  aarch64::Literal ConstantLiteral (0x0C030609'0306090CULL, 0x040B0E01'0B0E0104ULL);
   aarch64::Label PastConstant;
 
   // Do a "regular" AESE step
@@ -63,8 +63,7 @@ DEF_OP(AESKeyGenAssist) {
   aese(VTMP1.V16B(), VTMP2.V16B());
 
   // Do a table shuffle to undo ShiftRows
-  adr(TMP1.X(), &Constant);
-  ldr(VTMP3, MemOperand(TMP1.X()));
+  ldr(VTMP3, &ConstantLiteral);
 
   // Now EOR in the RCON
   if (Op->RCON) {
@@ -80,11 +79,7 @@ DEF_OP(AESKeyGenAssist) {
   }
 
   b(&PastConstant);
-  bind(&Constant);
-  dc32(0x0B0E0104);
-  dc32(0x040B0E01);
-  dc32(0x0306090C);
-  dc32(0x0C030609);
+  place(&ConstantLiteral);
   bind(&PastConstant);
 }
 
@@ -97,7 +92,6 @@ void Arm64JITCore::RegisterEncryptionHandlers() {
   REGISTER_OP(VAESDEC,     AESDec);
   REGISTER_OP(VAESDECLAST, AESDecLast);
   REGISTER_OP(VAESKEYGENASSIST, AESKeyGenAssist);
-
 #undef REGISTER_OP
 }
 }
