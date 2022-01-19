@@ -519,7 +519,7 @@ extern FEX_DEFAULT_VISIBILITY std::array<X86InstInfo, MAX_EVEX_TABLE_SIZE> EVEXT
 template <>
 struct fmt::formatter<FEXCore::X86Tables::DecodedOperand::OpType> : formatter<uint32_t> {
   template <typename FormatContext>
-  auto format(FEXCore::X86Tables::DecodedOperand::OpType type, FormatContext& ctx) const {
+  auto format(FEXCore::X86Tables::DecodedOperand::OpType type, FormatContext& ctx) const -> decltype(ctx.out()) {
     return fmt::formatter<uint32_t>::format(static_cast<uint32_t>(type), ctx);
   }
 };
