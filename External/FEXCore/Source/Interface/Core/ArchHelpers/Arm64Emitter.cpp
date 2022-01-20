@@ -50,7 +50,7 @@ void Arm64Emitter::PushCalleeSavedRegisters() {
   // We need to save pairs of registers
   // We save r19-r30
   MemOperand PairOffset(sp, -16, PreIndex);
-  const std::array<std::pair<vixl::aarch64::XRegister, vixl::aarch64::XRegister>, 6> CalleeSaved = {{
+  const std::array<std::pair<vixl::aarch64::Register, vixl::aarch64::Register>, 6> CalleeSaved = {{
     {x19, x20},
     {x21, x22},
     {x23, x24},
@@ -113,7 +113,7 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
   }
 
   MemOperand PairOffset(sp, 16, PostIndex);
-  const std::array<std::pair<vixl::aarch64::XRegister, vixl::aarch64::XRegister>, 6> CalleeSaved = {{
+  const std::array<std::pair<vixl::aarch64::Register, vixl::aarch64::Register>, 6> CalleeSaved = {{
     {x29, x30},
     {x27, x28},
     {x25, x26},

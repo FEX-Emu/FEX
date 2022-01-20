@@ -31,7 +31,9 @@ jobs:
 
     - name : submodule checkout
       # Need to update submodules
-      run: git submodule update --init --depth 1
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --depth 1
 
     - name: Clean Build Environment
       run: rm -Rf ${{runner.workspace}}/build
