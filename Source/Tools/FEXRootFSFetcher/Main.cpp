@@ -363,7 +363,7 @@ namespace WebFileFetcher {
     auto PathName = Path + filename;
 
     std::string BigArgs =
-    fmt::format("curl {} -o {}", URL, PathName);
+    fmt::format("curl -C - {} -o {}", URL, PathName);
     std::vector<const char*> ExecveArgs = {
       "/bin/sh",
       "-c",
@@ -381,10 +381,12 @@ namespace WebFileFetcher {
     // -# for progress bar
     // -o for output file
     // -f for silent fail
-    std::string CurlPipe = fmt::format("curl -#f {} -o {} 2>&1", URL, PathName);
+    std::string CurlPipe = fmt::format("curl -C - -#f {} -o {} 2>&1", URL, PathName);
     const std::string StdBuf = "stdbuf -oL tr '\\r' '\\n'";
     const std::string SedBuf = "sed -u 's/[^0-9]*\\([0-9]*\\).*/\\1/'";
-    const std::string ZenityBuf = "zenity --time-remaining --progress --auto-close --no-cancel --title 'Downloading'";
+    // zenity --auto-close can't be used since `curl -C` for whatever reason prints 100% at the start.
+    // Making zenity vanish immediately
+    const std::string ZenityBuf = "zenity --time-remaining --progress --no-cancel --title 'Downloading'";
     std::string BigArgs =
     fmt::format("{} | {} | {} | {}", CurlPipe, StdBuf, SedBuf, ZenityBuf);
     std::vector<const char*> ExecveArgs = {
@@ -606,7 +608,6 @@ namespace Zenity {
       }
 
       if (!WebFileFetcher::DownloadToPathWithZenityProgress(Target.URL, RootFS)) {
-        ExecWithInfo("Couldn't download RootFS");
         return false;
       }
 
@@ -766,12 +767,25 @@ namespace TTY {
           return false;
         }
       }
+      auto DoDownload = [&Target, &RootFS]() -> bool {
+        if (!WebFileFetcher::DownloadToPath(Target.URL, RootFS)) {
+          fmt::print("Couldn't download RootFS\n");
+          return false;
+        }
 
-      if (!WebFileFetcher::DownloadToPath(Target.URL, RootFS)) {
-        fmt::print("Couldn't download RootFS\n");
-        return false;
+        return true;
+      };
+
+      while (DoDownload() == false) {
+        if (AskForConfirmation("Curl RootFS download failed. Do you want to retry?")) {
+          // Loop to retry
+        }
+        else {
+          return false;
+        }
       }
 
+      // Got here then we passed
       return true;
     }
     return false;
@@ -933,22 +947,52 @@ int main(int argc, char **argv, char **const envp) {
       if (!ValidateCheckExists(Target)) {
         // Keep going
       }
-      else if (ValidateDownloadSelection(Target)) {
-        uint64_t ExpectedHash = std::stoul(Target.Hash, nullptr, 16);
+      else {
+        auto ValidateDownload = [&Target, &PathName]() -> std::pair<int32_t, bool> {
+          std::error_code ec;
+          if (ValidateDownloadSelection(Target)) {
+            uint64_t ExpectedHash = std::stoul(Target.Hash, nullptr, 16);
 
-        if (std::filesystem::exists(PathName, ec)) {
-          auto Res = XXFileHash::HashFile(PathName);
-          if (Res.first == false ||
-              Res.second != ExpectedHash) {
-            std::string Text = fmt::format("Couldn't hash the rootfs or hash didn't match\n");
-            Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
-            ExecWithInfo(Text);
-            return -1;
+            if (std::filesystem::exists(PathName, ec)) {
+              auto Res = XXFileHash::HashFile(PathName);
+              if (Res.first == false ||
+                  Res.second != ExpectedHash) {
+                std::string Text = fmt::format("Couldn't hash the rootfs or hash didn't match\n");
+                Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
+                ExecWithInfo(Text);
+                return std::make_pair(-1, true);
+              }
+            }
+            else {
+              ExecWithInfo("Correctly downloaded RootFS but doesn't exist?");
+              return std::make_pair(-1, false);
+            }
+          }
+          else {
+            ExecWithInfo("Couldn't download rootfs for some reason.");
+            return std::make_pair(-1, false);
+          }
+
+          return std::make_pair(0, false);
+        };
+
+        std::pair<int32_t, bool> Result{};
+        while ((Result = ValidateDownload()).second == true &&
+            Result.first == -1) {
+
+          if (AskForConfirmation("Do you want to try downloading the RootFS again?")) {
+            // Continue the loop
+          }
+          else {
+            // Didn't want to retry, just exit now
+            return Result.first;
           }
         }
-        else {
-          ExecWithInfo("Correctly downloaded RootFS but doesn't exist?");
-          return -1;
+
+        // Early exit on other errors
+        if (Result.first == -1 &&
+            Result.second == false) {
+          return Result.first;
         }
       }
 
@@ -956,7 +1000,32 @@ int main(int argc, char **argv, char **const envp) {
         "Extract",
         "As-Is",
       };
-      auto Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
+
+      int32_t Result{};
+      if (WorkingAppsTester::Has_Unsquashfs) {
+        if (WorkingAppsTester::Has_Squashfuse) {
+          Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
+        }
+        else {
+          Args.pop_back();
+          Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
+        }
+      }
+      else {
+        if (WorkingAppsTester::Has_Squashfuse) {
+          Args.erase(Args.begin());
+          Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
+          if (Result == 0) {
+            // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
+            Result = 1;
+          }
+        }
+        else {
+          Args.erase(Args.begin());
+          ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
+          Result = -1;
+        }
+      }
       if (Result == -1 ||
           Result == 1) {
         // Nothing
