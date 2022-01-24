@@ -79,7 +79,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   }
 
   const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewRIP = GetDynamicPC(Op, -Op->InstSize);
+  auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
   _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
 
   const auto& GPRIndicesRef = *GPRIndexes;
@@ -708,12 +708,12 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
     _InvalidateFlags(~0UL); // all flags
   }
 
-  auto ConstantPC = GetDynamicPC(Op);
+  auto ConstantPC = GetRelocatedPC(Op);
 
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   OrderedNode *NewRIP = _Add(ConstantPC, JMPPCOffset);
-  auto ConstantPCReturn = GetDynamicPC(Op);
+  auto ConstantPCReturn = GetRelocatedPC(Op);
 
   auto ConstantSize = _Constant(GPRSize);
   auto OldSP = _LoadContext(GPRSize, RSPOffset, GPRClass);
@@ -738,7 +738,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
   OrderedNode *JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto ConstantPCReturn = GetDynamicPC(Op);
+  auto ConstantPCReturn = GetRelocatedPC(Op);
 
   auto ConstantSize = _Constant(Size);
   auto OldSP = _LoadContext(GPRSize, RSPOffset, GPRClass);
@@ -1049,7 +1049,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, TargetOffset);
+      auto NewRIP = GetRelocatedPC(Op, TargetOffset);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1067,7 +1067,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = GetDynamicPC(Op);
+      auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
@@ -1109,7 +1109,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, Op->Src[0].Data.Literal.Value);
+      auto NewRIP = GetRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1127,7 +1127,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = GetDynamicPC(Op);
+      auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
@@ -1185,7 +1185,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetTrueJumpTarget(CondJump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
 
-      auto NewRIP = GetDynamicPC(Op, Op->Src[1].Data.Literal.Value);
+      auto NewRIP = GetRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
 
       // Store the new RIP
       _ExitFunction(NewRIP);
@@ -1203,7 +1203,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
 
       // Leave block
-      auto RIPTargetConst = GetDynamicPC(Op);
+      auto RIPTargetConst = GetRelocatedPC(Op);
 
       // Store the new RIP
       _ExitFunction(RIPTargetConst);
@@ -1248,14 +1248,14 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       auto JumpTarget = CreateNewCodeBlockAfter(GetCurrentBlock());
       SetJumpTarget(Jump, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
-      _ExitFunction(GetDynamicPC(Op, TargetOffset));
+      _ExitFunction(GetRelocatedPC(Op, TargetOffset));
     }
     return;
   }
 
   // Fallback
   {
-    auto RIPTargetConst = GetDynamicPC(Op);
+    auto RIPTargetConst = GetRelocatedPC(Op);
     auto NewRIP = _Add(_Constant(TargetOffset), RIPTargetConst);
 
     // Store the new RIP
@@ -4686,7 +4686,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   }
   else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
-      Src = GetDynamicPC(Op, Operand.Data.RIPLiteral.Value.s);
+      Src = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
     }
     else {
       // 32bit this isn't RIP relative but instead absolute
@@ -4761,7 +4761,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   return Src;
 }
 
-OrderedNode *OpDispatchBuilder::GetDynamicPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
+OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
 }
@@ -4830,7 +4830,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
   else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
-      MemStoreDst = GetDynamicPC(Op, Operand.Data.RIPLiteral.Value.s);
+      MemStoreDst = GetRelocatedPC(Op, Operand.Data.RIPLiteral.Value.s);
     }
     else {
       // 32bit this isn't RIP relative but instead absolute
@@ -5110,7 +5110,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     BlockSetRIP = setRIP;
 
     // We want to set RIP to the next instruction after HLT/INT3
-    auto NewRIP = GetDynamicPC(Op);
+    auto NewRIP = GetRelocatedPC(Op);
     _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
   }
 
@@ -5123,7 +5123,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
 
-    auto NewRIP = GetDynamicPC(Op);
+    auto NewRIP = GetRelocatedPC(Op);
     _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), NewRIP);
     _Break(Reason, Literal);
 
@@ -5224,7 +5224,7 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
 
   // We don't actually support this instruction
   // Multiblock may hit it though
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetDynamicPC(Op, -Op->InstSize));
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetRelocatedPC(Op, -Op->InstSize));
   _Break(FEXCore::IR::Break_Unimplemented, 0);
   BlockSetRIP = true;
 
@@ -5237,7 +5237,7 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
 
   // We don't actually support this instruction
   // Multiblock may hit it though
-  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetDynamicPC(Op, -Op->InstSize));
+  _StoreContext(GPRClass, GPRSize, offsetof(FEXCore::Core::CPUState, rip), GetRelocatedPC(Op, -Op->InstSize));
   _Break(FEXCore::IR::Break_InvalidInstruction, 0);
   BlockSetRIP = true;
 }
