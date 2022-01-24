@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/wait.h>
 
 namespace Exec {
@@ -108,6 +109,88 @@ namespace Exec {
     }
 
     return {};
+  }
+}
+
+namespace WorkingAppsTester {
+  static bool Has_Curl {false};
+  static bool Has_Squashfuse {false};
+  static bool Has_Unsquashfs {false};
+
+  void CheckCurl() {
+    // Check if curl exists on the host
+    std::vector<const char*> ExecveArgs = {
+      "curl",
+      "-V",
+      nullptr,
+    };
+
+    int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+    Has_Curl = Result != -1;
+  }
+
+  void CheckSquashfuse() {
+    std::vector<const char*> ExecveArgs = {
+      "squashfuse",
+      "--help",
+      nullptr,
+    };
+
+    int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+    Has_Squashfuse = Result != -1;
+  }
+
+  void CheckUnsquashfs() {
+    std::vector<const char*> ExecveArgs = {
+      "unsquashfs",
+      "--help",
+      nullptr,
+    };
+
+    int fd = memfd_create("stdout", 0);
+    int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), fd, fd);
+    Has_Unsquashfs = Result != -1;
+    if (Has_Unsquashfs) {
+      // Seek back to the start
+      lseek(fd, 0, SEEK_SET);
+
+      // Unsquashfs needs to support zstd
+      // Scan its output to find the zstd compressor
+      FILE *fp = fdopen(fd, "r");
+      char *Line {nullptr};
+      ssize_t NumRead;
+      size_t Len;
+
+      bool ReadingDecompressors = false;
+      bool SupportsZSTD = false;
+      while ((NumRead = getline(&Line, &Len, fp)) != -1) {
+        if (!ReadingDecompressors) {
+          if (strstr(Line, "Decompressors available")) {
+            ReadingDecompressors = true;
+          }
+        }
+        else {
+          if (strstr(Line, "zstd")) {
+            SupportsZSTD = true;
+          }
+        }
+      }
+
+      free(Line);
+      fclose(fp);
+
+      // Disable unsquashfs if it doesn't support ZSTD
+      if (!SupportsZSTD) {
+        Has_Unsquashfs = false;
+      }
+    }
+    close(fd);
+  }
+
+  void Init() {
+    CheckCurl();
+    CheckSquashfuse();
+    CheckUnsquashfs();
   }
 }
 
@@ -819,15 +902,9 @@ int main(int argc, char **argv, char **const envp) {
     return 0;
   }
 
+  WorkingAppsTester::Init();
   // Check if curl exists on the host
-  std::vector<const char*> ExecveArgs = {
-    "curl",
-    "-V",
-    nullptr,
-  };
-
-  int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
-  if (Result == -1) {
+  if (!WorkingAppsTester::Has_Curl) {
     ExecWithInfo("curl is required to use this tool. Please install curl before using.");
     return -1;
   }
