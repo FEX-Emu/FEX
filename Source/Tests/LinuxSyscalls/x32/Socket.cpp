@@ -7,6 +7,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Types.h"
+#include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
 
@@ -17,6 +18,7 @@ $end_info$
 #include <memory>
 #include <stddef.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::mmsghdr_32>, "%lx")
@@ -26,6 +28,48 @@ namespace FEXCore::Core {
 }
 
 namespace FEX::HLE::x32 {
+
+// Some sockopt defines for older build environments
+#ifndef SO_TXTIME
+#define SO_TXTIME 61
+#endif
+#ifndef SO_BINDTOIFINDEX
+#define SO_BINDTOIFINDEX 62
+#endif
+#ifndef SO_TIMESTAMP_NEW
+#define SO_TIMESTAMP_NEW 63
+#endif
+#ifndef SO_TIMESTAMPNS_NEW
+#define SO_TIMESTAMPNS_NEW 64
+#endif
+#ifndef SO_TIMESTAMPING_NEW
+#define SO_TIMESTAMPING_NEW 65
+#endif
+#ifndef SO_RCVTIMEO_NEW
+#define SO_RCVTIMEO_NEW 66
+#endif
+#ifndef SO_SNDTIMEO_NEW
+#define SO_SNDTIMEO_NEW 67
+#endif
+#ifndef SO_DETACH_REUSEPORT_BPF
+#define SO_DETACH_REUSEPORT_BPF 68
+#endif
+#ifndef SO_PREFER_BUSY_POLL
+#define SO_PREFER_BUSY_POLL	69
+#endif
+#ifndef SO_BUSY_POLL_BUDGET
+#define SO_BUSY_POLL_BUDGET	70
+#endif
+#ifndef SO_NETNS_COOKIE
+#define SO_NETNS_COOKIE 71
+#endif
+#ifndef SO_BUF_LOCK
+#define SO_BUF_LOCK 72
+#endif
+#ifndef SO_RESERVE_MEM
+#define SO_RESERVE_MEM 73
+#endif
+
   enum SockOp {
     OP_SOCKET = 1,
     OP_BIND = 2,
@@ -243,6 +287,279 @@ namespace FEX::HLE::x32 {
     SYSCALL_ERRNO();
   }
 
+  static uint64_t SetSockOpt(int sockfd, int level, int optname, compat_ptr<void> optval, int optlen) {
+    uint64_t Result{};
+
+    if (level == SOL_SOCKET) {
+      switch (optname) {
+        case SO_ATTACH_FILTER:
+        case SO_ATTACH_REUSEPORT_CBPF: {
+          struct sock_fprog32 {
+            uint16_t len;
+            uint32_t filter;
+          };
+          struct sock_fprog64 {
+            uint16_t len;
+            uint64_t filter;
+          };
+
+          if (optlen != sizeof(sock_fprog32)) {
+            return -EINVAL;
+          }
+
+          sock_fprog32 *prog = reinterpret_cast<sock_fprog32*>(optval.Ptr);
+          sock_fprog64 prog64{};
+          prog64.len = prog->len;
+          prog64.filter = prog->filter;
+
+          Result = ::syscall(SYSCALL_DEF(setsockopt),
+            sockfd,
+            level,
+            optname,
+            &prog64,
+            sizeof(sock_fprog64)
+            );
+          break;
+        }
+        case SO_RCVTIMEO_OLD: {
+          // _OLD uses old_timeval32. Needs to be converted
+          struct timeval tv64 = *reinterpret_cast<timeval32*>(optval.Ptr);
+          Result = ::syscall(SYSCALL_DEF(setsockopt),
+            sockfd,
+            level,
+            SO_RCVTIMEO_NEW,
+            &tv64,
+            sizeof(tv64)
+            );
+          break;
+        }
+        case SO_SNDTIMEO_OLD: {
+          // _OLD uses old_timeval32. Needs to be converted
+          struct timeval tv64 = *reinterpret_cast<timeval32*>(optval.Ptr);
+          Result = ::syscall(SYSCALL_DEF(setsockopt),
+            sockfd,
+            level,
+            SO_SNDTIMEO_NEW,
+            &tv64,
+            sizeof(tv64)
+            );
+          break;
+        }
+        // Each optname as a reminder which setting has been manually checked
+        case SO_DEBUG:
+        case SO_REUSEADDR:
+        case SO_TYPE:
+        case SO_ERROR:
+        case SO_DONTROUTE:
+        case SO_BROADCAST:
+        case SO_SNDBUF:
+        case SO_RCVBUF:
+        case SO_SNDBUFFORCE:
+        case SO_RCVBUFFORCE:
+        case SO_KEEPALIVE:
+        case SO_OOBINLINE:
+        case SO_NO_CHECK:
+        case SO_PRIORITY:
+        case SO_LINGER:
+        case SO_BSDCOMPAT:
+        case SO_REUSEPORT:
+        /**
+         * @name These end up differing between {x86,arm} and {powerpc, alpha, sparc, mips, parisc}
+         * @{ */
+        case SO_PASSCRED:
+        case SO_PEERCRED:
+        case SO_RCVLOWAT:
+        case SO_SNDLOWAT:
+        /**  @} */
+        case SO_SECURITY_AUTHENTICATION:
+        case SO_SECURITY_ENCRYPTION_TRANSPORT:
+        case SO_SECURITY_ENCRYPTION_NETWORK:
+        case SO_DETACH_FILTER:
+        case SO_PEERNAME:
+        case SO_TIMESTAMP_OLD: // Returns int32_t boolean
+        case SO_ACCEPTCONN:
+        case SO_PEERSEC:
+        // Gap 32, 33
+        case SO_PASSSEC:
+        case SO_TIMESTAMPNS_OLD: // Returns int32_t boolean
+        case SO_MARK:
+        case SO_TIMESTAMPING_OLD: // Returns so_timestamping
+        case SO_PROTOCOL:
+        case SO_DOMAIN:
+        case SO_RXQ_OVFL:
+        case SO_WIFI_STATUS:
+        case SO_PEEK_OFF:
+        case SO_NOFCS:
+        case SO_LOCK_FILTER:
+        case SO_SELECT_ERR_QUEUE:
+        case SO_BUSY_POLL:
+        case SO_MAX_PACING_RATE:
+        case SO_BPF_EXTENSIONS:
+        case SO_INCOMING_CPU:
+        case SO_ATTACH_BPF:
+        case SO_ATTACH_REUSEPORT_EBPF:
+        case SO_CNX_ADVICE:
+        // Gap 54 (SCM_TIMESTAMPING_OPT_STATS)
+        case SO_MEMINFO:
+        case SO_INCOMING_NAPI_ID:
+        case SO_COOKIE: // Cookie always returns 64-bit even on 32-bit
+        // Gap 58 (SCM_TIMESTAMPING_PKTINFO)
+        case SO_PEERGROUPS:
+        case SO_ZEROCOPY:
+        case SO_TXTIME:
+        case SO_BINDTOIFINDEX:
+        case SO_TIMESTAMP_NEW:
+        case SO_TIMESTAMPNS_NEW:
+        case SO_TIMESTAMPING_NEW:
+        case SO_RCVTIMEO_NEW:
+        case SO_SNDTIMEO_NEW:
+        case SO_DETACH_REUSEPORT_BPF:
+        case SO_PREFER_BUSY_POLL:
+        case SO_BUSY_POLL_BUDGET:
+        case SO_NETNS_COOKIE: // Cookie always returns 64-bit even on 32-bit
+        case SO_BUF_LOCK:
+        case SO_RESERVE_MEM:
+        default:
+          Result = ::syscall(SYSCALL_DEF(setsockopt),
+            sockfd,
+            level,
+            optname,
+            reinterpret_cast<const void*>(optval.Ptr),
+            optlen
+            );
+          break;
+      }
+    }
+    else {
+      Result = ::syscall(SYSCALL_DEF(setsockopt),
+        sockfd,
+        level,
+        optname,
+        reinterpret_cast<const void*>(optval.Ptr),
+        optlen
+        );
+    }
+
+    SYSCALL_ERRNO();
+  }
+
+  static uint64_t GetSockOpt(int sockfd, int level, int optname, compat_ptr<void> optval, compat_ptr<socklen_t> optlen) {
+    uint64_t Result{};
+    if (level == SOL_SOCKET) {
+      switch (optname) {
+        case SO_RCVTIMEO_OLD: {
+          // _OLD uses old_timeval32. Needs to be converted
+          struct timeval tv64{};
+          Result = ::syscall(SYSCALL_DEF(getsockopt),
+            sockfd,
+            level,
+            SO_RCVTIMEO_NEW,
+            &tv64,
+            sizeof(tv64)
+            );
+           *reinterpret_cast<timeval32*>(optval.Ptr) = tv64;
+          break;
+        }
+        case SO_SNDTIMEO_OLD: {
+          // _OLD uses old_timeval32. Needs to be converted
+          struct timeval tv64{};
+          Result = ::syscall(SYSCALL_DEF(getsockopt),
+            sockfd,
+            level,
+            SO_SNDTIMEO_NEW,
+            &tv64,
+            sizeof(tv64)
+            );
+           *reinterpret_cast<timeval32*>(optval.Ptr) = tv64;
+          break;
+        }
+        // Each optname as a reminder which setting has been manually checked
+        case SO_DEBUG:
+        case SO_REUSEADDR:
+        case SO_TYPE:
+        case SO_ERROR:
+        case SO_DONTROUTE:
+        case SO_BROADCAST:
+        case SO_SNDBUF:
+        case SO_RCVBUF:
+        case SO_SNDBUFFORCE:
+        case SO_RCVBUFFORCE:
+        case SO_KEEPALIVE:
+        case SO_OOBINLINE:
+        case SO_NO_CHECK:
+        case SO_PRIORITY:
+        case SO_LINGER:
+        case SO_BSDCOMPAT:
+        case SO_REUSEPORT:
+        /**
+         * @name These end up differing between {x86,arm} and {powerpc, alpha, sparc, mips, parisc}
+         * @{ */
+        case SO_PASSCRED:
+        case SO_PEERCRED:
+        case SO_RCVLOWAT:
+        case SO_SNDLOWAT:
+        /**  @} */
+        case SO_SECURITY_AUTHENTICATION:
+        case SO_SECURITY_ENCRYPTION_TRANSPORT:
+        case SO_SECURITY_ENCRYPTION_NETWORK:
+        case SO_ATTACH_FILTER: // Renamed to SO_GET_FILTER on get. Same between 32-bit and 64-bit
+        case SO_DETACH_FILTER:
+        case SO_PEERNAME:
+        case SO_TIMESTAMP_OLD: // Returns int32_t boolean
+        case SO_ACCEPTCONN:
+        case SO_PEERSEC:
+        // Gap 32, 33
+        case SO_PASSSEC:
+        case SO_TIMESTAMPNS_OLD: // Returns int32_t boolean
+        case SO_MARK:
+        case SO_TIMESTAMPING_OLD: // Returns so_timestamping
+        case SO_PROTOCOL:
+        case SO_DOMAIN:
+        case SO_RXQ_OVFL:
+        case SO_WIFI_STATUS:
+        case SO_PEEK_OFF:
+        case SO_NOFCS:
+        case SO_LOCK_FILTER:
+        case SO_SELECT_ERR_QUEUE:
+        case SO_BUSY_POLL:
+        case SO_MAX_PACING_RATE:
+        case SO_BPF_EXTENSIONS:
+        case SO_INCOMING_CPU:
+        case SO_ATTACH_BPF:
+        case SO_ATTACH_REUSEPORT_CBPF: // Doesn't do anything in get
+        case SO_ATTACH_REUSEPORT_EBPF:
+        case SO_CNX_ADVICE:
+        // Gap 54 (SCM_TIMESTAMPING_OPT_STATS)
+        case SO_MEMINFO:
+        case SO_INCOMING_NAPI_ID:
+        case SO_COOKIE: // Cookie always returns 64-bit even on 32-bit
+        // Gap 58 (SCM_TIMESTAMPING_PKTINFO)
+        case SO_PEERGROUPS:
+        case SO_ZEROCOPY:
+        case SO_TXTIME:
+        case SO_BINDTOIFINDEX:
+        case SO_TIMESTAMP_NEW:
+        case SO_TIMESTAMPNS_NEW:
+        case SO_TIMESTAMPING_NEW:
+        case SO_RCVTIMEO_NEW:
+        case SO_SNDTIMEO_NEW:
+        case SO_DETACH_REUSEPORT_BPF:
+        case SO_PREFER_BUSY_POLL:
+        case SO_BUSY_POLL_BUDGET:
+        case SO_NETNS_COOKIE: // Cookie always returns 64-bit even on 32-bit
+        case SO_BUF_LOCK:
+        case SO_RESERVE_MEM:
+        default:
+          Result = ::syscall(SYSCALL_DEF(getsockopt), sockfd, level, optname, optval, optlen);
+          break;
+      }
+    }
+    else {
+      Result = ::syscall(SYSCALL_DEF(getsockopt), sockfd, level, optname, optval, optlen);
+    }
+    SYSCALL_ERRNO();
+  }
+
   void RegisterSocket() {
     REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t call, uint32_t *Arguments) -> uint64_t {
       uint64_t Result{};
@@ -313,17 +630,17 @@ namespace FEX::HLE::x32 {
           break;
         }
         case OP_SETSOCKOPT: {
-          Result = ::setsockopt(
+          return SetSockOpt(
             Arguments[0],
             Arguments[1],
             Arguments[2],
-            reinterpret_cast<const void*>(Arguments[3]),
+            Arguments[3],
             reinterpret_cast<socklen_t>(Arguments[4])
             );
           break;
         }
         case OP_GETSOCKOPT: {
-          Result = ::getsockopt(
+          return GetSockOpt(
             Arguments[0],
             Arguments[1],
             Arguments[2],
@@ -462,6 +779,14 @@ namespace FEX::HLE::x32 {
 
     REGISTER_SYSCALL_IMPL_X32(recvmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, struct msghdr32 *msg, int flags) -> uint64_t {
       return RecvMsg(sockfd, msg, flags);
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(setsockopt, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, int level, int optname, compat_ptr<void> optval, socklen_t optlen) -> uint64_t {
+      return SetSockOpt(sockfd, level, optname, optval, optlen);
+    });
+
+    REGISTER_SYSCALL_IMPL_X32(getsockopt, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, int level, int optname, compat_ptr<void> optval, compat_ptr<socklen_t> optlen) -> uint64_t {
+        return GetSockOpt(sockfd, level, optname, optval, optlen);
     });
   }
 }
