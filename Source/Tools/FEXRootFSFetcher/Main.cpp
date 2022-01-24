@@ -27,21 +27,31 @@ namespace Exec {
     return -1;
   }
 
-  int32_t ExecAndWaitForResponseRedirect(const char *path, char* const* args, int stdoutRedirect = STDOUT_FILENO, int stderrRedirect = STDERR_FILENO) {
+  int32_t ExecAndWaitForResponseRedirect(const char *path, char* const* args, int stdoutRedirect = -2, int stderrRedirect = -2) {
     pid_t pid = fork();
     if (pid == 0) {
       if (stdoutRedirect == -1) {
         close(STDOUT_FILENO);
       }
-      else if (stdoutRedirect != STDOUT_FILENO) {
-        close(STDOUT_FILENO);
+      else if (stdoutRedirect == -2) {
+        // Do nothing
+      }
+      else {
+        if (stdoutRedirect != STDOUT_FILENO) {
+          close(STDOUT_FILENO);
+        }
         dup2(stdoutRedirect, STDOUT_FILENO);
       }
       if (stderrRedirect == -1) {
         close(STDERR_FILENO);
       }
-      else if (stderrRedirect != STDOUT_FILENO) {
-        close(STDERR_FILENO);
+      else if (stderrRedirect == -2) {
+        // Do nothing
+      }
+      else {
+        if (stderrRedirect != STDOUT_FILENO) {
+          close(STDERR_FILENO);
+        }
         dup2(stderrRedirect, STDERR_FILENO);
       }
       execvp(path, args);
