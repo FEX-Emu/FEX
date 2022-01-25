@@ -69,15 +69,5 @@ namespace FEX::HLE {
       uint64_t Result = ::socketpair(domain, type, protocol, sv);
       SYSCALL_ERRNO();
     });
-
-    REGISTER_SYSCALL_IMPL_PASS(setsockopt, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, int level, int optname, const void *optval, socklen_t optlen) -> uint64_t {
-      uint64_t Result = ::setsockopt(sockfd, level, optname, optval, optlen);
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_PASS(getsockopt, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, int level, int optname, void *optval, socklen_t *optlen) -> uint64_t {
-      uint64_t Result = ::getsockopt(sockfd, level, optname, optval, optlen);
-      SYSCALL_ERRNO();
-    });
   }
 }
