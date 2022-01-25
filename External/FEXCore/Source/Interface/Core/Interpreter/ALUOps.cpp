@@ -38,7 +38,13 @@ DEF_OP(Constant) {
 
 DEF_OP(EntrypointOffset) {
   auto Op = IROp->C<IR::IROp_EntrypointOffset>();
-  GD = Data->CurrentEntry + Op->Offset;
+  uint64_t Mask = ~0ULL;
+  uint8_t OpSize = IROp->Size;
+  if (OpSize == 4) {
+    Mask = 0xFFFF'FFFFULL;
+  }
+
+  GD = (Data->CurrentEntry + Op->Offset) & Mask;
 }
 
 DEF_OP(InlineConstant) {

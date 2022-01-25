@@ -306,7 +306,9 @@
     },
 
     "EntrypointOffset": {
-      "Desc": ["Returns the <entrypoint> + Offset address"],
+      "Desc": ["Returns the <entrypoint> + Offset address",
+               "When the size is 4 bytes then 32-bit overflow and underflow needs to work"
+              ],
       "OpClass": "ALU",
       "HasDest": true,
       "DestClass": "GPR",
@@ -320,7 +322,9 @@
     },
 
     "InlineEntrypointOffset": {
-      "Desc": ["Returns the <entrypoint> + Offset address"],
+      "Desc": ["Returns the <entrypoint> + Offset address",
+               "When the size is 4 bytes then 32-bit overflow and underflow needs to work"
+              ],
       "OpClass": "ALU",
       "DestSize": "RegisterSize",
       "Args": [

@@ -553,7 +553,12 @@ bool X86JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, u
   if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
     auto Op = OpHeader->C<IR::IROp_InlineEntrypointOffset>();
     if (Value) {
-      *Value = Entry + Op->Offset;
+      uint64_t Mask = ~0ULL;
+      uint8_t OpSize = OpHeader->Size;
+      if (OpSize == 4) {
+        Mask = 0xFFFF'FFFFULL;
+      }
+      *Value = (Entry + Op->Offset) & Mask;
     }
     return true;
   } else {

@@ -65,7 +65,13 @@ DEF_OP(EntrypointOffset) {
 
   auto Constant = Entry + Op->Offset;
   auto Dst = GetReg<RA_64>(Node);
-  LoadConstant(Dst, Constant);
+  uint64_t Mask = ~0ULL;
+  uint8_t OpSize = IROp->Size;
+  if (OpSize == 4) {
+    Mask = 0xFFFF'FFFFULL;
+  }
+
+  LoadConstant(Dst, Constant & Mask);
 }
 
 DEF_OP(InlineConstant) {
