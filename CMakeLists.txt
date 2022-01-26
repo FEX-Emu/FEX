@@ -19,6 +19,7 @@ option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
 option(ENABLE_OFFLINE_TELEMETRY "Enables FEX offline telemetry" TRUE)
 option(ENABLE_COMPILE_TIME_TRACE "Enables time trace compile option" FALSE)
 option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
+option(ENABLE_CROSS_COMPILE "Enables cross compile FEX to aarch64 on x86_64" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -54,7 +55,7 @@ else()
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" AND NOT ENABLE_CROSS_COMPILE)
   option(ENABLE_X86_HOST_DEBUG "Enables compiling on x86_64 host" FALSE)
   if (NOT ENABLE_X86_HOST_DEBUG)
     message(FATAL_ERROR
@@ -68,7 +69,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
 endif()
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR ENABLE_CROSS_COMPILE)
   set(_M_ARM_64 1)
   add_definitions(-D_M_ARM_64=1)
 endif()
@@ -585,7 +586,15 @@ else()
   set (CPACK_PACKAGE_NAME fex-emu)
   set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu-static")
 endif()
-set (CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${GIT_DESCRIBE_STRING}_${CMAKE_SYSTEM_PROCESSOR}")
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" AND NOT ENABLE_CROSS_COMPILE)
+  set (CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+endif()
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR ENABLE_CROSS_COMPILE)
+  set (CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
+endif()
+
+set (CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${GIT_DESCRIBE_STRING}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 set (CPACK_PACKAGE_CONTACT "FEX-Emu Maintainers <team@fex-emu.org>")
 set (CPACK_PACKAGE_VERSION_MAJOR "${FEX_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${FEX_VERSION_MINOR}")
@@ -596,7 +605,7 @@ set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/CPack/Descripti
 set (CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libstdc++6, libepoxy0, libsdl2-2.0-0, libegl1, libx11-6, squashfuse")
 set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
   "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm;${CMAKE_CURRENT_SOURCE_DIR}/CPack/triggers")
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR ENABLE_CROSS_COMPILE)
   # binfmt_misc conflicts with qemu-user-static
   # We also only install binfmt_misc on aarch64 hosts
   set (CPACK_DEBIAN_PACKAGE_CONFLICTS "${CPACK_DEBIAN_PACKAGE_CONFLICTS}, qemu-user-static")
