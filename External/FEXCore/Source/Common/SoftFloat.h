@@ -158,15 +158,7 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    X80SoftFloat Rem = extF80_rem(lhs, rhs);
-    if (SignBit(Rem)) {
-      Rem = extF80_add(Rem, rhs);
-    }
-    else {
-      Rem.Sign = SignBit(lhs);
-    }
-
-    return Rem;
+    return extF80_rem(lhs, rhs);
 #endif
   }
 
