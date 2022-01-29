@@ -77,7 +77,7 @@ struct FPRInfo {
 bool IsFPR(uint32_t Offset) {
 
   auto begin = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
-  auto end = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[17][0]);
+  auto end = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
   if (Offset < begin || Offset >= end)
     return false;
