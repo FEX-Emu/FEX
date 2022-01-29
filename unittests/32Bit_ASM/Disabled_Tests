@@ -5,3 +5,6 @@ Test_32Bit_X87/D9_FD.asm
 Test_32Bit_X87/D9_F9.asm
 
 Test_32Bit_X87/D9_F2.asm
+
+# Relies on rounding correctness
+Test_32Bit_X87/D9_F8.asm
