@@ -298,6 +298,63 @@ namespace AES {
   }
 }
 
+namespace CRC32 {
+  // CRC32 per byte lookup table.
+  constexpr std::array<uint32_t, 256> CRC32CTable = []() consteval {
+    std::array<uint32_t, 256> Table{};
+
+    // Clang 11.x doesn't support bitreverse as a consteval
+    // constexpr uint32_t Polynomial = 0x1EDC6F41;
+    constexpr uint32_t PolynomialRev = 0x82F63B78; //__builtin_bitreverse32(Polynomial);
+
+    for (size_t Char = 0; Char < std::size(Table); ++Char) {
+      uint32_t CurrentChar = Char;
+      for (size_t i = 0; i < 8; ++i) {
+        if (CurrentChar & 1) {
+          CurrentChar = (CurrentChar >> 1) ^ PolynomialRev;
+        }
+        else {
+          CurrentChar >>= 1;
+        }
+      }
+      Table[Char] = CurrentChar;
+    }
+
+    return Table;
+  }();
+
+  uint32_t crc32cb(uint32_t Accumulator, uint8_t data) {
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ data] ^ Accumulator >> 8;
+    return Accumulator;
+  }
+
+  uint32_t crc32ch(uint32_t Accumulator, uint16_t data) {
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 0) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 8) & 0xFF)] ^ Accumulator >> 8;
+    return Accumulator;
+  }
+
+  uint32_t crc32cw(uint32_t Accumulator, uint32_t data) {
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >>  0) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >>  8) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 16) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 24) & 0xFF)] ^ Accumulator >> 8;
+    return Accumulator;
+  }
+
+  uint32_t crc32cx(uint32_t Accumulator, uint64_t data) {
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >>  0) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >>  8) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 16) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 24) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 32) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 40) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 48) & 0xFF)] ^ Accumulator >> 8;
+    Accumulator = CRC32CTable[(uint8_t)Accumulator ^ ((data >> 56) & 0xFF)] ^ Accumulator >> 8;
+    return Accumulator;
+  }
+}
+
 namespace FEXCore::CPU {
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 
@@ -426,6 +483,33 @@ DEF_OP(AESKeyGenAssist) {
   Tmp |= Rot_X1 ^ Op->RCON;
   Tmp <<= 32;
   Tmp |= SubWord_X1;
+  memcpy(GDP, &Tmp, sizeof(Tmp));
+}
+
+DEF_OP(CRC32) {
+  auto Op = IROp->C<IR::IROp_CRC32>();
+  uint32_t Src1 = *GetSrc<uint32_t*>(Data->SSAData, Op->Src1);
+  uint8_t *Src2 = GetSrc<uint8_t*>(Data->SSAData, Op->Src2);
+  uint32_t Tmp{};
+
+  switch (Op->SrcSize) {
+    case 1:
+      Tmp = CRC32::crc32cb(Src1, *(uint8_t*)Src2);
+      break;
+    case 2:
+      Tmp = CRC32::crc32ch(Src1, *(uint16_t*)Src2);
+      break;
+    case 4:
+      Tmp = CRC32::crc32cw(Src1, *(uint32_t*)Src2);
+      break;
+    case 8:
+      Tmp = CRC32::crc32cx(Src1, *(uint64_t*)Src2);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown CRC32C size: {}", Op->SrcSize);
+      break;
+
+  }
   memcpy(GDP, &Tmp, sizeof(Tmp));
 }
 
