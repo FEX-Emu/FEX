@@ -45,6 +45,36 @@ DEF_OP(AESKeyGenAssist) {
   vaeskeygenassist(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), Op->RCON);
 }
 
+DEF_OP(CRC32) {
+  auto Op = IROp->C<IR::IROp_CRC32>();
+  switch (IROp->Size) {
+  case 4:
+    mov(TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+  break;
+  case 8:
+    mov(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  break;
+  default: LOGMAN_MSG_A_FMT("Unknown CRC32 size: {}", IROp->Size);
+  }
+
+  switch (Op->SrcSize) {
+    case 1:
+      crc32(GetDst<RA_32>(Node).cvt32(), TMP1.cvt8());
+      break;
+    case 2:
+      crc32(GetDst<RA_32>(Node).cvt32(), TMP1.cvt16());
+      break;
+    case 4:
+      crc32(GetDst<RA_32>(Node).cvt32(), TMP1.cvt32());
+      break;
+    case 8:
+      crc32(GetDst<RA_64>(Node).cvt64(), TMP1.cvt64());
+      break;
+  }
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterEncryptionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -54,7 +84,7 @@ void X86JITCore::RegisterEncryptionHandlers() {
   REGISTER_OP(VAESDEC,     AESDec);
   REGISTER_OP(VAESDECLAST, AESDecLast);
   REGISTER_OP(VAESKEYGENASSIST, AESKeyGenAssist);
-
+  REGISTER_OP(CRC32,             CRC32);
 #undef REGISTER_OP
 }
 }

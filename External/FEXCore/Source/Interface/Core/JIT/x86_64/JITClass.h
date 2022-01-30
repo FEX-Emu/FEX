@@ -434,6 +434,7 @@ private:
   DEF_OP(AESDec);
   DEF_OP(AESDecLast);
   DEF_OP(AESKeyGenAssist);
+  DEF_OP(CRC32);
 #undef DEF_OP
 };
 
