@@ -500,6 +500,8 @@ public:
 
   void MPSADBWOp(OpcodeArgs);
 
+  void CRC32(OpcodeArgs);
+
   void UnimplementedOp(OpcodeArgs);
 
   void InvalidOp(OpcodeArgs);

@@ -98,8 +98,8 @@ void InitializeH0F38Tables() {
     {OPD(PF_38_66, 0xF0), 1, X86InstInfo{"MOVBE",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(PF_38_66, 0xF1), 1, X86InstInfo{"MOVBE",      TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
 
-    {OPD(PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_INST, GenFlagsSizes(SIZE_DEF, SIZE_8BIT) | FLAGS_MODRM, 0, nullptr}},
+    {OPD(PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_INST, FLAGS_MODRM, 0, nullptr}},
 
     {OPD(PF_38_66,   0xF6), 1, X86InstInfo{"ADCX",       TYPE_INST, FLAGS_MODRM, 0, nullptr}},
     {OPD(PF_38_F3,   0xF6), 1, X86InstInfo{"ADOX",       TYPE_INST, FLAGS_MODRM, 0, nullptr}},
