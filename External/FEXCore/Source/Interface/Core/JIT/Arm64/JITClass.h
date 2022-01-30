@@ -305,7 +305,7 @@ private:
   DEF_OP(GetHostFlag);
 
   ///< Memory ops
-    DEF_OP(LoadContext);
+  DEF_OP(LoadContext);
   DEF_OP(StoreContext);
   DEF_OP(LoadRegister);
   DEF_OP(StoreRegister);
@@ -442,6 +442,7 @@ private:
   DEF_OP(AESDec);
   DEF_OP(AESDecLast);
   DEF_OP(AESKeyGenAssist);
+  DEF_OP(CRC32);
 #undef DEF_OP
 };
 
