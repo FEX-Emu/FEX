@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>
@@ -183,7 +184,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   size_t NumberOfPages = length / PAGE_SIZE;
 
   // This needs a mutex to be thread safe
-  std::scoped_lock<std::mutex> lk{AllocationMutex};
+  FHU::ScopedSignalMaskWithMutex lk(AllocationMutex);
 
   uint64_t AllocatedOffset{};
   LiveVMARegion *LiveRegion{};
@@ -442,7 +443,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   }
 
   // This needs a mutex to be thread safe
-  std::scoped_lock<std::mutex> lk{AllocationMutex};
+  FHU::ScopedSignalMaskWithMutex lk(AllocationMutex);
 
   length = FEXCore::AlignUp(length, PAGE_SIZE);
 
@@ -621,8 +622,8 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
 }
 
 OSAllocator_64Bit::~OSAllocator_64Bit() {
-  // For consistency, pull the mutex
-  std::scoped_lock<std::mutex> lk{AllocationMutex};
+  // This needs a mutex to be thread safe
+  FHU::ScopedSignalMaskWithMutex lk(AllocationMutex);
 
   // Walk the pages and deallocate
   // First walk the live regions
