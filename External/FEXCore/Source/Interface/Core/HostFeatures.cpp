@@ -53,6 +53,7 @@ HostFeatures::HostFeatures() {
 #ifdef _M_ARM_64
   auto Features = vixl::CPUFeatures::InferFromOS();
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
+  SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
   // Only supported when FEAT_AFP is supported
   SupportsFlushInputsToZero = Features.Has(vixl::CPUFeatures::Feature::kAFP);
@@ -78,6 +79,7 @@ HostFeatures::HostFeatures() {
 #ifdef _M_X86_64
   Xbyak::util::Cpu Features{};
   SupportsAES = Features.has(Xbyak::util::Cpu::tAESNI);
+  SupportsCRC = Features.has(Xbyak::util::Cpu::tSSE42);
   SupportsFlushInputsToZero = true;
   SupportsFloatExceptions = true;
 #else

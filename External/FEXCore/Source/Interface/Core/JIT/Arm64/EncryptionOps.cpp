@@ -83,6 +83,25 @@ DEF_OP(AESKeyGenAssist) {
   bind(&PastConstant);
 }
 
+DEF_OP(CRC32) {
+  auto Op = IROp->C<IR::IROp_CRC32>();
+  switch (Op->SrcSize) {
+    case 1:
+      crc32cb(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
+      break;
+    case 2:
+      crc32ch(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
+      break;
+    case 4:
+      crc32cw(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
+      break;
+    case 8:
+      crc32cx(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
+      break;
+    default: LOGMAN_MSG_A_FMT("Unknown CRC32 size: {}", Op->SrcSize);
+  }
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterEncryptionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -92,6 +111,7 @@ void Arm64JITCore::RegisterEncryptionHandlers() {
   REGISTER_OP(VAESDEC,     AESDec);
   REGISTER_OP(VAESDECLAST, AESDecLast);
   REGISTER_OP(VAESKEYGENASSIST, AESKeyGenAssist);
+  REGISTER_OP(CRC32,             CRC32);
 #undef REGISTER_OP
 }
 }

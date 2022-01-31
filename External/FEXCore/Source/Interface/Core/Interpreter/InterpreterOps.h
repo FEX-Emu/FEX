@@ -298,6 +298,7 @@ namespace FEXCore::CPU {
   DEF_OP(AESDec);
   DEF_OP(AESDecLast);
   DEF_OP(AESKeyGenAssist);
+  DEF_OP(CRC32);
 
   ///< F80 ops
   DEF_OP(F80LOADFCW);

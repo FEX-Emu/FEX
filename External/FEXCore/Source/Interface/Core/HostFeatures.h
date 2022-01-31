@@ -15,6 +15,7 @@ class HostFeatures final {
     uint32_t DCacheLineSize{};
     uint32_t ICacheLineSize{};
     bool SupportsAES{};
+    bool SupportsCRC{};
     bool SupportsCLZERO{};
     bool SupportsAtomics{};
     bool SupportsRCPC{};

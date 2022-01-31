@@ -5219,6 +5219,17 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   _StoreContext(GPRClass, GPRSize, GPROffset(X86State::REG_RDX), CounterHigh);
 }
 
+void OpDispatchBuilder::CRC32(OpcodeArgs) {
+  // Destination GPR size is always 4 or 8 bytes depending on widening
+  uint8_t DstSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
+  OrderedNode *Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+
+  // Incoming memory is 8, 16, 32, or 64
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+  auto Result = _CRC32(Dest, Src, GetSrcSize(Op));
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
 
@@ -6185,8 +6196,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
     {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
 
-    {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
+    {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
 
     {OPD(PF_38_66, 0xF6), 1, &OpDispatchBuilder::ADXOp},
     {OPD(PF_38_F3, 0xF6), 1, &OpDispatchBuilder::ADXOp},

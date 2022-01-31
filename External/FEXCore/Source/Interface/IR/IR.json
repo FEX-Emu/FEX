@@ -3555,6 +3555,23 @@
       ]
     },
 
+    "CRC32": {
+      "Desc": ["CRC32 using polynomial 0x1EDC6F41"
+              ],
+      "OpClass": "Crypto",
+      "HasDest": true,
+      "DestSize": "std::max<uint8_t>(4, GetOpSize(ssa0))",
+      "DestClass": "GPR",
+      "SSAArgs": "2",
+      "SSANames": [
+        "Src1",
+        "Src2"
+      ],
+      "Args": [
+        "uint8_t", "SrcSize"
+      ]
+    },
+
     "GetHostFlag": {
       "OpClass": "Flags",
       "HasDest": true,
