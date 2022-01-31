@@ -168,6 +168,11 @@ namespace FEX::HLE {
   }
 
   uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
+    // Just before we fork, pull the Filemanagement mutex so it is in a safe state
+    // Locking the mutex will mean that both processes will end up with a locked mutex
+    auto Mutex = FEX::HLE::_SyscallHandler->FM.GetFDLock();
+    Mutex->lock();
+
     pid_t Result{};
     if (flags & CLONE_VFORK) {
       // XXX: We don't currently support a vfork as it causes problems.
@@ -177,6 +182,9 @@ namespace FEX::HLE {
     else {
       Result = fork();
     }
+
+    // Unlock the mutex on both sides of the fork
+    Mutex->unlock();
 
     if (Result == 0) {
       // Child
