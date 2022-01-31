@@ -570,10 +570,10 @@ namespace {
     // Get SRA Reg and Class from a Context offset
     auto GetRegAndClassFromOffset = [](uint32_t Offset) {
         auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
-        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[17]);
+        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
 
         auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
-        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[17][0]);
+        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / 8;
@@ -594,10 +594,10 @@ namespace {
     // Get a StaticMap entry from context offset
     const auto GetStaticMapFromOffset = [&](uint32_t Offset) -> LiveRange** {
         auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
-        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[17]);
+        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
 
         auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
-        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[17][0]);
+        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / 8;

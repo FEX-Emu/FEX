@@ -25,7 +25,7 @@ public:
 
 bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
   const auto begin = offsetof(FEXCore::Core::CPUState, gregs[0]);
-  const auto end = offsetof(FEXCore::Core::CPUState, gregs[17]);
+  const auto end = offsetof(FEXCore::Core::CPUState, gregs[16]);
 
   if (Offset >= begin && Offset < end) {
     const auto reg = (Offset - begin) / 8;
@@ -40,7 +40,7 @@ bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
 
 bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
   const auto begin = offsetof(FEXCore::Core::CPUState, xmm[0][0]);
-  const auto end = offsetof(FEXCore::Core::CPUState, xmm[17][0]);
+  const auto end = offsetof(FEXCore::Core::CPUState, xmm[16][0]);
 
   if (Offset >= begin && Offset < end) {
     const auto reg = (Offset - begin) / 16;
