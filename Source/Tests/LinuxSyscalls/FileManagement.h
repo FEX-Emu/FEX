@@ -65,6 +65,8 @@ public:
 
   std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
 
+  std::mutex *GetFDLock() { return &FDLock; }
+
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
