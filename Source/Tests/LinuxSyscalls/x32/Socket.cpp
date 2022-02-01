@@ -30,6 +30,21 @@ namespace FEXCore::Core {
 namespace FEX::HLE::x32 {
 
 // Some sockopt defines for older build environments
+#ifndef SO_RCVTIMEO_OLD
+#define SO_RCVTIMEO_OLD 20
+#endif
+#ifndef SO_SNDTIMEO_OLD
+#define SO_SNDTIMEO_OLD 21
+#endif
+#ifndef SO_TIMESTAMP_OLD
+#define SO_TIMESTAMP_OLD 29
+#endif
+#ifndef SO_TIMESTAMPNS_OLD
+#define SO_TIMESTAMPNS_OLD 35
+#endif
+#ifndef SO_TIMESTAMPING_OLD
+#define SO_TIMESTAMPING_OLD 37
+#endif
 #ifndef SO_TXTIME
 #define SO_TXTIME 61
 #endif
