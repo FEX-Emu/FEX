@@ -493,9 +493,11 @@ namespace FEXCore::Context {
 
     // Create CPU backend
     switch (Config.Core) {
+#ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
       State->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread);
       break;
+#endif
     case FEXCore::Config::CONFIG_IRJIT:
       State->PassManager->InsertRegisterAllocationPass(DoSRA);
 
