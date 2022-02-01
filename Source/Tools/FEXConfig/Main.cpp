@@ -201,9 +201,10 @@ namespace {
     char EmulatedCPUCores[32]{};
 
     if (ImGui::BeginTabItem("CPU")) {
+      std::optional<std::string*> Value{};
 #ifdef INTERPRETER_ENABLED
       ImGui::Text("Core:");
-      auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CORE);
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CORE);
 
       ImGui::SameLine();
       if (ImGui::RadioButton("Int", Value.has_value() && **Value == "0")) {
