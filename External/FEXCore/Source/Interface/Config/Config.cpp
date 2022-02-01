@@ -434,7 +434,12 @@ namespace JSON {
 #else
       constexpr uint32_t MaxCoreNumber = 1;
 #endif
-      if (Core > MaxCoreNumber) {
+#ifdef INTERPRETER_ENABLED
+      constexpr uint32_t MinCoreNumber = 0;
+#else
+      constexpr uint32_t MinCoreNumber = 1;
+#endif
+      if (Core > MaxCoreNumber || Core < MinCoreNumber) {
         // Sanitize the core option by setting the core to the JIT if invalid
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, std::to_string(FEXCore::Config::CONFIG_IRJIT));
       }

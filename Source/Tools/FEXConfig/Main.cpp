@@ -201,6 +201,7 @@ namespace {
     char EmulatedCPUCores[32]{};
 
     if (ImGui::BeginTabItem("CPU")) {
+#ifdef INTERPRETER_ENABLED
       ImGui::Text("Core:");
       auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CORE);
 
@@ -214,7 +215,7 @@ namespace {
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CORE, "1");
         ConfigChanged = true;
       }
-
+#endif
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MAXINST);
       if (Value.has_value() && !(*Value)->empty()) {
         strncpy(BlockSize, &(*Value)->at(0), 32);
