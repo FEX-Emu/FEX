@@ -373,6 +373,11 @@ int main(int argc, char **argv, char **const envp) {
   auto CTX = FEXCore::Context::CreateNewContext();
   FEXCore::Context::InitializeContext(CTX);
 
+  // We can add named regions immediately after initializing context
+  for(const auto &Section: Loader.Sections) {
+    FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
+  }
+
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
 
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [&SignalDelegation](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
@@ -404,7 +409,6 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
   FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
-  FEXCore::Context::InitCore(CTX, &Loader);
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
@@ -418,41 +422,43 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-  if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
-    LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
-                      "Capture doesn't work with programs that fork.");
-  }
-
-  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
-    return open(filepath.c_str(), O_RDONLY);
-  });
-
-  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
-    if (*AOTWrite) {
-      std::filesystem::resize_file(filepath, 0);
-      AOTWrite->seekp(0);
-      LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
-    } else {
-      LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
+  // AOTIR
+  {
+    if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
+      LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
+                        "Capture doesn't work with programs that fork.");
     }
-    return AOTWrite;
-  });
 
-  FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
-    auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+    FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
-    // Rename the temporary file to atomically update the file
-    std::filesystem::rename(TmpFilepath, NewFilepath);
-  });
+      return open(filepath.c_str(), O_RDONLY);
+    });
 
-  for(const auto &Section: Loader.Sections) {
-    FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
+    FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+      if (*AOTWrite) {
+        std::filesystem::resize_file(filepath, 0);
+        AOTWrite->seekp(0);
+        LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
+      } else {
+        LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
+      }
+      return AOTWrite;
+    });
+
+    FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
+      auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+      auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+
+      // Rename the temporary file to atomically update the file
+      std::filesystem::rename(TmpFilepath, NewFilepath);
+    });
   }
+
+  // InitCore takes some time to initialize, while initializing the code serialization thread can be loading code from the filesystem
+  FEXCore::Context::InitCore(CTX, &Loader);
 
   if (AOTIRGenerate()) {
     for(auto &Section: Loader.Sections) {

@@ -49,7 +49,7 @@ namespace FEXCore::CPU {
     public:
       static void InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData);
       static void FillFallbackIndexPointers(uint64_t *Info);
-      static bool GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info);
+      static bool GetFallbackHandler(const IR::IROp_Header *IROp, FallbackInfo *Info);
 
       struct IROpData {
         FEXCore::Core::InternalThreadState *State{};

@@ -6,13 +6,16 @@
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
+#include <FEXCore/Utils/RefCountMutex.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <shared_mutex>
 #include <unordered_map>
 
 namespace FEXCore {
   class LookupCache;
   class CompileService;
+  class AOTSerializeService;
 }
 
 namespace FEXCore::Context {
@@ -26,6 +29,10 @@ namespace FEXCore::Frontend {
 namespace FEXCore::IR{
   class OpDispatchBuilder;
   class PassManager;
+}
+
+namespace FEXCore::CPU {
+  union Relocation;
 }
 
 namespace FEXCore::Core {
@@ -48,6 +55,7 @@ namespace FEXCore::Core {
   struct DebugData {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     std::vector<DebugDataSubblock> Subblocks;
+    std::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 
   enum class SignalEvent {
@@ -98,6 +106,9 @@ namespace FEXCore::Core {
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
     std::shared_ptr<FEXCore::CompileService> CompileService;
+
+    AOTMutex AOTCodeBlockRefCounter{};
+
     bool IsCompileService{false};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 

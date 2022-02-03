@@ -14,6 +14,9 @@ conformance-interfaces-clock-1-1.test
 conformance-interfaces-clock_gettime-4-1.test
 conformance-interfaces-clock_getcpuclockid-1-1.test
 
+# Takes too long, annoying
+conformance-interfaces-nanosleep-10000-1.test
+
 # These tests fail when run natively on x86-64 host
 conformance-interfaces-clock_getcpuclockid-2-1.test
 conformance-interfaces-mlock-speculative-12-1.test

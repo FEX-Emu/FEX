@@ -38,6 +38,17 @@
           "Number of physical hardware threads to tell the process we have.",
           "0 will auto detect."
         ]
+      },
+      "CacheCodeCompilation": {
+        "Type": "uint32",
+        "Default": "0",
+        "Desc": [
+          "Cache code compilation to drive.",
+          "Allows JIT code to be shared between applications",
+          "0 is off",
+          "1 is read only",
+          "2 is read/write"
+        ]
       }
     },
     "Emulation": {

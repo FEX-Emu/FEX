@@ -357,7 +357,7 @@ namespace FEXCore::IR {
         else {
           // If the IR doesn't need to be retained then we can just delete it now
           delete DebugData;
-          delete RAData;
+          FEXCore::Allocator::free(RAData);
           delete IRList;
         }
       }

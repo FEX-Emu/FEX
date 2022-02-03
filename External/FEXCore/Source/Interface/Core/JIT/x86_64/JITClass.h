@@ -68,6 +68,8 @@ public:
                                   FEXCore::Core::DebugData *DebugData,
                                   FEXCore::IR::RegisterAllocationData *RAData) override;
 
+  [[nodiscard]] void *RelocateJITCode(uint64_t Entry, const void *SerializationData) override;
+
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
@@ -84,6 +86,27 @@ public:
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
 
 private:
+  /**
+   * @name Relocations
+   * @{ */
+
+  void ClearRelocations() { Relocations.clear(); }
+  std::vector<FEXCore::CPU::Relocation> Relocations;
+
+  bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+
+  struct NamedSymbolLiteralPair {
+    Label Offset;
+    Relocation MoveABI{};
+  };
+  NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+  void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
+
+  void InsertGuestRIPMove(Xbyak::Reg Reg, uint64_t Constant);
+
+  uint64_t CursorEntry{};
+  /**  @} */
+
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;

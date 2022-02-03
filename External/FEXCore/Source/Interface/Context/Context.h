@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common/JitSymbols.h"
+#include "Interface/Core/CodeSerialize/CodeSerialize.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -98,6 +99,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
       FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+      FEX_CONFIG_OPT(CacheCodeCompilation, CACHECODECOMPILATION);
     } Config;
 
     using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
@@ -253,13 +255,16 @@ namespace FEXCore::Context {
     void DestroyThread(FEXCore::Core::InternalThreadState *Thread);
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
 
-    void CleanupAfterFork(FEXCore::Core::InternalThreadState *ExceptForThread);
+    void PrepareForExecve(FEXCore::Core::InternalThreadState *Thread);
+    void CleanupAfterExecve(FEXCore::Core::InternalThreadState *Thread);
+    void PrepareForFork(FEXCore::Core::InternalThreadState *Thread);
+    void CleanupAfterFork(FEXCore::Core::InternalThreadState *ExceptForThread, bool Parent);
 
     std::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
 
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
-    void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
+    void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename, bool Executable);
     void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);
 
     FEXCore::JITSymbols Symbols;
@@ -289,6 +294,9 @@ namespace FEXCore::Context {
 
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
+    std::unique_ptr<FEXCore::CodeSerialize::CodeSerializeService> AOTService;
+
+    void NotifyPause();
 
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
@@ -313,8 +321,6 @@ namespace FEXCore::Context {
     void InitializeCompiler(FEXCore::Core::InternalThreadState* State);
 
     void WaitForIdleWithTimeout();
-
-    void NotifyPause();
 
     void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length);
     FEXCore::CodeLoader *LocalLoader{};

@@ -53,12 +53,15 @@ public:
                                   FEXCore::Core::DebugData *DebugData,
                                   FEXCore::IR::RegisterAllocationData *RAData) override;
 
+  [[nodiscard]] void *RelocateJITCode(uint64_t Entry, const void *SerializationData) override;
+
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void ClearCache() override;
 
+  // XXX: max to not need to test cache clearing
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   [[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
 

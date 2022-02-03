@@ -361,12 +361,22 @@ namespace FEX::HarnessHelper {
 
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
   public:
+    struct LoadedSection {
+      uintptr_t Base;
+      size_t Size;
+      off_t Offs;
+      std::string Filename;
+    };
 
-    HarnessCodeLoader(std::string const &Filename, const char *ConfigFilename) {
+    std::vector<LoadedSection> Sections;
+
+    HarnessCodeLoader(std::string const &Filename, const char *ConfigFilename)
+      : Filename {Filename} {
       ReadFile(Filename, &RawFile);
       if (ConfigFilename) {
         Config.Init(ConfigFilename);
       }
+      Sections.emplace_back(LoadedSection{Code_start_page, RawFile.size(), 0, Filename});
     }
 
     uint64_t StackSize() const override {
@@ -453,6 +463,7 @@ namespace FEX::HarnessHelper {
     uint64_t Code_start_page = 0x1'0000;
     uint64_t RIP {};
 
+    std::string Filename{};
     std::vector<char> RawFile;
     ConfigLoader Config;
   };

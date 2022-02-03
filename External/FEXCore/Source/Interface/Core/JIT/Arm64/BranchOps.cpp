@@ -47,9 +47,15 @@ DEF_OP(CallbackReturn) {
 
   // We can now lower the ref counter again
   ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SignalHandlerRefCountPointer)));
-  ldr(w2, MemOperand(x0));
-  sub(w2, w2, 1);
-  str(w2, MemOperand(x0));
+  if (CTX->HostFeatures.SupportsAtomics) {
+    LoadConstant(w1, -1);
+    ldadd(w1, wzr, MemOperand(x0));
+  }
+  else {
+    ldr(w2, MemOperand(x0));
+    sub(w2, w2, 1);
+    str(w2, MemOperand(x0));
+  }
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
@@ -71,29 +77,39 @@ DEF_OP(ExitFunction) {
 
   aarch64::Register RipReg;
   uint64_t NewRIP;
+  bool IsInlineConst = IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP);
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    Literal l_BranchHost{Dispatcher->ExitFunctionLinkerAddress};
+  // XXX: Don't allow block linking with code caching right now
+  if (!CacheCodeCompilation() && IsInlineConst) {
+    auto l_BranchHost = InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER);
+    // XXX: This literal needs relocated
     Literal l_BranchGuest{NewRIP};
 
-    ldr(x0, &l_BranchHost);
+    ldr(x0, &l_BranchHost.Lit);
     blr(x0);
 
-    place(&l_BranchHost);
+    place(&l_BranchHost.Lit);
     place(&l_BranchGuest);
   } else {
-    RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+    if (IsInlineConst) {
+      // If it is an inline const then we need to move it in to a temporary register
+      RipReg = TMP3;
+      InsertGuestRIPMove(RipReg, NewRIP);
+    }
+    else {
+      RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+    }
 
     // L1 Cache
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
 
-    and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
-    add(x0, x0, Operand(x3, Shift::LSL, 4));
+    and_(TMP4, RipReg, LookupCache::L1_ENTRIES_MASK);
+    add(TMP1, TMP1, Operand(TMP4, Shift::LSL, 4));
 
-    ldp(x1, x0, MemOperand(x0));
-    cmp(x0, RipReg);
+    ldp(TMP2, TMP1, MemOperand(TMP1));
+    cmp(TMP1, RipReg);
     b(&FullLookup, Condition::ne);
-    br(x1);
+    br(TMP2);
 
     bind(&FullLookup);
     ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.DispatcherLoopTop)));
@@ -385,8 +401,7 @@ DEF_OP(Thunk) {
 
   mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
 
-  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
-  LoadConstant(x2, (uintptr_t)thunkFn);
+  InsertNamedThunkRelocation(Op->ThunkNameHash, x2);
   blr(x2);
 
   PopDynamicRegsAndLR();

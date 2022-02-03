@@ -113,7 +113,7 @@ static bool IsSupportedByInterpreter(std::string const &Filename) {
   return false;
 }
 
-uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args) {
+uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame *Frame, const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args) {
   std::string Filename{};
 
   std::error_code ec;
@@ -150,6 +150,8 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
     // JRE and shapez.io does this
     Filename = FEX::HLE::_SyscallHandler->Filename();
   }
+
+  FEXCore::Context::PrepareForExecve(Frame->Thread->CTX, Frame->Thread);
 
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
   // Reasoning is that if we try executing a file from FEXLoader then this process loses the ENOEXEC flag
@@ -330,6 +332,11 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   constexpr uint64_t INVALID_FOR_HOST =
     CLONE_SETTLS;
   uint64_t Flags = args->args.flags & ~INVALID_FOR_HOST;
+
+  if (!(Flags & CLONE_THREAD)) {
+    FEXCore::Context::PrepareForFork(Frame->Thread->CTX, Frame->Thread);
+  }
+
   uint64_t Result = ::clone(
     Clone2HandlerRet, // To be called function
     (void*)((uint64_t)Data->NewStack + Data->StackSize), // Stack
@@ -338,6 +345,10 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
     (pid_t*)args->args.parent_tid, // parent_tid
     0, // XXX: What is correct for this? tls
     (pid_t*)args->args.child_tid); // child_tid
+
+  if (!(Flags & CLONE_THREAD)) {
+    FEXCore::Context::CleanupAfterFork(Frame->Thread->CTX, Frame->Thread, true);
+  }
 
   // Only parent will get here
   SYSCALL_ERRNO();
@@ -372,9 +383,17 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   HostArgs.set_tid_size= args->args.set_tid_size;
   HostArgs.cgroup      = args->args.cgroup;
 
+  if (!(HostArgs.flags & CLONE_THREAD)) {
+    FEXCore::Context::PrepareForFork(Frame->Thread->CTX, Frame->Thread);
+  }
+
   // Create a copy of the parent frame
   memcpy(&Data->Data.NewFrame, Frame, sizeof(FEXCore::Core::CpuStateFrame));
   uint64_t Result = ::syscall(SYSCALL_DEF(clone3), &HostArgs, sizeof(HostArgs));
+
+  if (!(HostArgs.flags & CLONE_THREAD)) {
+    FEXCore::Context::CleanupAfterFork(Frame->Thread->CTX, Frame->Thread, true);
+  }
 
   // Only parent will get here
   SYSCALL_ERRNO();

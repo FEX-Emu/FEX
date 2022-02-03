@@ -461,6 +461,32 @@ namespace {
         ConfigChanged = true;
       }
 
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CACHECODECOMPILATION);
+
+      ImGui::Text("Cache JIT code:");
+      int CacheJITCode = 0;
+
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CACHECODECOMPILATION);
+      if (Value.has_value()) {
+        if (**Value == "0") {
+          CacheJITCode = 0;
+        } else if (**Value == "1") {
+          CacheJITCode = 1;
+        } else if (**Value == "2") {
+          CacheJITCode = 2;
+        }
+      }
+
+      bool CacheChanged = false;
+      CacheChanged |= ImGui::RadioButton("Off", &CacheJITCode, FEXCore::Config::CONFIG_SMC_NONE); ImGui::SameLine();
+      CacheChanged |= ImGui::RadioButton("Read-only", &CacheJITCode, FEXCore::Config::CONFIG_SMC_MMAN); ImGui::SameLine();
+      CacheChanged |= ImGui::RadioButton("Read/Write", &CacheJITCode, FEXCore::Config::CONFIG_SMC_FULL);
+
+      if (CacheChanged) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CACHECODECOMPILATION, std::to_string(CacheJITCode));
+        ConfigChanged = true;
+      }
+
       ImGui::EndTabItem();
     }
   }

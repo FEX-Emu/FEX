@@ -78,6 +78,10 @@ set (SRCS
   Common/SoftFloat-3e/s_normSubnormalF32Sig.c
   Common/SoftFloat-3e/s_f32UIToCommonNaN.c
   Interface/Context/Context.cpp
+  Interface/Core/CodeSerialize/CoreInterface.cpp
+  Interface/Core/CodeSerialize/NamedRegionHandling.cpp
+  Interface/Core/CodeSerialize/JobHandling.cpp
+  Interface/Core/CodeSerialize/Serializer.cpp
   Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
   Interface/Core/Core.cpp
@@ -97,6 +101,7 @@ set (SRCS
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64_stubs.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
+  Interface/Core/ArchHelpers/Relocations.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Dispatcher/X86Dispatcher.cpp
   Interface/Core/Dispatcher/Arm64Dispatcher.cpp

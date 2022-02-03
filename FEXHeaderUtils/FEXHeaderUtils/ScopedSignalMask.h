@@ -11,6 +11,27 @@
 #include <unistd.h>
 
 namespace FHU {
+  class ScopedSignalMask final {
+    public:
+
+      ScopedSignalMask(uint64_t Mask = ~0ULL) {
+        // Mask all signals, storing the original incoming mask
+        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &OriginalMask, sizeof(OriginalMask));
+      }
+
+      // No move, copy or assignment possible
+      ScopedSignalMask(const ScopedSignalMask&) = delete;
+      ScopedSignalMask& operator=(ScopedSignalMask&) = delete;
+      ScopedSignalMask(ScopedSignalMask&&rhs) = delete;
+
+      ~ScopedSignalMask() {
+        // Unmask back to the original signal mask
+        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &OriginalMask, nullptr, sizeof(OriginalMask));
+      }
+    private:
+      uint64_t OriginalMask{};
+  };
+
   /**
    * @brief A class that masks signals and locks a mutex until it goes out of scope. It is NOT SAFE to move across threads.
    *

@@ -59,6 +59,9 @@ class LLVMCore;
                                             FEXCore::Core::DebugData *DebugData,
                                             FEXCore::IR::RegisterAllocationData *RAData) = 0;
 
+
+    [[nodiscard]] virtual void *RelocateJITCode(uint64_t Entry, const void *SerializationData) { return nullptr; }
+
     /**
      * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required
      *

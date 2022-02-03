@@ -76,36 +76,46 @@ DEF_OP(ExitFunction) {
   Label FullLookup;
   auto Op = IROp->C<IR::IROp_ExitFunction>();
 
-
   if (SpillSlots) {
     add(rsp, SpillSlots * 16);
   }
 
   uint64_t NewRIP;
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    Label l_BranchHost;
+  bool IsInlineConst = IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP);
+
+  // XXX: Don't allow block linking with code caching right now
+  if (!CTX->Config.CacheCodeCompilation() && IsInlineConst) {
+    auto l_BranchHost = InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER);
+
     Label l_BranchGuest;
 
-    lea(rax, ptr[rip + l_BranchHost]);
-    jmp(qword[rax]);
+    lea(TMP1, ptr[rip + l_BranchHost.Offset]);
+    jmp(qword [TMP1]);
 
-    L(l_BranchHost);
-    dq(Dispatcher->ExitFunctionLinkerAddress);
+    PlaceNamedSymbolLiteral(l_BranchHost);
     L(l_BranchGuest);
     dq(NewRIP);
   } else {
-    Xbyak::Reg RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
+    Xbyak::Reg RipReg;
+    if (IsInlineConst) {
+      // If it is an inline const then we need to move it in to a temporary register
+      RipReg = TMP3;
+      InsertGuestRIPMove(RipReg, NewRIP);
+    }
+    else {
+      RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
+    }
 
     // L1 Cache
-    mov(rcx, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+    mov(TMP2, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
 
-    mov(rax, RipReg);
+    mov(TMP1, RipReg);
 
-    and_(rax, LookupCache::L1_ENTRIES_MASK);
-    shl(rax, 4);
+    and_(TMP1, LookupCache::L1_ENTRIES_MASK);
+    shl(TMP1, 4);
 
-    Xbyak::RegExp LookupBase = rcx + rax;
+    Xbyak::RegExp LookupBase = TMP2 + TMP1;
 
     cmp(qword[LookupBase + 8], RipReg);
     jne(FullLookup);
@@ -217,6 +227,7 @@ DEF_OP(Thunk) {
 
   mov(rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
 
+  // XXX: Thunk relocations
   auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
 
   mov(rax, reinterpret_cast<uintptr_t>(thunkFn));

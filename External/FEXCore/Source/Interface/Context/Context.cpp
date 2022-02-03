@@ -146,8 +146,16 @@ namespace FEXCore::Context {
     CTX->DestroyThread(Thread);
   }
 
-  void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->CleanupAfterFork(Thread);
+  void PrepareForExecve(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->PrepareForExecve(Thread);
+  }
+
+  void PrepareForFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
+    CTX->PrepareForFork(Thread);
+  }
+
+  void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, bool Parent) {
+    CTX->CleanupAfterFork(Thread, Parent);
   }
 
   void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {
@@ -186,8 +194,8 @@ namespace FEXCore::Context {
     CTX->WriteFilesWithCode(Writer);
   }
 
-  void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name) {
-    return CTX->AddNamedRegion(Base, Length, Offset, Name);
+  void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name, bool Executable) {
+    return CTX->AddNamedRegion(Base, Length, Offset, Name, Executable);
   }
   void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length) {
     return CTX->RemoveNamedRegion(Base, Length);

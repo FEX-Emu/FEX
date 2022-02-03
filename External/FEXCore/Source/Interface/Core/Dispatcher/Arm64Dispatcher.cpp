@@ -53,12 +53,19 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   //    Ptr();
   // }
 
+  // Thread Specific Data
   Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
-  Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
-  Literal l_CompileBlock {GetCompileBlockPtr()};
   Literal l_ExitFunctionLink {config.ExitFunctionLink};
   Literal l_ExitFunctionLinkThis {config.ExitFunctionLinkThis};
+
+  // Non-thread specific
+  Literal l_CompileBlock {GetCompileBlockPtr()};
+
+  // Context specific
+  Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
+
+  // Process specific
+  Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -169,6 +176,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
       } else {
         bind(&CallBlock);
         mov(x0, STATE);
+
         blr(x3);
 
         if (CTX->GetGdbServerStatus()) {
@@ -292,7 +300,8 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
     ldr(x0, &l_CTX);
     mov(x1, STATE);
-    ldr(x3, &l_CompileBlock);
+    //ldr(x3, &l_CompileBlock);
+    LoadConstant(x3, GetCompileBlockPtr());
 
     // X2 contains our guest RIP
     blr(x3); // { CTX, Frame, RIP}

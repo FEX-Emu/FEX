@@ -7,12 +7,16 @@
 #include "platform-vixl.h"
 #include "FEXCore/Config/Config.h"
 
+#include "Interface/Core/ArchHelpers/Relocations.h"
+
 #include <array>
 #include <stddef.h>
 #include <stdint.h>
 #include <utility>
+#include <vector>
 
 namespace FEXCore::CPU {
+class Dispatcher;
 using namespace vixl;
 using namespace vixl::aarch64;
 
@@ -60,6 +64,7 @@ class Arm64Emitter : public vixl::aarch64::Assembler {
 protected:
   Arm64Emitter(FEXCore::Context::Context *ctx, size_t size);
 
+  FEXCore::Context::Context *EmitterCTX;
   vixl::aarch64::CPU CPU;
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
   void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
@@ -80,9 +85,44 @@ protected:
   void ResetStack();
   void Align16B();
 
+  /**
+   * @name Relocations
+   * @{ */
+  void ClearRelocations() { Relocations.clear(); }
+  void InsertNamedSymbolRelocation(FEXCore::CPU::RelocNamedSymbolMove::NamedSymbol Op, vixl::aarch64::Register Reg);
+  void InsertNamedThunkRelocation(const IR::SHA256Sum &Sum, vixl::aarch64::Register Reg);
+  void InsertGuestRIPMove(vixl::aarch64::Register Reg, uint64_t Constant);
+
+  uint64_t GetNamedSymbol(FEXCore::CPU::RelocNamedSymbolMove::NamedSymbol Op);
+
+  ///< Relocation code loading
+  bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+
+  struct NamedSymbolLiteralPair {
+    Literal<uint64_t> Lit;
+    Relocation MoveABI{};
+  };
+  NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+  void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
+  std::vector<FEXCore::CPU::Relocation> Relocations;
+  /**  @} */
+
   uint32_t SpillSlots{};
+  struct CompilerSharedData {
+    uint64_t SignalReturnInstruction{};
+    uint64_t UnimplementedInstructionAddress{};
+    uintptr_t L1Pointer{};
+
+    uint32_t *SignalHandlerRefCounterPtr{};
+    FEXCore::CPU::Dispatcher *Dispatcher{};
+  };
+
+  CompilerSharedData ThreadSharedData;
 
   FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
+  FEX_CONFIG_OPT(CacheCodeCompilation, CACHECODECOMPILATION);
+
+  uint64_t GuestEntry{};
 };
 
 }

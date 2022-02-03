@@ -47,7 +47,7 @@ DEF_OP(EntrypointOffset) {
     Mask = 0xFFFF'FFFFULL;
   }
 
-  LoadConstant(Dst, Constant & Mask);
+  InsertGuestRIPMove(Dst, Constant & Mask);
 }
 
 DEF_OP(InlineConstant) {
@@ -1291,7 +1291,6 @@ void Arm64JITCore::RegisterALUHandlers() {
   REGISTER_OP(FLOAT_TOGPR_ZS,    Float_ToGPR_ZS);
   REGISTER_OP(FLOAT_TOGPR_S,     Float_ToGPR_S);
   REGISTER_OP(FCMP,              FCmp);
-
 #undef REGISTER_OP
 }
 

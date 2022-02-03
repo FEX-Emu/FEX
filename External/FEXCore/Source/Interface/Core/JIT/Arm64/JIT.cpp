@@ -12,9 +12,11 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
+#include "Interface/Core/CodeSerialize/CodeSerialize.h"
 
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
+#include "Interface/Core/ArchHelpers/Relocations.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
@@ -739,9 +741,10 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   // X1-X3 = Temp
   // X4-r18 = RA
 
-  auto GuestEntry = GetCursorAddress<uint64_t>();
+  ClearRelocations();
+  GuestEntry = GetCursorAddress<uint64_t>();
 
- if (CTX->GetGdbServerStatus()) {
+  if (CTX->GetGdbServerStatus()) {
     aarch64::Label RunBlock;
 
     // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
@@ -830,6 +833,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(GuestEntry);
+    DebugData->Relocations = &Relocations;
   }
 
   this->IR = nullptr;
@@ -837,10 +841,55 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   return reinterpret_cast<void*>(GuestEntry);
 }
 
+void *Arm64JITCore::RelocateJITCode(uint64_t Entry, const void *_SerializationData) {
+  //AOTLOG("Relocating RIP 0x{:x}", Entry);
+
+  auto SerializationData = reinterpret_cast<const FEXCore::CodeSerialize::FileData::DataSection*>(_SerializationData);
+
+  if ((GetCursorOffset() + SerializationData->Data->HostCodeLength) > CurrentCodeBuffer->Size) {
+    ThreadState->CTX->ClearCodeCache(ThreadState, false);
+  }
+
+  auto CursorBegin = GetCursorOffset();
+  auto HostEntry = GetCursorAddress<uint64_t>();
+
+  // Forward the cursor
+  GetBuffer()->CursorForward(SerializationData->Data->HostCodeLength);
+
+  memcpy(reinterpret_cast<void*>(HostEntry), SerializationData->HostCode, SerializationData->Data->HostCodeLength);
+
+  // Relocation apply messes with the cursor
+  // Save the cursor and restore at the end
+  auto CurrentCursor = GetCursorOffset();
+  bool Result = ApplyRelocations(Entry, HostEntry, CursorBegin, SerializationData->NumRelocations, SerializationData->Relocations);
+
+  if (!Result) {
+    // Reset cursor to the start
+    GetBuffer()->SetCursorOffset(CursorBegin);
+    return nullptr;
+  }
+
+  // We've moved the cursor around with relocations. Move it back to where we were before relocations
+  GetBuffer()->SetCursorOffset(CurrentCursor);
+
+  FinalizeCode();
+
+  auto CodeEnd = GetCursorAddress<uint64_t>();
+  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(HostEntry), CodeEnd - reinterpret_cast<uint64_t>(HostEntry));
+
+  this->IR = nullptr;
+
+  //AOTLOG("\tRelocated JIT at [0x{:x}, 0x{:x}): RIP 0x{:x}", (uint64_t)HostEntry, CodeEnd, Entry);
+  return reinterpret_cast<void*>(HostEntry);
+}
+
 uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
+  // XXX: All of this, thread specific
+  // Depends on emission pattern of the code
+  // Effectively needs to be converted to PIC
   auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
 
   if (!HostCode) {

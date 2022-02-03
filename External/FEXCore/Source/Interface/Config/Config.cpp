@@ -423,6 +423,16 @@ namespace JSON {
       }
     }
 
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CACHECODECOMPILATION)) {
+      FEX_CONFIG_OPT(CacheCodeCompilation, CACHECODECOMPILATION);
+      FEX_CONFIG_OPT(Core, CORE);
+
+      if (CacheCodeCompilation() && Core() == FEXCore::Config::CONFIG_INTERPRETER) {
+        // If running the interpreter then disable cache code compilation
+        FEXCore::Config::Erase(FEXCore::Config::CONFIG_CACHECODECOMPILATION);
+      }
+    }
+
     std::string ContainerPrefix { FindContainerPrefix() };
     auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, std::string PathName) {
       auto NewPath = ExpandPath(ContainerPrefix, PathName);

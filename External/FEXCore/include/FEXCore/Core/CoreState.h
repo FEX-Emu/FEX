@@ -31,7 +31,6 @@ namespace FEXCore::Core {
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
   struct InternalThreadState;
-
   enum FallbackHandlerIndex {
     OPINDEX_F80LOADFCW = 0,
     OPINDEX_F80CVTTO_4,

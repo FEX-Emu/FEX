@@ -144,6 +144,11 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::InitializeContext(CTX);
 
+  // We can add named regions immediately after initializing context
+  for(const auto &Section: Loader.Sections) {
+    FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
+  }
+
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 
   if (Loader.Is64BitMode()) {

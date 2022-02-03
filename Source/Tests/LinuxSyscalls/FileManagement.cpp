@@ -20,6 +20,7 @@ $end_info$
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -298,16 +299,24 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
 
   std::string Path = RootFSPath + pathname;
   if (FollowSymlink) {
-    std::error_code ec;
-    while(std::filesystem::is_symlink(Path, ec)) {
-      auto SymlinkTarget = std::filesystem::read_symlink(Path);
-      if (SymlinkTarget.is_absolute()) {
-        Path = RootFSPath + SymlinkTarget.string();
+    char ReadlinkPath[PATH_MAX + 1];
+    ReadlinkPath[PATH_MAX] = 0;
+    ssize_t Result{};
+    do {
+      Result = readlink(Path.c_str(), ReadlinkPath, PATH_MAX);
+      if (Result > 0) {
+        // Null terminate
+        ReadlinkPath[Result] = 0;
+
+        if (ReadlinkPath[0] == '/') {
+          Path = RootFSPath + std::string(ReadlinkPath);
+        }
+        else {
+          // Not absolute, leave now
+          break;
+        }
       }
-      else {
-        break;
-      }
-    }
+    } while (Result > 0);
   }
   return Path;
 }

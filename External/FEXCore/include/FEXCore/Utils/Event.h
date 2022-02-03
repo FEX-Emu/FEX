@@ -3,13 +3,14 @@
 #include <condition_variable>
 #include <mutex>
 
-class Event final {
-private:
 /**
  * @brief Literally just an atomic bool that we are using for this class
  */
 class Flag final {
-public:
+protected:
+  friend class Event;
+  friend class LatchEvent;
+
   bool TestAndSet(bool SetValue = true) {
     bool Expected = !SetValue;
     return Value.compare_exchange_strong(Expected, SetValue);
@@ -19,14 +20,30 @@ public:
     return TestAndSet(false);
   }
 
+  bool Test() const {
+    return Value.load();
+  }
+
+  void Set() {
+    Value = true;
+  }
+
 private:
   std::atomic_bool Value {false};
 };
 
+
+class Event final {
+private:
 public:
   ~Event() {
     NotifyAll();
   }
+
+  bool Test() const {
+    return FlagObject.Test();
+  }
+
   void NotifyOne() {
     if (FlagObject.TestAndSet()) {
       std::lock_guard<std::mutex> lk(MutexObject);
@@ -59,6 +76,49 @@ public:
     std::unique_lock<std::mutex> lk(MutexObject);
     bool DidSignal = CondObject.wait_for(lk, time, [this]{ return FlagObject.TestAndClear(); });
     return DidSignal;
+  }
+
+  void Lock() {
+    do {
+      FlagObject.TestAndSet();
+      CondObject.notify_all();
+    } while (!MutexObject.try_lock());
+  }
+
+  void Unlock() {
+    MutexObject.unlock();
+    FlagObject.TestAndSet();
+    CondObject.notify_all();
+  }
+
+private:
+  Flag FlagObject;
+  std::mutex MutexObject;
+  std::condition_variable CondObject;
+};
+
+/**
+ * @brief Once this event is latched then it never resets
+ */
+class LatchEvent final {
+public:
+
+  bool Test() const {
+    return FlagObject.Test();
+  }
+
+  void NotifyAll() {
+    if (!FlagObject.Test()) {
+      FlagObject.Set();
+      CondObject.notify_all();
+    }
+  }
+
+  void Wait() {
+    if (FlagObject.Test()) return;
+
+    std::unique_lock<std::mutex> lk(MutexObject);
+    CondObject.wait(lk, [this]{ return FlagObject.Test(); });
   }
 
 private:

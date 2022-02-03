@@ -130,7 +130,7 @@ namespace FEX::HLE {
       // If we don't have CLONE_THREAD then we are effectively a fork
       // Clear all the other threads that are being tracked
       // Frame->Thread is /ONLY/ safe to access when CLONE_THREAD flag is not set
-      FEXCore::Context::CleanupAfterFork(CTX, Frame->Thread);
+      FEXCore::Context::CleanupAfterFork(CTX, Frame->Thread, false);
 
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBX] = 0;
@@ -176,6 +176,9 @@ namespace FEX::HLE {
     auto Mutex = FEX::HLE::_SyscallHandler->FM.GetFDLock();
     Mutex->lock();
 
+    // Tell core that we are forking
+    FEXCore::Context::PrepareForFork(Thread->CTX, Frame->Thread);
+
     pid_t Result{};
     if (flags & CLONE_VFORK) {
       // XXX: We don't currently support a vfork as it causes problems.
@@ -198,7 +201,7 @@ namespace FEX::HLE {
       Thread->ThreadManager.clear_child_tid = nullptr;
 
       // Clear all the other threads that are being tracked
-      FEXCore::Context::CleanupAfterFork(Thread->CTX, Frame->Thread);
+      FEXCore::Context::CleanupAfterFork(Thread->CTX, Frame->Thread, false);
 
       // only a  single thread running so no need to remove anything from the thread array
 
@@ -239,6 +242,9 @@ namespace FEX::HLE {
       // the rest of the context remains as is, this thread will keep executing
       return 0;
     } else {
+      // Do any cleanups on parent as well
+      FEXCore::Context::CleanupAfterFork(Thread->CTX, Frame->Thread, true);
+
       if (Result != -1) {
         if (flags & CLONE_PARENT_SETTID) {
           *parent_tid = Result;

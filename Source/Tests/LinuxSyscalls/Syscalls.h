@@ -77,7 +77,7 @@ struct ExecveAtArgs {
   int flags;
 };
 
-uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args);
+uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame *Frame, const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:

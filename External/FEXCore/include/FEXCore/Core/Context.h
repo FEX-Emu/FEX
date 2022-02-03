@@ -230,13 +230,16 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  FEX_DEFAULT_VISIBILITY void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void PrepareForExecve(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void CleanupAfterExecve(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void PrepareForFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, bool Parent);
   FEX_DEFAULT_VISIBILITY void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation);
   FEX_DEFAULT_VISIBILITY void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler);
   FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf);
   FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf, uint32_t CPU);
 
-  FEX_DEFAULT_VISIBILITY void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name);
+  FEX_DEFAULT_VISIBILITY void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name, bool Executable = false);
   FEX_DEFAULT_VISIBILITY void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
   FEX_DEFAULT_VISIBILITY void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
   FEX_DEFAULT_VISIBILITY void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter);

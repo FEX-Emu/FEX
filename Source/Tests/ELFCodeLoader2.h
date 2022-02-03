@@ -33,6 +33,19 @@
 #define PAGE_ALIGN(x) (((x) + 4095) & ~(uintptr_t)(4095))
 
 class ELFCodeLoader2 final : public FEXCore::CodeLoader {
+  public:
+    struct LoadedSection {
+      uintptr_t ElfBase;
+      uintptr_t Base;
+      size_t Size;
+      off_t Offs;
+      std::string Filename;
+      bool Executable;
+    };
+
+    std::vector<LoadedSection> Sections;
+  private:
+
   ELFParser MainElf;
   ELFParser InterpElf;
 
@@ -64,7 +77,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   template<typename T>
-  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags, T Mapper) {
+  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags, T Mapper, std::vector<LoadedSection> *SectionArray) {
 
     auto addr = Base + PAGE_START(Header.p_vaddr);
     auto size = Header.p_filesz + PAGE_OFFSET(Header.p_vaddr);
@@ -85,7 +98,13 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       return false;
     } else {
       auto Filename = get_fdpath(file.fd);
-      Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
+      if ((prot & PROT_EXEC) != 0) {
+        // Push executable sections to the front
+        SectionArray->insert(SectionArray->begin(), {Base, (uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
+      }
+      else {
+        SectionArray->push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
+      }
 
       return true;
     }
@@ -107,7 +126,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   template <typename TMap, typename TUnmap>
-  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper) {
+  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper, std::vector<LoadedSection> *SectionArray) {
 
     uintptr_t LoadBase = 0;
 
@@ -139,7 +158,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 			int MapProt = MapFlags(Header);
       int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED_NOREPLACE;
 
-			if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper)) {
+			if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper, SectionArray)) {
         return {};
       }
 
@@ -203,16 +222,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return RootFSLink;
   }
 
-  struct LoadedSection {
-    uintptr_t ElfBase;
-    uintptr_t Base;
-    size_t Size;
-    off_t Offs;
-    std::string Filename;
-    bool Executable;
-  };
-
-  std::vector<LoadedSection> Sections;
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
@@ -359,12 +368,14 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
 
     // load the main elf
+    std::vector<LoadedSection> ELFSections;
+    std::vector<LoadedSection> InterpreterSections;
 
     uintptr_t BrkBase = 0;
 
     uintptr_t LoadBase = 0;
 
-    if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper)) {
+    if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper, &ELFSections)) {
       LoadBase = *elf;
       if (MainElf.ehdr.e_type == ET_DYN) {
         BaseOffset = LoadBase;
@@ -388,7 +399,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     if (!MainElf.InterpreterElf.empty()) {
       uint64_t InterpLoadBase = 0;
-      if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper)) {
+      if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper, &InterpreterSections)) {
         InterpLoadBase = *elf;
       } else {
         LogMan::Msg::EFmt("Failed to load interpreter elf file");
@@ -401,6 +412,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       InterpeterElfBase = 0;
       Entrypoint = MainElfEntrypoint;
     }
+
+    // Add the interpreter sections first then the main ELF sections
+    // This ensures that our code caching loads interpreter first, which is where code entry will be
+    Sections.insert(Sections.end(), InterpreterSections.begin(), InterpreterSections.end());
+    Sections.insert(Sections.end(), ELFSections.begin(), ELFSections.end());
 
     // All done
 

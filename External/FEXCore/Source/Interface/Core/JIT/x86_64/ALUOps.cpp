@@ -51,7 +51,7 @@ DEF_OP(EntrypointOffset) {
     Mask = 0xFFFF'FFFFULL;
   }
 
-  mov(GetDst<RA_64>(Node), Constant & Mask);
+  InsertGuestRIPMove(GetDst<RA_64>(Node), Constant & Mask);
 }
 
 DEF_OP(InlineConstant) {

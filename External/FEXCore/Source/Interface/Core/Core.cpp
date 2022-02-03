@@ -7,6 +7,7 @@ desc: Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispa
 $end_info$
 */
 
+#include "FEXHeaderUtils/ScopedSignalMask.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Core.h"
@@ -146,10 +147,17 @@ namespace FEXCore::Context {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
+
+    if (Config.CacheCodeCompilation) {
+      AOTService = std::make_unique<FEXCore::CodeSerialize::CodeSerializeService>(this);
+    }
   }
 
   Context::~Context() {
     {
+      if (AOTService) {
+        AOTService->Shutdown();
+      }
       for (auto &Thread : Threads) {
         if (Thread->ExecutionThread->joinable()) {
           Thread->ExecutionThread->join(nullptr);
@@ -580,46 +588,81 @@ namespace FEXCore::Context {
       // To be able to delete a thread from itself, we need to detached the std::thread object
       Thread->ExecutionThread->detach();
     }
+
     delete Thread;
   }
 
-  void Context::CleanupAfterFork(FEXCore::Core::InternalThreadState *LiveThread) {
+  void Context::PrepareForExecve(FEXCore::Core::InternalThreadState *Thread) {
+    if (AOTService) {
+      AOTService->PrepareForExecve(Thread);
+    }
+  }
+
+  void Context::CleanupAfterExecve(FEXCore::Core::InternalThreadState *Thread) {
+    if (AOTService) {
+      AOTService->CleanupAfterExecve(Thread);
+    }
+  }
+
+  void Context::PrepareForFork(FEXCore::Core::InternalThreadState *Thread) {
+    if (AOTService) {
+      AOTService->PrepareForFork(Thread);
+    }
+  }
+
+  void Context::CleanupAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Parent) {
     // This function is called after fork
     // We need to cleanup some of the thread data that is dead
-    for (auto &DeadThread : Threads) {
-      if (DeadThread == LiveThread) {
-        continue;
+    if (!Parent) {
+      for (auto &DeadThread : Threads) {
+        if (DeadThread == LiveThread) {
+          continue;
+        }
+
+        // Setting running to false ensures that when they are shutdown we won't send signals to kill them
+        DeadThread->RunningEvents.Running = false;
+
+        // Despite what google searches may susgest, glibc actually has special code to handle forks
+        // with multiple active threads.
+        // It cleans up the stacks of dead threads and marks them as terminated.
+        // It also cleans up a bunch of internal mutexes.
+
+        // FIXME: TLS is probally still alive. Investigate
+
+        // Deconstructing the Interneal thread state should clean up most of the state.
+        // But if anything on the now deleted stack is holding a refrence to the heap, it will be leaked
+        delete DeadThread;
+
+        // FIXME: Make sure sure nothing gets leaked via the heap. Ideas:
+        //         * Make sure nothing is allocated on the heap without ref in InternalThreadState
+        //         * Surround any code that heap allocates with a per-thread mutex.
+        //           Before forking, the the forking thread can lock all thread mutexes.
       }
 
-      // Setting running to false ensures that when they are shutdown we won't send signals to kill them
-      DeadThread->RunningEvents.Running = false;
+      // Remove all threads but the live thread from Threads
+      Threads.clear();
+      Threads.push_back(LiveThread);
 
-      // Despite what google searches may susgest, glibc actually has special code to handle forks
-      // with multiple active threads.
-      // It cleans up the stacks of dead threads and marks them as terminated.
-      // It also cleans up a bunch of internal mutexes.
+      // We now only have one thread
+      IdleWaitRefCount = 1;
 
-      // FIXME: TLS is probally still alive. Investigate
+      // Clean up dead stacks
+      FEXCore::Threads::Thread::CleanupAfterFork();
 
-      // Deconstructing the Interneal thread state should clean up most of the state.
-      // But if anything on the now deleted stack is holding a refrence to the heap, it will be leaked
-      delete DeadThread;
+      // Clean up dead stacks
+      FEXCore::Threads::Thread::CleanupAfterFork();
 
-      // FIXME: Make sure sure nothing gets leaked via the heap. Ideas:
-      //         * Make sure nothing is allocated on the heap without ref in InternalThreadState
-      //         * Surround any code that heap allocates with a per-thread mutex.
-      //           Before forking, the the forking thread can lock all thread mutexes.
+      // Remove the AOTService, Forks don't enjoy this benefit
+      if (AOTService) {
+        AOTService->CleanupAfterFork(LiveThread, Parent);
+        AOTService.reset();
+      }
     }
-
-    // Remove all threads but the live thread from Threads
-    Threads.clear();
-    Threads.push_back(LiveThread);
-
-    // We now only have one thread
-    IdleWaitRefCount = 1;
-
-    // Clean up dead stacks
-    FEXCore::Threads::Thread::CleanupAfterFork();
+    else {
+      if (AOTService) {
+        AOTService->CleanupAfterFork(LiveThread, Parent);
+      }
+    }
   }
 
   void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
@@ -628,6 +671,7 @@ namespace FEXCore::Context {
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+    FEXCore::Utils::RefCountLockUnique lk2(Thread->AOTCodeBlockRefCounter);
 
     Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
@@ -866,6 +910,25 @@ namespace FEXCore::Context {
       GeneratedIR = false;
     }
 
+    // AOT Code cache lookup
+    if (AOTService) {
+      auto CodeCache = AOTService->PreGenerateCodeFetch(GuestRIP);
+      if (CodeCache) {
+        auto CompiledCode = Thread->CPUBackend->RelocateJITCode(GuestRIP, CodeCache);
+        if (CompiledCode) {
+          return {
+            .CompiledCode = CompiledCode,
+            .IRData = nullptr,
+            .DebugData = nullptr,
+            .RAData = nullptr,
+            .GeneratedIR = false,
+            .StartAddr = StartAddr,
+            .Length = Length,
+          };
+        }
+      }
+    }
+
     // AOT IR bookkeeping and cache
     {
       auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(GuestRIP, IRList);
@@ -967,6 +1030,24 @@ namespace FEXCore::Context {
       }
     }
 
+    if (AOTService &&
+        Config.CacheCodeCompilation == 2 &&
+        DebugData) {
+      AOTService->AddSerializeJob(std::make_unique<CodeSerialize::CodeSerializeService::AOTData>(
+        CodeSerialize::CodeSerializeService::AOTData{
+          .GuestRIP = GuestRIP,
+          .HostCodeBegin = CodePtr,
+          .HostCodeLength = DebugData->HostCodeSize,
+          .HostCodeHash = 0,
+          .GuestCodeLength = Length,
+          .ThreadRefCountAOT = &Thread->AOTCodeBlockRefCounter,
+          .GuestCodeHash = 0,
+          .Relocations = *DebugData->Relocations,
+        }
+      ));
+    }
+
+    bool EarlyExit = false;
     if (IRCaptureCache.PostCompileCode(
         Thread,
         CodePtr,
@@ -978,6 +1059,10 @@ namespace FEXCore::Context {
         DebugData,
         GeneratedIR)) {
       // Early exit
+      EarlyExit = true;
+    }
+
+    if (EarlyExit) {
       return (uintptr_t)CodePtr;
     }
 
@@ -1013,6 +1098,11 @@ namespace FEXCore::Context {
       Thread->CPUBackend->ExecuteDispatch(Thread->CurrentFrame);
 
       Thread->RunningEvents.Running = false;
+    }
+
+    {
+      // Wait for the serialization thread to consume all the work
+      FEXCore::Utils::RefCountLockUnique lk(Thread->AOTCodeBlockRefCounter);
     }
 
     // If it is the parent thread that died then just leave
@@ -1116,17 +1206,32 @@ namespace FEXCore::Context {
     return Result;
   }
 
-  void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
+  void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename, bool Executable) {
+    // Block signals until we leave
+    // We absolutely can not be interrupted while doing this
+    FHU::ScopedSignalMask SignalMask;
+
     IRCaptureCache.AddNamedRegion(Base, Size, Offset, filename);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
     }
+
+    if (AOTService) {
+      AOTService->AddNamedRegionJob(Base, Size, Offset, filename, Executable);
+    }
   }
 
   void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
+    // Block signals until we leave
+    // We absolutely can not be interrupted while doing this
+    FHU::ScopedSignalMask SignalMask;
+
     IRCaptureCache.RemoveNamedRegion(Base, Size);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
+    }
+    if (AOTService) {
+      AOTService->RemoveNamedRegionJob(Base, Size);
     }
   }
 

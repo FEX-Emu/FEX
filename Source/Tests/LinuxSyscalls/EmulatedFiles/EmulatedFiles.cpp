@@ -45,7 +45,7 @@ namespace FEX::EmulatedFile {
    * @return A temporary file that we can use
    */
   static int GenTmpFD() {
-    int fd = open("/tmp", O_RDWR | O_TMPFILE | O_EXCL |  S_IRUSR | S_IWUSR);
+    int fd = open("/tmp", O_RDWR | O_TMPFILE | O_EXCL, S_IRUSR | S_IWUSR);
     return fd;
   }
 

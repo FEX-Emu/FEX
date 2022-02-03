@@ -62,7 +62,6 @@ DEF_OP(Break) {
 
       ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.UnimplementedInstructionHandler)));
       br(TMP1);
-
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Break reason: {}", Op->Reason);

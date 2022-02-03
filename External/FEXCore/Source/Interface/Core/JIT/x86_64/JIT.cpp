@@ -7,6 +7,7 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
+#include "Interface/Core/CodeSerialize/CodeSerialize.h"
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
@@ -649,6 +650,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   }
 
 	void *GuestEntry = getCurr<void*>();
+  CursorEntry = getSize();
   this->IR = IR;
 
   if (CTX->GetGdbServerStatus()) {
@@ -673,6 +675,8 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   LOGMAN_THROW_A_FMT(RAData != nullptr, "Needs RA");
 
   SpillSlots = RAData->SpillSlots();
+
+  ClearRelocations();
 
   if (SpillSlots) {
     sub(rsp, SpillSlots * 16);
@@ -801,8 +805,139 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
 
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(GuestExit) - reinterpret_cast<uintptr_t>(GuestEntry);
+    DebugData->Relocations = &Relocations;
   }
   return GuestEntry;
+}
+
+void *X86JITCore::RelocateJITCode(uint64_t Entry, const void *_SerializationData) {
+  AOTLOG("Relocating RIP 0x{:x}", Entry);
+
+  auto SerializationData = reinterpret_cast<const FEXCore::CodeSerialize::FileData::DataSection*>(_SerializationData);
+
+  if ((getSize() + SerializationData->Data->HostCodeLength) > CurrentCodeBuffer->Size) {
+    ThreadState->CTX->ClearCodeCache(ThreadState, false);
+  }
+
+  auto CursorBegin = getSize();
+	auto HostEntry = getCurr<uint64_t>();
+  AOTLOG("RIP Entry: disas 0x{:x},+{}", HostEntry, SerializationData->Data->HostCodeLength);
+
+  // Forward the cursor
+  setSize(CursorBegin + SerializationData->Data->HostCodeLength);
+
+  memcpy(reinterpret_cast<void*>(HostEntry), SerializationData->HostCode, SerializationData->Data->HostCodeLength);
+
+  // Relocation apply messes with the cursor
+  // Save the cursor and restore at the end
+  auto NewCursor = getSize();
+  bool Result = ApplyRelocations(Entry, HostEntry, CursorBegin, SerializationData->NumRelocations, SerializationData->Relocations);
+
+  if (!Result) {
+    // Reset cursor to the start
+    setSize(CursorBegin);
+    return nullptr;
+  }
+
+  // We've moved the cursor around with relocations. Move it back to where we were before relocations
+  setSize(NewCursor);
+
+  ready();
+
+  this->IR = nullptr;
+
+  //AOTLOG("\tRelocated JIT at [0x{:x}, 0x{:x}): RIP 0x{:x}", (uint64_t)HostEntry, CodeEnd, Entry);
+  return reinterpret_cast<void*>(HostEntry);
+}
+
+bool X86JITCore::ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations) {
+  size_t DataIndex{};
+  for (size_t j = 0; j < NumRelocations; ++j) {
+    const FEXCore::CPU::Relocation *Reloc = reinterpret_cast<const FEXCore::CPU::Relocation *>(&EntryRelocations[DataIndex]);
+
+    switch (Reloc->Header.Type) {
+      case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_MOVE: {
+        ERROR_AND_DIE_FMT("1");
+        DataIndex += sizeof(Reloc->NamedSymbolMove);
+        break;
+      }
+      case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL:
+        ERROR_AND_DIE_FMT("2");
+        DataIndex += sizeof(Reloc->NamedSymbolLiteral);
+        break;
+      case FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE:
+        ERROR_AND_DIE_FMT("3");
+        DataIndex += sizeof(Reloc->NamedThunkMove);
+        break;
+      case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE:
+        uint64_t Pointer = CTX->AOTService->FindRelocatedRIP(Reloc->GuestRIPMove.GuestRIP);
+
+        if (Pointer == ~0ULL) {
+          return false;
+        }
+
+        // Relocation occurs at the cursorEntry + offset relative to that cursor.
+        setSize(CursorEntry + Reloc->GuestRIPMove.Offset);
+        mov64(Xbyak::Reg64(Reloc->GuestRIPMove.RegisterIndex), Pointer);
+        DataIndex += sizeof(Reloc->GuestRIPMove);
+        break;
+    }
+  }
+
+  return true;
+}
+
+X86JITCore::NamedSymbolLiteralPair X86JITCore::InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op) {
+  NamedSymbolLiteralPair Lit {
+    .MoveABI = {
+      .NamedSymbolLiteral = {
+        .Header = {
+          .Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL,
+        },
+        .Symbol = Op,
+        .Offset = 0,
+      },
+    },
+  };
+  return Lit;
+}
+
+void X86JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit) {
+  // Offset is the offset from the entrypoint of the block
+  auto CurrentCursor = getSize();
+  Lit.MoveABI.NamedSymbolLiteral.Offset = CurrentCursor - CursorEntry;
+
+  uint64_t Pointer{};
+  switch (Lit.MoveABI.NamedSymbolLiteral.Symbol) {
+    case FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER:
+      Pointer = Dispatcher->ExitFunctionLinkerAddress;
+    break;
+    default: ERROR_AND_DIE_FMT("Unknown named symbol: {}", (uint64_t)Lit.MoveABI.NamedSymbolLiteral.Symbol);
+  }
+
+  L(Lit.Offset);
+  dq(Pointer);
+  Relocations.emplace_back(Lit.MoveABI);
+}
+
+void X86JITCore::InsertGuestRIPMove(Xbyak::Reg Reg, uint64_t Constant) {
+  Relocation MoveABI{};
+  MoveABI.GuestRIPMove.Header.Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE;
+
+  // Offset is the offset from the entrypoint of the block
+  auto CurrentCursor = getSize();
+  MoveABI.GuestRIPMove.Offset = CurrentCursor - CursorEntry;
+  MoveABI.GuestRIPMove.GuestRIP = Constant;
+  MoveABI.GuestRIPMove.RegisterIndex = Reg.getIdx();
+
+  if (CTX->Config.CacheCodeCompilation()) {
+    mov64(Reg, Constant);
+  }
+  else {
+    mov(Reg, Constant);
+  }
+
+  Relocations.emplace_back(MoveABI);
 }
 
 uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
