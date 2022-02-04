@@ -880,20 +880,19 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       }
       case 0x38: { // F38 Table!
         constexpr uint16_t PF_38_NONE = 0;
-        constexpr uint16_t PF_38_66 = 1;
-        constexpr uint16_t PF_38_F2 = 2;
-        constexpr uint16_t PF_38_F3 = 3;
+        constexpr uint16_t PF_38_66   = (1U << 0);
+        constexpr uint16_t PF_38_F2   = (1U << 1);
+        constexpr uint16_t PF_38_F3   = (1U << 2);
 
         uint16_t Prefix = PF_38_NONE;
-        if (DecodeInst->LastEscapePrefix == 0xF2) {
-          // Repeat prefix or instruction-specific
-          Prefix = PF_38_F2;
-        } else if (DecodeInst->LastEscapePrefix == 0xF3) {
-          // Repeat prefix or instruction-specific
-          Prefix = PF_38_F3;
-        } else if (DecodeInst->LastEscapePrefix == 0x66) {
-          // Operand size
-          Prefix = PF_38_66;
+        if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE) {
+          Prefix |= PF_38_66;
+        }
+        if (DecodeInst->Flags & DecodeFlags::FLAG_REPNE_PREFIX) {
+          Prefix |= PF_38_F2;
+        }
+        if (DecodeInst->Flags & DecodeFlags::FLAG_REP_PREFIX) {
+          Prefix |= PF_38_F3;
         }
 
         uint16_t LocalOp = (Prefix << 8) | ReadByte();

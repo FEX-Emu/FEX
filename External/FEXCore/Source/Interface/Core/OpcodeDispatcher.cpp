@@ -6119,11 +6119,11 @@ constexpr uint16_t PF_F2 = 3;
 #undef OPD
 #undef OPDReg
 
-#define OPD(prefix, opcode) ((prefix << 8) | opcode)
+#define OPD(prefix, opcode) (((prefix) << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
-  constexpr uint16_t PF_38_66   = 1;
-  constexpr uint16_t PF_38_F2   = 2;
-  constexpr uint16_t PF_38_F3   = 3;
+  constexpr uint16_t PF_38_66   = (1U << 0);
+  constexpr uint16_t PF_38_F2   = (1U << 1);
+  constexpr uint16_t PF_38_F3   = (1U << 2);
 
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38Table[] = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
@@ -6199,6 +6199,9 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
     {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
+
+    {OPD(PF_38_66 | PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
+    {OPD(PF_38_66 | PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
 
     {OPD(PF_38_66, 0xF6), 1, &OpDispatchBuilder::ADXOp},
     {OPD(PF_38_F3, 0xF6), 1, &OpDispatchBuilder::ADXOp},

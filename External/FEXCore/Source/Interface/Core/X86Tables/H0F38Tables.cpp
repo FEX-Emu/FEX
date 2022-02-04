@@ -14,11 +14,11 @@ namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
 void InitializeH0F38Tables() {
-#define OPD(prefix, opcode) ((prefix << 8) | opcode)
+#define OPD(prefix, opcode) (((prefix) << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
-  constexpr uint16_t PF_38_66   = 1;
-  constexpr uint16_t PF_38_F2   = 2;
-  constexpr uint16_t PF_38_F3   = 3;
+  constexpr uint16_t PF_38_66   = (1U << 0);
+  constexpr uint16_t PF_38_F2   = (1U << 1);
+  constexpr uint16_t PF_38_F3   = (1U << 2);
 
   static constexpr U16U8InfoStruct H0F38Table[] = {
     {OPD(PF_38_NONE, 0x00), 1, X86InstInfo{"PSHUFB",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT)  | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0, nullptr}},
@@ -101,6 +101,8 @@ void InitializeH0F38Tables() {
 
     {OPD(PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_INST, GenFlagsSizes(SIZE_DEF, SIZE_8BIT) | FLAGS_MODRM, 0, nullptr}},
     {OPD(PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_INST, FLAGS_MODRM, 0, nullptr}},
+    {OPD(PF_38_66 | PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_INST, GenFlagsSizes(SIZE_DEF, SIZE_8BIT) | FLAGS_MODRM, 0, nullptr}},
+    {OPD(PF_38_66 | PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_INST, FLAGS_MODRM, 0, nullptr}},
 
     {OPD(PF_38_66,   0xF6), 1, X86InstInfo{"ADCX",       TYPE_INST, FLAGS_MODRM, 0, nullptr}},
     {OPD(PF_38_F3,   0xF6), 1, X86InstInfo{"ADOX",       TYPE_INST, FLAGS_MODRM, 0, nullptr}},

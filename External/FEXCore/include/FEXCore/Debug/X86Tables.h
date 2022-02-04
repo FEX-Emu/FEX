@@ -468,7 +468,7 @@ constexpr size_t MAX_INST_GROUP_TABLE_SIZE = 512;
 constexpr size_t MAX_INST_SECOND_GROUP_TABLE_SIZE = 512;
 constexpr size_t MAX_X87_TABLE_SIZE = 1 << 11;
 constexpr size_t MAX_SECOND_MODRM_TABLE_SIZE = 32;
-// 3 prefixes | 8 bit opcode
+// (3 bit prefixes) | 8 bit opcode
 constexpr size_t MAX_0F_38_TABLE_SIZE = (1 << 11);
 // 1 REX | 1 prefixes | 8 bit opcode
 constexpr size_t MAX_0F_3A_TABLE_SIZE = (1 << 11);
