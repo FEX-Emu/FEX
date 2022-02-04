@@ -6176,6 +6176,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x33), 1, &OpDispatchBuilder::ExtendVectorElements<2, 4, false>},
     {OPD(PF_38_66,   0x34), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, false>},
     {OPD(PF_38_66,   0x35), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, false>},
+    {OPD(PF_38_66,   0x37), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 8>},
     {OPD(PF_38_66,   0x38), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 1>},
     {OPD(PF_38_66,   0x39), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 4>},
     {OPD(PF_38_66,   0x3A), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 2>},
