@@ -14,6 +14,7 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
+#include <fmt/format.h>
 #include <map>
 #include <stddef.h>
 #include <utility>
@@ -35,6 +36,37 @@ enum class SelectionFlag {
 };
 
 public:
+  enum class FlagsGenerationType : uint8_t {
+    TYPE_NONE,
+    TYPE_ADC,
+    TYPE_SBB,
+    TYPE_SUB,
+    TYPE_ADD,
+    TYPE_MUL,
+    TYPE_UMUL,
+    TYPE_LOGICAL,
+    TYPE_LSHL,
+    TYPE_LSHLI,
+    TYPE_LSHR,
+    TYPE_LSHRI,
+    TYPE_ASHR,
+    TYPE_ASHRI,
+    TYPE_ROR,
+    TYPE_RORI,
+    TYPE_ROL,
+    TYPE_ROLI,
+    TYPE_FCMP,
+    TYPE_BEXTR,
+    TYPE_BLSI,
+    TYPE_BLSMSK,
+    TYPE_BLSR,
+    TYPE_POPCOUNT,
+    TYPE_BZHI,
+    TYPE_TZCNT,
+    TYPE_LZCNT,
+    TYPE_BITSELECT,
+  };
+
   SelectionFlag flagsOp{};
   uint8_t flagsOpSize{};
   OrderedNode* flagsOpDest{};
@@ -87,6 +119,9 @@ public:
     //  cmp qword [rdi-8], 0
     //  jne .label
     if (LastOp && !BlockSetRIP) {
+      // Calculate flags first
+      CalculateDeferredFlags();
+
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
@@ -101,6 +136,11 @@ public:
         return true;
       }
     }
+
+    if (LastOp) {
+      LOGMAN_THROW_A_FMT(IsDeferredFlagsStored(), "FinishOp: Deferred flags weren't generated at end of block");
+    }
+
     BlockSetRIP = false;
 
     return false;
@@ -559,23 +599,515 @@ private:
 
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);
 
-  void GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
-  void GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
-  void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  void GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  void GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *High);
-  void GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *High);
-  void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void GenerateFlags_SignShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void GenerateFlags_RotateRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  /**
+   * @name Deferred RFLAG calculation and generation.
+   *
+   * Only handles the six flags that ALU ops typically generate.
+   * Specifically: CF, PF, AF, ZF, SF, OF
+   *  These six flags are heavily generated through basic ALU ops and balloon the IR if not early eliminated.
+   *  This tracking structure only tracks single blocks and requires RFLAGS calculation at block-ending ops.
+   *  Some flags generating ALU ops only touch part of the registers, In these cases it will do calculation up front.
+   *  This means we still need our IR passes to eliminate all redundant flags accesses but this light OpcodeDispatcher optimization
+   *  doesn't take it to that level.
+   * @{ */
+
+  // Deferred flag generation tracking structure.
+  // This structure is used to track RFlags from ALU ops for invalidation.
+  //
+  // Future ideas: Use an invalidation mask to do partial generation of flags.
+  // Particularly for the instructions that don't do the full set of flags calculations.
+  // These instructions currently calculate the deferred RFLAGS immediately then overwrite rflags state.
+  // RCLSE IR pass will catch and remove redundant rflags stores like this currently.
+  struct DeferredFlagData {
+    // What type of flags to generate
+    FlagsGenerationType Type {FlagsGenerationType::TYPE_NONE};
+
+    // Source size of the op
+    uint8_t SrcSize;
+
+    // Every flag generation type has a result
+    OrderedNode *Res{};
+
+    union {
+      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, BITSELECT
+      struct {
+      } NoSource;
+
+      // MUL, BLSR, BZHI
+      struct {
+        OrderedNode *Src1;
+      } OneSource;
+
+      // Logical, LSHL, LSHR, ASHR, ROR, ROL
+      struct {
+        OrderedNode *Src1;
+        OrderedNode *Src2;
+      } TwoSource;
+
+      // ADC, SBB
+      struct {
+        OrderedNode *Src1;
+        OrderedNode *Src2;
+        OrderedNode *Src3;
+      } ThreeSource;
+
+      // LSHLI, LSHRI, ASHRI, RORI, ROLI
+      struct {
+        OrderedNode *Src1;
+        uint64_t Imm;
+      } OneSrcImmediate;
+
+      // ADD, SUB
+      struct {
+        OrderedNode *Src1;
+        OrderedNode *Src2;
+
+        bool UpdateCF;
+      } TwoSrcImmediate;
+    } Sources{};
+  };
+
+  DeferredFlagData CurrentDeferredFlags{};
+
+  /**
+   * @brief Takes the current deferred flag state and stores the result in to RFLAGS.
+   *
+   * Once executed there will no longer be any deferred flag state and RFLAGS will have the correct flags in it.
+   * Necessary to do when leaving a IR block, or if an instruction is doing a partial overwrite of the flags.
+   */
+  void CalculateDeferredFlags(uint32_t FlagsToCalculateMask = ~0U);
+
+  /**
+   * @brief Invalidates the current deferred flags structure.
+   *
+   * If the emulated instruction is going to overwrite all of the flags but isn't tracked using the deferred flag system
+   * then use this function to stop tracking the current active deferred flags.
+   */
+  void InvalidateDeferredFlags() {
+    CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
+  }
+
+  /**
+   * @brief Checks if there is any deferred flag state active.
+   *
+   * @return True if RFLAGs contains the flags. False if deferred flags is tracking the data.
+   */
+  bool IsDeferredFlagsStored() const {
+    return CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE;
+  }
+
+  /**
+   * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
+   * @{ */
+  void CalculcateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
+  void CalculcateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
+  void CalculcateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
+  void CalculcateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
+  void CalculcateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High);
+  void CalculcateFlags_UMUL(OrderedNode *High);
+  void CalculcateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculcateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculcateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculcateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculcateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculcateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculcateFlags_BEXTR(OrderedNode *Src);
+  void CalculcateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
+  void CalculcateFlags_BLSMSK(OrderedNode *Src);
+  void CalculcateFlags_BLSR(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
+  void CalculcateFlags_POPCOUNT(OrderedNode *Src);
+  void CalculcateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
+  void CalculcateFlags_TZCNT(OrderedNode *Src);
+  void CalculcateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
+  void CalculcateFlags_BITSELECT(OrderedNode *Src);
+  /**  @} */
+
+  /**
+   * @name These functions generated deferred RFLAGs tracking.
+   *
+   * Depending on the operation it may force a RFLAGs calculation before storing the new deferred state.
+   * @{ */
+  void GenerateFlags_ADC(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ADC,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .ThreeSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+          .Src3 = CF,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_SBB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_SBB,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .ThreeSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+          .Src3 = CF,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_SUB(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
+    if (!UpdateCF) {
+      // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
+      CalculateDeferredFlags();
+    }
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_SUB,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSrcImmediate = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+          .UpdateCF = UpdateCF,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_ADD(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true) {
+    if (!UpdateCF) {
+      // If we aren't updating CF then we need to calculate flags. Invalidation mask would make this not required.
+      CalculateDeferredFlags();
+    }
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ADD,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSrcImmediate = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+          .UpdateCF = UpdateCF,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_MUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *High) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_MUL,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSource = {
+          .Src1 = High,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_UMUL(FEXCore::X86Tables::DecodedOp Op, OrderedNode *High) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_UMUL,
+      .SrcSize = GetSrcSize(Op),
+      .Res = High,
+    };
+  }
+
+  void GenerateFlags_Logical(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LOGICAL,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_ShiftLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    // Flags need to be used, generate incoming flags first.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LSHL,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_ShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    // Flags need to be used, generate incoming flags first.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LSHR,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_SignShiftRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    // Flags need to be used, generate incoming flags first.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ASHR,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_ShiftLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+    // No flags changed if shift is zero.
+    if (Shift == 0) return;
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LSHLI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSrcImmediate = {
+          .Src1 = Src1,
+          .Imm = Shift,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_SignShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+    // No flags changed if shift is zero.
+    if (Shift == 0) return;
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ASHRI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSrcImmediate = {
+          .Src1 = Src1,
+          .Imm = Shift,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_ShiftRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+    // No flags changed if shift is zero.
+    if (Shift == 0) return;
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LSHRI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSrcImmediate = {
+          .Src1 = Src1,
+          .Imm = Shift,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_RotateRight(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    // Doesn't set all the flags, needs to calculate.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ROR,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_RotateLeft(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    // Doesn't set all the flags, needs to calculate.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ROL,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_RotateRightImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+    if (Shift == 0) return;
+
+    // Doesn't set all the flags, needs to calculate.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_RORI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSrcImmediate = {
+          .Src1 = Src1,
+          .Imm = Shift,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_RotateLeftImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+    if (Shift == 0) return;
+
+    // Doesn't set all the flags, needs to calculate.
+    CalculateDeferredFlags();
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_ROLI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSrcImmediate = {
+          .Src1 = Src1,
+          .Imm = Shift,
+        },
+      }
+    };
+  }
+
+  void GenerateFlags_FCMP(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_FCMP,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .TwoSource = {
+          .Src1 = Src1,
+          .Src2 = Src2,
+        },
+      }
+    };
+  }
+
+  void GenerateFlags_BEXTR(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_BEXTR,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_BLSI(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_BLSI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_BLSMSK(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_BLSMSK,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_BLSR(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_BLSR,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSource = {
+          .Src1 = Src,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_POPCOUNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_POPCOUNT,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_BZHI(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Result, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_BZHI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Result,
+      .Sources = {
+        .OneSource = {
+          .Src1 = Src,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_TZCNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_TZCNT,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_LZCNT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LZCNT,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_BITSELECT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_BITSELECT,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  /**  @} */
+  /**  @} */
 
   OrderedNode * GetX87Top();
   enum class X87Tag {
@@ -615,11 +1147,22 @@ private:
     else
       return _LoadMem(ssa0, Invalid(), Align, Class, MEM_OFFSET_SXTX, 1, Size);
   }
-
-
 };
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode);
 
 }
+template <>
+struct fmt::formatter<FEXCore::IR::OpDispatchBuilder::FlagsGenerationType> : fmt::formatter<int> {
+  using Base = fmt::formatter<int>;
+
+  // Pass-through the underlying value, so IDs can
+  // be formatted like any integral value.
+  template <typename FormatContext>
+  auto format(const FEXCore::IR::OpDispatchBuilder::FlagsGenerationType& ID, FormatContext& ctx) {
+    return Base::format(static_cast<int>(ID), ctx);
+  }
+};
+
+
 

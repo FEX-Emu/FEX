@@ -35,7 +35,7 @@ public:
 
   uint64_t DecodedMinAddress {};
   uint64_t DecodedMaxAddress {~0ULL};
-  
+
   void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
   void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
 private:
