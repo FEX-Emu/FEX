@@ -155,33 +155,59 @@ namespace FEXCore {
         } _timer;
       } _sifields;
 
+      union HostSigInfo_t {
+        // This anonymous struct needs to match the host definition
+        struct {
+          uint32_t si_signo;
+          uint32_t si_errno;
+          uint32_t si_code;
+
+          uint32_t __pad0;
+
+          // Pad[28] is a union for all the sifields
+          uint32_t _pad[28];
+        } FEXDef;
+        ::siginfo_t host{};
+      };
+      static_assert(sizeof(HostSigInfo_t) == 128, "This needs to be the right size");
+
       siginfo_t() = delete;
 
       operator ::siginfo_t() const {
-        ::siginfo_t val{};
-        val.si_signo = si_signo;
-        val.si_errno = si_errno;
-        val.si_code = si_code;
+        // The definition of siginfo_t changes depending on the host environment
+        // It is guaranteed to be 128 bytes and the kernel interface is the same for all of them
+        // Since we only run on Linux
+        HostSigInfo_t val{};
+
+        val.FEXDef.si_signo = si_signo;
+        val.FEXDef.si_errno = si_errno;
+        val.FEXDef.si_code = si_code;
 
         // Host siginfo has a pad member that is set to zeros
-        val.__pad0 = 0;
+        val.FEXDef.__pad0 = 0;
 
         // Copy over the union
         // The union is different sizes on 64-bit versus 32-bit
-        memcpy(val._sifields._pad, _sifields.pad, std::min(sizeof(val._sifields._pad), sizeof(_sifields.pad)));
+        memcpy(val.FEXDef._pad, _sifields.pad, std::min(sizeof(val.FEXDef._pad), sizeof(_sifields.pad)));
 
-        return val;
+        return val.host;
       }
 
       siginfo_t(::siginfo_t val) {
-        si_signo = val.si_signo;
-        si_errno = val.si_errno;
-        si_code = val.si_code;
+        HostSigInfo_t host;
+        host.host = val;
+
+        si_signo = host.FEXDef.si_signo;
+        si_errno = host.FEXDef.si_errno;
+        si_code = host.FEXDef.si_code;
 
         // Copy over the union
         // The union is different sizes on 64-bit versus 32-bit
-        memcpy(val._sifields._pad, _sifields.pad, std::min(sizeof(val._sifields._pad), sizeof(_sifields.pad)));
+        memcpy(_sifields.pad, host.FEXDef._pad, std::min(sizeof(host.FEXDef._pad), sizeof(_sifields.pad)));
       }
+      static_assert(offsetof(::siginfo_t, si_signo) == offsetof(HostSigInfo_t, FEXDef.si_signo), "si_signo in wrong location?");
+      static_assert(offsetof(::siginfo_t, si_errno) == offsetof(HostSigInfo_t, FEXDef.si_errno), "si_errno in wrong location?");
+      static_assert(offsetof(::siginfo_t, si_code) == offsetof(HostSigInfo_t, FEXDef.si_code), "si_code in wrong location?");
     };
     static_assert(sizeof(FEXCore::x86::siginfo_t) == 128, "This needs to be the right size");
 
