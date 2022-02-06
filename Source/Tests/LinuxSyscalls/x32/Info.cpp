@@ -10,9 +10,7 @@ $end_info$
 
 #include <algorithm>
 #include <asm/posix_types.h>
-#include <bits/types/struct_rusage.h>
 #include <limits>
-#include <linux/sysinfo.h>
 #include <linux/utsname.h>
 #include <stdint.h>
 #include <sys/resource.h>

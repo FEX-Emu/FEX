@@ -11,7 +11,6 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #include <memory>
-#include <bits/types/stack_t.h>
 #include <signal.h>
 #include <stdint.h>
 #include <unordered_map>

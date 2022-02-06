@@ -12,7 +12,6 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 
 #include <alloca.h>
-#include <bits/types/struct_iovec.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>

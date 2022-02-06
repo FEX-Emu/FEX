@@ -9,8 +9,7 @@ $end_info$
 
 #include <array>
 #include <atomic>
-#include <bits/types/siginfo_t.h>
-#include <bits/types/stack_t.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <mutex>

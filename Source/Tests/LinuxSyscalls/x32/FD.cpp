@@ -17,7 +17,6 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 
 #include <algorithm>
-#include <bits/types/struct_iovec.h>
 #include <cstdint>
 #include <fcntl.h>
 #include <limits>

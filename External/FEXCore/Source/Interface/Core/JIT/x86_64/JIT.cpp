@@ -27,7 +27,6 @@ $end_info$
 
 #include <algorithm>
 #include <array>
-#include <bits/types/stack_t.h>
 #include <memory>
 #include <stddef.h>
 #include <stdint.h>

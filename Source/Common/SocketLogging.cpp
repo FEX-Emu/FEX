@@ -15,6 +15,10 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+// For older build environments
+#ifndef POLLREMOVE
+#define POLLREMOVE 0x1000
+#endif
 namespace FEX::SocketLogging {
   namespace Common {
     enum class PacketTypes : uint32_t {

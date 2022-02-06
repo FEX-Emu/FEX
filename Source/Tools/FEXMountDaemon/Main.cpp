@@ -2,7 +2,6 @@
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
-#include <bits/types/siginfo_t.h>
 #include <chrono>
 #include <condition_variable>
 #include <cstdlib>

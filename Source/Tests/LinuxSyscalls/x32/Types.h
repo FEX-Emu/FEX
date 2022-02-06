@@ -9,10 +9,8 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/shmbuf.h>
-#include <bits/types/stack_t.h>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
@@ -27,8 +25,8 @@ $end_info$
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
-#include <sys/time.h>
 #include <sys/times.h>
+#include <sys/timex.h>
 #include <sys/uio.h>
 #include <time.h>
 #include <type_traits>
