@@ -1182,6 +1182,11 @@ sigevent32 {
 
   sigevent32() = delete;
 
+// For older build environments
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id	 _sigev_un._tid
+#endif
+
   operator sigevent() const {
     sigevent val{};
     val.sigev_value  = sigev_value;
@@ -1189,7 +1194,7 @@ sigevent32 {
     val.sigev_notify = sigev_notify;
 
     if (sigev_notify == SIGEV_THREAD_ID) {
-      val._sigev_un._tid = _sigev_un._tid;
+      val.sigev_notify_thread_id = _sigev_un._tid;
     }
     else if (sigev_notify == SIGEV_THREAD) {
       val.sigev_notify_function   = reinterpret_cast<void(*)(sigval)>(_sigev_un._sigev_thread._function);
@@ -1204,11 +1209,11 @@ sigevent32 {
     sigev_notify = val.sigev_notify;
 
     if (sigev_notify == SIGEV_THREAD_ID) {
-      _sigev_un._tid = val._sigev_un._tid;
+      _sigev_un._tid = val.sigev_notify_thread_id;
     }
     else if (sigev_notify == SIGEV_THREAD) {
-      sigev_notify_function   = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val._sigev_un._sigev_thread._function));
-      sigev_notify_attributes = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val._sigev_un._sigev_thread._attribute));
+      _sigev_un._sigev_thread._function  = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val.sigev_notify_function));
+      _sigev_un._sigev_thread._attribute = static_cast<uint32_t>(reinterpret_cast<uint64_t>(val.sigev_notify_attributes));
     }
   }
 };
