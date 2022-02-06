@@ -169,12 +169,12 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_PASS(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(pread_64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
       uint64_t Result = ::pread64(fd, buf, count, offset);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_PASS(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X64_PASS(pwrite_64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, size_t count, off_t offset) -> uint64_t {
       uint64_t Result = ::pwrite64(fd, buf, count, offset);
       SYSCALL_ERRNO();
     });

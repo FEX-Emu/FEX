@@ -472,8 +472,8 @@ namespace FEX::HLE {
       std::terminate();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(prlimit64, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit) -> uint64_t {
-      uint64_t Result = ::prlimit(pid, (enum __rlimit_resource)(resource), new_limit, old_limit);
+    REGISTER_SYSCALL_IMPL_PASS(prlimit_64, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit) -> uint64_t {
+      uint64_t Result = ::syscall(SYSCALL_DEF(prlimit_64), pid, resource, new_limit, old_limit);
       SYSCALL_ERRNO();
     });
 

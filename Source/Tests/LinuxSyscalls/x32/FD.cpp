@@ -960,7 +960,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(pread64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(pread_64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
       uint64_t Offset = offset_high;
       Offset <<= 32;
       Offset |= offset_low;
@@ -969,7 +969,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(pwrite64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(pwrite_64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *buf, uint32_t count, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
       uint64_t Offset = offset_high;
       Offset <<= 32;
       Offset |= offset_low;
