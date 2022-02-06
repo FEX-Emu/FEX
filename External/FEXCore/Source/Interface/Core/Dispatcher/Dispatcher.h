@@ -5,8 +5,8 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
 
-#include <bits/types/stack_t.h>
 #include <cstdint>
+#include <signal.h>
 #include <stddef.h>
 #include <stack>
 #include <tuple>

@@ -16,9 +16,9 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <bits/types/siginfo_t.h>
 #include <csignal>
 #include <cstring>
+#include <signal.h>
 
 namespace FEXCore::CPU {
 

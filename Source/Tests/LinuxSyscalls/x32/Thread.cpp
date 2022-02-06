@@ -17,14 +17,13 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 
-#include <bits/types/siginfo_t.h>
-#include <bits/types/stack_t.h>
-#include <bits/types/struct_rusage.h>
 #include <errno.h>
 #include <grp.h>
 #include <linux/futex.h>
 #include <sched.h>
+#include <signal.h>
 #include <sys/fsuid.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 #include <syscall.h>
 #include <time.h>

@@ -32,19 +32,19 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS(pkey_mprotect, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t len, int prot, int pkey) -> uint64_t {
       // Added in Linux 4.9
-      uint64_t Result = ::pkey_mprotect(addr, len, prot, pkey);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pkey_mprotect), addr, len, prot, pkey);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(pkey_alloc, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int flags, unsigned int access_rights) -> uint64_t {
       // Added in Linux 4.9
-      uint64_t Result = ::pkey_alloc(flags, access_rights);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pkey_alloc), flags, access_rights);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS(pkey_free, [](FEXCore::Core::CpuStateFrame *Frame, int pkey) -> uint64_t {
       // Added in Linux 4.9
-      uint64_t Result = ::pkey_free(pkey);
+      uint64_t Result = ::syscall(SYSCALL_DEF(pkey_free), pkey);
       SYSCALL_ERRNO();
     });
   }

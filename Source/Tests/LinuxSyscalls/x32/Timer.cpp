@@ -11,7 +11,6 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
-#include <bits/types/timer_t.h>
 #include <stdint.h>
 #include <syscall.h>
 #include <sys/time.h>

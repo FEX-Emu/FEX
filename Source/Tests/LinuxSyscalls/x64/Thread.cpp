@@ -14,9 +14,8 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 
-#include <bits/types/siginfo_t.h>
-#include <bits/types/stack_t.h>
 #include <sched.h>
+#include <signal.h>
 #include <stddef.h>
 #include <syscall.h>
 #include <stdint.h>

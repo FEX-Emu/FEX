@@ -24,13 +24,17 @@ $end_info$
 #include <exception>
 #include <functional>
 #include <linux/futex.h>
-#include <bits/types/stack_t.h>
 #include <signal.h>
 #include <syscall.h>
 #include <sys/mman.h>
 #include <sys/signalfd.h>
 #include <unistd.h>
 #include <utility>
+
+// For older build environments
+#ifndef SS_AUTODISARM
+#define SS_AUTODISARM (1U << 31)
+#endif
 
 namespace FEX::HLE {
 #ifdef _M_X86_64
@@ -42,7 +46,6 @@ namespace FEX::HLE {
   }
 #endif
 
-  constexpr static uint32_t SS_AUTODISARM = (1U << 31);
   constexpr static uint32_t X86_MINSIGSTKSZ  = 0x2000U;
 
   // We can only have one delegator per process

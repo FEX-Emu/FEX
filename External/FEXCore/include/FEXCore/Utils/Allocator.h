@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <sys/types.h>
 
 namespace FEXCore::Allocator {
   using MMAP_Hook = void*(*)(void*, size_t, int, int, int, off_t);

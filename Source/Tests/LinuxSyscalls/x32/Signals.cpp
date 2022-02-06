@@ -13,7 +13,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/UContext.h>
 #include <errno.h>
-#include <bits/types/siginfo_t.h>
 #include <signal.h>
 #include <stdint.h>
 #include <sys/syscall.h>
