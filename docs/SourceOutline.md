@@ -1,4 +1,4 @@
-# FEX-2201
+# FEX-2202
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -184,6 +184,10 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### SDL2
 - [libSDL2_Guest.cpp](../ThunkLibs/libSDL2/libSDL2_Guest.cpp): Handles sdlglproc, dload, stubs a few log fns
 - [libSDL2_Host.cpp](../ThunkLibs/libSDL2/libSDL2_Host.cpp)
+
+#### Vulkan
+- [Guest.cpp](../ThunkLibs/libvulkan_device/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libvulkan_device/Host.cpp)
 
 #### X11
 - [libX11_Guest.cpp](../ThunkLibs/libX11/libX11_Guest.cpp): Handles callbacks and varargs
