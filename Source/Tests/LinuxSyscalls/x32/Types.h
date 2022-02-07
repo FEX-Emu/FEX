@@ -483,6 +483,7 @@ stat64_32 {
     #undef COPY
   }
 
+#ifndef stat64
   stat64_32(struct stat64 host) {
     #define COPY(x) x = host.x
     COPY(st_dev);
@@ -510,6 +511,7 @@ stat64_32 {
     st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
+#endif
 };
 static_assert(std::is_trivial<stat64_32>::value, "Needs to be trivial");
 static_assert(sizeof(stat64_32) == 96, "Incorrect size");
@@ -552,6 +554,7 @@ statfs64_32 {
     #undef COPY
   }
 
+#ifndef statfs64
   statfs64_32(struct statfs64 host) {
     #define COPY(x) x = host.x
     COPY(f_type);
@@ -568,6 +571,7 @@ statfs64_32 {
     memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
     #undef COPY
   }
+#endif
 };
 static_assert(std::is_trivial<statfs64_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs64_32) == 84, "Incorrect size");
@@ -608,6 +612,7 @@ statfs32_32 {
     #undef COPY
   }
 
+#ifndef statfs64
   statfs32_32(struct statfs64 host) {
     #define COPY(x) x = host.x
     COPY(f_type);
@@ -624,6 +629,7 @@ statfs32_32 {
     memcpy(&f_fsid, &host.f_fsid, sizeof(f_fsid));
     #undef COPY
   }
+#endif
 };
 static_assert(std::is_trivial<statfs32_32>::value, "Needs to be trivial");
 static_assert(sizeof(statfs32_32) == 64, "Incorrect size");
