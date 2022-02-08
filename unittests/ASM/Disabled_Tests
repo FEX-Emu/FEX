@@ -1,6 +1,3 @@
-# Not guaranteed to work in 64bit mode
-Test_Primary/Primary_8C.asm
-
 # Needs Precision checking
 Test_REP/F3_52.asm
 Test_REP/F3_53.asm
