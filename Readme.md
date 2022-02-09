@@ -9,7 +9,7 @@ FEX is very much work in progress, so expect things to change.
 ### For Ubuntu 20.04, 21.04, 21.10, 22.04
 Execute the following command in the terminal to install FEX through a PPA.
 
-`curl --silent https://raw.githubusercontent.com/FEX-Emu/FEX/main/Scripts/InstallFEX.py | python3`
+`curl --silent https://raw.githubusercontent.com/FEX-Emu/FEX/main/Scripts/InstallFEX.py --output /tmp/InstallFEX.py && python3 /tmp/InstallFEX.py && rm /tmp/InstallFEX.py`
 
 This command will walk you through installing FEX through a PPA, and downloading a RootFS for use with FEX.
 
