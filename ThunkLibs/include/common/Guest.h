@@ -3,6 +3,15 @@
 
 #define MAKE_THUNK(lib, name, hash) extern "C" { int fexthunks_##lib##_##name(void *args); } asm("fexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
 
+// Generated fexfn_pack_ symbols should be hidden by default, but clang does
+// not support aliasing to static functions. Make them regular non-static
+// functions on that compiler instead, hence.
+#if defined(__clang__)
+#define FEX_PACKFN_LINKAGE
+#else
+#define FEX_PACKFN_LINKAGE static
+#endif
+
 struct LoadlibArgs {
     const char *Name;
     uintptr_t CallbackThunks;

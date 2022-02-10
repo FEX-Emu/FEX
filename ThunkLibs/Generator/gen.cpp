@@ -521,7 +521,7 @@ void FrontendAction::EndSourceFileAction() {
         for (auto& data : thunks) {
             const auto& function_name = data.function_name;
             bool is_void = data.return_type->isVoidType();
-            file << "static auto fexfn_pack_" << function_name << "(";
+            file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(";
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
                 file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
