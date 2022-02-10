@@ -668,6 +668,22 @@ namespace FEX::EmulatedFile {
     FDReadCreators["/sys/devices/system/cpu/online"] = NumCPUCores;
     FDReadCreators["/sys/devices/system/cpu/present"] = NumCPUCores;
 
+    auto HostArchitecture = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      int FD = GenTmpFD();
+#ifdef _M_ARM_64
+      const char Arch[] = "arm64\0";
+#elif defined(_M_X86_64)
+      const char Arch[] = "x86_64\0";
+#else
+      const char Arch[] = "unknown\0";
+#endif
+      write(FD, Arch, sizeof(Arch));
+      lseek(FD, 0, SEEK_SET);
+      return FD;
+    };
+
+    FDReadCreators["/fex/arch"] = HostArchitecture;
+
     string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
 
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
