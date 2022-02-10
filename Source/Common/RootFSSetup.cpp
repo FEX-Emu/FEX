@@ -213,6 +213,23 @@ std::string GetRootFSLockFile() {
   return LockPath;
 }
 
+std::string GetRootFSPathIfExists() {
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+  if (FEX::FormatCheck::IsSquashFS(LDPath())) {
+    auto LockFile = FEX::RootFS::GetRootFSLockFile();
+    std::string MountPath;
+    if (FEX::RootFS::CheckLockExists(LockFile, &MountPath)) {
+      return MountPath;
+    }
+
+    // Wasn't mounted, don't return squashfs name
+    return {};
+  }
+
+  // Wasn't squashfs, return regular ROOTFS config
+  return LDPath();
+}
+
 enum class ErrorResult {
   ERROR_SUCCESS,
   ERROR_FAIL,
