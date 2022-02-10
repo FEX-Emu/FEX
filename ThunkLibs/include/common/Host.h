@@ -36,7 +36,7 @@ static fex_call_callback_t* call_guest;
  */
 struct fex_guest_function_ptr {
 private:
-    void* value = nullptr;
+    [[maybe_unused]] void* value = nullptr;
 
 public:
     fex_guest_function_ptr() = default;
