@@ -10,6 +10,13 @@ namespace FEX::RootFS {
   std::string GetRootFSLockFile();
   // Returns the socket file for a mount path
   std::string GetRootFSSocketFile(std::string const &MountPath);
+
+  // Returns the string to the rootfs path if it exists
+  // If unconfigured: Return empty string
+  // If regular directory: Return directory
+  // If squashfs: Only returns tmpfs directory if mounted, otherwise empty string
+  std::string GetRootFSPathIfExists();
+
   // Checks if the rootfs lock exists
   bool CheckLockExists(std::string const &LockPath, std::string *MountPath = nullptr);
   bool Setup(char **const envp, uint32_t TryCount = 0);

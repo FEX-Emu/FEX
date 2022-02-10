@@ -79,9 +79,8 @@ int main(int argc, char **argv, char **envp) {
   }
 
   if (Options.is_set_by_user("current_rootfs")) {
-    auto LockFile = FEX::RootFS::GetRootFSLockFile();
-    std::string MountPath;
-    if (FEX::RootFS::CheckLockExists(LockFile, &MountPath)) {
+    auto MountPath = FEX::RootFS::GetRootFSPathIfExists();
+    if (!MountPath.empty()) {
       fprintf(stdout, "%s\n", MountPath.c_str());
     }
   }
