@@ -291,8 +291,28 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
     return thunkOverlay->second;
   }
 
+  if (strstr(pathname, "/fex/host") == pathname) {
+    // Redirect `/fex/host`
+    const char *NewLocation = &pathname[strlen("/fex/host")];
+    if (NewLocation[0] == '\0') {
+      return "/";
+    }
+
+    return NewLocation;
+  }
+
   if (RootFSPath.empty()) { // If RootFS doesn't exist
     return {};
+  }
+
+  if (strstr(pathname, "/fex/rootfs") == pathname) {
+    // Redirect `/fex/rootfs`
+    const char *NewLocation = &pathname[strlen("/fex/rootfs")];
+    if (NewLocation[0] == '\0') {
+      return RootFSPath;
+    }
+
+    return RootFSPath + NewLocation;
   }
 
   std::string Path = RootFSPath + pathname;
