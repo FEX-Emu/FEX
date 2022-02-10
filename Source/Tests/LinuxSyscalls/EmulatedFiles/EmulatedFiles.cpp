@@ -684,6 +684,23 @@ namespace FEX::EmulatedFile {
 
     FDReadCreators["/fex/arch"] = HostArchitecture;
 
+    auto RootFSPath = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      int FD = GenTmpFD();
+      auto RootFSPath = LDPath();
+      if (!RootFSPath.empty()) {
+        write(FD, RootFSPath.data(), RootFSPath.size());
+      }
+
+      // Null terminate
+      char Null = '\0';
+      write(FD, &Null, sizeof(Null));
+
+      lseek(FD, 0, SEEK_SET);
+      return FD;
+    };
+
+    FDReadCreators["/fex/rootfs_path"] = RootFSPath;
+
     string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
 
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;

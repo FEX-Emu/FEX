@@ -33,5 +33,6 @@ namespace FEX::EmulatedFile {
 
       static int32_t ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode);
       FEX_CONFIG_OPT(ThreadsConfig, THREADS);
+      FEX_CONFIG_OPT(LDPath, ROOTFS);
   };
 }
