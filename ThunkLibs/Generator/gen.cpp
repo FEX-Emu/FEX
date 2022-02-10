@@ -45,17 +45,6 @@ struct ThunkedFunction : FunctionParams {
     // This is implied e.g. for thunks generated for variadic functions
     bool custom_host_impl = false;
 
-    FunctionParams GetNonvariadicParams() const {
-        if (!is_variadic) {
-            return *this;
-        }
-
-        auto ret = param_types;
-        ret.pop_back();
-        ret.pop_back();
-        return { std::move(ret) };
-    }
-
     std::string GetOriginalFunctionName() const {
         const std::string suffix = "_internal";
         assert(function_name.length() > suffix.size());
