@@ -1,21 +1,31 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
 
-set(CMAKE_CXX_STANDARD 17)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
+  set(CMAKE_CXX_STANDARD 17)
 
-# These get passed in from the main cmake project
-set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
-set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
-set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
+  # These get passed in from the main cmake project
+  set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
+  set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+  set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
-set(CMAKE_C_COMPILER "${X86_C_COMPILER}")
-set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
+  set(CMAKE_C_COMPILER "${X86_C_COMPILER}")
+  set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
+
+  set(TARGET_TYPE SHARED)
+  set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
+else()
+  # We've been included using add_subdirectory, so set up targets for IDE integration using the host toolchain
+  set(GENERATOR_EXE thunkgen)
+  set(TARGET_TYPE OBJECT)
+  set(GENERATE_GUEST_INSTALL_TARGETS FALSE)
+endif()
 
 # Syntax: generate(libxyz [LIBNAME libxyz-custom] libxyz-interface.cpp generator-targets...)
-# This defines two targets and a custom command:
+# This defines a target and a custom command:
 # - custom command: Main build step that runs the thunk generator on the given interface definition
-# - libxyz-interface: Target for IDE integration (making sure libxyz-interface.cpp shows up as a source file in the project tree)
-# - libxyz-deps: Interface target to read include directories from which are passed to libclang when parsing the interface definition
+# - libxyz-guest-deps: Interface target to read include directories from which are passed to libclang when parsing the interface definition
 function(generate NAME)
   cmake_parse_arguments(PARSE_ARGV 1 ARGS "" "LIBNAME" "")
   set(ARGN ${ARGS_UNPARSED_ARGUMENTS})
@@ -28,15 +38,11 @@ function(generate NAME)
   endif()
 
   # Interface target for the user to add include directories
-  add_library(${LIBNAME}-deps INTERFACE)
-  target_include_directories(${LIBNAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  add_library(${LIBNAME}-guest-deps INTERFACE)
+  target_include_directories(${LIBNAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
-  set(prop "$<TARGET_PROPERTY:${LIBNAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
-
-  # Target for IDE integration
-  add_library(${LIBNAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
-  target_link_libraries(${LIBNAME}-interface PRIVATE ${LIBNAME}-deps)
+  set(prop "$<TARGET_PROPERTY:${LIBNAME}-guest-deps,INTERFACE_INCLUDE_DIRECTORIES>")
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
@@ -76,19 +82,21 @@ function(add_guest_lib_with_name NAME LIBNAME)
     endif()
   endif()
 
-  add_library(${LIBNAME}-guest SHARED ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
+  add_library(${LIBNAME}-guest ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
   target_include_directories(${LIBNAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}")
   target_compile_definitions(${LIBNAME}-guest PRIVATE GUEST_THUNK_LIBRARY)
-  target_link_libraries(${LIBNAME}-guest PRIVATE lib${LIBNAME}-deps)
+  target_link_libraries(${LIBNAME}-guest PRIVATE lib${LIBNAME}-guest-deps)
 
   ## Tell GCC to not complain about ignored attributes
   target_compile_options(${LIBNAME}-guest PRIVATE -Wno-attributes)
   target_compile_options(${LIBNAME}-guest PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
-  add_custom_target(${LIBNAME}-guest-install
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{DESTDIR}/${DATA_DIRECTORY}/GuestThunks/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-guest.so $ENV{DESTDIR}/${DATA_DIRECTORY}/GuestThunks/)
-  add_dependencies(ThunkGuestsInstall ${LIBNAME}-guest-install)
+  if (GENERATE_GUEST_INSTALL_TARGETS)
+    add_custom_target(${LIBNAME}-guest-install
+      COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{DESTDIR}/${DATA_DIRECTORY}/GuestThunks/
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-guest.so $ENV{DESTDIR}/${DATA_DIRECTORY}/GuestThunks/)
+    add_dependencies(ThunkGuestsInstall ${LIBNAME}-guest-install)
+  endif()
 endfunction()
 
 function(add_guest_lib NAME)
@@ -175,6 +183,6 @@ generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_i
 add_guest_lib(xshmfence)
 
 generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp thunks function_packs function_packs_public)
-target_include_directories(libdrm-deps INTERFACE /usr/include/drm/)
-target_include_directories(libdrm-deps INTERFACE /usr/include/libdrm/)
+target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
+target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
 add_guest_lib(drm)

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
 
 set(CMAKE_CXX_STANDARD 17)
-set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
+set (HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
 
 # Syntax: generate(libxyz [LIBNAME libxyz-custom] libxyz-interface.cpp generator-targets...)
 # This defines two targets and a custom command:
@@ -41,10 +41,10 @@ function(generate NAME)
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
-      DEPENDS "${GENERATOR_EXE}"
       DEPENDS "${OUTFOLDER}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
+      DEPENDS thunkgen
+      COMMAND thunkgen "${SOURCE_FILE}" "${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
             # Expand include directories to space-separated list of -isystem parameters
            "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
       VERBATIM
@@ -74,15 +74,10 @@ function(add_host_lib_with_name NAME LIBNAME)
   target_compile_options(${LIBNAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
-  target_link_options(${LIBNAME}-host PRIVATE "-Wl,--no-undefined")
+  target_link_options(${LIBNAME}-host PRIVATE "LINKER:--no-undefined")
 
-  add_custom_target(${LIBNAME}-host-install
-    COMMAND ${CMAKE_COMMAND} -E make_directory $ENV{DESTDIR}/${DATA_DIRECTORY}/HostThunks/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/lib${LIBNAME}-host.so $ENV{DESTDIR}/${DATA_DIRECTORY}/HostThunks/)
-  add_dependencies(ThunkHostsInstall ${LIBNAME}-host-install)
+  install(TARGETS ${LIBNAME}-host DESTINATION $ENV{DESTDIR}/${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
 endfunction()
-
-add_custom_target(ThunkHostsInstall)
 
 function(add_host_lib NAME)
   add_host_lib_with_name(${NAME} ${NAME} ${ARGV})

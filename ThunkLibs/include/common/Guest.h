@@ -1,7 +1,20 @@
 #pragma once
 #include <stdint.h>
 
-#define MAKE_THUNK(lib, name, hash) extern "C" { int fexthunks_##lib##_##name(void *args); } asm("fexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
+#ifndef _M_ARM_64
+#define MAKE_THUNK(lib, name, hash) \
+  extern "C" int fexthunks_##lib##_##name(void *args); \
+  asm("fexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
+#else
+// We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
+// The name of that function serves as an error message if this library somehow gets loaded at runtime.
+extern "C" void BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK();
+#define MAKE_THUNK(lib, name, hash) \
+  extern "C" int fexthunks_##lib##_##name(void *args) { \
+    BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK(); \
+    return 0; \
+  }
+#endif
 
 // Generated fexfn_pack_ symbols should be hidden by default, but clang does
 // not support aliasing to static functions. Make them regular non-static
