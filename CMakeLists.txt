@@ -480,30 +480,14 @@ endif()
 if (BUILD_THUNKS)
   add_subdirectory(ThunkLibs/Generator)
 
+  # Thunk targets for both host libraries and IDE integration
+  add_subdirectory(ThunkLibs/HostLibs)
+
+  # Thunk targets for IDE integration of guest code, only
+  add_subdirectory(ThunkLibs/GuestLibs)
+
+  # Thunk targets for guest libraries
   include(ExternalProject)
-
-  ExternalProject_Add(host-libs
-    PREFIX host-libs
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/HostLibs"
-    BINARY_DIR "Host"
-    CMAKE_ARGS
-      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS ON
-    DEPENDS thunkgen
-  )
-
-  install(
-    CODE "MESSAGE(\"-- Installing: host-libs\")"
-    CODE "
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target ThunkHostsInstall
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Host
-    )"
-    DEPENDS host-libs
-  )
-
   ExternalProject_Add(guest-libs
     PREFIX guest-libs
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
