@@ -25,9 +25,9 @@ struct OutputFilenames {
     std::string symbol_list;
 };
 
-class FrontendAction : public clang::ASTFrontendAction {
+class GenerateThunkLibsAction : public clang::ASTFrontendAction {
 public:
-    FrontendAction(const std::string& libname, const OutputFilenames&);
+    GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&);
 
     void EndSourceFileAction() override;
 

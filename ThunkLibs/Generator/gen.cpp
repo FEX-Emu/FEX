@@ -365,7 +365,7 @@ public:
     }
 };
 
-FrontendAction::FrontendAction(const std::string& libname_, const OutputFilenames& output_filenames_)
+GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_)
     : libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
     for (auto& c : libname) {
         if (c == '-') {
@@ -395,7 +395,7 @@ static std::string format_function_args(const FunctionParams& params) {
                                 [](std::size_t idx) -> std::string { return "args->a_" + std::to_string(idx); });
 }
 
-void FrontendAction::EndSourceFileAction() {
+void GenerateThunkLibsAction::EndSourceFileAction() {
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         if (type->isFunctionPointerType()) {
             auto signature = type.getAsString();
@@ -758,6 +758,6 @@ void FrontendAction::EndSourceFileAction() {
     }
 }
 
-std::unique_ptr<clang::ASTConsumer> FrontendAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
+std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
     return std::make_unique<ASTConsumer>();
 }

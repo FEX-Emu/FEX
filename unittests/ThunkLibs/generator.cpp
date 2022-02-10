@@ -181,7 +181,7 @@ public:
 /**
  * The "silent" parameter is used to suppress non-fatal diagnostics in tests that expect failure
  */
-static void run_tool(std::unique_ptr<FrontendAction> action, std::string_view code, bool silent = false) {
+static void run_tool(std::unique_ptr<GenerateThunkLibsAction> action, std::string_view code, bool silent = false) {
     const char* memory_filename = "gen_input.cpp";
     auto adjuster = clang::tooling::getClangStripDependencyFileAdjuster();
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
@@ -214,7 +214,7 @@ struct callback_guest : callback_annotation_base {};
  * Generates guest thunk library code from the given input
  */
 std::string Fixture::run_thunkgen_guest(std::string_view code, bool silent) {
-    run_tool(std::make_unique<FrontendAction>(libname, output_filenames), code, silent);
+    run_tool(std::make_unique<GenerateThunkLibsAction>(libname, output_filenames), code, silent);
 
     std::string result = "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n";
     for (auto& filename : {
@@ -235,7 +235,7 @@ std::string Fixture::run_thunkgen_guest(std::string_view code, bool silent) {
  * Generates host thunk library code from the given input
  */
 std::string Fixture::run_thunkgen_host(std::string_view code, bool silent) {
-    run_tool(std::make_unique<FrontendAction>(libname, output_filenames), code, silent);
+    run_tool(std::make_unique<GenerateThunkLibsAction>(libname, output_filenames), code, silent);
 
     std::string result =
         "#include <cstdint>\n"
