@@ -2,14 +2,48 @@
 
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Tooling/Tooling.h>
+
+#include <llvm/Support/raw_os_ostream.h>
 
 #include <interface.h>
 
 #include <filesystem>
 #include <fstream>
 #include <string_view>
+
+/**
+ * This class parses its input code and stores it alongside its AST representation.
+ *
+ * Use this with HasASTMatching in Catch2's CHECK_THAT/REQUIRE_THAT macros.
+ */
+struct SourceWithAST {
+    std::string code;
+    std::unique_ptr<clang::ASTUnit> ast;
+
+    SourceWithAST(std::string_view input);
+};
+
+std::ostream& operator<<(std::ostream& os, const SourceWithAST& ast) {
+    os << ast.code;
+
+    // Additionally, change this to true to print the full AST on test failures
+    const bool print_ast = false;
+    if (print_ast) {
+        for (auto it = ast.ast->top_level_begin(); it != ast.ast->top_level_end(); ++it) {
+            // Skip header declarations
+            if (!ast.ast->isInMainFileID((*it)->getBeginLoc())) {
+                continue;
+            }
+
+            auto llvm_os = llvm::raw_os_ostream { os };
+            (*it)->dump(llvm_os);
+        }
+    }
+    return os;
+}
 
 struct Fixture {
     Fixture() {
@@ -36,13 +70,19 @@ struct Fixture {
     }
 
     struct GenOutput {
-        std::string guest;
-        std::string host;
+        SourceWithAST guest;
+        SourceWithAST host;
     };
 
-    std::string run_thunkgen_guest(std::string_view code, bool silent = false);
-    std::string run_thunkgen_host(std::string_view code, bool silent = false);
-    GenOutput run_thunkgen(std::string_view code, bool silent = false);
+    /**
+     * Runs the given given code through the thunk generator and verifies the output compiles.
+     *
+     * Input code with common definitions (types, functions, ...) should be specified in "prelude".
+     * It will be prepended to "code" before processing and also to the generator output.
+     */
+    SourceWithAST run_thunkgen_guest(std::string_view prelude, std::string_view code, bool silent = false);
+    SourceWithAST run_thunkgen_host(std::string_view prelude, std::string_view code, bool silent = false);
+    GenOutput run_thunkgen(std::string_view prelude, std::string_view code, bool silent = false);
 
     const std::string libname = "libtest";
     std::string tmpdir;
@@ -83,10 +123,14 @@ public:
     }
 };
 
+/**
+ * This class connects the libclang AST to Catch2 test matchers, allowing for
+ * code compiled via SourceWithAST objects to be pattern-matched using the
+ * libclang ASTMatcher API.
+ */
 template<typename ClangMatcher>
-class HasASTMatching : public Catch::MatcherBase<std::string> {
-    const ClangMatcher& matcher;
-
+class HasASTMatching : public Catch::MatcherBase<SourceWithAST> {
+    ClangMatcher matcher;
     MatchCallback callback;
 
 public:
@@ -100,12 +144,12 @@ public:
         return *this;
     }
 
-    bool match(const std::string& code) const override {
+    bool match(const SourceWithAST& code) const override {
         MatchCallback result = callback;
         clang::ast_matchers::MatchFinder finder;
         finder.addMatcher(matcher, &result);
-        bool compile_success = clang::tooling::runToolOnCodeWithArgs(clang::tooling::newFrontendActionFactory(&finder)->create(), code, { "-std=c++17", "-Werror" });
-        return compile_success && result.matched();
+        finder.matchAST(code.ast->getASTContext());
+        return result.matched();
     }
 
     std::string describe() const override {
@@ -126,19 +170,11 @@ HasASTMatching<StatementMatcher> matches(const StatementMatcher& matcher_) {
 /**
  * Catch matcher that checks if a tested C++ source defines a function with the given name
  */
-class DefinesPublicFunction : public Catch::MatcherBase<std::string> {
+class DefinesPublicFunction : public HasASTMatching<DeclarationMatcher> {
     std::string function_name;
 
 public:
-    DefinesPublicFunction(std::string_view name) : function_name(name) {
-    }
-
-    bool match(const std::string& code) const override {
-        MatchCallback result;
-        clang::ast_matchers::MatchFinder finder;
-        finder.addMatcher(functionDecl(hasName(function_name)), &result);
-        clang::tooling::runToolOnCodeWithArgs(clang::tooling::newFrontendActionFactory(&finder)->create(), code, { "-std=c++17" });
-        return result.matched();
+    DefinesPublicFunction(std::string_view name) : HasASTMatching(functionDecl(hasName(name))), function_name(name) {
     }
 
     std::string describe() const override {
@@ -181,7 +217,7 @@ public:
 /**
  * The "silent" parameter is used to suppress non-fatal diagnostics in tests that expect failure
  */
-static void run_tool(std::unique_ptr<FrontendAction> action, std::string_view code, bool silent = false) {
+static void run_tool(clang::tooling::ToolAction& action, std::string_view code, bool silent = false) {
     const char* memory_filename = "gen_input.cpp";
     auto adjuster = clang::tooling::getClangStripDependencyFileAdjuster();
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
@@ -195,12 +231,15 @@ struct callback_guest : callback_annotation_base {};
 } // namespace fexgen
 )";
 
+    llvm::IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> overlay_fs(new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem()));
     llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> memory_fs(new llvm::vfs::InMemoryFileSystem);
+    overlay_fs->pushOverlay(memory_fs);
     memory_fs->addFile(memory_filename, 0, llvm::MemoryBuffer::getMemBufferCopy(code));
     memory_fs->addFile("thunks_common.h", 0, llvm::MemoryBuffer::getMemBufferCopy(common_header_code));
-    llvm::IntrusiveRefCntPtr<clang::FileManager> files(new clang::FileManager(clang::FileSystemOptions(), memory_fs));
+    llvm::IntrusiveRefCntPtr<clang::FileManager> files(new clang::FileManager(clang::FileSystemOptions(), overlay_fs));
 
-    auto invocation = clang::tooling::ToolInvocation(args, std::move(action), files.get());
+    auto invocation = clang::tooling::ToolInvocation(args, &action, files.get(), std::make_shared<clang::PCHContainerOperations>());
+
     TestDiagnosticConsumer consumer(silent);
     invocation.setDiagnosticConsumer(&consumer);
     invocation.run();
@@ -210,11 +249,37 @@ struct callback_guest : callback_annotation_base {};
     }
 }
 
+static void run_tool(std::unique_ptr<clang::tooling::ToolAction> action, std::string_view code, bool silent = false) {
+    return run_tool(*action, code, silent);
+}
+
+SourceWithAST::SourceWithAST(std::string_view input) : code(input) {
+    // Call run_tool with a ToolAction that assigns this->ast
+
+    struct ToolAction : clang::tooling::ToolAction {
+        std::unique_ptr<clang::ASTUnit>& ast;
+
+        ToolAction(std::unique_ptr<clang::ASTUnit>& ast_) : ast(ast_) { }
+
+        bool runInvocation(std::shared_ptr<clang::CompilerInvocation> invocation,
+                           clang::FileManager* files,
+                           std::shared_ptr<clang::PCHContainerOperations> pch,
+                           clang::DiagnosticConsumer *diag_consumer) override {
+            auto diagnostics = clang::CompilerInstance::createDiagnostics(&invocation->getDiagnosticOpts(), diag_consumer, false);
+            ast = clang::ASTUnit::LoadFromCompilerInvocation(invocation, std::move(pch), std::move(diagnostics), files);
+            return (ast != nullptr);
+        }
+    } tool_action { ast };
+
+    run_tool(tool_action, code);
+}
+
 /**
  * Generates guest thunk library code from the given input
  */
-std::string Fixture::run_thunkgen_guest(std::string_view code, bool silent) {
-    run_tool(std::make_unique<FrontendAction>(libname, output_filenames), code, silent);
+SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_view code, bool silent) {
+    const std::string full_code = std::string { prelude } + std::string { code };
+    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
 
     std::string result = "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n";
     for (auto& filename : {
@@ -228,14 +293,15 @@ std::string Fixture::run_thunkgen_guest(std::string_view code, bool silent) {
         result.resize(result.size() + new_data_size);
         file.read(result.data() + current_size, result.size());
     }
-    return result;
+    return SourceWithAST { std::string { prelude } + result };
 }
 
 /**
  * Generates host thunk library code from the given input
  */
-std::string Fixture::run_thunkgen_host(std::string_view code, bool silent) {
-    run_tool(std::make_unique<FrontendAction>(libname, output_filenames), code, silent);
+SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_view code, bool silent) {
+    const std::string full_code = std::string { prelude } + std::string { code };
+    run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
 
     std::string result =
         "#include <cstdint>\n"
@@ -276,16 +342,16 @@ std::string Fixture::run_thunkgen_host(std::string_view code, bool silent) {
             result += "};\n";
         }
     }
-    return result;
+    return SourceWithAST { std::string { prelude } + result };
 }
 
-Fixture::GenOutput Fixture::run_thunkgen(std::string_view code, bool silent) {
-    return { run_thunkgen_guest(code, silent),
-             run_thunkgen_host(code, silent) };
+Fixture::GenOutput Fixture::run_thunkgen(std::string_view prelude, std::string_view code, bool silent) {
+    return { run_thunkgen_guest(prelude, code, silent),
+             run_thunkgen_host(prelude, code, silent) };
 }
 
 TEST_CASE_METHOD(Fixture, "Trivial") {
-    const auto output = run_thunkgen(
+    const auto output = run_thunkgen("",
         "#include <thunks_common.h>\n"
         "void func();\n"
         "template<auto> struct fex_gen_config {};\n"
@@ -314,20 +380,18 @@ TEST_CASE_METHOD(Fixture, "Trivial") {
 
 // Unknown annotations trigger an error
 TEST_CASE_METHOD(Fixture, "UnknownAnnotation") {
-    REQUIRE_THROWS(run_thunkgen(
-        "void func();\n"
+    REQUIRE_THROWS(run_thunkgen("void func();\n",
         "struct invalid_annotation {};\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> : invalid_annotation {};\n", true));
 
-    REQUIRE_THROWS(run_thunkgen(
-        "void func();\n"
+    REQUIRE_THROWS(run_thunkgen("void func();\n",
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> { int invalid_field_annotation; };\n", true));
 }
 
 TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
-    const auto output = run_thunkgen_host(
+    const auto output = run_thunkgen_host("",
         "template<auto> struct fex_gen_config { int version = 123; };\n");
 
     CHECK_THAT(output,
@@ -342,8 +406,7 @@ TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
 
 // Parameter is a function pointer
 TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
-    const auto output = run_thunkgen_guest(
-        "void func(int (*funcptr)(char, char));\n"
+    const auto output = run_thunkgen_guest("void func(int (*funcptr)(char, char));\n",
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n");
 
@@ -361,9 +424,8 @@ TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
     const std::string prelude =
         "struct fex_guest_function_ptr { int (*x)(char,char); };\n"
         "void fexfn_impl_libtest_func(fex_guest_function_ptr);\n";
-    const auto output = run_thunkgen(
-        "#include <thunks_common.h>\n" +
-        prelude +
+    const auto output = run_thunkgen(prelude,
+        "#include <thunks_common.h>\n"
         "void func(int (*funcptr)(char, char));\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> : fexgen::callback_guest, fexgen::custom_host_impl {};\n");
@@ -377,23 +439,20 @@ TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
         )));
 
     // Host-side implementation only sees an opaque type that it can't call
-    CHECK_THAT(prelude + output.host,
+    CHECK_THAT(output.host,
         matches(callExpr(callee(functionDecl(hasName("fexfn_impl_libtest_func"))),
                          hasArgument(0, hasType(asString("struct fex_guest_function_ptr")))
             )));
 }
 
 TEST_CASE_METHOD(Fixture, "MultipleParameters") {
-    const std::string prelude = "struct TestStruct { int member; };\n";
+    const std::string prelude =
+        "struct TestStruct { int member; };\n";
 
-    auto output = run_thunkgen(
-        prelude +
+    auto output = run_thunkgen(prelude,
         "void func(int arg, char, unsigned long, TestStruct);\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n");
-
-    output.guest = prelude + output.guest;
-    output.host = prelude + output.host;
 
     // Guest code
     CHECK_THAT(output.guest, DefinesPublicFunction("func"));
@@ -436,28 +495,25 @@ TEST_CASE_METHOD(Fixture, "MultipleParameters") {
 
 // Returning a function pointer should trigger an error unless an annotation is provided
 TEST_CASE_METHOD(Fixture, "ReturnFunctionPointer") {
-    const std::string prelude = "#include <thunks_common.h>\nusing funcptr = void (*)(char, char);\n";
+    const std::string prelude = "using funcptr = void (*)(char, char);\n";
 
-    REQUIRE_THROWS(run_thunkgen_guest(
-        prelude +
+    REQUIRE_THROWS(run_thunkgen_guest(prelude,
         "funcptr func(int);\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n", true));
 
-    REQUIRE_NOTHROW(run_thunkgen_guest(
-        prelude +
+    REQUIRE_NOTHROW(run_thunkgen_guest(prelude,
+        "#include <thunks_common.h>\n"
         "funcptr func(int);\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> : fexgen::returns_guest_pointer {};\n"));
 }
 
 TEST_CASE_METHOD(Fixture, "VariadicFunction") {
-    const std::string input =
-        "void func(int arg, ...);\n"
-        "template<auto> struct fex_gen_config {};\n";
+    const std::string prelude = "void func(int arg, ...);\n";
 
-    const auto output = run_thunkgen_guest(
-        input +
+    const auto output = run_thunkgen_guest(prelude,
+        "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {\n"
         "  using uniform_va_type = char;\n"
         "};\n");
@@ -475,8 +531,7 @@ TEST_CASE_METHOD(Fixture, "VariadicFunction") {
 
 // Variadic functions without annotation trigger an error
 TEST_CASE_METHOD(Fixture, "VariadicFunctionsWithoutAnnotation") {
-    REQUIRE_THROWS(run_thunkgen_guest(
-        "void func(int arg, ...);\n"
+    REQUIRE_THROWS(run_thunkgen_guest("void func(int arg, ...);\n",
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n", true));
 }

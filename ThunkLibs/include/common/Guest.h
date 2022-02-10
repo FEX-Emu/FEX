@@ -4,7 +4,7 @@
 #ifndef _M_ARM_64
 #define MAKE_THUNK(lib, name, hash) \
   extern "C" int fexthunks_##lib##_##name(void *args); \
-  asm("fexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
+  asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
 #else
 // We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
 // The name of that function serves as an error message if this library somehow gets loaded at runtime.

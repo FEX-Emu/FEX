@@ -12,21 +12,6 @@ void print_usage(const char* program_name) {
     std::cerr << "Usage: " << program_name << " <filename> <libname> <gen_target> <output_filename> -- <clang_flags>\n";
 }
 
-class ThunkGenFrontendActionFactory : public clang::tooling::FrontendActionFactory {
-public:
-    ThunkGenFrontendActionFactory(std::string_view libname_, OutputFilenames output_filenames_)
-        : libname(std::move(libname_)), output_filenames(std::move(output_filenames_)) {
-    }
-
-    std::unique_ptr<clang::FrontendAction> create() override {
-        return std::make_unique<FrontendAction>(libname, output_filenames);
-    }
-
-private:
-    std::string libname;
-    OutputFilenames output_filenames;
-};
-
 int main(int argc, char* argv[]) {
     if (argc < 6) {
         print_usage(argv[0]);
@@ -85,5 +70,5 @@ int main(int argc, char* argv[]) {
     }
 
     ClangTool Tool(*compile_db, { filename });
-    return Tool.run(std::make_unique<ThunkGenFrontendActionFactory>(std::move(libname), std::move(output_filenames)).get());
+    return Tool.run(std::make_unique<GenerateThunkLibsActionFactory>(std::move(libname), std::move(output_filenames)).get());
 }
