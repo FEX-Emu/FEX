@@ -61,7 +61,7 @@ protected:
   Arm64Emitter(FEXCore::Context::Context *ctx, size_t size);
 
   vixl::aarch64::CPU CPU;
-  void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant);
+  void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
   void SpillStaticRegs(bool FPRs = true, uint32_t SpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t FillMask = ~0U);
 
