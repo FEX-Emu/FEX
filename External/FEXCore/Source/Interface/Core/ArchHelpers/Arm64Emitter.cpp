@@ -28,20 +28,32 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::Context *ctx, size_t size) : vixl::
   SetCPUFeatures(Features);
 }
 
-void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant) {
+void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad) {
   bool Is64Bit = Reg.IsX();
   int Segments = Is64Bit ? 4 : 2;
 
   if (Is64Bit && ((~Constant)>> 16) == 0) {
     movn(Reg, (~Constant) & 0xFFFF);
+
+    if (NOPPad) {
+      nop(); nop(); nop();
+    }
     return;
   }
 
+  int NumMoves = 1;
   movz(Reg, (Constant) & 0xFFFF, 0);
   for (int i = 1; i < Segments; ++i) {
     uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
     if (Part) {
       movk(Reg, Part, i * 16);
+      ++NumMoves;
+    }
+  }
+
+  if (NOPPad) {
+    for (int i = NumMoves; i < Segments; ++i) {
+      nop();
     }
   }
 }
