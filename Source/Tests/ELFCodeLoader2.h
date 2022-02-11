@@ -341,7 +341,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     // map stack here, so that nothing gets mapped there
     // This works with both 64-bit and 32-bit. The mapper will only give us a function in the correct region
-    StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
+    StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0));
 
     if (StackPointer == ~0ULL) {
       LogMan::Msg::EFmt("Allocating stack failed");

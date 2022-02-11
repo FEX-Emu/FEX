@@ -31,7 +31,7 @@ namespace FEXCore::Threads {
     std::lock_guard lk{DeadStackPoolMutex};
     if (DeadStackPool.size() == 0) {
       // Nothing in the pool, just allocate
-      return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_GROWSDOWN, -1, 0);
+      return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     }
 
     // Keep the first item in the stack pool
