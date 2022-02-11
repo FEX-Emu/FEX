@@ -31,6 +31,42 @@ namespace FEXCore::Core {
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
   struct InternalThreadState;
+  union JITPointers {
+    struct {
+      // Process specific
+      uint64_t LUDIV{};
+      uint64_t LDIV{};
+      uint64_t LUREM{};
+      uint64_t LREM{};
+      uint64_t PrintValue{};
+      uint64_t PrintVectorValue{};
+      uint64_t RemoveCodeEntryFromJIT{};
+      uint64_t CPUIDObj{};
+      uint64_t CPUIDFunction{};
+      uint64_t SyscallHandlerObj{};
+      uint64_t SyscallHandlerFunc{};
+
+      // Thread Specific
+      uint64_t SignalHandlerRefCountPointer{};
+
+      /**
+       * @name Dispatcher pointers
+       * @{ */
+      uint64_t DispatcherLoopTop{};
+      uint64_t DispatcherLoopTopFillSRA{};
+      uint64_t ThreadStopHandlerSpillSRA{};
+      uint64_t ThreadPauseHandlerSpillSRA{};
+      uint64_t UnimplementedInstructionHandler{};
+      uint64_t OverflowExceptionHandler{};
+      uint64_t SignalReturnHandler{};
+      uint64_t L1Pointer{};
+      /**  @} */
+    } AArch64;
+
+    struct {
+      // XXX: Not implemented yet
+    } X86;
+  };
 
   // Each guest JIT frame has one of these
   struct CpuStateFrame {
@@ -52,9 +88,15 @@ namespace FEXCore::Core {
      */
     uint64_t InSyscallInfo{};
     InternalThreadState* Thread;
+
+    // Pointers that the JIT needs to load to remove relocations
+    JITPointers Pointers;
   };
   static_assert(offsetof(CpuStateFrame, State) == 0, "CPUState must be first member in CpuStateFrame");
   static_assert(offsetof(CpuStateFrame, State.rip) == 0, "rip must be zero offset in CpuStateFrame");
+  static_assert(offsetof(CpuStateFrame, Pointers) % 8 == 0, "JITPointers need to be aligned to 8 bytes");
+  static_assert(offsetof(CpuStateFrame, Pointers) + sizeof(CpuStateFrame::Pointers) <= 32760, "JITPointers maximum pointer needs to be less than architecture maximum 32768");
+
   static_assert(std::is_standard_layout<CpuStateFrame>::value, "This needs to be standard layout");
 
 #ifdef PAGE_SIZE

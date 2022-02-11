@@ -53,10 +53,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   //    Ptr();
   // }
 
-  uint64_t VirtualMemorySize = Thread->LookupCache->GetVirtualMemorySize();
-  Literal l_VirtualMemory {VirtualMemorySize};
   Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
-  Literal l_L1Ptr {Thread->LookupCache->GetL1Pointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
   Literal l_CompileBlock {GetCompileBlockPtr()};
@@ -99,7 +96,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   auto RipReg = x2;
 
   // L1 Cache
-  ldr(x0, &l_L1Ptr);
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
 
   and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
   add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -121,11 +118,12 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   ldr(x0, &l_PagePtr);
 
   // Mask the address by the virtual address size so we can check for aliases
+  uint64_t VirtualMemorySize = Thread->LookupCache->GetVirtualMemorySize();
   if (std::popcount(VirtualMemorySize) == 1) {
-    and_(x3, RipReg, Thread->LookupCache->GetVirtualMemorySize() - 1);
+    and_(x3, RipReg, VirtualMemorySize - 1);
   }
   else {
-    ldr(x3, &l_VirtualMemory);
+    LoadConstant(x3, VirtualMemorySize);
     and_(x3, RipReg, x3);
   }
 
@@ -159,7 +157,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      ldr(x0, &l_L1Ptr);
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
 
       and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
@@ -438,9 +436,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     b(&LoopTop);
   }
 
-  place(&l_VirtualMemory);
   place(&l_PagePtr);
-  place(&l_L1Ptr);
   place(&l_CTX);
   place(&l_Sleep);
   place(&l_CompileBlock);
@@ -460,6 +456,20 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
+  }
+
+  // Setup dispatcher specific pointers that need to be accessed from JIT code
+  {
+    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
+
+    Pointers.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Pointers.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Pointers.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
+    Pointers.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
+    Pointers.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
+    Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
   }
 }
 

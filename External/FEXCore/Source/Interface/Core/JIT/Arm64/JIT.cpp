@@ -21,16 +21,53 @@ $end_info$
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
+#include "Utils/MemberFunctionToPointer.h"
+
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
 #include <sys/mman.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
+namespace {
+static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
+  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
+  __uint128_t Res = Source / Divisor;
+  return Res;
+}
+
+static int64_t LDIV(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
+  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
+  __int128_t Res = Source / Divisor;
+  return Res;
+}
+
+static uint64_t LUREM(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
+  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
+  __uint128_t Res = Source % Divisor;
+  return Res;
+}
+
+static int64_t LREM(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
+  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
+  __int128_t Res = Source % Divisor;
+  return Res;
+}
+
+static void PrintValue(uint64_t Value) {
+  LogMan::Msg::DFmt("Value: 0x{:x}", Value);
+}
+
+static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
+  LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
+}
+}
 
 namespace FEXCore::CPU {
 
@@ -336,6 +373,32 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   : Arm64Emitter(ctx, 0)
   , CTX {ctx}
   , ThreadState {Thread} {
+
+  {
+    // Set up pointers that the JIT needs to load
+    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
+    // Process specific
+    Pointers.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
+    Pointers.LDIV = reinterpret_cast<uint64_t>(LDIV);
+    Pointers.LUREM = reinterpret_cast<uint64_t>(LUREM);
+    Pointers.LREM = reinterpret_cast<uint64_t>(LREM);
+    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
+    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
+      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+    }
+
+    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+
+    // Thread Specific
+    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
+  }
+
   {
     DispatcherConfig config;
     config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
@@ -673,7 +736,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
       str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
       // Stop the thread
-      LoadConstant(x0, ThreadSharedData.Dispatcher->ThreadPauseHandlerAddressSpillSRA);
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadPauseHandlerSpillSRA)));
       br(x0);
     }
     bind(&RunBlock);

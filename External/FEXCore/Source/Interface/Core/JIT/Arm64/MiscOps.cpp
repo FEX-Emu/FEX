@@ -7,14 +7,6 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-static void PrintValue(uint64_t Value) {
-  LogMan::Msg::DFmt("Value: 0x{:x}", Value);
-}
-
-static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
-  LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
-}
-
 using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
@@ -44,7 +36,7 @@ DEF_OP(Break) {
       break;
     case FEXCore::IR::Break_Overflow: // overflow
       ResetStack();
-      LoadConstant(TMP1, ThreadSharedData.Dispatcher->OverflowExceptionInstructionAddress);
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.OverflowExceptionHandler)));
       br(TMP1);
       break;
     case FEXCore::IR::Break_Halt: { // HLT
@@ -54,14 +46,13 @@ DEF_OP(Break) {
       add(sp, TMP1, 0);
 
       // Now we need to jump to the thread stop handler
-      LoadConstant(TMP1, ThreadSharedData.Dispatcher->ThreadStopHandlerAddressSpillSRA);
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadStopHandlerSpillSRA)));
       br(TMP1);
       break;
     }
     case FEXCore::IR::Break_Interrupt3: { // INT3
       ResetStack();
-
-      LoadConstant(TMP1, ThreadSharedData.Dispatcher->ThreadPauseHandlerAddressSpillSRA);
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadPauseHandlerSpillSRA)));
       br(TMP1);
       break;
     }
@@ -69,7 +60,7 @@ DEF_OP(Break) {
     {
       ResetStack();
 
-      LoadConstant(TMP1, ThreadSharedData.Dispatcher->UnimplementedInstructionAddress);
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.UnimplementedInstructionHandler)));
       br(TMP1);
 
       break;
@@ -143,13 +134,13 @@ DEF_OP(Print) {
 
   if (IsGPR(Op->Header.Args[0].ID())) {
     mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
-    LoadConstant(x3, reinterpret_cast<uint64_t>(PrintValue));
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.PrintValue)));
   }
   else {
     fmov(x0, GetSrc(Op->Header.Args[0].ID()).V1D());
     // Bug in vixl that source vector needs to b V1D rather than V2D?
     fmov(x1, GetSrc(Op->Header.Args[0].ID()).V1D(), 1);
-    LoadConstant(x3, reinterpret_cast<uint64_t>(PrintVectorValue));
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.PrintVectorValue)));
   }
   SpillStaticRegs();
   blr(x3);
