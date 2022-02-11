@@ -382,7 +382,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         return false;
       }
 
-      InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
+      InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - InterpElf.phdrs.front().p_offset;
       Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
     } else {
       InterpeterElfBase = 0;
@@ -401,7 +401,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
     AuxVariables.emplace_back(auxv_t{23, 0}); // AT_SECURE
     AuxVariables.emplace_back(auxv_t{8, 0}); // AT_FLAGS
-    AuxVariables.emplace_back(auxv_t{5, MainElf.phdrs.size()});
+    AuxVariables.emplace_back(auxv_t{5, MainElf.phdrs.size()}); // AT_PHNUM
 
     if (Is64BitMode()) {
       AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
@@ -424,7 +424,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       //AuxVariables.emplace_back(auxv_t{33, 0}); // AT_SYSINFO_EHDR - Address of the start of VDSO
     }
     AuxVariables.emplace_back(auxv_t{3, MainElfBase + MainElf.ehdr.e_phoff}); // Program header
-    AuxVariables.emplace_back(auxv_t{7, InterpeterElfBase}); // Interpreter address
+    AuxVariables.emplace_back(auxv_t{7, InterpeterElfBase}); // AT_BASE - Interpreter address
     AuxVariables.emplace_back(auxv_t{9, MainElfEntrypoint}); // AT_ENTRY
 
     AuxVariables.emplace_back(auxv_t{0, 0}); // Null ender
