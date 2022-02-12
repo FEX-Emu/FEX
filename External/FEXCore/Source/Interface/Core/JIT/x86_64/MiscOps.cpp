@@ -18,14 +18,6 @@ $end_info$
 #include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
-static void PrintValue(uint64_t Value) {
-  LogMan::Msg::DFmt("Value: 0x{:x}", Value);
-}
-
-static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
-  LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
-}
-
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
 DEF_OP(Fence) {
@@ -53,8 +45,7 @@ DEF_OP(Break) {
       break;
     case FEXCore::IR::Break_Overflow: // overflow
       // Need to be outside of JIT cache space to ensure cache clearing correctness
-      mov(TMP1, ThreadSharedData.Dispatcher->OverflowExceptionInstructionAddress);
-      jmp(TMP1);
+      jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.OverflowExceptionHandler)]);
       break;
     case FEXCore::IR::Break_Halt: { // HLT
       // Time to quit
@@ -62,8 +53,7 @@ DEF_OP(Break) {
       mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
       // Now we need to jump to the thread stop handler
-      mov(TMP1, ThreadSharedData.Dispatcher->ThreadStopHandlerAddress);
-      jmp(TMP1);
+      jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.ThreadStopHandler)]);
       break;
     }
     case FEXCore::IR::Break_Interrupt3: // INT3
@@ -75,8 +65,7 @@ DEF_OP(Break) {
         }
 
         // This jump target needs to be a constant offset here
-        mov(TMP1, ThreadSharedData.Dispatcher->ThreadPauseHandlerAddress);
-        jmp(TMP1);
+        jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.ThreadPauseHandler)]);
       }
       else {
         // If we don't have a gdb server attached then....crash?
@@ -84,8 +73,7 @@ DEF_OP(Break) {
         mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
         // Now we need to jump to the thread stop handler
-        mov(TMP1, ThreadSharedData.Dispatcher->ThreadStopHandlerAddress);
-        jmp(TMP1);
+        jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.ThreadStopHandler)]);
       }
     break;
     }
@@ -96,9 +84,7 @@ DEF_OP(Break) {
       }
 
       // Need to be outside of JIT cache space to ensure cache clearing correctness
-      mov(TMP1, ThreadSharedData.Dispatcher->UnimplementedInstructionAddress);
-      jmp(TMP1);
-
+      jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.UnimplementedInstructionHandler)]);
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Break reason: {}", Op->Reason);
@@ -144,17 +130,14 @@ DEF_OP(Print) {
   PushRegs();
   if (IsGPR(Op->Header.Args[0].ID())) {
     mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-
-    mov(rax, reinterpret_cast<uintptr_t>(PrintValue));
+    call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.PrintValue)]);
   }
   else {
     pextrq(rdi, GetSrc(Op->Header.Args[0].ID()), 0);
     pextrq(rsi, GetSrc(Op->Header.Args[0].ID()), 1);
 
-    mov(rax, reinterpret_cast<uintptr_t>(PrintVectorValue));
+    call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.PrintVectorValue)]);
   }
-
-  call(rax);
 
   PopRegs();
 }

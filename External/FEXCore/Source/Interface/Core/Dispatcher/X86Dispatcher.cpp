@@ -95,7 +95,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
     // L1 Cache
-    mov(r13, Thread->LookupCache->GetL1Pointer());
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
     mov(rax, rdx);
 
     and_(rax, LookupCache::L1_ENTRIES_MASK);
@@ -114,8 +114,9 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     mov(r13, Thread->LookupCache->GetPagePointer());
 
     // Full lookup
+    uint64_t VirtualMemorySize = Thread->LookupCache->GetVirtualMemorySize();
     mov(rax, rdx);
-    mov(rbx, Thread->LookupCache->GetVirtualMemorySize() - 1);
+    mov(rbx, VirtualMemorySize - 1);
     and_(rax, rbx);
     shr(rax, 12);
 
@@ -142,8 +143,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-
-    mov(r13, Thread->LookupCache->GetL1Pointer());
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
     mov(rcx, rdx);
     and_(rcx, LookupCache::L1_ENTRIES_MASK);
     shl(rcx, 1);
@@ -252,8 +252,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // XXX: XMM?
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    mov(rax, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
-    add(dword [rax], 1);
+    add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalHandlerRefCountPointer)], 1);
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
@@ -336,6 +335,20 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   }
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(Start), End-Start);
+  }
+
+  // Setup dispatcher specific pointers that need to be accessed from JIT code
+  {
+    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
+
+    Pointers.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Pointers.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Pointers.ThreadStopHandler = ThreadStopHandlerAddress;
+    Pointers.ThreadPauseHandler = ThreadPauseHandlerAddress;
+    Pointers.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
+    Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
   }
 }
 

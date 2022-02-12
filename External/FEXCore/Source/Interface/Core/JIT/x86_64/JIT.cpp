@@ -15,6 +15,8 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
+#include "Utils/MemberFunctionToPointer.h"
+
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
@@ -40,6 +42,16 @@ $end_info$
 
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
+
+namespace {
+static void PrintValue(uint64_t Value) {
+  LogMan::Msg::DFmt("Value: 0x{:x}", Value);
+}
+
+static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
+  LogMan::Msg::DFmt("Value: 0x{:016x}'{:016x}", ValueUpper, Value);
+}
+}
 
 namespace FEXCore::CPU {
 
@@ -316,6 +328,28 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   , ThreadState {Thread}
   , InitialCodeBuffer {Buffer}
 {
+
+  {
+    // Set up pointers that the JIT needs to load
+    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
+    // Process specific
+    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
+    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
+      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+    }
+
+    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+
+    // Thread Specific
+    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
+  }
+
   CurrentCodeBuffer = &InitialCodeBuffer;
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
