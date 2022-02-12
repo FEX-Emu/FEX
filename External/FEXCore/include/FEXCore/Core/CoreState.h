@@ -31,6 +31,57 @@ namespace FEXCore::Core {
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
   struct InternalThreadState;
+
+  enum FallbackHandlerIndex {
+    OPINDEX_F80LOADFCW = 0,
+    OPINDEX_F80CVTTO_4,
+    OPINDEX_F80CVTTO_8,
+    OPINDEX_F80CVT_4,
+    OPINDEX_F80CVT_8,
+    OPINDEX_F80CVTINT_2,
+    OPINDEX_F80CVTINT_4,
+    OPINDEX_F80CVTINT_8,
+    OPINDEX_F80CVTINT_TRUNC2,
+    OPINDEX_F80CVTINT_TRUNC4,
+    OPINDEX_F80CVTINT_TRUNC8,
+    OPINDEX_F80CMP_0,
+    OPINDEX_F80CMP_1,
+    OPINDEX_F80CMP_2,
+    OPINDEX_F80CMP_3,
+    OPINDEX_F80CMP_4,
+    OPINDEX_F80CMP_5,
+    OPINDEX_F80CMP_6,
+    OPINDEX_F80CMP_7,
+    OPINDEX_F80CVTTOINT_2,
+    OPINDEX_F80CVTTOINT_4,
+
+    // Unary
+    OPINDEX_F80ROUND,
+    OPINDEX_F80F2XM1,
+    OPINDEX_F80TAN,
+    OPINDEX_F80SQRT,
+    OPINDEX_F80SIN,
+    OPINDEX_F80COS,
+    OPINDEX_F80XTRACT_EXP,
+    OPINDEX_F80XTRACT_SIG,
+    OPINDEX_F80BCDSTORE,
+    OPINDEX_F80BCDLOAD,
+
+    // Binary
+    OPINDEX_F80ADD,
+    OPINDEX_F80SUB,
+    OPINDEX_F80MUL,
+    OPINDEX_F80DIV,
+    OPINDEX_F80FYL2X,
+    OPINDEX_F80ATAN,
+    OPINDEX_F80FPREM1,
+    OPINDEX_F80FPREM,
+    OPINDEX_F80SCALE,
+
+    // Maximum
+    OPINDEX_MAX,
+  };
+
   union JITPointers {
     struct {
       // Process specific
@@ -45,6 +96,8 @@ namespace FEXCore::Core {
       uint64_t CPUIDFunction{};
       uint64_t SyscallHandlerObj{};
       uint64_t SyscallHandlerFunc{};
+
+      uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
 
       // Thread Specific
       uint64_t SignalHandlerRefCountPointer{};
@@ -72,6 +125,8 @@ namespace FEXCore::Core {
       uint64_t CPUIDFunction{};
       uint64_t SyscallHandlerObj{};
       uint64_t SyscallHandlerFunc{};
+
+      uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
 
       // Thread Specific
       uint64_t SignalHandlerRefCountPointer{};
