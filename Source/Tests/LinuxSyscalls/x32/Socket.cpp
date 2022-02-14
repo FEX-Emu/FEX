@@ -21,6 +21,8 @@ $end_info$
 #include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::mmsghdr_32>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<void>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<uint32_t>, "%lx")
 
 namespace FEXCore::Core {
   struct CpuStateFrame;
