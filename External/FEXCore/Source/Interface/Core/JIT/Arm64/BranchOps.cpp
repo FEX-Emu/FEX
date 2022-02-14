@@ -36,7 +36,7 @@ DEF_OP(SignalReturn) {
 
   // Now branch to our signal return helper
   // This can't be a direct branch since the code needs to live at a constant location
-  LoadConstant(x0, ThreadSharedData.SignalReturnInstruction);
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SignalReturnHandler)));
   br(x0);
 }
 
@@ -49,7 +49,7 @@ DEF_OP(CallbackReturn) {
   ResetStack();
 
   // We can now lower the ref counter again
-  LoadConstant(x0, reinterpret_cast<uint64_t>(ThreadSharedData.SignalHandlerRefCounterPtr));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SignalHandlerRefCountPointer)));
   ldr(w2, MemOperand(x0));
   sub(w2, w2, 1);
   str(w2, MemOperand(x0));
@@ -88,7 +88,7 @@ DEF_OP(ExitFunction) {
     RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
     // L1 Cache
-    LoadConstant(x0, ThreadState->LookupCache->GetL1Pointer());
+    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
 
     and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
     add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -99,7 +99,7 @@ DEF_OP(ExitFunction) {
     br(x1);
 
     bind(&FullLookup);
-    LoadConstant(TMP1, ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress);
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.DispatcherLoopTop)));
     str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
     br(TMP1);
   }
@@ -194,11 +194,10 @@ DEF_OP(Syscall) {
     str(GetReg<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, i * 8));
   }
 
-  LoadConstant(x0, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SyscallHandlerObj)));
+  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SyscallHandlerFunc)));
   mov(x1, STATE);
   mov(x2, sp);
-
-  LoadConstant(x3, reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall));
   blr(x3);
 
   add(sp, sp, SPOffset);
@@ -437,7 +436,7 @@ DEF_OP(RemoveCodeEntry) {
   mov(x0, STATE);
   LoadConstant(x1, Entry);
 
-  LoadConstant(x2, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit));
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.RemoveCodeEntryFromJIT)));
   SpillStaticRegs();
   blr(x2);
   FillStaticRegs();
@@ -454,19 +453,10 @@ DEF_OP(CPUID) {
   // x0 = CPUID Handler
   // x1 = CPUID Function
   // x2 = CPUID Leaf
-  LoadConstant(x0, reinterpret_cast<uint64_t>(&CTX->CPUID));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.CPUIDObj)));
+  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.CPUIDFunction)));
   mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
   mov(x2, GetReg<RA_64>(Op->Header.Args[1].ID()));
-
-  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t, uint32_t);
-  union PtrCast {
-    ClassPtrType ClassPtr;
-    uintptr_t Data;
-  };
-
-  PtrCast Ptr;
-  Ptr.ClassPtr = &FEXCore::CPUIDEmu::RunFunction;
-  LoadConstant(x3, Ptr.Data);
   SpillStaticRegs();
   blr(x3);
   FillStaticRegs();

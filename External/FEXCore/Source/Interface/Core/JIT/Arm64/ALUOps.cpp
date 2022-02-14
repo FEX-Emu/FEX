@@ -12,30 +12,6 @@ namespace FEXCore::CPU {
 #define GRD(Node) (IROp->Size <= 4 ? GetDst<RA_32>(Node) : GetDst<RA_64>(Node))
 #define GRS(Node) (IROp->Size <= 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
-static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
-  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
-  __uint128_t Res = Source / Divisor;
-  return Res;
-}
-
-static int64_t LDIV(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
-  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
-  __int128_t Res = Source / Divisor;
-  return Res;
-}
-
-static uint64_t LUREM(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
-  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
-  __uint128_t Res = Source % Divisor;
-  return Res;
-}
-
-static int64_t LREM(int64_t SrcHigh, int64_t SrcLow, int64_t Divisor) {
-  __int128_t Source = (static_cast<__int128_t>(SrcHigh) << 64) | SrcLow;
-  __int128_t Res = Source % Divisor;
-  return Res;
-}
-
 using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
@@ -666,7 +642,8 @@ DEF_OP(LDiv) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-      LoadConstant(x3, reinterpret_cast<uint64_t>(LDIV));
+      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIV)));
+
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
@@ -709,7 +686,7 @@ DEF_OP(LUDiv) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-      LoadConstant(x3, reinterpret_cast<uint64_t>(LUDIV));
+      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIV)));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
@@ -762,7 +739,7 @@ DEF_OP(LRem) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-      LoadConstant(x3, reinterpret_cast<uint64_t>(LREM));
+      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREM)));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
@@ -812,7 +789,7 @@ DEF_OP(LURem) {
       mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
       mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
 
-      LoadConstant(x3, reinterpret_cast<uint64_t>(LUREM));
+      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREM)));
       SpillStaticRegs();
       blr(x3);
       FillStaticRegs();
