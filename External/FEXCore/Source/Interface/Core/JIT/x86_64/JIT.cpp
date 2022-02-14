@@ -120,9 +120,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       case FABI_VOID_U16: {
         PushRegs();
         mov(edi, GetSrc<RA_32>(IROp->Args[0].ID()));
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
         break;
@@ -131,9 +129,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         movss(xmm0, GetSrc(IROp->Args[0].ID()));
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -147,9 +143,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         movsd(xmm0, GetSrc(IROp->Args[0].ID()));
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -164,9 +158,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         mov(edi, GetSrc<RA_32>(IROp->Args[0].ID()));
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -182,9 +174,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -198,9 +188,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -214,9 +202,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -229,9 +215,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -244,9 +228,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -262,9 +244,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdx, GetSrc(IROp->Args[1].ID()));
         pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -277,9 +257,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -297,9 +275,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdx, GetSrc(IROp->Args[1].ID()));
         pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
 
-        mov(rax, (uintptr_t)Info.fn);
-
-        call(rax);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -345,6 +321,9 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+
+    // Fill in the fallback handlers
+    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
 
     // Thread Specific
     Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);

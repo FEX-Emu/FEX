@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 
@@ -38,12 +39,14 @@ namespace FEXCore::CPU {
   struct FallbackInfo {
     FallbackABI ABI;
     void *fn;
+    FEXCore::Core::FallbackHandlerIndex HandlerIndex;
   };
 
   class InterpreterOps {
 
     public:
       static void InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData);
+      static void FillFallbackIndexPointers(uint64_t *Info);
       static bool GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info);
 
       struct IROpData {
