@@ -9,15 +9,17 @@ foreach(POSIX_TEST ${POSIX_TESTS})
   list(GET TEST_NAME_LIST 1 TEST_NAME)
   string(REPLACE "/" "-" TEST_NAME ${TEST_NAME})
 
-  add_test(NAME "${TEST_NAME}.int.posix"
-    COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-    "${CMAKE_SOURCE_DIR}/unittests/POSIX/Known_Failures"
-    "${CMAKE_SOURCE_DIR}/unittests/POSIX/Expected_Output"
-    "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
-    "${TEST_NAME}"
-    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "--no-silent" "-c" "irint" "-n" "500" "--"
-    "${POSIX_TEST}")
+  if (ENABLE_INTERPRETER)
+    add_test(NAME "${TEST_NAME}.int.posix"
+      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+      "${CMAKE_SOURCE_DIR}/unittests/POSIX/Known_Failures"
+      "${CMAKE_SOURCE_DIR}/unittests/POSIX/Expected_Output"
+      "${CMAKE_SOURCE_DIR}/unittests/POSIX/Disabled_Tests"
+      "${TEST_NAME}"
+      "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
+      "--no-silent" "-c" "irint" "-n" "500" "--"
+      "${POSIX_TEST}")
+  endif()
 
   add_test(NAME "${TEST_NAME}.jit.posix"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"

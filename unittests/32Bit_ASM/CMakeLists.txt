@@ -48,9 +48,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   # Format is "<Test Arguments>" "<Test Name>"
   set(TEST_ARGS
-    "--no-silent -g -c irint -n 1   --no-multiblock"    "int_1"     "int"
-    "--no-silent -g -c irint -n 500 --no-multiblock"    "int_500"   "int"
-    "--no-silent -g -c irint -n 500 --multiblock"       "int_500_m" "int"
     "--no-silent -g -c irjit -n 1   --no-multiblock"    "jit_1"     "jit"
     "--no-silent -g -c irjit -n 500 --no-multiblock"    "jit_500"   "jit"
     "--no-silent -g -c irjit -n 500 --multiblock"       "jit_500_m" "jit"
@@ -60,6 +57,14 @@ foreach(ASM_SRC ${ASM_SOURCES})
     list(APPEND TEST_ARGS
       "--no-silent -g -c host"       "host"      "host"
       )
+  endif()
+
+  if (ENABLE_INTERPRETER)
+    list(APPEND TEST_ARGS
+      "--no-silent -g -c irint -n 1   --no-multiblock"    "int_1"     "int"
+      "--no-silent -g -c irint -n 500 --no-multiblock"    "int_500"   "int"
+      "--no-silent -g -c irint -n 500 --multiblock"       "int_500_m" "int"
+    )
   endif()
 
   set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests")
