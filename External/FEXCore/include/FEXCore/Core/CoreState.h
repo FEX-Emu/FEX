@@ -64,7 +64,30 @@ namespace FEXCore::Core {
     } AArch64;
 
     struct {
-      // XXX: Not implemented yet
+      // Process specific
+      uint64_t PrintValue{};
+      uint64_t PrintVectorValue{};
+      uint64_t RemoveCodeEntryFromJIT{};
+      uint64_t CPUIDObj{};
+      uint64_t CPUIDFunction{};
+      uint64_t SyscallHandlerObj{};
+      uint64_t SyscallHandlerFunc{};
+
+      // Thread Specific
+      uint64_t SignalHandlerRefCountPointer{};
+
+      /**
+       * @name Dispatcher pointers
+       * @{ */
+      uint64_t DispatcherLoopTop{};
+      uint64_t DispatcherLoopTopFillSRA{};
+      uint64_t ThreadStopHandler{};
+      uint64_t ThreadPauseHandler{};
+      uint64_t UnimplementedInstructionHandler{};
+      uint64_t OverflowExceptionHandler{};
+      uint64_t SignalReturnHandler{};
+      uint64_t L1Pointer{};
+      /**  @} */
     } X86;
   };
 

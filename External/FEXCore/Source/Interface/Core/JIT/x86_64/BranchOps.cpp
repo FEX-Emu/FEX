@@ -47,8 +47,7 @@ DEF_OP(SignalReturn) {
     add(rsp, SpillSlots * 16); // + 8 to consume return address
   }
 
-  mov(TMP1, ThreadSharedData.SignalHandlerReturnAddress);
-  jmp(TMP1);
+  jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalReturnHandler)]);
 }
 
 DEF_OP(CallbackReturn) {
@@ -58,8 +57,7 @@ DEF_OP(CallbackReturn) {
   }
 
   // Make sure to adjust the refcounter so we don't clear the cache now
-  mov(rax, reinterpret_cast<uint64_t>(ThreadSharedData.SignalHandlerRefCounterPtr));
-  sub(dword [rax], 1);
+  sub(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalHandlerRefCountPointer)], 1);
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
   add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])], 8);
@@ -104,7 +102,8 @@ DEF_OP(ExitFunction) {
     Xbyak::Reg RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
 
     // L1 Cache
-    mov(rcx, ThreadState->LookupCache->GetL1Pointer());
+    mov(rcx, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+
     mov(rax, RipReg);
 
     and_(rax, LookupCache::L1_ENTRIES_MASK);
@@ -117,9 +116,8 @@ DEF_OP(ExitFunction) {
     jmp(qword[LookupBase + 0]);
 
     L(FullLookup);
-    mov(rax, ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress);
     mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], RipReg);
-    jmp(rax);
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.DispatcherLoopTop)]);
   }
 
 #ifdef BLOCKSTATS
@@ -187,15 +185,13 @@ DEF_OP(Syscall) {
   }
 
   mov(rsi, STATE); // Move thread in to rsi
-  mov(rdi, reinterpret_cast<uint64_t>(CTX->SyscallHandler));
+  mov(rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SyscallHandlerObj)]);
   mov(rdx, rsp);
-
-  mov(rax, reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall));
 
   if (NumPush & 1)
     sub(rsp, 8); // Align
   // {rdi, rsi, rdx}
-  call(rax);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SyscallHandlerFunc)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
@@ -280,9 +276,7 @@ DEF_OP(RemoveCodeEntry) {
   mov(rax, Entry); // imm64 move
   mov(rsi, rax);
 
-
-  mov(rax, reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit));
-  call(rax);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.RemoveCodeEntryFromJIT)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
@@ -293,13 +287,6 @@ DEF_OP(RemoveCodeEntry) {
 
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
-
-  using ClassPtrType = FEXCore::CPUID::FunctionResults (FEXCore::CPUIDEmu::*)(uint32_t Function, uint32_t Leaf);
-  union {
-    ClassPtrType ClassPtr;
-    uint64_t Raw;
-  } Ptr;
-  Ptr.ClassPtr = &CPUIDEmu::RunFunction;
 
   for (auto &Reg : RA64)
     push(Reg);
@@ -313,18 +300,15 @@ DEF_OP(CPUID) {
   // rsi can be in the source registers, so copy argument to edx first
   mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
   mov (esi, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-  mov (rdi, reinterpret_cast<uint64_t>(&CTX->CPUID));
+  mov (rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.CPUIDObj)]);
 
   auto NumPush = RA64.size();
 
   if (NumPush & 1)
     sub(rsp, 8); // Align
 
-  mov(rax, Ptr.Raw);
-
   // {rdi, rsi, rdx}
-
-  call(rax);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.CPUIDFunction)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
