@@ -76,7 +76,7 @@ function(add_host_lib_with_name NAME LIBNAME)
   # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
   target_link_options(${LIBNAME}-host PRIVATE "LINKER:--no-undefined")
 
-  install(TARGETS ${LIBNAME}-host DESTINATION $ENV{DESTDIR}/${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
+  install(TARGETS ${LIBNAME}-host DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
 endfunction()
 
 function(add_host_lib NAME)

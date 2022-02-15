@@ -507,7 +507,7 @@ if (BUILD_THUNKS)
   install(
     CODE "MESSAGE(\"-- Installing: guest-libs\")"
     CODE "
-    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target ThunkGuestsInstall
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
     )"
     DEPENDS guest-libs
