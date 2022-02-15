@@ -140,51 +140,75 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
 }
 
 
-void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t SpillMask) {
+void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
   if (StaticRegisterAllocation()) {
     for (size_t i = 0; i < SRA64.size(); i+=2) {
       auto Reg1 = SRA64[i];
       auto Reg2 = SRA64[i+1];
-      if (((1U << Reg1.GetCode()) & SpillMask) &&
-          ((1U << Reg2.GetCode()) & SpillMask)) {
+      if (((1U << Reg1.GetCode()) & GPRSpillMask) &&
+          ((1U << Reg2.GetCode()) & GPRSpillMask)) {
         stp(Reg1, Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
       }
-      else if (((1U << Reg1.GetCode()) & SpillMask)) {
+      else if (((1U << Reg1.GetCode()) & GPRSpillMask)) {
         str(Reg1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
       }
-      else if (((1U << Reg2.GetCode()) & SpillMask)) {
+      else if (((1U << Reg2.GetCode()) & GPRSpillMask)) {
         str(Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1])));
       }
     }
 
     if (FPRs) {
       for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-        stp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+        auto Reg1 = SRAFPR[i];
+        auto Reg2 = SRAFPR[i+1];
+
+        if (((1U << Reg1.GetCode()) & FPRSpillMask) &&
+            ((1U << Reg2.GetCode()) & FPRSpillMask)) {
+          stp(Reg1.Q(), Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+        }
+        else if (((1U << Reg1.GetCode()) & FPRSpillMask)) {
+          str(Reg1.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+        }
+        else if (((1U << Reg2.GetCode()) & FPRSpillMask)) {
+          str(Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i+1][0])));
+        }
       }
     }
   }
 }
 
-void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t FillMask) {
+void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
   if (StaticRegisterAllocation()) {
     for (size_t i = 0; i < SRA64.size(); i+=2) {
       auto Reg1 = SRA64[i];
       auto Reg2 = SRA64[i+1];
-      if (((1U << Reg1.GetCode()) & FillMask) &&
-          ((1U << Reg2.GetCode()) & FillMask)) {
+      if (((1U << Reg1.GetCode()) & GPRFillMask) &&
+          ((1U << Reg2.GetCode()) & GPRFillMask)) {
         ldp(Reg1, Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
       }
-      else if (((1U << Reg1.GetCode()) & FillMask)) {
+      else if (((1U << Reg1.GetCode()) & GPRFillMask)) {
         ldr(Reg1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
       }
-      else if (((1U << Reg2.GetCode()) & FillMask)) {
+      else if (((1U << Reg2.GetCode()) & GPRFillMask)) {
         ldr(Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1])));
       }
     }
 
     if (FPRs) {
       for (size_t i = 0; i < SRAFPR.size(); i+=2) {
-        ldp(SRAFPR[i].Q(), SRAFPR[i+1].Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+        auto Reg1 = SRAFPR[i];
+        auto Reg2 = SRAFPR[i+1];
+
+        if (((1U << Reg1.GetCode()) & FPRFillMask) &&
+            ((1U << Reg2.GetCode()) & FPRFillMask)) {
+          ldp(Reg1.Q(), Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+        }
+        else if (((1U << Reg1.GetCode()) & FPRFillMask)) {
+          ldr(Reg1.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+        }
+        else if (((1U << Reg2.GetCode()) & FPRFillMask)) {
+          ldr(Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i+1][0])));
+        }
       }
     }
   }

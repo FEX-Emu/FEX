@@ -661,10 +661,25 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           Changed = true;
         }
       }
+      else if (IROp->Op == OP_SYSCALL ||
+               IROp->Op == OP_INLINESYSCALL) {
+        uint32_t Flags{};
+        if (IROp->Op == OP_SYSCALL) {
+          auto Op = IROp->C<IR::IROp_Syscall>();
+          Flags = Op->Flags;
+        }
+        else {
+          auto Op = IROp->C<IR::IROp_InlineSyscall>();
+          Flags = Op->Flags;
+        }
+
+        if ((Flags & FEXCore::IR::SYSCALL_FLAG_OPTIMIZETHROUGH) != FEXCore::IR::SYSCALL_FLAG_OPTIMIZETHROUGH) {
+          // We can't track through these
+          ResetClassificationAccesses(&LocalInfo);
+        }
+      }
       else if (IROp->Op == OP_STORECONTEXTINDEXED ||
                IROp->Op == OP_LOADCONTEXTINDEXED ||
-               IROp->Op == OP_SYSCALL ||
-               IROp->Op == OP_INLINESYSCALL ||
                IROp->Op == OP_BREAK) {
         // We can't track through these
         ResetClassificationAccesses(&LocalInfo);

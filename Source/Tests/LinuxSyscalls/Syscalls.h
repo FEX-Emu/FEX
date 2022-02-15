@@ -12,6 +12,7 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <mutex>
@@ -98,6 +99,7 @@ public:
 
   struct SyscallFunctionDefinition {
     uint8_t NumArgs;
+    uint8_t Flags;
     union {
       void* Ptr;
       SyscallPtrArg0 Ptr0;
@@ -121,6 +123,11 @@ public:
   FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
     auto &Def = Definitions.at(Syscall);
     return {Def.NumArgs, true, Def.HostSyscallNumber};
+  }
+
+  uint32_t GetSyscallFlags(uint64_t Syscall) const override {
+    auto &Def = Definitions.at(Syscall);
+    return Def.Flags;
   }
 
   uint64_t HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr);
@@ -388,8 +395,8 @@ static bool HasSyscallError(const void* Result) {
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
     } } impl_##name
 
 // Registers syscall for both 32bit and 64bit
@@ -397,6 +404,22 @@ static bool HasSyscallError(const void* Result) {
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
+    } } impl_##name
+
+#define REGISTER_SYSCALL_IMPL_FLAGS(name, flags, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, flags, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, flags, #name, lambda); \
+    } } impl_##name
+
+#define REGISTER_SYSCALL_IMPL_PASS_FLAGS(name, flags, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), flags, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), flags, #name, lambda); \
     } } impl_##name

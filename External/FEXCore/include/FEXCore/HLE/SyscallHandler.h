@@ -43,6 +43,7 @@ namespace FEXCore::HLE {
 
     virtual uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) = 0;
     virtual SyscallABI GetSyscallABI(uint64_t Syscall) = 0;
+    virtual uint32_t GetSyscallFlags(uint64_t Syscall) const { return 0; }
 
     SyscallOSABI GetOSABI() const { return OSABI; }
 

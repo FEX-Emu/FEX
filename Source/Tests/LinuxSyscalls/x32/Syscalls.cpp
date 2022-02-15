@@ -66,6 +66,7 @@ namespace FEX::HLE::x32 {
     void* SyscallHandler;
     int ArgumentCount;
     int32_t HostSyscallNumber;
+    uint8_t Flags;
 #ifdef DEBUG_STRACE
     std::string TraceFormatString;
 #endif
@@ -75,6 +76,7 @@ namespace FEX::HLE::x32 {
 
   void RegisterSyscallInternal(int SyscallNumber,
     int32_t HostSyscallNumber,
+    uint8_t Flags,
 #ifdef DEBUG_STRACE
     const std::string& TraceFormatString,
 #endif
@@ -83,6 +85,7 @@ namespace FEX::HLE::x32 {
       SyscallHandler,
       ArgumentCount,
       HostSyscallNumber,
+      Flags,
 #ifdef DEBUG_STRACE
       TraceFormatString
 #endif
@@ -163,6 +166,7 @@ namespace FEX::HLE::x32 {
 #endif
       Def.Ptr = Syscall.SyscallHandler;
       Def.NumArgs = Syscall.ArgumentCount;
+      Def.Flags = Syscall.Flags;
       Def.HostSyscallNumber = Syscall.HostSyscallNumber;
 #ifdef DEBUG_STRACE
       Def.StraceFmt = Syscall.TraceFormatString;

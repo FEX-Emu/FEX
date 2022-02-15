@@ -4,6 +4,7 @@ tags: LinuxSyscalls|syscalls-shared
 $end_info$
 */
 
+#include "FEXCore/IR/IR.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
@@ -267,7 +268,8 @@ namespace FEX::HLE {
       return CloneHandler(Frame, &args);
     }));
 
-    REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(exit, FEXCore::IR::SYSCALL_FLAG_NORETURN | FEXCore::IR::SYSCALL_FLAG_OPTIMIZETHROUGH | FEXCore::IR::SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
       auto Thread = Frame->Thread;
       if (Thread->ThreadManager.clear_child_tid) {
         std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
@@ -303,7 +305,8 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getuid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getuid, FEXCore::IR::SYSCALL_FLAG_OPTIMIZETHROUGH | FEXCore::IR::SYSCALL_FLAG_NOSYNCSTATEONENTRY | FEXCore::IR::SYSCALL_FLAG_NOSIDEEFFECTS,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getuid();
       SYSCALL_ERRNO();
     });

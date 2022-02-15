@@ -75,7 +75,13 @@
     "constexpr FEXCore::IR::BreakReason Break_Interrupt3         {2}",
     "constexpr FEXCore::IR::BreakReason Break_Halt               {3}",
     "constexpr FEXCore::IR::BreakReason Break_Overflow           {4}",
-    "constexpr FEXCore::IR::BreakReason Break_InvalidInstruction {5}"
+    "constexpr FEXCore::IR::BreakReason Break_InvalidInstruction {5}",
+
+    "constexpr uint8_t SYSCALL_FLAG_DEFAULT            {0}",
+    "constexpr uint8_t SYSCALL_FLAG_OPTIMIZETHROUGH    {1 << 0}",
+    "constexpr uint8_t SYSCALL_FLAG_NOSYNCSTATEONENTRY {1 << 1}",
+    "constexpr uint8_t SYSCALL_FLAG_NORETURN           {1 << 2}",
+    "constexpr uint8_t SYSCALL_FLAG_NOSIDEEFFECTS      {1 << 3}"
   ],
 
   "Ops": {
@@ -699,6 +705,9 @@
         "Arg3",
         "Arg4",
         "Arg5"
+      ],
+      "Args": [
+        "uint8_t", "Flags"
       ]
     },
 
@@ -725,7 +734,8 @@
         "Arg5"
       ],
       "Args": [
-        "int32_t", "HostSyscallNumber"
+        "int32_t", "HostSyscallNumber",
+        "uint8_t", "Flags"
       ]
     },
 

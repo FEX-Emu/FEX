@@ -37,9 +37,27 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
     while (1) {
       auto [CodeNode, IROp] = CodeLast();
 
+      bool HasSideEffects = IR::HasSideEffects(IROp->Op);
+      if (IROp->Op == OP_SYSCALL ||
+          IROp->Op == OP_INLINESYSCALL) {
+        uint32_t Flags{};
+        if (IROp->Op == OP_SYSCALL) {
+          auto Op = IROp->C<IR::IROp_Syscall>();
+          Flags = Op->Flags;
+        }
+        else {
+          auto Op = IROp->C<IR::IROp_InlineSyscall>();
+          Flags = Op->Flags;
+        }
+
+        if (Flags & FEXCore::IR::SYSCALL_FLAG_NOSIDEEFFECTS) {
+          HasSideEffects = false;
+        }
+      }
+
       // Skip over anything that has side effects
       // Use count tracking can't safely remove anything with side effects
-      if (!IR::HasSideEffects(IROp->Op)) {
+      if (!HasSideEffects) {
         if (CodeNode->GetUses() == 0) {
           NumRemoved++;
           IREmit->Remove(CodeNode);
