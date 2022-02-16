@@ -8,6 +8,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
+#include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstring>
@@ -31,7 +32,10 @@ namespace FEX::HLE {
   using cap_user_data_t = void*;
 
   void RegisterInfo() {
-    REGISTER_SYSCALL_IMPL(uname, [](FEXCore::Core::CpuStateFrame *Frame, struct utsname *buf) -> uint64_t {
+    using namespace FEXCore::IR;
+
+    REGISTER_SYSCALL_IMPL_FLAGS(uname, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, struct utsname *buf) -> uint64_t {
       struct utsname Local{};
       if (::uname(&Local) == 0) {
         memcpy(buf->nodename, Local.nodename, sizeof(Local.nodename));
@@ -58,27 +62,32 @@ namespace FEX::HLE {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(syslog, [](FEXCore::Core::CpuStateFrame *Frame, int type, char *bufp, int len) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(syslog, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int type, char *bufp, int len) -> uint64_t {
       uint64_t Result = ::klogctl(type, bufp, len);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getrandom, [](FEXCore::Core::CpuStateFrame *Frame, void *buf, size_t buflen, unsigned int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getrandom, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, void *buf, size_t buflen, unsigned int flags) -> uint64_t {
       uint64_t Result = ::getrandom(buf, buflen, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(capget, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(capget, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, cap_user_data_t datap) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(capget), hdrp, datap);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(capset, [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(capset, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, cap_user_header_t hdrp, const cap_user_data_t datap) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(capset), hdrp, datap);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(getcpu, [](FEXCore::Core::CpuStateFrame *Frame, unsigned *cpu, unsigned *node, struct getcpu_cache *tcache) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(getcpu, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, unsigned *cpu, unsigned *node, struct getcpu_cache *tcache) -> uint64_t {
       uint32_t LocalCPU{};
       uint32_t LocalNode{};
       // tcache is ignored
@@ -98,12 +107,14 @@ namespace FEX::HLE {
     });
 
     //compare  two  processes  to determine if they share a kernel resource
-    REGISTER_SYSCALL_IMPL_PASS(kcmp, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid1, pid_t pid2, int type, unsigned long idx1, unsigned long idx2) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(kcmp, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid1, pid_t pid2, int type, unsigned long idx1, unsigned long idx2) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(kcmp), pid1, pid2, type, idx1, idx2);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(seccomp, [](FEXCore::Core::CpuStateFrame *Frame, unsigned int operation, unsigned int flags, void *args) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(seccomp, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, unsigned int operation, unsigned int flags, void *args) -> uint64_t {
       // FEX doesn't support seccomp
       return -EINVAL;
     });

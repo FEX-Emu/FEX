@@ -8,6 +8,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 
+#include <FEXCore/IR/IR.h>
+
 #include <mqueue.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -17,22 +19,28 @@ $end_info$
 
 namespace FEX::HLE {
   void RegisterMsg() {
-    REGISTER_SYSCALL_IMPL_PASS(msgget, [](FEXCore::Core::CpuStateFrame *Frame, key_t key, int msgflg) -> uint64_t {
+    using namespace FEXCore::IR;
+
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgget, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, key_t key, int msgflg) -> uint64_t {
       uint64_t Result = ::msgget(key, msgflg);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(msgsnd, [](FEXCore::Core::CpuStateFrame *Frame, int msqid, const void *msgp, size_t msgsz, int msgflg) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgsnd, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int msqid, const void *msgp, size_t msgsz, int msgflg) -> uint64_t {
       uint64_t Result = ::msgsnd(msqid, msgp, msgsz, msgflg);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(msgrcv, [](FEXCore::Core::CpuStateFrame *Frame, int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgrcv, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) -> uint64_t {
       uint64_t Result = ::msgrcv(msqid, msgp, msgsz, msgtyp, msgflg);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(msgctl, [](FEXCore::Core::CpuStateFrame *Frame, int msqid, int cmd, struct msqid_ds *buf) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgctl, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int msqid, int cmd, struct msqid_ds *buf) -> uint64_t {
       // A quirk of this syscall
       // On 32-bit this syscall ONLY supports IPC_64 msqid_ds encoding
       // If an application want to use the old style encoding then it needs to use the ipc syscall with MSGCTL command
@@ -42,7 +50,8 @@ namespace FEX::HLE {
     });
 
     // last two parameters are optional
-    REGISTER_SYSCALL_IMPL_PASS(mq_unlink, [](FEXCore::Core::CpuStateFrame *Frame, const char *name) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(mq_unlink, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, const char *name) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(mq_unlink), name);
       SYSCALL_ERRNO();
     });
