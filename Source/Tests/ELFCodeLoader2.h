@@ -341,7 +341,17 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     // map stack here, so that nothing gets mapped there
     // This works with both 64-bit and 32-bit. The mapper will only give us a function in the correct region
-    StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0));
+    //
+    // MAP_GROWSDOWN is required here. The default stack pointer allocated by the kernel is mapped with it.
+    // Some libraries (like libfmod) will have a PT_GNU_STACK with executable stack bit set
+    // On dlopen glibc will check its current stack allocation permission bits (using internal expectations of allocation, not /proc/self/maps)
+    // If stack hasn't been allocated as executable then it will proceed to mprotect the range with the executable bit set
+    // Then it will mprotect the base stack page with `PROT_READ|PROT_WRITE|PROT_EXEC|PROT_GROWSDOWN`
+    // If the original stack memory region wasn't allocated with MAP_GROWSDOWN then the mprotect with PROT_GROWSDOWN will fail with EINVAL
+    //
+    // This is still technically a memory leak if the stack grows, but since the primary thread's stack only gets destroyed on process close, this is
+    // fine.
+    StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (StackPointer == ~0ULL) {
       LogMan::Msg::EFmt("Allocating stack failed");
