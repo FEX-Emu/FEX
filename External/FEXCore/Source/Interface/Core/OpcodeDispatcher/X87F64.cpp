@@ -551,14 +551,15 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
 }
 
+//TODO: This should obey rounding mode
 void OpDispatchBuilder::FRNDINTF64(OpcodeArgs) {
   auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
+  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  auto result = _F80Round(a);
+  auto result = _Vector_FToI(8, 8, a, FEXCore::IR::Round_Nearest);
 
   // Write to ST[TOP]
-  _StoreContextIndexed(result, top, 16, MMBaseOffset(), 16, FPRClass);
+  _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
 //TODO: Don't round trip through F80
@@ -572,8 +573,8 @@ void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
 
   auto a_f80 = _F80CVTTo(a, 8);
 
-  auto exp_f80 = _F80XTRACT_EXP(a);
-  auto sig_f80 = _F80XTRACT_SIG(a);
+  auto exp_f80 = _F80XTRACT_EXP(a_f80);
+  auto sig_f80 = _F80XTRACT_SIG(a_f80);
 
   auto exp = _F80CVT(8, exp_f80);
   auto sig = _F80CVT(8, sig_f80);
