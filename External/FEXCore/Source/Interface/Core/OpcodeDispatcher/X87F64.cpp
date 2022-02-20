@@ -612,17 +612,16 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  auto a_f80 = _F80CVTTo(a, 8);
-  auto b_f80 = _F80CVTTo(b, 8);
+  auto one = _Constant(1);
 
-  OrderedNode *Res = _F80Cmp(a_f80, b_f80,
-    (1 << FCMP_FLAG_EQ) |
-    (1 << FCMP_FLAG_LT) |
-    (1 << FCMP_FLAG_UNORDERED));
+  auto cmp_eq = _VFCMPEQ(8, 8, a, b);
+  auto cmp_lt = _VFCMPLT(8, 8, a, b);
+  auto cmp_un = _VFCMPUNO(8, 8, a, b);
 
-  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
+  OrderedNode* HostFlag_ZF = _And(_VExtractToGPR(8, 8, cmp_eq, 0), one);
+  OrderedNode* HostFlag_CF = _And(_VExtractToGPR(8, 8, cmp_lt, 0), one);
+  OrderedNode* HostFlag_Unordered = _And(_VExtractToGPR(8, 8, cmp_un, 0), one);
+  
   HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
   HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
 
