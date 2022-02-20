@@ -90,6 +90,7 @@ set (SRCS
   Interface/Core/OpcodeDispatcher/Flags.cpp
   Interface/Core/OpcodeDispatcher/Vector.cpp
   Interface/Core/OpcodeDispatcher/X87.cpp
+  Interface/Core/OpcodeDispatcher/X87F64.cpp
   Interface/Core/OpcodeDispatcher.cpp
   Interface/Core/SignalDelegator.cpp
   Interface/Core/X86Tables.cpp

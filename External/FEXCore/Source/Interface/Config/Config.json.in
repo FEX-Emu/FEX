@@ -241,6 +241,13 @@
           "Highly likely to break any multithreaded application if disabled."
         ]
       },
+      "X87ReducedPrecision": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Emulates X87 floating point using 64-bit precision"
+        ]
+      },
       "ABILocalFlags": {
         "Type": "bool",
         "Default": "false",

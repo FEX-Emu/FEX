@@ -1478,6 +1478,35 @@
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
       }
     },
+    "F64": {
+        "FPR = F64ATAN FPR:$Src1, FPR:$Src2": {
+            "DestSize": "8"
+        },
+        "FPR = F64FPREM FPR:$Src1, FPR:$Src2": {
+            "DestSize": "8"
+        },
+        "FPR = F64FPREM1 FPR:$Src1, FPR:$Src2": {
+            "DestSize": "8"
+        },
+        "FPR = F64SCALE FPR:$Src1, FPR:$Src2": {
+            "DestSize": "8"
+        },
+        "FPR = F64F2XM1 FPR:$Src": {
+            "DestSize": "8"
+        },
+        "FPR = F64FYL2X FPR:$Src, FPR:$Src2": {
+            "DestSize": "8"
+        },
+        "FPR = F64TAN FPR:$Src": {
+            "DestSize": "8"
+        },
+        "FPR = F64SIN FPR:$Src": {
+            "DestSize": "8"
+        },
+        "FPR = F64COS FPR:$Src": {
+            "DestSize": "8"
+        }
+    },
     "F80": {
       "F80LoadFCW GPR:$Src": {
         "HasSideEffects": true

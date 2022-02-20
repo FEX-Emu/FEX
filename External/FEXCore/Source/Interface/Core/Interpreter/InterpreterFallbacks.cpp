@@ -48,6 +48,16 @@ FallbackInfo GetFallbackInfo(double(*fn)(X80SoftFloat), FEXCore::Core::FallbackH
 }
 
 template<>
+FallbackInfo GetFallbackInfo(double(*fn)(double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_F64, (void*)fn, HandlerIndex};
+}
+
+template<>
+FallbackInfo GetFallbackInfo(double(*fn)(double,double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_F64_F64, (void*)fn, HandlerIndex};
+}
+
+template<>
 FallbackInfo GetFallbackInfo(int16_t(*fn)(X80SoftFloat), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
   return {FABI_I16_F80, (void*)fn, HandlerIndex};
 }
@@ -122,6 +132,18 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
   Info[Core::OPINDEX_F80FPREM1] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80FPREM1>::handle, Core::OPINDEX_F80FPREM1).fn);
   Info[Core::OPINDEX_F80FPREM] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80FPREM>::handle, Core::OPINDEX_F80FPREM).fn);
   Info[Core::OPINDEX_F80SCALE] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80SCALE>::handle, Core::OPINDEX_F80SCALE).fn);
+
+  // Double Precision
+  Info[Core::OPINDEX_F64SIN] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64SIN>::handle, Core::OPINDEX_F64SIN).fn);
+  Info[Core::OPINDEX_F64COS] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64COS>::handle, Core::OPINDEX_F64COS).fn);
+  Info[Core::OPINDEX_F64TAN] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64TAN>::handle, Core::OPINDEX_F64TAN).fn);
+  Info[Core::OPINDEX_F64ATAN] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64ATAN>::handle, Core::OPINDEX_F64ATAN).fn);
+  Info[Core::OPINDEX_F64F2XM1] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64F2XM1>::handle, Core::OPINDEX_F64F2XM1).fn);
+  Info[Core::OPINDEX_F64FYL2X] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64FYL2X>::handle, Core::OPINDEX_F64FYL2X).fn);
+  Info[Core::OPINDEX_F64FPREM] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64FPREM>::handle, Core::OPINDEX_F64FPREM).fn);
+  Info[Core::OPINDEX_F64FPREM1] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64FPREM1>::handle, Core::OPINDEX_F64FPREM1).fn);
+  Info[Core::OPINDEX_F64SCALE] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64SCALE>::handle, Core::OPINDEX_F64SCALE).fn);
+
 }
 
 bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info) {
@@ -238,6 +260,12 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
       return true; \
     }
 
+#define COMMON_F64_OP(OP) \
+    case IR::OP_F64##OP: { \
+      *Info = GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64##OP>::handle, Core::OPINDEX_F64##OP); \
+      return true; \
+    }
+
     // Unary
     COMMON_X87_OP(ROUND)
     COMMON_X87_OP(F2XM1)
@@ -260,6 +288,19 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
     COMMON_X87_OP(FPREM1)
     COMMON_X87_OP(FPREM)
     COMMON_X87_OP(SCALE)
+
+    // Double Precision Unary
+    COMMON_F64_OP(F2XM1)
+    COMMON_F64_OP(TAN)
+    COMMON_F64_OP(SIN)
+    COMMON_F64_OP(COS)
+
+    // Double Precision Binary
+    COMMON_F64_OP(FYL2X)
+    COMMON_F64_OP(ATAN)
+    COMMON_F64_OP(FPREM1)
+    COMMON_F64_OP(FPREM)
+    COMMON_F64_OP(SCALE)
 
     default:
       break;

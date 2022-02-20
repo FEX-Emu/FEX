@@ -28,6 +28,8 @@ namespace FEXCore::CPU {
     FABI_F80_I32,
     FABI_F32_F80,
     FABI_F64_F80,
+    FABI_F64_F64,
+    FABI_F64_F64_F64,
     FABI_I16_F80,
     FABI_I32_F80,
     FABI_I64_F80,
