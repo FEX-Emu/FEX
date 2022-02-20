@@ -311,6 +311,17 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(F80BCDLOAD,             F80BCDLOAD);
   REGISTER_OP(F80BCDSTORE,            F80BCDSTORE);
 
+  // F64 ops
+  REGISTER_OP(F64SIN,                 F64SIN);
+  REGISTER_OP(F64COS,                 F64COS);
+  REGISTER_OP(F64TAN,                 F64TAN);
+  REGISTER_OP(F64F2XM1,               F64F2XM1);
+  REGISTER_OP(F64ATAN,                F64ATAN);
+  REGISTER_OP(F64FPREM,               F64FPREM);
+  REGISTER_OP(F64FPREM1,              F64FPREM1);
+  REGISTER_OP(F64FYL2X,               F64FYL2X);
+  REGISTER_OP(F64SCALE,               F64SCALE);
+
   return Handlers;
 }();
 

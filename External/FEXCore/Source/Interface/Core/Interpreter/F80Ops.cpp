@@ -356,6 +356,81 @@ DEF_OP(F80BCDSTORE) {
   memcpy(GDP, BCD, 10);
 }
 
+DEF_OP(F64SIN) {
+  auto Op = IROp->C<IR::IROp_F64SIN>();
+  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Tmp = sin(Src);
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64COS) {
+  auto Op = IROp->C<IR::IROp_F64COS>();
+  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Tmp = cos(Src);
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64TAN) {
+  auto Op = IROp->C<IR::IROp_F64TAN>();
+  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Tmp = tan(Src);
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64F2XM1) {
+  auto Op = IROp->C<IR::IROp_F64F2XM1>();
+  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Tmp = exp2(Src) - 1.0;
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64ATAN) {
+  auto Op = IROp->C<IR::IROp_F64ATAN>();
+  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
+  double Tmp = atan2(Src1, Src2);
+
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64FPREM) {
+  auto Op = IROp->C<IR::IROp_F64FPREM>();
+  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
+  double Tmp = remainder(Src1, Src2);
+
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64FPREM1) {
+  auto Op = IROp->C<IR::IROp_F64FPREM1>();
+  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
+  double Tmp = remainder(Src1, Src2);
+
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64FYL2X) {
+  auto Op = IROp->C<IR::IROp_F64FYL2X>();
+  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
+  double Tmp = Src2 * log2(Src1);
+
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+DEF_OP(F64SCALE) {
+  auto Op = IROp->C<IR::IROp_F64SCALE>();
+  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
+  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
+  double trunc = round(Src2);
+  double Tmp = Src1 * exp2(trunc);
+
+  memcpy(GDP, &Tmp, sizeof(double));
+}
+
+
 #undef DEF_OP
 
 } // namespace FEXCore::CPU
