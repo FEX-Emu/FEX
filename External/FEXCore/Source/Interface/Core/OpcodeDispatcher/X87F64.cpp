@@ -510,7 +510,7 @@ void OpDispatchBuilder::FSUBF64<32, true, true, OpDispatchBuilder::OpResult::RES
 void OpDispatchBuilder::FCHSF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto b = _Constant(0b1'000'0000'0000'0000ULL);
+  auto b = _VCastFromGPR(8, 8, _Constant(0x8000000000000000));
 
   auto result = _VXor(8, 8, a, b);
   // Write to ST[TOP]
@@ -520,7 +520,7 @@ void OpDispatchBuilder::FCHSF64(OpcodeArgs) {
 void OpDispatchBuilder::FABSF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
-  auto b = _Constant(0b0'111'1111'1111'1111ULL);
+  auto b = _VCastFromGPR(8, 8, _Constant(0x7fffffffffffffff));
   auto result = _VAnd(8, 8, a, b);
 
   // Write to ST[TOP]
