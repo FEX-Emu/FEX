@@ -221,7 +221,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       }
       break;
 
-      case FABI_F64_F64: {
+      case FABI_F64_F64_F64: {
         SpillStaticRegs();
 
         PushDynamicRegsAndLR();
