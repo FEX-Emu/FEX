@@ -316,6 +316,8 @@ namespace FEX::HarnessHelper {
       uint32_t OptionRegDataCount;
       uint32_t OptionMemDataOffset;
       uint32_t OptionMemDataCount;
+      uint32_t OptionEnvOptionOffset;
+      uint32_t OptionEnvOptionCount;
       uint8_t  AdditionalData[];
     } FEX_PACKED;
 
