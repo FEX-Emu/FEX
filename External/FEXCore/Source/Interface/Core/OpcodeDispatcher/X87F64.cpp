@@ -108,7 +108,7 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   
   OrderedNode *converted = _F80CVTTo(data, 8);
-  converted = _F80BCDStore(data);
+  converted = _F80BCDStore(converted);
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
 
