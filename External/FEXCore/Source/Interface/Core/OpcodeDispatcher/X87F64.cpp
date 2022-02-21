@@ -562,7 +562,6 @@ void OpDispatchBuilder::FRNDINTF64(OpcodeArgs) {
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-//TODO: Don't round trip through F80
 void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto top = _And(_Sub(orig_top, _Constant(1)), _Constant(7));
@@ -570,14 +569,14 @@ void OpDispatchBuilder::FXTRACTF64(OpcodeArgs) {
   SetX87Top(top);
 
   auto a = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-
-  auto a_f80 = _F80CVTTo(a, 8);
-
-  auto exp_f80 = _F80XTRACT_EXP(a_f80);
-  auto sig_f80 = _F80XTRACT_SIG(a_f80);
-
-  auto exp = _F80CVT(8, exp_f80);
-  auto sig = _F80CVT(8, sig_f80);
+  auto gpr = _VExtractToGPR(8, 8, a, 0);
+  OrderedNode* exp = _And(gpr, _Constant(0x7ff0000000000000LL));
+  exp = _Lshr(exp, _Constant(52));
+  exp = _Sub(exp, _Constant(1023));
+  exp = _Float_FromGPR_S(8, 8, exp);
+  OrderedNode* sig = _And(gpr, _Constant(0x800fffffffffffffLL));
+  sig = _Or(sig, _Constant(0x3ff0000000000000LL));
+  sig = _VCastFromGPR(8, 8, sig);
   // Write to ST[TOP]
   _StoreContextIndexed(exp, orig_top, 8, MMBaseOffset(), 16, FPRClass);
   _StoreContextIndexed(sig, top, 8, MMBaseOffset(), 16, FPRClass);
