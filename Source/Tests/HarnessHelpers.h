@@ -161,6 +161,21 @@ namespace FEX::HarnessHelper {
     void Init(std::string const &ConfigFilename) {
       ReadFile(ConfigFilename, &RawConfigFile);
       memcpy(&BaseConfig, RawConfigFile.data(), sizeof(ConfigStructBase));
+      GetEnvironmentOptions();
+    }
+
+    std::vector<std::pair<std::string_view, std::string_view>> GetEnvironmentOptions() {
+      std::vector<std::pair<std::string_view, std::string_view>> Env{};
+
+      uintptr_t DataOffset = BaseConfig.OptionEnvOptionOffset;
+      for (unsigned i = 0; i < BaseConfig.OptionEnvOptionCount; ++i) {
+        // Environment variables are null terminated strings
+        std::string_view Key = RawConfigFile.data() + DataOffset;
+        std::string_view Value = RawConfigFile.data() + DataOffset + Key.size() + 1;
+        DataOffset += Key.size() + Value.size() + 2;
+        Env.emplace_back(Key, Value);
+      }
+      return Env;
     }
 
     bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
@@ -426,6 +441,9 @@ namespace FEX::HarnessHelper {
       Config.LoadMemory();
     }
 
+    std::vector<std::pair<std::string_view, std::string_view>> GetEnvironmentOptions() {
+      return Config.GetEnvironmentOptions();
+    }
 
     bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
       return Config.CompareStates(State1, State2);

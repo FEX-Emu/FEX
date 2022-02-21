@@ -64,6 +64,53 @@ void AssertHandler(char const *Message) {
   fmt::print("[ASSERT] {}\n", Message);
 }
 
+namespace {
+static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+#define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
+#include <FEXCore/Config/ConfigValues.inl>
+}};
+
+// Claims to be a local application config layer
+class TestEnvLoader final : public FEXCore::Config::Layer {
+public:
+  explicit TestEnvLoader(std::vector<std::pair<std::string_view, std::string_view>> _Env)
+    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_LOCAL_APP)
+    , Env {std::move(_Env)} {
+    Load();
+  }
+
+  void Load() override {
+    std::unordered_map<std::string_view, std::string_view> EnvMap;
+    for (auto &Option : Env) {
+      std::string_view Key = Option.first;
+      std::string_view Value = Option.second;
+
+#define ENVLOADER
+#include <FEXCore/Config/ConfigOptions.inl>
+
+      EnvMap.insert_or_assign(Key, Value);
+    }
+
+    auto GetVar = [&](const std::string_view id) -> std::optional<std::string_view> {
+      const auto it = EnvMap.find(id);
+      if (it == EnvMap.end())
+        return std::nullopt;
+
+      return it->second;
+    };
+
+    for (auto &it : EnvConfigLookup) {
+      if (auto Value = GetVar(it.first); Value) {
+        Set(it.second, *Value);
+      }
+    }
+  }
+
+private:
+  std::vector<std::pair<std::string_view, std::string_view>> Env;
+};
+}
+
 int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -80,6 +127,11 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
+
+  // Adds in environment options from the test harness config
+  FEXCore::Config::AddLayer(std::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
+  FEXCore::Config::ReloadMetaLayer();
+
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
