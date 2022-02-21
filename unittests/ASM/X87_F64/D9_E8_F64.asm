@@ -1,20 +1,17 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX":  ["0x0"]
+    "RAX":  ["0x3ff0000000000000"]
   },
   "Env": { "FEX_X87REDUCEDPRECISION" : "1" }
 }
 %endif
 
+mov rcx, 0xe0000000
+
 fld1
-fldz
-fcomp
-fnstsw ax
-test ah, 041h
-jp good
-mov rax, 0
-hlt
-good:
-mov rax, 1
+
+fst qword [rcx]
+mov rax, [rcx]
+
 hlt

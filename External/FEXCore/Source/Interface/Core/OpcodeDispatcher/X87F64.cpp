@@ -155,7 +155,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   size_t read_width = GetSrcSize(Op);
   // Read from memory
   auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
-  auto converted = _Float_FromGPR_S(8, read_width, data);
+  auto converted = _Float_FromGPR_S(8, 8, data);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
 }
@@ -200,9 +200,9 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   OrderedNode *data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   if constexpr (Truncate) {
-    data = _Float_ToGPR_ZS(Size, 8, data);
+    data = _Float_ToGPR_ZS(8, 8, data);
   } else {
-    data = _Float_ToGPR_S(Size, 8, data);
+    data = _Float_ToGPR_S(8, 8, data);
   }
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, 1);
 
@@ -234,7 +234,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, width / 8, arg);
+      b = _Float_FromGPR_S(8, 8, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -292,7 +292,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, width / 8, arg);
+      b = _Float_FromGPR_S(8, 8, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -353,7 +353,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, width / 8, arg);
+      b = _Float_FromGPR_S(8, 8, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -436,7 +436,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, width / 8, arg);
+      b = _Float_FromGPR_S(8, 8, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -529,12 +529,12 @@ void OpDispatchBuilder::FABSF64(OpcodeArgs) {
 
 void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   auto top = GetX87Top();
-  auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
+  auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
   auto low = _Constant(0);
-  OrderedNode *data = _VCastFromGPR(16, 8, low);
+  OrderedNode *data = _VCastFromGPR(8, 8, low);
 
-  OrderedNode *Res = _F80Cmp(a, data,
+  OrderedNode *Res = _FCmp(8, a, data,
     (1 << FCMP_FLAG_EQ) |
     (1 << FCMP_FLAG_LT) |
     (1 << FCMP_FLAG_UNORDERED));
@@ -596,7 +596,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, width / 8, arg);
+      b = _Float_FromGPR_S(8, 8, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -612,15 +612,14 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
-  auto one = _Constant(1);
+  OrderedNode *Res = _FCmp(8, a, b,
+    (1 << FCMP_FLAG_EQ) |
+    (1 << FCMP_FLAG_LT) |
+    (1 << FCMP_FLAG_UNORDERED));
 
-  auto cmp_eq = _VFCMPEQ(8, 8, a, b);
-  auto cmp_lt = _VFCMPLT(8, 8, a, b);
-  auto cmp_un = _VFCMPUNO(8, 8, a, b);
-
-  OrderedNode* HostFlag_ZF = _And(_VExtractToGPR(8, 8, cmp_eq, 0), one);
-  OrderedNode* HostFlag_CF = _And(_VExtractToGPR(8, 8, cmp_lt, 0), one);
-  OrderedNode* HostFlag_Unordered = _And(_VExtractToGPR(8, 8, cmp_un, 0), one);
+  OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
+  OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
+  OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
   
   HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
   HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
