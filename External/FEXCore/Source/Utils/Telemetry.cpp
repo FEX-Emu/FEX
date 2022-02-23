@@ -15,9 +15,13 @@ namespace FEXCore::Telemetry {
   static std::array<Value, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryValues = {{ }};
   const std::array<std::string_view, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryNames {
     "64byte Split Locks",
-    "16Byte Split atomics",
+    "16byte Split atomics",
     "VEX instructions (AVX)",
     "EVEX instructions (AVX512)",
+    "16bit CAS Tear",
+    "32bit CAS Tear",
+    "64bit CAS Tear",
+    "128bit CAS Tear",
   };
   void Initialize() {
     auto DataDirectory = Config::GetDataDirectory();
