@@ -12,7 +12,6 @@ $end_info$
 
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/fanotify.h>
 #include <sys/mount.h>
 #include <sys/swap.h>
 #include <sys/syscall.h>
@@ -178,7 +177,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(syncfs, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int fd) -> uint64_t {
-      uint64_t Result = ::syncfs(fd);
+      uint64_t Result = ::syscall(SYSCALL_DEF(syncfs), fd);
       SYSCALL_ERRNO();
     });
 
@@ -256,13 +255,13 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(fanotify_init, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, unsigned int flags, unsigned int event_f_flags) -> uint64_t {
-      uint64_t Result = ::fanotify_init(flags, event_f_flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(fanotify_init), flags, event_f_flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(fanotify_mark, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int fanotify_fd, unsigned int flags, uint64_t mask, int dirfd, const char *pathname) -> uint64_t {
-      uint64_t Result = ::fanotify_mark(fanotify_fd, flags, mask, dirfd, pathname);
+      uint64_t Result = ::syscall(SYSCALL_DEF(fanotify_mark), fanotify_fd, flags, mask, dirfd, pathname);
       SYSCALL_ERRNO();
     });
 

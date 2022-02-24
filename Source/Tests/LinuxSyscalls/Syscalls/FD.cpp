@@ -305,7 +305,7 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(memfd_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *name, uint32_t flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::memfd_create(name, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(memfd_create), name, flags);
       SYSCALL_ERRNO();
     });
 
@@ -319,14 +319,14 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(name_to_handle_at, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::name_to_handle_at(dirfd, pathname, handle, mount_id, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(name_to_handle_at), dirfd, pathname, handle, mount_id, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(open_by_handle_at, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int mount_fd, struct file_handle *handle, int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::open_by_handle_at(mount_fd, handle, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(open_by_handle_at), mount_fd, handle, flags);
       SYSCALL_ERRNO();
     });
 
@@ -340,7 +340,7 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(copy_file_range, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int fd_in, loff_t *off_in, int fd_out, loff_t *off_out, size_t len, unsigned int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::copy_file_range(fd_in, off_in, fd_out, off_out, len, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(copy_file_range), fd_in, off_in, fd_out, off_out, len, flags);
       SYSCALL_ERRNO();
     });
 

@@ -23,19 +23,19 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgget, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, key_t key, int msgflg) -> uint64_t {
-      uint64_t Result = ::msgget(key, msgflg);
+      uint64_t Result = ::syscall(SYSCALL_DEF(msgget), key, msgflg);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgsnd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int msqid, const void *msgp, size_t msgsz, int msgflg) -> uint64_t {
-      uint64_t Result = ::msgsnd(msqid, msgp, msgsz, msgflg);
+      uint64_t Result = ::syscall(SYSCALL_DEF(msgsnd), msqid, msgp, msgsz, msgflg);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgrcv, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) -> uint64_t {
-      uint64_t Result = ::msgrcv(msqid, msgp, msgsz, msgtyp, msgflg);
+      uint64_t Result = ::syscall(SYSCALL_DEF(msgrcv), msqid, msgp, msgsz, msgtyp, msgflg);
       SYSCALL_ERRNO();
     });
 
@@ -45,7 +45,7 @@ namespace FEX::HLE {
       // On 32-bit this syscall ONLY supports IPC_64 msqid_ds encoding
       // If an application want to use the old style encoding then it needs to use the ipc syscall with MSGCTL command
       // ipc syscall supports both IPC_64 and old encoding
-      uint64_t Result = ::msgctl(msqid, cmd, buf);
+      uint64_t Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, buf);
       SYSCALL_ERRNO();
     });
 

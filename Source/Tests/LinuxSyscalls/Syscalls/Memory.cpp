@@ -58,14 +58,14 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(mlock2, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const void *addr, size_t len, int flags) -> uint64_t {
-      uint64_t Result = ::mlock2(addr, len, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(mlock2), addr, len, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(remap_file_pages, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t size, int prot, size_t pgoff, int flags) -> uint64_t {
       // This syscall is deprecated, not sure when it will end up being removed
-      uint64_t Result = ::remap_file_pages(addr, size, prot, pgoff, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(remap_file_pages), addr, size, prot, pgoff, flags);
       SYSCALL_ERRNO();
     });
 
