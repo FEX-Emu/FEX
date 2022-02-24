@@ -25,6 +25,7 @@ $end_info$
 #include <strings.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <sys/user.h>
 #include <utility>
 #include <vector>
 
@@ -61,7 +62,7 @@ namespace {
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
-  constexpr size_t REGISTER_NODES_PER_PAGE = FEXCore::Core::PAGE_SIZE / sizeof(RegisterNode);
+  constexpr size_t REGISTER_NODES_PER_PAGE = PAGE_SIZE / sizeof(RegisterNode);
 
   struct RegisterSet {
     std::vector<RegisterClass> Classes;

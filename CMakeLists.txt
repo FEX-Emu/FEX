@@ -115,6 +115,60 @@ if (NOT ENABLE_OFFLINE_TELEMETRY)
   add_definitions(-DFEX_DISABLE_TELEMETRY=1)
 endif()
 
+# Check if the build target page size is 4096
+include(CheckCSourceRuns)
+
+check_c_source_runs(
+  "#include <unistd.h>
+  int main(int argc, char* argv[])
+  {
+    return getpagesize() == 4096 ? 0 : 1;
+  }"
+  PAGEFILE_RESULT
+  )
+
+if (NOT ${PAGEFILE_RESULT})
+  message(FATAL_ERROR "Host PAGE_SIZE is not 4096. Can't build on this target")
+endif()
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles(
+"#include <sys/user.h>
+ int main() {
+  return PAGE_SIZE;
+ }
+ "
+ HAS_PAGESIZE)
+
+check_cxx_source_compiles(
+"#include <sys/user.h>
+ int main() {
+  return PAGE_SHIFT;
+ }
+ "
+ HAS_PAGESHIFT)
+
+check_cxx_source_compiles(
+"#include <sys/user.h>
+ int main() {
+  return PAGE_MASK;
+ }
+ "
+ HAS_PAGEMASK)
+
+if (NOT HAS_PAGESIZE)
+  add_definitions(-DPAGE_SIZE=4096)
+endif()
+
+if (NOT HAS_PAGESHIFT)
+  add_definitions(-DPAGE_SHIFT=12)
+endif()
+if (NOT HAS_PAGEMASK)
+  add_definitions(-DPAGE_MASK=0xFFF)
+endif()
+
+
+
 if (ENABLE_STATIC_PIE)
   if (_M_ARM_64 AND ENABLE_LLD)
     message (FATAL_ERROR "Static linking does not currently work with AArch64+LLD. Use GNU ld for now.")

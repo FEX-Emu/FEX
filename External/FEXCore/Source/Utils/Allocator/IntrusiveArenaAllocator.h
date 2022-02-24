@@ -8,6 +8,8 @@
 #include <bitset>
 #include <cstddef>
 #include <memory_resource>
+#include <sys/user.h>
+
 #include <mutex>
 #include <vector>
 

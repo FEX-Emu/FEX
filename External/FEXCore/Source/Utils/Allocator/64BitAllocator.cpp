@@ -20,13 +20,12 @@
 #include <sstream>
 #include <sys/mman.h>
 #include <sys/utsname.h>
+#include <sys/user.h>
 #include <type_traits>
 #include <utility>
 
-static constexpr uint64_t PAGE_SHIFT = 12;
-static constexpr uint64_t PAGE_MASK = (1 << PAGE_SHIFT) - 1;
-
 namespace Alloc::OSAllocator {
+
   class OSAllocator_64Bit final : public Alloc::HostAllocator {
     public:
       OSAllocator_64Bit();
@@ -38,7 +37,6 @@ namespace Alloc::OSAllocator {
       int Munmap(void *addr, size_t length) override;
 
     private:
-      constexpr static uint64_t PAGE_SIZE = 4096;
       // Upper bound is the maximum virtual address space of the host processor
       uintptr_t UPPER_BOUND = (1ULL << 57);
 

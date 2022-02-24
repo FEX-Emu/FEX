@@ -10,6 +10,7 @@
 #include <cstring>
 #include <fstream>
 #include <sys/mman.h>
+#include <sys/user.h>
 #include <vector>
 
 #include <FEXCore/Core/CodeLoader.h>
@@ -357,14 +358,7 @@ namespace FEX::HarnessHelper {
     ConfigStructBase BaseConfig;
   };
 
-#ifdef PAGE_SIZE
-  static_assert(PAGE_SIZE == 4096, "FEX only supports 4k pages");
-#undef PAGE_SIZE
-#endif
-
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
-
-    static constexpr uint32_t PAGE_SIZE = 4096;
   public:
 
     HarnessCodeLoader(std::string const &Filename, const char *ConfigFilename) {
