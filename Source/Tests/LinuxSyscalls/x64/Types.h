@@ -9,12 +9,13 @@ $end_info$
 #include "Tests/LinuxSyscalls/Types.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <linux/sem.h>
 #include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/posix_types.h>
 #include <asm/sembuf.h>
 #include <cstdint>
-#include <sys/sem.h>
+#include <sys/ipc.h>
 #include <sys/stat.h>
 #include <type_traits>
 
@@ -37,8 +38,8 @@ using __time_t = time_t;
 
     ipc_perm_64() = delete;
 
-    operator struct ipc_perm() const {
-      struct ipc_perm perm;
+    operator struct ipc64_perm() const {
+      struct ipc64_perm perm;
       perm.__key = key;
       perm.uid   = uid;
       perm.gid   = gid;
@@ -49,7 +50,7 @@ using __time_t = time_t;
       return perm;
     }
 
-    ipc_perm_64(struct ipc_perm perm) {
+    ipc_perm_64(struct ipc64_perm perm) {
       key  = perm.__key;
       uid  = perm.uid;
       gid  = perm.gid;
@@ -79,8 +80,8 @@ using __time_t = time_t;
 
     semid_ds_64() = delete;
 
-    operator struct semid_ds() const {
-      struct semid_ds buf{};
+    operator struct semid64_ds() const {
+      struct semid64_ds buf{};
       buf.sem_perm = sem_perm;
 
       buf.sem_otime = sem_otime;
@@ -89,7 +90,7 @@ using __time_t = time_t;
       return buf;
     }
 
-    semid_ds_64(struct semid_ds buf)
+    semid_ds_64(struct semid64_ds buf)
       : sem_perm {buf.sem_perm} {
       sem_otime = buf.sem_otime;
       sem_ctime = buf.sem_ctime;

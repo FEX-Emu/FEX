@@ -10,6 +10,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <asm/ipcbuf.h>
+#include <asm/sembuf.h>
 #include <asm/shmbuf.h>
 #include <cstdint>
 #include <cstring>
@@ -19,7 +20,6 @@ $end_info$
 #include <signal.h>
 #include <sys/msg.h>
 #include <sys/resource.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -1484,8 +1484,8 @@ struct semid_ds_32 {
 
   semid_ds_32() = delete;
 
-  operator struct semid_ds() const {
-    struct semid_ds buf{};
+  operator struct semid64_ds() const {
+    struct semid64_ds buf{};
     buf.sem_perm = sem_perm;
 
     buf.sem_otime = sem_otime;
@@ -1497,7 +1497,7 @@ struct semid_ds_32 {
     return buf;
   }
 
-  semid_ds_32(struct semid_ds buf)
+  semid_ds_32(struct semid64_ds buf)
     : sem_perm {buf.sem_perm} {
     sem_otime = buf.sem_otime;
     sem_ctime = buf.sem_ctime;
@@ -1519,8 +1519,8 @@ struct semid_ds_64 {
 
   semid_ds_64() = delete;
 
-  operator struct semid_ds() const {
-    struct semid_ds buf{};
+  operator struct semid64_ds() const {
+    struct semid64_ds buf{};
     buf.sem_perm = sem_perm;
 
     buf.sem_otime = sem_otime_high;
@@ -1536,7 +1536,7 @@ struct semid_ds_64 {
     return buf;
   }
 
-  semid_ds_64(struct semid_ds buf)
+  semid_ds_64(struct semid64_ds buf)
     : sem_perm {buf.sem_perm} {
     sem_otime = buf.sem_otime;
     sem_otime_high = buf.sem_otime >> 32;

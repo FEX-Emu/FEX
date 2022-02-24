@@ -16,6 +16,7 @@ $end_info$
 #include <cstdint>
 #include <errno.h>
 #include <limits>
+#include <linux/sem.h>
 #include <string.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
@@ -105,7 +106,7 @@ namespace FEX::HLE::x32 {
         bool IPC64 = third & 0x100;
         switch (cmd) {
           case IPC_SET: {
-            struct semid_ds buf{};
+            struct semid64_ds buf{};
             if (IPC64) {
               buf = *semun->buf64;
             }
@@ -126,7 +127,7 @@ namespace FEX::HLE::x32 {
           case SEM_STAT:
           case SEM_STAT_ANY:
           case IPC_STAT: {
-            struct semid_ds buf{};
+            struct semid64_ds buf{};
             Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
@@ -386,7 +387,7 @@ namespace FEX::HLE::x32 {
 
       switch (cmd) {
         case IPC_SET: {
-          struct semid_ds buf{};
+          struct semid64_ds buf{};
           if (IPC64) {
             buf = *semun->buf64;
           }
@@ -407,7 +408,7 @@ namespace FEX::HLE::x32 {
         case SEM_STAT:
         case SEM_STAT_ANY:
         case IPC_STAT: {
-          struct semid_ds buf{};
+          struct semid64_ds buf{};
           Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
           if (Result != -1) {
             if (IPC64) {

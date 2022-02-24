@@ -10,6 +10,7 @@ $end_info$
 
 #include <FEXHeaderUtils/Syscalls.h>
 
+#include <linux/sem.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -35,7 +36,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result{};
       switch (cmd) {
         case IPC_SET: {
-          struct semid_ds buf{};
+          struct semid64_ds buf{};
           buf = *semun.buf;
           Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
           if (Result != -1) {
@@ -46,7 +47,7 @@ namespace FEX::HLE::x64 {
         case SEM_STAT:
         case SEM_STAT_ANY:
         case IPC_STAT: {
-          struct semid_ds buf{};
+          struct semid64_ds buf{};
           Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
           if (Result != -1) {
             *semun.buf = buf;
