@@ -7,6 +7,9 @@
 
 namespace FEX::HLE::x32 {
 namespace usbdev {
+#ifndef USBDEVFS_GET_SPEED
+#define USBDEVFS_GET_SPEED         _IO('U', 31)
+#endif
 #ifndef USBDEVFS_CONNINFO_EX
 #define USBDEVFS_CONNINFO_EX(len)  _IOC(_IOC_READ, 'U', 32, len)
 #endif

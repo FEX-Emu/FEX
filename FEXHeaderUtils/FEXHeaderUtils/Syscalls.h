@@ -28,6 +28,16 @@ namespace FHU::Syscalls {
 #define CLONE_PIDFD 0x00001000
 #endif
 
+#if defined(__aarch64__) || defined(_M_ARM64)
+#ifndef SYS_statx
+#define SYS_statx 291
+#endif
+#elif defined(__x86_64__) || defined(_M_X64)
+#ifndef SYS_statx
+#define SYS_statx 332
+#endif
+#endif
+
 inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
   // Third argument is unused
 #if defined(HAS_SYSCALL_GETCPU) && HAS_SYSCALL_GETCPU

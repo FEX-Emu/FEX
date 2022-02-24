@@ -6,6 +6,9 @@
 
 namespace FEX::HLE::x32 {
 namespace streams {
+#ifndef TIOCGPTPEER
+#define TIOCGPTPEER     _IO('T', 0x41)
+#endif
 #include "Tests/LinuxSyscalls/x32/Ioctl/streams.inl"
 }
 
