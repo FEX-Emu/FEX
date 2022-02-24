@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 
+#include "Tests/LinuxSyscalls/Types.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <linux/types.h>
@@ -114,26 +115,26 @@ using __time_t = time_t;
   FEX_ANNOTATE("fex-match")
   FEX_PACKED
   guest_stat {
-    __kernel_ulong_t  st_dev;
-    __kernel_ulong_t  st_ino;
-    __kernel_ulong_t  st_nlink;
+    uint64_t  st_dev;
+    uint64_t  st_ino;
+    uint64_t  st_nlink;
 
     unsigned int    st_mode;
     unsigned int    st_uid;
     unsigned int    st_gid;
     unsigned int    __pad0;
-    __kernel_ulong_t  st_rdev;
-    __kernel_long_t   st_size;
-    __kernel_long_t   st_blksize;
-    __kernel_long_t   st_blocks;  /* Number 512-byte blocks allocated. */
+    uint64_t  st_rdev;
+    int64_t   st_size;
+    int64_t   st_blksize;
+    int64_t   st_blocks;  /* Number 512-byte blocks allocated. */
 
-    __kernel_ulong_t  st_atime_;
-    __kernel_ulong_t  st_atime_nsec;
-    __kernel_ulong_t  st_mtime_;
-    __kernel_ulong_t  st_mtime_nsec;
-    __kernel_ulong_t  st_ctime_;
-    __kernel_ulong_t  st_ctime_nsec;
-    __kernel_long_t   __unused[3];
+    uint64_t  st_atime_;
+    uint64_t  fex_st_atime_nsec;
+    uint64_t  st_mtime_;
+    uint64_t  fex_st_mtime_nsec;
+    uint64_t  st_ctime_;
+    uint64_t  fex_st_ctime_nsec;
+    int64_t   unused[3];
 
     guest_stat() = delete;
     operator struct stat() const {
@@ -153,13 +154,13 @@ using __time_t = time_t;
     COPY(st_blocks);
 
     val.st_atim.tv_sec = st_atime_;
-    val.st_atim.tv_nsec = st_atime_nsec;
+    val.st_atim.tv_nsec = fex_st_atime_nsec;
 
     val.st_mtim.tv_sec = st_mtime_;
-    val.st_mtim.tv_nsec = st_mtime_nsec;
+    val.st_mtim.tv_nsec = fex_st_mtime_nsec;
 
     val.st_ctim.tv_sec = st_ctime_;
-    val.st_ctim.tv_nsec= st_ctime_nsec;
+    val.st_ctim.tv_nsec= fex_st_ctime_nsec;
 #undef COPY
       return val;
     }
@@ -180,13 +181,13 @@ using __time_t = time_t;
     COPY(st_blocks);
 
     st_atime_ = val.st_atim.tv_sec;
-    st_atime_nsec = val.st_atim.tv_nsec;
+    fex_st_atime_nsec = val.st_atim.tv_nsec;
 
     st_mtime_ = val.st_mtime;
-    st_mtime_nsec = val.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = val.st_mtim.tv_nsec;
 
     st_ctime_ = val.st_ctime;
-    st_ctime_nsec = val.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = val.st_ctim.tv_nsec;
 #undef COPY
     }
   };
