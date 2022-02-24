@@ -164,10 +164,8 @@ if (NOT HAS_PAGESHIFT)
   add_definitions(-DPAGE_SHIFT=12)
 endif()
 if (NOT HAS_PAGEMASK)
-  add_definitions(-DPAGE_MASK=0xFFF)
+  add_definitions("-DPAGE_MASK=(~(PAGE_SIZE-1))")
 endif()
-
-
 
 if(DEFINED ENV{TERMUX_VERSION})
   add_definitions(-DTERMUX_BUILD=1)

@@ -160,13 +160,13 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
 
   uint64_t Addr = reinterpret_cast<uint64_t>(addr);
   // Addr must be page aligned
-  if (Addr & PAGE_MASK) {
+  if (Addr & ~PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
   // If FD is provided then offset must also be page aligned
   if (fd != -1 &&
-      offset & PAGE_MASK) {
+      offset & ~PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
@@ -428,11 +428,11 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
 
   uint64_t Addr = reinterpret_cast<uint64_t>(addr);
 
-  if (Addr & PAGE_MASK) {
+  if (Addr & ~PAGE_MASK) {
     return -EINVAL;
   }
 
-  if (length & PAGE_MASK) {
+  if (length & ~PAGE_MASK) {
     return -EINVAL;
   }
 

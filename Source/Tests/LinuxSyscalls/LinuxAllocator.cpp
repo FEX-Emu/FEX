@@ -141,13 +141,13 @@ void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, in
       (flags & MAP_FIXED_NOREPLACE));
 
   // Both Addr and length must be page aligned
-  if (Addr & PAGE_MASK) {
+  if (Addr & ~PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
   // If we do have an fd then offset must be page aligned
   if (fd != -1 &&
-      offset & PAGE_MASK) {
+      offset & ~PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
@@ -273,11 +273,11 @@ int MemAllocator32Bit::munmap(void *addr, size_t length) {
   uintptr_t PageEnd = PageAddr + PagesLength;
 
   // Both Addr and length must be page aligned
-  if (Addr & PAGE_MASK) {
+  if (Addr & ~PAGE_MASK) {
     return -EINVAL;
   }
 
-  if (length & PAGE_MASK) {
+  if (length & ~PAGE_MASK) {
     return -EINVAL;
   }
 
