@@ -72,8 +72,16 @@ namespace FEX::HLE::x64 {
       [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {
       auto Thread = Frame->Thread;
       Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
+#ifdef TERMUX_BUILD
+      // Termux/Android doesn't support `set_robust_list` syscall.
+      // The seccomp filter that the OS installs explicitly blocks this syscall from working
+      // glibc uses this syscall for tls and thread data so almost every application uses it
+      // Return success since we have stored the pointer ourselves.
+      return 0;
+#else
       uint64_t Result = ::syscall(SYSCALL_DEF(set_robust_list), head, len);
       SYSCALL_ERRNO();
+#endif
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(get_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
