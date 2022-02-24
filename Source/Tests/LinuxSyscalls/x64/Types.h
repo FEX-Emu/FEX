@@ -9,13 +9,10 @@ $end_info$
 #include "Tests/LinuxSyscalls/Types.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <linux/sem.h>
-#include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/posix_types.h>
 #include <asm/sembuf.h>
 #include <cstdint>
-#include <sys/ipc.h>
 #include <sys/stat.h>
 #include <type_traits>
 
@@ -40,24 +37,24 @@ using __time_t = time_t;
 
     operator struct ipc64_perm() const {
       struct ipc64_perm perm;
-      perm.__key = key;
+      perm.key = key;
       perm.uid   = uid;
       perm.gid   = gid;
       perm.cuid  = cuid;
       perm.cgid  = cgid;
       perm.mode  = mode;
-      perm.__seq = seq;
+      perm.seq = seq;
       return perm;
     }
 
     ipc_perm_64(struct ipc64_perm perm) {
-      key  = perm.__key;
+      key  = perm.key;
       uid  = perm.uid;
       gid  = perm.gid;
       cuid = perm.cuid;
       cgid = perm.cgid;
       mode = perm.mode;
-      seq  = perm.__seq;
+      seq  = perm.seq;
     }
   };
 
@@ -105,7 +102,7 @@ using __time_t = time_t;
     int val;
     FEX::HLE::x64::semid_ds_64 *buf;
     unsigned short *array;
-    struct seminfo *__buf;
+    struct fex_seminfo *__buf;
     void *__pad;
   };
 

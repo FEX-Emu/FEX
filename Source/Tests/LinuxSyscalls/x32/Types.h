@@ -10,6 +10,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <asm/ipcbuf.h>
+#include <asm/msgbuf.h>
 #include <asm/sembuf.h>
 #include <asm/shmbuf.h>
 #include <cstdint>
@@ -18,7 +19,6 @@ $end_info$
 #include <limits>
 #include <linux/mqueue.h>
 #include <signal.h>
-#include <sys/msg.h>
 #include <sys/resource.h>
 #include <sys/shm.h>
 #include <sys/socket.h>
@@ -1303,26 +1303,26 @@ struct ipc_perm_32 {
 
   ipc_perm_32() = delete;
 
-  operator struct ipc_perm() const {
-    struct ipc_perm perm;
-    perm.__key = key;
+  operator struct ipc64_perm() const {
+    struct ipc64_perm perm;
+    perm.key = key;
     perm.uid   = uid;
     perm.gid   = gid;
     perm.cuid  = cuid;
     perm.cgid  = cgid;
     perm.mode  = mode;
-    perm.__seq = seq;
+    perm.seq = seq;
     return perm;
   }
 
-  ipc_perm_32(struct ipc_perm perm) {
-    key  = perm.__key;
+  ipc_perm_32(struct ipc64_perm perm) {
+    key  = perm.key;
     uid  = perm.uid;
     gid  = perm.gid;
     cuid = perm.cuid;
     cgid = perm.cgid;
     mode = perm.mode;
-    seq  = perm.__seq;
+    seq  = perm.seq;
   }
 };
 
@@ -1343,26 +1343,26 @@ struct ipc_perm_64 {
 
   ipc_perm_64() = delete;
 
-  operator struct ipc_perm() const {
-    struct ipc_perm perm;
-    perm.__key = key;
+  operator struct ipc64_perm() const {
+    struct ipc64_perm perm;
+    perm.key = key;
     perm.uid   = uid;
     perm.gid   = gid;
     perm.cuid  = cuid;
     perm.cgid  = cgid;
     perm.mode  = mode;
-    perm.__seq = seq;
+    perm.seq = seq;
     return perm;
   }
 
-  ipc_perm_64(struct ipc_perm perm) {
-    key  = perm.__key;
+  ipc_perm_64(struct ipc64_perm perm) {
+    key  = perm.key;
     uid  = perm.uid;
     gid  = perm.gid;
     cuid = perm.cuid;
     cgid = perm.cgid;
     mode = perm.mode;
-    seq  = perm.__seq;
+    seq  = perm.seq;
   }
 };
 
@@ -1384,8 +1384,8 @@ struct shmid_ds_32 {
 
   shmid_ds_32() = delete;
 
-  operator struct shmid_ds() const {
-    struct shmid_ds buf;
+  operator struct shmid64_ds() const {
+    struct shmid64_ds buf;
     buf.shm_perm = shm_perm;
 
     buf.shm_segsz = shm_segsz;
@@ -1398,7 +1398,7 @@ struct shmid_ds_32 {
     return buf;
   }
 
-  shmid_ds_32(struct shmid_ds buf)
+  shmid_ds_32(struct shmid64_ds buf)
     : shm_perm {buf.shm_perm} {
     shm_segsz = buf.shm_segsz;
     shm_atime = buf.shm_atime;
@@ -1430,8 +1430,8 @@ struct shmid_ds_64 {
 
   shmid_ds_64() = delete;
 
-  operator struct shmid_ds() const {
-    struct shmid_ds buf;
+  operator struct shmid64_ds() const {
+    struct shmid64_ds buf;
     buf.shm_perm = shm_perm;
 
     buf.shm_segsz = shm_segsz;
@@ -1453,7 +1453,7 @@ struct shmid_ds_64 {
     return buf;
   }
 
-  shmid_ds_64(struct shmid_ds buf)
+  shmid_ds_64(struct shmid64_ds buf)
     : shm_perm {buf.shm_perm} {
     shm_segsz = buf.shm_segsz;
     shm_atime = buf.shm_atime;
@@ -1565,8 +1565,8 @@ struct msqid_ds_32 {
   uint16_t msg_lrpid;
 
   msqid_ds_32() = delete;
-  operator struct msqid_ds() const {
-    struct msqid_ds val{};
+  operator struct msqid64_ds() const {
+    struct msqid64_ds val{};
     // msg_first and msg_last are unused and untouched
     val.msg_perm = msg_perm;
     val.msg_stime = msg_stime;
@@ -1581,7 +1581,7 @@ struct msqid_ds_32 {
     return val;
   }
 
-  msqid_ds_32(struct msqid_ds buf)
+  msqid_ds_32(struct msqid64_ds buf)
     : msg_perm {buf.msg_perm} {
     // msg_first and msg_last are unused and untouched
     msg_stime = buf.msg_stime;
@@ -1632,8 +1632,8 @@ struct msqid_ds_64 {
   uint32_t _pad[2];
 
   msqid_ds_64() = delete;
-  operator struct msqid_ds() const {
-    struct msqid_ds val{};
+  operator struct msqid64_ds() const {
+    struct msqid64_ds val{};
     val.msg_perm = msg_perm;
     val.msg_stime = msg_stime_high;
     val.msg_stime <<= 32;
@@ -1655,7 +1655,7 @@ struct msqid_ds_64 {
     return val;
   }
 
-  msqid_ds_64(struct msqid_ds buf)
+  msqid_ds_64(struct msqid64_ds buf)
     : msg_perm {buf.msg_perm} {
     msg_stime = buf.msg_stime;
     msg_stime_high = buf.msg_stime >> 32;

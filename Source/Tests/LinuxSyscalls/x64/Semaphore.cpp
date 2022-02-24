@@ -56,7 +56,7 @@ namespace FEX::HLE::x64 {
         }
         case SEM_INFO:
         case IPC_INFO: {
-          struct seminfo si{};
+          struct fex_seminfo si{};
           Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &si);
           if (Result != -1) {
             memcpy(semun.__buf, &si, sizeof(si));

@@ -71,4 +71,20 @@ struct FEX_PACKED epoll_event_x86 {
 static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
 static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
 
+// This directly matches the Linux `struct seminfo` structure
+// Due to the way this definition cyclic depends inside of includes, redefine it
+// This works around some terrible compile errors on some platforms
+struct fex_seminfo {
+	int32_t semmap;
+	int32_t semmni;
+	int32_t semmns;
+	int32_t semmnu;
+	int32_t semmsl;
+	int32_t semopm;
+	int32_t semume;
+	int32_t semusz;
+	int32_t semvmx;
+	int32_t semaem;
+};
+
 }
