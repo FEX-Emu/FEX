@@ -46,6 +46,18 @@ namespace FEX::HLE::x32 {
 #ifndef SO_TIMESTAMPING_OLD
 #define SO_TIMESTAMPING_OLD 37
 #endif
+#ifndef SO_MEMINFO
+#define SO_MEMINFO 55
+#endif
+#ifndef SO_INCOMING_NAPI_ID
+#define SO_INCOMING_NAPI_ID 56
+#endif
+#ifndef SO_PEERGROUPS
+#define SO_PEERGROUPS 59
+#endif
+#ifndef SO_ZEROCOPY
+#define SO_ZEROCOPY 60
+#endif
 #ifndef SO_TXTIME
 #define SO_TXTIME 61
 #endif

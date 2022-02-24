@@ -12,6 +12,10 @@ namespace asound {
 #define SNDRV_TIMER_IOCTL_TREAD_OLD	_IOW('T', 0x02, int)
 #endif
 
+#ifndef SNDRV_PCM_IOCTL_USER_PVERSION
+#define SNDRV_PCM_IOCTL_USER_PVERSION   _IOW('A', 0x04, int)
+#endif
+
 #ifndef SNDRV_TIMER_IOCTL_TREAD64
 #define SNDRV_TIMER_IOCTL_TREAD64	_IOW('T', 0xa4, int)
 #endif
