@@ -15,6 +15,7 @@ $end_info$
 #include <stddef.h>
 #include <string>
 #include <sys/stat.h>
+#include <vector>
 
 #include <unordered_map>
 #include <unordered_set>

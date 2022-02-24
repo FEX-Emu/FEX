@@ -5,6 +5,7 @@
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
+#include <byteswap.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <poll.h>
@@ -14,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <vector>
 
 // For older build environments
 #ifndef POLLREMOVE

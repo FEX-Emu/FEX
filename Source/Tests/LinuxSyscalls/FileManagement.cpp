@@ -21,6 +21,7 @@ $end_info$
 #include <filesystem>
 #include <fstream>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <syscall.h>
