@@ -18,7 +18,6 @@ $end_info$
 #include <limits>
 #include <map>
 #include <mutex>
-#include <sys/ipc.h>
 #include <sys/mman.h>
 #include <sys/shm.h>
 #include <utility>

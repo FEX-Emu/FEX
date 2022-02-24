@@ -10,9 +10,7 @@ $end_info$
 
 #include <FEXCore/IR/IR.h>
 
-#include <mqueue.h>
 #include <sys/types.h>
-#include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/syscall.h>
 #include <unistd.h>

@@ -17,9 +17,7 @@ $end_info$
 #include <errno.h>
 #include <limits>
 #include <string.h>
-#include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
 #include <time.h>
 #include <type_traits>
