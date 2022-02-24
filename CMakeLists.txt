@@ -169,6 +169,13 @@ endif()
 
 
 
+if(DEFINED ENV{TERMUX_VERSION})
+  add_definitions(-DTERMUX_BUILD=1)
+  set(TERMUX_BUILD 1)
+  # Termux doesn't support Jemalloc due to bad interactions between emutls, jemalloc, and scudo
+  set(ENABLE_JEMALLOC FALSE)
+endif()
+
 if (ENABLE_STATIC_PIE)
   if (_M_ARM_64 AND ENABLE_LLD)
     message (FATAL_ERROR "Static linking does not currently work with AArch64+LLD. Use GNU ld for now.")
