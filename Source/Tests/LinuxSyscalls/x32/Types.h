@@ -15,8 +15,7 @@ $end_info$
 #include <cstring>
 #include <fcntl.h>
 #include <limits>
-#include <sys/ipc.h>
-#include <mqueue.h>
+#include <linux/mqueue.h>
 #include <signal.h>
 #include <sys/msg.h>
 #include <sys/resource.h>
@@ -385,11 +384,11 @@ stat32 {
   uint32_t st_blksize;
   uint32_t st_blocks;  /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
-  uint32_t st_atime_nsec;
+  uint32_t fex_st_atime_nsec;
   uint32_t st_mtime_;
-  uint32_t st_mtime_nsec;
+  uint32_t fex_st_mtime_nsec;
   uint32_t st_ctime_;
-  uint32_t st_ctime_nsec;
+  uint32_t fex_st_ctime_nsec;
   uint32_t __unused4;
   uint32_t __unused5;
 
@@ -411,13 +410,13 @@ stat32 {
     COPY(st_blocks);
 
     st_atime_ = host.st_atim.tv_sec;
-    st_atime_nsec = host.st_atim.tv_nsec;
+    fex_st_atime_nsec = host.st_atim.tv_nsec;
 
     st_mtime_ = host.st_mtime;
-    st_mtime_nsec = host.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = host.st_mtim.tv_nsec;
 
     st_ctime_ = host.st_ctime;
-    st_ctime_nsec = host.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
 };
@@ -446,11 +445,11 @@ stat64_32 {
   uint32_t st_blksize;
   compat_uint64_t st_blocks;  /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
-  uint32_t st_atime_nsec;
+  uint32_t fex_st_atime_nsec;
   uint32_t st_mtime_;
-  uint32_t st_mtime_nsec;
+  uint32_t fex_st_mtime_nsec;
   uint32_t st_ctime_;
-  uint32_t st_ctime_nsec;
+  uint32_t fex_st_ctime_nsec;
   compat_uint64_t st_ino;
 
   stat64_32() = delete;
@@ -473,13 +472,13 @@ stat64_32 {
     __st_ino = host.st_ino;
 
     st_atime_ = host.st_atim.tv_sec;
-    st_atime_nsec = host.st_atim.tv_nsec;
+    fex_st_atime_nsec = host.st_atim.tv_nsec;
 
     st_mtime_ = host.st_mtime;
-    st_mtime_nsec = host.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = host.st_mtim.tv_nsec;
 
     st_ctime_ = host.st_ctime;
-    st_ctime_nsec = host.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
 
@@ -502,13 +501,13 @@ stat64_32 {
     __st_ino = host.st_ino;
 
     st_atime_ = host.st_atim.tv_sec;
-    st_atime_nsec = host.st_atim.tv_nsec;
+    fex_st_atime_nsec = host.st_atim.tv_nsec;
 
     st_mtime_ = host.st_mtime;
-    st_mtime_nsec = host.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = host.st_mtim.tv_nsec;
 
     st_ctime_ = host.st_ctime;
-    st_ctime_nsec = host.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
 #endif
