@@ -1168,8 +1168,8 @@ sigval32 {
 static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
 static_assert(sizeof(sigval32) == 4, "Incorrect size");
 
-constexpr size_t SIGEV_MAX_SIZE = 64;
-constexpr size_t SIGEV_PAD_SIZE = (SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
+constexpr size_t FEX_SIGEV_MAX_SIZE = 64;
+constexpr size_t FEX_SIGEV_PAD_SIZE = (FEX_SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
 
 struct
 FEX_ANNOTATE("fex-match")
@@ -1178,7 +1178,7 @@ sigevent32 {
   int sigev_signo;
   int sigev_notify;
   union {
-    int _pad[SIGEV_PAD_SIZE];
+    int _pad[FEX_SIGEV_PAD_SIZE];
     int _tid;
     struct {
       uint32_t _function;
