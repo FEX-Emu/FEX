@@ -12,6 +12,7 @@
 #include <sys/inotify.h>
 #include <thread>
 #include <unistd.h>
+#include <vector>
 
 namespace {
   static std::chrono::time_point<std::chrono::high_resolution_clock> GlobalTime{};
