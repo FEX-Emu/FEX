@@ -105,8 +105,8 @@ namespace Alloc::OSAllocator {
       static_assert(std::is_trivially_copyable<LiveVMARegion>::value, "Needs to be trivially copyable");
       static_assert(offsetof(LiveVMARegion, UsedPages) == sizeof(LiveVMARegion), "FlexBitSet needs to be at the end");
 
-      using ReservedRegionListType = std::pmr::list<ReservedVMARegion*>;
-      using LiveRegionListType = std::pmr::list<LiveVMARegion*>;
+      using ReservedRegionListType = fex_pmr::list<ReservedVMARegion*>;
+      using LiveRegionListType = fex_pmr::list<LiveVMARegion*>;
       ReservedRegionListType *ReservedRegions{};
       LiveRegionListType *LiveRegions{};
 

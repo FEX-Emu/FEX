@@ -7,14 +7,26 @@
 
 #include <bitset>
 #include <cstddef>
+#ifdef TERMUX_BUILD
+#ifdef __has_include
+#if __has_include(<memory_resource>)
+#error Termux <experimental/memory_resource> workaround can be removed
+#endif
+#endif
+#include <experimental/memory_resource>
+#include <experimental/list>
+namespace fex_pmr = std::experimental::pmr;
+#else
 #include <memory_resource>
+namespace fex_pmr = std::pmr;
+#endif
 #include <sys/user.h>
 
 #include <mutex>
 #include <vector>
 
 namespace Alloc {
-  class ForwardOnlyIntrusiveArenaAllocator final : public std::pmr::memory_resource {
+  class ForwardOnlyIntrusiveArenaAllocator final : public fex_pmr::memory_resource {
   public:
     ForwardOnlyIntrusiveArenaAllocator(void* Ptr, size_t _Size)
       : Begin {reinterpret_cast<uintptr_t>(Ptr)}
@@ -56,7 +68,7 @@ namespace Alloc {
       // Do nothing
     }
 
-    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
+    bool do_is_equal(const fex_pmr::memory_resource& other) const noexcept override {
       // Only if the allocator pointers are the same are they equal
       if (this == &other) {
         return true;
@@ -70,7 +82,7 @@ namespace Alloc {
     size_t LastAllocation{};
   };
 
-  class IntrusiveArenaAllocator final : public std::pmr::memory_resource {
+  class IntrusiveArenaAllocator final : public fex_pmr::memory_resource {
   public:
     IntrusiveArenaAllocator(void* Ptr, size_t _Size)
       : Begin {reinterpret_cast<uintptr_t>(Ptr)}
@@ -169,7 +181,7 @@ namespace Alloc {
       FreePages += FreedPages;
     }
 
-    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
+    bool do_is_equal(const fex_pmr::memory_resource& other) const noexcept override {
       // Only if the allocator pointers are the same are they equal
       if (this == &other) {
         return true;
