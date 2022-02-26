@@ -147,8 +147,16 @@ DEF_OP(Vector_FToF) {
 
   uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
 
-  auto Func = [](auto a, auto min, auto max) { return a; };
+  auto Func = [](auto &a, auto min, auto max) { return a; };
+  using FP16Type = __fp16;
   switch (Conv) {
+    case 0x0402: { // Float <- Float16
+      // Only the lower elements from the source
+      // This uses half the source elements
+      uint8_t Elements = OpSize / 4;
+      DO_VECTOR_1SRC_2TYPE_OP_NOSIZE(float, FP16Type, Func, 0, 0)
+      break;
+    }
     case 0x0804: { // Double <- float
       // Only the lower elements from the source
       // This uses half the source elements
@@ -163,6 +171,15 @@ DEF_OP(Vector_FToF) {
       // eg: %ssa5 i32v2 = Vector_FToF %ssa4 i128, #0x8
       uint8_t Elements = (OpSize << 1) / Op->SrcElementSize;
       DO_VECTOR_1SRC_2TYPE_OP_NOSIZE(float, double, Func, 0, 0)
+      break;
+    }
+    case 0x0204: { // Float16 <- Float
+      // Little bit tricky here
+      // Sometimes is used to convert from a 128bit vector register
+      // in to a 64bit vector register with different sized elements
+      // eg: %ssa5 i32v2 = Vector_FToF %ssa4 i128, #0x8
+      uint8_t Elements = (OpSize << 1) / Op->SrcElementSize;
+      DO_VECTOR_1SRC_2TYPE_OP_NOSIZE(FP16Type, float, Func, 0, 0)
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Conversion Type : 0x{:04x}", Conv); break;

@@ -103,7 +103,6 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
 
   // Load old mxcsr
   // Only stores to memory
@@ -113,9 +112,17 @@ DEF_OP(SetRoundingMode) {
 
   // Insert the new rounding mode
   and_(TMP1.cvt32(), ~(0b111 << 13));
-  mov(TMP2.cvt32(), Src);
-  shl(TMP2.cvt32(), 13);
-  or_(TMP1.cvt32(), TMP2.cvt32());
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[0], &Const)) {
+    or_(TMP1.cvt32(), Const << 13);
+  }
+  else {
+    auto Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
+    mov(TMP2.cvt32(), Src);
+    shl(TMP2.cvt32(), 13);
+    or_(TMP1.cvt32(), TMP2.cvt32());
+  }
 
   // Store it to mxcsr
   // Only loads from memory

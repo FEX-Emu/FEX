@@ -444,7 +444,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (0 << 26) | // XSAVE
     (0 << 27) | // OSXSAVE
     (SUPPORTS_AVX << 28) | // AVX
-    (0 << 29) | // F16C
+    (SUPPORTS_AVX << 29) | // F16C
     (CTX->HostFeatures.SupportsRAND << 30) | // RDRAND
     (0 << 31);  // Hypervisor always returns zero
 

@@ -1109,6 +1109,53 @@ template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 2>(OpcodeArgs);
+
+void OpDispatchBuilder::Vector_CVT_Float_To_Float16(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  uint64_t Mode = Op->Src[1].Data.Literal.Value;
+  size_t Size = GetSrcSize(Op);
+
+  bool HostRounding = 0b100;
+
+  OrderedNode *RoundingMode{};
+  if (!(Mode & HostRounding)) {
+    // If the round mode control isn't set to host then we need to temporarily change the host rounding mode
+    RoundingMode = _GetRoundingMode();
+    switch (Mode & 0b11) {
+    case 0b00: // Nearest
+      _SetRoundingMode(_Constant(IR::ROUND_MODE_NEAREST));
+      break;
+    case 0b01: // Down
+      _SetRoundingMode(_Constant(IR::ROUND_MODE_NEGATIVE_INFINITY));
+      break;
+    case 0b10: // Up
+      _SetRoundingMode(_Constant(IR::ROUND_MODE_POSITIVE_INFINITY));
+      break;
+    case 0b11: // Truncate
+      _SetRoundingMode(_Constant(IR::ROUND_MODE_TOWARDS_ZERO));
+      break;
+    }
+  }
+
+  Src = _Vector_FToF(Size, 2, Src, 4);
+
+  if (!(Mode & HostRounding)) {
+    _SetRoundingMode(RoundingMode);
+  }
+
+  if (Op->Dest.IsGPR()) {
+    // If the destination is a register then the top 64-bits are zext
+    // Vector_FToF with narrow will already zext
+    StoreResult(FPRClass, Op, Src, -1);
+  }
+  else {
+    // If the destination is memory then we only store 64-bits
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, -1);
+  }
+}
 
 template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {

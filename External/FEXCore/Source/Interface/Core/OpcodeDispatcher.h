@@ -350,6 +350,7 @@ public:
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
   void Vector_CVT_Float_To_Float(OpcodeArgs);
+  void Vector_CVT_Float_To_Float16(OpcodeArgs);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   template<size_t SrcElementSize, bool Widen>

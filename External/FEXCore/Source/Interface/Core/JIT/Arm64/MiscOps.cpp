@@ -97,34 +97,69 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  // Setup the rounding flags correctly
-  and_(TMP1, Src, 0b11);
+  uint64_t Const;
+  if (IsInlineConstant(Op->Header.Args[0], &Const)) {
+    uint32_t ARMFlags{};
+    switch (Const & 0b11) {
+      case IR::ROUND_MODE_NEAREST:
+        ARMFlags = 0;
+        break;
+      case IR::ROUND_MODE_POSITIVE_INFINITY:
+        ARMFlags = 1;
+        break;
+      case IR::ROUND_MODE_NEGATIVE_INFINITY:
+        ARMFlags = 2;
+        break;
+      case IR::ROUND_MODE_TOWARDS_ZERO:
+        ARMFlags = 3;
+        break;
+    }
 
-  cmp(TMP1, IR::ROUND_MODE_POSITIVE_INFINITY);
-  LoadConstant(TMP3, 1);
-  csel(TMP2, TMP3, xzr, vixl::aarch64::Condition::eq);
+    if (Const & 0b100) {
+      // FTZ flag
+      ARMFlags |= 1 << 2;
+    }
 
-  cmp(TMP1, IR::ROUND_MODE_NEGATIVE_INFINITY);
-  LoadConstant(TMP3, 2);
-  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+    LoadConstant(TMP2, ARMFlags);
+    mrs(TMP1, FPCR);
 
-  cmp(TMP1, IR::ROUND_MODE_TOWARDS_ZERO);
-  LoadConstant(TMP3, 3);
-  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+    // Insert the rounding flags and FTZ
+    bfi(TMP1, TMP2, 22, 3);
 
-  mrs(TMP1, FPCR);
+    // Now save the new FPCR
+    msr(FPCR, TMP1);
+  }
+  else {
+    auto Src = GetReg<RA_64>(Op->Header.Args[0].ID());
 
-  // Insert the rounding flags
-  bfi(TMP1, TMP2, 22, 2);
+    // Setup the rounding flags correctly
+    and_(TMP1, Src, 0b11);
 
-  // Insert the FTZ flag
-  lsr(TMP2, Src, 2);
-  bfi(TMP1, TMP2, 24, 1);
+    cmp(TMP1, IR::ROUND_MODE_POSITIVE_INFINITY);
+    LoadConstant(TMP3, 1);
+    csel(TMP2, TMP3, xzr, vixl::aarch64::Condition::eq);
 
-  // Now save the new FPCR
-  msr(FPCR, TMP1);
+    cmp(TMP1, IR::ROUND_MODE_NEGATIVE_INFINITY);
+    LoadConstant(TMP3, 2);
+    csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+
+    cmp(TMP1, IR::ROUND_MODE_TOWARDS_ZERO);
+    LoadConstant(TMP3, 3);
+    csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+
+    mrs(TMP1, FPCR);
+
+    // Insert the rounding flags
+    bfi(TMP1, TMP2, 22, 2);
+
+    // Insert the FTZ flag
+    lsr(TMP2, Src, 2);
+    bfi(TMP1, TMP2, 24, 1);
+
+    // Now save the new FPCR
+    msr(FPCR, TMP1);
+  }
 }
 
 DEF_OP(Print) {

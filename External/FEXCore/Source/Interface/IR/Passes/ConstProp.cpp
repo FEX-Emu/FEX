@@ -980,6 +980,18 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         break;
       }
 
+      case OP_SETROUNDINGMODE:
+      {
+        auto Op = IROp->C<IR::IROp_SetRoundingMode>();
+
+        uint64_t Const{};
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Const)) {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Const));
+          Changed = true;
+        }
+        break;
+      }
       default:
         break;
     }

@@ -154,12 +154,21 @@ DEF_OP(Vector_FToF) {
   uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
 
   switch (Conv) {
+    case 0x0402: { // Float <- Float16
+      vcvtph2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      break;
+    }
     case 0x0804: { // Double <- Float
       cvtps2pd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
       break;
     }
     case 0x0408: { // Float <- Double
       cvtpd2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      break;
+    }
+    case 0x0204: { // Float16 <-- Float
+      // Host rounding mode
+      vcvtps2ph(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0b100);
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF conversion type : 0x{:04x}", Conv); break;

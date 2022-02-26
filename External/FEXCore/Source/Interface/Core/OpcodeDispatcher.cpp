@@ -6291,6 +6291,9 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::UnimplementedOp},
 
+    // VEX Map 2
+    {OPD(2, 0b01, 0x13), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 2>},
+
     {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b01, 0x58), 3, &OpDispatchBuilder::UnimplementedOp},
@@ -6308,6 +6311,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b11, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
 
+    // VEX Map 3
+    {OPD(3, 0b01, 0x1D), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float16},
     {OPD(3, 0b11, 0xF0), 1, &OpDispatchBuilder::RORX},
   };
 #undef OPD

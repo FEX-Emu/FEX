@@ -141,12 +141,20 @@ DEF_OP(Vector_FToF) {
   uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
 
   switch (Conv) {
+    case 0x0402: { // Float <- Float16
+      fcvtl(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4H());
+      break;
+    }
     case 0x0804: { // Double <- Float
       fcvtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S());
       break;
     }
     case 0x0408: { // Float <- Double
       fcvtn(GetDst(Node).V2S(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      break;
+    }
+    case 0x0204: { // Float16 <-- Float
+      fcvtn(GetDst(Node).V4H(), GetSrc(Op->Header.Args[0].ID()).V4S());
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv); break;
