@@ -99,7 +99,7 @@ public:
 
   struct SyscallFunctionDefinition {
     uint8_t NumArgs;
-    uint8_t Flags;
+    FEXCore::IR::SyscallFlags Flags;
     union {
       void* Ptr;
       SyscallPtrArg0 Ptr0;
@@ -125,7 +125,7 @@ public:
     return {Def.NumArgs, true, Def.HostSyscallNumber};
   }
 
-  uint32_t GetSyscallFlags(uint64_t Syscall) const override {
+  FEXCore::IR::SyscallFlags  GetSyscallFlags(uint64_t Syscall) const override {
     auto &Def = Definitions.at(Syscall);
     return Def.Flags;
   }
@@ -395,8 +395,8 @@ static bool HasSyscallError(const void* Result) {
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
     } } impl_##name
 
 // Registers syscall for both 32bit and 64bit
@@ -404,8 +404,8 @@ static bool HasSyscallError(const void* Result) {
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SYSCALL_FLAG_DEFAULT, #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
     } } impl_##name
 
 #define REGISTER_SYSCALL_IMPL_FLAGS(name, flags, lambda) \

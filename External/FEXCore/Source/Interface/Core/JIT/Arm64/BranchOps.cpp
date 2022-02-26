@@ -185,10 +185,10 @@ DEF_OP(Syscall) {
   // X1: ThreadState
   // X2: Pointer to SyscallArguments
 
-  uint8_t Flags = Op->Flags;
+  FEXCore::IR::SyscallFlags Flags = Op->Flags;
   PushDynamicRegsAndLR();
 
-  if ((Flags & FEXCore::IR::SYSCALL_FLAG_NOSYNCSTATEONENTRY) != FEXCore::IR::SYSCALL_FLAG_NOSYNCSTATEONENTRY) {
+  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
     SpillStaticRegs();
   }
   else {
@@ -211,8 +211,8 @@ DEF_OP(Syscall) {
 
   add(sp, sp, SPOffset);
 
-  if ((Flags & FEXCore::IR::SYSCALL_FLAG_NOSYNCSTATEONENTRY) != FEXCore::IR::SYSCALL_FLAG_NOSYNCSTATEONENTRY &&
-      (Flags & FEXCore::IR::SYSCALL_FLAG_NORETURN) != FEXCore::IR::SYSCALL_FLAG_NORETURN) {
+  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY &&
+      (Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     FillStaticRegs();
   }
   else {
@@ -223,7 +223,7 @@ DEF_OP(Syscall) {
 
   PopDynamicRegsAndLR();
 
-  if ((Flags & FEXCore::IR::SYSCALL_FLAG_NORETURN) != FEXCore::IR::SYSCALL_FLAG_NORETURN) {
+  if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     // Move result to its destination register
     mov(GetReg<RA_64>(Node), x0);
   }
@@ -357,13 +357,11 @@ DEF_OP(InlineSyscall) {
   svc(0);
   // On updated signal mask we can receive a signal RIGHT HERE
 
-  if ((Op->Flags & FEXCore::IR::SYSCALL_FLAG_NORETURN) != FEXCore::IR::SYSCALL_FLAG_NORETURN) {
+  if ((Op->Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     // Now that we are done in the syscall we need to carefully peel back the state
     // First unspill the registers from before
     FillStaticRegs(false, SpillMask);
-  }
 
-  if ((Op->Flags & FEXCore::IR::SYSCALL_FLAG_NORETURN) == 0) {
     // Now the registers we've spilled are back in their original host registers
     // We can safely claim we are no longer in a syscall
     str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));

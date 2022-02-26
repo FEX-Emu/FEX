@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXHeaderUtils/EnumOperators.h>
 
 #include <array>
 #include <cassert>
@@ -481,6 +482,16 @@ protected:
   uintptr_t IRList{};
   OrderedNodeWrapper Node{};
 };
+
+enum class SyscallFlags : uint8_t {
+  DEFAULT            = 0,
+  OPTIMIZETHROUGH    = 1 << 0,
+  NOSYNCSTATEONENTRY = 1 << 1,
+  NORETURN           = 1 << 2,
+  NOSIDEEFFECTS      = 1 << 3
+};
+
+FEX_DEF_NUM_OPS(SyscallFlags)
 
 #define IROP_ENUM
 #define IROP_STRUCTS

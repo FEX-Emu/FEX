@@ -40,7 +40,7 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
       bool HasSideEffects = IR::HasSideEffects(IROp->Op);
       if (IROp->Op == OP_SYSCALL ||
           IROp->Op == OP_INLINESYSCALL) {
-        uint32_t Flags{};
+        FEXCore::IR::SyscallFlags Flags{};
         if (IROp->Op == OP_SYSCALL) {
           auto Op = IROp->C<IR::IROp_Syscall>();
           Flags = Op->Flags;
@@ -50,7 +50,7 @@ bool DeadCodeElimination::Run(IREmitter *IREmit) {
           Flags = Op->Flags;
         }
 
-        if (Flags & FEXCore::IR::SYSCALL_FLAG_NOSIDEEFFECTS) {
+        if ((Flags & FEXCore::IR::SyscallFlags::NOSIDEEFFECTS) == FEXCore::IR::SyscallFlags::NOSIDEEFFECTS) {
           HasSideEffects = false;
         }
       }

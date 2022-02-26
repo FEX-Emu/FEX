@@ -108,7 +108,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     Arguments[4],
     Arguments[5],
     Arguments[6],
-    FEXCore::IR::SYSCALL_FLAG_DEFAULT);
+    FEXCore::IR::SyscallFlags::DEFAULT);
 
   if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
     // Hangover doesn't want us returning a result here

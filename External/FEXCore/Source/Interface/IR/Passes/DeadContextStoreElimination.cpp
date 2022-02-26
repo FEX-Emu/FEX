@@ -663,7 +663,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
       }
       else if (IROp->Op == OP_SYSCALL ||
                IROp->Op == OP_INLINESYSCALL) {
-        uint32_t Flags{};
+        FEXCore::IR::SyscallFlags Flags{};
         if (IROp->Op == OP_SYSCALL) {
           auto Op = IROp->C<IR::IROp_Syscall>();
           Flags = Op->Flags;
@@ -673,7 +673,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
           Flags = Op->Flags;
         }
 
-        if ((Flags & FEXCore::IR::SYSCALL_FLAG_OPTIMIZETHROUGH) != FEXCore::IR::SYSCALL_FLAG_OPTIMIZETHROUGH) {
+        if ((Flags & FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH) != FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH) {
           // We can't track through these
           ResetClassificationAccesses(&LocalInfo);
         }

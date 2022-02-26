@@ -19,39 +19,39 @@ namespace FEX::HLE {
   void RegisterKey() {
     using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(add_key, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(add_key, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *type, const char *description, const void *payload, size_t plen, key_serial_t keyring) -> uint64_t {
       uint64_t Result = syscall(SYS_add_key, type, description, payload, plen, keyring);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(request_key, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(request_key, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *type, const char *description, const char *callout_info, key_serial_t dest_keyring) -> uint64_t {
       uint64_t Result = syscall(SYS_request_key, type, description, callout_info, dest_keyring);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(keyctl, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(keyctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int operation, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5) -> uint64_t {
       uint64_t Result = syscall(SYS_keyctl, operation, arg2, arg3, arg4, arg5);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_mprotect, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_mprotect, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t len, int prot, int pkey) -> uint64_t {
       // Added in Linux 4.9
       uint64_t Result = ::syscall(SYSCALL_DEF(pkey_mprotect), addr, len, prot, pkey);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_alloc, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_alloc, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, unsigned int flags, unsigned int access_rights) -> uint64_t {
       // Added in Linux 4.9
       uint64_t Result = ::syscall(SYSCALL_DEF(pkey_alloc), flags, access_rights);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_free, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_free, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int pkey) -> uint64_t {
       // Added in Linux 4.9
       uint64_t Result = ::syscall(SYSCALL_DEF(pkey_free), pkey);

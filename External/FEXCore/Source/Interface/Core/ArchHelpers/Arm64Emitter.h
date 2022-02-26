@@ -65,12 +65,7 @@ protected:
   void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
 
-  static constexpr uint32_t CALLER_GPR_MASK =
-    (1U <<  0) | (1U <<  1) | (1U <<  2) | (1U <<  3) |
-    (1U <<  4) | (1U <<  5) | (1U <<  6) | (1U <<  7) |
-    (1U <<  8) | (1U <<  9) | (1U << 10) | (1U << 11) |
-    (1U << 12) | (1U << 13) | (1U << 14) | (1U << 15) |
-    (1U << 16) | (1U << 17) | (1U << 18);
+  static constexpr uint32_t CALLER_GPR_MASK = 0b0011'1111'1111'1111'1111;
 
   // This isn't technically true because the lower 64-bits of v8..v15 are callee saved
   // We can't guarantee only the lower 64bits are used so flush everything

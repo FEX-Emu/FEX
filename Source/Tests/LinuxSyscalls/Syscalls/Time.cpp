@@ -16,7 +16,7 @@ namespace FEX::HLE {
   void RegisterTime() {
     using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pause, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pause, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::pause();
       SYSCALL_ERRNO();

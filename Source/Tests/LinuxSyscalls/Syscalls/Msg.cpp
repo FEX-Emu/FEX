@@ -21,25 +21,25 @@ namespace FEX::HLE {
   void RegisterMsg() {
     using namespace FEXCore::IR;
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgget, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgget, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, key_t key, int msgflg) -> uint64_t {
       uint64_t Result = ::msgget(key, msgflg);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgsnd, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgsnd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int msqid, const void *msgp, size_t msgsz, int msgflg) -> uint64_t {
       uint64_t Result = ::msgsnd(msqid, msgp, msgsz, msgflg);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgrcv, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgrcv, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) -> uint64_t {
       uint64_t Result = ::msgrcv(msqid, msgp, msgsz, msgtyp, msgflg);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgctl, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(msgctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int msqid, int cmd, struct msqid_ds *buf) -> uint64_t {
       // A quirk of this syscall
       // On 32-bit this syscall ONLY supports IPC_64 msqid_ds encoding
@@ -50,7 +50,7 @@ namespace FEX::HLE {
     });
 
     // last two parameters are optional
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(mq_unlink, SYSCALL_FLAG_OPTIMIZETHROUGH | SYSCALL_FLAG_NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(mq_unlink, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *name) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(mq_unlink), name);
       SYSCALL_ERRNO();

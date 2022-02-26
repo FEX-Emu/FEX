@@ -171,6 +171,19 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   }
 }
 
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::SyscallFlags Arg) {
+  switch (Arg) {
+    case FEXCore::IR::SyscallFlags::DEFAULT: *out << "Default"; break;
+    case FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH: *out << "Optimize Through"; break;
+    case FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY: *out << "No Sync State on Entry"; break;
+    case FEXCore::IR::SyscallFlags::NORETURN: *out << "No Return"; break;
+    case FEXCore::IR::SyscallFlags::NOSIDEEFFECTS: *out << "No Side Effects"; break;
+    default: *out << "<Unknown Round Type>"; break;
+  }
+}
+
+
+
 void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();
 
