@@ -25,7 +25,7 @@ else()
 endif()
 target_link_libraries(${NAME} PRIVATE Common pthread epoxy X11 EGL imgui json-maker)
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(${NAME}
     PRIVATE
       "LINKER:--gc-sections"

@@ -3,7 +3,7 @@ set(SRCS Main.cpp)
 
 add_executable(${NAME} ${SRCS})
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(${NAME}
     PRIVATE
       "LINKER:--gc-sections"

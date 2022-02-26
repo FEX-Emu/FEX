@@ -342,7 +342,7 @@ function(AddDefaultOptionsToTarget Name)
       "-fcolor-diagnostics")
   endif()
 
-  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  if (STRIP_BUILD)
     target_link_options(${Name}
       PRIVATE
       "LINKER:--gc-sections"

@@ -7,7 +7,7 @@ list(APPEND LIBS FEXCore Common CommonCore)
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(${NAME}
     PRIVATE
       "LINKER:--gc-sections"

@@ -22,8 +22,7 @@ else()
   target_link_libraries(${NAME} PRIVATE ${SDL2_LIBRARIES})
 endif()
 
-
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(${NAME}
     PRIVATE
       "LINKER:--gc-sections"

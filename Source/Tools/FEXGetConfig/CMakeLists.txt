@@ -5,7 +5,7 @@ add_executable(${NAME} ${SRCS})
 
 list(APPEND LIBS Common CommonCore)
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(${NAME}
     PRIVATE
       "LINKER:--gc-sections"

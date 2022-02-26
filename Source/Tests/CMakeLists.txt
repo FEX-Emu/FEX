@@ -20,7 +20,7 @@ target_link_libraries(FEXLoader
     fmt::fmt
 )
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(FEXLoader
     PRIVATE
       "LINKER:--gc-sections"
@@ -117,7 +117,7 @@ target_link_libraries(FEXBash
     ${PTHREAD_LIB}
 )
 
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+if (STRIP_BUILD)
   target_link_options(FEXBash
     PRIVATE
       "LINKER:--gc-sections"
