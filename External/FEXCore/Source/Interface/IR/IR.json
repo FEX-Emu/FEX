@@ -3476,6 +3476,25 @@
       ]
     },
 
+    "VRev64": {
+      "Desc" : ["Reverses elements in 64-bit halfwords",
+                "Available element size: 1byte, 2 byte, 4 byte"
+               ],
+      "OpClass": "Vector",
+      "HasDest": true,
+      "DestClass": "FPR",
+      "DestSize": "RegisterSize",
+      "NumElements": "RegisterSize / ElementSize",
+      "SSAArgs": "1",
+      "SSANames": [
+        "Source"
+      ],
+      "HelperArgs": [
+        "uint8_t", "RegisterSize",
+        "uint8_t", "ElementSize"
+      ]
+    },
+
     "VAESImc": {
       "OpClass": "Vector",
       "Dest": "Does a stage of the inverse mix column transformation",

@@ -7,6 +7,7 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
+#include <FEXCore/Utils/BitUtils.h>
 
 #include <bit>
 #include <cstdint>
@@ -1928,6 +1929,39 @@ DEF_OP(VTBL1) {
     Tmp[i] = Index >= OpSize ? 0 : Src1[Index];
   }
   memcpy(GDP, Tmp, OpSize);
+}
+
+DEF_OP(VRev64) {
+  auto Op = IROp->C<IR::IROp_VRev64>();
+  uint8_t OpSize = IROp->Size;
+
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+
+  uint8_t Tmp[16];
+
+  uint8_t Elements = OpSize / 8;
+
+  // The element working size is always 64-bit
+  // The defined element size in the op is the operating size of the element swapping
+  auto Func8 = [](auto a) { return BSwap64(a); };
+  auto Func16 = [](auto a) {
+    return (a >> 48) |                    // Element[3] -> Element[0]
+      ((a >> 16) & 0xFFFF'0000U) |        // Element[2] -> Element[1]
+      ((a << 16) & 0xFFFF'0000'0000ULL) | // Element[1] -> Element[2]
+      (a << 48);                          // Element[0] -> Element[3]
+  };
+  auto Func32 = [](auto a) {
+    return (a >> 32) | (a << 32);
+  };
+
+  switch (Op->Header.ElementSize) {
+    DO_VECTOR_1SRC_OP(1, uint64_t, Func8)
+    DO_VECTOR_1SRC_OP(2, uint64_t, Func16)
+    DO_VECTOR_1SRC_OP(4, uint64_t, Func32)
+
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+  }
+  memcpy(GDP, Tmp, Op->Header.Size);
 }
 
 #undef DEF_OP
