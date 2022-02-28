@@ -262,16 +262,13 @@ enum InstType {
 
   TYPE_GROUP_EVEX,
 
-  // Just to make grepping easier
-  TYPE_3DNOW_TABLE = TYPE_INVALID,
-  TYPE_3DNOW_INST = TYPE_INVALID,
-
   // Exists in the table but isn't decoded correctly
   TYPE_UNDEC = TYPE_INVALID,
   TYPE_MMX = TYPE_INVALID,
   TYPE_PRIV = TYPE_INVALID,
   TYPE_0F38_TABLE = TYPE_INVALID,
   TYPE_0F3A_TABLE = TYPE_INVALID,
+  TYPE_3DNOW_TABLE = TYPE_INVALID,
 };
 
 namespace InstFlags {
