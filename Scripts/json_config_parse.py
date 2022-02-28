@@ -148,7 +148,7 @@ def parse_json(json_text, output_file):
     OptionRegData = {}
     OptionMemoryRegions = {}
     OptionMemoryData = {}
-
+    OptionEnvironmentVariables = {}
 
     json_object = json.loads(json_text)
     json_object = {k.upper(): v for k, v in json_object.items()}
@@ -242,6 +242,14 @@ def parse_json(json_text, output_file):
             length, byte_data = parse_hexstring(data_val)
             OptionMemoryData[int(data_key, 0)] = (length, byte_data)
 
+    if ("ENV" in json_object):
+        data = json_object["ENV"]
+        if not (type(data) is dict):
+            sys.exit("Environment variables value must be list of key:value pairs")
+
+        for data_key, data_val in data.items():
+            OptionEnvironmentVariables[data_key] = data_val
+
     # If Match option wasn't touched then set it to the default
     if (OptionMatch == Regs.REG_INVALID):
         OptionMatch = Regs.REG_NONE
@@ -250,6 +258,7 @@ def parse_json(json_text, output_file):
     memRegions = bytes()
     regData = bytes()
     memData = bytes()
+    envData = bytes()
 
     # Write memory regions
     for key, val in OptionMemoryRegions.items():
@@ -271,6 +280,13 @@ def parse_json(json_text, output_file):
         for byte in data:
             memData += struct.pack('B', byte)
 
+    # Write environment variables
+    for key, val in OptionEnvironmentVariables.items():
+        envData += key.encode()
+        envData += struct.pack('B', 0)
+        envData += val.encode()
+        envData += struct.pack('B', 0)
+
     config_file = open(output_file, "wb")
     config_file.write(struct.pack('Q', OptionMatch.value))
     config_file.write(struct.pack('Q', OptionIgnore.value))
@@ -280,7 +296,7 @@ def parse_json(json_text, output_file):
     config_file.write(struct.pack('I', OptionMode.value))
 
     # Total length of header, including offsets/counts below
-    headerLength = (8 * 4) + (4 * 2) + (4 * 6)
+    headerLength = (8 * 4) + (4 * 2) + (4 * 8)
     offset = headerLength
 
     #  memory regions offset/count
@@ -298,10 +314,16 @@ def parse_json(json_text, output_file):
     config_file.write(struct.pack('I', len(OptionMemoryData)))
     offset += len(memData)
 
+    # environment data offset/count
+    config_file.write(struct.pack('I', offset))
+    config_file.write(struct.pack('I', len(OptionEnvironmentVariables)))
+    offset += len(envData)
+
     # write out the actual data for memory regions, reg data and memory data
     config_file.write(memRegions)
     config_file.write(regData)
     config_file.write(memData)
+    config_file.write(envData)
 
     config_file.close()
 
