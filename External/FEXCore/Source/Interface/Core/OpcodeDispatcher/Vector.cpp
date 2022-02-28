@@ -298,6 +298,24 @@ template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>(OpcodeArgs);
 
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  auto ALUOp = _VAdd(Size, ElementSize, Src, Dest);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  StoreResult(FPRClass, Op, ALUOp, -1);
+}
+
+template
+void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
+
+template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
@@ -391,6 +409,26 @@ template
 void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
+
+template<FEXCore::IR::IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto ALUOp = _VFSqrt(ElementSize, ElementSize, Src);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  // Duplicate the lower bits
+  auto Result = _VDupElement(Size, ElementSize, ALUOp, 0);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -1027,6 +1065,8 @@ template
 void OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::Vector_CVT_Float_To_Int<4, true, false>(OpcodeArgs);
 
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
@@ -1633,10 +1673,150 @@ void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ResAdd, -1);
 }
 
+void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *ResSubSrc{};
+  OrderedNode *ResSubDest{};
+  auto UpperSubDest = _VExtractElement(Size, 4, Dest, 1);
+  auto UpperSubSrc = _VExtractElement(Size, 4, Src, 1);
+
+  ResSubDest = _VFSub(4, 4, Dest, UpperSubDest);
+  ResSubSrc = _VFSub(4, 4, Src, UpperSubSrc);
+
+  auto Result = _VInsElement(8, 4, 1, 0, ResSubDest, ResSubSrc);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::PFPNACCOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *ResAdd{};
+  OrderedNode *ResSub{};
+  auto UpperSubDest = _VExtractElement(Size, 4, Dest, 1);
+
+  ResSub = _VFSub(4, 4, Dest, UpperSubDest);
+  ResAdd = _VFAddP(Size, 4, Src, Src);
+
+  auto Result = _VInsElement(8, 4, 1, 0, ResSub, ResAdd);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::PSWAPDOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto Result = _VRev64(Size, 4, Src);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 template
 void OpDispatchBuilder::ADDSUBPOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::ADDSUBPOp<8>(OpcodeArgs);
+
+void OpDispatchBuilder::PI2FWOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  size_t Size = GetDstSize(Op);
+
+  // We now need to transpose the lower 16-bits of each element together
+  // Only needing to move the upper element down in this case
+  Src = _VInsElement(Size, 2, 1, 2, Src, Src);
+
+  // Now we need to sign extend the 16bit value to 32-bit
+  Src = _VSXTL(Size, 2, Src);
+
+  // int32_t to float
+  Src = _Vector_SToF(Src, Size, 4);
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
+}
+
+void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  size_t Size = GetDstSize(Op);
+
+  // Float to int32_t
+  Src = _Vector_FToZS(Src, Size, 4);
+
+  // We now need to transpose the lower 16-bits of each element together
+  // Only needing to move the upper element down in this case
+  Src = _VInsElement(Size, 2, 1, 2, Src, Src);
+
+  // Now we need to sign extend the 16bit value to 32-bit
+  Src = _VSXTL(Size, 2, Src);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
+}
+
+void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *Res{};
+
+  // Implementation is more efficient for 8byte registers
+  // Multiplies 4 16bit values in to 4 32bit values
+  Res = _VSMull(Size * 2, 2, Dest, Src);
+  //TODO: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
+  auto M = _Constant(0x0000'8000'0000'8000ULL);
+  OrderedNode *VConstant = _VCastFromGPR(16, 8, M);
+  VConstant = _VInsGPR(16, 8, VConstant, M, 1);
+
+  Res = _VAdd(Size * 2, 4, Res, VConstant);
+
+  // Now shift and narrow to convert 32-bit values to 16bit, storing the top 16bits
+  Res = _VUShrNI(Size * 2, 4, Res, 16);
+
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+template<uint8_t CompType>
+void OpDispatchBuilder::VPFCMPOp(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
+
+  OrderedNode *Result{};
+  // This maps 1:1 to an AArch64 NEON Op
+  //auto ALUOp = _VCMPGT(Size, 4, Dest, Src);
+  LogMan::Msg::DFmt("CompType: {} Size: {}", CompType, Size);
+  switch (CompType) {
+    case 0x00: // EQ
+      Result = _VFCMPEQ(Size, 4, Dest, Src);
+    break;
+    case 0x01: // GE(Swapped operand)
+      Result = _VFCMPLE(Size, 4, Src, Dest);
+    break;
+    case 0x02: // GT
+      Result = _VFCMPGT(Size, 4, Dest, Src);
+    break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType);
+    break;
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+  ShouldDump = true;
+}
+
+template
+void OpDispatchBuilder::VPFCMPOp<0>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPFCMPOp<1>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPFCMPOp<2>(OpcodeArgs);
 
 void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
   // This is a pretty curious operation

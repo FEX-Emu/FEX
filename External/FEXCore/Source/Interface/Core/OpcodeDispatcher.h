@@ -296,9 +296,14 @@ public:
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorALUROp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorScalarALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
   void VectorUnaryOp(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorUnaryDuplicateOp(OpcodeArgs);
+
   void MOVQOp(OpcodeArgs);
   template<size_t ElementSize>
   void PADDQOp(OpcodeArgs);
@@ -484,6 +489,17 @@ public:
 
   template<size_t ElementSize>
   void ADDSUBPOp(OpcodeArgs);
+
+  void PFNACCOp(OpcodeArgs);
+  void PFPNACCOp(OpcodeArgs);
+  void PSWAPDOp(OpcodeArgs);
+
+  template<uint8_t CompType>
+  void VPFCMPOp(OpcodeArgs);
+  void PI2FWOp(OpcodeArgs);
+  void PF2IWOp(OpcodeArgs);
+
+  void PMULHRWOp(OpcodeArgs);
 
   void PMADDWD(OpcodeArgs);
   void PMADDUBSW(OpcodeArgs);
