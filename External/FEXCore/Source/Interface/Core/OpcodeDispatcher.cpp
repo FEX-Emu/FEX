@@ -5200,8 +5200,10 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   _Break(FEXCore::IR::Break_Unimplemented, 0);
   BlockSetRIP = true;
 
-  auto NextBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-  SetCurrentCodeBlock(NextBlock);
+  if (Multiblock) {
+    auto NextBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+    SetCurrentCodeBlock(NextBlock);
+  }
 }
 
 void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
