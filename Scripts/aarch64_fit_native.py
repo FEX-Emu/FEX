@@ -16,6 +16,14 @@ BigCoreIDs = {
         tuple([0x41, 0xd0d]): "cortex-a77",
         tuple([0x41, 0xd41]): "cortex-a78",
         tuple([0x41, 0xd44]): "cortex-x1",
+        tuple([0x41, 0xd47]):
+            [ ["cortex-a78", "0.0"],
+              ["cortex-a710", "999.0"], # Doesn't exist in clang as of version 13
+            ],
+        tuple([0x41, 0xd48]):
+            [ ["cortex-x1", "0.0"],
+              ["cortex-x2", "999.0"], # Doesn't exist in clang as of version 13
+            ],
         tuple([0x41, 0xd0c]): "neoverse-n1",
         tuple([0x41, 0xd49]): "neoverse-n2",
         ## Nvidia
@@ -36,6 +44,10 @@ LittleCoreIDs = {
         tuple([0x41, 0xd04]): "cortex-a35",
         tuple([0x41, 0xd03]): "cortex-a53",
         tuple([0x41, 0xd05]): "cortex-a55",
+        tuple([0x41, 0xd46]):
+            [ ["cortex-a55", "0.0"],
+              ["cortex-a510", "999.0"], # Doesn't exist in clang as of version 13
+            ],
 
         # Qualcomm
         tuple([0x51, 0x801]): "cortex-a53", # Kryo 2xx Silver
