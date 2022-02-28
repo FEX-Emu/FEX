@@ -15,3 +15,32 @@ Test_SecondaryModRM/Reg_7_4_2.asm
 # Not guaranteed to work in 64bit mode
 Test_Primary/Primary_8C.asm
 Test_Primary/Primary_8C_2.asm
+
+# CI runners don't have 3DNow!
+Test_3DNow/0C.asm
+Test_3DNow/0D.asm
+Test_3DNow/0E.asm
+Test_3DNow/1C.asm
+Test_3DNow/1D.asm
+Test_3DNow/86.asm
+Test_3DNow/87.asm
+Test_3DNow/8A.asm
+Test_3DNow/8E.asm
+Test_3DNow/90.asm
+Test_3DNow/94.asm
+Test_3DNow/96.asm
+Test_3DNow/97.asm
+Test_3DNow/9A.asm
+Test_3DNow/9E.asm
+Test_3DNow/A0.asm
+Test_3DNow/A4.asm
+Test_3DNow/A6.asm
+Test_3DNow/A7.asm
+Test_3DNow/AA.asm
+Test_3DNow/AE.asm
+Test_3DNow/B0.asm
+Test_3DNow/B4.asm
+Test_3DNow/B6.asm
+Test_3DNow/B7.asm
+Test_3DNow/BB.asm
+Test_3DNow/BF.asm

@@ -1,0 +1,27 @@
+%ifdef CONFIG
+{
+  "RegData": {
+    "RAX": "0xFFFF"
+  }
+}
+%endif
+
+; Load all x87 registers
+finit
+fldz
+fldz
+fldz
+fldz
+fldz
+fldz
+fldz
+
+; femms sets all the tag bits to 0b11
+femms
+
+mov rdx, 0xe0000000
+o32 fstenv [rdx]
+
+mov eax, dword [rdx + 8] ; Offset 8 in the structure has FTW
+
+hlt
