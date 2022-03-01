@@ -62,8 +62,14 @@ protected:
 
   vixl::aarch64::CPU CPU;
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
-  void SpillStaticRegs(bool FPRs = true, uint32_t SpillMask = ~0U);
-  void FillStaticRegs(bool FPRs = true, uint32_t FillMask = ~0U);
+  void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
+  void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
+
+  static constexpr uint32_t CALLER_GPR_MASK = 0b0011'1111'1111'1111'1111;
+
+  // This isn't technically true because the lower 64-bits of v8..v15 are callee saved
+  // We can't guarantee only the lower 64bits are used so flush everything
+  static constexpr uint32_t CALLER_FPR_MASK = ~0U;
 
   void PushDynamicRegsAndLR();
   void PopDynamicRegsAndLR();

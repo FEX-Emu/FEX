@@ -26,14 +26,20 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 
-
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
 
     if (IROp->Op == FEXCore::IR::OP_SYSCALL) {
+      auto Op = IROp->CW<IR::IROp_Syscall>();
+
       // Is the first argument a constant?
       uint64_t Constant;
-      if (IREmit->IsValueConstant(IROp->Args[0], &Constant)) {
+      if (IREmit->IsValueConstant(Op->SyscallID, &Constant)) {
         auto SyscallDef = Manager->SyscallHandler->GetSyscallABI(Constant);
+        auto SyscallFlags = Manager->SyscallHandler->GetSyscallFlags(Constant);
+
+        // Update the syscall flags
+        Op->Flags = SyscallFlags;
+
         // XXX: Once we have the ability to do real function calls then we can call directly in to the syscall handler
         if (SyscallDef.NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS) {
           // If the number of args are less than what the IR op supports then we can remove arg usage
@@ -53,7 +59,8 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
               CurrentIR.GetNode(IROp->Args[4]),
               CurrentIR.GetNode(IROp->Args[5]),
               CurrentIR.GetNode(IROp->Args[6]),
-              SyscallDef.HostSyscallNumber);
+              SyscallDef.HostSyscallNumber,
+              Op->Flags);
 
             // Replace all syscall uses with this inline one
             IREmit->ReplaceAllUsesWith(CodeNode, InlineSyscall);
@@ -62,8 +69,9 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
             IREmit->Remove(CodeNode);
           }
 #endif
-          Changed = true;
         }
+
+        Changed = true;
       }
     }
   }

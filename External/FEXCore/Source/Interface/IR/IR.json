@@ -699,6 +699,9 @@
         "Arg3",
         "Arg4",
         "Arg5"
+      ],
+      "Args": [
+        "FEXCore::IR::SyscallFlags", "Flags"
       ]
     },
 
@@ -725,7 +728,8 @@
         "Arg5"
       ],
       "Args": [
-        "int32_t", "HostSyscallNumber"
+        "int32_t", "HostSyscallNumber",
+        "FEXCore::IR::SyscallFlags", "Flags"
       ]
     },
 

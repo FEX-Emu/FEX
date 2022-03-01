@@ -8,6 +8,7 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/FileManagement.h"
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/IR/IR.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -31,6 +32,7 @@ std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Contex
 
 void RegisterSyscallInternal(int SyscallNumber,
   int32_t HostSyscallNumber,
+  FEXCore::IR::SyscallFlags Flags,
 #ifdef DEBUG_STRACE
   const std::string& TraceFormatString,
 #endif
@@ -46,17 +48,17 @@ void RegisterSyscallInternal(int SyscallNumber,
 // Deduces return, args... from the function passed
 // Does not work with lambas, because they are objects with operator (), not functions
 template<typename R, typename ...Args>
-bool RegisterSyscall(int SyscallNumber, int32_t HostSyscallNumber, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
+void RegisterSyscall(int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
 #ifdef DEBUG_STRACE
   auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif
   FEX::HLE::x64::RegisterSyscallInternal(SyscallNumber,
     HostSyscallNumber,
+    Flags,
 #ifdef DEBUG_STRACE
     TraceFormatString,
 #endif
     reinterpret_cast<void*>(fn), sizeof...(Args));
-  return true;
 }
 
 //LambdaTraits extracts the function singature of a lambda from operator()
@@ -73,9 +75,9 @@ struct LambdaTraits<T (C::*)(Args...) const>
 // Non-capturing lambdas can be cast to function pointers, but this does not happen on argument matching
 // This is some glue logic that will cast a lambda and call the base RegisterSyscall implementation
 template<class F>
-bool RegisterSyscall(int num, int32_t HostSyscallNumber, const char *name, F f){
+void RegisterSyscall(int num, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags, const char *name, F f){
   typedef typename LambdaTraits<decltype(&F::operator())>::Type Signature;
-  return RegisterSyscall(num, HostSyscallNumber, name, (Signature)f);
+  RegisterSyscall(num, HostSyscallNumber, Flags, name, (Signature)f);
 }
 
 }
@@ -85,12 +87,26 @@ bool RegisterSyscall(int num, int32_t HostSyscallNumber, const char *name, F f){
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, ~0, #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
     } } impl_##name
 
 #define REGISTER_SYSCALL_IMPL_X64_PASS(name, lambda) \
   struct impl_##name { \
     impl_##name() \
     { \
-      FEX::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, SYSCALL_DEF(name), #name, lambda); \
+      FEX::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+    } } impl_##name
+
+#define REGISTER_SYSCALL_IMPL_X64_FLAGS(name, flags, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, ~0, flags, #name, lambda); \
+    } } impl_##name
+
+#define REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(name, flags, lambda) \
+  struct impl_##name { \
+    impl_##name() \
+    { \
+      FEX::HLE::x64::RegisterSyscall(x64::SYSCALL_x64_##name, SYSCALL_DEF(name), flags, #name, lambda); \
     } } impl_##name

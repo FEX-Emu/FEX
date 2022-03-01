@@ -4,6 +4,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "FEXCore/IR/IR.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
@@ -184,8 +185,16 @@ DEF_OP(Syscall) {
   // X1: ThreadState
   // X2: Pointer to SyscallArguments
 
+  FEXCore::IR::SyscallFlags Flags = Op->Flags;
   PushDynamicRegsAndLR();
-  SpillStaticRegs();
+
+  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
+    SpillStaticRegs();
+  }
+  else {
+    // Need to spill all caller saved registers still
+    SpillStaticRegs(true, CALLER_GPR_MASK, CALLER_FPR_MASK);
+  }
 
   uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
   sub(sp, sp, SPOffset);
@@ -202,13 +211,22 @@ DEF_OP(Syscall) {
 
   add(sp, sp, SPOffset);
 
-  // Result is now in x0
-  // Fix the stack and any values that were stepped on
-  FillStaticRegs();
+  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY &&
+      (Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
+    FillStaticRegs();
+  }
+  else {
+    // Result is now in x0
+    // Fix the stack and any values that were stepped on
+    FillStaticRegs(true, CALLER_GPR_MASK, CALLER_FPR_MASK);
+  }
+
   PopDynamicRegsAndLR();
 
-  // Move result to its destination register
-  mov(GetReg<RA_64>(Node), x0);
+  if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
+    // Move result to its destination register
+    mov(GetReg<RA_64>(Node), x0);
+  }
 }
 
 DEF_OP(InlineSyscall) {
@@ -339,21 +357,23 @@ DEF_OP(InlineSyscall) {
   svc(0);
   // On updated signal mask we can receive a signal RIGHT HERE
 
-  // Now that we are done in the syscall we need to carefully peel back the state
-  // First unspill the registers from before
-  FillStaticRegs(false, SpillMask);
+  if ((Op->Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
+    // Now that we are done in the syscall we need to carefully peel back the state
+    // First unspill the registers from before
+    FillStaticRegs(false, SpillMask);
 
-  // Now the registers we've spilled are back in their original host registers
-  // We can safely claim we are no longer in a syscall
-  str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+    // Now the registers we've spilled are back in their original host registers
+    // We can safely claim we are no longer in a syscall
+    str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
 
-  // Result is now in x0
-  // Move result to its destination register
-  if (CTX->Config.Is64BitMode()) {
-    mov(GetReg<RA_64>(Node), x0);
-  }
-  else {
-    uxtw(GetReg<RA_64>(Node), x0);
+    // Result is now in x0
+    // Move result to its destination register
+    if (CTX->Config.Is64BitMode()) {
+      mov(GetReg<RA_64>(Node), x0);
+    }
+    else {
+      uxtw(GetReg<RA_64>(Node), x0);
+    }
   }
 }
 

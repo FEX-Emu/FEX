@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <string>
 
+#include <FEXCore/IR/IR.h>
+
 namespace FEXCore::Context {
   struct Context;
 }
@@ -43,6 +45,7 @@ namespace FEXCore::HLE {
 
     virtual uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) = 0;
     virtual SyscallABI GetSyscallABI(uint64_t Syscall) = 0;
+    virtual FEXCore::IR::SyscallFlags GetSyscallFlags(uint64_t Syscall) const { return FEXCore::IR::SyscallFlags::DEFAULT; }
 
     SyscallOSABI GetOSABI() const { return OSABI; }
 

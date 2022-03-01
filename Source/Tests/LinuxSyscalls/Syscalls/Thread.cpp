@@ -4,6 +4,7 @@ tags: LinuxSyscalls|syscalls-shared
 $end_info$
 */
 
+#include "FEXCore/IR/IR.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
@@ -14,6 +15,8 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/IR/IR.h>
+
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <grp.h>
@@ -247,27 +250,31 @@ namespace FEX::HLE {
   }
 
   void RegisterThread(FEX::HLE::SyscallHandler *const Handler) {
-    REGISTER_SYSCALL_IMPL_PASS(getpid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    using namespace FEXCore::IR;
+
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getpid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(fork, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(fork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0);
     });
 
-    REGISTER_SYSCALL_IMPL(vfork, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(vfork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0);
     });
 
-    REGISTER_SYSCALL_IMPL(clone3, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *cl_args, size_t size) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(clone3, SyscallFlags::DEFAULT, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *cl_args, size_t size) -> uint64_t {
       FEX::HLE::clone3_args args{};
       args.Type = TypeOfClone::TYPE_CLONE3;
       memcpy(&args.args, cl_args, std::min(sizeof(FEX::HLE::kernel_clone3_args), size));
       return CloneHandler(Frame, &args);
     }));
 
-    REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(exit, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
+      [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
       auto Thread = Frame->Thread;
       if (Thread->ThreadManager.clear_child_tid) {
         std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
@@ -287,113 +294,132 @@ namespace FEX::HLE {
       return 0;
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(kill, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(kill, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig) -> uint64_t {
       uint64_t Result = ::kill(pid, sig);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(tkill, [](FEXCore::Core::CpuStateFrame *Frame, int tid, int sig) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(tkill, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame, int tid, int sig) -> uint64_t {
       // Can't actually use tgkill here, kernel rejects tgkill of tgid == 0
       uint64_t Result = ::syscall(SYSCALL_DEF(tkill), tid, sig);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(tgkill, [](FEXCore::Core::CpuStateFrame *Frame, int tgid, int tid, int sig) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(tgkill, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame, int tgid, int tid, int sig) -> uint64_t {
       uint64_t Result = FHU::Syscalls::tgkill(tgid, tid, sig);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getuid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getuid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getgid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getgid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t uid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uid_t uid) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setuid), uid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t gid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, gid_t gid) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setgid), gid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(geteuid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(geteuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::geteuid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getegid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getegid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getegid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getppid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getppid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getppid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getpgrp, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpgrp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getpgrp();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setsid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setsid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::setsid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setreuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setreuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setreuid), ruid, euid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setregid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setregid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setregid), rgid, egid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getgroups, [](FEXCore::Core::CpuStateFrame *Frame, int size, gid_t list[]) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getgroups, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int size, gid_t list[]) -> uint64_t {
       uint64_t Result = ::getgroups(size, list);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setgroups, [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setgroups, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, size_t size, const gid_t *list) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setgroups), size, list);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setresuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid, uid_t suid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setresuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uid_t ruid, uid_t euid, uid_t suid) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setresuid), ruid, euid, suid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getresuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t *ruid, uid_t *euid, uid_t *suid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getresuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uid_t *ruid, uid_t *euid, uid_t *suid) -> uint64_t {
       uint64_t Result = ::getresuid(ruid, euid, suid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setresgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid, gid_t sgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setresgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, gid_t rgid, gid_t egid, gid_t sgid) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(setresgid), rgid, egid, sgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getresgid, [](FEXCore::Core::CpuStateFrame *Frame, gid_t *rgid, gid_t *egid, gid_t *sgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getresgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, gid_t *rgid, gid_t *egid, gid_t *sgid) -> uint64_t {
       uint64_t Result = ::getresgid(rgid, egid, sgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(personality, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t persona) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(personality, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uint64_t persona) -> uint64_t {
       uint64_t Result = ::personality(persona);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(prctl, [](FEXCore::Core::CpuStateFrame *Frame, int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(prctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) -> uint64_t {
       uint64_t Result{};
       switch (option) {
       case PR_SET_SECCOMP:
@@ -408,7 +434,8 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(arch_prctl, [](FEXCore::Core::CpuStateFrame *Frame, int code, unsigned long addr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(arch_prctl, SyscallFlags::DEFAULT,
+      [](FEXCore::Core::CpuStateFrame *Frame, int code, unsigned long addr) -> uint64_t {
       constexpr uint64_t TASK_MAX = (1ULL << 48); // 48-bits until we can query the host side VA sanely. AArch64 doesn't expose this in cpuinfo
       uint64_t Result{};
       switch (code) {
@@ -453,18 +480,21 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(gettid, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(gettid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = FHU::Syscalls::gettid();
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL(set_tid_address, [](FEXCore::Core::CpuStateFrame *Frame, int *tidptr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(set_tid_address, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int *tidptr) -> uint64_t {
       auto Thread = Frame->Thread;
       Thread->ThreadManager.clear_child_tid = tidptr;
       return Thread->ThreadManager.GetTID();
     });
 
-    REGISTER_SYSCALL_IMPL(exit_group, [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
+      [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
       auto Thread = Frame->Thread;
       Thread->StatusCode = status;
       FEXCore::Context::Stop(Thread->CTX);
@@ -472,48 +502,57 @@ namespace FEX::HLE {
       std::terminate();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(prlimit_64, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(prlimit_64, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int resource, const struct rlimit *new_limit, struct rlimit *old_limit) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(prlimit_64), pid, resource, new_limit, old_limit);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setpgid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, pid_t pgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setpgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, pid_t pgid) -> uint64_t {
       uint64_t Result = ::setpgid(pid, pgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getpgid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
       uint64_t Result = ::getpgid(pid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setfsuid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setfsuid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsuid) -> uint64_t {
       uint64_t Result = ::setfsuid(fsuid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setfsgid, [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setfsgid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, uid_t fsgid) -> uint64_t {
       uint64_t Result = ::setfsgid(fsgid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(getsid, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getsid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid) -> uint64_t {
       uint64_t Result = ::getsid(pid);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(unshare, [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(unshare, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int flags) -> uint64_t {
       uint64_t Result = ::unshare(flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS(setns, [](FEXCore::Core::CpuStateFrame *Frame, int fd, int nstype) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setns, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, int fd, int nstype) -> uint64_t {
       uint64_t Result = ::setns(fd, nstype);
       SYSCALL_ERRNO();
     });
 
     if (Handler->IsHostKernelVersionAtLeast(5, 16, 0)) {
-      REGISTER_SYSCALL_IMPL_PASS(futex_waitv, [](FEXCore::Core::CpuStateFrame *Frame, void *waiters, uint32_t nr_futexes, uint32_t flags, struct timespec *timeout, clockid_t clockid) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(futex_waitv, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+        [](FEXCore::Core::CpuStateFrame *Frame, void *waiters, uint32_t nr_futexes, uint32_t flags, struct timespec *timeout, clockid_t clockid) -> uint64_t {
         uint64_t Result = ::syscall(SYSCALL_DEF(futex_waitv), waiters, nr_futexes, flags, timeout, clockid);
         SYSCALL_ERRNO();
       });
