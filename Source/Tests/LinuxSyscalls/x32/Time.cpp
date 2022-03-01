@@ -170,9 +170,9 @@ namespace FEX::HLE::x32 {
         struct timeval times64[2]{};
         times64[0] = times[0];
         times64[1] = times[1];
-        Result = ::futimesat(dirfd, pathname, times64);
+        Result = ::syscall(SYSCALL_DEF(futimesat), dirfd, pathname, times64);
       } else {
-        Result = ::futimesat(dirfd, pathname, nullptr);
+        Result = ::syscall(SYSCALL_DEF(futimesat), dirfd, pathname, nullptr);
       }
       SYSCALL_ERRNO();
     });

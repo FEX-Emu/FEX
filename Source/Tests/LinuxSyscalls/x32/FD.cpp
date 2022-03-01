@@ -1003,7 +1003,7 @@ namespace FEX::HLE::x32 {
       Len <<= 32;
       Len |= len_low;
 
-      uint64_t Result = ::sync_file_range(fd, Offset, Len, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(sync_file_range), fd, Offset, Len, flags);
       SYSCALL_ERRNO();
     });
 

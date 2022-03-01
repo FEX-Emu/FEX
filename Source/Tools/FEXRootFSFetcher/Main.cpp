@@ -7,8 +7,11 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
+#include <sstream>
 #include <sys/mman.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 namespace Exec {
   int32_t ExecAndWaitForResponse(const char *path, char* const* args) {
@@ -147,7 +150,7 @@ namespace WorkingAppsTester {
       nullptr,
     };
 
-    int fd = memfd_create("stdout", 0);
+    int fd = ::syscall(SYS_memfd_create, "stdout", 0);
     int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), fd, fd);
     Has_Unsquashfs = Result != -1;
     if (Has_Unsquashfs) {

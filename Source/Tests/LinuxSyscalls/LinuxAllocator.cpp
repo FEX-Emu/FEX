@@ -8,6 +8,7 @@
 #include <map>
 #include <linux/mman.h>
 #include <unistd.h>
+#include <sys/user.h>
 #include <sys/mman.h>
 #include <sys/shm.h>
 
@@ -18,9 +19,6 @@
 namespace FEX::HLE {
 class MemAllocator32Bit final : public FEX::HLE::MemAllocator {
 private:
-  static constexpr uint64_t PAGE_SHIFT = 12;
-  static constexpr uint64_t PAGE_SIZE = 1 << PAGE_SHIFT;
-  static constexpr uint64_t PAGE_MASK = (1 << PAGE_SHIFT) - 1;
   static constexpr uint64_t BASE_KEY = 16;
   const uint64_t TOP_KEY = 0xFFFF'F000ULL >> PAGE_SHIFT;
   const uint64_t TOP_KEY32BIT = 0x1F'F000ULL >> PAGE_SHIFT;
@@ -143,13 +141,13 @@ void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, in
       (flags & MAP_FIXED_NOREPLACE));
 
   // Both Addr and length must be page aligned
-  if (Addr & PAGE_MASK) {
+  if (Addr & ~PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
   // If we do have an fd then offset must be page aligned
   if (fd != -1 &&
-      offset & PAGE_MASK) {
+      offset & ~PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
@@ -275,11 +273,11 @@ int MemAllocator32Bit::munmap(void *addr, size_t length) {
   uintptr_t PageEnd = PageAddr + PagesLength;
 
   // Both Addr and length must be page aligned
-  if (Addr & PAGE_MASK) {
+  if (Addr & ~PAGE_MASK) {
     return -EINVAL;
   }
 
-  if (length & PAGE_MASK) {
+  if (length & ~PAGE_MASK) {
     return -EINVAL;
   }
 

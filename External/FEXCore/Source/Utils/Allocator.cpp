@@ -6,6 +6,7 @@
 
 #include <array>
 #include <sys/mman.h>
+#include <sys/user.h>
 #ifdef ENABLE_JEMALLOC
 #include <jemalloc/jemalloc.h>
 #endif

@@ -6,6 +6,7 @@
 #include <map>
 #include <unordered_set>
 #include <unistd.h>
+#include <vector>
 
 namespace Common {
   const char *GetCharLevel(uint32_t Level) {

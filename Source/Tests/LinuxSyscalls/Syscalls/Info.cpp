@@ -70,7 +70,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(getrandom, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *buf, size_t buflen, unsigned int flags) -> uint64_t {
-      uint64_t Result = ::getrandom(buf, buflen, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(getrandom), buf, buflen, flags);
       SYSCALL_ERRNO();
     });
 

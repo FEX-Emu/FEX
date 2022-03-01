@@ -35,18 +35,34 @@ install(TARGETS FEXLoader
     COMPONENT runtime
 )
 
-add_custom_target(FEXInterpreter ALL
-  COMMAND "ln" "-f" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
-  DEPENDS FEXLoader
-)
+if(TERMUX_BUILD)
+  # Termux doesn't support hard links, just copy FEXLoader
+  add_custom_target(FEXInterpreter ALL
+    COMMAND "cp" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
+    DEPENDS FEXLoader
+  )
 
-install(
-  CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
-  CODE "
-  EXECUTE_PROCESS(COMMAND ln -f FEXLoader FEXInterpreter
-  WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
-  )"
-)
+  install(
+    CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND cp FEXLoader FEXInterpreter
+      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+    )"
+  )
+else()
+  add_custom_target(FEXInterpreter ALL
+    COMMAND "ln" "-f" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
+    DEPENDS FEXLoader
+  )
+
+  install(
+    CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND ln -f FEXLoader FEXInterpreter
+      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+    )"
+  )
+endif()
 
 install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
 

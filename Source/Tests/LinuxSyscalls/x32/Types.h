@@ -10,17 +10,16 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <asm/ipcbuf.h>
+#include <asm/msgbuf.h>
+#include <asm/sembuf.h>
 #include <asm/shmbuf.h>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
 #include <limits>
-#include <sys/ipc.h>
-#include <mqueue.h>
+#include <linux/mqueue.h>
 #include <signal.h>
-#include <sys/msg.h>
 #include <sys/resource.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -385,11 +384,11 @@ stat32 {
   uint32_t st_blksize;
   uint32_t st_blocks;  /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
-  uint32_t st_atime_nsec;
+  uint32_t fex_st_atime_nsec;
   uint32_t st_mtime_;
-  uint32_t st_mtime_nsec;
+  uint32_t fex_st_mtime_nsec;
   uint32_t st_ctime_;
-  uint32_t st_ctime_nsec;
+  uint32_t fex_st_ctime_nsec;
   uint32_t __unused4;
   uint32_t __unused5;
 
@@ -411,13 +410,13 @@ stat32 {
     COPY(st_blocks);
 
     st_atime_ = host.st_atim.tv_sec;
-    st_atime_nsec = host.st_atim.tv_nsec;
+    fex_st_atime_nsec = host.st_atim.tv_nsec;
 
     st_mtime_ = host.st_mtime;
-    st_mtime_nsec = host.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = host.st_mtim.tv_nsec;
 
     st_ctime_ = host.st_ctime;
-    st_ctime_nsec = host.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
 };
@@ -446,11 +445,11 @@ stat64_32 {
   uint32_t st_blksize;
   compat_uint64_t st_blocks;  /* Number 512-byte blocks allocated. */
   uint32_t st_atime_;
-  uint32_t st_atime_nsec;
+  uint32_t fex_st_atime_nsec;
   uint32_t st_mtime_;
-  uint32_t st_mtime_nsec;
+  uint32_t fex_st_mtime_nsec;
   uint32_t st_ctime_;
-  uint32_t st_ctime_nsec;
+  uint32_t fex_st_ctime_nsec;
   compat_uint64_t st_ino;
 
   stat64_32() = delete;
@@ -473,13 +472,13 @@ stat64_32 {
     __st_ino = host.st_ino;
 
     st_atime_ = host.st_atim.tv_sec;
-    st_atime_nsec = host.st_atim.tv_nsec;
+    fex_st_atime_nsec = host.st_atim.tv_nsec;
 
     st_mtime_ = host.st_mtime;
-    st_mtime_nsec = host.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = host.st_mtim.tv_nsec;
 
     st_ctime_ = host.st_ctime;
-    st_ctime_nsec = host.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
 
@@ -502,13 +501,13 @@ stat64_32 {
     __st_ino = host.st_ino;
 
     st_atime_ = host.st_atim.tv_sec;
-    st_atime_nsec = host.st_atim.tv_nsec;
+    fex_st_atime_nsec = host.st_atim.tv_nsec;
 
     st_mtime_ = host.st_mtime;
-    st_mtime_nsec = host.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = host.st_mtim.tv_nsec;
 
     st_ctime_ = host.st_ctime;
-    st_ctime_nsec = host.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = host.st_ctim.tv_nsec;
     #undef COPY
   }
 #endif
@@ -1168,8 +1167,8 @@ sigval32 {
 static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
 static_assert(sizeof(sigval32) == 4, "Incorrect size");
 
-constexpr size_t SIGEV_MAX_SIZE = 64;
-constexpr size_t SIGEV_PAD_SIZE = (SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
+constexpr size_t FEX_SIGEV_MAX_SIZE = 64;
+constexpr size_t FEX_SIGEV_PAD_SIZE = (FEX_SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
 
 struct
 FEX_ANNOTATE("fex-match")
@@ -1178,7 +1177,7 @@ sigevent32 {
   int sigev_signo;
   int sigev_notify;
   union {
-    int _pad[SIGEV_PAD_SIZE];
+    int _pad[FEX_SIGEV_PAD_SIZE];
     int _tid;
     struct {
       uint32_t _function;
@@ -1304,26 +1303,26 @@ struct ipc_perm_32 {
 
   ipc_perm_32() = delete;
 
-  operator struct ipc_perm() const {
-    struct ipc_perm perm;
-    perm.__key = key;
+  operator struct ipc64_perm() const {
+    struct ipc64_perm perm;
+    perm.key = key;
     perm.uid   = uid;
     perm.gid   = gid;
     perm.cuid  = cuid;
     perm.cgid  = cgid;
     perm.mode  = mode;
-    perm.__seq = seq;
+    perm.seq = seq;
     return perm;
   }
 
-  ipc_perm_32(struct ipc_perm perm) {
-    key  = perm.__key;
+  ipc_perm_32(struct ipc64_perm perm) {
+    key  = perm.key;
     uid  = perm.uid;
     gid  = perm.gid;
     cuid = perm.cuid;
     cgid = perm.cgid;
     mode = perm.mode;
-    seq  = perm.__seq;
+    seq  = perm.seq;
   }
 };
 
@@ -1344,26 +1343,26 @@ struct ipc_perm_64 {
 
   ipc_perm_64() = delete;
 
-  operator struct ipc_perm() const {
-    struct ipc_perm perm;
-    perm.__key = key;
+  operator struct ipc64_perm() const {
+    struct ipc64_perm perm;
+    perm.key = key;
     perm.uid   = uid;
     perm.gid   = gid;
     perm.cuid  = cuid;
     perm.cgid  = cgid;
     perm.mode  = mode;
-    perm.__seq = seq;
+    perm.seq = seq;
     return perm;
   }
 
-  ipc_perm_64(struct ipc_perm perm) {
-    key  = perm.__key;
+  ipc_perm_64(struct ipc64_perm perm) {
+    key  = perm.key;
     uid  = perm.uid;
     gid  = perm.gid;
     cuid = perm.cuid;
     cgid = perm.cgid;
     mode = perm.mode;
-    seq  = perm.__seq;
+    seq  = perm.seq;
   }
 };
 
@@ -1385,8 +1384,8 @@ struct shmid_ds_32 {
 
   shmid_ds_32() = delete;
 
-  operator struct shmid_ds() const {
-    struct shmid_ds buf;
+  operator struct shmid64_ds() const {
+    struct shmid64_ds buf;
     buf.shm_perm = shm_perm;
 
     buf.shm_segsz = shm_segsz;
@@ -1399,7 +1398,7 @@ struct shmid_ds_32 {
     return buf;
   }
 
-  shmid_ds_32(struct shmid_ds buf)
+  shmid_ds_32(struct shmid64_ds buf)
     : shm_perm {buf.shm_perm} {
     shm_segsz = buf.shm_segsz;
     shm_atime = buf.shm_atime;
@@ -1431,8 +1430,8 @@ struct shmid_ds_64 {
 
   shmid_ds_64() = delete;
 
-  operator struct shmid_ds() const {
-    struct shmid_ds buf;
+  operator struct shmid64_ds() const {
+    struct shmid64_ds buf;
     buf.shm_perm = shm_perm;
 
     buf.shm_segsz = shm_segsz;
@@ -1454,7 +1453,7 @@ struct shmid_ds_64 {
     return buf;
   }
 
-  shmid_ds_64(struct shmid_ds buf)
+  shmid_ds_64(struct shmid64_ds buf)
     : shm_perm {buf.shm_perm} {
     shm_segsz = buf.shm_segsz;
     shm_atime = buf.shm_atime;
@@ -1485,8 +1484,8 @@ struct semid_ds_32 {
 
   semid_ds_32() = delete;
 
-  operator struct semid_ds() const {
-    struct semid_ds buf{};
+  operator struct semid64_ds() const {
+    struct semid64_ds buf{};
     buf.sem_perm = sem_perm;
 
     buf.sem_otime = sem_otime;
@@ -1498,7 +1497,7 @@ struct semid_ds_32 {
     return buf;
   }
 
-  semid_ds_32(struct semid_ds buf)
+  semid_ds_32(struct semid64_ds buf)
     : sem_perm {buf.sem_perm} {
     sem_otime = buf.sem_otime;
     sem_ctime = buf.sem_ctime;
@@ -1520,8 +1519,8 @@ struct semid_ds_64 {
 
   semid_ds_64() = delete;
 
-  operator struct semid_ds() const {
-    struct semid_ds buf{};
+  operator struct semid64_ds() const {
+    struct semid64_ds buf{};
     buf.sem_perm = sem_perm;
 
     buf.sem_otime = sem_otime_high;
@@ -1537,7 +1536,7 @@ struct semid_ds_64 {
     return buf;
   }
 
-  semid_ds_64(struct semid_ds buf)
+  semid_ds_64(struct semid64_ds buf)
     : sem_perm {buf.sem_perm} {
     sem_otime = buf.sem_otime;
     sem_otime_high = buf.sem_otime >> 32;
@@ -1566,8 +1565,8 @@ struct msqid_ds_32 {
   uint16_t msg_lrpid;
 
   msqid_ds_32() = delete;
-  operator struct msqid_ds() const {
-    struct msqid_ds val{};
+  operator struct msqid64_ds() const {
+    struct msqid64_ds val{};
     // msg_first and msg_last are unused and untouched
     val.msg_perm = msg_perm;
     val.msg_stime = msg_stime;
@@ -1582,7 +1581,7 @@ struct msqid_ds_32 {
     return val;
   }
 
-  msqid_ds_32(struct msqid_ds buf)
+  msqid_ds_32(struct msqid64_ds buf)
     : msg_perm {buf.msg_perm} {
     // msg_first and msg_last are unused and untouched
     msg_stime = buf.msg_stime;
@@ -1633,8 +1632,8 @@ struct msqid_ds_64 {
   uint32_t _pad[2];
 
   msqid_ds_64() = delete;
-  operator struct msqid_ds() const {
-    struct msqid_ds val{};
+  operator struct msqid64_ds() const {
+    struct msqid64_ds val{};
     val.msg_perm = msg_perm;
     val.msg_stime = msg_stime_high;
     val.msg_stime <<= 32;
@@ -1656,7 +1655,7 @@ struct msqid_ds_64 {
     return val;
   }
 
-  msqid_ds_64(struct msqid_ds buf)
+  msqid_ds_64(struct msqid64_ds buf)
     : msg_perm {buf.msg_perm} {
     msg_stime = buf.msg_stime;
     msg_stime_high = buf.msg_stime >> 32;

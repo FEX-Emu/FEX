@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Config/Config.h>

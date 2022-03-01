@@ -6,14 +6,13 @@ $end_info$
 
 #pragma once
 
+#include "Tests/LinuxSyscalls/Types.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/posix_types.h>
 #include <asm/sembuf.h>
 #include <cstdint>
-#include <sys/sem.h>
 #include <sys/stat.h>
 #include <type_traits>
 
@@ -36,26 +35,26 @@ using __time_t = time_t;
 
     ipc_perm_64() = delete;
 
-    operator struct ipc_perm() const {
-      struct ipc_perm perm;
-      perm.__key = key;
+    operator struct ipc64_perm() const {
+      struct ipc64_perm perm;
+      perm.key = key;
       perm.uid   = uid;
       perm.gid   = gid;
       perm.cuid  = cuid;
       perm.cgid  = cgid;
       perm.mode  = mode;
-      perm.__seq = seq;
+      perm.seq = seq;
       return perm;
     }
 
-    ipc_perm_64(struct ipc_perm perm) {
-      key  = perm.__key;
+    ipc_perm_64(struct ipc64_perm perm) {
+      key  = perm.key;
       uid  = perm.uid;
       gid  = perm.gid;
       cuid = perm.cuid;
       cgid = perm.cgid;
       mode = perm.mode;
-      seq  = perm.__seq;
+      seq  = perm.seq;
     }
   };
 
@@ -78,8 +77,8 @@ using __time_t = time_t;
 
     semid_ds_64() = delete;
 
-    operator struct semid_ds() const {
-      struct semid_ds buf{};
+    operator struct semid64_ds() const {
+      struct semid64_ds buf{};
       buf.sem_perm = sem_perm;
 
       buf.sem_otime = sem_otime;
@@ -88,7 +87,7 @@ using __time_t = time_t;
       return buf;
     }
 
-    semid_ds_64(struct semid_ds buf)
+    semid_ds_64(struct semid64_ds buf)
       : sem_perm {buf.sem_perm} {
       sem_otime = buf.sem_otime;
       sem_ctime = buf.sem_ctime;
@@ -103,7 +102,7 @@ using __time_t = time_t;
     int val;
     FEX::HLE::x64::semid_ds_64 *buf;
     unsigned short *array;
-    struct seminfo *__buf;
+    struct fex_seminfo *__buf;
     void *__pad;
   };
 
@@ -114,26 +113,26 @@ using __time_t = time_t;
   FEX_ANNOTATE("fex-match")
   FEX_PACKED
   guest_stat {
-    __kernel_ulong_t  st_dev;
-    __kernel_ulong_t  st_ino;
-    __kernel_ulong_t  st_nlink;
+    uint64_t  st_dev;
+    uint64_t  st_ino;
+    uint64_t  st_nlink;
 
     unsigned int    st_mode;
     unsigned int    st_uid;
     unsigned int    st_gid;
     unsigned int    __pad0;
-    __kernel_ulong_t  st_rdev;
-    __kernel_long_t   st_size;
-    __kernel_long_t   st_blksize;
-    __kernel_long_t   st_blocks;  /* Number 512-byte blocks allocated. */
+    uint64_t  st_rdev;
+    int64_t   st_size;
+    int64_t   st_blksize;
+    int64_t   st_blocks;  /* Number 512-byte blocks allocated. */
 
-    __kernel_ulong_t  st_atime_;
-    __kernel_ulong_t  st_atime_nsec;
-    __kernel_ulong_t  st_mtime_;
-    __kernel_ulong_t  st_mtime_nsec;
-    __kernel_ulong_t  st_ctime_;
-    __kernel_ulong_t  st_ctime_nsec;
-    __kernel_long_t   __unused[3];
+    uint64_t  st_atime_;
+    uint64_t  fex_st_atime_nsec;
+    uint64_t  st_mtime_;
+    uint64_t  fex_st_mtime_nsec;
+    uint64_t  st_ctime_;
+    uint64_t  fex_st_ctime_nsec;
+    int64_t   unused[3];
 
     guest_stat() = delete;
     operator struct stat() const {
@@ -153,13 +152,13 @@ using __time_t = time_t;
     COPY(st_blocks);
 
     val.st_atim.tv_sec = st_atime_;
-    val.st_atim.tv_nsec = st_atime_nsec;
+    val.st_atim.tv_nsec = fex_st_atime_nsec;
 
     val.st_mtim.tv_sec = st_mtime_;
-    val.st_mtim.tv_nsec = st_mtime_nsec;
+    val.st_mtim.tv_nsec = fex_st_mtime_nsec;
 
     val.st_ctim.tv_sec = st_ctime_;
-    val.st_ctim.tv_nsec= st_ctime_nsec;
+    val.st_ctim.tv_nsec= fex_st_ctime_nsec;
 #undef COPY
       return val;
     }
@@ -180,13 +179,13 @@ using __time_t = time_t;
     COPY(st_blocks);
 
     st_atime_ = val.st_atim.tv_sec;
-    st_atime_nsec = val.st_atim.tv_nsec;
+    fex_st_atime_nsec = val.st_atim.tv_nsec;
 
     st_mtime_ = val.st_mtime;
-    st_mtime_nsec = val.st_mtim.tv_nsec;
+    fex_st_mtime_nsec = val.st_mtim.tv_nsec;
 
     st_ctime_ = val.st_ctime;
-    st_ctime_nsec = val.st_ctim.tv_nsec;
+    fex_st_ctime_nsec = val.st_ctim.tv_nsec;
 #undef COPY
     }
   };

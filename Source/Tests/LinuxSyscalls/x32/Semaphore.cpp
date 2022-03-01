@@ -17,9 +17,7 @@ $end_info$
 #include <errno.h>
 #include <limits>
 #include <string.h>
-#include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
 #include <time.h>
 #include <type_traits>
@@ -56,7 +54,7 @@ namespace FEX::HLE::x32 {
     compat_ptr<semid_ds_32> buf32; // struct semid_ds* - Buffer ptr for IPC_STAT, IPC_SET
     compat_ptr<semid_ds_64> buf64; // struct semid_ds* - Buffer ptr for IPC_STAT, IPC_SET
     uint32_t array;   // uint16_t array for GETALL, SETALL
-    compat_ptr<struct seminfo> __buf;   // struct seminfo * - Buffer for IPC_INFO
+    compat_ptr<struct fex_seminfo> __buf;   // struct seminfo * - Buffer for IPC_INFO
   };
 
   union msgun_32 {
@@ -82,7 +80,7 @@ namespace FEX::HLE::x32 {
     int val;			/* value for SETVAL */
     struct semid_ds_32 *buf;	/* buffer for IPC_STAT & IPC_SET */
     unsigned short *array;	/* array for GETALL & SETALL */
-    struct seminfo *__buf;	/* buffer for IPC_INFO */
+    struct fex_seminfo *__buf;	/* buffer for IPC_INFO */
     void *__pad;
   };
 
@@ -91,11 +89,11 @@ namespace FEX::HLE::x32 {
 
     switch (static_cast<IPCOp>(call)) {
       case OP_SEMOP: {
-        Result = ::semop(first, reinterpret_cast<struct sembuf*>(ptr), second);
+        Result = ::syscall(SYSCALL_DEF(semop), first, reinterpret_cast<struct sembuf*>(ptr), second);
         break;
       }
       case OP_SEMGET: {
-        Result = ::semget(first, second, third);
+        Result = ::syscall(SYSCALL_DEF(semget), first, second, third);
         break;
       }
       case OP_SEMCTL: {
@@ -107,14 +105,14 @@ namespace FEX::HLE::x32 {
         bool IPC64 = third & 0x100;
         switch (cmd) {
           case IPC_SET: {
-            struct semid_ds buf{};
+            struct semid64_ds buf{};
             if (IPC64) {
               buf = *semun->buf64;
             }
             else {
               buf = *semun->buf32;
             }
-            Result = ::semctl(semid, semnum, cmd, &buf);
+            Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
                 *semun->buf64 = buf;
@@ -128,8 +126,8 @@ namespace FEX::HLE::x32 {
           case SEM_STAT:
           case SEM_STAT_ANY:
           case IPC_STAT: {
-            struct semid_ds buf{};
-            Result = ::semctl(semid, semnum, cmd, &buf);
+            struct semid64_ds buf{};
+            Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
                 *semun->buf64 = buf;
@@ -142,8 +140,8 @@ namespace FEX::HLE::x32 {
           }
           case SEM_INFO:
           case IPC_INFO: {
-            struct seminfo si{};
-            Result = ::semctl(semid, semnum, cmd, &si);
+            struct fex_seminfo si{};
+            Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &si);
             if (Result != -1) {
               memcpy(semun->__buf, &si, sizeof(si));
             }
@@ -152,12 +150,12 @@ namespace FEX::HLE::x32 {
           case GETALL:
           case SETALL: {
             // ptr is just a int32_t* in this case
-            Result = ::semctl(semid, semnum, cmd, semun->array);
+            Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, semun->array);
             break;
           }
           case SETVAL: {
             // ptr is just a int32_t in this case
-            Result = ::semctl(semid, semnum, cmd, semun->val);
+            Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, semun->val);
             break;
           }
           case IPC_RMID:
@@ -165,7 +163,7 @@ namespace FEX::HLE::x32 {
           case GETNCNT:
           case GETZCNT:
           case GETVAL:
-            Result = ::semctl(semid, semnum, cmd);
+            Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd);
             break;
           default:
             LOGMAN_MSG_A_FMT("Unhandled semctl cmd: {}", cmd);
@@ -182,7 +180,7 @@ namespace FEX::HLE::x32 {
           timed_ptr = &tp64;
         }
 
-        Result = ::semtimedop(first, reinterpret_cast<struct sembuf*>(ptr), second, timed_ptr);
+        Result = ::syscall(SYSCALL_DEF(semtimedop), first, reinterpret_cast<struct sembuf*>(ptr), second, timed_ptr);
         break;
       }
       case OP_MSGSND: {
@@ -193,7 +191,7 @@ namespace FEX::HLE::x32 {
         TmpMsg->mtype = src->mtype;
         memcpy(TmpMsg->mtext, src->mtext, second);
 
-        Result = ::msgsnd(first, TmpMsg, second, third);
+        Result = ::syscall(SYSCALL_DEF(msgsnd), first, TmpMsg, second, third);
         break;
       }
       case OP_MSGRCV: {
@@ -201,7 +199,7 @@ namespace FEX::HLE::x32 {
         struct msgbuf *TmpMsg = reinterpret_cast<struct msgbuf *>(&Tmp.at(0));
 
         if (call >> 16) {
-          Result = ::msgrcv(first, TmpMsg, second, fifth, third);
+          Result = ::syscall(SYSCALL_DEF(msgrcv), first, TmpMsg, second, fifth, third);
           if (Result != -1) {
             msgbuf_32 *src = reinterpret_cast<msgbuf_32*>(ptr);
             src->mtype = TmpMsg->mtype;
@@ -215,7 +213,7 @@ namespace FEX::HLE::x32 {
             compat_long_t msgtyp;
           };
           compat_ipc_kludge *ipck = reinterpret_cast<compat_ipc_kludge*>(ptr);
-          Result = ::msgrcv(first, TmpMsg, second, ipck->msgtyp, third);
+          Result = ::syscall(SYSCALL_DEF(msgrcv), first, TmpMsg, second, ipck->msgtyp, third);
           if (Result != -1) {
             msgbuf_32 *src = reinterpret_cast<msgbuf_32*>(ipck->msgp);
             ipck->msgtyp = TmpMsg->mtype;
@@ -226,7 +224,7 @@ namespace FEX::HLE::x32 {
         break;
       }
       case OP_MSGGET: {
-        Result = ::msgget(first, second);
+        Result = ::syscall(SYSCALL_DEF(msgget), first, second);
         break;
       }
       case OP_MSGCTL: {
@@ -237,21 +235,21 @@ namespace FEX::HLE::x32 {
         bool IPC64 = second & 0x100;
         switch (cmd) {
           case IPC_SET: {
-            struct msqid_ds buf{};
+            struct msqid64_ds buf{};
             if (IPC64) {
               buf = *msgun.buf64;
             }
             else {
               buf = *msgun.buf32;
             }
-            Result = ::msgctl(msqid, cmd, &buf);
+            Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, &buf);
             break;
           }
           case MSG_STAT:
           case MSG_STAT_ANY:
           case IPC_STAT: {
-            struct msqid_ds buf{};
-            Result = ::msgctl(msqid, cmd, &buf);
+            struct msqid64_ds buf{};
+            Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
                 *msgun.buf64 = buf;
@@ -265,14 +263,14 @@ namespace FEX::HLE::x32 {
           case MSG_INFO:
           case IPC_INFO: {
             struct msginfo mi{};
-            Result = ::msgctl(msqid, cmd, reinterpret_cast<struct msqid_ds*>(&mi));
+            Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, reinterpret_cast<struct msqid_ds*>(&mi));
             if (Result != -1) {
               memcpy(msgun.__buf, &mi, sizeof(mi));
             }
             break;
           }
           case IPC_RMID:
-            Result = ::msgctl(msqid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, nullptr);
             break;
           default:
             LOGMAN_MSG_A_FMT("Unhandled msgctl cmd: {}", cmd);
@@ -304,14 +302,14 @@ namespace FEX::HLE::x32 {
 
         switch (cmd) {
           case IPC_SET: {
-            struct shmid_ds buf{};
+            struct shmid64_ds buf{};
             if (IPC64) {
               buf = *shmun.buf64;
             }
             else {
               buf = *shmun.buf32;
             }
-            Result = ::shmctl(shmid, cmd, &buf);
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, &buf);
             // IPC_SET sets the internal data structure that the kernel uses
             // No need to writeback
             break;
@@ -319,8 +317,8 @@ namespace FEX::HLE::x32 {
           case SHM_STAT:
           case SHM_STAT_ANY:
           case IPC_STAT: {
-            struct shmid_ds buf{};
-            Result = ::shmctl(shmid, cmd, &buf);
+            struct shmid64_ds buf{};
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
                 *shmun.buf64 = buf;
@@ -333,7 +331,7 @@ namespace FEX::HLE::x32 {
           }
           case IPC_INFO: {
             struct shminfo si{};
-            Result = ::shmctl(shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
             if (Result != -1) {
               if (IPC64) {
                 *shmun.__buf64 = si;
@@ -346,7 +344,7 @@ namespace FEX::HLE::x32 {
           }
           case SHM_INFO: {
             struct shm_info si{};
-            Result = ::shmctl(shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
             if (Result != -1) {
               // SHM_INFO doesn't follow IPC64 behaviour
               *shmun.__buf_info_32 = si;
@@ -354,13 +352,13 @@ namespace FEX::HLE::x32 {
             break;
           }
           case SHM_LOCK:
-            Result = ::shmctl(shmid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, nullptr);
             break;
           case SHM_UNLOCK:
-            Result = ::shmctl(shmid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, nullptr);
             break;
           case IPC_RMID:
-            Result = ::shmctl(shmid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, nullptr);
             break;
 
           default:
@@ -378,7 +376,7 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(ipc, _ipc);
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(semtimedop_time64, semtimedop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout) -> uint64_t {
-      uint64_t Result = ::semtimedop(semid, sops, nsops, timeout);
+      uint64_t Result = ::syscall(SYSCALL_DEF(semtimedop), semid, sops, nsops, timeout);
       SYSCALL_ERRNO();
     });
 
@@ -388,14 +386,14 @@ namespace FEX::HLE::x32 {
 
       switch (cmd) {
         case IPC_SET: {
-          struct semid_ds buf{};
+          struct semid64_ds buf{};
           if (IPC64) {
             buf = *semun->buf64;
           }
           else {
             buf = *semun->buf32;
           }
-          Result = ::semctl(semid, semnum, cmd, &buf);
+          Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
           if (Result != -1) {
             if (IPC64) {
               *semun->buf64 = buf;
@@ -409,8 +407,8 @@ namespace FEX::HLE::x32 {
         case SEM_STAT:
         case SEM_STAT_ANY:
         case IPC_STAT: {
-          struct semid_ds buf{};
-          Result = ::semctl(semid, semnum, cmd, &buf);
+          struct semid64_ds buf{};
+          Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
           if (Result != -1) {
             if (IPC64) {
               *semun->buf64 = buf;
@@ -423,8 +421,8 @@ namespace FEX::HLE::x32 {
         }
         case SEM_INFO:
         case IPC_INFO: {
-          struct seminfo si{};
-          Result = ::semctl(semid, semnum, cmd, &si);
+          struct fex_seminfo si{};
+          Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &si);
           if (Result != -1) {
             memcpy(semun->__buf, &si, sizeof(si));
           }
@@ -433,12 +431,12 @@ namespace FEX::HLE::x32 {
         case GETALL:
         case SETALL: {
           // ptr is just a int32_t* in this case
-          Result = ::semctl(semid, semnum, cmd, semun->array);
+          Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, semun->array);
           break;
         }
         case SETVAL: {
           // ptr is just a int32_t in this case
-          Result = ::semctl(semid, semnum, cmd, semun->val);
+          Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, semun->val);
           break;
         }
         case IPC_RMID:
@@ -446,7 +444,7 @@ namespace FEX::HLE::x32 {
         case GETNCNT:
         case GETZCNT:
         case GETVAL:
-          Result = ::semctl(semid, semnum, cmd, semun);
+          Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, semun);
           break;
         default:
           LOGMAN_MSG_A_FMT("Unhandled semctl cmd: {}", cmd);

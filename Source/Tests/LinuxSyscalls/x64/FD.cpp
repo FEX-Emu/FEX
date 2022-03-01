@@ -57,7 +57,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(futimesat, [](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, const struct timeval times[2]) -> uint64_t {
-      uint64_t Result = ::futimesat(dirfd, pathname, times);
+      uint64_t Result = ::syscall(SYSCALL_DEF(futimesat), dirfd, pathname, times);
       SYSCALL_ERRNO();
     });
 
@@ -243,7 +243,7 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_PASS(sync_file_range, [](FEXCore::Core::CpuStateFrame *Frame, int fd, off64_t offset, off64_t nbytes, unsigned int flags) -> uint64_t {
       // Flags don't need remapped
-      uint64_t Result = ::sync_file_range(fd, offset, nbytes, flags);
+      uint64_t Result = ::syscall(SYSCALL_DEF(sync_file_range), fd, offset, nbytes, flags);
       SYSCALL_ERRNO();
     });
 

@@ -10,7 +10,6 @@ $end_info$
 
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
-#include <mqueue.h>
 #include <stdint.h>
 #include <syscall.h>
 #include <time.h>
@@ -21,7 +20,7 @@ ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigevent32>, "%lx")
 
 namespace FEX::HLE::x32 {
   void RegisterMsg() {
-    REGISTER_SYSCALL_IMPL_X32(mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec32 *abs_timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec32 *abs_timeout) -> uint64_t {
       struct timespec tp64{};
       struct timespec *timed_ptr{};
       if (abs_timeout) {
@@ -33,7 +32,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(mq_timedreceive, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec32 *abs_timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(mq_timedreceive, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec32 *abs_timeout) -> uint64_t {
       struct timespec tp64{};
       struct timespec *timed_ptr{};
       if (abs_timeout) {
@@ -45,12 +44,12 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedsend_time64, mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedsend_time64, mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedsend), mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedreceive_time64, mq_timedreceive, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec *abs_timeout) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(mq_timedreceive_time64, mq_timedreceive, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio, const struct timespec *abs_timeout) -> uint64_t {
       uint64_t Result = ::syscall(SYSCALL_DEF(mq_timedreceive), mqdes, msg_ptr, msg_len, msg_prio, abs_timeout);
       SYSCALL_ERRNO();
     });
@@ -68,13 +67,13 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(mq_notify, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, const compat_ptr<FEX::HLE::x32::sigevent32> sevp) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(mq_notify, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, const compat_ptr<FEX::HLE::x32::sigevent32> sevp) -> uint64_t {
       sigevent Host = *sevp;
       uint64_t Result = ::syscall(SYSCALL_DEF(mq_notify), mqdes, &Host);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(mq_getsetattr, [](FEXCore::Core::CpuStateFrame *Frame, mqd_t mqdes, compat_ptr<FEX::HLE::x32::mq_attr32> newattr, compat_ptr<FEX::HLE::x32::mq_attr32> oldattr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(mq_getsetattr, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, compat_ptr<FEX::HLE::x32::mq_attr32> newattr, compat_ptr<FEX::HLE::x32::mq_attr32> oldattr) -> uint64_t {
       mq_attr HostNew{};
       mq_attr *HostNew_p{};
 
