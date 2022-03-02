@@ -137,8 +137,10 @@ void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, in
   uintptr_t Addr = reinterpret_cast<uintptr_t>(addr);
   uintptr_t PageAddr = Addr >> PAGE_SHIFT;
 
+  // Define MAP_FIXED_NOREPLACE ourselves to ensure we always parse this flag
+  constexpr int FEX_MAP_FIXED_NOREPLACE = 0x100000;
   bool Fixed = ((flags & MAP_FIXED) ||
-      (flags & MAP_FIXED_NOREPLACE));
+      (flags & FEX_MAP_FIXED_NOREPLACE));
 
   // Both Addr and length must be page aligned
   if (Addr & ~PAGE_MASK) {
@@ -168,8 +170,7 @@ void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, in
 
   bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
 
-  // Find a region that fits our address
-  if (Addr == 0) {
+  auto AllocateNoHint = [&]() -> void*{
     bool Wrapped = false;
     uint64_t BottomPage = Map32Bit && (LastScanLocation >= LastKeyLocation32Bit) ? LastKeyLocation32Bit : LastScanLocation;
 restart:
@@ -192,7 +193,7 @@ restart:
           reinterpret_cast<void*>(LowerPage<< PAGE_SHIFT),
           length,
           prot,
-          flags | MAP_FIXED_NOREPLACE,
+          flags | FEX_MAP_FIXED_NOREPLACE,
           fd,
           offset);
 
@@ -242,6 +243,11 @@ restart:
         }
       }
     }
+  };
+
+  // Find a region that fits our address
+  if (Addr == 0) {
+    return AllocateNoHint();
   }
   else {
     void *MappedPtr = ::mmap(
@@ -252,7 +258,15 @@ restart:
       fd,
       offset);
 
-    if (MappedPtr != MAP_FAILED) {
+    if (MappedPtr >= reinterpret_cast<void*>(TOP_KEY << PAGE_SHIFT) &&
+        (flags & FEX_MAP_FIXED_NOREPLACE)) {
+      // Handles the case where MAP_FIXED_NOREPLACE isn't handled by the host system's
+      // kernel and returns the wrong pointer
+      // Make sure to munmap this so we don't leak memory
+      ::munmap(MappedPtr, length);
+      return reinterpret_cast<void*>(-EEXIST);
+    }
+    else if (MappedPtr != MAP_FAILED) {
       SetUsedPages(PageAddr, PagesLength);
       return MappedPtr;
     }
