@@ -812,6 +812,28 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_1Ah(uint32_t Leaf) {
   return Res;
 }
 
+// Hypervisor CPUID information leaf
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0000h(uint32_t Leaf) {
+  FEXCore::CPUID::FunctionResults Res{};
+  // Maximum supported hypervisor leafs
+  // We only expose the information leaf
+  //
+  // Common courtesy to follow VMWare's "Hypervisor CPUID Interface proposal"
+  // 4000_0000h - Information leaf. Advertising to the software which hypervisor this is
+  // 4000_0001h - 4000_000Fh - Hypervisor specific leafs. FEX can use these for anything
+  // 4000_0010h - 4000_00FFh - "Generic Leafs" - Try not to overwrite, other hypervisors might expect information in these
+  //
+  // CPUID documentation information:
+  // 4000_0000h - 4FFF_FFFFh - No existing or future CPU will return information in this range
+  // Reserved entirely for VMs to do whatever they want.
+  Res.eax = 0x40000000;
+
+  // EBX, EDX, ECX become the hypervisor ID signature
+  constexpr static char HypervisorID[12] = "FEXIFEXIEMU";
+  memcpy(&Res.ebx, HypervisorID, sizeof(HypervisorID));
+  return Res;
+}
+
 // Highest extended function implemented
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
@@ -1204,6 +1226,9 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
 #ifndef CPUID_AMD
   RegisterFunction(0x1A, &CPUIDEmu::Function_1Ah);
 #endif
+  // Hypervisor CPUID information leaf
+  RegisterFunction(0x4000'0000, &CPUIDEmu::Function_4000_0000h);
+
   // Largest extended function number
   RegisterFunction(0x8000'0000, &CPUIDEmu::Function_8000_0000h);
   // Processor vendor
