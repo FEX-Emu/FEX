@@ -561,7 +561,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
                 // the vector element
                 IREmit->SetWriteCursor(CodeNode);
                 // zext to size
-                LastNode = IREmit->_VMov(LastNode, IROp->Size);
+                LastNode = IREmit->_VMov(IROp->Size, LastNode);
 
                 IREmit->ReplaceAllUsesWithRange(CodeNode, LastNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
                 RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
@@ -577,7 +577,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
                        IROp->Size < IREmit->GetOpSize(LastNode)) {
               IREmit->SetWriteCursor(CodeNode);
               // trucate to size
-              LastNode = IREmit->_VMov(LastNode, IROp->Size);
+              LastNode = IREmit->_VMov(IROp->Size, LastNode);
               IREmit->ReplaceAllUsesWithRange(CodeNode, LastNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
               RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
               Changed = true;
@@ -585,7 +585,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
                        IROp->Size > IREmit->GetOpSize(LastNode)) {
               IREmit->SetWriteCursor(CodeNode);
               // zext to size
-              LastNode = IREmit->_VMov(LastNode, IROp->Size);
+              LastNode = IREmit->_VMov(IROp->Size, LastNode);
 
               IREmit->ReplaceAllUsesWithRange(CodeNode, LastNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
               RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastNode);
