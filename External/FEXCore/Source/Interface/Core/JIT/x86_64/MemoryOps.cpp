@@ -23,7 +23,7 @@ DEF_OP(LoadContext) {
   auto Op = IROp->C<IR::IROp_LoadContext>();
   uint8_t OpSize = IROp->Size;
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == IR::GPRClass) {
     switch (OpSize) {
     case 1: {
       movzx(GetDst<RA_32>(Node), byte [STATE + Op->Offset]);
@@ -84,23 +84,23 @@ DEF_OP(StoreContext) {
   auto Op = IROp->C<IR::IROp_StoreContext>();
   uint8_t OpSize = IROp->Size;
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == IR::GPRClass) {
     switch (OpSize) {
     case 1: {
-      mov(byte [STATE + Op->Offset], GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      mov(byte [STATE + Op->Offset], GetSrc<RA_8>(Op->Value.ID()));
     }
     break;
 
     case 2: {
-      mov(word [STATE + Op->Offset], GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      mov(word [STATE + Op->Offset], GetSrc<RA_16>(Op->Value.ID()));
     }
     break;
     case 4: {
-      mov(dword [STATE + Op->Offset], GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      mov(dword [STATE + Op->Offset], GetSrc<RA_32>(Op->Value.ID()));
     }
     break;
     case 8: {
-      mov(qword [STATE + Op->Offset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      mov(qword [STATE + Op->Offset], GetSrc<RA_64>(Op->Value.ID()));
     }
     break;
     case 16:
@@ -112,27 +112,27 @@ DEF_OP(StoreContext) {
   else {
     switch (OpSize) {
     case 1: {
-      pextrb(byte [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()), 0);
+      pextrb(byte [STATE + Op->Offset], GetSrc(Op->Value.ID()), 0);
     }
     break;
 
     case 2: {
-      pextrw(word [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()), 0);
+      pextrw(word [STATE + Op->Offset], GetSrc(Op->Value.ID()), 0);
     }
     break;
     case 4: {
-      vmovd(dword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+      vmovd(dword [STATE + Op->Offset], GetSrc(Op->Value.ID()));
     }
     break;
     case 8: {
-      vmovq(qword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+      vmovq(qword [STATE + Op->Offset], GetSrc(Op->Value.ID()));
     }
     break;
     case 16: {
       if (Op->Offset % 16 == 0)
-        movaps(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+        movaps(xword [STATE + Op->Offset], GetSrc(Op->Value.ID()));
       else
-        movups(xword [STATE + Op->Offset], GetSrc(Op->Header.Args[0].ID()));
+        movups(xword [STATE + Op->Offset], GetSrc(Op->Value.ID()));
     }
     break;
     default:  LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
@@ -143,9 +143,9 @@ DEF_OP(StoreContext) {
 DEF_OP(LoadContextIndexed) {
   auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
   size_t size = IROp->Size;
-  Reg index = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Reg index = GetSrc<RA_64>(Op->Index.ID());
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == IR::GPRClass) {
     switch (Op->Stride) {
     case 1:
     case 2:
@@ -245,11 +245,11 @@ DEF_OP(LoadContextIndexed) {
 
 DEF_OP(StoreContextIndexed) {
   auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  Reg index = GetSrc<RA_64>(Op->Header.Args[1].ID());
+  Reg index = GetSrc<RA_64>(Op->Index.ID());
   size_t size = IROp->Size;
 
-  if (Op->Class.Val == 0) {
-    auto value = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  if (Op->Class == IR::GPRClass) {
+    auto value = GetSrc<RA_64>(Op->Value.ID());
     lea(rax, dword [STATE + Op->BaseOffset]);
 
     switch (Op->Stride) {
@@ -269,7 +269,7 @@ DEF_OP(StoreContextIndexed) {
     }
   }
   else {
-    auto value = GetSrc(Op->Header.Args[0].ID());
+    auto value = GetSrc(Op->Value.ID());
     switch (Op->Stride) {
     case 1:
     case 2:
@@ -339,19 +339,19 @@ DEF_OP(SpillRegister) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
       case 1: {
-        mov(byte [rsp + SlotOffset], GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        mov(byte [rsp + SlotOffset], GetSrc<RA_8>(Op->Value.ID()));
         break;
       }
       case 2: {
-        mov(word [rsp + SlotOffset], GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        mov(word [rsp + SlotOffset], GetSrc<RA_16>(Op->Value.ID()));
         break;
       }
       case 4: {
-        mov(dword [rsp + SlotOffset], GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(dword [rsp + SlotOffset], GetSrc<RA_32>(Op->Value.ID()));
         break;
       }
       case 8: {
-        mov(qword [rsp + SlotOffset], GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(qword [rsp + SlotOffset], GetSrc<RA_64>(Op->Value.ID()));
         break;
       }
       default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
@@ -359,15 +359,15 @@ DEF_OP(SpillRegister) {
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     switch (OpSize) {
       case 4: {
-        movss(dword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
+        movss(dword [rsp + SlotOffset], GetSrc(Op->Value.ID()));
         break;
       }
       case 8: {
-        movsd(qword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
+        movsd(qword [rsp + SlotOffset], GetSrc(Op->Value.ID()));
         break;
       }
       case 16: {
-        movaps(xword [rsp + SlotOffset], GetSrc(Op->Header.Args[0].ID()));
+        movaps(xword [rsp + SlotOffset], GetSrc(Op->Value.ID()));
         break;
       }
       default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
@@ -435,7 +435,7 @@ DEF_OP(LoadFlag) {
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
 
-  mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov (rax, GetSrc<RA_64>(Op->Value.ID()));
   mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
 }
 
@@ -469,7 +469,7 @@ DEF_OP(LoadMem) {
 
   auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == IR::GPRClass) {
     auto Dst = GetDst<RA_64>(Node);
 
     switch (IROp->Size) {
@@ -537,19 +537,19 @@ DEF_OP(StoreMem) {
 
   auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  if (Op->Class.Val == 0) {
+  if (Op->Class == IR::GPRClass) {
     switch (IROp->Size) {
     case 1:
-      mov(byte [MemPtr], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      mov(byte [MemPtr], GetSrc<RA_8>(Op->Value.ID()));
     break;
     case 2:
-      mov(word [MemPtr], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      mov(word [MemPtr], GetSrc<RA_16>(Op->Value.ID()));
     break;
     case 4:
-      mov(dword [MemPtr], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      mov(dword [MemPtr], GetSrc<RA_32>(Op->Value.ID()));
     break;
     case 8:
-      mov(qword [MemPtr], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      mov(qword [MemPtr], GetSrc<RA_64>(Op->Value.ID()));
     break;
     default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }
@@ -557,22 +557,22 @@ DEF_OP(StoreMem) {
   else {
     switch (IROp->Size) {
     case 1:
-      pextrb(byte [MemPtr], GetSrc(Op->Header.Args[1].ID()), 0);
+      pextrb(byte [MemPtr], GetSrc(Op->Value.ID()), 0);
     break;
     case 2:
-      pextrw(word [MemPtr], GetSrc(Op->Header.Args[1].ID()), 0);
+      pextrw(word [MemPtr], GetSrc(Op->Value.ID()), 0);
     break;
     case 4:
-      vmovd(dword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
+      vmovd(dword [MemPtr], GetSrc(Op->Value.ID()));
     break;
     case 8:
-      vmovq(qword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
+      vmovq(qword [MemPtr], GetSrc(Op->Value.ID()));
     break;
     case 16:
       if (IROp->Size == Op->Align)
-        movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
+        movups(xword [MemPtr], GetSrc(Op->Value.ID()));
       else
-        movups(xword [MemPtr], GetSrc(Op->Header.Args[1].ID()));
+        movups(xword [MemPtr], GetSrc(Op->Value.ID()));
     break;
     default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }

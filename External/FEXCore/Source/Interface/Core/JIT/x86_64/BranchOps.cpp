@@ -37,10 +37,6 @@ DEF_OP(GuestCallIndirect) {
   LogMan::Msg::DFmt("Unimplemented");
 }
 
-DEF_OP(GuestReturn) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
-
 DEF_OP(SignalReturn) {
   // Adjust the stack first for a regular return
   if (SpillSlots) {
@@ -326,7 +322,6 @@ void X86JITCore::RegisterBranchHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
   REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
-  REGISTER_OP(GUESTRETURN,       GuestReturn);
   REGISTER_OP(SIGNALRETURN,      SignalReturn);
   REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
   REGISTER_OP(EXITFUNCTION,      ExitFunction);
