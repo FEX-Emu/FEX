@@ -293,6 +293,7 @@ namespace FEXCore::CPU {
   DEF_OP(VSMull2);
   DEF_OP(VUABDL);
   DEF_OP(VTBL1);
+  DEF_OP(VRev64);
 
   ///< Encryption ops
   DEF_OP(AESImc);

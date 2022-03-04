@@ -367,6 +367,9 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_VTBL1> _VTBL1(uint8_t RegisterSize, OrderedNode *ssa0, OrderedNode *ssa1) {
     return _VTBL1(ssa0, ssa1, RegisterSize);
   }
+  IRPair<IROp_VRev64> _VRev64(uint8_t RegisterSize, uint8_t ElementSize, OrderedNode *ssa0) {
+    return _VRev64(ssa0, RegisterSize, ElementSize);
+  }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }

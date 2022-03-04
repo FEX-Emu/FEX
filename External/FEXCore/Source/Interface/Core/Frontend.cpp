@@ -583,8 +583,11 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
         return false;
     }
     else {
-      auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
-      (this->*Disp)(&NonGPR, ModRM);
+      // Only decode if we haven't pre-decoded
+      if (NonGPR.IsNone()) {
+        auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
+        (this->*Disp)(&NonGPR, ModRM);
+      }
     }
 
     return true;
@@ -857,7 +860,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
     case 0x0F: {// Escape Op
       uint8_t EscapeOp = ReadByte();
       switch (EscapeOp) {
-      case 0x0F: { // 3DNow!
+      case 0x0F: [[unlikely]] { // 3DNow!
         // 3DNow! Instruction Encoding: 0F 0F [ModRM] [SIB] [Displacement] [Opcode]
         // Decode ModRM
         uint8_t ModRMByte = ReadByte();
@@ -870,8 +873,12 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
           DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
-        auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
-        (this->*Disp)(&DecodeInst->Src[0], ModRM);
+        // All 3DNow! instructions have the second argument as the rm handler
+        // We need to decode it upfront to get the displacement out of the way
+        if (ModRM.mod != 0b11) {
+          auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
+          (this->*Disp)(&DecodeInst->Src[0], ModRM);
+        }
 
         // Take a peek at the op just past the displacement
         uint8_t LocalOp = ReadByte();

@@ -2318,6 +2318,22 @@ DEF_OP(VTBL1) {
   }
 }
 
+DEF_OP(VRev64) {
+  auto Op = IROp->C<IR::IROp_VRev64>();
+  uint8_t OpSize = IROp->Size;
+  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  // Vector
+  switch (Op->Header.ElementSize) {
+    case 1:
+    case 2:
+    case 4:
+      rev64(GetDst(Node).VCast(OpSize * 8, Elements), GetSrc(Op->Header.Args[0].ID()).VCast(OpSize * 8, Elements));
+      break;
+    case 8:
+    default: LOGMAN_MSG_A_FMT("Invalid Element Size: {}", Op->Header.ElementSize); break;
+  }
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -2413,6 +2429,7 @@ void Arm64JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSMULL2,           VSMull2);
   REGISTER_OP(VUABDL,            VUABDL);
   REGISTER_OP(VTBL1,             VTBL1);
+  REGISTER_OP(VREV64,            VRev64);
 #undef REGISTER_OP
 }
 }

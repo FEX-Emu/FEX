@@ -2151,6 +2151,74 @@ DEF_OP(VTBL1) {
   }
 }
 
+DEF_OP(VRev64) {
+  auto Op = IROp->C<IR::IROp_VDupElement>();
+
+  switch (Op->Header.ElementSize) {
+    case 1: {
+      mov(rax, 0x00'01'02'03'04'05'06'07); // Lower
+      vmovq(xmm15, rax);
+      if (IROp->Size == 16) {
+        // Full 8bit byteswap in each 64-bit element
+        mov(rcx, 0x08'09'0A'0B'0C'0D'0E'0F); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+      else {
+        // 8byte, upper bits get zero
+        // Full 8bit byteswap in each 64-bit element
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+
+      vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      break;
+    }
+    case 2: {
+      // Full 16-bit byteswap in each 64-bit element
+      mov(rax, 0x01'00'03'02'05'04'07'06); // Lower
+      vmovq(xmm15, rax);
+      if (IROp->Size == 16) {
+        mov(rcx, 0x09'08'0B'0A'0D'0C'0F'0E); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+      else {
+        // 8byte, upper bits get zero
+        // Full 8bit byteswap in each 64-bit element
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        pinsrq(xmm15, rcx, 1);
+      }
+      vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      break;
+    }
+    case 4: {
+      if (IROp->Size == 16) {
+      vpshufd(GetDst(Node),
+        GetSrc(Op->Header.Args[0].ID()),
+        (0b11 << 0) |
+        (0b10 << 2) |
+        (0b01 << 4) |
+        (0b00 << 6));
+      }
+      else {
+
+      vpshufd(GetDst(Node),
+        GetSrc(Op->Header.Args[0].ID()),
+        (0b01 << 0) |
+        (0b00 << 2) |
+        (0b11 << 4) | // Last two don't matter, will be overwritten with zero
+        (0b11 << 6));
+
+        // Zero upper 64-bits
+        mov(rcx, 0);
+        pinsrq(GetDst(Node), rcx, 1);
+      }
+      break;
+    }
+    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+  }
+}
+
+
 #undef DEF_OP
 void X86JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -2246,6 +2314,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSMULL2,           VSMull2);
   REGISTER_OP(VUABDL,            VUABDL);
   REGISTER_OP(VTBL1,             VTBL1);
+  REGISTER_OP(VREV64,            VRev64);
 #undef REGISTER_OP
 }
 }
