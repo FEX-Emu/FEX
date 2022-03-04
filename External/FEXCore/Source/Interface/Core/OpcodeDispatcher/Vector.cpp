@@ -435,9 +435,10 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
   if (Op->Dest.IsGPR()) {
     const auto gpr = Op->Dest.Data.GPR.GPR;
-    _StoreContext(FPRClass, 8, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][0]), Src);
+
+    _StoreContext(8, FPRClass, Src, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][0]));
     auto Const = _Constant(0);
-    _StoreContext(GPRClass, 8, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][1]), Const);
+    _StoreContext(8, GPRClass, Const, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][1]));
   }
   else {
     // This is simple, just store the result
@@ -478,14 +479,15 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   //TODO: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
   auto M = _Constant(0x80'40'20'10'08'04'02'01ULL);
   OrderedNode *VMask = _VCastFromGPR(16, 8, M);
-  VMask = _VInsGPR(16, 8, VMask, M, 1);
 
-  auto VCMP = _VCMPLTZ(Src, 16, 1);
-  auto VAnd = _VAnd(VCMP, VMask, 16, 1);
+  VMask = _VInsGPR(16, 8, 1, VMask, M);
 
-  auto VAdd1 = _VAddP(VAnd, VAnd, 16, 1);
-  auto VAdd2 = _VAddP(VAdd1, VAdd1, 8, 1);
-  auto VAdd3 = _VAddP(VAdd2, VAdd2, 8, 1);
+  auto VCMP = _VCMPLTZ(16, 1, Src);
+  auto VAnd = _VAnd(16, 1, VCMP, VMask);
+
+  auto VAdd1 = _VAddP(16, 1, VAnd, VAnd);
+  auto VAdd2 = _VAddP(8, 1, VAdd1, VAdd1);
+  auto VAdd3 = _VAddP(8, 1, VAdd2, VAdd2);
 
   StoreResult(GPRClass, Op, _VExtractToGPR(16, 2, VAdd3, 0), -1);
 }
@@ -542,11 +544,11 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   // Bits [6:4] is reserved for 128bit
   // Bits [6:3] is reserved for 64bit
   if (Size == 8) {
-    auto MaskVector = _VectorImm(0b1000'0111, Size, 1);
+    auto MaskVector = _VectorImm(Size, 1, 0b1000'0111);
     Src = _VAnd(Size, Size, Src, MaskVector);
   }
   else {
-    auto MaskVector = _VectorImm(0b1000'1111, Size, 1);
+    auto MaskVector = _VectorImm(Size, 1, 0b1000'1111);
     Src = _VAnd(Size, Size, Src, MaskVector);
   }
   auto Res = _VTBL1(Size, Dest, Src);
@@ -667,7 +669,7 @@ void OpDispatchBuilder::PINSROp(OpcodeArgs) {
   Index &= NumElements - 1;
 
   // This maps 1:1 to an AArch64 NEON Op
-  auto ALUOp = _VInsGPR(Size, ElementSize, Dest, Src, Index);
+  auto ALUOp = _VInsGPR(Size, ElementSize, Index, Dest, Src);
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
@@ -710,10 +712,10 @@ void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
 
   // ZMask happens after insert
   if (ZMask == 0xF) {
-    Dest = _VectorImm(0, 16, 4);
+    Dest = _VectorImm(16, 4, 0);
   }
   else if (ZMask) {
-    auto Zero = _VectorImm(0, 16, 4);
+    auto Zero = _VectorImm(16, 4, 0);
     for (size_t i = 0; i < 4; ++i) {
       if (ZMask & (1 << i)) {
         Dest = _VInsElement(GetDstSize(Op), 4, i, 0, Dest, Zero);
@@ -806,7 +808,7 @@ void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
   Src = _VUMin(8, 8, MaxShift, Src);
   Result = _VUShrS(Size, ElementSize, Dest, Src);
 
@@ -870,7 +872,7 @@ void OpDispatchBuilder::PSLL(OpcodeArgs) {
   OrderedNode *Result{};
 
   // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
   Src = _VUMin(8, 8, MaxShift, Src);
   Result = _VUShlS(Size, ElementSize, Dest, Src);
 
@@ -894,7 +896,7 @@ void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
   OrderedNode *Result{};
 
   // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(ElementSize * 8, 8, 8);
+  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
   Src = _VUMin(8, 8, MaxShift, Src);
   Result = _VSShrS(Size, ElementSize, Dest, Src);
 
@@ -997,12 +999,11 @@ void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   // Source Element size is determined by instruction
   size_t GPRSize = GetDstSize(Op);
 
-  size_t ElementSize = SrcElementSize;
   if constexpr (HostRoundingMode) {
-    Src = _Float_ToGPR_S(Src, ElementSize, GPRSize);
+    Src = _Float_ToGPR_S(GPRSize, SrcElementSize, Src);
   }
   else {
-    Src = _Float_ToGPR_ZS(Src, ElementSize, GPRSize);
+    Src = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src);
   }
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, GPRSize, -1);
@@ -1025,11 +1026,11 @@ void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
   size_t ElementSize = SrcElementSize;
   size_t Size = GetDstSize(Op);
   if constexpr (Widen) {
-    Src = _VSXTL(Src, Size, ElementSize);
+    Src = _VSXTL(Size, ElementSize, Src);
     ElementSize <<= 1;
   }
 
-  Src = _Vector_SToF(Src, Size, ElementSize);
+  Src = _Vector_SToF(Size, ElementSize, Src);
 
   StoreResult(FPRClass, Op, Src, -1);
 }
@@ -1047,15 +1048,15 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   size_t Size = GetDstSize(Op);
 
   if constexpr (Narrow) {
-    Src = _Vector_FToF(Size, SrcElementSize >> 1, SrcElementSize, Src);
+    Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
     ElementSize >>= 1;
   }
 
   if constexpr (HostRoundingMode) {
-    Src = _Vector_FToS(Src, Size, ElementSize);
+    Src = _Vector_FToS(Size, ElementSize, Src);
   }
   else {
-    Src = _Vector_FToZS(Src, Size, ElementSize);
+    Src = _Vector_FToZS(Size, ElementSize, Src);
   }
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
@@ -1095,10 +1096,10 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
   size_t Size = GetDstSize(Op);
 
   if constexpr (DstElementSize > SrcElementSize) {
-    Src = _Vector_FToF(Size, SrcElementSize << 1, SrcElementSize, Src);
+    Src = _Vector_FToF(Size, SrcElementSize << 1, Src, SrcElementSize);
   }
   else {
-    Src = _Vector_FToF(Size, SrcElementSize >> 1, SrcElementSize, Src);
+    Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
   }
 
   StoreResult(FPRClass, Op, Src, -1);
@@ -1116,12 +1117,12 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   size_t ElementSize = SrcElementSize;
   size_t DstSize = GetDstSize(Op);
   if constexpr (Widen) {
-    Src = _VSXTL(Src, DstSize, ElementSize);
+    Src = _VSXTL(DstSize, ElementSize, Src);
     ElementSize <<= 1;
   }
 
   // Always signed
-  Src = _Vector_SToF(Src, DstSize, ElementSize);
+  Src = _Vector_SToF(DstSize, ElementSize, Src);
 
   OrderedNode *Dest{};
   if constexpr (Widen) {
@@ -1149,14 +1150,14 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   size_t Size = GetDstSize(Op);
 
   // Always narrows
-  Src = _Vector_FToF(Size, SrcElementSize >> 1, SrcElementSize, Src);
+  Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
   ElementSize >>= 1;
 
   if constexpr (HostRoundingMode) {
-    Src = _Vector_FToS(Src, Size, ElementSize);
+    Src = _Vector_FToS(Size, ElementSize, Src);
   }
   else {
-    Src = _Vector_FToZS(Src, Size, ElementSize);
+    Src = _Vector_FToZS(Size, ElementSize, Src);
   }
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
@@ -1175,7 +1176,7 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  OrderedNode *MemDest = _LoadContext(GPRSize, GPROffset(X86State::REG_RDI), GPRClass);
+  OrderedNode *MemDest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
 
   const size_t NumElements = Size / 64;
   for (size_t Element = 0; Element < NumElements; ++Element) {
@@ -1303,7 +1304,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   }
 
   {
-    auto FCW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FCW), GPRClass);
+    auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
     _StoreMem(GPRClass, 2, Mem, FCW, 2);
   }
 
@@ -1329,7 +1330,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   {
     // FTW
     OrderedNode *MemLocation = _Add(Mem, _Constant(4));
-    auto FTW = _LoadContext(2, offsetof(FEXCore::Core::CPUState, FTW), GPRClass);
+    auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
     _StoreMem(GPRClass, 2, MemLocation, FTW, 2);
   }
 
@@ -1378,7 +1379,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
   for (unsigned i = 0; i < 8; ++i) {
-    OrderedNode *MMReg = _LoadContext(16, offsetof(FEXCore::Core::CPUState, mm[i]), FPRClass);
+    OrderedNode *MMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, mm[i]));
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
 
     _StoreMem(FPRClass, 16, MemLocation, MMReg, 16);
@@ -1386,7 +1387,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   unsigned NumRegs = CTX->Config.Is64BitMode ? 16 : 8;
 
   for (unsigned i = 0; i < NumRegs; ++i) {
-    OrderedNode *XMMReg = _LoadContext(16, offsetof(FEXCore::Core::CPUState, xmm[i]), FPRClass);
+    OrderedNode *XMMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm[i]));
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
 
     _StoreMem(FPRClass, 16, MemLocation, XMMReg, 16);
@@ -1399,7 +1400,7 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   _F80LoadFCW(NewFCW);
-  _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FCW), NewFCW);
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   {
     OrderedNode *MemLocation = _Add(Mem, _Constant(2));
@@ -1424,20 +1425,20 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
     // FTW
     OrderedNode *MemLocation = _Add(Mem, _Constant(4));
     auto NewFTW = _LoadMem(GPRClass, 2, MemLocation, 2);
-    _StoreContext(GPRClass, 2, offsetof(FEXCore::Core::CPUState, FTW), NewFTW);
+    _StoreContext(2, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, FTW));
   }
 
   for (unsigned i = 0; i < 8; ++i) {
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
     auto MMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
-    _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, mm[i]), MMReg);
+    _StoreContext(16, FPRClass, MMReg, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
   unsigned NumRegs = CTX->Config.Is64BitMode ? 16 : 8;
 
   for (unsigned i = 0; i < NumRegs; ++i) {
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
     auto XMMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
-    _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, xmm[i]), XMMReg);
+    _StoreContext(16, FPRClass, XMMReg, offsetof(FEXCore::Core::CPUState, xmm[i]));
   }
 }
 
@@ -1462,7 +1463,7 @@ template<size_t ElementSize>
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Res = _FCmp(Src1, Src2, ElementSize,
+  OrderedNode *Res = _FCmp(ElementSize, Src1, Src2,
     (1 << FCMP_FLAG_EQ) |
     (1 << FCMP_FLAG_LT) |
     (1 << FCMP_FLAG_UNORDERED));
@@ -1583,8 +1584,8 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
 
   // This instruction is a bit special in that if the source is MMX then it zexts to 128bit
   if constexpr (ToXMM) {
-    Src = _VMov(Src, 16);
-    _StoreContext(FPRClass, 16, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0][0]), Src);
+    Src = _VMov(16, Src);
+    _StoreContext(16, FPRClass, Src, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0][0]));
   }
   else {
     // This is simple, just store the result
@@ -1736,7 +1737,7 @@ void OpDispatchBuilder::PI2FWOp(OpcodeArgs) {
   Src = _VSXTL(Size, 2, Src);
 
   // int32_t to float
-  Src = _Vector_SToF(Src, Size, 4);
+  Src = _Vector_SToF(Size, 4, Src);
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
 }
@@ -1747,7 +1748,7 @@ void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
   size_t Size = GetDstSize(Op);
 
   // Float to int32_t
-  Src = _Vector_FToZS(Src, Size, 4);
+  Src = _Vector_FToZS(Size, 4, Src);
 
   // We now need to transpose the lower 16-bits of each element together
   // Only needing to move the upper element down in this case
@@ -1772,7 +1773,7 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   //TODO: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
   auto M = _Constant(0x0000'8000'0000'8000ULL);
   OrderedNode *VConstant = _VCastFromGPR(16, 8, M);
-  VConstant = _VInsGPR(16, 8, VConstant, M, 1);
+  VConstant = _VInsGPR(16, 8, 1, VConstant, M);
 
   Res = _VAdd(Size * 2, 4, Res, VConstant);
 
@@ -1970,7 +1971,7 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
     // Implementation is more efficient for 8byte registers
     Res = _VSMull(Size * 2, 2, Dest, Src);
     Res = _VSShrI(Size * 2, 4, Res, 14);
-    auto OneVector = _VectorImm(1, Size * 2, 4);
+    auto OneVector = _VectorImm(Size * 2, 4, 1);
     Res = _VAdd(Size * 2, 4, Res, OneVector);
     Res = _VUShrNI(Size * 2, 4, Res, 1);
   }
@@ -1984,7 +1985,7 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
 
     ResultLow = _VSShrI(Size, 4, ResultLow, 14);
     ResultHigh = _VSShrI(Size, 4, ResultHigh, 14);
-    auto OneVector = _VectorImm(1, Size, 4);
+    auto OneVector = _VectorImm(Size, 4, 1);
 
     ResultLow = _VAdd(Size, 4, ResultLow, OneVector);
     ResultHigh = _VAdd(Size, 4, ResultHigh, OneVector);
@@ -2239,10 +2240,10 @@ void OpDispatchBuilder::ExtendVectorElements(OpcodeArgs) {
        CurrentElementSize != DstElementSize;
        CurrentElementSize <<= 1) {
     if constexpr (Signed) {
-      Result = _VSXTL(Result, Size, CurrentElementSize);
+      Result = _VSXTL(Size, CurrentElementSize, Result);
     }
     else {
-      Result = _VUXTL(Result, Size, CurrentElementSize);
+      Result = _VUXTL(Size, CurrentElementSize, Result);
     }
   }
   StoreResult(FPRClass, Op, Result, -1);
@@ -2296,7 +2297,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
     FEXCore::IR::Round_Host,
   };
 
-  Src = _Vector_FToI(Src, SourceModes[(RoundControlSource << 2) | RoundControl], Size, ElementSize);
+  Src = _Vector_FToI(Size, ElementSize, Src, SourceModes[(RoundControlSource << 2) | RoundControl]);
 
   if constexpr (Scalar) {
     // Insert the lower bits
@@ -2350,13 +2351,14 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // The mask is hardcoded to be xmm0 in this instruction
-  OrderedNode *Mask = _LoadContext(16, offsetof(FEXCore::Core::CPUState, xmm[0]), FPRClass);
+  OrderedNode *Mask = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm[0]));
   // Each element is selected by the high bit of that element size
   // Dest[ElementIdx] = Xmm0[ElementIndex][HighBit] ? Src : Dest;
   //
   // To emulate this on AArch64
   // Arithmetic shift right by the element size, then use BSL to select the registers
   Mask = _VSShrI(Size, ElementSize, Mask, (ElementSize * 8) - 1);
+
   auto Result = _VBSL(Mask, Src, Dest);
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -2377,8 +2379,8 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *Test1 = _VAnd(Dest, Src, Size, 1);
-  OrderedNode *Test2 = _VBic(Src, Dest, Size, 1);
+  OrderedNode *Test1 = _VAnd(Size, 1, Dest, Src);
+  OrderedNode *Test2 = _VBic(Size, 1, Src, Dest);
 
   Test1 = _VPopcount(Size, 1, Test1);
   Test2 = _VPopcount(Size, 1, Test2);
@@ -2440,10 +2442,10 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   }
 
   // Insert the minimum in to bits [15:0]
-  OrderedNode *Result = _VMov(Min, 2);
+  OrderedNode *Result = _VMov(2, Min);
 
   // Insert position in to bits [18:16]
-  Result = _VInsGPR(16, 2, Result, Pos, 1);
+  Result = _VInsGPR(16, 2, 1, Result, Pos);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
