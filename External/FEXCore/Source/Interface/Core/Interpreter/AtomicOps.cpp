@@ -319,17 +319,17 @@ DEF_OP(CASPair) {
   switch (OpSize) {
     case 4: {
       GD = AtomicCompareAndSwap(
-        *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]),
-        *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]),
-        *GetSrc<uint64_t**>(Data->SSAData, Op->Header.Args[2])
+        *GetSrc<uint64_t*>(Data->SSAData, Op->Expected),
+        *GetSrc<uint64_t*>(Data->SSAData, Op->Desired),
+        *GetSrc<uint64_t**>(Data->SSAData, Op->Addr)
       );
       break;
     }
     case 8: {
-      std::atomic<__uint128_t> *MemData = *GetSrc<std::atomic<__uint128_t> **>(Data->SSAData, Op->Header.Args[2]);
+      std::atomic<__uint128_t> *MemData = *GetSrc<std::atomic<__uint128_t> **>(Data->SSAData, Op->Addr);
 
-      __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-      __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+      __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Expected);
+      __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Desired);
 
       __uint128_t Expected = Src1;
       bool Result = MemData->compare_exchange_strong(Expected, Src2);
@@ -347,33 +347,33 @@ DEF_OP(CAS) {
   switch (OpSize) {
     case 1: {
       GD = AtomicCompareAndSwap(
-        *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[0]),
-        *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]),
-        *GetSrc<uint8_t**>(Data->SSAData, Op->Header.Args[2])
+        *GetSrc<uint8_t*>(Data->SSAData, Op->Expected),
+        *GetSrc<uint8_t*>(Data->SSAData, Op->Desired),
+        *GetSrc<uint8_t**>(Data->SSAData, Op->Addr)
       );
       break;
     }
     case 2: {
       GD = AtomicCompareAndSwap(
-        *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[0]),
-        *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]),
-        *GetSrc<uint16_t**>(Data->SSAData, Op->Header.Args[2])
+        *GetSrc<uint16_t*>(Data->SSAData, Op->Expected),
+        *GetSrc<uint16_t*>(Data->SSAData, Op->Desired),
+        *GetSrc<uint16_t**>(Data->SSAData, Op->Addr)
       );
       break;
     }
     case 4: {
       GD = AtomicCompareAndSwap(
-        *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[0]),
-        *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]),
-        *GetSrc<uint32_t**>(Data->SSAData, Op->Header.Args[2])
+        *GetSrc<uint32_t*>(Data->SSAData, Op->Expected),
+        *GetSrc<uint32_t*>(Data->SSAData, Op->Desired),
+        *GetSrc<uint32_t**>(Data->SSAData, Op->Addr)
       );
       break;
     }
     case 8: {
       GD = AtomicCompareAndSwap(
-        *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]),
-        *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]),
-        *GetSrc<uint64_t**>(Data->SSAData, Op->Header.Args[2])
+        *GetSrc<uint64_t*>(Data->SSAData, Op->Expected),
+        *GetSrc<uint64_t*>(Data->SSAData, Op->Desired),
+        *GetSrc<uint64_t**>(Data->SSAData, Op->Addr)
       );
       break;
     }
@@ -385,26 +385,26 @@ DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       *MemData += Src;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       *MemData += Src;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       *MemData += Src;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       *MemData += Src;
       break;
     }
@@ -416,26 +416,26 @@ DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       *MemData -= Src;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       *MemData -= Src;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       *MemData -= Src;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       *MemData -= Src;
       break;
     }
@@ -447,26 +447,26 @@ DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       *MemData &= Src;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       *MemData &= Src;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       *MemData &= Src;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       *MemData &= Src;
       break;
     }
@@ -478,26 +478,26 @@ DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       *MemData |= Src;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       *MemData |= Src;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       *MemData |= Src;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       *MemData |= Src;
       break;
     }
@@ -509,26 +509,26 @@ DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       *MemData ^= Src;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       *MemData ^= Src;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       *MemData ^= Src;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       *MemData ^= Src;
       break;
     }
@@ -540,29 +540,29 @@ DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       uint8_t Previous = MemData->exchange(Src);
       GD = Previous;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       uint16_t Previous = MemData->exchange(Src);
       GD = Previous;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       uint32_t Previous = MemData->exchange(Src);
       GD = Previous;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       uint64_t Previous = MemData->exchange(Src);
       GD = Previous;
       break;
@@ -575,29 +575,29 @@ DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       uint8_t Previous = MemData->fetch_add(Src);
       GD = Previous;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       uint16_t Previous = MemData->fetch_add(Src);
       GD = Previous;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       uint32_t Previous = MemData->fetch_add(Src);
       GD = Previous;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       uint64_t Previous = MemData->fetch_add(Src);
       GD = Previous;
       break;
@@ -610,29 +610,29 @@ DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       uint8_t Previous = MemData->fetch_sub(Src);
       GD = Previous;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       uint16_t Previous = MemData->fetch_sub(Src);
       GD = Previous;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       uint32_t Previous = MemData->fetch_sub(Src);
       GD = Previous;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       uint64_t Previous = MemData->fetch_sub(Src);
       GD = Previous;
       break;
@@ -645,29 +645,29 @@ DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       uint8_t Previous = MemData->fetch_and(Src);
       GD = Previous;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       uint16_t Previous = MemData->fetch_and(Src);
       GD = Previous;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       uint32_t Previous = MemData->fetch_and(Src);
       GD = Previous;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       uint64_t Previous = MemData->fetch_and(Src);
       GD = Previous;
       break;
@@ -680,29 +680,29 @@ DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       uint8_t Previous = MemData->fetch_or(Src);
       GD = Previous;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       uint16_t Previous = MemData->fetch_or(Src);
       GD = Previous;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       uint32_t Previous = MemData->fetch_or(Src);
       GD = Previous;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       uint64_t Previous = MemData->fetch_or(Src);
       GD = Previous;
       break;
@@ -715,29 +715,29 @@ DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
   switch (IROp->Size) {
     case 1: {
-      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint8_t> *MemData = *GetSrc<std::atomic<uint8_t> **>(Data->SSAData, Op->Addr);
+      uint8_t Src = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
       uint8_t Previous = MemData->fetch_xor(Src);
       GD = Previous;
       break;
     }
     case 2: {
-      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint16_t> *MemData = *GetSrc<std::atomic<uint16_t> **>(Data->SSAData, Op->Addr);
+      uint16_t Src = *GetSrc<uint16_t*>(Data->SSAData, Op->Value);
       uint16_t Previous = MemData->fetch_xor(Src);
       GD = Previous;
       break;
     }
     case 4: {
-      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint32_t> *MemData = *GetSrc<std::atomic<uint32_t> **>(Data->SSAData, Op->Addr);
+      uint32_t Src = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
       uint32_t Previous = MemData->fetch_xor(Src);
       GD = Previous;
       break;
     }
     case 8: {
-      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Header.Args[0]);
-      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+      std::atomic<uint64_t> *MemData = *GetSrc<std::atomic<uint64_t> **>(Data->SSAData, Op->Addr);
+      uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
       uint64_t Previous = MemData->fetch_xor(Src);
       GD = Previous;
       break;
@@ -751,22 +751,22 @@ DEF_OP(AtomicFetchNeg) {
   switch (IROp->Size) {
     case 1: {
       using Type = uint8_t;
-      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Header.Args[0]));
+      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Addr));
       break;
     }
     case 2: {
       using Type = uint16_t;
-      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Header.Args[0]));
+      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Addr));
       break;
     }
     case 4: {
       using Type = uint32_t;
-      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Header.Args[0]));
+      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Addr));
       break;
     }
     case 8: {
       using Type = uint64_t;
-      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Header.Args[0]));
+      GD = AtomicFetchNeg(*GetSrc<Type**>(Data->SSAData, Op->Addr));
       break;
     }
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);

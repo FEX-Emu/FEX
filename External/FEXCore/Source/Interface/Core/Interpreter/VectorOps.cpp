@@ -39,39 +39,6 @@ DEF_OP(VectorImm) {
   memcpy(GDP, Tmp, OpSize);
 }
 
-DEF_OP(CreateVector2) {
-  auto Op = IROp->C<IR::IROp_CreateVector2>();
-  uint8_t OpSize = IROp->Size;
-
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
-  uint8_t Tmp[16];
-  uint8_t ElementSize = OpSize / 2;
-  #define CREATE_VECTOR(elementsize, type) \
-    case elementsize: { \
-      auto *Dst_d = reinterpret_cast<type*>(Tmp); \
-      auto *Src1_d = reinterpret_cast<type*>(Src1); \
-      auto *Src2_d = reinterpret_cast<type*>(Src2); \
-      Dst_d[0] = *Src1_d; \
-      Dst_d[1] = *Src2_d; \
-      break; \
-    }
-  switch (ElementSize) {
-    CREATE_VECTOR(1, uint8_t)
-    CREATE_VECTOR(2, uint16_t)
-    CREATE_VECTOR(4, uint32_t)
-    CREATE_VECTOR(8, uint64_t)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize); break;
-  }
-  #undef CREATE_VECTOR
-  memcpy(GDP, Tmp, OpSize);
-}
-
-DEF_OP(CreateVector4) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
-}
-
 DEF_OP(SplatVector) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
   uint8_t OpSize = IROp->Size;
