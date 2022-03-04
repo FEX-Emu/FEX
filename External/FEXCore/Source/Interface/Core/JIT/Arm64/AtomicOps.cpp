@@ -15,9 +15,9 @@ DEF_OP(CASPair) {
   uint8_t OpSize = IROp->Size;
   // Size is the size of each pair element
   auto Dst = GetSrcPair<RA_64>(Node);
-  auto Expected = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
-  auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[2].ID());
+  auto Expected = GetSrcPair<RA_64>(Op->Expected.ID());
+  auto Desired = GetSrcPair<RA_64>(Op->Desired.ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mov(TMP3, Expected.first);
@@ -99,16 +99,13 @@ DEF_OP(CASPair) {
 DEF_OP(CAS) {
   auto Op = IROp->C<IR::IROp_CAS>();
   uint8_t OpSize = IROp->Size;
-  // Args[0]: Expected
-  // Args[1]: Desired
-  // Args[2]: Pointer
   // DataSrc = *Src1
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
   // This will write to memory! Careful!
 
-  auto Expected = GetReg<RA_64>(Op->Header.Args[0].ID());
-  auto Desired = GetReg<RA_64>(Op->Header.Args[1].ID());
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[2].ID());
+  auto Expected = GetReg<RA_64>(Op->Expected.ID());
+  auto Desired = GetReg<RA_64>(Op->Desired.ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mov(TMP2, Expected);
@@ -216,14 +213,14 @@ DEF_OP(CAS) {
 DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
 
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
-    case 1: staddlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 2: staddlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 4: staddl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 8: staddl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+    case 1: staddlb(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 2: staddlh(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 4: staddl(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 8: staddl(GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
@@ -234,7 +231,7 @@ DEF_OP(AtomicAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -243,7 +240,7 @@ DEF_OP(AtomicAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -252,7 +249,7 @@ DEF_OP(AtomicAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -261,7 +258,7 @@ DEF_OP(AtomicAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        add(TMP2, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        add(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP2, TMP2, MemOperand(MemSrc));
         cbnz(TMP2, &LoopTop);
         break;
@@ -274,10 +271,10 @@ DEF_OP(AtomicAdd) {
 DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
 
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+    neg(TMP2, GetReg<RA_64>(Op->Value.ID()));
     switch (IROp->Size) {
     case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
     case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
@@ -293,7 +290,7 @@ DEF_OP(AtomicSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -302,7 +299,7 @@ DEF_OP(AtomicSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -311,7 +308,7 @@ DEF_OP(AtomicSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -320,7 +317,7 @@ DEF_OP(AtomicSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        sub(TMP2, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        sub(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP2, TMP2, MemOperand(MemSrc));
         cbnz(TMP2, &LoopTop);
         break;
@@ -333,10 +330,10 @@ DEF_OP(AtomicSub) {
 DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
 
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+    mvn(TMP2, GetReg<RA_64>(Op->Value.ID()));
     switch (IROp->Size) {
     case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
     case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
@@ -352,7 +349,7 @@ DEF_OP(AtomicAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -361,7 +358,7 @@ DEF_OP(AtomicAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -370,7 +367,7 @@ DEF_OP(AtomicAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -379,7 +376,7 @@ DEF_OP(AtomicAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        and_(TMP2, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        and_(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP2, TMP2, MemOperand(MemSrc));
         cbnz(TMP2, &LoopTop);
         break;
@@ -392,14 +389,14 @@ DEF_OP(AtomicAnd) {
 DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
 
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
-    case 1: stsetlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 2: stsetlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 4: stsetl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 8: stsetl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+    case 1: stsetlb(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 2: stsetlh(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 4: stsetl(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 8: stsetl(GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
@@ -410,7 +407,7 @@ DEF_OP(AtomicOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -419,7 +416,7 @@ DEF_OP(AtomicOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -428,7 +425,7 @@ DEF_OP(AtomicOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -437,7 +434,7 @@ DEF_OP(AtomicOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        orr(TMP2, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        orr(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP2, TMP2, MemOperand(MemSrc));
         cbnz(TMP2, &LoopTop);
         break;
@@ -450,14 +447,14 @@ DEF_OP(AtomicOr) {
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
 
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
-    case 1: steorlb(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 2: steorlh(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 4: steorl(GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
-    case 8: steorl(GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc)); break;
+    case 1: steorlb(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 2: steorlh(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 4: steorl(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
+    case 8: steorl(GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
@@ -468,7 +465,7 @@ DEF_OP(AtomicXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -477,7 +474,7 @@ DEF_OP(AtomicXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -486,7 +483,7 @@ DEF_OP(AtomicXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
         cbnz(TMP2.W(), &LoopTop);
         break;
@@ -495,7 +492,7 @@ DEF_OP(AtomicXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        eor(TMP2, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        eor(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP2, TMP2, MemOperand(MemSrc));
         cbnz(TMP2, &LoopTop);
         break;
@@ -508,10 +505,10 @@ DEF_OP(AtomicXor) {
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
 
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+    mov(TMP2, GetReg<RA_64>(Op->Value.ID()));
     switch (IROp->Size) {
     case 1: swplb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: swplh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -527,7 +524,7 @@ DEF_OP(AtomicSwap) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        stlxrb(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
+        stlxrb(TMP4.W(), GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         uxtb(GetReg<RA_32>(Node), TMP2.W());
         break;
@@ -536,7 +533,7 @@ DEF_OP(AtomicSwap) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        stlxrh(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
+        stlxrh(TMP4.W(), GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         uxtw(GetReg<RA_32>(Node), TMP2.W());
         break;
@@ -545,7 +542,7 @@ DEF_OP(AtomicSwap) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        stlxr(TMP4.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
+        stlxr(TMP4.W(), GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
         break;
@@ -554,7 +551,7 @@ DEF_OP(AtomicSwap) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        stlxr(TMP4, GetReg<RA_64>(Op->Header.Args[1].ID()), MemOperand(MemSrc));
+        stlxr(TMP4, GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2.X());
         break;
@@ -566,14 +563,14 @@ DEF_OP(AtomicSwap) {
 
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
-    case 1: ldaddalb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldaddalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldaddal(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldaddal(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
+    case 1: ldaddalb(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 2: ldaddalh(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 4: ldaddal(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 8: ldaddal(GetReg<RA_64>(Op->Value.ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
@@ -584,7 +581,7 @@ DEF_OP(AtomicFetchAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -594,7 +591,7 @@ DEF_OP(AtomicFetchAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -604,7 +601,7 @@ DEF_OP(AtomicFetchAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -614,7 +611,7 @@ DEF_OP(AtomicFetchAdd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        add(TMP3, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        add(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP4, TMP3, MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2);
@@ -627,10 +624,10 @@ DEF_OP(AtomicFetchAdd) {
 
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    neg(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+    neg(TMP2, GetReg<RA_64>(Op->Value.ID()));
     switch (IROp->Size) {
     case 1: ldaddalb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldaddalh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -646,7 +643,7 @@ DEF_OP(AtomicFetchSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -656,7 +653,7 @@ DEF_OP(AtomicFetchSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -666,7 +663,7 @@ DEF_OP(AtomicFetchSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -676,7 +673,7 @@ DEF_OP(AtomicFetchSub) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        sub(TMP3, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        sub(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP4, TMP3, MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2);
@@ -689,10 +686,10 @@ DEF_OP(AtomicFetchSub) {
 
 DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mvn(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+    mvn(TMP2, GetReg<RA_64>(Op->Value.ID()));
     switch (IROp->Size) {
     case 1: ldclralb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
     case 2: ldclralh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
@@ -708,7 +705,7 @@ DEF_OP(AtomicFetchAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -718,7 +715,7 @@ DEF_OP(AtomicFetchAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -728,7 +725,7 @@ DEF_OP(AtomicFetchAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -738,7 +735,7 @@ DEF_OP(AtomicFetchAnd) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        and_(TMP3, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        and_(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP4, TMP3, MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2);
@@ -751,14 +748,14 @@ DEF_OP(AtomicFetchAnd) {
 
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
-    case 1: ldsetalb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldsetalh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldsetal(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldsetal(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
+    case 1: ldsetalb(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 2: ldsetalh(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 4: ldsetal(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 8: ldsetal(GetReg<RA_64>(Op->Value.ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
@@ -769,7 +766,7 @@ DEF_OP(AtomicFetchOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -779,7 +776,7 @@ DEF_OP(AtomicFetchOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -789,7 +786,7 @@ DEF_OP(AtomicFetchOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -799,7 +796,7 @@ DEF_OP(AtomicFetchOr) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        orr(TMP3, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        orr(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP4, TMP3, MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2);
@@ -812,14 +809,14 @@ DEF_OP(AtomicFetchOr) {
 
 DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {
     switch (IROp->Size) {
-    case 1: ldeoralb(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldeoralh(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldeoral(GetReg<RA_32>(Op->Header.Args[1].ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldeoral(GetReg<RA_64>(Op->Header.Args[1].ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
+    case 1: ldeoralb(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 2: ldeoralh(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 4: ldeoral(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 8: ldeoral(GetReg<RA_64>(Op->Value.ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }
@@ -830,7 +827,7 @@ DEF_OP(AtomicFetchXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -840,7 +837,7 @@ DEF_OP(AtomicFetchXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -850,7 +847,7 @@ DEF_OP(AtomicFetchXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
         stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
         cbnz(TMP4.W(), &LoopTop);
         mov(GetReg<RA_32>(Node), TMP2.W());
@@ -860,7 +857,7 @@ DEF_OP(AtomicFetchXor) {
         aarch64::Label LoopTop;
         bind(&LoopTop);
         ldaxr(TMP2, MemOperand(MemSrc));
-        eor(TMP3, TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+        eor(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
         stlxr(TMP4, TMP3, MemOperand(MemSrc));
         cbnz(TMP4, &LoopTop);
         mov(GetReg<RA_64>(Node), TMP2);
@@ -873,7 +870,7 @@ DEF_OP(AtomicFetchXor) {
 
 DEF_OP(AtomicFetchNeg) {
   auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
-  auto MemSrc = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   // TMP2-TMP3
   switch (IROp->Size) {
