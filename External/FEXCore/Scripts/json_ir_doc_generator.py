@@ -7,17 +7,12 @@ OpClasses = collections.OrderedDict()
 def get_ir_classes(ops, defines):
     global OpClasses
 
-    for op_key, op_vals in ops.items():
-        if not ("Last" in op_vals):
-            OpClass = "#Unknown"
+    for op_class, opslist in ops.items():
+        if not (op_class in OpClasses):
+            OpClasses[op_class] = []
 
-            if ("OpClass" in op_vals):
-                OpClass = op_vals["OpClass"]
-
-            if not (OpClass in OpClasses):
-                OpClasses[OpClass] = []
-
-            OpClasses[OpClass].append([op_key, op_vals])
+        for op, op_val in opslist.items():
+            OpClasses[op_class].append([op, op_val])
 
     # Sort the dictionary after we are done parsing it
     OpClasses = collections.OrderedDict(sorted(OpClasses.items()))
@@ -38,41 +33,9 @@ def print_ir_ops():
             op_key = op[0]
             op_vals = op[1]
             output_file.write("## %s\n" % (op_key))
-            HasDest = ("HasDest" in op_vals and op_vals["HasDest"] == True)
-            HasSSAArgs = ("SSAArgs" in op_vals and len(op_vals["SSAArgs"]) > 0)
-            HasSSAArgNames = "SSANames" in op_vals
-            HasArgs = "Args" in op_vals
-            SSAArgsCount = 0
-            ArgCount = 0
-            if (HasSSAArgs):
-                SSAArgsCount = int(op_vals["SSAArgs"])
-            if (HasArgs):
-                ArgCount = len(op_vals["Args"])
-
-            TotalArgsCount = SSAArgsCount + (ArgCount / 2)
 
             output_file.write(">")
-            if (HasDest):
-                output_file.write("%dest = ")
-
-            output_file.write("%s " % op_key)
-
-            ArgComma = (", ", "")
-            if (HasSSAArgs):
-                for i in range(0, SSAArgsCount):
-                    FinalArg = (i + 1) == TotalArgsCount
-                    if (HasSSAArgNames):
-                        output_file.write("%%%s%s" % (op_vals["SSANames"][i], ArgComma[FinalArg]))
-                    else:
-                        output_file.write("%%ssa%d%s" % (i, ArgComma[FinalArg]))
-
-            if (HasArgs):
-                Args = op_vals["Args"]
-                for i in range(0, ArgCount, 2):
-                    FinalArg = ((i / 2) + SSAArgsCount + 1) == TotalArgsCount
-                    data_type = Args[i]
-                    data_name = Args[i + 1]
-                    output_file.write("\<%s %s\>%s" % (data_type, data_name, ArgComma[FinalArg]))
+            output_file.write(op_key)
 
             output_file.write("\n\n")
 
