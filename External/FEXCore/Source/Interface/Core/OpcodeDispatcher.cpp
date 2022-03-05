@@ -5188,6 +5188,18 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
+
+template<bool Reseed>
+void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
+  auto Res = _RDRAND(Reseed);
+
+  OrderedNode *Result_Lower = _ExtractElementPair(Res, 0);
+  OrderedNode *Result_Upper = _ExtractElementPair(Res, 1);
+
+  StoreResult(GPRClass, Op, Result_Lower, -1);
+  GenerateFlags_RDRAND(Op, Result_Upper);
+}
+
 void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // Ensure flags are calculated on invalid op.
   CalculateDeferredFlags();
@@ -5782,6 +5794,11 @@ constexpr uint16_t PF_F2 = 3;
 
     // GROUP 9
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
 
     // GROUP 12
     {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLI<2>},

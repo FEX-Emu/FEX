@@ -249,6 +249,9 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
     case FlagsGenerationType::TYPE_BITSELECT:
       CalculcateFlags_BITSELECT(CurrentDeferredFlags.Res);
       break;
+    case FlagsGenerationType::TYPE_RDRAND:
+      CalculcateFlags_RDRAND(CurrentDeferredFlags.Res);
+      break;
     case FlagsGenerationType::TYPE_NONE:
     default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
   }
@@ -1257,6 +1260,19 @@ void OpDispatchBuilder::CalculcateFlags_BITSELECT(OrderedNode *Src) {
       OneConst, ZeroConst);
 
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
+}
+
+void OpDispatchBuilder::CalculcateFlags_RDRAND(OrderedNode *Src) {
+  // OF, SF, ZF, AF, PF all zero
+  // CF is set to the incoming source
+
+  auto ZeroConst = _Constant(0);
+  SetRFLAG<X86State::RFLAG_OF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_SF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_ZF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_AF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Src);
 }
 
 }

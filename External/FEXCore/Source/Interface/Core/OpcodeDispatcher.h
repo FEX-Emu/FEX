@@ -65,6 +65,7 @@ public:
     TYPE_TZCNT,
     TYPE_LZCNT,
     TYPE_BITSELECT,
+    TYPE_RDRAND,
   };
 
   SelectionFlag flagsOp{};
@@ -273,6 +274,8 @@ public:
   void XADDOp(OpcodeArgs);
   void PopcountOp(OpcodeArgs);
   void XLATOp(OpcodeArgs);
+  template<bool Reseed>
+  void RDRANDOp(OpcodeArgs);
 
   enum class Segment {
     FS,
@@ -645,7 +648,7 @@ private:
     OrderedNode *Res{};
 
     union {
-      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, BITSELECT
+      // UMUL, BEXTR, BLSI, BLSMSK, POPCOUNT, TZCNT, LZCNT, BITSELECT, RDRAND
       struct {
       } NoSource;
 
@@ -742,6 +745,7 @@ private:
   void CalculcateFlags_TZCNT(OrderedNode *Src);
   void CalculcateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
   void CalculcateFlags_BITSELECT(OrderedNode *Src);
+  void CalculcateFlags_RDRAND(OrderedNode *Src);
   /**  @} */
 
   /**
@@ -1117,6 +1121,14 @@ private:
   void GenerateFlags_BITSELECT(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_BITSELECT,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Src,
+    };
+  }
+
+  void GenerateFlags_RDRAND(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Src) {
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_RDRAND,
       .SrcSize = GetSrcSize(Op),
       .Res = Src,
     };

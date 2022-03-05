@@ -445,7 +445,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (0 << 27) | // OSXSAVE
     (SUPPORTS_AVX << 28) | // AVX
     (0 << 29) | // F16C
-    (0 << 30) | // RDRAND
+    (CTX->HostFeatures.SupportsRAND << 30) | // RDRAND
     (0 << 31);  // Hypervisor always returns zero
 
   Res.edx =
@@ -647,7 +647,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (0 << 15) | // Intel Resource Directory Technology Allocation
       (0 << 16) | // Reserved
       (0 << 17) | // Reserved
-      (0 << 18) | // RDSEED
+      (CTX->HostFeatures.SupportsRAND << 18) | // RDSEED
       (1 << 19) | // ADCX and ADOX instructions
       (0 << 20) | // SMAP Supervisor mode access prevention and CLAC/STAC instructions
       (0 << 21) | // Reserved

@@ -201,6 +201,24 @@ DEF_OP(ProcessorID) {
   orr(GetReg<RA_64>(Node), x0, Operand(x1, LSL, 12));
 }
 
+DEF_OP(RDRAND) {
+  auto Op = IROp->C<IR::IROp_RDRAND>();
+
+  // Results are in x0, x1
+  // Results want to be in a i64v2 vector
+  auto Dst = GetSrcPair<RA_64>(Node);
+
+  if (Op->GetReseeded) {
+    mrs(Dst.first, RNDRRS);
+  }
+  else {
+    mrs(Dst.first, RNDR);
+  }
+
+  // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
+  cset(Dst.second, Condition::ne);
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -218,6 +236,8 @@ void Arm64JITCore::RegisterMiscHandlers() {
   REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
   REGISTER_OP(PROCESSORID,   ProcessorID);
+  REGISTER_OP(RDRAND, RDRAND);
+
 #undef REGISTER_OP
 }
 }

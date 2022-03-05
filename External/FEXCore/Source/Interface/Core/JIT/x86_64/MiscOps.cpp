@@ -149,6 +149,23 @@ DEF_OP(ProcessorID) {
   mov (GetDst<RA_32>(Node), ecx);
 }
 
+DEF_OP(RDRAND) {
+  auto Op = IROp->C<IR::IROp_RDRAND>();
+
+  auto Dst = GetSrcPair<RA_64>(Node);
+
+  if (Op->GetReseeded) {
+    rdrand(Dst.first);
+  }
+  else {
+    rdseed(Dst.first);
+  }
+
+  // In the case of RDRAND or RDSEED returning a valid number then CF = 1, else 0
+  mov (Dst.second, 0);
+  setc(Dst.second.cvt8());
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -166,6 +183,7 @@ void X86JITCore::RegisterMiscHandlers() {
   REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
   REGISTER_OP(PROCESSORID,   ProcessorID);
+  REGISTER_OP(RDRAND, RDRAND);
 #undef REGISTER_OP
 }
 }

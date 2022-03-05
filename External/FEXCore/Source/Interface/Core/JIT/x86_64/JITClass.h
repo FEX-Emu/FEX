@@ -328,6 +328,7 @@ private:
   DEF_OP(GetRoundingMode);
   DEF_OP(SetRoundingMode);
   DEF_OP(ProcessorID);
+  DEF_OP(RDRAND);
 
   ///< Move ops
   DEF_OP(ExtractElementPair);
