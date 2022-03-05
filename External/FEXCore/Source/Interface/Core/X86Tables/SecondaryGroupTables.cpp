@@ -144,38 +144,38 @@ void InitializeSecondaryGroupTables() {
 
     // AMD documentation is a bit broken for Group 9
     // Claims the entire group has n/a applied for the prefix (Implies that the prefix is ignored)
-    // RDRAND/RDSEED only work with no prefix
+    // RDRAND/RDSEED only work with no prefix (Other than 66h)
     // CMPXCHG8B/16B works with all prefixes
     // Tooling fails to decode CMPXCHG with prefix
     {OPD(TYPE_GROUP_9, PF_NONE, 0), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,   0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_NONE, 1), 1, X86InstInfo{"CMPXCHG16B", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_NONE, 1), 1, X86InstInfo{"CMPXCHG8B",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_NONE, 2), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,   0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_NONE, 3), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,   0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_NONE, 4), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,   0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_NONE, 5), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,   0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_NONE, 6), 1, X86InstInfo{"RDRAND",     TYPE_UNDEC, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_NONE, 7), 1, X86InstInfo{"RDSEED",     TYPE_UNDEC, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_NONE, 6), 1, X86InstInfo{"RDRAND",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_NONE, 7), 1, X86InstInfo{"RDSEED",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
 
     {OPD(TYPE_GROUP_9, PF_F3, 0), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_F3, 1), 1, X86InstInfo{"CMPXCHG16B", TYPE_INVALID, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY,   0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_F3, 1), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 2), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 3), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 4), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 5), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F3, 6), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_F3, 7), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_F3, 7), 1, X86InstInfo{"RDPID",      TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
 
     {OPD(TYPE_GROUP_9, PF_66, 0), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_66, 1), 1, X86InstInfo{"CMPXCHG16B", TYPE_INVALID, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY,   0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_66, 1), 1, X86InstInfo{"CMPXCHG16B", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY, 0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_66, 2), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_66, 3), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_66, 4), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_66, 5), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_66, 6), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_66, 7), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_66, 6), 1, X86InstInfo{"RDRAND",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_66, 7), 1, X86InstInfo{"RDSEED",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
 
     {OPD(TYPE_GROUP_9, PF_F2, 0), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
-    {OPD(TYPE_GROUP_9, PF_F2, 1), 1, X86InstInfo{"CMPXCHG16B", TYPE_INVALID, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY,   0, nullptr}},
+    {OPD(TYPE_GROUP_9, PF_F2, 1), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F2, 2), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F2, 3), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
     {OPD(TYPE_GROUP_9, PF_F2, 4), 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NONE,     0, nullptr}},
