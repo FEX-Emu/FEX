@@ -6,6 +6,7 @@
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>
 #include <array>
@@ -43,8 +44,8 @@ namespace Alloc::OSAllocator {
       // Lower bound is the starting of the range just past the lower 32bits
       constexpr static uintptr_t LOWER_BOUND = 0x1'0000'0000ULL;
 
-      uintptr_t UPPER_BOUND_PAGE = UPPER_BOUND / PAGE_SIZE;
-      constexpr static uintptr_t LOWER_BOUND_PAGE = LOWER_BOUND / PAGE_SIZE;
+      uintptr_t UPPER_BOUND_PAGE = UPPER_BOUND / FHU::FEX_PAGE_SIZE;
+      constexpr static uintptr_t LOWER_BOUND_PAGE = LOWER_BOUND / FHU::FEX_PAGE_SIZE;
 
       struct ReservedVMARegion {
         uintptr_t Base;
@@ -81,19 +82,19 @@ namespace Alloc::OSAllocator {
           // 0x100'0000 Pages
           // 1 bit per page for tracking means 0x20'0000 (Pages / 8) bytes of flex space
           // Which is 2MB of tracking
-          uint64_t NumElements = (Size >> PAGE_SHIFT) * sizeof(uint64_t);
+          uint64_t NumElements = (Size >> FHU::FEX_PAGE_SHIFT) * sizeof(uint64_t);
           return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<uint64_t>::Size(NumElements);
         }
 
         static void InitializeVMARegionUsed(LiveVMARegion *Region, size_t AdditionalSize) {
-          size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(Region->SlabInfo->RegionSize), PAGE_SIZE);
+          size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(Region->SlabInfo->RegionSize), FHU::FEX_PAGE_SIZE);
           size_t SizePlusManagedData = SizeOfLiveRegion + AdditionalSize;
 
           Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
 
-          size_t NumPages = SizePlusManagedData >> PAGE_SHIFT;
+          size_t NumPages = SizePlusManagedData >> FHU::FEX_PAGE_SHIFT;
           // Memset the full tracking to zero to state nothing used
-          Region->UsedPages.MemSet(Region->SlabInfo->RegionSize >> PAGE_SHIFT);
+          Region->UsedPages.MemSet(Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT);
           // Set our reserved pages
           for (size_t i = 0; i < NumPages; ++i) {
             // Set our used pages
@@ -119,7 +120,7 @@ namespace Alloc::OSAllocator {
 
         ReservedRegions->erase(ReservedIterator);
         // mprotect the new region we've allocated
-        size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), PAGE_SIZE);
+        size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), FHU::FEX_PAGE_SIZE);
         size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
         [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
@@ -147,7 +148,7 @@ void OSAllocator_64Bit::DetermineVASize() {
   size_t Bits = FEXCore::Allocator::DetermineVASize();
   uintptr_t Size = 1ULL << Bits;
   UPPER_BOUND = Size;
-  UPPER_BOUND_PAGE = UPPER_BOUND / PAGE_SIZE;
+  UPPER_BOUND_PAGE = UPPER_BOUND / FHU::FEX_PAGE_SIZE;
 }
 
 void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
@@ -160,13 +161,13 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
 
   uint64_t Addr = reinterpret_cast<uint64_t>(addr);
   // Addr must be page aligned
-  if (Addr & ~PAGE_MASK) {
+  if (Addr & ~FHU::FEX_PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
   // If FD is provided then offset must also be page aligned
   if (fd != -1 &&
-      offset & ~PAGE_MASK) {
+      offset & ~FHU::FEX_PAGE_MASK) {
     return reinterpret_cast<void*>(-EINVAL);
   }
 
@@ -176,10 +177,10 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   }
 
   bool Fixed = (flags & MAP_FIXED) || (flags & MAP_FIXED_NOREPLACE);
-  length = FEXCore::AlignUp(length, PAGE_SIZE);
+  length = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE);
 
   uint64_t AddrEnd = Addr + length;
-  size_t NumberOfPages = length / PAGE_SIZE;
+  size_t NumberOfPages = length / FHU::FEX_PAGE_SIZE;
 
   // This needs a mutex to be thread safe
   FHU::ScopedSignalMaskWithMutex lk(AllocationMutex);
@@ -223,14 +224,14 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
 
   auto CheckIfRangeFits = [&AllocatedOffset](LiveVMARegion *Region, uint64_t length, int prot, int flags, int fd, off_t offset, uint64_t StartingPosition = 0) -> std::pair<LiveVMARegion*, void*> {
     uint64_t AllocatedPage{};
-    uint64_t NumberOfPages = length >> PAGE_SHIFT;
+    uint64_t NumberOfPages = length >> FHU::FEX_PAGE_SHIFT;
 
     if (Region->FreeSpace >= length) {
       uint64_t LastAllocation =
         StartingPosition ?
-        (StartingPosition - Region->SlabInfo->Base) >> PAGE_SHIFT
+        (StartingPosition - Region->SlabInfo->Base) >> FHU::FEX_PAGE_SHIFT
         : Region->LastPageAllocation;
-      size_t RegionNumberOfPages = Region->SlabInfo->RegionSize >> PAGE_SHIFT;
+      size_t RegionNumberOfPages = Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT;
 
       // Backward scan
       // We need to do a backward scan first to fill any holes
@@ -298,7 +299,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
       }
 
       if (AllocatedPage) {
-        AllocatedOffset = Region->SlabInfo->Base + AllocatedPage * PAGE_SIZE;
+        AllocatedOffset = Region->SlabInfo->Base + AllocatedPage * FHU::FEX_PAGE_SIZE;
 
         // We need to setup protections for this
         void *MMapResult = ::mmap(reinterpret_cast<void*>(AllocatedOffset),
@@ -388,7 +389,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
     if (!LiveRegion) {
       // Couldn't find a fit in the live regions
       // Allocate a new reserved region
-      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(length), PAGE_SIZE);
+      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(length), FHU::FEX_PAGE_SIZE);
       size_t lengthPlusManagedData = length + lengthOfLiveRegion;
       for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
         if ((*it)->RegionSize >= lengthPlusManagedData) {
@@ -402,7 +403,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   if (LiveRegion) {
     // Mark the pages as used
     uintptr_t RegionBegin = LiveRegion->SlabInfo->Base;
-    uintptr_t MappedBegin = (AllocatedOffset - RegionBegin) >> PAGE_SHIFT;
+    uintptr_t MappedBegin = (AllocatedOffset - RegionBegin) >> FHU::FEX_PAGE_SHIFT;
 
     for (size_t i = 0; i < NumberOfPages; ++i) {
       LiveRegion->UsedPages.Set(MappedBegin + i);
@@ -428,11 +429,11 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
 
   uint64_t Addr = reinterpret_cast<uint64_t>(addr);
 
-  if (Addr & ~PAGE_MASK) {
+  if (Addr & ~FHU::FEX_PAGE_MASK) {
     return -EINVAL;
   }
 
-  if (length & ~PAGE_MASK) {
+  if (length & ~FHU::FEX_PAGE_MASK) {
     return -EINVAL;
   }
 
@@ -443,7 +444,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   // This needs a mutex to be thread safe
   FHU::ScopedSignalMaskWithMutex lk(AllocationMutex);
 
-  length = FEXCore::AlignUp(length, PAGE_SIZE);
+  length = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE);
 
   uintptr_t PtrBegin = reinterpret_cast<uintptr_t>(addr);
   uintptr_t PtrEnd = PtrBegin + length;
@@ -457,8 +458,8 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
       // Live region fully encompasses slab range
 
       uint64_t FreedPages{};
-      uint32_t SlabPageBegin = (PtrBegin - RegionBegin) >> PAGE_SHIFT;
-      uint64_t PagesToFree = length >> PAGE_SHIFT;
+      uint32_t SlabPageBegin = (PtrBegin - RegionBegin) >> FHU::FEX_PAGE_SHIFT;
+      uint64_t PagesToFree = length >> FHU::FEX_PAGE_SHIFT;
 
       for (size_t i = 0; i < PagesToFree; ++i) {
         FreedPages += (*it)->UsedPages.TestAndClear(SlabPageBegin + i) ? 1 : 0;

@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/Utils/BucketList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -62,7 +63,7 @@ namespace {
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
-  constexpr size_t REGISTER_NODES_PER_PAGE = PAGE_SIZE / sizeof(RegisterNode);
+  constexpr size_t REGISTER_NODES_PER_PAGE = FHU::FEX_PAGE_SIZE / sizeof(RegisterNode);
 
   struct RegisterSet {
     std::vector<RegisterClass> Classes;

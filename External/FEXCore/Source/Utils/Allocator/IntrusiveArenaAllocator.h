@@ -4,6 +4,7 @@
 #include "HostAllocator.h"
 
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <bitset>
 #include <cstddef>
@@ -87,9 +88,9 @@ namespace Alloc {
     IntrusiveArenaAllocator(void* Ptr, size_t _Size)
       : Begin {reinterpret_cast<uintptr_t>(Ptr)}
       , Size {_Size} {
-      uint64_t NumberOfPages = _Size / PAGE_SIZE;
+      uint64_t NumberOfPages = _Size / FHU::FEX_PAGE_SIZE;
       uint64_t UsedBits = FEXCore::AlignUp(sizeof(IntrusiveArenaAllocator) +
-        Size / PAGE_SIZE / 8, PAGE_SIZE);
+        Size / FHU::FEX_PAGE_SIZE / 8, FHU::FEX_PAGE_SIZE);
       for (size_t i = 0; i < UsedBits; ++i) {
         UsedPages.Set(i);
       }
@@ -117,7 +118,7 @@ namespace Alloc {
     void *do_allocate(std::size_t bytes, std::size_t alignment) override {
       std::scoped_lock<std::mutex> lk{AllocationMutex};
 
-      size_t NumberPages = FEXCore::AlignUp(bytes, PAGE_SIZE) / PAGE_SIZE;
+      size_t NumberPages = FEXCore::AlignUp(bytes, FHU::FEX_PAGE_SIZE) / FHU::FEX_PAGE_SIZE;
 
       uintptr_t AllocatedOffset{};
 
@@ -161,7 +162,7 @@ namespace Alloc {
         LastAllocatedPageOffset = AllocatedOffset + NumberPages;
 
         // Now convert this base page to a pointer and return it
-        return reinterpret_cast<void*>(Begin + AllocatedOffset * PAGE_SIZE);
+        return reinterpret_cast<void*>(Begin + AllocatedOffset * FHU::FEX_PAGE_SIZE);
       }
 
       return nullptr;
@@ -170,8 +171,8 @@ namespace Alloc {
     void do_deallocate(void* p, std::size_t bytes, std::size_t alignment) override {
       std::scoped_lock<std::mutex> lk{AllocationMutex};
 
-      uintptr_t PageOffset = (reinterpret_cast<uintptr_t>(p) - Begin) / PAGE_SIZE;
-      size_t NumPages = FEXCore::AlignUp(bytes, PAGE_SIZE) / PAGE_SIZE;
+      uintptr_t PageOffset = (reinterpret_cast<uintptr_t>(p) - Begin) / FHU::FEX_PAGE_SIZE;
+      size_t NumPages = FEXCore::AlignUp(bytes, FHU::FEX_PAGE_SIZE) / FHU::FEX_PAGE_SIZE;
 
       // Walk the allocation list and deallocate
       uint64_t FreedPages{};
