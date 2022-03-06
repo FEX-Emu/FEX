@@ -21,6 +21,7 @@ option(ENABLE_COMPILE_TIME_TRACE "Enables time trace compile option" FALSE)
 option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
 option(ENABLE_INTERPRETER "Enables FEX's Interpreter" FALSE)
 option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
+option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
 
 set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
 set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
@@ -115,7 +116,7 @@ if (NOT ENABLE_OFFLINE_TELEMETRY)
   add_definitions(-DFEX_DISABLE_TELEMETRY=1)
 endif()
 
-if(DEFINED ENV{TERMUX_VERSION})
+if(DEFINED ENV{TERMUX_VERSION} OR ENABLE_TERMUX_BUILD)
   add_definitions(-DTERMUX_BUILD=1)
   set(TERMUX_BUILD 1)
   # Termux doesn't support Jemalloc due to bad interactions between emutls, jemalloc, and scudo
