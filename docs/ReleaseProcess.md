@@ -60,6 +60,14 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
 * Requires PPA GPG key signing access
 * Wait the 20-30 minutes for Ubuntu PPA to build and publish the binaries
 
+## Termux package update steps
+* Clone https://github.com/termux/termux-packages
+* Update the package script with thew new version tag (https://github.com/termux/termux-packages/blob/master/packages/fex/build.sh)
+* ***!!! Test the build locally on an Android device !!!***
+  * Check the wiki for a command to run in the local changed repo on-device
+  * https://github.com/termux/termux-packages/wiki/Building-packages#how-to-build-package
+* Submit a PR to upstream on github to get it picked up
+
 ## @FEX_Emu twitter account steps
 * Requires @FEX_Emu twitter account access
 * Create a tweet with some small blurb/sizzle text about some relevant changes in this tagged version
