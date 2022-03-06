@@ -22,6 +22,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <fmt/format.h>
 
@@ -396,14 +397,14 @@ namespace FEX::HarnessHelper {
       };
 
       if (LimitedSize) {
-        DoMMap(0xe000'0000, PAGE_SIZE * 10);
+        DoMMap(0xe000'0000, FHU::FEX_PAGE_SIZE * 10);
 
         // SIB8
         // We test [-128, -126] (Bottom)
         // We test [-8, 8] (Middle)
         // We test [120, 127] (Top)
         // Can fit in two pages
-        DoMMap(0xe800'0000 - PAGE_SIZE, PAGE_SIZE * 2);
+        DoMMap(0xe800'0000 - FHU::FEX_PAGE_SIZE, FHU::FEX_PAGE_SIZE * 2);
       }
       else {
         // This is scratch memory location and SIB8 location
@@ -413,7 +414,7 @@ namespace FEX::HarnessHelper {
       }
 
       // Map in the memory region for the test file
-      size_t Length = FEXCore::AlignUp(RawFile.size(), PAGE_SIZE);
+      size_t Length = FEXCore::AlignUp(RawFile.size(), FHU::FEX_PAGE_SIZE);
       Code_start_page = reinterpret_cast<uint64_t>(DoMMap(Code_start_page, Length));
       mprotect(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC);
       RIP = Code_start_page;
@@ -446,7 +447,7 @@ namespace FEX::HarnessHelper {
     bool Is64BitMode() const { return Config.Is64BitMode(); }
 
   private:
-    constexpr static uint64_t STACK_SIZE = PAGE_SIZE;
+    constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;
     constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
     // Zero is special case to know when we are done
     uint64_t Code_start_page = 0x1'0000;

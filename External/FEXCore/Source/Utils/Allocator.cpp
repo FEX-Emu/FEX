@@ -3,6 +3,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <array>
 #include <sys/mman.h>
@@ -110,10 +111,10 @@ namespace FEXCore::Allocator {
         for (int i = 0; i < 64; ++i) {
           // Try grabbing a some of the top pages of the range
           // x86 allocates some high pages in the top end
-          void *Ptr = ::mmap(reinterpret_cast<void*>(Size - PAGE_SIZE * i), PAGE_SIZE, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+          void *Ptr = ::mmap(reinterpret_cast<void*>(Size - FHU::FEX_PAGE_SIZE * i), FHU::FEX_PAGE_SIZE, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
           if (Ptr != (void*)~0ULL) {
-            ::munmap(Ptr, PAGE_SIZE);
-            if (Ptr == (void*)(Size - PAGE_SIZE * i)) {
+            ::munmap(Ptr, FHU::FEX_PAGE_SIZE);
+            if (Ptr == (void*)(Size - FHU::FEX_PAGE_SIZE * i)) {
               return true;
             }
           }
