@@ -229,7 +229,7 @@
                  "The second GPR pair element is a bool if the number is valid",
                  "RNG hardware is allowed to fail early and return. Software must always check this"
                 ],
-        "DestSize": "8",
+        "DestSize": "16",
         "NumElements": "2"
       }
     },
@@ -287,7 +287,7 @@
         "Desc": ["Calls in to the CPUID handler function to return emulated CPUID",
                  "Returns a 128bit GPR pair that fits emulated EAX, EBX, EDX, ECX respectively"
                 ],
-        "DestSize": "8",
+        "DestSize": "16",
         "NumElements": "2"
       },
       "GuestCallDirect u64:$RIP, u64:$NextRIP": {
@@ -304,7 +304,7 @@
 
       "GPR = ExtractElementPair GPRPair:$Pair, u8:$Element": {
         "Desc": ["Extracts a register for the register pair"],
-        "DestSize": "GetOpSize(_Pair)"
+        "DestSize": "GetOpSize(_Pair) >> 1"
       },
 
       "GPRPair = CreateElementPair GPR:$Lower, GPR:$Upper": {
@@ -312,7 +312,7 @@
                  "ssa0 is the lower incoming register",
                  "ssa1 is the upper incoming register"
                 ],
-        "DestSize": "GetOpSize(_Lower)",
+        "DestSize": "GetOpSize(_Lower) * 2",
         "NumElements": "2"
       },
       "SSA = Phi SSA:$PhiBegin, SSA:$PhiEnd, RegisterClass:$Class": {
@@ -535,7 +535,11 @@
                 ],
         "HasDest": true,
         "DestSize": "GetOpSize(_Expected)",
-        "NumElements": "2"
+        "NumElements": "2",
+        "EmitValidation": [
+          "(GetOpElementSize(_Expected) == 4 && GetOpSize(_Expected) == 8) || GetOpElementSize(_Expected) == 8",
+          "(GetOpElementSize(_Expected) == 8 && GetOpSize(_Expected) == 16) || GetOpElementSize(_Expected) == 4"
+        ]
       },
       "GPR = AtomicAdd u8:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
@@ -655,7 +659,7 @@
 
       "GPRPair = TruncElementPair GPRPair:$Pair, u8:#ByteSize": {
         "Desc": "Truncates each element of a pair to the destination size",
-        "DestSize": "ByteSize",
+        "DestSize": "ByteSize * 2",
         "NumElements": "2"
       },
       "GPR = CycleCounter": {
