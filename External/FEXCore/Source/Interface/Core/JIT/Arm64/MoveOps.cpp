@@ -37,7 +37,7 @@ DEF_OP(CreateElementPair) {
   aarch64::Register RegSecond;
   aarch64::Register RegTmp;
 
-  switch (Op->Header.Size) {
+  switch (IROp->ElementSize) {
     case 4: {
       Dst = GetSrcPair<RA_32>(Node);
       RegFirst = GetReg<RA_32>(Op->Header.Args[0].ID());

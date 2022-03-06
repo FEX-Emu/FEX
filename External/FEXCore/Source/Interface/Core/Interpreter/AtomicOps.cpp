@@ -313,10 +313,9 @@ uint64_t AtomicCompareAndSwap(uint64_t expected, uint64_t desired, uint64_t *add
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
-  uint8_t OpSize = IROp->Size;
 
   // Size is the size of each pair element
-  switch (OpSize) {
+  switch (IROp->ElementSize) {
     case 4: {
       GD = AtomicCompareAndSwap(
         *GetSrc<uint64_t*>(Data->SSAData, Op->Expected),
@@ -336,7 +335,7 @@ DEF_OP(CASPair) {
       memcpy(GDP, Result ? &Src1 : &Expected, 16);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown CAS size: {}", OpSize); break;
+    default: LOGMAN_MSG_A_FMT("Unknown CAS size: {}", IROp->ElementSize); break;
   }
 }
 
