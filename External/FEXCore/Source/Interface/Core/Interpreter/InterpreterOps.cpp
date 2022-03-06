@@ -175,6 +175,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(SETROUNDINGMODE,        SetRoundingMode);
   REGISTER_OP(INVALIDATEFLAGS,        NoOp);
   REGISTER_OP(PROCESSORID,            ProcessorID);
+  REGISTER_OP(RDRAND,                 RDRAND);
 
   // Move ops
   REGISTER_OP(EXTRACTELEMENTPAIR,     ExtractElementPair);

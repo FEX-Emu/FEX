@@ -14,6 +14,7 @@ $end_info$
 #ifdef _M_X86_64
 #include <xmmintrin.h>
 #endif
+#include <sys/random.h>
 
 namespace FEXCore::CPU {
 [[noreturn]]
@@ -148,6 +149,14 @@ DEF_OP(ProcessorID) {
   GD = (CPUNode << 12) | CPU;
 }
 
+DEF_OP(RDRAND) {
+  // We are ignoring Op->GetReseeded in the interpreter
+  uint64_t *DstPtr = GetDest<uint64_t*>(Data->SSAData, Node);
+  ssize_t Result = ::getrandom(&DstPtr[0], 8, 0);
+
+  // Second result is if we managed to read a valid random number or not
+  DstPtr[1] = Result == 8 ? 1 : 0;
+}
 #undef DEF_OP
 
 } // namespace FEXCore::CPU

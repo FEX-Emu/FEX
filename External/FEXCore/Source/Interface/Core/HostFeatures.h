@@ -19,6 +19,7 @@ class HostFeatures final {
     bool SupportsCLZERO{};
     bool SupportsAtomics{};
     bool SupportsRCPC{};
+    bool SupportsRAND{};
 
     // Float exception behaviour
     bool SupportsFlushInputsToZero{};
