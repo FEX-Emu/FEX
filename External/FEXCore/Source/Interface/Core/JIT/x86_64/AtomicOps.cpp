@@ -18,7 +18,6 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CAS>();
-  uint8_t OpSize = IROp->Size;
 
   // DataSrc = *Src1
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
@@ -44,7 +43,7 @@ DEF_OP(CASPair) {
 
   lock();
 
-  switch (OpSize) {
+  switch (IROp->ElementSize) {
     case 4: {
       cmpxchg8b(dword [MemReg]);
       // EDX:EAX now contains the result
@@ -59,7 +58,7 @@ DEF_OP(CASPair) {
       mov(Dst.second, rdx);
     break;
     }
-    default: LOGMAN_MSG_A_FMT("Unsupported: {}", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported: {}", IROp->ElementSize);
   }
 }
 

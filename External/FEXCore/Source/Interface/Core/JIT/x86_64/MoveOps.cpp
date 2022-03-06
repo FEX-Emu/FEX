@@ -42,7 +42,7 @@ DEF_OP(CreateElementPair) {
   Xbyak::Reg RegSecond;
   Xbyak::Reg RegTmp;
 
-  switch (Op->Header.Size) {
+  switch (IROp->ElementSize) {
     case 4: {
       Dst = GetSrcPair<RA_32>(Node);
       RegFirst = GetSrc<RA_32>(Op->Header.Args[0].ID());

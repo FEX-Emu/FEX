@@ -26,8 +26,8 @@ DEF_OP(CreateElementPair) {
 
   uint8_t *Dst = GetDest<uint8_t*>(Data->SSAData, Node);
 
-  memcpy(Dst, Src_Lower, Op->Header.Size);
-  memcpy(Dst + Op->Header.Size, Src_Upper, Op->Header.Size);
+  memcpy(Dst, Src_Lower, IROp->ElementSize);
+  memcpy(Dst + IROp->ElementSize, Src_Upper, IROp->ElementSize);
 }
 
 DEF_OP(Mov) {

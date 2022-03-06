@@ -12,7 +12,6 @@ using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
-  uint8_t OpSize = IROp->Size;
   // Size is the size of each pair element
   auto Dst = GetSrcPair<RA_64>(Node);
   auto Expected = GetSrcPair<RA_64>(Op->Expected.ID());
@@ -23,7 +22,7 @@ DEF_OP(CASPair) {
     mov(TMP3, Expected.first);
     mov(TMP4, Expected.second);
 
-    switch (OpSize) {
+    switch (IROp->ElementSize) {
     case 4:
       caspal(TMP3.W(), TMP4.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
       mov(Dst.first.W(), TMP3.W());
@@ -34,11 +33,11 @@ DEF_OP(CASPair) {
       mov(Dst.first, TMP3);
       mov(Dst.second, TMP4);
       break;
-    default: LOGMAN_MSG_A_FMT("Unsupported: {}", OpSize);
+    default: LOGMAN_MSG_A_FMT("Unsupported: {}", IROp->ElementSize);
     }
   }
   else {
-    switch (OpSize) {
+    switch (IROp->ElementSize) {
       case 4: {
         aarch64::Label LoopTop;
         aarch64::Label LoopNotExpected;
@@ -91,7 +90,7 @@ DEF_OP(CASPair) {
         bind(&LoopExpected);
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unsupported: {}", OpSize);
+      default: LOGMAN_MSG_A_FMT("Unsupported: {}", IROp->ElementSize);
     }
   }
 }
