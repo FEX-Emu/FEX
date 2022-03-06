@@ -33,10 +33,6 @@ DEF_OP(GuestCallIndirect) {
   LogMan::Msg::DFmt("Unimplemented");
 }
 
-DEF_OP(GuestReturn) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
-
 DEF_OP(SignalReturn) {
   SignalReturn(Data->State);
 }

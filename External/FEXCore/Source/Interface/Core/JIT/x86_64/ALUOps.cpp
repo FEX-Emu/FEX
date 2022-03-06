@@ -24,7 +24,7 @@ namespace FEXCore::CPU {
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
 
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 4: {
       auto Dst = GetSrcPair<RA_32>(Node);
       auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
@@ -32,7 +32,7 @@ DEF_OP(TruncElementPair) {
       mov(Dst.second, Src.second);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", Op->Size); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size); break;
   }
 }
 
@@ -1150,19 +1150,19 @@ DEF_OP(VExtractToGPR) {
 
   switch (Op->Header.ElementSize) {
     case 1: {
-      pextrb(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+      pextrb(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
     break;
     }
     case 2: {
-      pextrw(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+      pextrw(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
     break;
     }
     case 4: {
-      pextrd(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+      pextrd(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
     break;
     }
     case 8: {
-      pextrq(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Idx);
+      pextrq(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;

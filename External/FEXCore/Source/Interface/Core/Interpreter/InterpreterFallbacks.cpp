@@ -135,7 +135,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
     case IR::OP_F80CVTTO: {
       auto Op = IROp->C<IR::IROp_F80CVTTo>();
 
-      switch (Op->Size) {
+      switch (Op->SrcSize) {
         case 4: {
           *Info = GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle4, Core::OPINDEX_F80CVTTO_4);
           return true;
@@ -218,7 +218,7 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Inf
     case IR::OP_F80CVTTOINT: {
       auto Op = IROp->C<IR::IROp_F80CVTToInt>();
 
-      switch (Op->Size) {
+      switch (Op->SrcSize) {
         case 2: {
           *Info = GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle2, Core::OPINDEX_F80CVTTOINT_2);
           return true;

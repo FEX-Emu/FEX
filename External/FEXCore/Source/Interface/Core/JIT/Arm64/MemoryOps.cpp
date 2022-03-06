@@ -698,29 +698,29 @@ DEF_OP(LoadMemTSO) {
 DEF_OP(StoreMem) {
   auto Op = IROp->C<IR::IROp_StoreMem>();
 
-  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
   auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (IROp->Size) {
       case 1:
-        strb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        strb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
         break;
       case 2:
-        strh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        strh(GetReg<RA_64>(Op->Value.ID()), MemSrc);
         break;
       case 4:
-        str(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+        str(GetReg<RA_32>(Op->Value.ID()), MemSrc);
         break;
       case 8:
-        str(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+        str(GetReg<RA_64>(Op->Value.ID()), MemSrc);
         break;
       default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
     }
   }
   else {
-    auto Src = GetSrc(Op->Header.Args[1].ID());
+    auto Src = GetSrc(Op->Value.ID());
     switch (IROp->Size) {
       case 1:
         str(Src.B(), MemSrc);
@@ -744,7 +744,7 @@ DEF_OP(StoreMem) {
 
 DEF_OP(StoreMemTSO) {
   auto Op = IROp->C<IR::IROp_StoreMemTSO>();
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Addr.ID()));
 
   if (!Op->Offset.IsInvalid()) {
     LOGMAN_MSG_A_FMT("StoreMemTSO: No offset allowed");
@@ -753,19 +753,19 @@ DEF_OP(StoreMemTSO) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
-      stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+      stlrb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
     }
     else {
       nop();
       switch (IROp->Size) {
         case 2:
-          stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          stlrh(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
         case 4:
-          stlr(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+          stlr(GetReg<RA_32>(Op->Value.ID()), MemSrc);
           break;
         case 8:
-          stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          stlr(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
         default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
       }
@@ -774,7 +774,7 @@ DEF_OP(StoreMemTSO) {
   }
   else {
     dmb(InnerShareable, BarrierAll);
-    auto Src = GetSrc(Op->Header.Args[1].ID());
+    auto Src = GetSrc(Op->Value.ID());
     switch (IROp->Size) {
       case 1:
         str(Src.B(), MemSrc);
@@ -800,7 +800,7 @@ DEF_OP(StoreMemTSO) {
 DEF_OP(ParanoidLoadMemTSO) {
   auto Op = IROp->C<IR::IROp_LoadMemTSO>();
 
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Addr.ID()));
 
   if (!Op->Offset.IsInvalid()) {
     LOGMAN_MSG_A_FMT("ParanoidLoadMemTSO: No offset allowed");
@@ -857,7 +857,7 @@ DEF_OP(ParanoidLoadMemTSO) {
 
 DEF_OP(ParanoidStoreMemTSO) {
   auto Op = IROp->C<IR::IROp_StoreMemTSO>();
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Addr.ID()));
 
   if (!Op->Offset.IsInvalid()) {
     LOGMAN_MSG_A_FMT("ParanoidStoreMemTSO: No offset allowed");
@@ -866,25 +866,25 @@ DEF_OP(ParanoidStoreMemTSO) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
-      stlrb(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+      stlrb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
     }
     else {
       switch (IROp->Size) {
         case 2:
-          stlrh(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          stlrh(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
         case 4:
-          stlr(GetReg<RA_32>(Op->Header.Args[1].ID()), MemSrc);
+          stlr(GetReg<RA_32>(Op->Value.ID()), MemSrc);
           break;
         case 8:
-          stlr(GetReg<RA_64>(Op->Header.Args[1].ID()), MemSrc);
+          stlr(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
         default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", IROp->Size);
       }
     }
   }
   else {
-    auto Src = GetSrc(Op->Header.Args[1].ID());
+    auto Src = GetSrc(Op->Value.ID());
     if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       mov(TMP1.W(), Src.V16B(), 0);

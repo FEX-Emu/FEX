@@ -16,19 +16,19 @@ DEF_OP(VInsGPR) {
   mov(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
   switch (Op->Header.ElementSize) {
     case 1: {
-      ins(GetDst(Node).V16B(), Op->Index, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V16B(), Op->DestIdx, GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 2: {
-      ins(GetDst(Node).V8H(), Op->Index, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V8H(), Op->DestIdx, GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 4: {
-      ins(GetDst(Node).V4S(), Op->Index, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V4S(), Op->DestIdx, GetReg<RA_32>(Op->Header.Args[1].ID()));
     break;
     }
     case 8: {
-      ins(GetDst(Node).V2D(), Op->Index, GetReg<RA_64>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V2D(), Op->DestIdx, GetReg<RA_64>(Op->Header.Args[1].ID()));
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;

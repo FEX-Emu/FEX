@@ -23,27 +23,30 @@
     (%begin i0) BeginBlock %ssa2
 ; Clear registers
     %AddrB i64 = Constant #0x1000010
-    %ClearVal i128 = LoadMem %AddrB i64, %Invalid, #0x10, FPR, SXTX, #0x1, #0x10
-    (%Clear1 i128) StoreContext %ClearVal i128, #0x90, FPR
-    (%Clear2 i128) StoreContext %ClearVal i128, #0xa0, FPR
-    (%Clear3 i128) StoreContext %ClearVal i128, #0xb0, FPR
-    (%Clear4 i128) StoreContext %ClearVal i128, #0xc0, FPR
+
+    %ClearVal i128 = LoadMem FPR, #0x10, %AddrB i64, %Invalid, #0x10, SXTX, #1
+    (%Clear1 i128) StoreContext #0x10, FPR, %ClearVal i128, #0x90
+    (%Clear2 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xa0
+    (%Clear3 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xb0
+    (%Clear4 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xc0
 
     %AddrA i64 = Constant #0x1000000
-    %MemValueA i128 = LoadMem %AddrA i64, %Invalid, #0x10, FPR, SXTX, #0x1, #0x10
 
-    (%Store1 i64) StoreContext %MemValueA i128, #0x90, FPR
-    (%Store2 i32) StoreContext %MemValueA i128, #0xa0, FPR
-    (%Store3 i16) StoreContext %MemValueA i128, #0xb0, FPR
-    (%Store4 i8)  StoreContext %MemValueA i128, #0xc0, FPR
-    %Truncated64 i64 = LoadContext #0x90, FPR
-    %Truncated32 i32 = LoadContext #0xa0, FPR
-    %Truncated16 i16 = LoadContext #0xb0, FPR
-    %Truncated8  i8 = LoadContext #0xc0, FPR
-    (%Store5 i128) StoreContext %Truncated64 i128, #0xd0, FPR
-    (%Store6 i128) StoreContext %Truncated32 i128, #0xe0, FPR
-    (%Store7 i128) StoreContext %Truncated16 i128, #0xf0, FPR
-    (%Store8 i128)  StoreContext %Truncated8 i128, #0x100, FPR
-    (%Store9 i128)  StoreContext %MemValueA i128, #0x110, FPR
+    %MemValueA i128 = LoadMem FPR, #0x10, %AddrA i64, %Invalid, #0x10, SXTX, #1
+    (%Store1 i128) StoreContext #0x10, FPR, %MemValueA i128, #0x90
+    (%Store2 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xa0
+    (%Store3 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xb0
+    (%Store4 i8)   StoreContext  #0x1, FPR, %MemValueA i128, #0xc0
+
+    %Truncated64 i64 = LoadContext #0x8, FPR, #0x90
+    %Truncated32 i32 = LoadContext #0x4, FPR, #0xa0
+    %Truncated16 i16 = LoadContext #0x2, FPR, #0xb0
+    %Truncated8  i8  = LoadContext #0x1, FPR, #0xc0
+
+    (%Store5 i128) StoreContext #0x10, FPR, %Truncated64 i128, #0xd0
+    (%Store6 i128) StoreContext #0x10, FPR, %Truncated32 i128, #0xe0
+    (%Store7 i128) StoreContext #0x10, FPR, %Truncated16 i128, #0xf0
+    (%Store8 i128) StoreContext #0x10, FPR, %Truncated8 i128, #0x100
+    (%Store9 i128) StoreContext #0x10, FPR, %MemValueA i128, #0x110
     (%ssa7 i0) Break Halt, #4
     (%end i0) EndBlock %ssa2

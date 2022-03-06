@@ -42,14 +42,6 @@ DEF_OP(VectorImm) {
   }
 }
 
-DEF_OP(CreateVector2) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
-}
-
-DEF_OP(CreateVector4) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
-}
-
 DEF_OP(SplatVector2) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
   uint8_t OpSize = IROp->Size;
@@ -1758,8 +1750,7 @@ DEF_OP(VInsScalarElement) {
 
 DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
-  uint8_t OpSize = IROp->Size;
-  switch (OpSize) {
+  switch (Op->Header.Size) {
     case 1:
       mov(GetDst(Node).B(), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
     break;
@@ -1772,7 +1763,7 @@ DEF_OP(VExtractElement) {
     case 8:
       mov(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Index);
     break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled VExtractElement element size: {}", OpSize);
+    default:  LOGMAN_MSG_A_FMT("Unhandled VExtractElement element size: {}", Op->Header.Size);
   }
 }
 
@@ -2339,8 +2330,6 @@ void Arm64JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(VECTORIMM,         VectorImm);
-  REGISTER_OP(CREATEVECTOR2,     CreateVector2);
-  REGISTER_OP(CREATEVECTOR4,     CreateVector4);
   REGISTER_OP(SPLATVECTOR2,      SplatVector2);
   REGISTER_OP(SPLATVECTOR4,      SplatVector4);
   REGISTER_OP(VMOV,              VMov);

@@ -18,7 +18,7 @@ namespace FEXCore::CPU {
 DEF_OP(TruncElementPair) {
   auto Op = IROp->C<IR::IROp_TruncElementPair>();
 
-  switch (Op->Size) {
+  switch (IROp->Size) {
     case 4: {
       uint64_t *Src = GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]);
       uint64_t Result{};
@@ -27,7 +27,7 @@ DEF_OP(TruncElementPair) {
       GD = Result;
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", Op->Size); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size); break;
   }
 }
 
@@ -900,7 +900,7 @@ DEF_OP(VExtractToGPR) {
 
   if (SourceSize == 16) {
     __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Idx * 8;
+    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
     if (Op->Header.ElementSize == 8)
       SourceMask = ~0ULL;
 
@@ -911,7 +911,7 @@ DEF_OP(VExtractToGPR) {
   }
   else {
     uint64_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Idx * 8;
+    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
     if (Op->Header.ElementSize == 8)
       SourceMask = ~0ULL;
 

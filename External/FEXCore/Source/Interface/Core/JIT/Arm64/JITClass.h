@@ -277,7 +277,6 @@ private:
   ///< Branch ops
   DEF_OP(GuestCallDirect);
   DEF_OP(GuestCallIndirect);
-  DEF_OP(GuestReturn);
   DEF_OP(SignalReturn);
   DEF_OP(CallbackReturn);
   DEF_OP(ExitFunction);
@@ -345,8 +344,6 @@ private:
   ///< Vector ops
   DEF_OP(VectorZero);
   DEF_OP(VectorImm);
-  DEF_OP(CreateVector2);
-  DEF_OP(CreateVector4);
   DEF_OP(SplatVector2);
   DEF_OP(SplatVector4);
   DEF_OP(VMov);

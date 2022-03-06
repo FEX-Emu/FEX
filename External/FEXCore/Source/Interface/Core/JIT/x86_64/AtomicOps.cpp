@@ -20,18 +20,15 @@ DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CAS>();
   uint8_t OpSize = IROp->Size;
 
-  // Args[0]: Desired
-  // Args[1]: Expected
-  // Args[2]: Pointer
   // DataSrc = *Src1
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
   //OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
   auto Dst = GetSrcPair<RA_64>(Node);
-  auto Expected = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
-  auto Desired = GetSrcPair<RA_64>(Op->Header.Args[1].ID());
-  auto MemSrc = GetSrc<RA_64>(Op->Header.Args[2].ID());
+  auto Expected = GetSrcPair<RA_64>(Op->Expected.ID());
+  auto Desired = GetSrcPair<RA_64>(Op->Desired.ID());
+  auto MemSrc = GetSrc<RA_64>(Op->Addr.ID());
 
   Xbyak::Reg MemReg = MemSrc;
 
@@ -70,18 +67,15 @@ DEF_OP(CAS) {
   auto Op = IROp->C<IR::IROp_CAS>();
   uint8_t OpSize = IROp->Size;
 
-  // Args[0]: Desired
-  // Args[1]: Expected
-  // Args[2]: Pointer
   // DataSrc = *Src1
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
   //OrderedNode *CASResult = _CAS(Src3, Src2, Src1);
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[2].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
 
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Expected.ID()));
 
   // RCX now contains pointer
   // RAX contains our expected value
@@ -90,23 +84,23 @@ DEF_OP(CAS) {
   lock();
   switch (OpSize) {
   case 1: {
-    cmpxchg(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+    cmpxchg(byte [MemReg], GetSrc<RA_8>(Op->Desired.ID()));
     movzx(GetDst<RA_64>(Node), al);
   break;
   }
   case 2: {
-    cmpxchg(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+    cmpxchg(word [MemReg], GetSrc<RA_16>(Op->Desired.ID()));
     movzx(GetDst<RA_64>(Node), ax);
   break;
   }
   case 4: {
-    cmpxchg(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    cmpxchg(dword [MemReg], GetSrc<RA_32>(Op->Desired.ID()));
     // RAX now contains the result
     mov (GetDst<RA_64>(Node), eax);
   break;
   }
   case 8: {
-    cmpxchg(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    cmpxchg(qword [MemReg], GetSrc<RA_64>(Op->Desired.ID()));
     // RAX now contains the result
     mov (GetDst<RA_64>(Node), rax);
   break;
@@ -118,21 +112,21 @@ DEF_OP(CAS) {
 DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
 
   lock();
   switch (IROp->Size) {
     case 1:
-      add(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      add(byte [MemReg], GetSrc<RA_8>(Op->Value.ID()));
       break;
     case 2:
-      add(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      add(word [MemReg], GetSrc<RA_16>(Op->Value.ID()));
       break;
     case 4:
-      add(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      add(dword [MemReg], GetSrc<RA_32>(Op->Value.ID()));
       break;
     case 8:
-      add(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      add(qword [MemReg], GetSrc<RA_64>(Op->Value.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
@@ -141,20 +135,20 @@ DEF_OP(AtomicAdd) {
 DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   lock();
   switch (IROp->Size) {
     case 1:
-      sub(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      sub(byte [MemReg], GetSrc<RA_8>(Op->Value.ID()));
       break;
     case 2:
-      sub(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      sub(word [MemReg], GetSrc<RA_16>(Op->Value.ID()));
       break;
     case 4:
-      sub(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      sub(dword [MemReg], GetSrc<RA_32>(Op->Value.ID()));
       break;
     case 8:
-      sub(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      sub(qword [MemReg], GetSrc<RA_64>(Op->Value.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
@@ -163,20 +157,20 @@ DEF_OP(AtomicSub) {
 DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   lock();
   switch (IROp->Size) {
     case 1:
-      and_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      and_(byte [MemReg], GetSrc<RA_8>(Op->Value.ID()));
       break;
     case 2:
-      and_(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      and_(word [MemReg], GetSrc<RA_16>(Op->Value.ID()));
       break;
     case 4:
-      and_(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      and_(dword [MemReg], GetSrc<RA_32>(Op->Value.ID()));
       break;
     case 8:
-      and_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      and_(qword [MemReg], GetSrc<RA_64>(Op->Value.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
@@ -185,20 +179,20 @@ DEF_OP(AtomicAnd) {
 DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   lock();
   switch (IROp->Size) {
     case 1:
-      or_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      or_(byte [MemReg], GetSrc<RA_8>(Op->Value.ID()));
       break;
     case 2:
-      or_(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      or_(word [MemReg], GetSrc<RA_16>(Op->Value.ID()));
       break;
     case 4:
-      or_(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      or_(dword [MemReg], GetSrc<RA_32>(Op->Value.ID()));
       break;
     case 8:
-      or_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      or_(qword [MemReg], GetSrc<RA_64>(Op->Value.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
@@ -207,20 +201,20 @@ DEF_OP(AtomicOr) {
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   lock();
   switch (IROp->Size) {
     case 1:
-      xor_(byte [MemReg], GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      xor_(byte [MemReg], GetSrc<RA_8>(Op->Value.ID()));
       break;
     case 2:
-      xor_(word [MemReg], GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      xor_(word [MemReg], GetSrc<RA_16>(Op->Value.ID()));
       break;
     case 4:
-      xor_(dword [MemReg], GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      xor_(dword [MemReg], GetSrc<RA_32>(Op->Value.ID()));
       break;
     case 8:
-      xor_(qword [MemReg], GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      xor_(qword [MemReg], GetSrc<RA_64>(Op->Value.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled AtomicAdd size: {}", IROp->Size);
   }
@@ -230,26 +224,26 @@ DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
 
   Xbyak::Reg MemReg = rax;
-  mov(MemReg, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(MemReg, GetSrc<RA_64>(Op->Addr.ID()));
 
   switch (IROp->Size) {
     case 1:
-      movzx(GetDst<RA_64>(Node), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      movzx(GetDst<RA_64>(Node), GetSrc<RA_8>(Op->Value.ID()));
       lock();
       xchg(byte [MemReg], GetDst<RA_8>(Node));
       break;
     case 2:
-      movzx(GetDst<RA_64>(Node), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      movzx(GetDst<RA_64>(Node), GetSrc<RA_16>(Op->Value.ID()));
       lock();
       xchg(word [MemReg], GetDst<RA_16>(Node));
       break;
     case 4:
-      mov(GetDst<RA_64>(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      mov(GetDst<RA_64>(Node), GetSrc<RA_32>(Op->Value.ID()));
       lock();
       xchg(dword [MemReg], GetDst<RA_32>(Node));
       break;
     case 8:
-      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Value.ID()));
       lock();
       xchg(qword [MemReg], GetDst<RA_64>(Node));
       break;
@@ -260,28 +254,28 @@ DEF_OP(AtomicSwap) {
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   switch (IROp->Size) {
     case 1:
-      movzx(rcx, GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      movzx(rcx, GetSrc<RA_8>(Op->Value.ID()));
       lock();
       xadd(byte [MemReg], cl);
       movzx(GetDst<RA_32>(Node), cl);
       break;
     case 2:
-      movzx(rcx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      movzx(rcx, GetSrc<RA_16>(Op->Value.ID()));
       lock();
       xadd(word [MemReg], cx);
       movzx(GetDst<RA_32>(Node), cx);
       break;
     case 4:
-      mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      mov(ecx, GetSrc<RA_32>(Op->Value.ID()));
       lock();
       xadd(dword [MemReg], ecx);
       mov(GetDst<RA_64>(Node), ecx);
       break;
     case 8:
-      mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      mov(rcx, GetSrc<RA_64>(Op->Value.ID()));
       lock();
       xadd(qword [MemReg], rcx);
       mov(GetDst<RA_64>(Node), rcx);
@@ -293,31 +287,31 @@ DEF_OP(AtomicFetchAdd) {
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   switch (IROp->Size) {
     case 1:
-      mov(cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      mov(cl, GetSrc<RA_8>(Op->Value.ID()));
       neg(cl);
       lock();
       xadd(byte [MemReg], cl);
       movzx(GetDst<RA_32>(Node), cl);
       break;
     case 2:
-      mov(cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      mov(cx, GetSrc<RA_16>(Op->Value.ID()));
       neg(cx);
       lock();
       xadd(word [MemReg], cx);
       movzx(GetDst<RA_32>(Node), cx);
       break;
     case 4:
-      mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      mov(ecx, GetSrc<RA_32>(Op->Value.ID()));
       neg(ecx);
       lock();
       xadd(dword [MemReg], ecx);
       mov(GetDst<RA_32>(Node), ecx);
       break;
     case 8:
-      mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      mov(rcx, GetSrc<RA_64>(Op->Value.ID()));
       neg(rcx);
       lock();
       xadd(qword [MemReg], rcx);
@@ -331,7 +325,7 @@ DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
 
   // TMP1 = rax
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
 
   switch (IROp->Size) {
     case 1: {
@@ -341,7 +335,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt8(), TMP1.cvt8());
       mov(TMP3.cvt8(), TMP1.cvt8());
-      and_(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt8(), GetSrc<RA_8>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
@@ -357,7 +351,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt16(), TMP1.cvt16());
       mov(TMP3.cvt16(), TMP1.cvt16());
-      and_(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt16(), GetSrc<RA_16>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(word [MemReg], TMP2.cvt16());
@@ -374,7 +368,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt32(), TMP1.cvt32());
       mov(TMP3.cvt32(), TMP1.cvt32());
-      and_(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt32(), GetSrc<RA_32>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
@@ -391,7 +385,7 @@ DEF_OP(AtomicFetchAnd) {
       L(Loop);
       mov(TMP2.cvt64(), TMP1.cvt64());
       mov(TMP3.cvt64(), TMP1.cvt64());
-      and_(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      and_(TMP2.cvt64(), GetSrc<RA_64>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
@@ -409,7 +403,7 @@ DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
 
   // TMP1 = rax
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
@@ -418,7 +412,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt8(), TMP1.cvt8());
       mov(TMP3.cvt8(), TMP1.cvt8());
-      or_(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt8(), GetSrc<RA_8>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
@@ -434,7 +428,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt16(), TMP1.cvt16());
       mov(TMP3.cvt16(), TMP1.cvt16());
-      or_(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt16(), GetSrc<RA_16>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(word [MemReg], TMP2.cvt16());
@@ -451,7 +445,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt32(), TMP1.cvt32());
       mov(TMP3.cvt32(), TMP1.cvt32());
-      or_(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt32(), GetSrc<RA_32>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
@@ -468,7 +462,7 @@ DEF_OP(AtomicFetchOr) {
       L(Loop);
       mov(TMP2.cvt64(), TMP1.cvt64());
       mov(TMP3.cvt64(), TMP1.cvt64());
-      or_(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      or_(TMP2.cvt64(), GetSrc<RA_64>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
@@ -486,7 +480,7 @@ DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
 
   // TMP1 = rax
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);
@@ -495,7 +489,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt8(), TMP1.cvt8());
       mov(TMP3.cvt8(), TMP1.cvt8());
-      xor_(TMP2.cvt8(), GetSrc<RA_8>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt8(), GetSrc<RA_8>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(byte [MemReg], TMP2.cvt8());
@@ -511,7 +505,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt16(), TMP1.cvt16());
       mov(TMP3.cvt16(), TMP1.cvt16());
-      xor_(TMP2.cvt16(), GetSrc<RA_16>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt16(), GetSrc<RA_16>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(word [MemReg], TMP2.cvt16());
@@ -528,7 +522,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt32(), TMP1.cvt32());
       mov(TMP3.cvt32(), TMP1.cvt32());
-      xor_(TMP2.cvt32(), GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt32(), GetSrc<RA_32>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(dword [MemReg], TMP2.cvt32());
@@ -545,7 +539,7 @@ DEF_OP(AtomicFetchXor) {
       L(Loop);
       mov(TMP2.cvt64(), TMP1.cvt64());
       mov(TMP3.cvt64(), TMP1.cvt64());
-      xor_(TMP2.cvt64(), GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      xor_(TMP2.cvt64(), GetSrc<RA_64>(Op->Value.ID()));
 
       // Updates RAX with the value from memory
       lock(); cmpxchg(qword [MemReg], TMP2.cvt64());
@@ -562,7 +556,7 @@ DEF_OP(AtomicFetchXor) {
 DEF_OP(AtomicFetchNeg) {
   auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Header.Args[0].ID());
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
   switch (IROp->Size) {
     case 1: {
       mov(TMP1.cvt8(), byte [MemReg]);

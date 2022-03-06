@@ -158,7 +158,7 @@ DEF_OP(F80CVTINT) {
 DEF_OP(F80CVTTO) {
   auto Op = IROp->C<IR::IROp_F80CVTTo>();
 
-  switch (Op->Size) {
+  switch (Op->SrcSize) {
     case 4: {
       float Src = *GetSrc<float *>(Data->SSAData, Op->Header.Args[0]);
       X80SoftFloat Tmp = Src;
@@ -171,14 +171,14 @@ DEF_OP(F80CVTTO) {
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
-    default: LogMan::Msg::DFmt("Unhandled size: {}", Op->Size);
+    default: LogMan::Msg::DFmt("Unhandled size: {}", Op->SrcSize);
   }
 }
 
 DEF_OP(F80CVTTOINT) {
   auto Op = IROp->C<IR::IROp_F80CVTToInt>();
 
-  switch (Op->Size) {
+  switch (Op->SrcSize) {
     case 2: {
       int16_t Src = *GetSrc<int16_t*>(Data->SSAData, Op->Header.Args[0]);
       X80SoftFloat Tmp = Src;
@@ -191,7 +191,7 @@ DEF_OP(F80CVTTOINT) {
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
-    default: LogMan::Msg::DFmt("Unhandled size: {}", Op->Size);
+    default: LogMan::Msg::DFmt("Unhandled size: {}", Op->SrcSize);
   }
 }
 

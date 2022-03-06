@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/msgbuf.h>
 #include <asm/sembuf.h>

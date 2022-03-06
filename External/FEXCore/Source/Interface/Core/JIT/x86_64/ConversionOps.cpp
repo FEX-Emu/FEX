@@ -18,23 +18,23 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(VInsGPR) {
   auto Op = IROp->C<IR::IROp_VInsGPR>();
-  movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  movapd(GetDst(Node), GetSrc(Op->DestVector.ID()));
 
   switch (Op->Header.ElementSize) {
     case 1: {
-      pinsrb(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()), Op->Index);
+      pinsrb(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()), Op->DestIdx);
       break;
     }
     case 2: {
-      pinsrw(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()), Op->Index);
+      pinsrw(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()), Op->DestIdx);
       break;
     }
     case 4: {
-      pinsrd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[1].ID()), Op->Index);
+      pinsrd(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()), Op->DestIdx);
       break;
     }
     case 8: {
-      pinsrq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[1].ID()), Op->Index);
+      pinsrq(GetDst(Node), GetSrc<RA_64>(Op->Src.ID()), Op->DestIdx);
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;

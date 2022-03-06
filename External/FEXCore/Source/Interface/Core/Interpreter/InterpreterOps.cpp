@@ -114,7 +114,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   // Branch ops
   REGISTER_OP(GUESTCALLDIRECT,        GuestCallDirect);
   REGISTER_OP(GUESTCALLINDIRECT,      GuestCallIndirect);
-  REGISTER_OP(GUESTRETURN,            GuestReturn);
   REGISTER_OP(SIGNALRETURN,           SignalReturn);
   REGISTER_OP(CALLBACKRETURN,         CallbackReturn);
   REGISTER_OP(EXITFUNCTION,           ExitFunction);
@@ -185,8 +184,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   // Vector ops
   REGISTER_OP(VECTORZERO,             VectorZero);
   REGISTER_OP(VECTORIMM,              VectorImm);
-  REGISTER_OP(CREATEVECTOR2,          CreateVector2);
-  REGISTER_OP(CREATEVECTOR4,          CreateVector4);
   REGISTER_OP(SPLATVECTOR2,           SplatVector);
   REGISTER_OP(SPLATVECTOR4,           SplatVector);
   REGISTER_OP(VMOV,                   VMov);

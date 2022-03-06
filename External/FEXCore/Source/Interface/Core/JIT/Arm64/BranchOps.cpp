@@ -27,10 +27,6 @@ DEF_OP(GuestCallIndirect) {
   LogMan::Msg::DFmt("Unimplemented");
 }
 
-DEF_OP(GuestReturn) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
-
 DEF_OP(SignalReturn) {
   // First we must reset the stack
   ResetStack();
@@ -495,7 +491,6 @@ void Arm64JITCore::RegisterBranchHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
   REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
-  REGISTER_OP(GUESTRETURN,       GuestReturn);
   REGISTER_OP(SIGNALRETURN,      SignalReturn);
   REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
   REGISTER_OP(EXITFUNCTION,      ExitFunction);

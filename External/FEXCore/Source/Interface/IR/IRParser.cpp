@@ -170,7 +170,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
       Result.data[i] = high * 16 + low;
     }
-    
+
     return {DecodeFailure::DECODE_OKAY, Result};
   }
 
@@ -351,15 +351,23 @@ class IRParser: public FEXCore::IR::IREmitter {
 
   bool Loaded = false;
 
-#define IROP_PARSER_ALLOCATE_HELPERS
-#include <FEXCore/IR/IRDefines.inc>
-
-
   bool Parse() {
     const auto CheckPrintError = [&](const LineDefinition &Def, DecodeFailure Failure) -> bool {
       if (Failure != DecodeFailure::DECODE_OKAY) {
         LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
         LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+        LogMan::Msg::EFmt("Value Couldn't be decoded due to {}", DecodeErrorToString(Failure));
+        return false;
+      }
+
+      return true;
+    };
+
+    const auto CheckPrintErrorArg = [&](const LineDefinition &Def, DecodeFailure Failure, size_t Arg) -> bool {
+      if (Failure != DecodeFailure::DECODE_OKAY) {
+        LogMan::Msg::EFmt("Error on Line: {}", Def.LineNumber);
+        LogMan::Msg::EFmt("{}", Lines[Def.LineNumber]);
+        LogMan::Msg::EFmt("Argument Number {}: {}", Arg + 1, Def.Args[Arg]);
         LogMan::Msg::EFmt("Value Couldn't be decoded due to {}", DecodeErrorToString(Failure));
         return false;
       }

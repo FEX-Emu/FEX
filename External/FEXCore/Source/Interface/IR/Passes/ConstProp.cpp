@@ -286,7 +286,7 @@ void ConstProp::FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR)
     if (IROp->Op == OP_GETHOSTFLAG) {
       auto ghf = IROp->CW<IR::IROp_GetHostFlag>();
 
-      auto fcmp = IREmit->GetOpHeader(ghf->GPR)->CW<IR::IROp_FCmp>();
+      auto fcmp = IREmit->GetOpHeader(ghf->Value)->CW<IR::IROp_FCmp>();
       LOGMAN_THROW_A_FMT(fcmp->Header.Op == OP_FCMP || fcmp->Header.Op == OP_F80CMP, "Unexpected OP_GETHOSTFLAG source");
       if(fcmp->Header.Op == OP_FCMP) {
         fcmp->Flags |= 1 << ghf->Flag;
@@ -301,18 +301,29 @@ void ConstProp::LoadMemStoreMemImmediatePooling(IREmitter *IREmit, const IRListV
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_LOADMEM || IROp->Op == OP_STOREMEM) {
+        size_t AddrIndex = 0;
+        size_t OffsetIndex = 0;
+
+        if (IROp->Op == OP_LOADMEM) {
+          AddrIndex = IR::IROp_LoadMem::Addr_Index;
+          OffsetIndex = IR::IROp_LoadMem::Offset_Index;
+        }
+        else {
+          AddrIndex = IR::IROp_StoreMem::Addr_Index;
+          OffsetIndex = IR::IROp_StoreMem::Offset_Index;
+        }
         uint64_t Addr;
 
-        if (IREmit->IsValueConstant(IROp->Args[0], &Addr) && IROp->Args[1].IsInvalid()) {
+        if (IREmit->IsValueConstant(IROp->Args[AddrIndex], &Addr) && IROp->Args[OffsetIndex].IsInvalid()) {
           for (auto& Const: AddressgenConsts) {
             if ((Addr - Const.second) < 65536) {
-              IREmit->ReplaceNodeArgument(CodeNode, 0, Const.first);
-              IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_Constant(Addr - Const.second));
+              IREmit->ReplaceNodeArgument(CodeNode, AddrIndex, Const.first);
+              IREmit->ReplaceNodeArgument(CodeNode, OffsetIndex, IREmit->_Constant(Addr - Const.second));
               goto doneOp;
             }
           }
 
-          AddressgenConsts[IREmit->UnwrapNode(IROp->Args[0])] = Addr;
+          AddressgenConsts[IREmit->UnwrapNode(IROp->Args[AddrIndex])] = Addr;
         }
         doneOp:
         ;
@@ -374,8 +385,8 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
       auto Op = IROp->C<IR::IROp_Bfe>();
 
       // Is this value already BFE'd?
-      if (IsBfeAlreadyDone(IREmit, IROp->Args[0], Op->Width)) {
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
+      if (IsBfeAlreadyDone(IREmit, Op->Src, Op->Width)) {
+        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Src));
         //printf("Removed BFE once \n");
         break;
       }
@@ -383,7 +394,7 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
       // Is this value already ZEXT'd?
       if (Op->lsb == 0) {
         //LoadMem, LoadMemTSO & LoadContext ZExt
-        auto source = IROp->Args[0];
+        auto source = Op->Src;
         auto sourceHeader = IREmit->GetOpHeader(source);
 
         if (Op->Width >= (sourceHeader->Size*8)  &&
@@ -401,10 +412,10 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
       imm = (imm-1) *2 + 1;
       imm <<= Op->lsb;
 
-      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
+      auto newArg = RemoveUselessMasking(IREmit, Op->Src, imm);
 
-      if (newArg.ID() != IROp->Args[0].ID()) {
-        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
+      if (newArg.ID() != Op->Src.ID()) {
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Src_Index, IREmit->UnwrapNode(newArg));
         Changed = true;
       }
       break;
@@ -418,10 +429,10 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
       imm = (imm-1) *2 + 1;
       imm <<= Op->lsb;
 
-      auto newArg = RemoveUselessMasking(IREmit, IROp->Args[0], imm);
+      auto newArg = RemoveUselessMasking(IREmit, Op->Src, imm);
 
-      if (newArg.ID() != IROp->Args[0].ID()) {
-        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->UnwrapNode(newArg));
+      if (newArg.ID() != Op->Src.ID()) {
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Src_Index, IREmit->UnwrapNode(newArg));
         Changed = true;
       }
       break;
@@ -528,15 +539,15 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
     case OP_LOADMEM: {
       auto Op = IROp->CW<IR::IROp_LoadMem>();
-      auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
+      auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
 
       if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
         auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
 
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
-        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
-        IREmit->ReplaceNodeArgument(CodeNode, 1, Arg1);
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
 
         Changed = true;
       }
@@ -545,15 +556,15 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
     case OP_STOREMEM: {
       auto Op = IROp->CW<IR::IROp_StoreMem>();
-      auto AddressHeader = IREmit->GetOpHeader(Op->Header.Args[0]);
+      auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
 
       if (AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
         auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
 
         Op->OffsetType = OffsetType;
         Op->OffsetScale = OffsetScale;
-        IREmit->ReplaceNodeArgument(CodeNode, 0, Arg0);
-        IREmit->ReplaceNodeArgument(CodeNode, 2, Arg1);
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
 
         Changed = true;
       }
@@ -707,7 +718,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
     case OP_BFE: {
       auto Op = IROp->C<IR::IROp_Bfe>();
       uint64_t Constant;
-      if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
+      if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Src, &Constant)) {
         uint64_t SourceMask = (1ULL << Op->Width) - 1;
         if (Op->Width == 64)
           SourceMask = ~0ULL;
@@ -897,7 +908,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         uint64_t Constant{};
         if (IREmit->IsValueConstant(Op->NewRIP, &Constant)) {
-          
+
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
 
           IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Constant));
@@ -940,11 +951,11 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         auto Op = IROp->CW<IR::IROp_LoadMem>();
 
         uint64_t Constant2{};
-        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
           if (IsImmMemory(Constant2, IROp->Size)) {
-            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
 
             Changed = true;
           }
@@ -957,11 +968,11 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         auto Op = IROp->CW<IR::IROp_StoreMem>();
 
         uint64_t Constant2{};
-        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Header.Args[2], &Constant2)) {
+        if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
           if (IsImmMemory(Constant2, IROp->Size)) {
-            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
+            IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
 
             Changed = true;
           }

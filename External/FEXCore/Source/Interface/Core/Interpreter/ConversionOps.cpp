@@ -19,7 +19,7 @@ DEF_OP(VInsGPR) {
   __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
   __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
 
-  uint64_t Offset = Op->Index * Op->Header.ElementSize * 8;
+  uint64_t Offset = Op->DestIdx * Op->Header.ElementSize * 8;
   __uint128_t Mask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
   if (Op->Header.ElementSize == 8) {
     Mask = ~0ULL;
