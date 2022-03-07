@@ -22,7 +22,7 @@ class MemAllocator32Bit final : public FEX::HLE::MemAllocator {
 private:
   static constexpr uint64_t BASE_KEY = 16;
   const uint64_t TOP_KEY = 0xFFFF'F000ULL >> FHU::FEX_PAGE_SHIFT;
-  const uint64_t TOP_KEY32BIT = 0x1F'F000ULL >> FHU::FEX_PAGE_SHIFT;
+  const uint64_t TOP_KEY32BIT = 0x7FFF'F000ULL >> FHU::FEX_PAGE_SHIFT;
 
 public:
   MemAllocator32Bit() {
@@ -171,6 +171,9 @@ void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, in
 
   bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
 
+  // Remove the MAP_32BIT flag if it exists now
+  flags &= ~FEX::HLE::X86_64_MAP_32BIT;
+
   auto AllocateNoHint = [&]() -> void*{
     bool Wrapped = false;
     uint64_t BottomPage = Map32Bit && (LastScanLocation >= LastKeyLocation32Bit) ? LastKeyLocation32Bit : LastScanLocation;
@@ -191,7 +194,7 @@ restart:
       {
         // Try and map the range
         void *MappedPtr = ::mmap(
-          reinterpret_cast<void*>(LowerPage<< FHU::FEX_PAGE_SHIFT),
+          reinterpret_cast<void*>(LowerPage << FHU::FEX_PAGE_SHIFT),
           length,
           prot,
           flags | FEX_MAP_FIXED_NOREPLACE,
