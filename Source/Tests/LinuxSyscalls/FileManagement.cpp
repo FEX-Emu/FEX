@@ -387,7 +387,7 @@ uint64_t FileManager::Lstat(const char *pathname, void *buf) {
       return Result;
   }
 
-  return ::lstat(SelfPath, reinterpret_cast<struct stat*>(buf));
+  return ::lstat(pathname, reinterpret_cast<struct stat*>(buf));
 }
 
 uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
