@@ -70,4 +70,4 @@ https://wiki.fex-emu.org/index.php/Development:Setting_up_FEX
 AArch64 host端需要一个rootfs去运行guest程序。参考以下维基页面从头开始创建一个rootfs
 https://wiki.fex-emu.org/index.php/Development:Setting_up_RootFS
 
-![FEX diagram](docs/Diagram.svg)
+![FEX diagram](Diagram.svg)
