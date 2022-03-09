@@ -4,6 +4,10 @@
 
 #include <FEXCore/IR/IR.h>
 
+namespace FEXCore {
+  class CodeLoader;
+}
+
 namespace FEXCore::Context {
   struct Context;
 }
@@ -48,6 +52,7 @@ namespace FEXCore::HLE {
     virtual FEXCore::IR::SyscallFlags GetSyscallFlags(uint64_t Syscall) const { return FEXCore::IR::SyscallFlags::DEFAULT; }
 
     SyscallOSABI GetOSABI() const { return OSABI; }
+    virtual FEXCore::CodeLoader *GetCodeLoader() const { return nullptr; }
 
   protected:
     SyscallOSABI OSABI;

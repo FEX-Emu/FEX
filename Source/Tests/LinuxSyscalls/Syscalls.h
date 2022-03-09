@@ -133,7 +133,7 @@ public:
   uint64_t HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr);
 
   FEX::HLE::FileManager FM;
-  FEXCore::CodeLoader *GetCodeLoader() const { return LocalLoader; }
+  FEXCore::CodeLoader *GetCodeLoader() const override { return LocalLoader; }
   void SetCodeLoader(FEXCore::CodeLoader *Loader) { LocalLoader = Loader; }
   FEX::HLE::SignalDelegator *GetSignalDelegator() { return SignalDelegation; }
 
