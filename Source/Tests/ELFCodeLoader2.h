@@ -366,6 +366,9 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper)) {
       LoadBase = *elf;
+      if (MainElf.ehdr.e_type == ET_DYN) {
+        BaseOffset = LoadBase;
+      }
     } else {
       LogMan::Msg::EFmt("Failed to load elf file");
       return false;
@@ -620,6 +623,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     size = AuxTabSize;
   }
 
+  uint64_t GetBaseOffset() const override {
+    return BaseOffset;
+  }
+
   bool Is64BitMode() {
     return MainElf.type == ::ELFLoader::ELFContainer::TYPE_X86_64;
   }
@@ -643,5 +650,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uint64_t AuxTabBase, AuxTabSize;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
+  uint64_t BaseOffset{};
 
 };

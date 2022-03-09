@@ -48,6 +48,8 @@ public:
 
   using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IREmitter *IR)>;
   virtual void AddIR(IRHandler Handler) {}
+
+  virtual uint64_t GetBaseOffset() const { return 0; }
 };
 
 
