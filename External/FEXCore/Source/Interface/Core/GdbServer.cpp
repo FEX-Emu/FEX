@@ -745,8 +745,8 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     SupportedFeatures += "qXfer:siginfo:write+;";
     // XXX: Allowing this causes GDB to crash
     SupportedFeatures += "qXfer:threads:read+;";
-    // QCatchSignals
-    // QPassSignals
+    SupportedFeatures += "QCatchSignals+;";
+    SupportedFeatures += "QPassSignals+;";
     SupportedFeatures += "QNonStop+;";
 
     SupportedFeatures += "qXfer:osdata:read+;";
@@ -831,6 +831,25 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     return {"OK", HandledPacketType::TYPE_ACK};
   }
 
+  if (match("QPassSignals")) {
+    // First set all signals as unpassed
+    std::fill(PassSignals.begin(), PassSignals.end(), false);
+
+    // eg: QPassSignals:e;10;14;17;1a;1b;1c;21;24;25;2c;4c;97;
+    auto ss = std::istringstream(packet);
+    ss.seekg(std::string("QPassSignals").size());
+    ss.get(); // discard colon
+
+    // We now have a semi-colon deliminated list of signals to pass to the guest process
+    for (std::string tmp; std::getline(ss, tmp, ';'); ) {
+      uint32_t Signal = std::stoi(tmp, nullptr, 16);
+      if (Signal < SignalDelegator::MAX_SIGNALS) {
+        PassSignals[Signal] = true;
+      }
+    }
+
+    return {"OK", HandledPacketType::TYPE_ACK};
+  }
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 

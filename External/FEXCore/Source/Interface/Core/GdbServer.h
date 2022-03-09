@@ -77,6 +77,7 @@ private:
     std::string MemoryMapString{};
     std::string OSDataString{};
 
+    std::array<bool, SignalDelegator::MAX_SIGNALS + 1> PassSignals{};
     uint32_t CurrentDebuggingThread{};
     int ListenSocket{};
     FEX_CONFIG_OPT(Filename, APP_FILENAME);
