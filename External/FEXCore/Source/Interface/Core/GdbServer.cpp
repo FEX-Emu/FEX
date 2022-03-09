@@ -871,7 +871,8 @@ GdbServer::HandledPacketType GdbServer::handleV(const std::string& packet) {
     const auto F       = [](int result) { return fmt::format("F{:x}", result); };
     const auto F_error = [] { return fmt::format("F-1,{:x}", errno); };
     const auto F_data  = [](int result, const std::string& data) {
-        return fmt::format("F{:x};{}", result, data);
+      // Binary encoded data is raw appended to the end
+      return fmt::format("F{:#x};", result) + data;
     };
 
     std::optional<std::istringstream> ss;
@@ -916,6 +917,11 @@ GdbServer::HandledPacketType GdbServer::handleV(const std::string& packet) {
         if (ret < 0) {
             return {F_error(), HandledPacketType::TYPE_ACK};
         }
+
+        if (ret == 0) {
+          return {F(0), HandledPacketType::TYPE_ACK};
+        }
+
         data.resize(ret);
         return {F_data(ret, data), HandledPacketType::TYPE_ACK};
     }
