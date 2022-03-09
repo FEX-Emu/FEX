@@ -17,12 +17,14 @@ $end_info$
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -611,6 +613,21 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
       return {encode(OSDataString), HandledPacketType::TYPE_ACK};
     }
 
+    if (object == "auxv") {
+      auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
+      uint64_t auxv_ptr, auxv_size;
+      CodeLoader->GetAuxv(auxv_ptr, auxv_size);
+      std::string data;
+      data.resize(auxv_size * 16);
+
+      for (size_t i = 0; i < auxv_size; ++i) {
+        uint64_t *auxv = reinterpret_cast<uint64_t*>(auxv_ptr + i * 16);
+        memcpy(data.data()+i*16, auxv, 16);
+      }
+
+      return {encode(data), HandledPacketType::TYPE_ACK};
+    }
+
     return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
@@ -730,8 +747,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     SupportedFeatures += "PacketSize=5000;";
     SupportedFeatures += "xmlRegisters=i386;";
 
-    // XXX: Not yet supported, would be easy
-    // SupportedFeatures += "qXfer:auxv-file:read+";
+    SupportedFeatures += "qXfer:auxv:read+;";
     SupportedFeatures += "qXfer:exec-file:read+;";
     SupportedFeatures += "qXfer:features:read+;";
     // XXX: Requires parsing the ELF and watching the library list
