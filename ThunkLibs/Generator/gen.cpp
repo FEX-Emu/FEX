@@ -88,6 +88,8 @@ static std::vector<ThunkedFunction> thunks;
 static std::vector<ThunkedAPIFunction> thunked_api;
 static std::optional<unsigned> lib_version;
 
+static std::vector<std::string> data_symbols;
+
 struct NamespaceInfo {
     std::string name;
 
@@ -270,86 +272,98 @@ public:
         const auto& template_args = decl->getTemplateArgs();
         assert(template_args.size() == 1);
 
-        auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl());
-        assert(emitted_function && "Argument is not a function");
-        auto return_type = emitted_function->getReturnType();
+        if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
+          auto return_type = emitted_function->getReturnType();
 
-        const auto annotations = GetAnnotations(decl);
-        if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
-            // TODO: Should regular pointers require annotation, too?
-            throw Error(decl->getBeginLoc(),
-                        "Function pointer return types require explicit annotation\n");
+          const auto annotations = GetAnnotations(decl); // TODO: Rename to GetFunctionAnnotations
+          if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
+              // TODO: Should regular pointers require annotation, too?
+              throw Error(decl->getBeginLoc(),
+                          "Function pointer return types require explicit annotation\n");
+          }
+
+          // TODO: Use the types as written in the signature instead?
+          ThunkedFunction data;
+          data.function_name = emitted_function->getName().str();
+          data.return_type = return_type;
+          data.is_variadic = emitted_function->isVariadic();
+
+          data.decl = emitted_function;
+
+          data.custom_host_impl = annotations.custom_host_impl;
+
+          for (std::size_t param_idx = 0; param_idx < emitted_function->param_size(); ++param_idx) {
+              auto* param = emitted_function->getParamDecl(param_idx);
+              data.param_types.push_back(param->getType());
+
+              if (param->getType()->isFunctionPointerType()) {
+                  auto funcptr = param->getFunctionType()->getAs<clang::FunctionProtoType>();
+                  ThunkedCallback callback;
+                  callback.return_type = funcptr->getReturnType();
+                  for (auto& cb_param : funcptr->getParamTypes()) {
+                      callback.param_types.push_back(cb_param);
+                  }
+                  callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
+                  callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
+                  callback.is_variadic = funcptr->isVariadic();
+
+                  if (callback.is_guest && !data.custom_host_impl) {
+                      throw Error(decl->getBeginLoc(), "callback_guest can only be used with custom_host_impl");
+                  }
+
+                  data.callbacks.emplace(param_idx, callback);
+                  if (data.callbacks.size() != 1) {
+                      throw Error(decl->getBeginLoc(), "Support for more than one callback is not implemented");
+                  }
+                  if (funcptr->isVariadic() && !callback.is_stub) {
+                      throw Error(decl->getBeginLoc(), "Variadic callbacks are not supported");
+                  }
+              }
+          }
+
+          // TODO: Rename to something like "needs_modified_callback"
+          const bool has_nonstub_callbacks = std::any_of(data.callbacks.begin(), data.callbacks.end(),
+                                                         [](auto& cb) { return !cb.second.is_stub && !cb.second.is_guest; });
+          thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
+                                                      namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
+                                                      has_nonstub_callbacks || data.is_variadic || annotations.custom_guest_entrypoint,
+                                                      data.is_variadic,
+                                                      std::nullopt });
+          if (namespace_info.generate_guest_symtable) {
+              thunked_api.back().symtable_namespace = namespace_idx;
+          }
+
+          if (data.is_variadic) {
+              if (!annotations.uniform_va_type) {
+                  throw Error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
+              }
+
+              // Convert variadic argument list into a count + pointer pair
+              data.param_types.push_back(context.getSizeType());
+              data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
+          }
+
+          if (has_nonstub_callbacks || data.is_variadic) {
+              // This function is thunked through an "_internal" symbol since its signature
+              // is different from the one in the native host/guest libraries.
+              data.function_name = data.function_name + "_internal";
+              assert(!data.custom_host_impl && "Custom host impl requested but this is implied by the function signature already");
+              data.custom_host_impl = true;
+          }
+
+          thunks.push_back(std::move(data));
+        } else {
+          const auto data_symbol = template_args[0].getAsDecl();
+          data_symbols.push_back(data_symbol->getName().str());
+
+//          ThunkedFunction data;
+//          data.function_name = "fex_get_datasymbol_" + data_symbol->getName().str();
+//          data.return_type = context.VoidPtrTy;
+
+//          data.decl = nullptr;
+
+//          thunks.push_back(std::move(data));
         }
-
-        // TODO: Use the types as written in the signature instead?
-        ThunkedFunction data;
-        data.function_name = emitted_function->getName().str();
-        data.return_type = return_type;
-        data.is_variadic = emitted_function->isVariadic();
-
-        data.decl = emitted_function;
-
-        data.custom_host_impl = annotations.custom_host_impl;
-
-        for (std::size_t param_idx = 0; param_idx < emitted_function->param_size(); ++param_idx) {
-            auto* param = emitted_function->getParamDecl(param_idx);
-            data.param_types.push_back(param->getType());
-
-            if (param->getType()->isFunctionPointerType()) {
-                auto funcptr = param->getFunctionType()->getAs<clang::FunctionProtoType>();
-                ThunkedCallback callback;
-                callback.return_type = funcptr->getReturnType();
-                for (auto& cb_param : funcptr->getParamTypes()) {
-                    callback.param_types.push_back(cb_param);
-                }
-                callback.is_stub = annotations.callback_strategy == CallbackStrategy::Stub;
-                callback.is_guest = annotations.callback_strategy == CallbackStrategy::Guest;
-                callback.is_variadic = funcptr->isVariadic();
-
-                if (callback.is_guest && !data.custom_host_impl) {
-                    throw Error(decl->getBeginLoc(), "callback_guest can only be used with custom_host_impl");
-                }
-
-                data.callbacks.emplace(param_idx, callback);
-                // TODO: Support for more than one callback is untested
-                assert(data.callbacks.size() == 1);
-                if (funcptr->isVariadic() && !callback.is_stub) {
-                    throw Error(decl->getBeginLoc(), "Variadic callbacks are not supported");
-                }
-            }
-        }
-
-        // TODO: Rename to something like "needs_modified_callback"
-        const bool has_nonstub_callbacks = std::any_of(data.callbacks.begin(), data.callbacks.end(),
-                                                       [](auto& cb) { return !cb.second.is_stub && !cb.second.is_guest; });
-        thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
-                                                    namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
-                                                    has_nonstub_callbacks || data.is_variadic || annotations.custom_guest_entrypoint,
-                                                    data.is_variadic,
-                                                    std::nullopt });
-        if (namespace_info.generate_guest_symtable) {
-            thunked_api.back().symtable_namespace = namespace_idx;
-        }
-
-        if (data.is_variadic) {
-            if (!annotations.uniform_va_type) {
-                throw Error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
-            }
-
-            // Convert variadic argument list into a count + pointer pair
-            data.param_types.push_back(context.getSizeType());
-            data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
-        }
-
-        if (has_nonstub_callbacks || data.is_variadic) {
-            // This function is thunked through an "_internal" symbol since its signature
-            // is different from the one in the native host/guest libraries.
-            data.function_name = data.function_name + "_internal";
-            assert(!data.custom_host_impl && "Custom host impl requested but this is implied by the function signature already");
-            data.custom_host_impl = true;
-        }
-
-        thunks.push_back(std::move(data));
 
         return true;
     } catch (ClangDiagnosticAsException& exception) {
@@ -460,7 +474,17 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             }
             file << "\")\n";
         }
-
+        for (auto& data_symbol : data_symbols) {
+            const auto& function_name = "fetchsym_" + data_symbol;
+            auto sha256 = get_sha256(function_name);
+            file << "MAKE_THUNK(" << libname << ", " << function_name << ", \"";
+            bool first = true;
+            for (auto c : sha256) {
+                file << (first ? "" : ", ") << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+                first = false;
+            }
+            file << "\")\n";
+        }
         file << "}\n";
     }
 
@@ -538,6 +562,17 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             }
             file << "}\n";
         }
+        for (auto& data_symbol : data_symbols) {
+            const auto& function_name = "fetchsym_" + data_symbol;
+            file << "static void* fexfn_pack_" << function_name << "() {\n";
+            file << "  struct {\n";
+            file << "    void* rv;\n";
+            file << "  } args;\n";
+            file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
+            file << "  return args.rv;\n";
+            file << "}\n";
+        }
+
         file << "}\n";
     }
 
@@ -630,6 +665,9 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         for (auto& import : thunked_api) {
             file << "  (void*&)fexldr_ptr_" << libname << "_" << import.function_name << " = " << import.host_loader << "(fexldr_ptr_" << libname << "_so, \"" << import.function_name << "\");\n";
         }
+        for (auto& data_symbol : data_symbols) {
+            file << "  fexldr_dataptr_" << data_symbol << " = " << "dlsym" << "(fexldr_ptr_" << libname << "_so, \"" << data_symbol << "\");\n";
+        }
         file << "  return true;\n";
         file << "}\n";
     }
@@ -642,6 +680,9 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             const char* variadic_ellipsis = import.is_variadic ? ", ..." : "";
             file << "using fexldr_type_" << libname << "_" << function_name << " = auto " << "(" << format_function_params(import) << variadic_ellipsis << ") -> " << import.return_type.getAsString() << ";\n";
             file << "static fexldr_type_" << libname << "_" << function_name << " *fexldr_ptr_" << libname << "_" << function_name << ";\n";
+        }
+        for (auto& data_symbol : data_symbols) {
+            file << "void* fexldr_dataptr_" << data_symbol << ";\n";
         }
     }
 
