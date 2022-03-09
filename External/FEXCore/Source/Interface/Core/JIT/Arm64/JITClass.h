@@ -183,6 +183,8 @@ private:
   };
 
   CompilerSharedData ThreadSharedData;
+
+  void EmitDetectionString();
   IR::RegisterAllocationPass *RAPass;
   IR::RegisterAllocationData *RAData;
 

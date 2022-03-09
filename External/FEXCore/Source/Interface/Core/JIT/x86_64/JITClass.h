@@ -152,6 +152,8 @@ private:
 
   static uint64_t ExitFunctionLink(X86JITCore* code, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
+  void EmitDetectionString();
+
   // This is the initial code buffer that we will fall back to
   // In a program without signals and code clearing, we will typically
   // only have this code buffer
