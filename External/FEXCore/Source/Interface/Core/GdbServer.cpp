@@ -656,22 +656,10 @@ static size_t CheckMemMapping(uint64_t Address, size_t Size) {
 }
 
 GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
-  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
-  std::string Line;
-  std::string const &RuntimeExecutable = Filename();
-
-  while (std::getline(fs, Line)) {
-    uint64_t Begin, End;
-    char Filename[255];
-    if (sscanf(Line.c_str(), "%lx-%lx %*c%*c%*c%*c %*x %*x:%*x %*d%s", &Begin, &End, Filename) == 3) {
-      if (RuntimeExecutable == Filename) {
-        auto str = fmt::format("Text={:x};Data={:x};Bss={:x}", Begin, Begin, Begin);
-        return {std::move(str), HandledPacketType::TYPE_ACK};
-      }
-    }
-  }
-
-  return {"Text=0;Data=0;Bss=0", HandledPacketType::TYPE_ACK};
+  auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
+  uint64_t BaseOffset = CodeLoader->GetBaseOffset();
+  auto str = fmt::format("Text={:x};Data={:x};Bss={:x}", BaseOffset, BaseOffset, BaseOffset);
+  return {std::move(str), HandledPacketType::TYPE_ACK};
 }
 
 GdbServer::HandledPacketType GdbServer::handleMemory(const std::string &packet) {
