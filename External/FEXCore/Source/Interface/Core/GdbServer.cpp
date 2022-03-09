@@ -51,13 +51,13 @@ namespace FEXCore
 {
 
 void GdbServer::Break(int signal) {
-    std::lock_guard lk(sendMutex);
-    if (!CommsStream) {
-      return;
-    }
+  std::lock_guard lk(sendMutex);
+  if (!CommsStream) {
+    return;
+  }
 
-    const auto str = fmt::format("S{:02x}", signal);
-    SendPacket(*CommsStream, str);
+  const auto str = fmt::format("S{:02x}", signal);
+  SendPacket(*CommsStream, str);
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
@@ -96,36 +96,36 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
 }
 
 static int calculateChecksum(const std::string &packet) {
-    unsigned char checksum = 0;
-    for (const char &c : packet) {
-        checksum += c;
-    }
-    return checksum;
+  unsigned char checksum = 0;
+  for (const char &c : packet) {
+    checksum += c;
+  }
+  return checksum;
 }
 
 static std::string hexstring(std::istringstream &ss, int delm) {
-    std::string ret;
+  std::string ret;
 
-    char hexString[3] = {0, 0, 0};
-    while (ss.peek() != delm) {
-        ss.read(hexString, 2);
-        int c = std::strtoul(hexString, nullptr, 16);
-        ret.push_back((char) c);
-    }
+  char hexString[3] = {0, 0, 0};
+  while (ss.peek() != delm) {
+    ss.read(hexString, 2);
+    int c = std::strtoul(hexString, nullptr, 16);
+    ret.push_back((char) c);
+  }
 
-    if (delm != -1)
-        ss.get();
+  if (delm != -1)
+    ss.get();
 
-    return ret;
+  return ret;
 }
 
 static std::string encodeHex(unsigned char *data, size_t length) {
-    std::ostringstream ss;
+  std::ostringstream ss;
 
-    for (size_t i=0; i < length; i++) {
-        ss << std::setfill('0') << std::setw(2) << std::hex << int(data[i]);
-    }
-    return ss.str();
+  for (size_t i=0; i < length; i++) {
+    ss << std::setfill('0') << std::setw(2) << std::hex << int(data[i]);
+  }
+  return ss.str();
 }
 
 static std::string getThreadName(uint32_t ThreadID) {
@@ -147,76 +147,76 @@ static std::string getThreadName(uint32_t ThreadID) {
 // Un-escapes chars, checks the checksum and request a retransmit if it fails.
 // Once the checksum is validated, it acknowledges and returns the packet in a string
 std::string GdbServer::ReadPacket(std::iostream &stream) {
-    std::string packet{};
+  std::string packet{};
 
-    // The GDB "Remote Serial Protocal" was originally 7bit clean for use on serial ports.
-    // Binary data is useally hex encoded. However some later extentions just put
-    // raw 8bit binary data.
+  // The GDB "Remote Serial Protocal" was originally 7bit clean for use on serial ports.
+  // Binary data is useally hex encoded. However some later extentions just put
+  // raw 8bit binary data.
 
-    // Packets are in the format
-    // $<data>#<checksum>
-    // where any $ or # in the packet body are escaped ('}' followed by the char XORed with 0x20)
-    // The checksum is a single unsigned byte sum of the data, hex encoded.
+  // Packets are in the format
+  // $<data>#<checksum>
+  // where any $ or # in the packet body are escaped ('}' followed by the char XORed with 0x20)
+  // The checksum is a single unsigned byte sum of the data, hex encoded.
 
-    int c;
-    while ((c = stream.get()) > 0 ) {
-        switch(c) {
-        case '$': // start of packet
-            if (packet.size() != 0)
-                LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
+  int c;
+  while ((c = stream.get()) > 0 ) {
+    switch(c) {
+      case '$': // start of packet
+        if (packet.size() != 0)
+          LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
 
-            // clear any existing data, must have been a mistake.
-            packet = std::string();
-            break;
-        case '}': // escape char
-        {
-            char escaped;
-            stream >> escaped;
-            packet.push_back(escaped ^ 0x20);
-            break;
+        // clear any existing data, must have been a mistake.
+        packet = std::string();
+        break;
+      case '}': // escape char
+      {
+        char escaped;
+        stream >> escaped;
+        packet.push_back(escaped ^ 0x20);
+        break;
+      }
+      case '#': // end of packet
+      {
+        char hexString[3] = {0, 0, 0};
+        stream.read(hexString, 2);
+        int expected_checksum = std::strtoul(hexString, nullptr, 16);
+
+        if (calculateChecksum(packet) == expected_checksum) {
+          return packet;
+        } else {
+          LogMan::Msg::EFmt("Received Invalid Packet: ${}#{:02x}", packet, expected_checksum);
         }
-        case '#': // end of packet
-        {
-            char hexString[3] = {0, 0, 0};
-            stream.read(hexString, 2);
-            int expected_checksum = std::strtoul(hexString, nullptr, 16);
-
-            if (calculateChecksum(packet) == expected_checksum) {
-                return packet;
-            } else {
-                LogMan::Msg::EFmt("Received Invalid Packet: ${}#{:02x}", packet, expected_checksum);
-            }
-            break;
-        }
-        default:
-            packet.push_back((char) c);
-            break;
-        }
+        break;
+      }
+      default:
+        packet.push_back((char) c);
+        break;
     }
+  }
 
-    return "";
+  return "";
 }
 
 static std::string escapePacket(const std::string& packet) {
-    std::ostringstream ss;
+  std::ostringstream ss;
 
-    for(const auto &c : packet) {
-        switch (c) {
-        case '$':
-        case '#':
-        case '*':
-        case '}': {
-            char escaped = c ^ 0x20;
-            ss << '}' << (escaped);
-            break;
-        }
-        default:
-            ss << c;
-            break;
-        }
+  for(const auto &c : packet) {
+    switch (c) {
+      case '$':
+      case '#':
+      case '*':
+      case '}': {
+        char escaped = c ^ 0x20;
+        ss << '}' << (escaped);
+        break;
+      }
+      default:
+        ss << c;
+        break;
     }
+  }
 
-    return ss.str();
+  return ss.str();
 }
 
 void GdbServer::SendPacket(std::ostream &stream, const std::string& packet) {
@@ -388,104 +388,104 @@ GdbServer::HandledPacketType GdbServer::readReg(const std::string& packet) {
 }
 
 std::string buildTargetXML() {
-    std::ostringstream xml;
+  std::ostringstream xml;
 
-    xml << "<?xml version='1.0'?>\n";
-    xml << "<!DOCTYPE target SYSTEM 'gdb-target.dtd'>\n";\
-    xml << "<target>\n";
-    xml << "<architecture>i386:x86-64</architecture>\n";
-    xml << "<osabi>GNU/Linux</osabi>\n";
-        xml << "<feature name='org.gnu.gdb.i386.core'>\n";
+  xml << "<?xml version='1.0'?>\n";
+  xml << "<!DOCTYPE target SYSTEM 'gdb-target.dtd'>\n";
+  xml << "<target>\n";
+  xml << "<architecture>i386:x86-64</architecture>\n";
+  xml << "<osabi>GNU/Linux</osabi>\n";
+    xml << "<feature name='org.gnu.gdb.i386.core'>\n";
 
-            xml << "<flags id='fex_eflags' size='4'>\n";
-            // flags register
-            for(int i = 0; i < 22; i++) {
-                auto name = FEXCore::Core::GetFlagName(i);
-                if (name.empty()) {
-                  continue;
-                }
-                xml << "\t<field name='" << name << "' start='" << i << "' end='" << i << "' />\n";
-            }
-            xml << "</flags>\n";
+      xml << "<flags id='fex_eflags' size='4'>\n";
+      // flags register
+      for(int i = 0; i < 22; i++) {
+          auto name = FEXCore::Core::GetFlagName(i);
+          if (name.empty()) {
+            continue;
+          }
+          xml << "\t<field name='" << name << "' start='" << i << "' end='" << i << "' />\n";
+      }
+      xml << "</flags>\n";
 
-            int32_t TargetSize{};
-            auto reg = [&](std::string_view name, std::string_view type, int size) {
-              TargetSize += size;
-                xml << "<reg name='" << name << "' bitsize='" << size << "' type='" << type << "' />" << std::endl;
-            };
+      int32_t TargetSize{};
+      auto reg = [&](std::string_view name, std::string_view type, int size) {
+        TargetSize += size;
+        xml << "<reg name='" << name << "' bitsize='" << size << "' type='" << type << "' />" << std::endl;
+      };
 
-            // Register ordering.
-            // We want to just memcpy our x86 state to gdb, so we tell it the ordering.
+      // Register ordering.
+      // We want to just memcpy our x86 state to gdb, so we tell it the ordering.
 
-            // GPRs
-            for (int i=0; i < 16; i++) {
-                reg(FEXCore::Core::GetGRegName(i), "int64", 64);
-            }
+      // GPRs
+      for (int i=0; i < 16; i++) {
+        reg(FEXCore::Core::GetGRegName(i), "int64", 64);
+      }
 
-            reg("rip", "code_ptr", 64);
+      reg("rip", "code_ptr", 64);
 
-            reg("eflags", "fex_eflags", 32);
+      reg("eflags", "fex_eflags", 32);
 
-            // Fake registers which GDB requires, but we don't support;
-            // We stick them past the end of our cpu state.
+      // Fake registers which GDB requires, but we don't support;
+      // We stick them past the end of our cpu state.
 
-            // non-userspace segment registers
-            reg("cs", "int32", 32);
-            reg("ss", "int32", 32);
-            reg("ds", "int32", 32);
-            reg("es", "int32", 32);
+      // non-userspace segment registers
+      reg("cs", "int32", 32);
+      reg("ss", "int32", 32);
+      reg("ds", "int32", 32);
+      reg("es", "int32", 32);
 
-            reg("fs", "int32", 32);
-            reg("gs", "int32", 32);
+      reg("fs", "int32", 32);
+      reg("gs", "int32", 32);
 
-            // x87 stack
-            for (int i=0; i < 8; i++) {
-                reg("st" + std::to_string(i), "i387_ext", 80);
-            }
+      // x87 stack
+      for (int i=0; i < 8; i++) {
+          reg("st" + std::to_string(i), "i387_ext", 80);
+      }
 
-            // x87 control
-            reg("fctrl", "int32", 32);
-            reg("fstat", "int32", 32);
-            reg("ftag",  "int32", 32);
-            reg("fiseg", "int32", 32);
-            reg("fioff", "int32", 32);
-            reg("foseg", "int32", 32);
-            reg("fooff", "int32", 32);
-            reg("fop",   "int32", 32);
+      // x87 control
+      reg("fctrl", "int32", 32);
+      reg("fstat", "int32", 32);
+      reg("ftag",  "int32", 32);
+      reg("fiseg", "int32", 32);
+      reg("fioff", "int32", 32);
+      reg("foseg", "int32", 32);
+      reg("fooff", "int32", 32);
+      reg("fop",   "int32", 32);
 
 
-        xml << "</feature>\n";
-        xml << "<feature name='org.gnu.gdb.i386.sse'>\n";
-        xml <<
-          R"(<vector id="v4f" type="ieee_single" count="4"/>
-          <vector id="v2d" type="ieee_double" count="2"/>
-          <vector id="v16i8" type="int8" count="16"/>
-          <vector id="v8i16" type="int16" count="8"/>
-          <vector id="v4i32" type="int32" count="4"/>
-          <vector id="v2i64" type="int64" count="2"/>
-          <union id="vec128">
-            <field name="v4_float" type="v4f"/>
-            <field name="v2_double" type="v2d"/>
-            <field name="v16_int8" type="v16i8"/>
-            <field name="v8_int16" type="v8i16"/>
-            <field name="v4_int32" type="v4i32"/>
-            <field name="v2_int64" type="v2i64"/>
-            <field name="uint128" type="uint128"/>
-          </union>
-          )";
+      xml << "</feature>\n";
+      xml << "<feature name='org.gnu.gdb.i386.sse'>\n";
+      xml <<
+        R"(<vector id="v4f" type="ieee_single" count="4"/>
+        <vector id="v2d" type="ieee_double" count="2"/>
+        <vector id="v16i8" type="int8" count="16"/>
+        <vector id="v8i16" type="int16" count="8"/>
+        <vector id="v4i32" type="int32" count="4"/>
+        <vector id="v2i64" type="int64" count="2"/>
+        <union id="vec128">
+          <field name="v4_float" type="v4f"/>
+          <field name="v2_double" type="v2d"/>
+          <field name="v16_int8" type="v16i8"/>
+          <field name="v8_int16" type="v8i16"/>
+          <field name="v4_int32" type="v4i32"/>
+          <field name="v2_int64" type="v2i64"/>
+          <field name="uint128" type="uint128"/>
+        </union>
+        )";
 
-            // SSE regs
-            for (int i=0; i < 16; i++) {
-                reg("xmm" + std::to_string(i), "vec128", 128);
-            }
+      // SSE regs
+      for (int i=0; i < 16; i++) {
+          reg("xmm" + std::to_string(i), "vec128", 128);
+      }
 
-            reg("mxcsr", "int", 32);
+      reg("mxcsr", "int", 32);
 
-        xml << "</feature>\n";
-    xml << "</target>";
-    xml << std::flush;
+    xml << "</feature>\n";
+  xml << "</target>";
+  xml << std::flush;
 
-    return xml.str();
+  return xml.str();
 }
 
 std::string buildMemoryMap() {
@@ -531,116 +531,116 @@ std::string buildOSData() {
 }
 
 GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
-    std::string object;
-    std::string rw;
-    std::string annex;
-    int annex_pid;
-    int offset;
-    int length;
+  std::string object;
+  std::string rw;
+  std::string annex;
+  int annex_pid;
+  int offset;
+  int length;
 
-    // Parse Xfer message
-    {
-        auto ss = std::istringstream(packet);
-        std::string expectXfer;
-        char expectComma;
+  // Parse Xfer message
+  {
+    auto ss = std::istringstream(packet);
+    std::string expectXfer;
+    char expectComma;
 
-        std::getline(ss, expectXfer, ':');
-        std::getline(ss, object, ':');
-        std::getline(ss, rw, ':');
-        std::getline(ss, annex, ':');
-        if (annex == "") {
-          annex_pid = getpid();
-        }
-        else {
-          auto ss_pid = std::istringstream(annex);
-          ss_pid >> std::hex >> annex_pid;
-        }
-        ss >> std::hex >> offset;
-        ss.get(expectComma);
-        ss >> std::hex >> length;
-
-        // Bail on any errors
-        if (ss.fail() || !ss.eof() || expectXfer != "qXfer" || rw != "read" || expectComma != ',')
-          return {"E00", HandledPacketType::TYPE_ACK};
+    std::getline(ss, expectXfer, ':');
+    std::getline(ss, object, ':');
+    std::getline(ss, rw, ':');
+    std::getline(ss, annex, ':');
+    if (annex == "") {
+      annex_pid = getpid();
     }
+    else {
+      auto ss_pid = std::istringstream(annex);
+      ss_pid >> std::hex >> annex_pid;
+    }
+    ss >> std::hex >> offset;
+    ss.get(expectComma);
+    ss >> std::hex >> length;
 
-    // Lambda to correctly encode any reply
-    auto encode = [&](std::string data) -> std::string {
-        if (offset == data.size())
-            return "l";
-        if (offset >= data.size())
-            return "E34"; // ERANGE
-        if ((data.size() - offset) > length)
-            return "m" + data.substr(offset, length);
-        return "l" + data.substr(offset);
-    };
-
-    if (object == "exec-file") {
-      if (annex_pid == getpid()) {
-        return {encode(Filename()), HandledPacketType::TYPE_ACK};
-      }
-
+    // Bail on any errors
+    if (ss.fail() || !ss.eof() || expectXfer != "qXfer" || rw != "read" || expectComma != ',')
       return {"E00", HandledPacketType::TYPE_ACK};
+  }
+
+  // Lambda to correctly encode any reply
+  auto encode = [&](std::string data) -> std::string {
+    if (offset == data.size())
+      return "l";
+    if (offset >= data.size())
+      return "E34"; // ERANGE
+    if ((data.size() - offset) > length)
+      return "m" + data.substr(offset, length);
+    return "l" + data.substr(offset);
+  };
+
+  if (object == "exec-file") {
+    if (annex_pid == getpid()) {
+      return {encode(Filename()), HandledPacketType::TYPE_ACK};
     }
 
-    if (object == "features") {
-      if (annex == "target.xml")
-        return {encode(buildTargetXML()), HandledPacketType::TYPE_ACK};
+    return {"E00", HandledPacketType::TYPE_ACK};
+  }
 
-      return {"E00", HandledPacketType::TYPE_ACK};
-    }
+  if (object == "features") {
+    if (annex == "target.xml")
+      return {encode(buildTargetXML()), HandledPacketType::TYPE_ACK};
 
-    if (object == "threads") {
-      if (offset == 0) {
-        auto Threads = CTX->GetThreads();
+    return {"E00", HandledPacketType::TYPE_ACK};
+  }
 
-        ThreadString.clear();
-        std::ostringstream ss;
-        ss << "<?xml version=\"1.0\"?>\n";
-        ss << "<threads>\n";
-        for (auto &Thread : *Threads) {
-          // Thread id is in hex without 0x prefix
-          ss << "\t<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\" name=\"" <<  getThreadName(Thread->ThreadManager.GetTID()) << "\">\n";
-          ss << "\t</thread>\n";
-        }
+  if (object == "threads") {
+    if (offset == 0) {
+      auto Threads = CTX->GetThreads();
 
-        ss << "</threads>";
-        ss << std::flush;
-        ThreadString = ss.str();
+      ThreadString.clear();
+      std::ostringstream ss;
+      ss << "<?xml version=\"1.0\"?>\n";
+      ss << "<threads>\n";
+      for (auto &Thread : *Threads) {
+        // Thread id is in hex without 0x prefix
+        ss << "\t<thread id=\"" << std::hex << Thread->ThreadManager.GetTID() << "\" name=\"" <<  getThreadName(Thread->ThreadManager.GetTID()) << "\">\n";
+        ss << "\t</thread>\n";
       }
 
-      return {encode(ThreadString), HandledPacketType::TYPE_ACK};
+      ss << "</threads>";
+      ss << std::flush;
+      ThreadString = ss.str();
     }
 
-    if (object == "memory-map") {
-      if (offset == 0) {
-        MemoryMapString = buildMemoryMap();
-      }
-      return {encode(MemoryMapString), HandledPacketType::TYPE_ACK};
+    return {encode(ThreadString), HandledPacketType::TYPE_ACK};
+  }
+
+  if (object == "memory-map") {
+    if (offset == 0) {
+      MemoryMapString = buildMemoryMap();
     }
-    if (object == "osdata") {
-      if (offset == 0) {
-        OSDataString = buildOSData();
-      }
-      return {encode(OSDataString), HandledPacketType::TYPE_ACK};
+    return {encode(MemoryMapString), HandledPacketType::TYPE_ACK};
+  }
+  if (object == "osdata") {
+    if (offset == 0) {
+      OSDataString = buildOSData();
+    }
+    return {encode(OSDataString), HandledPacketType::TYPE_ACK};
+  }
+
+  if (object == "auxv") {
+    auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
+    uint64_t auxv_ptr, auxv_size;
+    CodeLoader->GetAuxv(auxv_ptr, auxv_size);
+    std::string data;
+    data.resize(auxv_size * 16);
+
+    for (size_t i = 0; i < auxv_size; ++i) {
+      uint64_t *auxv = reinterpret_cast<uint64_t*>(auxv_ptr + i * 16);
+      memcpy(data.data()+i*16, auxv, 16);
     }
 
-    if (object == "auxv") {
-      auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
-      uint64_t auxv_ptr, auxv_size;
-      CodeLoader->GetAuxv(auxv_ptr, auxv_size);
-      std::string data;
-      data.resize(auxv_size * 16);
+    return {encode(data), HandledPacketType::TYPE_ACK};
+  }
 
-      for (size_t i = 0; i < auxv_size; ++i) {
-        uint64_t *auxv = reinterpret_cast<uint64_t*>(auxv_ptr + i * 16);
-        memcpy(data.data()+i*16, auxv, 16);
-      }
-
-      return {encode(data), HandledPacketType::TYPE_ACK};
-    }
-
-    return {"", HandledPacketType::TYPE_UNKNOWN};
+  return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
 static size_t CheckMemMapping(uint64_t Address, size_t Size) {
@@ -675,43 +675,43 @@ GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
 }
 
 GdbServer::HandledPacketType GdbServer::handleMemory(const std::string &packet) {
-    bool write;
-    size_t addr;
-    size_t length;
-    std::string data;
+  bool write;
+  size_t addr;
+  size_t length;
+  std::string data;
 
-    auto ss = std::istringstream(packet);
-    write = ss.get() == 'M';
-    ss >> std::hex >> addr;
-    ss.get(); // discard comma
-    ss >> std::hex >> length;
+  auto ss = std::istringstream(packet);
+  write = ss.get() == 'M';
+  ss >> std::hex >> addr;
+  ss.get(); // discard comma
+  ss >> std::hex >> length;
 
-    if (write) {
-        ss.get(); // discard colon
-        data = hexstring(ss, -1); // grab data until end of file.
-    }
+  if (write) {
+    ss.get(); // discard colon
+    data = hexstring(ss, -1); // grab data until end of file.
+  }
 
-    // validate packet
-    if (ss.fail() || !ss.eof() || (write && (data.length() != length))) {
-        return {"E00", HandledPacketType::TYPE_ACK};
-    }
+  // validate packet
+  if (ss.fail() || !ss.eof() || (write && (data.length() != length))) {
+    return {"E00", HandledPacketType::TYPE_ACK};
+  }
 
-    length = CheckMemMapping(addr, length);
-    if (length == 0) {
-			return {"E00", HandledPacketType::TYPE_ACK};
-		}
+  length = CheckMemMapping(addr, length);
+  if (length == 0) {
+    return {"E00", HandledPacketType::TYPE_ACK};
+  }
 
-    // TODO: check we are in a valid memory range
-    //       Also, clamp length
-    void* ptr = reinterpret_cast<void*>(addr);
+  // TODO: check we are in a valid memory range
+  //       Also, clamp length
+  void* ptr = reinterpret_cast<void*>(addr);
 
-    if (write) {
-        std::memcpy(ptr, data.data(), data.length());
-        // TODO: invalidate any code
-        return {"OK", HandledPacketType::TYPE_ACK};
-    } else {
-        return {encodeHex((unsigned char*)ptr, length), HandledPacketType::TYPE_ACK};
-    }
+  if (write) {
+    std::memcpy(ptr, data.data(), data.length());
+    // TODO: invalidate any code
+    return {"OK", HandledPacketType::TYPE_ACK};
+  } else {
+    return {encodeHex((unsigned char*)ptr, length), HandledPacketType::TYPE_ACK};
+  }
 }
 
 
@@ -890,94 +890,94 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
 }
 
 GdbServer::HandledPacketType GdbServer::handleV(const std::string& packet) {
-    const auto match = [&](const std::string& str) -> std::optional<std::istringstream> {
-        if (packet.rfind(str, 0) == 0) {
-            auto ss = std::istringstream(packet);
-            ss.seekg(str.size());
-            return ss;
-        }
-        return std::nullopt;
-    };
-
-    const auto F       = [](int result) { return fmt::format("F{:x}", result); };
-    const auto F_error = [] { return fmt::format("F-1,{:x}", errno); };
-    const auto F_data  = [](int result, const std::string& data) {
-      // Binary encoded data is raw appended to the end
-      return fmt::format("F{:#x};", result) + data;
-    };
-
-    std::optional<std::istringstream> ss;
-    if((ss = match("vFile:open:"))) {
-        std::string filename;
-        int flags;
-        int mode;
-
-        filename = hexstring(*ss, ',');
-        *ss >> std::hex >> flags;
-        ss->get(); // discard comma
-        *ss >> std::hex >> mode;
-
-        return {F(open(filename.c_str(), flags, mode)), HandledPacketType::TYPE_ACK};
+  const auto match = [&](const std::string& str) -> std::optional<std::istringstream> {
+    if (packet.rfind(str, 0) == 0) {
+      auto ss = std::istringstream(packet);
+      ss.seekg(str.size());
+      return ss;
     }
-    if((ss = match("vFile:setfs:"))) {
-        int pid;
-        *ss >> pid;
+    return std::nullopt;
+  };
 
-        return {F(pid == 0 ? 0 : -1), HandledPacketType::TYPE_ACK}; // Only support the common filesystem
+  const auto F       = [](int result) { return fmt::format("F{:x}", result); };
+  const auto F_error = [] { return fmt::format("F-1,{:x}", errno); };
+  const auto F_data  = [](int result, const std::string& data) {
+    // Binary encoded data is raw appended to the end
+    return fmt::format("F{:#x};", result) + data;
+  };
+
+  std::optional<std::istringstream> ss;
+  if((ss = match("vFile:open:"))) {
+    std::string filename;
+    int flags;
+    int mode;
+
+    filename = hexstring(*ss, ',');
+    *ss >> std::hex >> flags;
+    ss->get(); // discard comma
+    *ss >> std::hex >> mode;
+
+    return {F(open(filename.c_str(), flags, mode)), HandledPacketType::TYPE_ACK};
+  }
+  if((ss = match("vFile:setfs:"))) {
+    int pid;
+    *ss >> pid;
+
+    return {F(pid == 0 ? 0 : -1), HandledPacketType::TYPE_ACK}; // Only support the common filesystem
+  }
+  if((ss = match("vFile:close:"))) {
+    int fd;
+    *ss >> std::hex >> fd;
+    close(fd);
+    return {F(0), HandledPacketType::TYPE_ACK};
+  }
+  if((ss = match("vFile:pread:"))) {
+    int fd, count, offset;
+
+    *ss >> std::hex >> fd;
+    ss->get(); // discard comma
+    *ss >> std::hex >> count;
+    ss->get(); // discard comma
+    *ss >> std::hex >> offset;
+
+    std::string data(count, '\0');
+    if (lseek(fd, offset, SEEK_SET) < 0) {
+      return {F_error(), HandledPacketType::TYPE_ACK};
     }
-    if((ss = match("vFile:close:"))) {
-      int fd;
-      *ss >> std::hex >> fd;
-      close(fd);
+    int ret = read(fd, data.data(), count);
+    if (ret < 0) {
+      return {F_error(), HandledPacketType::TYPE_ACK};
+    }
+
+    if (ret == 0) {
       return {F(0), HandledPacketType::TYPE_ACK};
     }
-    if((ss = match("vFile:pread:"))) {
-        int fd, count, offset;
 
-        *ss >> std::hex >> fd;
-        ss->get(); // discard comma
-        *ss >> std::hex >> count;
-        ss->get(); // discard comma
-        *ss >> std::hex >> offset;
+    data.resize(ret);
+    return {F_data(ret, data), HandledPacketType::TYPE_ACK};
+  }
+  if ((ss = match("vCont?"))) {
+    return {"vCont;c;t;s;r", HandledPacketType::TYPE_ACK}; // We support continue, step and terminate
+    // FIXME: We also claim to support continue with signal... because it's compulsory
+  }
+  if ((ss = match("vCont;"))) {
+    char action{};
+    int thread{};
 
-        std::string data(count, '\0');
-        if (lseek(fd, offset, SEEK_SET) < 0) {
-            return {F_error(), HandledPacketType::TYPE_ACK};
-        }
-        int ret = read(fd, data.data(), count);
-        if (ret < 0) {
-            return {F_error(), HandledPacketType::TYPE_ACK};
-        }
+    action = ss->get();
 
-        if (ret == 0) {
-          return {F(0), HandledPacketType::TYPE_ACK};
-        }
-
-        data.resize(ret);
-        return {F_data(ret, data), HandledPacketType::TYPE_ACK};
+    if (ss->peek() == ':') {
+      ss->get();
+      *ss >> std::hex >> thread;
     }
-    if ((ss = match("vCont?"))) {
-      return {"vCont;c;t;s;r", HandledPacketType::TYPE_ACK}; // We support continue, step and terminate
-      // FIXME: We also claim to support continue with signal... because it's compulsory
+
+    if (ss->fail()) {
+      return {"E00", HandledPacketType::TYPE_ACK};
     }
-    if ((ss = match("vCont;"))) {
-      char action{};
-      int thread{};
 
-      action = ss->get();
-
-      if (ss->peek() == ':') {
-        ss->get();
-        *ss >> std::hex >> thread;
-      }
-
-      if (ss->fail()) {
-        return {"E00", HandledPacketType::TYPE_ACK};
-      }
-
-      return ThreadAction(action, thread);
-    }
-    return {"", HandledPacketType::TYPE_ACK};
+    return ThreadAction(action, thread);
+  }
+  return {"", HandledPacketType::TYPE_ACK};
 }
 
 GdbServer::HandledPacketType GdbServer::handleThreadOp(const std::string &packet) {
@@ -1204,6 +1204,5 @@ std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
 
   return std::make_unique<FEXCore::Utils::NetStream>(new_fd);
 }
-
 
 } // namespace FEXCore
