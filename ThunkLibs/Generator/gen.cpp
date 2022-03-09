@@ -1,13 +1,252 @@
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/Frontend/CompilerInstance.h"
 
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <numeric>
 #include <string_view>
+#include <variant>
 
 #include <openssl/sha.h>
 
 #include "interface.h"
+
+/**
+ * Describes what action must be taken when passing data from guest to host or vice-versa.
+ */
+enum class ABICompatibility {
+    Trivial,       // data can be exchanged without issues
+    Repack,        // apply struct repacking
+    GuestPtrAsInt, // host-pointer is stored as a uintptr_t with size of the guest pointer. No repacking is needed
+    PackedPtr,     // pointer value is the same for guest and host, converting via zero-extension or truncation where needed. Repacking is only needed if guest pointer size is different from the host
+    Unknown,       // ABI compatibility can't be detected
+};
+
+static ABICompatibility CheckABICompatibility(const ABITable& abi, const StructInfo::ChildInfo& type);
+
+/* type_name must be a non-pointer type that is present in ABITable */
+static ABICompatibility CheckABICompatibility(const ABITable& abi, std::string_view type_name) {
+    // TODO: Assert there's no star or array brackets in type_name
+
+    std::cerr << "Checking ABI compatibility of type " << type_name << "\n";
+
+    std::vector<const TypeInfo*> types_per_abi;
+    for (int i = 0; i < abi.abis.size(); ++i) {
+        auto type_it = abi.abis[i].find(std::string { type_name });
+        if (type_it == abi.abis[i].end()) {
+            // TODO: Probably should assert here?
+            std::cerr << "TYPE NOT PRESENT " << type_name << "\n";
+            assert(false && "Type is not present in all ABIs");
+            return ABICompatibility::Unknown;
+        }
+
+        types_per_abi.push_back(&type_it->second);
+
+        if (types_per_abi[i]->is_opaque()) {
+            // TODO: Requires zero-extension on x86-32
+            // TODO: Should only return trivial ABI compatibility for pointers, since the data itself can't be handled
+            return ABICompatibility::Trivial;
+        }
+
+        // For non-opaque types, make sure the general kind of type is consistent (struct, builtin, ...)
+        if (types_per_abi[i]->index() != types_per_abi[0]->index()) {
+            // TODO: Probably should assert here?
+            assert(false && "Type has inconsistent kind across ABIs");
+            return ABICompatibility::Unknown;
+        }
+    }
+
+    if (auto* struct_info = std::get_if<StructInfo>(types_per_abi[0])) {
+        // First, recursively check ABI compatibility of children:
+        // The struct *can* be trivial if all of them are trivial, otherwise
+        // the struct *can* be repackable if all of them are repackable.
+        auto compat =
+            std::accumulate(struct_info->children.begin(), struct_info->children.end(),
+                            ABICompatibility::Trivial,
+                            [&](ABICompatibility compat, const StructInfo::ChildInfo& next) {
+                                if (compat != ABICompatibility::Trivial && compat != ABICompatibility::Repack) {
+                                    return ABICompatibility::Unknown;
+                                }
+
+                                auto next_compat = CheckABICompatibility(abi, next);
+                                switch (compat) {
+                                case ABICompatibility::Trivial:
+                                    return next_compat;
+
+                                case ABICompatibility::Repack:
+                                    if (next_compat == ABICompatibility::Trivial) {
+                                        return ABICompatibility::Repack;
+                                    } else {
+                                        return next_compat;
+                                    }
+
+                                // TODO: Member with GuestPtrAsInt allows for Trivial compatibility
+
+                                default:
+                                    return ABICompatibility::Unknown;
+                                }
+                            });
+        std::cerr << "  ABICompatibility of children is " << static_cast<int>(compat) << "\n";
+
+        // Second, check if the member offsets are consistent
+        //
+        // The struct as a whole has ABICompatibility::Trivial only if all
+        // members are trivially ABI compatible *and* the member offsets
+        // within the struct are consistent across ABIs.
+        //
+        // If all members are ABI compatible trivially or through repacking,
+        // but the member offsets differ between ABIs, then the struct has
+        // ABICompatibility::Repack.
+        //
+        // Otherwise, the struct has ABICompatibility::Unknown.
+        std::vector<StructInfo::ChildInfo> base_layout;
+        for (int i = 0; i < types_per_abi.size(); ++i) {
+            const auto& children = std::get<StructInfo>(*types_per_abi[i]).children;
+
+            int non_padding_members = 0;
+
+            for (auto& child : children) {
+                if (child.is_padding_member) {
+                    continue;
+                }
+
+                ++non_padding_members;
+
+                if (i == 0) {
+                    // Build reference layout
+                    base_layout.push_back(child);
+                } else {
+                    // Ensure the layout on this ABI is compatible with the reference layout
+                    auto other_child = std::find_if(base_layout.begin(), base_layout.end(),
+                                                    [&child](const StructInfo::ChildInfo& other) {
+                                                        return other.member_name == child.member_name;
+                                                    });
+                    if (other_child == base_layout.end()) {
+                        // Member not present in the reference ABI
+                        // TODO: Fail loudly?
+                        std::cerr << "Member not present in the reference ABI\n";
+                        compat = ABICompatibility::Unknown;
+                        break;
+                    }
+
+                    if (child.offset_bits == other_child->offset_bits) {
+                        // Trivial. Leave compatibility unchanged
+                    } else {
+                        // Child offsets break triviality, but we can restore ABI compatibility by reordering them
+                        if (compat == ABICompatibility::Trivial) {
+                            compat = ABICompatibility::Repack;
+                        }
+                    }
+                }
+            }
+
+            if (non_padding_members != base_layout.size()) {
+                // Some member of the reference ABI is not present here
+                // TODO: Fail loudly?
+                std::cerr << "Some member of the reference ABI is not present in all ABIs\n";
+                compat = ABICompatibility::Unknown;
+                break;
+            }
+        }
+
+        std::cerr << "  ABICompatibility after layout analysis is " << static_cast<int>(compat) << "\n";
+        return compat;
+    } else if (auto* simple_info = std::get_if<SimpleTypeInfo>(types_per_abi[0])) {
+        // TODO: Unless long double
+        std::cerr << "  is of simple kind, returning ABICompatibility::Trivial\n";
+        return ABICompatibility::Trivial;
+    } else {
+        // TODO: Handle opaque types. Probably shouldn't ever get here, but instead special-case the pointer path?
+        std::cerr << "  is of unknown kind, returning ABICompatibility::Unknown\n";
+        return ABICompatibility::Unknown;
+    }
+}
+
+struct FunctionAnnotations {
+    bool in = false;
+    bool out = false;
+    bool ptr_passthrough = false;
+    bool untyped_address = false;
+
+    bool HasAny() const noexcept {
+        return in || out || ptr_passthrough || untyped_address;
+    }
+};
+
+static ABICompatibility CheckABICompatibility(const ABITable& abi, const clang::Type* type, FunctionAnnotations annotations) {
+    if (!type->isPointerType()) {
+        return CheckABICompatibility(abi, clang::QualType(type, 0).getAsString());
+    } else if (type->isFunctionPointerType()) {
+        // TODO
+        return ABICompatibility::Trivial;
+    } else {
+        type = type->getPointeeType()->getUnqualifiedDesugaredType();
+        if (annotations.ptr_passthrough) {
+            return ABICompatibility::GuestPtrAsInt;
+        } else if (annotations.untyped_address) {
+            return ABICompatibility::PackedPtr;
+        } else if (false) {
+            // TODO: Check if the pointee is of opaque type
+        } else {
+            std::cerr << "Checking ABI of " << clang::QualType { type, 0 }.getAsString() << "\n";
+            auto pointee_compat = CheckABICompatibility(abi, clang::QualType { type, 0 }.getAsString());
+            if (pointee_compat == ABICompatibility::Repack) {
+                if (!annotations.in && !annotations.out) {
+                    throw std::runtime_error("Struct requires repacking, but no input/output annotations were given"); // TODO: Proper error
+                }
+                return pointee_compat;
+            }
+
+            return pointee_compat == ABICompatibility::Trivial ? ABICompatibility::Trivial : ABICompatibility::Unknown;
+        }
+    }
+}
+
+static ABICompatibility CheckABICompatibility(const ABITable& abi, const StructInfo::ChildInfo& type) {
+    if (type.pointer_chain.empty() || (type.pointer_chain.size() == 1 && type.pointer_chain[0].array_size)) {
+        return CheckABICompatibility(abi, type.type_name);
+    } else {
+        // TODO: Check member annotations (e.g. passthrough pointer)
+        return ABICompatibility::Unknown;
+    }
+}
+
+#if 0
+static bool TypeHasConsistentABI(const ABITable& abi, const clang::Type* type) {
+    if (!type->isPointerType()) {
+        // TODO: Handle non-pointer types...
+        return true;
+    }
+    type = type->getPointeeType()->getUnqualifiedDesugaredType();
+
+    std::array<const TypeInfo*, ABITable::num_abis> types;
+    for (int i = 0; i < types.size(); ++i) {
+        auto type_it = abi.abis[i].find(clang::QualType(type, 0).getAsString());
+        if (type_it == abi.abis[i].end()) {
+            return false;
+        }
+
+        types[i] = &type_it->second;
+
+        // Make sure the general kind of type is consistent (struct, builtin, ...)
+        if (types[i]->index() != types[0]->index()) {
+            return false;
+        }
+    }
+
+    if (auto* struct_info = std::get_if<StructInfo>(types[0])) {
+        return std::all_of(types.begin(), types.end(),
+                           [&](const TypeInfo* a) {
+                                // TODO: Recursively test ABI compatibility
+                               return std::get<StructInfo>(*a) == *struct_info;
+                           });
+    } else {
+        // TODO
+        return true;
+    }
+}
+#endif
 
 struct FunctionParams {
     std::vector<clang::QualType> param_types;
@@ -71,6 +310,11 @@ struct ThunkedFunction : FunctionParams {
     std::unordered_map<unsigned, ThunkedCallback> callbacks;
 
     clang::FunctionDecl* decl;
+
+    // Maps parameter index to FunctionAnnotations
+    // TODO: Map -1 to return value annotations?
+    // TODO: Is this a good place to put this?
+    std::unordered_map<int, FunctionAnnotations> parameter_annotations;
 };
 
 /**
@@ -284,8 +528,49 @@ public:
 
     /**
      * Matches "template<> struct fex_gen_config<LibraryFunc> { ... }"
+     * and "template<> struct fex_gen_param<LibraryFunc, ParamIdx[, ParamType]> { ... }"
      */
     bool VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* decl) try {
+        if (decl->getName() == "fex_gen_param") {
+            // Function parameter annotation
+            const auto& template_args = decl->getTemplateArgs();
+            auto function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl());
+            auto param_idx = template_args[1].getAsIntegral().getExtValue();
+            auto param_type = template_args[2].getAsType();
+            if (param_type->isVoidType()) {
+                //// Type wasn't specified, so auto-detect it
+                //param_type = function->getParamDecl(param_idx)->getType();
+            } else if (param_type != function->getParamDecl(param_idx)->getType()) {
+                throw Error(decl->getBeginLoc(), "Given parameter type doesn't match the function signature");
+            }
+
+            FunctionAnnotations annotations;
+            for (const clang::CXXBaseSpecifier& base : decl->bases()) {
+                auto annotation = base.getType().getAsString();
+                if (annotation == "fexgen::ptr_in") {
+                    annotations.in = true;
+                } else if (annotation == "fexgen::ptr_out") {
+                    annotations.out = true;
+                } else if (annotation == "fexgen::ptr_inout") {
+                    annotations.in = true;
+                    annotations.out = true;
+                } else if (annotation == "fexgen::ptr_pointer_passthrough") {
+                    annotations.ptr_passthrough = true;
+                } else if (annotation == "fexgen::ptr_is_untyped_address") {
+                    annotations.untyped_address = true;
+                } else {
+                    throw Error(base.getSourceRange().getBegin(), "Unknown function parameter annotation");
+                }
+            }
+            auto thunk_it = std::find_if(thunks.begin(), thunks.end(), [function](auto& thunk) { return thunk.decl == function; });
+            if (thunk_it == thunks.end()) {
+                throw Error(decl->getBeginLoc(), "Before annotating function parameters, fex_gen_config must be specialized for the function itself");
+            }
+            thunk_it->parameter_annotations[param_idx] = annotations;
+            return true;
+        }
+
+
         if (decl->getName() != "fex_gen_config") {
             return true;
         }
@@ -376,9 +661,11 @@ public:
                       throw Error(decl->getBeginLoc(), "callback_guest can only be used with custom_host_impl");
                   }
 
-                  data.callbacks.emplace(param_idx, callback);
-                  if (data.callbacks.size() != 1) {
-                      throw Error(decl->getBeginLoc(), "Support for more than one callback is not implemented");
+                  if (!annotations.custom_guest_entrypoint || !annotations.custom_host_impl) {
+                      data.callbacks.emplace(param_idx, callback);
+                      if (data.callbacks.size() != 1) {
+                          throw Error(decl->getBeginLoc(), "Support for more than one callback is not implemented");
+                      }
                   }
                   if (funcptr->isVariadic() && !callback.is_stub) {
                       throw Error(decl->getBeginLoc(), "Variadic callbacks are not supported");
@@ -450,8 +737,8 @@ public:
     }
 };
 
-GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_)
-    : libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
+GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_, const ABITable& abi_)
+    : libfilename(libname_), libname(libname_), output_filenames(output_filenames_), abi(abi_) {
     for (auto& c : libname) {
         if (c == '-') {
             c = '_';
@@ -480,7 +767,191 @@ static std::string format_function_args(const FunctionParams& params) {
                                 [](std::size_t idx) -> std::string { return "args->a_" + std::to_string(idx); });
 }
 
-void GenerateThunkLibsAction::EndSourceFileAction() {
+static StructInfo::ChildInfo FromClangType(const clang::Type* field_type, std::string_view field_name, std::optional<uint64_t> field_offset, std::optional<unsigned> bitfield_width) {
+    std::vector<PointerInfo> pointer_chain;
+    while (true) {
+        if (auto pointer_type = field_type->getAs<clang::PointerType>()) {
+            field_type = pointer_type->getPointeeType()->getUnqualifiedDesugaredType();
+            pointer_chain.push_back(PointerInfo {});
+        } else if (auto array_type = llvm::dyn_cast<clang::ConstantArrayType>(field_type)) {
+            field_type = array_type->getElementType()->getUnqualifiedDesugaredType();
+            pointer_chain.push_back(PointerInfo { array_type->getSize().getZExtValue() });
+        } else {
+            break;
+        }
+    }
+
+    return {
+        field_offset.value_or(std::numeric_limits<uint64_t>::max()),
+        clang::QualType(field_type, 0).getAsString(),
+        std::string { field_name },
+        std::move(pointer_chain),
+        bitfield_width,
+        false /* is_padding_member (set by caller if applicable) */
+    };
+}
+
+struct MemberAnnotations {
+    std::optional<PointerInfo::Type> pointer_type;
+    bool is_padding_member;
+};
+
+static TypeInfo GetTypeInfoFromClang( clang::ASTContext& context, const clang::Type* type,
+                                      std::unordered_map<const clang::FieldDecl*, MemberAnnotations>& member_annotations) {
+    TypeInfo info;
+
+    if (!type->isIncompleteType()) {
+        auto size_bits = context.getTypeSize(type);
+
+        if (auto* record_type = type->getAs<clang::RecordType>()) {
+            StructInfo struct_info { size_bits };
+            if (record_type->isUnionType()) {
+                struct_info.is_union = true;
+            } else {
+                // This is a proper struct
+                for (auto* field : record_type->getAsCXXRecordDecl()->fields()) {
+                    auto field_type = field->getType().getCanonicalType()->getUnqualifiedDesugaredType();
+                    auto child_info = FromClangType(field_type, field->getNameAsString(), context.getFieldOffset(field), field->isBitField() ? std::optional { field->getBitWidthValue(context) } : std::nullopt);
+                    auto member_annotations_it = member_annotations.find(field);
+                    if (member_annotations_it != member_annotations.end()) {
+                        const auto& annotations = member_annotations_it->second;
+                        if (annotations.pointer_type) {
+                            if (child_info.pointer_chain.empty()) {
+                                // TODO: Error properly
+                                throw std::runtime_error("Specified pointer annotations to non-pointer member");
+                            }
+                            child_info.pointer_chain[0].type = *annotations.pointer_type;
+                        }
+
+                        child_info.is_padding_member = annotations.is_padding_member;
+                    }
+                    struct_info.children.push_back(child_info);
+                }
+            }
+
+            info = struct_info;
+        } else {
+            // TODO: Size?
+            // TODO: Pointer chain
+            info = SimpleTypeInfo {};
+        }
+    }
+
+    return info;
+}
+
+enum class RepackTo {
+    Host,
+    Guest
+};
+
+void emit_repacking_code_child(std::ostream& file, const TypeInfo& child_type_info, std::string source_parent, const StructInfo::ChildInfo& source_child, std::string target_parent, const StructInfo::ChildInfo& target_child, RepackTo target_abi, bool is_fex_wrapped) {
+    // TODO: If ABI compatible, just do a straight assignment
+
+    const bool is_struct = std::holds_alternative<StructInfo>(child_type_info);
+
+    source_parent = source_parent.empty() ? "" : (source_parent + '.');
+    target_parent = target_parent.empty() ? "" : (target_parent + '.');
+
+    if (target_child.pointer_chain.size() == 1 && !target_child.pointer_chain.back().array_size) {
+        // Peel off one pointer layer and recurse
+        auto new_source_child = source_child;
+        new_source_child.member_name = '*' + source_parent + new_source_child.member_name;
+        new_source_child.pointer_chain.pop_back();
+
+        auto new_target_child = target_child;
+        new_target_child.member_name = '*' + target_parent + new_target_child.member_name;
+        new_target_child.pointer_chain.pop_back();
+
+        if (target_abi == RepackTo::Host) {
+            // Repoint the pointer to a stack-allocated struct instance with host layout
+            // TODO: Only do this if the types aren't ABI compatible!
+            new_target_child.member_name = "temp_" + target_child.member_name;
+            file << "  " << (is_struct ? "fex_host_type<" : "") << target_child.type_name << (is_struct ? ">" : "") << " " << new_target_child.member_name << ";\n";
+            file << "  " << target_parent << target_child.member_name << " = &" << new_target_child.member_name << ";\n";
+        }
+
+        return emit_repacking_code_child(file, child_type_info, "", new_source_child, "", new_target_child, target_abi, is_fex_wrapped);
+    } else if (target_child.pointer_chain.size() > 1) {
+        if (target_parent == "args.") {
+            // TODO: Remove this hacky workaround... Needed e.g. for getopt_long, which has a const char* argument and a const struct option* argument
+//            file << "  args." << target_child.member_name << " = " << source_parent << source_child.member_name << ";\n";
+            file << "  memcpy(&args." << target_child.member_name << ", (const void*)&" << source_parent << source_child.member_name << ", sizeof(" << source_parent << source_child.member_name << "));\n";
+        } else {
+            file << "  // TODO: Skipping " << source_child.member_name << " with too many pointer/array decorators\n";
+        }
+        return;
+    }
+    std::string pointer_prefix;
+    for (auto& pointer : source_child.pointer_chain) {
+        if (!pointer.array_size) {
+            pointer_prefix += '*';
+        }
+    }
+    // TODO: Support multi-dimensional arrays
+    const auto array_size = target_child.pointer_chain.size() == 1 ? target_child.pointer_chain.back().array_size : std::nullopt;
+    const auto array_subscript = array_size ? "[elem_idx]" : "";
+    if (array_size) {
+        file << "  for (int elem_idx = 0; elem_idx < " << *array_size << "; ++elem_idx)\n  ";
+    }
+    if (is_struct) {
+        // TODO: Actually, avoid dereferencing and make fex_repack_to_host accept pointer arguments
+        file << "  " << (target_abi == RepackTo::Host ? "fex_repack_to_host" : "fex_repack_from_host") << "(" << pointer_prefix << source_parent << source_child.member_name << array_subscript << ", " << pointer_prefix << target_parent << target_child.member_name << array_subscript << ")";
+    } else {
+        // TODO: Simple types like long-double still need repacking
+        file << "  " << pointer_prefix << target_parent << target_child.member_name << array_subscript << " = " << pointer_prefix << source_parent << source_child.member_name << array_subscript;
+    }
+
+    file << ';';
+    if (source_child.offset_bits != std::numeric_limits<uint64_t>::max()) {
+        file << " // Offset " << source_child.offset_bits / 8 << " -> " << target_child.offset_bits / 8;
+    }
+    file << '\n';
+};
+
+// Custom sort algorithm that works with partial orders.
+//
+// In contrast, std::sort requires that any two different elements A and B of
+// the input range compare either A<B or B<A. This requirement is violated e.g.
+// for dependency relations: Elements A and B might not depend on each other,
+// but they both might depend on some third element C. BubbleSort then ensures
+// C preceeds both A and B in the sorted range, while leaving the relative
+// order of A and B undetermined. In effect when iterating over the sorted
+// range, each dependency is visited before any of its dependees.
+template<std::forward_iterator It>
+void BubbleSort(It begin, It end,
+                std::relation<std::iter_value_t<It>, std::iter_value_t<It>> auto compare) {
+    while (true) {
+        bool fixpoint = true;
+        for (auto it = begin; it != end; ++it) {
+            for (auto it2 = std::next(it); it2 != end; ++it2) {
+                if (compare(*it2, *it)) {
+                    std::swap(*it, *it2);
+                    fixpoint = false;
+                }
+            }
+        }
+
+        if (fixpoint) {
+            return;
+        }
+    }
+}
+
+// TODO: Move elsewhere
+using ClangDiagnosticAsException = std::pair<clang::SourceLocation, unsigned>;
+
+void GenerateThunkLibsAction::EndSourceFileAction() try {
+    auto& context = getCompilerInstance().getASTContext();
+
+    // TODO: Move elsewhere
+    auto Error = [&context]<std::size_t N>(clang::SourceLocation loc, const char (&message)[N]) -> ClangDiagnosticAsException {
+        auto id = context.getDiagnostics().getCustomDiagID(clang::DiagnosticsEngine::Error, message);
+        return std::pair(loc, id);
+    };
+
+    const ABI& guest_abi = abi.abis[1]; // TODO: Select properly
+
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         if (type->isFunctionPointerType()) {
             auto signature = type.getAsString();
@@ -634,8 +1105,132 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         file << "}\n";
     }
 
+    auto get_struct_member_annotations = [](std::string_view parent_name, const StructInfo::ChildInfo& member) {
+        // TODO: Return proper annotations
+        return (/* TODO: cleanup */ parent_name == "struct sigstack" && member.member_name == "ss_sp");
+    };
+
     if (!output_filenames.function_packs.empty()) {
         std::ofstream file(output_filenames.function_packs);
+
+        auto emit_repacking_code = [&file, &guest_abi, &get_struct_member_annotations](std::string_view parent_type, const StructInfo& source_struct_info, const ABI& target_abi, const StructInfo& target_struct_info) {
+            // TODO: memset "into" to zero
+            for (auto& target_child : target_struct_info.children) {
+                auto source_child = std::find_if(source_struct_info.children.begin(), source_struct_info.children.end(),
+                                                [&target_child](const auto& source_child) { return source_child.member_name == target_child.member_name; });
+                if (source_child == source_struct_info.children.end()) {
+                    // TODO: Some structs have named padding members (e.g. stat::__pad0), but skipping them should require an explicit annotation
+                    file << "  // Omitted " << (&target_abi == &guest_abi ? "guest" : "host") << "-only member \"" << target_child.member_name << "\"\n";
+                    continue;
+                }
+
+                const auto& child_type_info = target_abi.at(target_child.type_name);
+                auto child_annotations = get_struct_member_annotations(parent_type, target_child);
+                emit_repacking_code_child(file, child_type_info, "from", *source_child, "into", target_child, (&target_abi == &guest_abi ? RepackTo::Guest : RepackTo::Host), child_annotations);
+            }
+        };
+
+        file << "template<typename> struct fex_host_type;\n";
+
+        // Specialize for pointers
+        file << "template<typename T> struct fex_host_type<T*> {\n";
+        file << "  fex_host_type<T>* data;\n";
+        file << "  fex_host_type<T>& operator*() { return *data; }\n";
+        file << "  fex_host_type& operator=(fex_host_type<T>* ptr) { data = ptr; return *this; }\n";
+        file << "};\n";
+        file << "template<typename T> struct fex_host_type<const T*> : fex_host_type<T*> {\n";
+        file << "  fex_host_type& operator=(fex_host_type<std::remove_const_t<T>>* ptr) { memcpy(&this->data, &ptr, sizeof(ptr)); return *this; }\n";
+        file << "};\n";
+
+        // Used for pointers to untyped data (e.g. free), which are compatible with the host ABI (e.g. x86_64 on aarch64) or can be zero-extended (e.g. x86_32 on aarch64)
+        file << "template<typename T> struct fex_untyped_host_pointer { uint64_t host_pointer; };\n";
+
+        // Compares such that A < B if B contains A as a member and requires A to be completely defined (i.e. non-pointer/non-reference).
+        // This applies recursively to structs contained by B.
+        struct compare_by_struct_dependency {
+            const ABI& abi;
+
+            bool operator()(const std::pair<std::string, TypeInfo>& a, const std::pair<std::string, TypeInfo>& b) /*const*/ {
+                auto* b_as_struct = std::get_if<StructInfo>(&b.second);
+                if (!b_as_struct) {
+                    // Not a struct => no dependency
+                    return false;
+                }
+
+                for (auto& child : b_as_struct->children) {
+                    if (child.type_name == a.first) {
+                        return true;
+                    }
+
+//                    // If this is a pointer (and not a fixed-size array), we don't need a complete definition
+//                    if (!child.pointer_chain.empty() && std::none_of(child.pointer_chain.begin(), child.pointer_chain.end(),
+//                                                                      [](const PointerInfo& ptr) { return ptr.array_size.has_value(); })) {
+//                         continue;
+//                    }
+
+                    auto child_info = abi.find(child.type_name);
+                    if (child_info != abi.end() && (*this)(a, *child_info)) {
+                        // Child depends on A => transitive dependency
+                        return true;
+                    }
+                }
+
+                // No dependency found
+                return false;
+            }
+        };
+
+        std::vector<std::pair<std::string, TypeInfo>> types(abi.host().size());
+        std::copy(abi.host().begin(), abi.host().end(), types.begin());
+        auto comparer = compare_by_struct_dependency{abi.host()};
+        BubbleSort(types.begin(), types.end(), comparer);
+
+        for (auto& type : types) {
+            if (auto* host_struct_info = std::get_if<StructInfo>(&type.second)) {
+                // TODO: Assert they have common members
+
+                auto struct_name = type.first;
+                if (!guest_abi.count(type.first)) {
+                    continue;
+                }
+                const auto& guest_struct_info = std::get<StructInfo>(guest_abi.at(type.first));
+
+                file << "template<> struct fex_host_type<" << struct_name << "> {\n";
+                // TODO: Needs fex_host_type declared for all children
+                for (auto& child : host_struct_info->children) {
+                    if (/* TODO: cleanup */ struct_name == "struct sigstack" && child.member_name == "ss_sp") {
+                        file << "  fex_untyped_host_pointer<" << child.type_name << ">";
+                    } else if (std::holds_alternative<StructInfo>(abi.host().at(child.type_name))) {
+                        file << "  fex_host_type<" << child.type_name << ">";
+                    } else {
+                        file << "  " << child.type_name;
+                    }
+                    const auto array_size = child.pointer_chain.size() == 1 ? child.pointer_chain.back().array_size : std::nullopt;
+                    if (!array_size) {
+                        for ([[maybe_unused]] auto& pointer_info : child.pointer_chain) {
+                            file << "*";
+                        }
+                    }
+                    file << " " << child.member_name;
+                    if (array_size) {
+                        file << '[' << *array_size << ']';
+                    }
+                    file << "; // " << child.offset_bits / 8 << "\n";
+                }
+                file << "};\n";
+                file << "static_assert(sizeof(fex_host_type<" << struct_name << ">) == " << host_struct_info->size_bits / 8 << ");\n\n";
+
+                // Repacker for guest->host layout
+                file << "inline void fex_repack_to_host(std::add_lvalue_reference_t<std::add_const_t<" << struct_name << ">> from, fex_host_type<" << struct_name << ">& into) {\n";
+                emit_repacking_code(struct_name, guest_struct_info, abi.host(), *host_struct_info);
+                file << "}\n\n";
+
+                // Repacker for host->guest layout
+                file << "inline void fex_repack_from_host(const fex_host_type<" << struct_name << ">& from, std::add_lvalue_reference_t<" << struct_name << "> into) {\n";
+                emit_repacking_code(struct_name, *host_struct_info, guest_abi, guest_struct_info);
+                file << "}\n\n";
+            }
+        }
 
         file << "extern \"C\" {\n";
         for (auto& data : thunks) {
@@ -645,9 +1240,34 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             // Using trailing return type as it makes handling function pointer returns much easier
             file << ") -> " << data.return_type.getAsString() << " {\n";
             file << "  struct {\n";
+            std::vector<ABICompatibility> param_abi_compat;
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
-                file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                const auto& annotations = data.parameter_annotations[idx];
+                auto compat = CheckABICompatibility(abi, type.getTypePtr(), annotations);
+                if (type->isPointerType() && compat == ABICompatibility::Unknown) {
+//                    throw Error(data.decl->getParamDecl(idx)->getBeginLoc(), "Function parameters that are ABI-incompatible pointers must be annotated");
+                    throw Error(clang::SourceLocation {} /* TODO: Using proper location crashes currently */, "Could not determine ABI compatibility for function parameter of pointer type. Are you missing any annotations?");
+                }
+                param_abi_compat.push_back(compat);
+            }
+
+            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
+                auto& type = data.param_types[idx];
+                if (param_abi_compat[idx] == ABICompatibility::Repack) { // && type.getUnqualifiedType().getAsString() != "void **" /* TODO: Drop workaround for _internal variadic functions */) {
+                    // TODO: Define fex_host_type for pointers?
+                    file << "    " << "fex_host_type<" << type.getUnqualifiedType().getAsString() << "> a_" + std::to_string(idx) << ";\n";
+                } else if (param_abi_compat[idx] == ABICompatibility::Trivial) {
+                    file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                } else if (param_abi_compat[idx] == ABICompatibility::GuestPtrAsInt) {
+                    // TODO: 32-bit support
+                    file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                } else if (param_abi_compat[idx] == ABICompatibility::PackedPtr) {
+                    // TODO: 32-bit support
+                    file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                } else {
+                  throw std::runtime_error("Unknown ABI compatibility for function parameter of type " + type.getAsString()); // TODO: Proper error
+                }
             }
             if (!is_void) {
                 file << "    " << format_decl(data.return_type, "rv") << ";\n";
@@ -656,10 +1276,71 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "    char force_nonempty;\n";
             }
             file << "  } args;\n";
+
+            // Initialize host argument structure (repacking guest->host structs if needed)
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
-                file << "  args.a_" << idx << " = a_" << idx << ";\n";
+                if (!data.parameter_annotations[idx].in) {
+                    // TODO: Ideally, avoid declaring the corresponding member in the "args" structure altogether
+                    continue;
+                }
+                // TODO: Converting to ChildInfo may be too specific. Use GetTypeInfoFromClang instead?
+                auto& type = data.param_types[idx];
+                auto field_type = data.param_types.at(idx).getCanonicalType()->getUnqualifiedDesugaredType();
+                auto guest_args = FromClangType(field_type, "a_" + std::to_string(idx), std::nullopt, std::nullopt);
+                auto host_args = FromClangType(field_type, "a_" + std::to_string(idx), std::nullopt, std::nullopt);
+                if (abi.host().count(host_args.type_name)) {
+                    if (param_abi_compat[idx] == ABICompatibility::Trivial ||
+                        param_abi_compat[idx] == ABICompatibility::GuestPtrAsInt ||
+                        param_abi_compat[idx] == ABICompatibility::PackedPtr) { // && type.getUnqualifiedType().getAsString() != "void **" /* TODO: Drop workaround for _internal variadic functions */) {
+                        file << "  args.a_" << idx << " = a_" << idx << ";\n";
+                    } else if (param_abi_compat[idx] == ABICompatibility::Repack) {
+                        const auto& type_info = abi.host().at(host_args.type_name);
+                        // TODO: Include function parameter annotations
+                        // TODO: Should be fex_wrapped for struct types
+                        emit_repacking_code_child(file, type_info, "", guest_args, "args", host_args, RepackTo::Host, false);
+                    } else {
+                        assert(false);
+                    }
+                } else {
+                    // TODO: Error. Can't decide if repacking is needed without ABI description
+                    file << "  // TODO: Can't repack " << host_args.type_name << " without ABI info\n";
+                    // TODO: Error out instead of trying anyway...
+                    file << "  memcpy(&args.a_" << idx << ", (const void*)&a_" << idx << ", sizeof(a_" << idx << "));\n";
+                }
             }
-            file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
+
+            file << "\n  fexthunks_" << libname << "_" << function_name << "(&args);\n\n";
+
+            // Repack host->guest structs for output parameters
+            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
+                // NOTE: Even for by-value parameters, structs may contain pointers that may need to be updated!
+                const auto qual_field_type = data.param_types.at(idx).getCanonicalType();
+                auto field_type = qual_field_type->getUnqualifiedDesugaredType();
+                if (!data.parameter_annotations[idx].out) {
+                    continue;
+                }
+
+                if (field_type->isPointerType() || field_type->isRecordType()) {
+                    // TODO: Use GetTypeInfoFromClang instead?
+                    // TODO: For plain pointer types (e.g. char*), this currently does an incorrect pointer reassignment instead of a data reassignment!!
+                    auto guest_args = FromClangType(field_type, "a_" + std::to_string(idx), std::nullopt, std::nullopt);
+                    auto host_args = FromClangType(field_type, "a_" + std::to_string(idx), std::nullopt, std::nullopt);
+                    if (abi.host().count(host_args.type_name)) {
+                        if (param_abi_compat[idx] == ABICompatibility::Repack) {
+                            const auto& type_info = abi.host().at(host_args.type_name);
+                            // TODO: Include function parameter annotations
+                            // TODO: Should be fex_wrapped for struct types
+                            emit_repacking_code_child(file, type_info, "args", host_args, "", guest_args, RepackTo::Guest, false);
+                        } else {
+                            file << "  // NO NEED TO REPACK OUTGOING DATA\n";
+                        }
+                    } else {
+                        // TODO: Error. Can't decide if repacking is needed without ABI description
+                        file << "  // TODO: Can't repack " << host_args.type_name << " without ABI info\n";
+                    }
+                }
+            }
+
             if (!is_void) {
                 file << "  return args.rv;\n";
             }
@@ -712,7 +1393,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 }
             }
 
-            file << "static void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
+            file << "/*static */void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
 
             const auto impl_function_name = (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") + libname + "_" + function_name;
             auto format_param = [&](std::size_t idx) {
@@ -928,8 +1609,264 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             file << "\n";
         }
     }
+} catch (ClangDiagnosticAsException& exception) {
+    auto& diagnostics = getCompilerInstance().getASTContext().getDiagnostics();
+    std::cerr << "DIAGNOSTICS: " << &diagnostics << "\n";
+    diagnostics.Report(exception.first, exception.second);
+} catch (std::runtime_error& exception) {
+    // TODO: Avoid throwing std::runtime_error and remove this handler
+
+    std::cerr << "EXCEPTION: " << exception.what() << "\n";
+    auto& diagnostics = getCompilerInstance().getASTContext().getDiagnostics();
+    auto id = diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Error, "ERROR: std::runtime_error exception thrown. See log for details");
+    diagnostics.Report(clang::SourceLocation {}, id);
 }
 
 std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
     return std::make_unique<ASTConsumer>();
+}
+
+#include <unordered_set>
+
+#include "abi.h"
+
+class AnalyzeABIVisitor : public clang::RecursiveASTVisitor<AnalyzeABIVisitor> {
+    clang::ASTContext& context;
+    ABI& type_abi;
+
+    using ClangDiagnosticAsException = std::pair<clang::SourceLocation, unsigned>;
+
+    template<std::size_t N>
+    [[nodiscard]] ClangDiagnosticAsException Error(clang::SourceLocation loc, const char (&message)[N]) {
+        auto id = context.getDiagnostics().getCustomDiagID(clang::DiagnosticsEngine::Error, message);
+        return std::pair(loc, id);
+    }
+
+    // Type data from annotations
+    struct TypeData {
+        // If true, objects of this type are never accessed directly on this ABI
+        bool is_opaque;
+
+        // For pointer members, a pointer type can be specified here
+        std::unordered_map<const clang::FieldDecl*, MemberAnnotations> members;
+    };
+
+    std::unordered_map<const clang::Type*, TypeData> types;
+
+public:
+    AnalyzeABIVisitor(clang::ASTContext& context_, ABI& abi_) : context(context_), type_abi(abi_) {
+    }
+
+    ~AnalyzeABIVisitor() {
+        // TODO: Move all of this into AnalyzeABIConsumer
+
+        while (!types.empty()) {
+            auto [type, type_data]  = *types.begin();
+            types.erase(type);
+
+            auto type_name = static_cast<clang::QualType>(type->getCanonicalTypeUnqualified()).getAsString();
+
+            if (std::any_of(type_abi.begin(), type_abi.end(), [&](auto& info) { return info.first == type_name; })) {
+                continue;
+            }
+
+            type_abi.emplace( type_name,
+                              type_data.is_opaque ? TypeInfo {} : GetTypeInfoFromClang(context, type, type_data.members));
+        }
+
+        // Completeness check
+        bool changed = true;
+        while (changed) {
+            changed = false;
+
+            for (const auto& [type_name, type_info] : type_abi) {
+                if (auto struct_info = type_info.as_struct()) {
+                    bool remove = false;
+                    if (struct_info->is_union) {
+                        // Unions are not supported yet
+                        remove = true;
+                    }
+
+                    for (auto& child : struct_info->children) {
+                        if (!type_abi.contains(child.type_name)) {
+                            // No ABI description of the member available, so we can't reliably the describe parent ABI either
+                            remove = true;
+                        } else if (child.member_name == "") {
+                            // Some structs have unnamed bit fields, e.g. struct timex
+                            remove = true;
+                        } else if (child.pointer_chain.size() != 1 &&
+                                   std::any_of(child.pointer_chain.begin(), child.pointer_chain.end(),
+                                               [](auto& info) -> bool { return info.array_size.has_value(); })) {
+                            // Nesting pointers and array is not supported yet
+                            // TODO: See below. Pointers aren't supported at all
+                            remove = true;
+                        } else if (child.pointer_chain.size() == 1 &&
+                                   !child.pointer_chain[0].array_size) {
+                            // TODO: Actually, we don't support these at all. Structs like ftsent make this really difficult to do safely!
+                            remove = true;
+                        } else if (child.type_name.starts_with("union ")) {
+                            // Unions are not supported yet
+                            remove = true;
+                        } else if (child.bitfield_size) {
+                            // Bit fields are not supported yet
+                            remove = true;
+                        }
+                    }
+
+                    if (remove) {
+                        // Remove parent type since we can't accurately describe its ABI
+                        type_abi.erase(type_name);
+                        changed = true;
+                        goto repeat;
+                    }
+                }
+            }
+        repeat:;
+        }
+    }
+
+    bool VisitFunctionDecl(clang::FunctionDecl* decl) try {
+        for (clang::ParmVarDecl* param : decl->parameters()) {
+            HandleType(param->getBeginLoc(), param->getType().getTypePtr());
+        }
+        return true;
+    } catch (ClangDiagnosticAsException& exception) {
+        context.getDiagnostics().Report(exception.first, exception.second);
+        return false;
+    }
+
+    /**
+     * Matches "template<> struct fex_gen_config<&LibraryStruct> { ... }"
+     */
+    bool VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* decl) try {
+        if (decl->getName() != "fex_gen_config" && decl->getName() != "fex_gen_type") {
+            return true;
+        }
+
+        if (auto namespace_decl = llvm::dyn_cast<clang::NamespaceDecl>(decl->getDeclContext())) {
+            // Namespace declarations are ignored in this pass
+            return true;
+        }
+
+        if (decl->getSpecializationKind() == clang::TSK_ExplicitInstantiationDefinition) {
+            throw Error(decl->getBeginLoc(), "fex_gen_config may not be partially specialized\n");
+        }
+
+        const auto& template_args = decl->getTemplateArgs();
+        assert(template_args.size() == 1);
+
+        if (decl->getName() == "fex_gen_type") {
+            // Type annotation
+            auto type = template_args[0].getAsType();
+            HandleType(clang::SourceLocation {} /* TODO */, type.getTypePtr());
+            for (const clang::CXXBaseSpecifier& base : decl->bases()) {
+                auto annotation = base.getType().getAsString();
+                if (annotation == "fexgen::opaque_to_guest" ||
+                    annotation == "fexgen::opaque_to_host") {
+                  types.at(type.getTypePtr()).is_opaque = true;
+                } else {
+                    throw Error(base.getSourceRange().getBegin(), "Unknown type annotation");
+                }
+            }
+        } else if (decl->getName() == "fex_gen_config") {
+            if (auto member_decl = llvm::dyn_cast<clang::FieldDecl>(template_args[0].getAsDecl())) {
+                // Struct member annotation
+                auto parent_type = member_decl->getParent()->getTypeForDecl();
+                auto& annotated_members = types.at(parent_type).members;
+                HandleType(member_decl->getBeginLoc(), parent_type);
+                for (const clang::CXXBaseSpecifier& base : decl->bases()) {
+                    auto annotation = base.getType().getAsString();
+                    if (annotation == "fexgen::ptr_pointer_passthrough") {
+                        annotated_members[member_decl].pointer_type = PointerInfo::Type::Passthrough;
+                    } else if (annotation == "fexgen::ptr_is_untyped_address") {
+                        annotated_members[member_decl].pointer_type = PointerInfo::Type::Untyped;
+                    } else if (annotation == "fexgen::ptr_todo_only64") {
+                        annotated_members[member_decl].pointer_type = PointerInfo::Type::TODOONLY64;
+                    } else if (annotation == "fexgen::is_padding_member") {
+                        annotated_members[member_decl].is_padding_member = true;
+                    } else {
+                        throw Error(base.getSourceRange().getBegin(), "Unknown struct member annotation");
+                    }
+                }
+            } else {
+                // Other annotations are ignored in this ABI pass
+            }
+        } else {
+            // Other annotations are ignored in the ABI pass
+        }
+
+        return true;
+    } catch (ClangDiagnosticAsException& exception) {
+        context.getDiagnostics().Report(exception.first, exception.second);
+        return false;
+    }
+
+
+private:
+    void HandleType(clang::SourceLocation loc, const clang::Type* type) {
+        // Strip any typedefs or "struct" prefixes from the type
+        type = type->getUnqualifiedDesugaredType();
+
+        if (types.contains(type)) {
+            return;
+        }
+
+        if (auto* builtin_type = type->getAs<clang::BuiltinType>()) {
+            clang::PrintingPolicy pol {{}};
+//            types.insert(builtin_type);
+            auto [it, inserted] = types.emplace(type, TypeData {});
+            if (!inserted) {
+                abort();
+            }
+        } else if (type->getAs<clang::FunctionProtoType>()) {
+            // Nothing to do
+        } else if (type->getAs<clang::TemplateSpecializationType>()) {
+            // Not handled currently
+        } else if (type->getAs<clang::TemplateTypeParmType>()) {
+            // Not handled currently
+        } else if (type->getAs<clang::DecltypeType>()) {
+            // Not handled currently
+        } else if (type->getAs<clang::ReferenceType>()) {
+            // Not handled currently
+        } else if (auto* array_type = llvm::dyn_cast<clang::ArrayType>(type)) {
+            HandleType(loc, array_type->getElementType().getTypePtr());
+        } else if (auto* pointer_type = type->getAs<clang::PointerType>()) {
+            HandleType(loc, pointer_type->getPointeeType().getTypePtr());
+        } else if (auto* enum_type = type->getAs<clang::EnumType>()) {
+            types.emplace(enum_type, TypeData {});
+        } else if (auto* record_type = type->getAs<clang::RecordType>()) {
+            // TODO: Handle anonymous unions
+
+            types.emplace(record_type, TypeData {});
+            RegisterStruct(record_type->getDecl());
+        } else {
+            // TODO: Emit warning about unknown type
+            std::cerr << "UNKNOWN TYPE: ";
+            type->dump();
+//            throw Error(loc, "Unknown type");
+        }
+    }
+
+    void RegisterStruct(const clang::RecordDecl* decl) {
+        for (auto* field : decl->fields()) {
+            HandleType(field->getBeginLoc(), field->getType().getTypePtr());
+        }
+    }
+};
+
+class AnalyzeABIConsumer : public clang::ASTConsumer {
+    ABI& abi;
+
+public:
+    AnalyzeABIConsumer(ABI& output) : abi(output) {
+
+    }
+
+    void HandleTranslationUnit(clang::ASTContext& context) override {
+        AnalyzeABIVisitor{context, abi}.TraverseDecl(context.getTranslationUnitDecl());
+    }
+};
+
+std::unique_ptr<clang::ASTConsumer> AnalyzeABIAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
+    return std::make_unique<AnalyzeABIConsumer>(abi);
 }

@@ -18,6 +18,8 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    const int total_argc = argc;
+
     // Parse compile flags after "--" (this updates argc to the index of the "--" separator)
     std::string error;
     auto compile_db = FixedCompilationDatabase::loadFromCommandLine(argc, argv, error);
@@ -69,6 +71,35 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // TODO: Add prepass to gather functions, then only extract type ABIs for types that are actually used
+
+    ABITable abi = ABITable::standard();
     ClangTool Tool(*compile_db, { filename });
-    return Tool.run(std::make_unique<GenerateThunkLibsActionFactory>(std::move(libname), std::move(output_filenames)).get());
+    // TODO: Error check
+    auto ret = Tool.run(std::make_unique<AnalyzeABIActionFactory>(abi.host()).get());
+    if (ret != 0) {
+        std::cerr << "Aborting because ABI analysis failed for host\n";
+        return ret;
+    }
+
+    std::pair<ABI&, std::vector<std::string>> abi_commands[] = {
+        // TODO: Attempt to find header locations automatically...
+//        { abi.x86_32, { "-target", "i686-linux-gnu", "-isystem/usr/i686-linux-gnu/include", "-isystem/usr/i686-linux-gnu/include/c++/11/i686-linux-gnu/" } },
+        { abi.abis[1], { "-target", "x86_64-linux-gnu", "-isystem/usr/x86_64-linux-gnu/include", "-isystem/usr/x86_64-linux-gnu/include/c++/11/x86_64-linux-gnu/" } }
+    };
+    for (auto& [abi, extra_commands] : abi_commands) {
+        // Gather arguments past "--" and add target-specific commands
+        std::vector<std::string> commands { argv + argc + 1, argv + total_argc };
+        commands.insert(commands.end(), extra_commands.begin(), extra_commands.end());
+
+        auto compile_db = FixedCompilationDatabase(".", commands);
+        ClangTool ToolGuest(compile_db, { filename });
+        auto ret = ToolGuest.run(std::make_unique<AnalyzeABIActionFactory>(abi).get());
+        if (ret != 0) {
+            std::cerr << "Aborting because ABI analysis failed for " << abi_commands->second[1] << "\n";
+            return ret;
+        }
+    }
+
+    return Tool.run(std::make_unique<GenerateThunkLibsActionFactory>(std::move(libname), std::move(output_filenames), abi).get());
 }
