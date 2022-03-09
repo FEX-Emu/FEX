@@ -83,6 +83,8 @@ public:
     return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher, IncludeCompileService);
   }
 
+  static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
+
 private:
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;

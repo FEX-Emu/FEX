@@ -454,37 +454,38 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
 
     ThreadSharedData.Dispatcher = Dispatcher.get();
+  }
+}
 
-    // This will register the host signal handler per thread, which is fine
-    CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
-    }, true);
+void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+  CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
+  }, true);
 
-    CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
+  CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
 
-      if (!Core->Dispatcher->IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext))) {
-        // Wasn't a sigbus in JIT code
-        return false;
-      }
-
-      return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Core->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
-    }, true);
-
-    CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
-    }, true);
-
-    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-    };
-
-    for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-      CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+    if (!Core->Dispatcher->IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext))) {
+      // Wasn't a sigbus in JIT code
+      return false;
     }
+
+    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Core->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
+  }, true);
+
+  CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
+  }, true);
+
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+  };
+
+  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
   }
 }
 
@@ -867,5 +868,9 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
 
 std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
   return std::make_unique<Arm64JITCore>(ctx, Thread, CompileThread);
+}
+
+void InitializeArm64JITSignalHandlers(FEXCore::Context::Context *CTX) {
+  Arm64JITCore::InitializeSignalHandlers(CTX);
 }
 }
