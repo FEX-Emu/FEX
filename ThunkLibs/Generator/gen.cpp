@@ -24,6 +24,12 @@ struct ThunkedCallback : FunctionParams {
     bool is_variadic = false;
 };
 
+enum class VariadicStrategy {
+    Unneeded,
+    UniformList, // Convert va_list into a pair of element count and pointer to array of arguments with type specified by an annotation
+    LikePrintf,  // Convert va_list into a triple of element count, pointer to array of element types (e.g. PA_INT), and pointer to array of 128-bit value slots
+};
+
 /**
  * Guest<->Host transition point.
  *
@@ -37,7 +43,7 @@ struct ThunkedFunction : FunctionParams {
     clang::QualType return_type;
 
     // If true, param_types contains an extra size_t and the valist for marshalling through an internal function
-    bool is_variadic = false;
+    VariadicStrategy variadic_strategy = VariadicStrategy::Unneeded;
 
     // If true, the unpacking function will call a custom fexfn_impl function
     // to be provided manually instead of calling the host library function
@@ -286,9 +292,14 @@ public:
           ThunkedFunction data;
           data.function_name = emitted_function->getName().str();
           data.return_type = return_type;
-          data.is_variadic = emitted_function->isVariadic();
-
           data.decl = emitted_function;
+
+          if (emitted_function->isVariadic()) {
+            if (!annotations.uniform_va_type) {
+                throw Error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
+            }
+            data.variadic_strategy = VariadicStrategy::UniformList;
+          }
 
           data.custom_host_impl = annotations.custom_host_impl;
 
@@ -326,24 +337,20 @@ public:
                                                          [](auto& cb) { return !cb.second.is_stub && !cb.second.is_guest; });
           thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
                                                       namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
-                                                      has_nonstub_callbacks || data.is_variadic || annotations.custom_guest_entrypoint,
-                                                      data.is_variadic,
+                                                      has_nonstub_callbacks || data.variadic_strategy == VariadicStrategy::UniformList || annotations.custom_guest_entrypoint,
+                                                      emitted_function->isVariadic(),
                                                       std::nullopt });
           if (namespace_info.generate_guest_symtable) {
               thunked_api.back().symtable_namespace = namespace_idx;
           }
 
-          if (data.is_variadic) {
-              if (!annotations.uniform_va_type) {
-                  throw Error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
-              }
-
+          if (data.variadic_strategy == VariadicStrategy::UniformList) {
               // Convert variadic argument list into a count + pointer pair
               data.param_types.push_back(context.getSizeType());
               data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
           }
 
-          if (has_nonstub_callbacks || data.is_variadic) {
+          if (has_nonstub_callbacks || data.variadic_strategy == VariadicStrategy::UniformList) {
               // This function is thunked through an "_internal" symbol since its signature
               // is different from the one in the native host/guest libraries.
               data.function_name = data.function_name + "_internal";
