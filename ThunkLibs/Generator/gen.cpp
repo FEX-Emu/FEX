@@ -27,7 +27,10 @@ struct ThunkedCallback : FunctionParams {
 enum class VariadicStrategy {
     Unneeded,
     UniformList, // Convert va_list into a pair of element count and pointer to array of arguments with type specified by an annotation
-    LikePrintf,  // Convert va_list into a triple of element count, pointer to array of element types (e.g. PA_INT), and pointer to array of 128-bit value slots
+
+    // Convert va_list into a triple of element count, pointer to array of element types (e.g. PA_INT), and pointer to array of value slots.
+    // Each formatted argument is written to a 128-bit value slot, which is enough to fit the largest type printable by printf (long double)
+    LikePrintf,
 };
 
 /**
@@ -44,6 +47,12 @@ struct ThunkedFunction : FunctionParams {
 
     // If true, param_types contains an extra size_t and the valist for marshalling through an internal function
     VariadicStrategy variadic_strategy = VariadicStrategy::Unneeded;
+
+    // For s(n)printf-like functions, this field stores the index of the output buffer parameter
+    std::optional<int> sprintf_buffer;
+
+    // For snprintf-like functions, this field stores the index of the output buffer size parameter
+    std::optional<int> snprintf_buffer_size;
 
     // If true, the unpacking function will call a custom fexfn_impl function
     // to be provided manually instead of calling the host library function
@@ -130,6 +139,10 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
         bool returns_guest_pointer = false;
 
+        bool like_printf = false;
+        std::optional<int> sprintf_buffer = std::nullopt;
+        std::optional<int> snprintf_buffer_size = std::nullopt;
+
         std::optional<clang::QualType> uniform_va_type;
 
         CallbackStrategy callback_strategy = CallbackStrategy::Default;
@@ -183,6 +196,12 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
 
         for (const auto& base : decl->bases()) {
             auto annotation = base.getType().getAsString();
+
+            auto read_int_arg = [&base](int arg_idx) -> int64_t {
+                auto template_arg_expr = base.getType()->getAs<clang::TemplateSpecializationType>()->getArg(arg_idx).getAsExpr();
+                return llvm::dyn_cast<clang::ConstantExpr>(template_arg_expr)->getAPValueResult().getInt().getExtValue();
+            };
+
             if (annotation == "fexgen::returns_guest_pointer") {
                 ret.returns_guest_pointer = true;
             } else if (annotation == "fexgen::custom_host_impl") {
@@ -193,6 +212,15 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
                 ret.callback_strategy = CallbackStrategy::Guest;
             } else if (annotation == "fexgen::custom_guest_entrypoint") {
                 ret.custom_guest_entrypoint = true;
+            } else if (annotation == "fexgen::like_printf") {
+                ret.like_printf = true;
+            } else if (annotation.starts_with("fexgen::like_sprintf<")) {
+                ret.like_printf = true;
+                ret.sprintf_buffer = read_int_arg(0);
+            } else if (annotation.starts_with("fexgen::like_snprintf<")) {
+                ret.like_printf = true;
+                ret.sprintf_buffer = read_int_arg(0);
+                ret.snprintf_buffer_size = read_int_arg(1);
             } else {
                 throw Error(base.getSourceRange().getBegin(), "Unknown annotation");
             }
@@ -294,14 +322,40 @@ public:
           data.return_type = return_type;
           data.decl = emitted_function;
 
-          if (emitted_function->isVariadic()) {
-            if (!annotations.uniform_va_type) {
-                throw Error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
-            }
-            data.variadic_strategy = VariadicStrategy::UniformList;
-          }
-
           data.custom_host_impl = annotations.custom_host_impl;
+
+          const bool has_explicit_va_list = std::any_of(emitted_function->param_begin(), emitted_function->param_end(),
+                       [](clang::ParmVarDecl* param) { return param->getType().getAsString() == "__gnuc_va_list"; });
+
+          if (emitted_function->isVariadic()) {
+              if (annotations.uniform_va_type) {
+                  assert(!has_explicit_va_list); // Not implemented yet
+                  data.variadic_strategy = VariadicStrategy::UniformList;
+              } else if (annotations.like_printf) {
+                  data.variadic_strategy = VariadicStrategy::LikePrintf;
+                  data.sprintf_buffer = annotations.sprintf_buffer;
+                  data.snprintf_buffer_size = annotations.snprintf_buffer_size;
+              } else {
+                  throw Error(decl->getBeginLoc(), "Variadic functions must be annotated with parameter type using uniform_va_type");
+              }
+          } else if (has_explicit_va_list) {
+              if (annotations.like_printf) {
+                  // Assume this is a vprintf-like function that takes an explicit va_list parameter
+                  auto num_params = emitted_function->getNumParams();
+                  if (num_params == 0 ||
+                      emitted_function->getParamDecl(num_params - 1)->getType().getAsString() != "__gnuc_va_list") {
+                      throw Error(decl->getBeginLoc(), "printf annotations may only be used if the function is variadic or has a va_list parameter at the end");
+                  }
+
+                  data.variadic_strategy = VariadicStrategy::LikePrintf;
+                  data.sprintf_buffer = annotations.sprintf_buffer;
+                  data.snprintf_buffer_size = annotations.snprintf_buffer_size;
+              } else {
+                  throw Error(decl->getBeginLoc(), "Functions with explicit va_list parameter must be annotated (consider like_printf)");
+              }
+          } else if (annotations.uniform_va_type || annotations.like_printf) {
+              throw Error(decl->getBeginLoc(), "Invalid annotation for non-variadic function");
+          }
 
           for (std::size_t param_idx = 0; param_idx < emitted_function->param_size(); ++param_idx) {
               auto* param = emitted_function->getParamDecl(param_idx);
@@ -348,9 +402,19 @@ public:
               // Convert variadic argument list into a count + pointer pair
               data.param_types.push_back(context.getSizeType());
               data.param_types.push_back(context.getPointerType(*annotations.uniform_va_type));
+          } else if (data.variadic_strategy == VariadicStrategy::LikePrintf) {
+              // Pop explicit va_list argument (if any)
+              if (!data.decl->isVariadic()) {
+                  data.param_types.pop_back();
+              }
+
+              // Convert variadic argument list into a count + type[] + value[] triple
+              data.param_types.push_back(context.getSizeType());
+              data.param_types.push_back(context.getPointerType(context.IntTy));
+              data.param_types.push_back(context.VoidPtrTy);
           }
 
-          if (has_nonstub_callbacks || data.variadic_strategy == VariadicStrategy::UniformList) {
+          if (has_nonstub_callbacks || data.variadic_strategy != VariadicStrategy::Unneeded) {
               // This function is thunked through an "_internal" symbol since its signature
               // is different from the one in the native host/guest libraries.
               data.function_name = data.function_name + "_internal";
@@ -430,7 +494,11 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 return signature;
             }
         } else {
-            return type.getAsString() + " " + std::string(name);
+            auto type_name = type.getAsString();
+            if (type_name == "__gnuc_va_list") {
+                type_name = "va_list";
+            }
+            return type_name + " " + std::string(name);
         }
     };
 
@@ -505,13 +573,45 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             }
 
             const auto& function_name = data.function_name;
+            const char* variadic_ellipsis = data.is_variadic ? ", ..." : "";
 
-            file << "__attribute__((alias(\"fexfn_pack_" << function_name << "\"))) auto " << function_name << "(";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
-                auto& type = data.param_types[idx];
-                file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
+            const bool has_explicit_va_list = (!data.param_types.empty() && data.param_types.back().getAsString() == "__gnuc_va_list");
+
+            if (!data.is_variadic && !has_explicit_va_list) {
+                file << "__attribute__((alias(\"fexfn_pack_" << function_name << "\"))) auto " << function_name << "(";
+                file << format_function_params(data);
+                file << variadic_ellipsis << ") -> " << data.return_type.getAsString() << ";\n";
+            } else {
+                // Assume this is a printf-like function
+                const bool is_vprintf = has_explicit_va_list;
+                const int format_arg_idx = data.param_types.size() - 1 - is_vprintf;
+
+                file << "auto " << function_name << "(";
+                file << format_function_params(data);
+                if (!is_vprintf) {
+                    file << ", ...";
+                }
+                file << ") -> " << data.return_type.getAsString() << " {\n";
+                file << "  int num_args = fexfn_pack_parse_printf_format(a_" << format_arg_idx << ", 0, nullptr);\n";
+                file << "  auto* arg_types = (int*)alloca(num_args * sizeof(int));\n";
+                file << "  auto* args = (printf_packed_arg_t*)alloca(num_args * sizeof(printf_packed_arg_t));\n";
+
+                if (!is_vprintf) {
+                    file << "  va_list va_args;\n";
+                    file << "  va_start(va_args, a_" << format_arg_idx << ");\n";
+                }
+                const auto va_list_name = !is_vprintf ? "va_args" : "a_" + std::to_string(data.param_types.size() - 1);
+                file << "  pack_printf_va_list(a_" << format_arg_idx << ", " << va_list_name << ", num_args, arg_types, args);\n";
+                if (!is_vprintf) {
+                    file << "  va_end(va_args);\n";
+                }
+                file << "  return fexfn_pack_" << function_name << "_internal(";
+                for (std::size_t idx = 0; idx < data.param_types.size() - is_vprintf; ++idx) {
+                    file << "a_" << idx << ", ";
+                }
+                file << "num_args, arg_types, args);\n";
+                file << "}\n";
             }
-            file << ") -> " << data.return_type.getAsString() << ";\n";
         }
 
         for (std::size_t namespace_idx = 0; namespace_idx < namespaces.size(); ++namespace_idx) {
@@ -541,11 +641,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         for (auto& data : thunks) {
             const auto& function_name = data.function_name;
             bool is_void = data.return_type->isVoidType();
-            file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
-                auto& type = data.param_types[idx];
-                file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
-            }
+            file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(" << format_function_params(data);
             // Using trailing return type as it makes handling function pointer returns much easier
             file << ") -> " << data.return_type.getAsString() << " {\n";
             file << "  struct {\n";
@@ -617,23 +713,42 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             }
 
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
-            file << (is_void ? "  " : "  args->rv = ") << (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") << libname << "_" << function_name << "(";
-            {
-                auto format_param = [&](std::size_t idx) {
-                    auto cb = thunk.callbacks.find(idx);
-                    if (cb != thunk.callbacks.end() && cb->second.is_stub) {
-                        bool is_first_cb = (cb->first == thunk.callbacks.begin()->first);
-                        return "fexfn_unpack_" + get_callback_name(function_name, cb->first, is_first_cb) + "_stub";
-                    } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return "fex_guest_function_ptr { args->a_" + std::to_string(idx) + " }";
-                    } else {
-                        return "args->a_" + std::to_string(idx);
-                    }
-                };
 
+            const auto impl_function_name = (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") + libname + "_" + function_name;
+            auto format_param = [&](std::size_t idx) {
+                auto cb = thunk.callbacks.find(idx);
+                if (cb != thunk.callbacks.end() && cb->second.is_stub) {
+                    bool is_first_cb = (cb->first == thunk.callbacks.begin()->first);
+                    return "fexfn_unpack_" + get_callback_name(function_name, cb->first, is_first_cb) + "_stub";
+                } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
+                    return "fex_guest_function_ptr { args->a_" + std::to_string(idx) + " }";
+                } else {
+                    return "args->a_" + std::to_string(idx);
+                }
+            };
+
+            if(thunk.variadic_strategy == VariadicStrategy::LikePrintf) {
+                const bool is_vprintf = !thunk.decl->isVariadic();
+                const int format_arg_idx = thunk.param_types.size() - 4;
+                assert(thunk.return_type.getAsString() == "int");
+                file << "  int chars_written = 0;\n";
+                file << "  auto do_printf = wrap_format_function<"
+                     << thunk.sprintf_buffer.value_or(-1) << ", "
+                     << thunk.snprintf_buffer_size.value_or(-1) << ", "
+                     << (is_vprintf ? "true" : "false")
+                     << ">(" << "fexldr_ptr_" + libname + "_" + thunk.GetOriginalFunctionName() << ", chars_written";
+                for (std::size_t idx = 0; idx < format_arg_idx; ++idx) {
+                    file << ", " << format_param(idx);
+                }
+                file << ");\n";
+                file << "  unpack_printf_params(args->a_" << format_arg_idx << ", args->a_" << format_arg_idx + 1
+                     << ", args->a_" << format_arg_idx + 2 << ", args->a_" << format_arg_idx + 3 << ", do_printf);\n";
+                file << "  args->rv = chars_written;\n";
+            } else {
+                file << (is_void ? "  " : "  args->rv = ") << impl_function_name << "(";
                 file << format_function_args(thunk, format_param);
+                file << ");\n";
             }
-            file << ");\n";
             file << "}\n";
         }
 
@@ -652,6 +767,15 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
             }
             file << "\", &fexfn_type_erased_unpack<fexfn_unpack_" << libname << "_" << function_name << ">}, // " << libname << ":" << function_name << "\n";
+        }
+        for (auto& data_symbol : data_symbols) {
+            const auto& function_name = "fetchsym_" + data_symbol;
+            auto sha256 = get_sha256(function_name);
+            file << "{(uint8_t*)\"";
+            for (auto c : sha256) {
+                file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+            }
+            file << "\", &fexfn_fetch_symbol<&" << data_symbol << ">}, // " << libname << ":" << function_name << "\n";
         }
     }
 

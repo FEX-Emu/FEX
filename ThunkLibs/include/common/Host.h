@@ -22,6 +22,11 @@ fexfn_type_erased_unpack(void* argsv) {
     return Fn(reinterpret_cast<args_t>(argsv));
 }
 
+template<auto Obj>
+static void fexfn_fetch_symbol(void* argsv) {
+    *reinterpret_cast<decltype(Obj)>(argsv) = *Obj;
+}
+
 struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
