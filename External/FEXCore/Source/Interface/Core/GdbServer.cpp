@@ -61,26 +61,38 @@ void GdbServer::Break(int signal) {
 }
 
 GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
-    Context::SetExitHandler(ctx, [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
-        if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
-            this->Break(SIGTRAP);
-        }
-    });
+  // Pass all signals by default
+  std::fill(PassSignals.begin(), PassSignals.end(), true);
 
-    // This is a total hack as there is currently no way to resume once hitting a segfault
-    // But it's semi-useful for debugging.
-    ctx->SignalDelegation->RegisterHostSignalHandler(SIGSEGV, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-        this->Break(SIGSEGV);
+  Context::SetExitHandler(ctx, [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
+    if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
+      this->Break(SIGTRAP);
+    }
+  });
 
-        this->CTX->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
+  // This is a total hack as there is currently no way to resume once hitting a segfault
+  // But it's semi-useful for debugging.
+  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+    ctx->SignalDelegation->RegisterHostSignalHandler(Signal, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+      if (PassSignals[Signal]) {
+        // Pass signal to the guest
+        return false;
+      }
 
-        for (;;)
-          usleep(100000);
+      this->CTX->Config.RunningMode = FEXCore::Context::CoreRunningMode::MODE_SINGLESTEP;
 
-        return true;
+      // Let GDB know that we have a signal
+      this->Break(Signal);
+
+      for (;;) {
+        pselect(0, nullptr, nullptr, nullptr, nullptr, nullptr);
+      }
+
+      return true;
     }, true);
+  }
 
-    StartThread();
+  StartThread();
 }
 
 static int calculateChecksum(const std::string &packet) {
