@@ -1,3 +1,4 @@
+[中文](https://github.com/FEX-Emu/FEX/blob/main/docs/Readme_CN.md)
 # FEX - Fast x86 emulation frontend
 FEX allows you to run x86 and x86-64 binaries on an AArch64 host, similar to qemu-user and box86.
 It has native support for a rootfs overlay, so you don't need to chroot, as well as some thunklibs so it can forward things like GL to the host.
