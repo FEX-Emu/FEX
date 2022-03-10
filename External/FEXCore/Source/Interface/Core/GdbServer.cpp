@@ -32,6 +32,7 @@ $end_info$
 
 #include <atomic>
 #include <cstring>
+#include <elf.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fstream>
@@ -630,11 +631,21 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
     uint64_t auxv_ptr, auxv_size;
     CodeLoader->GetAuxv(auxv_ptr, auxv_size);
     std::string data;
-    data.resize(auxv_size * 16);
-
-    for (size_t i = 0; i < auxv_size; ++i) {
-      uint64_t *auxv = reinterpret_cast<uint64_t*>(auxv_ptr + i * 16);
-      memcpy(data.data()+i*16, auxv, 16);
+    if (CTX->Config.Is64BitMode) {
+      data.resize(auxv_size);
+      memcpy(data.data(), reinterpret_cast<void*>(auxv_ptr), data.size());
+    }
+    else {
+      // We need to transcode from 32-bit auxv_t to 64-bit
+      data.resize(auxv_size / sizeof(Elf32_auxv_t) * sizeof(Elf64_auxv_t));
+      size_t NumAuxv = auxv_size / sizeof(Elf32_auxv_t);
+      for (size_t i = 0; i < NumAuxv; ++i) {
+        Elf32_auxv_t *auxv = reinterpret_cast<Elf32_auxv_t*>(auxv_ptr + i * sizeof(Elf32_auxv_t));
+        Elf64_auxv_t tmp;
+        tmp.a_type = auxv->a_type;
+        tmp.a_un.a_val = auxv->a_un.a_val;
+        memcpy(data.data() + i * sizeof(Elf64_auxv_t), &tmp, sizeof(Elf64_auxv_t));
+      }
     }
 
     return {encode(data), HandledPacketType::TYPE_ACK};
