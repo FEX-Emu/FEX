@@ -152,6 +152,7 @@ private:
 
   static uint64_t ExitFunctionLink(X86JITCore* code, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
+  // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
 
   // This is the initial code buffer that we will fall back to

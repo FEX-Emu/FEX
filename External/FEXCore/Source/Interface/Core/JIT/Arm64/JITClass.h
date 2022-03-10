@@ -184,6 +184,7 @@ private:
 
   CompilerSharedData ThreadSharedData;
 
+  // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
   IR::RegisterAllocationPass *RAPass;
   IR::RegisterAllocationData *RAData;
