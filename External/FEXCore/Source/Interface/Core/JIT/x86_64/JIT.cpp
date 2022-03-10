@@ -330,6 +330,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   }
 
   CurrentCodeBuffer = &InitialCodeBuffer;
+  EmitDetectionString();
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
@@ -406,6 +407,13 @@ X86JITCore::~X86JITCore() {
   FreeCodeBuffer(InitialCodeBuffer);
 }
 
+void X86JITCore::EmitDetectionString() {
+  const char JITString[] = "FEXJIT::X86JITCore::";
+  for (char c : JITString) {
+    db(c);
+  }
+}
+
 void X86JITCore::ClearCache() {
   if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
     if (!CodeBuffers.empty()) {
@@ -444,6 +452,8 @@ void X86JITCore::ClearCache() {
     EmplaceNewCodeBuffer(NewCodeBuffer);
     setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
+
+  EmitDetectionString();
 }
 
 IR::PhysicalRegister X86JITCore::GetPhys(IR::NodeID Node) const {

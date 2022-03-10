@@ -405,6 +405,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   InitialCodeBuffer = AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
   *GetBuffer() = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
   SetAllowAssembler(true);
+  EmitDetectionString();
 
   CurrentCodeBuffer = &InitialCodeBuffer;
 
@@ -487,6 +488,13 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   }
 }
 
+void Arm64JITCore::EmitDetectionString() {
+  const char JITString[] = "FEXJIT::Arm64JITCore::";
+  auto Buffer = GetBuffer();
+  Buffer->EmitString(JITString);
+  Buffer->Align();
+}
+
 void Arm64JITCore::ClearCache() {
   // Get the backing code buffer
   auto Buffer = GetBuffer();
@@ -527,6 +535,7 @@ void Arm64JITCore::ClearCache() {
     EmplaceNewCodeBuffer(NewCodeBuffer);
     *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
   }
+  EmitDetectionString();
 }
 
 Arm64JITCore::~Arm64JITCore() {
