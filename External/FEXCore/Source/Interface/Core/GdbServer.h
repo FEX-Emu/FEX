@@ -8,6 +8,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <atomic>
 #include <istream>
 #include <memory>
 #include <mutex>
@@ -26,6 +27,10 @@ public:
 
     // Public for threading
     void GdbServerLoop();
+
+    void AlertLibrariesChanged() {
+      LibraryMapChanged = true;
+    }
 
 private:
     void Break(int signal);
@@ -76,6 +81,9 @@ private:
     std::string ThreadString{};
     std::string MemoryMapString{};
     std::string OSDataString{};
+    void buildLibraryMap();
+    std::atomic<bool> LibraryMapChanged = true;
+    std::string LibraryMapString{};
 
     // Used to keep track of which signals to pass to the guest
     std::array<bool, SignalDelegator::MAX_SIGNALS + 1> PassSignals{};

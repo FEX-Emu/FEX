@@ -1148,10 +1148,16 @@ namespace FEXCore::Context {
 
   void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
     IRCaptureCache.AddNamedRegion(Base, Size, Offset, filename);
+    if (DebugServer) {
+      DebugServer->AlertLibrariesChanged();
+    }
   }
 
   void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
     IRCaptureCache.RemoveNamedRegion(Base, Size);
+    if (DebugServer) {
+      DebugServer->AlertLibrariesChanged();
+    }
   }
 
   void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
