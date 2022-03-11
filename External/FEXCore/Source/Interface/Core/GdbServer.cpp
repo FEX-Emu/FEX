@@ -1311,8 +1311,8 @@ void GdbServer::OpenListenSocket() {
 
 std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   // Block until a connection arrives
-  struct sockaddr_storage their_addr;
-  socklen_t addr_size;
+  struct sockaddr_storage their_addr{};
+  socklen_t addr_size{};
 
   LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
   int new_fd = accept(ListenSocket, (struct sockaddr *)&their_addr, &addr_size);
