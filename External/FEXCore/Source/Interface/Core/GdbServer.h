@@ -6,6 +6,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
 
 #include <atomic>
@@ -43,6 +44,9 @@ private:
 
     void SendACK(std::ostream &stream, bool NACK);
 
+    Event ThreadBreakEvent{};
+    void WaitForThreadWakeup();
+
     struct HandledPacketType {
       std::string Response{};
       enum ResponseType {
@@ -79,7 +83,6 @@ private:
     bool NoAckMode{false};
     bool NonStopMode{false};
     std::string ThreadString{};
-    std::string MemoryMapString{};
     std::string OSDataString{};
     void buildLibraryMap();
     std::atomic<bool> LibraryMapChanged = true;

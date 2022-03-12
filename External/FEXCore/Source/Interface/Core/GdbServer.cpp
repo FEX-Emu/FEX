@@ -63,6 +63,11 @@ void GdbServer::Break(int signal) {
   SendPacket(*CommsStream, str);
 }
 
+void GdbServer::WaitForThreadWakeup() {
+  // Wait for gdbserver to tell us to wake up
+  ThreadBreakEvent.Wait();
+}
+
 GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
@@ -87,9 +92,7 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
       // Let GDB know that we have a signal
       this->Break(Signal);
 
-      for (;;) {
-        pselect(0, nullptr, nullptr, nullptr, nullptr, nullptr);
-      }
+      WaitForThreadWakeup();
 
       return true;
     }, true);
@@ -491,33 +494,6 @@ std::string buildTargetXML() {
   return xml.str();
 }
 
-std::string buildMemoryMap() {
-  std::ostringstream xml;
-
-  xml << "<?xml version='1.0'?>\n";
-
-  xml << "<!DOCTYPE memory-map>\n";
-  xml << "<memory-map>\n";
-
-  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
-  std::string Line;
-
-  while (std::getline(fs, Line)) {
-    if (fs.eof()) break;
-    uint64_t Begin, End;
-    char r,w,x,p;
-    if (sscanf(Line.c_str(), "%lx-%lx %c%c%c%c", &Begin, &End, &r, &w, &x, &p) == 6) {
-      xml << "<memory type=\"ram\" start=\"0x" << std::hex << Begin << "\" length=\"0x" << (End - Begin) << "\"/>\n";
-    }
-  }
-
-  xml << "</memory-map>\n";
-
-  xml << std::flush;
-
-  return xml.str();
-}
-
 std::string buildOSData() {
   std::ostringstream xml;
 
@@ -689,12 +665,6 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
     return {encode(ThreadString), HandledPacketType::TYPE_ACK};
   }
 
-  if (object == "memory-map") {
-    if (offset == 0) {
-      MemoryMapString = buildMemoryMap();
-    }
-    return {encode(MemoryMapString), HandledPacketType::TYPE_ACK};
-  }
   if (object == "osdata") {
     if (offset == 0) {
       OSDataString = buildOSData();
@@ -846,7 +816,13 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     SupportedFeatures += "qXfer:exec-file:read+;";
     SupportedFeatures += "qXfer:features:read+;";
     SupportedFeatures += "qXfer:libraries:read+;";
-    SupportedFeatures += "qXfer:memory-map:read+;";
+    // Don't enable this feature. If enabled then gdb doesn't query for
+    // memory-map updates post-launch. Resulting in the inability to
+    // disassemble code from loaded libraries.
+    // gdbserver running on a true host also doesn't use this feature.
+    // It is likely used for embedded environments where you have a fixed
+    // memory map.
+    // SupportedFeatures += "qXfer:memory-map:read+;";
     SupportedFeatures += "qXfer:siginfo:read+;";
     SupportedFeatures += "qXfer:siginfo:write+;";
     SupportedFeatures += "qXfer:threads:read+;";
@@ -975,6 +951,7 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
   switch (action) {
     case 'c': {
       CTX->Run();
+      ThreadBreakEvent.NotifyAll();
       CTX->WaitForThreadsToRun();
       return {"", HandledPacketType::TYPE_ONLYACK};
     }
@@ -1146,9 +1123,7 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const std::string &packet)
     }
     case 'c':
       // Continue
-      CTX->Run();
-      CTX->WaitForThreadsToRun();
-      return {"OK", HandledPacketType::TYPE_ACK};
+      return ThreadAction('c', 0);
     case 'D':
       // Detach
       // Ensure the threads are back in running state on detach
