@@ -5,6 +5,8 @@ tags: ir|parser
 $end_info$
 */
 
+#include "Common/StringUtils.h"
+
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -41,28 +43,6 @@ enum class DecodeFailure {
   DECODE_INVALID_BREAKTYPE,
 
 };
-
-std::string ltrim(std::string String) {
-	size_t pos = std::string::npos;
-	if ((pos = String.find_first_not_of(" \t\n\r")) != std::string::npos) {
-		String.erase(0, pos);
-	}
-
-	return String;
-}
-
-std::string rtrim(std::string String) {
-	size_t pos = std::string::npos;
-	if ((pos = String.find_last_not_of(" \t\n\r")) != std::string::npos) {
-		String.erase(String.begin() + pos + 1, String.end());
-	}
-
-	return String;
-}
-
-std::string trim(std::string String) {
-  return rtrim(ltrim(String));
-}
 
 std::string DecodeErrorToString(DecodeFailure Failure) {
   switch (Failure) {
@@ -295,7 +275,7 @@ class IRParser: public FEXCore::IR::IREmitter {
     if (Arg.at(0) != '%') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     // Strip off the type qualifier from the ssa value
-    std::string SSAName = trim(Arg);
+    std::string SSAName = FEXCore::StringUtils::Trim(Arg);
     const size_t ArgEnd = SSAName.find_first_of(' ');
 
     if (ArgEnd != std::string::npos) {
@@ -382,7 +362,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       CurrentDef = &Def;
       Def.LineNumber = i;
 
-      Line = trim(Line);
+      Line = FEXCore::StringUtils::Trim(Line);
 
       // Skip empty lines
       if (Line.empty()) {
@@ -401,7 +381,7 @@ class IRParser: public FEXCore::IR::IREmitter {
         size_t DefinitionEnd = std::string::npos;
         if ((DefinitionEnd = Line.find_first_of('=', CurrentPos)) != std::string::npos) {
           Def.Definition = Line.substr(0, DefinitionEnd);
-          Def.Definition = trim(Def.Definition);
+          Def.Definition = FEXCore::StringUtils::Trim(Def.Definition);
           Def.HasDefinition = true;
           CurrentPos = DefinitionEnd + 1; // +1 to ensure we go past then assignment
         }
@@ -421,7 +401,7 @@ class IRParser: public FEXCore::IR::IREmitter {
           size_t SSAEnd = std::string::npos;
           if ((SSAEnd = Line.find_last_of(' ', DefinitionEnd)) != std::string::npos) {
             std::string Type = Line.substr(SSAEnd + 1, DefinitionEnd - SSAEnd - 1);
-            Type = trim(Type);
+            Type = FEXCore::StringUtils::Trim(Type);
 
             auto DefinitionSize = DecodeValue<FEXCore::IR::TypeDefinition>(Type);
             if (!CheckPrintError(Def, DefinitionSize.first)) {
@@ -430,7 +410,7 @@ class IRParser: public FEXCore::IR::IREmitter {
             Def.Size = DefinitionSize.second;
           }
 
-          Def.Definition = trim(Line.substr(1, std::min(DefinitionEnd, SSAEnd) - 1));
+          Def.Definition = FEXCore::StringUtils::Trim(Line.substr(1, std::min(DefinitionEnd, SSAEnd) - 1));
 
           CurrentPos = DefinitionEnd + 1;
         }
@@ -447,8 +427,8 @@ class IRParser: public FEXCore::IR::IREmitter {
         size_t NameEnd = std::string::npos;
         if ((NameEnd = Def.Definition.find_first_of(' ')) != std::string::npos) {
           std::string Type = Def.Definition.substr(NameEnd + 1);
-          Type = trim(Type);
-          Def.Definition = trim(Def.Definition.substr(0, NameEnd));
+          Type = FEXCore::StringUtils::Trim(Type);
+          Def.Definition = FEXCore::StringUtils::Trim(Def.Definition.substr(0, NameEnd));
 
           auto DefinitionSize = DecodeValue<FEXCore::IR::TypeDefinition>(Type);
           if (!CheckPrintError(Def, DefinitionSize.first)) return false;
@@ -465,11 +445,11 @@ class IRParser: public FEXCore::IR::IREmitter {
 
       // Let's get the IR op
       size_t OpNameEnd = std::string::npos;
-      std::string RemainingLine = trim(Line.substr(CurrentPos));
+      std::string RemainingLine = FEXCore::StringUtils::Trim(Line.substr(CurrentPos));
       CurrentPos = 0;
       if ((OpNameEnd = RemainingLine.find_first_of(" \t\n\r\0", CurrentPos)) != std::string::npos) {
         Def.IROp = RemainingLine.substr(CurrentPos, OpNameEnd);
-        Def.IROp = trim(Def.IROp);
+        Def.IROp = FEXCore::StringUtils::Trim(Def.IROp);
         Def.HasArgs = true;
         CurrentPos = OpNameEnd;
       }
@@ -486,7 +466,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
 
       if (Def.HasArgs) {
-        RemainingLine = trim(RemainingLine.substr(CurrentPos));
+        RemainingLine = FEXCore::StringUtils::Trim(RemainingLine.substr(CurrentPos));
         CurrentPos = 0;
         if (RemainingLine.empty()) {
           // How did we get here?
@@ -495,7 +475,7 @@ class IRParser: public FEXCore::IR::IREmitter {
         else {
           while (!RemainingLine.empty()) {
             const size_t ArgEnd = RemainingLine.find(',');
-            std::string Arg = trim(RemainingLine.substr(0, ArgEnd));
+            std::string Arg = FEXCore::StringUtils::Trim(RemainingLine.substr(0, ArgEnd));
 
             Def.Args.emplace_back(std::move(Arg));
 

@@ -14,6 +14,7 @@ $end_info$
 #include <optional>
 #include <vector>
 #include "Common/SoftFloat.h"
+#include "Common/StringUtils.h"
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
@@ -42,6 +43,7 @@ $end_info$
 #include <stddef.h>
 #include <string_view>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -531,6 +533,80 @@ std::string buildOSData() {
   return xml.str();
 }
 
+void GdbServer::buildLibraryMap() {
+  if (!LibraryMapChanged) {
+    // No need to update
+    return;
+  }
+
+  std::ostringstream xml;
+
+  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  std::string Line;
+
+  struct FileData {
+    uint64_t Begin;
+  };
+
+  std::map<std::string, std::vector<FileData>> SegmentMaps;
+
+  // 7ff5dd6d2000-7ff5dd6d3000 rw-p 0000a000 103:0b 1881447                   /usr/lib/x86_64-linux-gnu/libnss_compat.so.2
+  std::string const &RuntimeExecutable = Filename();
+  while (std::getline(fs, Line)) {
+    auto ss = std::istringstream(Line);
+    std::string Tmp;
+    std::string Begin;
+    std::string Name;
+    std::getline(ss, Begin, '-');
+    std::getline(ss, Tmp, ' '); // End
+    std::getline(ss, Tmp, ' '); // Perm
+    std::getline(ss, Tmp, ' '); // Inode
+    std::getline(ss, Tmp, ' '); // devid
+    std::getline(ss, Tmp, ' '); // Some garbage
+    std::getline(ss, Name, '\n');
+
+    if (strstr(Name.c_str(), "aarch64") != nullptr) {
+      // If the library comes from aarch64, just skip it
+      // Reduces the amount of memory gdb fetches
+      continue;
+    }
+
+    Name = FEXCore::StringUtils::Trim(Name);
+
+    struct stat sb{};
+    if (stat(Name.c_str(), &sb) != -1) {
+      if (S_ISCHR(sb.st_mode)) {
+        // Skip this special file type
+        // Fixes GDB trying to read dri render nodes
+        continue;
+      }
+    }
+
+    // Skip empty entries, the entry from the process, and also anything like [heap]
+    if (!Name.empty() && Name != RuntimeExecutable && Name[0] != '[') {
+      FileData data {
+        .Begin = std::strtoul(Begin.c_str(), nullptr, 16),
+      };
+
+      SegmentMaps[Name].emplace_back(data);
+    }
+  }
+
+  xml << "<library-list>\n";
+  for (auto &Array : SegmentMaps) {
+    xml << "\t<library name=\"" << Array.first << "\">\n";
+    for (auto &Data : Array.second) {
+      xml << "\t\t<segment address=\"0x" << std::hex << Data.Begin << "\"/>\n";
+    }
+    xml << "\t</library>\n";
+  }
+
+  xml << "</library-list>\n";
+
+  LibraryMapString = xml.str();
+  LibraryMapChanged = false;
+}
+
 GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
   std::string object;
   std::string rw;
@@ -624,6 +700,14 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const std::string &packet) {
       OSDataString = buildOSData();
     }
     return {encode(OSDataString), HandledPacketType::TYPE_ACK};
+  }
+
+  if (object == "libraries") {
+    if (offset == 0) {
+      // Attempt to rebuild when reading from zero
+      buildLibraryMap();
+    }
+    return {encode(LibraryMapString), HandledPacketType::TYPE_ACK};
   }
 
   if (object == "auxv") {
@@ -755,18 +839,16 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     std::string SupportedFeatures{};
 
     // Required features
-    SupportedFeatures += "PacketSize=5000;";
+    SupportedFeatures += "PacketSize=32768;";
     SupportedFeatures += "xmlRegisters=i386;";
 
     SupportedFeatures += "qXfer:auxv:read+;";
     SupportedFeatures += "qXfer:exec-file:read+;";
     SupportedFeatures += "qXfer:features:read+;";
-    // XXX: Requires parsing the ELF and watching the library list
-    // SupportedFeatures += "qXfer:libraries:read+;";
+    SupportedFeatures += "qXfer:libraries:read+;";
     SupportedFeatures += "qXfer:memory-map:read+;";
     SupportedFeatures += "qXfer:siginfo:read+;";
     SupportedFeatures += "qXfer:siginfo:write+;";
-    // XXX: Allowing this causes GDB to crash
     SupportedFeatures += "qXfer:threads:read+;";
     SupportedFeatures += "QCatchSignals+;";
     SupportedFeatures += "QPassSignals+;";
@@ -851,7 +933,19 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     return {"OK", HandledPacketType::TYPE_ACK};
   }
   if (match("qSymbol")) {
-    return {"OK", HandledPacketType::TYPE_ACK};
+    auto ss = std::istringstream(packet);
+    ss.seekg(std::string("qSymbol").size());
+    ss.get(); // discard colon
+    std::string Symbol_Val, Symbol_name;
+    std::getline(ss, Symbol_Val, ':');
+    std::getline(ss, Symbol_name, ':');
+
+    if (Symbol_Val.empty() && Symbol_name.empty()) {
+      return {"OK", HandledPacketType::TYPE_ACK};
+    }
+    else {
+      return {"", HandledPacketType::TYPE_UNKNOWN};
+    }
   }
 
   if (match("QPassSignals")) {
@@ -887,7 +981,12 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
     case 's': {
       CTX->Step();
       SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
-      auto str = fmt::format("T05thread:{:02x};core:2c;", getpid());
+      auto str = fmt::format("T05thread:{:02x};", getpid());
+      if (LibraryMapChanged) {
+        // If libraries have changed then let gdb know
+        str += "library:1;";
+      }
+
       SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
       return {"OK", HandledPacketType::TYPE_ACK};
     }
@@ -1078,6 +1177,7 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const std::string &packet)
       return {"OK", HandledPacketType::TYPE_ACK};
     case 's': // Step
       return ThreadAction('s', 0);
+    case 'z': // Remove breakpoint or watchpoint
     case 'Z': // Inserts breakpoint or watchpoint
       return handleBreakpoint(packet);
     case 'k': // Kill the process
@@ -1144,7 +1244,11 @@ void GdbServer::GdbServerLoop() {
             break;
         case '\x03': { // ASCII EOT
             CTX->Pause();
-            auto str = fmt::format("T02thread:{:02x};core:2c;", getpid());
+            auto str = fmt::format("T02thread:{:02x};", getpid());
+            if (LibraryMapChanged) {
+              // If libraries have changed then let gdb know
+              str += "library:1;";
+            }
             SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
             break;
           }
@@ -1207,8 +1311,8 @@ void GdbServer::OpenListenSocket() {
 
 std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   // Block until a connection arrives
-  struct sockaddr_storage their_addr;
-  socklen_t addr_size;
+  struct sockaddr_storage their_addr{};
+  socklen_t addr_size{};
 
   LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
   int new_fd = accept(ListenSocket, (struct sockaddr *)&their_addr, &addr_size);

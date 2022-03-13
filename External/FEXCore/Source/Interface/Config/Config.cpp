@@ -1,4 +1,5 @@
 #include "Common/StringConv.h"
+#include "Common/StringUtils.h"
 #include "Common/Paths.h"
 #include "Utils/FileLoading.h"
 
@@ -370,29 +371,6 @@ namespace JSON {
     return {};
   }
 
-  std::string ltrim(std::string String) {
-    size_t pos = std::string::npos;
-    if ((pos = String.find_first_not_of(" \t\n\r")) != std::string::npos) {
-      String.erase(0, pos);
-    }
-
-    return String;
-  }
-
-  std::string rtrim(std::string String) {
-    size_t pos = std::string::npos;
-    if ((pos = String.find_last_not_of(" \t\n\r")) != std::string::npos) {
-      String.erase(String.begin() + pos + 1, String.end());
-    }
-
-    return String;
-  }
-
-  std::string trim(std::string String) {
-    return rtrim(ltrim(String));
-  }
-
-
   std::string FindContainerPrefix() {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
@@ -401,7 +379,7 @@ namespace JSON {
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
         std::string ManagerStr = Manager.data();
-        ManagerStr = trim(ManagerStr);
+        ManagerStr = FEXCore::StringUtils::Trim(ManagerStr);
         if (strncmp(ManagerStr.data(), "pressure-vessel", Manager.size()) == 0) {
           // We are running inside of pressure vessel
           // Our $CMAKE_INSTALL_PREFIX paths are now inside of /run/host/$CMAKE_INSTALL_PREFIX
