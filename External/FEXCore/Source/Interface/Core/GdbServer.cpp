@@ -80,9 +80,9 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
 
   // This is a total hack as there is currently no way to resume once hitting a segfault
   // But it's semi-useful for debugging.
-  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
     ctx->SignalDelegation->RegisterHostSignalHandler(Signal, [this] (FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-      if (PassSignals[Signal]) {
+      if (PassSignals[Signal - 1]) {
         // Pass signal to the guest
         return false;
       }
@@ -937,7 +937,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
     for (std::string tmp; std::getline(ss, tmp, ';'); ) {
       uint32_t Signal = std::stoi(tmp, nullptr, 16);
       if (Signal < SignalDelegator::MAX_SIGNALS) {
-        PassSignals[Signal] = true;
+        PassSignals[Signal - 1] = true;
       }
     }
 

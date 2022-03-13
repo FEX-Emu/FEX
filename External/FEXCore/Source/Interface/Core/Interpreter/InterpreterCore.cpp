@@ -61,8 +61,8 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
     return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
   };
 
-  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+  for (uint32_t Signal = 0; Signal < SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal + 1, GuestSignalHandler);
   }
 }
 

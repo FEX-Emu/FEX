@@ -89,7 +89,7 @@ namespace FEXCore {
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
     auto Thread = GetTLSThread();
-    HostSignalHandler &Handler = HostHandlers[Signal];
+    HostSignalHandler &Handler = HostHandlers[Signal - 1];
 
     if (!Thread) {
       LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());

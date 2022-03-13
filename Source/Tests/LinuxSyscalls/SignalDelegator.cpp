@@ -86,7 +86,7 @@ namespace FEX::HLE {
 
   void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
-    SignalHandler &Handler = HostHandlers[Signal];
+    SignalHandler &Handler = HostHandlers[Signal - 1];
 
     ucontext_t* _context = (ucontext_t*)UContext;
 
@@ -118,7 +118,7 @@ namespace FEX::HLE {
 
         // Walk our required signals and stop masking them if requested
         for (size_t i = 0; i < MAX_SIGNALS; ++i) {
-          if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
+          if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
             // Never mask our required signals
             NewMask &= ~(1ULL << i);
           }
@@ -156,7 +156,7 @@ namespace FEX::HLE {
   }
 
   bool SignalDelegator::InstallHostThunk(int Signal) {
-    SignalHandler &SignalHandler = HostHandlers[Signal];
+    SignalHandler &SignalHandler = HostHandlers[Signal - 1];
     // If the host thunk is already installed for this, just return
     if (SignalHandler.Installed) {
       return false;
@@ -172,7 +172,7 @@ namespace FEX::HLE {
   }
 
   bool SignalDelegator::UpdateHostThunk(int Signal) {
-    SignalHandler &SignalHandler = HostHandlers[Signal];
+    SignalHandler &SignalHandler = HostHandlers[Signal - 1];
 
     // Now install the thunk handler
     SignalHandler.HostAction.sigaction = SignalHandlerThunk;
@@ -209,18 +209,18 @@ namespace FEX::HLE {
     // This'll likely be SIGILL, SIGBUS, SIG63
 
     // If the guest has masked some signals then we need to also mask those signals
-    for (size_t i = 1; i < HostHandlers.size(); ++i) {
+    for (size_t i = 0; i < SignalDelegator::MAX_SIGNALS; ++i) {
       if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
-        SignalHandler.HostAction.sa_mask &= ~(1ULL << (i - 1));
+        SignalHandler.HostAction.sa_mask &= ~(1ULL << i);
       }
-      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
-        SignalHandler.HostAction.sa_mask |= (1ULL << (i - 1));
+      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i + 1)) {
+        SignalHandler.HostAction.sa_mask |= (1ULL << i);
       }
     }
 
     // Check for SIG_IGN
     if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN &&
-        HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false) {
+        SignalHandler.Required.load(std::memory_order_relaxed) == false) {
       // We are ignoring this signal on the guest
       // Which means we need to ignore it on the host as well
       SignalHandler.HostAction.handler = SIG_IGN;
@@ -228,7 +228,7 @@ namespace FEX::HLE {
 
     // Check for SIG_DFL
     if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_DFL &&
-        HostHandlers[Signal].Required.load(std::memory_order_relaxed) == false) {
+        SignalHandler.Required.load(std::memory_order_relaxed) == false) {
       // Default handler on guest and default handler on host
       // With coredump and terminate then expect fireworks, but that is what the guest wants
       SignalHandler.HostAction.handler = SIG_DFL;
@@ -246,7 +246,7 @@ namespace FEX::HLE {
   }
 
   void SignalDelegator::UninstallHostHandler(int Signal) {
-    SignalHandler &SignalHandler = HostHandlers[Signal];
+    SignalHandler &SignalHandler = HostHandlers[Signal - 1];
 
     ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.OldAction, nullptr, 8);
   }
@@ -255,12 +255,9 @@ namespace FEX::HLE {
     // Register this delegate
     LOGMAN_THROW_A_FMT(!GlobalDelegator, "Can't register global delegator multiple times!");
     GlobalDelegator = this;
-    // Signal zero isn't real
-    HostHandlers[0].Installed = true;
-
     // We can't capture SIGKILL or SIGSTOP
-    HostHandlers[SIGKILL].Installed = true;
-    HostHandlers[SIGSTOP].Installed = true;
+    HostHandlers[SIGKILL - 1].Installed = true;
+    HostHandlers[SIGSTOP - 1].Installed = true;
 
     // Most signals default to termination
     // These ones are slightly different
@@ -282,20 +279,19 @@ namespace FEX::HLE {
     }};
 
     for (const auto &[Signal, Behaviour] : SignalDefaultBehaviours) {
-      HostHandlers[Signal].DefaultBehaviour = Behaviour;
+      HostHandlers[Signal - 1].DefaultBehaviour = Behaviour;
     }
   }
 
   SignalDelegator::~SignalDelegator() {
     for (int i = 0; i < MAX_SIGNALS; ++i) {
-      if (i == 0 ||
-          i == SIGKILL ||
-          i == SIGSTOP ||
+      if ((i + 1) == SIGKILL ||
+          (i + 1) == SIGSTOP ||
           !HostHandlers[i].Installed
           ) {
         continue;
       }
-      ::syscall(SYS_rt_sigaction, i, &HostHandlers[i].OldAction, nullptr, 8);
+      ::syscall(SYS_rt_sigaction, i + 1, &HostHandlers[i].OldAction, nullptr, 8);
       HostHandlers[i].Installed = false;
     }
     GlobalDelegator = nullptr;
@@ -340,7 +336,7 @@ namespace FEX::HLE {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
-    HostHandlers[Signal].Required = Required;
+    HostHandlers[Signal - 1].Required = Required;
     InstallHostThunk(Signal);
   }
 
@@ -348,13 +344,13 @@ namespace FEX::HLE {
     // Linux signal handlers are per-process rather than per thread
     // Multiple threads could be calling in to this
     std::lock_guard lk(HostDelegatorMutex);
-    HostHandlers[Signal].Required = Required;
+    HostHandlers[Signal - 1].Required = Required;
     InstallHostThunk(Signal);
   }
 
   void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEXCore::HostSignalDelegatorFunctionForGuest Func) {
     std::lock_guard lk(HostDelegatorMutex);
-    HostHandlers[Signal].GuestHandler = std::move(Func);
+    HostHandlers[Signal - 1].GuestHandler = std::move(Func);
   }
 
   uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, FEXCore::GuestSigAction *OldAction) {
@@ -367,7 +363,7 @@ namespace FEX::HLE {
 
     // If we have an old signal set then give it back
     if (OldAction) {
-      *OldAction = HostHandlers[Signal].GuestAction;
+      *OldAction = HostHandlers[Signal - 1].GuestAction;
     }
 
     // Now assign the new action
@@ -377,7 +373,7 @@ namespace FEX::HLE {
         return -EINVAL;
       }
 
-      HostHandlers[Signal].GuestAction = *Action;
+      HostHandlers[Signal - 1].GuestAction = *Action;
       // Only attempt to install a new thunk handler if we were installing a new guest action
       if (!InstallHostThunk(Signal)) {
         UpdateHostThunk(Signal);
@@ -450,7 +446,7 @@ namespace FEX::HLE {
     // Do we have any pending signals that became unmasked?
     uint64_t PendingSignals = ~ThreadData.CurrentSignalMask.Val & ThreadData.PendingSignals;
     if (PendingSignals != 0) {
-      for (int i = 0; i < 64; ++i) {
+      for (int i = 0; i < SignalDelegator::MAX_SIGNALS; ++i) {
         if (PendingSignals & (1ULL << i)) {
           FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, i + 1);
           // We might not even return here which is spooky
@@ -488,7 +484,7 @@ namespace FEX::HLE {
       // Now actually set the host mask
       // This will hide from the guest that we are not actually setting all of the masks it wants
       for (size_t i = 0; i < MAX_SIGNALS; ++i) {
-        if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
+        if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
           // If it is a required host signal then we can't mask it
           HostMask &= ~(1ULL << i);
         }
@@ -567,7 +563,6 @@ namespace FEX::HLE {
     CheckForPendingSignals(GetTLSThread());
 
     return Result == -1 ? -errno : Result;
-
   }
 
   uint64_t SignalDelegator::GuestSigTimedWait(uint64_t *set, siginfo_t *info, const struct timespec *timeout, size_t sigsetsize) {
@@ -589,7 +584,7 @@ namespace FEX::HLE {
     sigemptyset(&HostSet);
 
     for (size_t i = 0; i < MAX_SIGNALS; ++i) {
-      if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
+      if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
         // For now skip our internal signals
         continue;
       }

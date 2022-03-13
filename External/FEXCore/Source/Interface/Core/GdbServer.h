@@ -89,7 +89,7 @@ private:
     std::string LibraryMapString{};
 
     // Used to keep track of which signals to pass to the guest
-    std::array<bool, SignalDelegator::MAX_SIGNALS + 1> PassSignals{};
+    std::array<bool, SignalDelegator::MAX_SIGNALS> PassSignals{};
     uint32_t CurrentDebuggingThread{};
     int ListenSocket{};
     FEX_CONFIG_OPT(Filename, APP_FILENAME);

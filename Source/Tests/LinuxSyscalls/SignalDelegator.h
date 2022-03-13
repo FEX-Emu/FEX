@@ -103,7 +103,7 @@ namespace FEX::HLE {
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
     };
 
-    std::array<SignalHandler, MAX_SIGNALS + 1> HostHandlers{};
+    std::array<SignalHandler, MAX_SIGNALS> HostHandlers{};
     bool InstallHostThunk(int Signal);
     bool UpdateHostThunk(int Signal);
 
