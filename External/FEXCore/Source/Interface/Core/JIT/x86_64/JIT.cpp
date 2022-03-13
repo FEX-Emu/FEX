@@ -304,31 +304,6 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   , ThreadState {Thread}
   , InitialCodeBuffer {Buffer}
 {
-
-  {
-    // Set up pointers that the JIT needs to load
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
-    // Process specific
-    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
-    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
-    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
-
-    {
-      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
-      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
-    }
-
-    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
-
-    // Fill in the fallback handlers
-    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
-
-    // Thread Specific
-    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
-  }
-
   CurrentCodeBuffer = &InitialCodeBuffer;
   EmitDetectionString();
 
@@ -363,6 +338,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     DispatcherConfig config;
     config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
     config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
+    config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
 
     Dispatcher = std::make_unique<X86Dispatcher>(CTX, ThreadState, config);
     DispatchPtr = Dispatcher->DispatchPtr;
@@ -374,6 +350,30 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     ThreadSharedData.OverflowExceptionInstructionAddress = Dispatcher->OverflowExceptionInstructionAddress;
 
     ThreadSharedData.Dispatcher = Dispatcher.get();
+  }
+
+  {
+    // Set up pointers that the JIT needs to load
+    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
+    // Process specific
+    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
+    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
+      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+    }
+
+    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+
+    // Fill in the fallback handlers
+    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
+
+    // Thread Specific
+    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
   }
 }
 

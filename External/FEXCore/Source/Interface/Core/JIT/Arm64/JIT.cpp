@@ -361,54 +361,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   : Arm64Emitter(ctx, 0)
   , CTX {ctx}
   , ThreadState {Thread} {
-
-  {
-    // Set up pointers that the JIT needs to load
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
-    // Process specific
-    Pointers.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
-    Pointers.LDIV = reinterpret_cast<uint64_t>(LDIV);
-    Pointers.LUREM = reinterpret_cast<uint64_t>(LUREM);
-    Pointers.LREM = reinterpret_cast<uint64_t>(LREM);
-    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
-    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
-    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
-
-    {
-      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
-      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
-    }
-
-    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
-
-    // Fill in the fallback handlers
-    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
-
-    // Thread Specific
-    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
-  }
-
-  {
-    DispatcherConfig config;
-    config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
-    config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
-    config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
-
-    Dispatcher = std::make_unique<Arm64Dispatcher>(CTX, ThreadState, config);
-    DispatchPtr = Dispatcher->DispatchPtr;
-    CallbackPtr = Dispatcher->CallbackPtr;
-  }
-
-  // Can't allocate a code buffer until after dispatcher is created
-  InitialCodeBuffer = AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-  *GetBuffer() = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-  SetAllowAssembler(true);
-  EmitDetectionString();
-
-  CurrentCodeBuffer = &InitialCodeBuffer;
-
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
 #if DEBUG
@@ -448,13 +400,61 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   RegisterVectorHandlers();
   RegisterEncryptionHandlers();
 
+  {
+    DispatcherConfig config;
+    config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
+    config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
+    config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
+
+    Dispatcher = std::make_unique<Arm64Dispatcher>(CTX, ThreadState, config);
+    DispatchPtr = Dispatcher->DispatchPtr;
+    CallbackPtr = Dispatcher->CallbackPtr;
+  }
+
   if (!CompileThread) {
     ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
     ThreadSharedData.SignalReturnInstruction = Dispatcher->SignalHandlerReturnAddress;
     ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
+    ThreadSharedData.OverflowExceptionInstructionAddress = Dispatcher->OverflowExceptionInstructionAddress;
 
     ThreadSharedData.Dispatcher = Dispatcher.get();
   }
+
+  {
+    // Set up pointers that the JIT needs to load
+    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
+    // Process specific
+    Pointers.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
+    Pointers.LDIV = reinterpret_cast<uint64_t>(LDIV);
+    Pointers.LUREM = reinterpret_cast<uint64_t>(LUREM);
+    Pointers.LREM = reinterpret_cast<uint64_t>(LREM);
+    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
+    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
+      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+    }
+
+    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+
+    // Fill in the fallback handlers
+    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
+
+    // Thread Specific
+    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
+  }
+
+  // Can't allocate a code buffer until after dispatcher is created
+  InitialCodeBuffer = AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
+  *GetBuffer() = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+  SetAllowAssembler(true);
+  EmitDetectionString();
+
+  CurrentCodeBuffer = &InitialCodeBuffer;
 }
 
 void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
