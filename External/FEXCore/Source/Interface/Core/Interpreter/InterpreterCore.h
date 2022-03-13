@@ -17,4 +17,6 @@ class CPUBackend;
                                                                 FEXCore::Core::InternalThreadState *Thread,
                                                                 bool CompileThread);
 
+void InitializeInterpreterSignalHandlers(FEXCore::Context::Context *CTX);
+
 } // namespace FEXCore::CPU

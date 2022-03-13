@@ -95,10 +95,11 @@ namespace FEXCore {
       LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
     }
     else {
-      if (Handler.Handler &&
-          Handler.Handler(Thread, Signal, Info, UContext)) {
-        // If the host handler handled the fault then we can continue now
-        return;
+      for (auto &Handler : Handler.Handlers) {
+        if (Handler(Thread, Signal, Info, UContext)) {
+          // If the host handler handled the fault then we can continue now
+          return;
+        }
       }
 
       if (Handler.FrontendHandler &&

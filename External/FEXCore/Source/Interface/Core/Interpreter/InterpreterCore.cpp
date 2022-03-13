@@ -41,25 +41,28 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   if (!CompileThread &&
       CTX->Config.Core == FEXCore::Config::CONFIG_INTERPRETER) {
     CreateAsmDispatch(ctx, Thread);
-    CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
-    }, true);
+  }
+}
+
+void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+  CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
+  }, true);
 
 #ifdef _M_ARM_64
-    CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
-    }, true);
+  CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
+  }, true);
 #endif
 
-    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-    };
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+  };
 
-    for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-      CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
-    }
+  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
   }
 }
 
@@ -69,6 +72,10 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
 
 std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
   return std::make_unique<InterpreterCore>(ctx, Thread, CompileThread);
+}
+
+void InitializeInterpreterSignalHandlers(FEXCore::Context::Context *CTX) {
+  InterpreterCore::InitializeSignalHandlers(CTX);
 }
 
 }

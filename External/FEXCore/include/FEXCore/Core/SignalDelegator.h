@@ -96,14 +96,14 @@ namespace Core {
 
   private:
     struct HostSignalHandler {
-      FEXCore::HostSignalDelegatorFunction Handler{};
+      std::vector<FEXCore::HostSignalDelegatorFunction> Handlers{};
       FEXCore::HostSignalDelegatorFunction FrontendHandler{};
     };
     std::array<HostSignalHandler, MAX_SIGNALS + 1> HostHandlers{};
 
   protected:
     void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-      HostHandlers[Signal].Handler = std::move(Func);
+      HostHandlers[Signal].Handlers.push_back(std::move(Func));
     }
     void SetFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
       HostHandlers[Signal].FrontendHandler = std::move(Func);

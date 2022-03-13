@@ -190,6 +190,32 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
+    // Initialize the CPU core signal handlers
+    switch (Config.Core) {
+#ifdef INTERPRETER_ENABLED
+    case FEXCore::Config::CONFIG_INTERPRETER:
+      FEXCore::CPU::InitializeInterpreterSignalHandlers(this);
+      break;
+#endif
+    case FEXCore::Config::CONFIG_IRJIT:
+#if (_M_X86_64 && JIT_X86_64)
+      FEXCore::CPU::InitializeX86JITSignalHandlers(this);
+#elif (_M_ARM_64 && JIT_ARM64)
+      FEXCore::CPU::InitializeArm64JITSignalHandlers(this);
+#else
+      ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
+#endif
+      break;
+    case FEXCore::Config::CONFIG_CUSTOM:
+      // Do nothing
+      break;
+    default:
+      ERROR_AND_DIE_FMT("Unknown core configuration");
+      break;
+    }
+
+    // Initialize GDBServer after the signal handlers are installed
+    // It may install its own handlers that need to be executed AFTER the CPU cores
     if (Config.GdbServer) {
       StartGdbServer();
     }

@@ -374,26 +374,27 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     ThreadSharedData.OverflowExceptionInstructionAddress = Dispatcher->OverflowExceptionInstructionAddress;
 
     ThreadSharedData.Dispatcher = Dispatcher.get();
+  }
+}
 
-    // This will register the host signal handler per thread, which is fine
-    CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
-    }, true);
+void X86JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+  CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
+  }, true);
 
-    CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
-    }, true);
+  CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
+  }, true);
 
-    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
-      return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-    };
+  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+    X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
+    return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+  };
 
-    for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-      CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
-    }
+  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
   }
 }
 
@@ -815,4 +816,9 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
   return std::make_unique<X86JITCore>(ctx, Thread, AllocateNewCodeBuffer(ctx, CompileThread ? X86JITCore::MAX_CODE_SIZE : X86JITCore::INITIAL_CODE_SIZE), CompileThread);
 }
+
+void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX) {
+  X86JITCore::InitializeSignalHandlers(CTX);
+}
+
 }
