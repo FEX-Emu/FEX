@@ -324,12 +324,6 @@ void InterpreterOps::Op_NoOp(FEXCore::IR::IROp_Header *IROp, IROpData *Data, IR:
 void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData) {
   volatile void *StackEntry = alloca(0);
 
-  // Debug data is only passed in debug builds
-  #ifndef NDEBUG
-  // TODO: should be moved to an IR Op
-  Thread->Stats.InstructionsExecuted.fetch_add(DebugData->GuestInstructionCount);
-  #endif
-
   uintptr_t ListSize = CurrentIR->GetSSACount();
 
   static_assert(sizeof(FEXCore::IR::IROp_Header) == 4);

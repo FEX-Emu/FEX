@@ -38,7 +38,6 @@ namespace FEXCore::Core {
   struct DebugDataSubblock {
     uintptr_t HostCodeStart;
     uint32_t HostCodeSize;
-    IR::NodeID SSAId;
   };
 
   /**
@@ -48,10 +47,6 @@ namespace FEXCore::Core {
    */
   struct DebugData {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
-    uint64_t GuestCodeSize; ///< The size of the guest side code
-    uint64_t GuestInstructionCount; ///< Number of guest instructions
-    uint64_t TimeSpentInCode; ///< How long this code has spent time running
-    uint64_t RunCount; ///< Number of times this block of code has been run
     std::vector<DebugDataSubblock> Subblocks;
   };
 
