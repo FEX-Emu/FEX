@@ -3,7 +3,6 @@ Test_REP/F3_52.asm
 Test_REP/F3_53.asm
 Test_TwoByte/0F_52.asm
 Test_TwoByte/0F_53.asm
-Test_X87/D9_FD.asm
 
 # Not supported in userspace in all cases
 Test_Secondary/15_F3_00.asm

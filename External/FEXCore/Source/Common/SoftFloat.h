@@ -188,6 +188,10 @@ struct X80SoftFloat {
     return extF80_roundToInt(lhs, softfloat_roundingMode, false);
   }
 
+  static X80SoftFloat FRNDINT(X80SoftFloat const &lhs, uint_fast8_t RoundMode) {
+    return extF80_roundToInt(lhs, RoundMode, false);
+  }
+
   static X80SoftFloat FXTRACT_SIG(X80SoftFloat const &lhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
@@ -257,7 +261,7 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    X80SoftFloat Int = FRNDINT(rhs);
+    X80SoftFloat Int = FRNDINT(rhs, softfloat_round_minMag);
     BIGFLOAT Src2_d = Int;
     Src2_d = exp2l(Src2_d);
     X80SoftFloat Src2_X80 = Src2_d;
