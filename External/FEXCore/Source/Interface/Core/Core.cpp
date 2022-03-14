@@ -897,10 +897,6 @@ namespace FEXCore::Context {
       StartAddr = _StartAddr;
       Length = _Length;
 
-      // Initialize metadata
-      DebugData->GuestCodeSize = TotalInstructionsLength;
-      DebugData->GuestInstructionCount = TotalInstructions;
-
       // Increment stats
       Thread->Stats.BlocksCompiled.fetch_add(1);
 

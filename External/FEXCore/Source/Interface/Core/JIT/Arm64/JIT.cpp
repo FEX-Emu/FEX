@@ -765,6 +765,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
+    uintptr_t BlockStartHostCode = GetCursorAddress<uintptr_t>();
     {
       const auto Node = IR->GetID(BlockNode);
       const auto IsTarget = JumpTargets.try_emplace(Node).first;
@@ -779,10 +780,6 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
       bind(&IsTarget->second);
     }
 
-    if (DebugData) {
-      DebugData->Subblocks.push_back({GetCursorAddress<uintptr_t>(), 0, IR->GetID(BlockNode)});
-    }
-
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       const auto ID = IR->GetID(CodeNode);
 
@@ -792,7 +789,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     }
 
     if (DebugData) {
-      DebugData->Subblocks.back().HostCodeSize = GetCursorAddress<uintptr_t>() - DebugData->Subblocks.back().HostCodeStart;
+      DebugData->Subblocks.push_back({BlockStartHostCode, static_cast<uint32_t>(GetCursorAddress<uintptr_t>() - BlockStartHostCode)});
     }
   }
 
