@@ -309,7 +309,8 @@ class IRParser: public FEXCore::IR::IREmitter {
   LineDefinition *CurrentDef{};
   std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
 
-  IRParser(std::istream *text) {
+  IRParser(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, std::istream *text)
+    : IREmitter {ThreadAllocator} {
     InitializeNameMap();
 
     std::string TmpLine;
@@ -660,8 +661,8 @@ class IRParser: public FEXCore::IR::IREmitter {
 
 } // anon namespace
 
-std::unique_ptr<IREmitter> Parse(std::istream *in) {
-    auto parser = std::make_unique<IRParser>(in);
+std::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, std::istream *in) {
+    auto parser = std::make_unique<IRParser>(ThreadAllocator, in);
 
     if (parser->Loaded) {
       return parser;

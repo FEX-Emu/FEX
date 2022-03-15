@@ -38,6 +38,11 @@ public:
 
   void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
   void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
+
+  void DelayedDisownBuffer() {
+    PoolObject.DelayedDisownBuffer();
+  }
+
 private:
   // To pass any information from instruction prefixes
   // down into the actual instruction handling machinery.
@@ -63,6 +68,7 @@ private:
 
   static constexpr size_t DefaultDecodedBufferSize = 0x10000;
   FEXCore::X86Tables::DecodedInst *DecodedBuffer{};
+  Utils::FixedSizePooledAllocation<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
   size_t DecodedSize {};
 
   uint8_t const *InstStream;

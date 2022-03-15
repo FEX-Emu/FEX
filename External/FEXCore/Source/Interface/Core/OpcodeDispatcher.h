@@ -148,6 +148,7 @@ public:
   }
 
   OpDispatchBuilder(FEXCore::Context::Context *ctx);
+  OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
 
   void ResetWorkingList();
   void ResetDecodeFailure() { DecodeFailure = false; }

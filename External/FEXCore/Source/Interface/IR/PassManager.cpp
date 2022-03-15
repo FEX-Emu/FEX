@@ -6,6 +6,7 @@ desc: Defines which passes are run, and runs them
 $end_info$
 */
 
+#include "Interface/Context/Context.h"
 #include "Interface/IR/PassManager.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -15,7 +16,7 @@ $end_info$
 namespace FEXCore::IR {
 class IREmitter;
 
-void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation) {
+void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineConstants, bool StaticRegisterAllocation) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {
@@ -48,7 +49,7 @@ void PassManager::AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllo
 
   // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node
   // Compact before IR, don't worry about RA generating spills/fills
-  InsertPass(CreateIRCompaction(), "Compaction");
+  InsertPass(CreateIRCompaction(ctx->OpDispatcherAllocator), "Compaction");
 }
 
 void PassManager::AddDefaultValidationPasses() {

@@ -1,5 +1,7 @@
 #include "IRLoader/Loader.h"
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/ThreadPoolAllocator.h>
+
 
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -17,12 +19,12 @@ namespace FEX::IRLoader {
       return;
     }
 
-    ParsedCode = FEXCore::IR::Parse(&fp);
+    ParsedCode = FEXCore::IR::Parse(Allocator, &fp);
 
     if (ParsedCode) {
       auto NewIR = ParsedCode->ViewIR();
       EntryRIP = 0x40000;
-      
+
       std::stringstream out;
       FEXCore::IR::Dump(&out, &NewIR, nullptr);
       fmt::print("IR:\n{}\n@@@@@\n", out.str());

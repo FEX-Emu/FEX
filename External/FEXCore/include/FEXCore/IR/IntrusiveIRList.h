@@ -3,6 +3,7 @@
 #include "FEXCore/IR/IR.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/ThreadPoolAllocator.h>
 
 #include <cassert>
 #include <cstddef>
@@ -20,21 +21,8 @@ namespace FEXCore::IR {
  *
  * Can potentially support reallocation if we are smart and make sure to invalidate anything holding a true pointer
  */
-class DualIntrusiveAllocator final {
+class DualIntrusiveAllocator {
   public:
-    DualIntrusiveAllocator() = delete;
-    DualIntrusiveAllocator(DualIntrusiveAllocator &&) = delete;
-    DualIntrusiveAllocator(size_t Size)
-      : MemorySize {Size} {
-      Data = reinterpret_cast<uintptr_t>(FEXCore::Allocator::malloc(Size * 2));
-      List = reinterpret_cast<uintptr_t>(Data + Size);
-    }
-
-
-    ~DualIntrusiveAllocator() {
-      FEXCore::Allocator::free(reinterpret_cast<void*>(Data));
-    }
-
     [[nodiscard]] bool DataCheckSize(size_t Size) const {
       size_t NewOffset = DataCurrentOffset + Size;
       return NewOffset <= MemorySize;
@@ -81,7 +69,11 @@ class DualIntrusiveAllocator final {
       memcpy(reinterpret_cast<void*>(List), reinterpret_cast<void*>(rhs.List), ListCurrentOffset);
     }
 
-  private:
+  protected:
+    DualIntrusiveAllocator(size_t Size)
+      : MemorySize {Size} {
+    }
+
     uintptr_t Data;
     uintptr_t List;
     size_t DataCurrentOffset {0};
@@ -89,6 +81,44 @@ class DualIntrusiveAllocator final {
     size_t MemorySize;
 };
 
+class DualIntrusiveAllocatorMalloc final : public DualIntrusiveAllocator {
+  public:
+    DualIntrusiveAllocatorMalloc(size_t Size)
+      : DualIntrusiveAllocator {Size} {
+      Data = reinterpret_cast<uintptr_t>(FEXCore::Allocator::malloc(Size * 2));
+      List = reinterpret_cast<uintptr_t>(Data + Size);
+    }
+
+    ~DualIntrusiveAllocatorMalloc() {
+      FEXCore::Allocator::free(reinterpret_cast<void*>(Data));
+    }
+};
+
+class DualIntrusiveAllocatorThreadPool final : public DualIntrusiveAllocator {
+  public:
+    DualIntrusiveAllocatorThreadPool(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, size_t Size)
+      : DualIntrusiveAllocator {Size}
+      , PoolObject{ThreadAllocator, Size * 2} {
+      // Claim a buffer on allocation
+      PoolObject.ReownOrClaimBuffer();
+    }
+
+    ~DualIntrusiveAllocatorThreadPool() {
+      PoolObject.UnclaimBuffer();
+    }
+
+    void ReownOrClaimBuffer() {
+      Data = PoolObject.ReownOrClaimBuffer();
+      List = Data + MemorySize;
+    }
+
+    void DelayedDisownBuffer() {
+      PoolObject.DelayedDisownBuffer();
+    }
+
+  private:
+    Utils::FixedSizePooledAllocation<uintptr_t, 5000, 500> PoolObject;
+};
 
 class IRListView final {
   enum Flags {

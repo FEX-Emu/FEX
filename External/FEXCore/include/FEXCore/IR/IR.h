@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXHeaderUtils/EnumOperators.h>
 
 #include <array>
@@ -560,7 +561,7 @@ class IRListView;
 class IREmitter;
 
 FEX_DEFAULT_VISIBILITY void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
-FEX_DEFAULT_VISIBILITY std::unique_ptr<IREmitter> Parse(std::istream *in);
+FEX_DEFAULT_VISIBILITY std::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, std::istream *in);
 
 template<typename Type>
 inline NodeID NodeWrapperBase<Type>::ID() const {

@@ -4886,9 +4886,14 @@ void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCor
 }
 
 OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::Context *ctx)
-  : CTX {ctx} {
+  : IREmitter {ctx->OpDispatcherAllocator}
+  , CTX {ctx} {
   ResetWorkingList();
   InstallHostSpecificOpcodeHandlers();
+}
+OpDispatchBuilder::OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator)
+  : IREmitter {Allocator}
+  , CTX {nullptr} {
 }
 
 void OpDispatchBuilder::ResetWorkingList() {

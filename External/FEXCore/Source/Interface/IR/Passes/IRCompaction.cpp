@@ -31,7 +31,7 @@ static_assert(sizeof(RemapNode) == 4);
 
 class IRCompaction final : public FEXCore::IR::Pass {
 public:
-  IRCompaction();
+  IRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
   bool Run(IREmitter *IREmit) override;
 
 private:
@@ -46,12 +46,14 @@ private:
   std::vector<CodeBlockData> GeneratedCodeBlocks{};
 };
 
-IRCompaction::IRCompaction()
-  : LocalBuilder {nullptr} {
+IRCompaction::IRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator)
+  : LocalBuilder {Allocator} {
   OldToNewRemap.resize(AlignSize);
 }
 
 bool IRCompaction::Run(IREmitter *IREmit) {
+  LocalBuilder.ReownOrClaimBuffer();
+
   auto CurrentIR = IREmit->ViewIR();
   uint32_t NodeCount = CurrentIR.GetSSACount();
 
@@ -211,11 +213,12 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   IREmit->CopyData(LocalBuilder);
 
+  LocalBuilder.DelayedDisownBuffer();
   return true;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction() {
-  return std::make_unique<IRCompaction>();
+std::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator) {
+  return std::make_unique<IRCompaction>(Allocator);
 }
 
 }
