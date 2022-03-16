@@ -424,7 +424,7 @@ DEF_OP(F64SCALE) {
   auto Op = IROp->C<IR::IROp_F64SCALE>();
   double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
   double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double trunc = round(Src2);
+  double trunc = (double)(int64_t)(Src2); //truncate
   double Tmp = Src1 * exp2(trunc);
 
   memcpy(GDP, &Tmp, sizeof(double));

@@ -282,7 +282,7 @@ struct OpHandlers<IR::OP_F64FYL2X> {
 template<>
 struct OpHandlers<IR::OP_F64SCALE> {
   static double handle(double src1, double src2) {
-    double trunc = round(src2);
+    double trunc = (double)(int64_t)(src2); //truncate
     return src1 * exp2(trunc);
   }
 };
