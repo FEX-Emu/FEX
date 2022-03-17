@@ -35,10 +35,8 @@ static ABICompatibility CheckABICompatibility(const ABITable& abi, std::string_v
     for (int i = 0; i < abi.abis.size(); ++i) {
         auto type_it = abi.abis[i].find(std::string { type_name });
         if (type_it == abi.abis[i].end()) {
-            // TODO: Probably should assert here?
             std::cerr << "TYPE NOT PRESENT " << type_name << "\n";
-            assert(false && "Type is not present in all ABIs");
-            return ABICompatibility::Unknown;
+            throw std::runtime_error("No ABI description for type \"" + std::string { type_name } + "\" required by interface definition");
         }
 
         types_per_abi.push_back(&type_it->second);
@@ -175,6 +173,20 @@ struct FunctionAnnotations {
 };
 
 static ABICompatibility CheckABICompatibility(const ABITable& abi, const clang::Type* type, FunctionAnnotations annotations) {
+    if (auto* typedef_type = llvm::dyn_cast_or_null<clang::TypedefType>(type)) {
+        auto aliased_type = typedef_type->getDecl()->getUnderlyingType().getTypePtr();
+        if (aliased_type->isRecordType()) {
+            // TODO: Needed by xcb_randr_mode_end to reconstruct the "struct" for xcb_randr_mode_iterator_t. Is this the right approach, and should we just strip off the typedef elsewhere?
+            type = aliased_type;
+        }
+
+        // Handle simple, built-in types.
+        // TODO: These should be part of the ABI instead!
+        if (aliased_type->isBuiltinType()) {
+            return ABICompatibility::Trivial;
+        }
+    }
+
     if (!type->isPointerType()) {
         return CheckABICompatibility(abi, clang::QualType(type, 0).getAsString());
     } else if (type->isFunctionPointerType()) {
@@ -204,7 +216,7 @@ static ABICompatibility CheckABICompatibility(const ABITable& abi, const clang::
 }
 
 static ABICompatibility CheckABICompatibility(const ABITable& abi, const StructInfo::ChildInfo& type) {
-    if (type.pointer_chain.empty() || (type.pointer_chain.size() == 1 && type.pointer_chain[0].array_size)) {
+    if (type.pointer_chain.empty() || (type.pointer_chain.size() == 1/* && type.pointer_chain[0].array_size*/)) {
         return CheckABICompatibility(abi, type.type_name);
     } else {
         // TODO: Check member annotations (e.g. passthrough pointer)
@@ -362,6 +374,39 @@ struct NamespaceInfo {
 // List of namespaces with a non-specialized fex_gen_config definition (including the global namespace, represented with an empty name)
 static std::vector<NamespaceInfo> namespaces;
 
+struct ClangDiagnosticAsException : std::pair<clang::SourceLocation, unsigned> {
+    // List of callbacks that add an argument to a clang::DiagnosticBuilder
+    std::vector<std::function<void(clang::DiagnosticBuilder&)>> args;
+
+    ClangDiagnosticAsException& AddString(std::string str) {
+        args.push_back([arg=std::move(str)](clang::DiagnosticBuilder& db) {
+            db.AddString(arg);
+        });
+        return *this;
+    }
+
+    ClangDiagnosticAsException& AddSourceRange(clang::CharSourceRange range) {
+        args.push_back([range](clang::DiagnosticBuilder& db) {
+            db.AddSourceRange(range);
+        });
+        return *this;
+    }
+
+    ClangDiagnosticAsException& AddTaggedVal(clang::QualType type) {
+        args.push_back([val=reinterpret_cast<uint64_t&>(type)](clang::DiagnosticBuilder& db) {
+            db.AddTaggedVal(val, clang::DiagnosticsEngine::ak_qualtype);
+        });
+        return *this;
+    }
+
+    void Report(clang::DiagnosticsEngine& diagnostics) const {
+        auto builder = diagnostics.Report(first, second);
+        for (auto& arg_appender : args) {
+            arg_appender(builder);
+        }
+    }
+};
+
 class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
     clang::ASTContext& context;
 
@@ -486,12 +531,10 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
         return ret;
     }
 
-    using ClangDiagnosticAsException = std::pair<clang::SourceLocation, unsigned>;
-
     template<std::size_t N>
     [[nodiscard]] ClangDiagnosticAsException Error(clang::SourceLocation loc, const char (&message)[N]) {
         auto id = context.getDiagnostics().getCustomDiagID(clang::DiagnosticsEngine::Error, message);
-        return std::pair(loc, id);
+        return { std::pair(loc, id) };
     }
 
 public:
@@ -522,7 +565,7 @@ public:
 
         return true;
     } catch (ClangDiagnosticAsException& exception) {
-        context.getDiagnostics().Report(exception.first, exception.second);
+        exception.Report(context.getDiagnostics());
         return false;
     }
 
@@ -540,8 +583,12 @@ public:
             if (param_type->isVoidType()) {
                 //// Type wasn't specified, so auto-detect it
                 //param_type = function->getParamDecl(param_idx)->getType();
+            // TODO: This doesn't work when comparing `struct xcb_randr_notify_data_iterator_t *` and `xcb_randr_notify_data_iterator_t *`!
+            //       Disabled for now, but we really should have something like this...
             } else if (param_type != function->getParamDecl(param_idx)->getType()) {
-                throw Error(decl->getBeginLoc(), "Given parameter type doesn't match the function signature");
+//                throw Error(decl->getBeginLoc(), "Given parameter type %0 doesn't match %1 expected from function signature")
+//                    .AddTaggedVal(param_type)
+//                    .AddTaggedVal(function->getParamDecl(param_idx)->getType());
             }
 
             FunctionAnnotations annotations;
@@ -558,6 +605,9 @@ public:
                     annotations.ptr_passthrough = true;
                 } else if (annotation == "fexgen::ptr_is_untyped_address") {
                     annotations.untyped_address = true;
+                } else if (annotation == "fexgen::ptr_todo_only64") {
+                    // Treat as passthrough pointer
+                    annotations.ptr_passthrough = true;
                 } else {
                     throw Error(base.getSourceRange().getBegin(), "Unknown function parameter annotation");
                 }
@@ -725,7 +775,7 @@ public:
 
         return true;
     } catch (ClangDiagnosticAsException& exception) {
-        context.getDiagnostics().Report(exception.first, exception.second);
+        exception.Report(context.getDiagnostics());
         return false;
     }
 };
@@ -938,18 +988,21 @@ void BubbleSort(It begin, It end,
     }
 }
 
-// TODO: Move elsewhere
-using ClangDiagnosticAsException = std::pair<clang::SourceLocation, unsigned>;
+void GenerateThunkLibsAction::ExecuteAction() {
+    clang::ASTFrontendAction::ExecuteAction();
 
-void GenerateThunkLibsAction::EndSourceFileAction() try {
+    // Post-processing happens here rather than in an overridden EndSourceFileAction implementation.
+    // We can't move the logic to the latter since this code might still raise errors, but
+    // clang's diagnostics engine is already shut down by the time EndSourceFileAction is called.
     auto& context = getCompilerInstance().getASTContext();
 
     // TODO: Move elsewhere
     auto Error = [&context]<std::size_t N>(clang::SourceLocation loc, const char (&message)[N]) -> ClangDiagnosticAsException {
         auto id = context.getDiagnostics().getCustomDiagID(clang::DiagnosticsEngine::Error, message);
-        return std::pair(loc, id);
+        return ClangDiagnosticAsException {{ loc, id }};
     };
 
+try {
     const ABI& guest_abi = abi.abis[1]; // TODO: Select properly
 
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
@@ -1218,7 +1271,10 @@ void GenerateThunkLibsAction::EndSourceFileAction() try {
                     file << "; // " << child.offset_bits / 8 << "\n";
                 }
                 file << "};\n";
-                file << "static_assert(sizeof(fex_host_type<" << struct_name << ">) == " << host_struct_info->size_bits / 8 << ");\n\n";
+                // TODO: Remove if-check once unions are supported
+                if (!host_struct_info->is_union) {
+                    file << "static_assert(sizeof(fex_host_type<" << struct_name << ">) == " << host_struct_info->size_bits / 8 << ");\n\n";
+                }
 
                 // Repacker for guest->host layout
                 file << "inline void fex_repack_to_host(std::add_lvalue_reference_t<std::add_const_t<" << struct_name << ">> from, fex_host_type<" << struct_name << ">& into) {\n";
@@ -1244,12 +1300,21 @@ void GenerateThunkLibsAction::EndSourceFileAction() try {
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
                 const auto& annotations = data.parameter_annotations[idx];
-                auto compat = CheckABICompatibility(abi, type.getTypePtr(), annotations);
-                if (type->isPointerType() && compat == ABICompatibility::Unknown) {
-//                    throw Error(data.decl->getParamDecl(idx)->getBeginLoc(), "Function parameters that are ABI-incompatible pointers must be annotated");
-                    throw Error(clang::SourceLocation {} /* TODO: Using proper location crashes currently */, "Could not determine ABI compatibility for function parameter of pointer type. Are you missing any annotations?");
+                try {
+                    auto compat = CheckABICompatibility(abi, type.getTypePtr(), annotations);
+                    if (type->isPointerType() && compat == ABICompatibility::Unknown) {
+                        throw Error(data.decl->getNameInfo().getBeginLoc(),
+                                    "Could not determine ABI compatibility for parameter of type %0. Are you missing any annotations?")
+                                .AddTaggedVal(type)
+                                .AddSourceRange({data.decl->getSourceRange(), false});
+                    }
+                    param_abi_compat.push_back(compat);
+                } catch (std::runtime_error& err) {
+                    throw Error(data.decl->getNameInfo().getBeginLoc(), "Can't auto-pack '%0': %1")
+                            .AddString(function_name)
+                            .AddString(err.what())
+                            .AddSourceRange({data.decl->getSourceRange(), false});
                 }
-                param_abi_compat.push_back(compat);
             }
 
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
@@ -1609,17 +1674,10 @@ void GenerateThunkLibsAction::EndSourceFileAction() try {
             file << "\n";
         }
     }
+// TODO: Re-indent
 } catch (ClangDiagnosticAsException& exception) {
-    auto& diagnostics = getCompilerInstance().getASTContext().getDiagnostics();
-    std::cerr << "DIAGNOSTICS: " << &diagnostics << "\n";
-    diagnostics.Report(exception.first, exception.second);
-} catch (std::runtime_error& exception) {
-    // TODO: Avoid throwing std::runtime_error and remove this handler
-
-    std::cerr << "EXCEPTION: " << exception.what() << "\n";
-    auto& diagnostics = getCompilerInstance().getASTContext().getDiagnostics();
-    auto id = diagnostics.getCustomDiagID(clang::DiagnosticsEngine::Error, "ERROR: std::runtime_error exception thrown. See log for details");
-    diagnostics.Report(clang::SourceLocation {}, id);
+    exception.Report(context.getDiagnostics());
+}
 }
 
 std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
@@ -1634,12 +1692,10 @@ class AnalyzeABIVisitor : public clang::RecursiveASTVisitor<AnalyzeABIVisitor> {
     clang::ASTContext& context;
     ABI& type_abi;
 
-    using ClangDiagnosticAsException = std::pair<clang::SourceLocation, unsigned>;
-
     template<std::size_t N>
     [[nodiscard]] ClangDiagnosticAsException Error(clang::SourceLocation loc, const char (&message)[N]) {
         auto id = context.getDiagnostics().getCustomDiagID(clang::DiagnosticsEngine::Error, message);
-        return std::pair(loc, id);
+        return { std::pair(loc, id) };
     }
 
     // Type data from annotations
@@ -1682,33 +1738,46 @@ public:
             for (const auto& [type_name, type_info] : type_abi) {
                 if (auto struct_info = type_info.as_struct()) {
                     bool remove = false;
+                    std::string removal_reason;
                     if (struct_info->is_union) {
                         // Unions are not supported yet
-                        remove = true;
+                        // TODO: Disabling removal for now for xcb_randr_notify_data_iterator_t
+                        removal_reason = "is a union";
+//                        remove = true;
                     }
 
                     for (auto& child : struct_info->children) {
                         if (!type_abi.contains(child.type_name)) {
                             // No ABI description of the member available, so we can't reliably the describe parent ABI either
-                            remove = true;
+                            removal_reason = "has member \"" + child.type_name + "\" without ABI description";
+                            // TODO: Don't remove if this member has a pointer annotation. For now, we just avoid removing for all pointers...
+                            if (child.pointer_chain.empty() || child.pointer_chain[0].array_size) {
+                                remove = true;
+                            }
                         } else if (child.member_name == "") {
                             // Some structs have unnamed bit fields, e.g. struct timex
+                            removal_reason = "has unnamed member";
                             remove = true;
                         } else if (child.pointer_chain.size() != 1 &&
                                    std::any_of(child.pointer_chain.begin(), child.pointer_chain.end(),
                                                [](auto& info) -> bool { return info.array_size.has_value(); })) {
                             // Nesting pointers and array is not supported yet
                             // TODO: See below. Pointers aren't supported at all
+                            removal_reason = "has member \"" + child.type_name + "\" that is a nested pointer/array";
                             remove = true;
                         } else if (child.pointer_chain.size() == 1 &&
                                    !child.pointer_chain[0].array_size) {
                             // TODO: Actually, we don't support these at all. Structs like ftsent make this really difficult to do safely!
-                            remove = true;
+                            // TODO: For pointers to trivially compatible data types, this should be fine...
+                            removal_reason = "has pointer member \"" + child.type_name + "\"";
+//                            remove = true;
                         } else if (child.type_name.starts_with("union ")) {
                             // Unions are not supported yet
+                            removal_reason = "has member \"" + child.type_name + "\" that is a union";
                             remove = true;
                         } else if (child.bitfield_size) {
                             // Bit fields are not supported yet
+                            removal_reason = "has bit field member \"" + child.type_name + "\"";
                             remove = true;
                         }
                     }
@@ -1723,16 +1792,6 @@ public:
             }
         repeat:;
         }
-    }
-
-    bool VisitFunctionDecl(clang::FunctionDecl* decl) try {
-        for (clang::ParmVarDecl* param : decl->parameters()) {
-            HandleType(param->getBeginLoc(), param->getType().getTypePtr());
-        }
-        return true;
-    } catch (ClangDiagnosticAsException& exception) {
-        context.getDiagnostics().Report(exception.first, exception.second);
-        return false;
     }
 
     /**
@@ -1788,6 +1847,11 @@ public:
                         throw Error(base.getSourceRange().getBegin(), "Unknown struct member annotation");
                     }
                 }
+            } else if (auto function_decl = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
+                for (clang::ParmVarDecl* param : function_decl->parameters()) {
+                    HandleType(param->getBeginLoc(), param->getType().getTypePtr());
+                }
+                // TODO: handle returned types too
             } else {
                 // Other annotations are ignored in this ABI pass
             }
@@ -1797,7 +1861,7 @@ public:
 
         return true;
     } catch (ClangDiagnosticAsException& exception) {
-        context.getDiagnostics().Report(exception.first, exception.second);
+        exception.Report(context.getDiagnostics());
         return false;
     }
 

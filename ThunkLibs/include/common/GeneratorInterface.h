@@ -77,6 +77,9 @@ struct ptr_out {};
 struct ptr_inout {};
 struct ptr_is_untyped_address {};
 
+struct opaque_to_guest {};
+struct opaque_to_host {};
+
 // Used for padding members that need not be present on all architectures
 struct is_padding_member {};
 

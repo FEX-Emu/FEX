@@ -54,7 +54,7 @@ class GenerateThunkLibsAction : public clang::ASTFrontendAction {
 public:
     GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&, const ABITable&);
 
-    void EndSourceFileAction() override;
+    void ExecuteAction() override;
 
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
 
