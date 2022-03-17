@@ -22,6 +22,34 @@ struct fex_gen_config {
     unsigned version = 6;
 };
 
+// TODO: Can these actually be opaque for this library? The use of Xlibint is concerning
+template<> struct fex_gen_type<Display> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XRegion> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but has several issues right now: Has function pointer members, has _XConnectionInfo pointers as members
+template<> struct fex_gen_type<_XConnectionInfo> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but has several issues right now: Has function pointer members, has XExtData pointers as members
+template<> struct fex_gen_type<XExtData> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but contains several function pointer members
+template<> struct fex_gen_type<_XExtensionHooks> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but has several issues right now: Has function pointer members, has _XInternalAsync pointers as members
+template<> struct fex_gen_type<_XInternalAsync> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but contains many function pointers (including one in a nested struct, which currently can't be annotated)
+template<> struct fex_gen_type<XImage> : fexgen::opaque_to_guest {};
+
+// TODO: This is part of XEvent, which is a huge union and likely repacked incorrectly...
+template<> struct fex_gen_config<&XGenericEventCookie::data> : fexgen::ptr_todo_only64 {};
+
+// TODO: This is a massive union, but it seems to be written with ABI-stability in mind
+template<> struct fex_gen_type<xReply> : fexgen::opaque_to_guest {};
+
+// TODO: This is big union that needs custom repacking
+template<> struct fex_gen_type<XEvent> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<DPMSCapable> {};
 template<> struct fex_gen_config<DPMSDisable> {};
 template<> struct fex_gen_config<DPMSEnable> {};
@@ -119,11 +147,21 @@ template<> struct fex_gen_config<XSyncCreateAlarm> {};
 template<> struct fex_gen_config<XSyncCreateCounter> {};
 template<> struct fex_gen_config<XSyncCreateFence> {};
 template<> struct fex_gen_config<XSyncListSystemCounters> {};
+
 template<> struct fex_gen_config<XextCreateExtension> {};
+
 template<> struct fex_gen_config<XextDestroyExtension> {};
+template<> struct fex_gen_param<XextDestroyExtension, 0, XExtensionInfo*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XextAddDisplay> {};
+template<> struct fex_gen_param<XextAddDisplay, 0, XExtensionInfo*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XextRemoveDisplay> {};
+template<> struct fex_gen_param<XextRemoveDisplay, 0, XExtensionInfo*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XextFindDisplay> {};
+template<> struct fex_gen_param<XextFindDisplay, 0, XExtensionInfo*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XGetRequest> {};
 template<> struct fex_gen_config<_XFlushGCCache> {};
 template<> struct fex_gen_config<_XData32> {};
@@ -148,13 +186,31 @@ template<> struct fex_gen_config<_XRead> {};
 template<> struct fex_gen_config<_XReadPad> {};
 template<> struct fex_gen_config<_XSend> {};
 template<> struct fex_gen_config<_XReply> {};
+
 template<> struct fex_gen_config<_XEnq> {};
+template<> struct fex_gen_param<_XEnq, 1, xEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XDeq> {};
+template<> struct fex_gen_param<_XDeq, 1, _XQEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<_XDeq, 2, _XQEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XUnknownWireEvent> {};
+template<> struct fex_gen_param<_XUnknownWireEvent, 1, XEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<_XUnknownWireEvent, 2, xEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XUnknownWireEventCookie> {};
+template<> struct fex_gen_param<_XUnknownWireEventCookie, 2, xEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XUnknownCopyEventCookie> {};
+
 template<> struct fex_gen_config<_XUnknownNativeEvent> {};
+template<> struct fex_gen_param<_XUnknownNativeEvent, 1, XEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<_XUnknownNativeEvent, 2, xEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XWireToEvent> {};
+template<> struct fex_gen_param<_XWireToEvent, 1, XEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<_XWireToEvent, 2, xEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XDefaultWireError> {};
 template<> struct fex_gen_config<_XPollfdCacheInit> {};
 template<> struct fex_gen_config<_XPollfdCacheAdd> {};
@@ -167,12 +223,19 @@ template<> struct fex_gen_config<_XUnregisterInternalConnection> {};
 template<> struct fex_gen_config<_XProcessInternalConnection> {};
 template<> struct fex_gen_config<_XTextHeight> {};
 template<> struct fex_gen_config<_XTextHeight16> {};
+
 template<> struct fex_gen_config<_XEventToWire> {};
+template<> struct fex_gen_param<_XEventToWire, 1, XEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<_XEventToWire, 2, xEvent*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XF86LoadQueryLocaleFont> {};
 template<> struct fex_gen_config<_XProcessWindowAttributes> {};
 template<> struct fex_gen_config<_XDefaultError> {};
 template<> struct fex_gen_config<_XDefaultIOError> {};
+
 template<> struct fex_gen_config<_XDefaultIOErrorExit> {};
+template<> struct fex_gen_param<_XDefaultIOErrorExit, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<_XSetClipRectangles> {};
 template<> struct fex_gen_config<_XGetWindowAttributes> {};
 template<> struct fex_gen_config<_XPutBackEvent> {};

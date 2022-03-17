@@ -7,21 +7,105 @@ struct fex_gen_config {
     unsigned version = 2;
 };
 
+template<typename>
+struct fex_gen_type;
+
+// TODO: This should not be opaque, but it's struct of function pointers
+template<> struct fex_gen_type<snd_pcm_scope_ops_t> : fexgen::opaque_to_guest {};
+// TODO: This should not be opaque. It's first member is a pointer to ABI stable data
+template<> struct fex_gen_type<snd_pcm_channel_area_t> : fexgen::opaque_to_guest {};
+
+// TODO: Some of these might actually have definitions available! e.g. snd_devname uses "typedef struct snd_devname snd_devname_t" as if it were opaque but then proceeds to define the struct
+template<> struct fex_gen_type<snd_midi_event_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_query_subscribe_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_system_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_mixer_elem_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_mixer_class_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_sctl_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_mixer_selem_id_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_elem_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_elem_id_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_gstatus_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_gparams_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_ginfo_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_id_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_hctl_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_hctl_elem_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_hwdep_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_client_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_client_pool_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_input_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_elem_list_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_subformat_mask_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_shm_area> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_scope_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_params_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_format_mask_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_hwdep_dsp_image_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_queue_timer_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_event_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_status_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_elem_value_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_timer_query_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_mixer_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_queue_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_port_subscribe_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_queue_tempo_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_remove_events_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_queue_status_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_async_handler_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_rawmidi_status_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_rawmidi_params_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_rawmidi_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_config_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_access_mask_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_output_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_seq_port_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_ctl_card_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_hwdep_dsp_status_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_rawmidi_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_config_update_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_hwdep_info_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_sw_params_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_hw_params_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<snd_pcm_status_t> : fexgen::opaque_to_guest {};
+
+template<> struct fex_gen_type<FILE> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<snd_asoundlib_version> {};
 template<> struct fex_gen_config<snd_dlpath> {};
+template<> struct fexgen::annotate_param<snd_dlpath, 0, char*> : fexgen::ptr_todo_only64 {};
 template<> struct fex_gen_config<snd_dlopen> {};
-template<> struct fex_gen_config<snd_dlsym> {};
-template<> struct fex_gen_config<snd_dlclose> {};
+template<> struct fexgen::annotate_param<snd_dlopen, 0, char*> : fexgen::ptr_todo_only64 {};
+// TODO: Re-enable dl* functions
+//template<> struct fex_gen_config<snd_dlsym> {};
+//template<> struct fex_gen_config<snd_dlclose> {};
 //template<> struct fex_gen_config<snd_async_add_handler> {};
 //template<> struct fex_gen_config<snd_async_del_handler> {};
 //template<> struct fex_gen_config<snd_async_handler_get_fd> {};
 //template<> struct fex_gen_config<snd_async_handler_get_signo> {};
 //template<> struct fex_gen_config<snd_async_handler_get_callback_private> {};
 template<> struct fex_gen_config<snd_shm_area_create> {};
+// NOTE: This pointer is only used as an argument to shmdt
+template<> struct fex_gen_param<snd_shm_area_create, 1, void*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<snd_shm_area_share> {};
 template<> struct fex_gen_config<snd_shm_area_destroy> {};
-template<> struct fex_gen_config<snd_user_file> {};
+
+// TODO: Reimplement. The result is strdup'ed into the output parameter, so it lives on host heap. We need to strdup it to the guest heap.
+//template<> struct fex_gen_config<snd_user_file> {};
+//template<> struct fex_gen_param<snd_user_file, 0, const char *> : fexgen::ptr_in {};
+//template<> struct fex_gen_param<snd_user_file, 0, const char *> : fexgen::ptr_in {};
+
 template<> struct fex_gen_config<snd_input_stdio_open> {};
+template<> struct fex_gen_param<snd_input_stdio_open, 0, snd_input_t**> : fexgen::ptr_out {};
+
 template<> struct fex_gen_config<snd_input_stdio_attach> {};
 template<> struct fex_gen_config<snd_input_buffer_open> {};
 template<> struct fex_gen_config<snd_input_close> {};
@@ -75,7 +159,10 @@ template<> struct fex_gen_config<snd_config_make_compound> {};
 //template<> struct fex_gen_config<snd_config_imake_real> {};
 template<> struct fex_gen_config<snd_config_imake_string> {};
 template<> struct fex_gen_config<snd_config_imake_safe_string> {};
+
 template<> struct fex_gen_config<snd_config_imake_pointer> {};
+template<> struct fex_gen_param<snd_config_imake_pointer, 2, const void*> : fexgen::ptr_todo_only64 {}; // TODO: untyped pointer?
+
 template<> struct fex_gen_config<snd_config_get_type> {};
 template<> struct fex_gen_config<snd_config_is_array> {};
 template<> struct fex_gen_config<snd_config_set_id> {};
@@ -84,7 +171,10 @@ template<> struct fex_gen_config<snd_config_set_integer64> {};
 template<> struct fex_gen_config<snd_config_set_real> {};
 template<> struct fex_gen_config<snd_config_set_string> {};
 template<> struct fex_gen_config<snd_config_set_ascii> {};
+
 template<> struct fex_gen_config<snd_config_set_pointer> {};
+template<> struct fex_gen_param<snd_config_set_pointer, 1, const void*> : fexgen::ptr_todo_only64 {}; // TODO: untyped pointer?
+
 template<> struct fex_gen_config<snd_config_get_id> {};
 template<> struct fex_gen_config<snd_config_get_integer> {};
 template<> struct fex_gen_config<snd_config_get_integer64> {};
@@ -92,7 +182,10 @@ template<> struct fex_gen_config<snd_config_get_real> {};
 template<> struct fex_gen_config<snd_config_get_ireal> {};
 template<> struct fex_gen_config<snd_config_get_string> {};
 template<> struct fex_gen_config<snd_config_get_ascii> {};
+
 template<> struct fex_gen_config<snd_config_get_pointer> {};
+template<> struct fex_gen_param<snd_config_get_pointer, 1, const void**> : fexgen::ptr_todo_only64 {}; // TODO: untyped pointer?
+
 template<> struct fex_gen_config<snd_config_test_id> {};
 template<> struct fex_gen_config<snd_config_iterator_first> {};
 //template<> struct fex_gen_config<snd_config_iterator_next> {};
@@ -102,8 +195,13 @@ template<> struct fex_gen_config<snd_config_get_bool_ascii> {};
 template<> struct fex_gen_config<snd_config_get_bool> {};
 template<> struct fex_gen_config<snd_config_get_ctl_iface_ascii> {};
 template<> struct fex_gen_config<snd_config_get_ctl_iface> {};
+
 template<> struct fex_gen_config<snd_names_list> {};
+template<> struct fex_gen_param<snd_names_list, 1, snd_devname_t**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_names_list_free> {};
+template<> struct fex_gen_param<snd_names_list_free, 0, snd_devname_t*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_pcm_open> {};
 template<> struct fex_gen_config<snd_pcm_open_lconf> {};
 template<> struct fex_gen_config<snd_pcm_open_fallback> {};
@@ -142,10 +240,22 @@ template<> struct fex_gen_config<snd_pcm_rewindable> {};
 template<> struct fex_gen_config<snd_pcm_rewind> {};
 template<> struct fex_gen_config<snd_pcm_forwardable> {};
 template<> struct fex_gen_config<snd_pcm_forward> {};
+
+// TODO: Has void* with well-defined ABI
 template<> struct fex_gen_config<snd_pcm_writei> {};
+template<> struct fex_gen_param<snd_pcm_writei, 1, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Has void* with well-defined ABI
 template<> struct fex_gen_config<snd_pcm_readi> {};
+template<> struct fex_gen_param<snd_pcm_readi, 1, void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Has void** with well-defined ABI
 template<> struct fex_gen_config<snd_pcm_writen> {};
+template<> struct fex_gen_param<snd_pcm_writen, 1, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_pcm_readn> {};
+template<> struct fex_gen_param<snd_pcm_readn, 1, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_pcm_wait> {};
 template<> struct fex_gen_config<snd_pcm_link> {};
 template<> struct fex_gen_config<snd_pcm_unlink> {};
@@ -373,8 +483,11 @@ template<> struct fex_gen_config<snd_pcm_status_get_tstamp> {};
 template<> struct fex_gen_config<snd_pcm_status_get_htstamp> {};
 template<> struct fex_gen_config<snd_pcm_status_get_audio_htstamp> {};
 template<> struct fex_gen_config<snd_pcm_status_get_driver_htstamp> {};
-template<> struct fex_gen_config<snd_pcm_status_get_audio_htstamp_report> {};
-template<> struct fex_gen_config<snd_pcm_status_set_audio_htstamp_config> {};
+
+// TODO: Requires repacking of structs with bit fields (trivial in this case)
+//template<> struct fex_gen_config<snd_pcm_status_get_audio_htstamp_report> {};
+//template<> struct fex_gen_config<snd_pcm_status_set_audio_htstamp_config> {};
+
 template<> struct fex_gen_config<snd_pcm_status_get_delay> {};
 template<> struct fex_gen_config<snd_pcm_status_get_avail> {};
 template<> struct fex_gen_config<snd_pcm_status_get_avail_max> {};
@@ -398,10 +511,23 @@ template<> struct fex_gen_config<snd_pcm_sw_params_dump> {};
 template<> struct fex_gen_config<snd_pcm_status_dump> {};
 template<> struct fex_gen_config<snd_pcm_mmap_begin> {};
 template<> struct fex_gen_config<snd_pcm_mmap_commit> {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_pcm_mmap_writei> {};
+template<> struct fex_gen_param<snd_pcm_mmap_writei, 1, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_pcm_mmap_readi> {};
+template<> struct fex_gen_param<snd_pcm_mmap_readi, 1, void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_pcm_mmap_writen> {};
+template<> struct fex_gen_param<snd_pcm_mmap_writen, 1, void**> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_pcm_mmap_readn> {};
+template<> struct fex_gen_param<snd_pcm_mmap_readn, 1, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_pcm_format_signed> {};
 template<> struct fex_gen_config<snd_pcm_format_unsigned> {};
 template<> struct fex_gen_config<snd_pcm_format_linear> {};
@@ -417,7 +543,11 @@ template<> struct fex_gen_config<snd_pcm_format_silence> {};
 template<> struct fex_gen_config<snd_pcm_format_silence_16> {};
 template<> struct fex_gen_config<snd_pcm_format_silence_32> {};
 template<> struct fex_gen_config<snd_pcm_format_silence_64> {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_pcm_format_set_silence> {};
+template<> struct fex_gen_param<snd_pcm_format_set_silence, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_pcm_bytes_to_frames> {};
 template<> struct fex_gen_config<snd_pcm_frames_to_bytes> {};
 template<> struct fex_gen_config<snd_pcm_bytes_to_samples> {};
@@ -444,7 +574,11 @@ template<> struct fex_gen_config<snd_pcm_scope_set_ops> {};
 template<> struct fex_gen_config<snd_pcm_scope_set_name> {};
 template<> struct fex_gen_config<snd_pcm_scope_get_name> {};
 template<> struct fex_gen_config<snd_pcm_scope_get_callback_private> {};
+
+// Callback argument is passed back to guest => passthrough
 template<> struct fex_gen_config<snd_pcm_scope_set_callback_private> {};
+template<> struct fex_gen_param<snd_pcm_scope_set_callback_private, 1, void*> : fexgen::ptr_pointer_passthrough {};
+
 template<> struct fex_gen_config<snd_pcm_scope_s16_open> {};
 template<> struct fex_gen_config<snd_pcm_scope_s16_get_channel_buffer> {};
 template<> struct fex_gen_config<snd_spcm_init> {};
@@ -497,8 +631,14 @@ template<> struct fex_gen_config<snd_rawmidi_status_get_xruns> {};
 template<> struct fex_gen_config<snd_rawmidi_status> {};
 template<> struct fex_gen_config<snd_rawmidi_drain> {};
 template<> struct fex_gen_config<snd_rawmidi_drop> {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_rawmidi_write> {};
+template<> struct fex_gen_param<snd_rawmidi_write, 1, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_rawmidi_read> {};
+template<> struct fex_gen_param<snd_rawmidi_read, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_rawmidi_name> {};
 template<> struct fex_gen_config<snd_rawmidi_type> {};
 template<> struct fex_gen_config<snd_rawmidi_stream> {};
@@ -523,7 +663,10 @@ template<> struct fex_gen_config<snd_timer_status> {};
 template<> struct fex_gen_config<snd_timer_start> {};
 template<> struct fex_gen_config<snd_timer_stop> {};
 template<> struct fex_gen_config<snd_timer_continue> {};
+
 template<> struct fex_gen_config<snd_timer_read> {};
+template<> struct fex_gen_param<snd_timer_read, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_timer_id_sizeof> {};
 template<> struct fex_gen_config<snd_timer_id_malloc> {};
 template<> struct fex_gen_config<snd_timer_id_free> {};
@@ -596,9 +739,16 @@ template<> struct fex_gen_config<snd_hwdep_nonblock> {};
 template<> struct fex_gen_config<snd_hwdep_info> {};
 template<> struct fex_gen_config<snd_hwdep_dsp_status> {};
 template<> struct fex_gen_config<snd_hwdep_dsp_load> {};
+
 template<> struct fex_gen_config<snd_hwdep_ioctl> {};
+template<> struct fex_gen_param<snd_hwdep_ioctl, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_hwdep_write> {};
+template<> struct fex_gen_param<snd_hwdep_write, 1, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_hwdep_read> {};
+template<> struct fex_gen_param<snd_hwdep_read, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_hwdep_info_sizeof> {};
 template<> struct fex_gen_config<snd_hwdep_info_malloc> {};
 template<> struct fex_gen_config<snd_hwdep_info_free> {};
@@ -628,16 +778,30 @@ template<> struct fex_gen_config<snd_hwdep_dsp_image_get_image> {};
 template<> struct fex_gen_config<snd_hwdep_dsp_image_get_length> {};
 template<> struct fex_gen_config<snd_hwdep_dsp_image_set_index> {};
 template<> struct fex_gen_config<snd_hwdep_dsp_image_set_name> {};
+
+// TODO: Stable ABI?
 template<> struct fex_gen_config<snd_hwdep_dsp_image_set_image> {};
+template<> struct fex_gen_param<snd_hwdep_dsp_image_set_image, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_hwdep_dsp_image_set_length> {};
 template<> struct fex_gen_config<snd_card_load> {};
 template<> struct fex_gen_config<snd_card_next> {};
 template<> struct fex_gen_config<snd_card_get_index> {};
 template<> struct fex_gen_config<snd_card_get_name> {};
 template<> struct fex_gen_config<snd_card_get_longname> {};
+
 template<> struct fex_gen_config<snd_device_name_hint> {};
+template<> struct fex_gen_param<snd_device_name_hint, 1, const char*> : fexgen::ptr_todo_only64 {};
+// NOTE: This triply-nested pointer is an out-param to an array of pointers to opaque data
+template<> struct fex_gen_param<snd_device_name_hint, 2, void***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_device_name_free_hint> {};
+template<> struct fex_gen_param<snd_device_name_free_hint, 0, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_device_name_get_hint> {};
+template<> struct fex_gen_param<snd_device_name_get_hint, 0, const void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<snd_device_name_get_hint, 1, const char*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_ctl_open> {};
 template<> struct fex_gen_config<snd_ctl_open_lconf> {};
 template<> struct fex_gen_config<snd_ctl_open_fallback> {};
@@ -824,7 +988,11 @@ template<> struct fex_gen_config<snd_ctl_elem_value_set_integer> {};
 template<> struct fex_gen_config<snd_ctl_elem_value_set_integer64> {};
 template<> struct fex_gen_config<snd_ctl_elem_value_set_enumerated> {};
 template<> struct fex_gen_config<snd_ctl_elem_value_set_byte> {};
+
+// TODO: Stable ABI?
 template<> struct fex_gen_config<snd_ctl_elem_set_bytes> {};
+template<> struct fex_gen_param<snd_ctl_elem_set_bytes, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_ctl_elem_value_get_bytes> {};
 template<> struct fex_gen_config<snd_ctl_elem_value_get_iec958> {};
 template<> struct fex_gen_config<snd_ctl_elem_value_set_iec958> {};
@@ -1203,16 +1371,17 @@ template<> struct fex_gen_config<snd_seq_queue_timer_set_id> {};
 template<> struct fex_gen_config<snd_seq_queue_timer_set_resolution> {};
 template<> struct fex_gen_config<snd_seq_get_queue_timer> {};
 template<> struct fex_gen_config<snd_seq_set_queue_timer> {};
-template<> struct fex_gen_config<snd_seq_free_event> {};
-template<> struct fex_gen_config<snd_seq_event_length> {};
-template<> struct fex_gen_config<snd_seq_event_output> {};
-template<> struct fex_gen_config<snd_seq_event_output_buffer> {};
-template<> struct fex_gen_config<snd_seq_event_output_direct> {};
-template<> struct fex_gen_config<snd_seq_event_input> {};
-template<> struct fex_gen_config<snd_seq_event_input_pending> {};
+// TODO: Add support for snd_seq_event and re-enable these
+//template<> struct fex_gen_config<snd_seq_free_event> {};
+//template<> struct fex_gen_config<snd_seq_event_length> {};
+//template<> struct fex_gen_config<snd_seq_event_output> {};
+//template<> struct fex_gen_config<snd_seq_event_output_buffer> {};
+//template<> struct fex_gen_config<snd_seq_event_output_direct> {};
+//template<> struct fex_gen_config<snd_seq_event_input> {};
+//template<> struct fex_gen_config<snd_seq_event_input_pending> {};
 template<> struct fex_gen_config<snd_seq_drain_output> {};
-template<> struct fex_gen_config<snd_seq_event_output_pending> {};
-template<> struct fex_gen_config<snd_seq_extract_output> {};
+//template<> struct fex_gen_config<snd_seq_event_output_pending> {};
+//template<> struct fex_gen_config<snd_seq_extract_output> {};
 template<> struct fex_gen_config<snd_seq_drop_output> {};
 template<> struct fex_gen_config<snd_seq_drop_output_buffer> {};
 template<> struct fex_gen_config<snd_seq_drop_input> {};
@@ -1230,17 +1399,35 @@ template<> struct fex_gen_config<snd_seq_remove_events_get_event_type> {};
 template<> struct fex_gen_config<snd_seq_remove_events_get_tag> {};
 template<> struct fex_gen_config<snd_seq_remove_events_set_condition> {};
 template<> struct fex_gen_config<snd_seq_remove_events_set_queue> {};
+
+// TODO: Union of trivially compatible types shouldn't require annotations
 template<> struct fex_gen_config<snd_seq_remove_events_set_time> {};
+template<> struct fex_gen_param<snd_seq_remove_events_set_time, 1, const snd_seq_timestamp_t*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<snd_seq_remove_events_set_dest> {};
 template<> struct fex_gen_config<snd_seq_remove_events_set_channel> {};
 template<> struct fex_gen_config<snd_seq_remove_events_set_event_type> {};
 template<> struct fex_gen_config<snd_seq_remove_events_set_tag> {};
 template<> struct fex_gen_config<snd_seq_remove_events> {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_seq_set_bit> {};
+template<> struct fex_gen_param<snd_seq_set_bit, 1, void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_seq_unset_bit> {};
+template<> struct fex_gen_param<snd_seq_unset_bit, 1, void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_seq_change_bit> {};
+template<> struct fex_gen_param<snd_seq_change_bit, 1, void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI
 template<> struct fex_gen_config<snd_seq_get_bit> {};
-template<> struct fex_gen_config<snd_seq_control_queue> {};
+template<> struct fex_gen_param<snd_seq_get_bit, 1, void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Add support for snd_seq_event and re-enable this
+//template<> struct fex_gen_config<snd_seq_control_queue> {};
 template<> struct fex_gen_config<snd_seq_create_simple_port> {};
 template<> struct fex_gen_config<snd_seq_delete_simple_port> {};
 template<> struct fex_gen_config<snd_seq_connect_from> {};
@@ -1263,6 +1450,7 @@ template<> struct fex_gen_config<snd_midi_event_init> {};
 template<> struct fex_gen_config<snd_midi_event_reset_encode> {};
 template<> struct fex_gen_config<snd_midi_event_reset_decode> {};
 template<> struct fex_gen_config<snd_midi_event_no_status> {};
-template<> struct fex_gen_config<snd_midi_event_encode> {};
-template<> struct fex_gen_config<snd_midi_event_encode_byte> {};
-template<> struct fex_gen_config<snd_midi_event_decode> {};
+// TODO: Add support for snd_seq_event and re-enable these
+//template<> struct fex_gen_config<snd_midi_event_encode> {};
+//template<> struct fex_gen_config<snd_midi_event_encode_byte> {};
+//template<> struct fex_gen_config<snd_midi_event_decode> {};

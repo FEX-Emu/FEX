@@ -9,6 +9,9 @@ struct fex_gen_config;
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #include <vulkan/vulkan.h>
 
+// TODO: Should not be opaque. Has function pointer members
+template<> struct fex_gen_type<VkAllocationCallbacks> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<vkAcquireNextImage2KHR> {};
 template<> struct fex_gen_config<vkAcquireNextImageKHR> {};
 template<> struct fex_gen_config<vkAcquirePerformanceConfigurationINTEL> {};

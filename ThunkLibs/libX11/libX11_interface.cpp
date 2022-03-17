@@ -12,6 +12,30 @@ struct fex_gen_config {
     unsigned version = 6;
 };
 
+template<> struct fex_gen_type<Display> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XIC> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XIM> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XOC> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XOM> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XrmHashBucketRec> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XRegion> : fexgen::opaque_to_guest {};
+
+
+// TODO: Should not be opaque, but has several issues right now: Has function pointer members, has XExtData pointers as members
+template<> struct fex_gen_type<XExtData> : fexgen::opaque_to_guest {};
+// TODO: This is part of XEvent, which is a huge union and likely repacked incorrectly...
+template<> struct fex_gen_config<&XGenericEventCookie::data> : fexgen::ptr_todo_only64 {};
+
+// TODO: Should not be opaque, but contains many function pointers (including one in a nested struct, which currently can't be annotated)
+template<> struct fex_gen_type<XImage> : fexgen::opaque_to_guest {};
+//template<> struct fex_gen_config<&XImage::funcs::create_image> : fexgen::ptr_todo_only64 {};
+
+// TODO: Should not be opaque, but is a nontrivial union
+template<> struct fex_gen_type<XEvent> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but is a nontrivial union of pointers (possibly to opaque types, though?)
+template<> struct fex_gen_type<XEDataObject> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<XFetchBytes> {};
 template<> struct fex_gen_config<XLocaleOfIM> {};
 template<> struct fex_gen_config<XLocaleOfOM> {};
@@ -50,17 +74,26 @@ template<> struct fex_gen_config<XSetIconName> {};
 template<> struct fex_gen_config<XSetModifierMapping> {};
 template<> struct fex_gen_config<XSetPointerMapping> {};
 template<> struct fex_gen_config<XSetScreenSaver> {};
-template<> struct fex_gen_config<XSetSizeHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetSizeHints> {};
+
 template<> struct fex_gen_config<XSetState> {};
 template<> struct fex_gen_config<XSetWMColormapWindows> {};
-template<> struct fex_gen_config<XSetZoomHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetZoomHints> {};
+
 template<> struct fex_gen_config<XShrinkRegion> {};
 template<> struct fex_gen_config<XStoreBuffer> {};
 template<> struct fex_gen_config<XStoreColor> {};
 template<> struct fex_gen_config<XStoreNamedColor> {};
 template<> struct fex_gen_config<XStringListToTextProperty> {};
 template<> struct fex_gen_config<XTextExtents> {};
+
 template<> struct fex_gen_config<XTextPropertyToStringList> {};
+template<> struct fex_gen_param<XTextPropertyToStringList, 1, char***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XUninstallColormap> {};
 template<> struct fex_gen_config<XUnregisterIMInstantiateCallback> {};
 template<> struct fex_gen_config<Xutf8TextEscapement> {};
@@ -76,7 +109,10 @@ template<> struct fex_gen_config<XKeycodeToKeysym> {};
 template<> struct fex_gen_config<XDisplayMotionBufferSize> {};
 template<> struct fex_gen_config<XDestroyOC> {};
 template<> struct fex_gen_config<XmbDrawText> {};
-template<> struct fex_gen_config<XmbSetWMProperties> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XmbSetWMProperties> {};
+
 template<> struct fex_gen_config<XRemoveConnectionWatch> {};
 template<> struct fex_gen_config<XrmPutFileDatabase> {};
 template<> struct fex_gen_config<XrmPutResource> {};
@@ -85,7 +121,10 @@ template<> struct fex_gen_config<XrmStringToQuarkList> {};
 template<> struct fex_gen_config<XSetStandardColormap> {};
 template<> struct fex_gen_config<XSetTextProperty> {};
 template<> struct fex_gen_config<XSetWMClientMachine> {};
-template<> struct fex_gen_config<XSetWMSizeHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetWMSizeHints> {};
+
 template<> struct fex_gen_config<Xutf8DrawImageString> {};
 template<> struct fex_gen_config<Xutf8DrawString> {};
 template<> struct fex_gen_config<Xutf8DrawText> {};
@@ -154,22 +193,36 @@ template<> struct fex_gen_config<XFreeFontNames> {};
 template<> struct fex_gen_config<XFreeFontPath> {};
 template<> struct fex_gen_config<XGeometry> {};
 template<> struct fex_gen_config<XGetAtomNames> {};
+
 template<> struct fex_gen_config<XGetCommand> {};
+template<> struct fex_gen_param<XGetCommand, 2, char***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XGetIconName> {};
 template<> struct fex_gen_config<XGetIconSizes> {};
 template<> struct fex_gen_config<XGetKeyboardControl> {};
-template<> struct fex_gen_config<XGetNormalHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XGetNormalHints> {};
+
 template<> struct fex_gen_config<XGetPointerControl> {};
 template<> struct fex_gen_config<XGetPointerMapping> {};
 template<> struct fex_gen_config<XGetScreenSaver> {};
-template<> struct fex_gen_config<XGetSizeHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XGetSizeHints> {};
+
 template<> struct fex_gen_config<XGetStandardColormap> {};
 template<> struct fex_gen_config<XGetTextProperty> {};
 template<> struct fex_gen_config<XGetTransientForHint> {};
 template<> struct fex_gen_config<XGetWMColormapWindows> {};
 template<> struct fex_gen_config<XGetWMIconName> {};
-template<> struct fex_gen_config<XGetWMSizeHints> {};
-template<> struct fex_gen_config<XGetZoomHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XGetWMSizeHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XGetZoomHints> {};
+
 template<> struct fex_gen_config<XHeightMMOfScreen> {};
 template<> struct fex_gen_config<XHeightOfScreen> {};
 template<> struct fex_gen_config<XImageByteOrder> {};
@@ -214,8 +267,13 @@ template<> struct fex_gen_config<XrmQuarkToString> {};
 template<> struct fex_gen_config<XrmCombineFileDatabase> {};
 template<> struct fex_gen_config<XrmGetResource> {};
 template<> struct fex_gen_config<XrmQGetResource> {};
+
 template<> struct fex_gen_config<XrmQGetSearchList> {};
+template<> struct fex_gen_param<XrmQGetSearchList, 3, XrmHashTable*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XrmQGetSearchResource> {};
+template<> struct fex_gen_param<XrmQGetSearchResource, 0, XrmHashTable*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XrmCombineDatabase> {};
 template<> struct fex_gen_config<XrmDestroyDatabase> {};
 template<> struct fex_gen_config<XrmMergeDatabases> {};
@@ -289,7 +347,11 @@ template<> struct fex_gen_config<XFillArcs> {};
 template<> struct fex_gen_config<XFillPolygon> {};
 template<> struct fex_gen_config<XFillRectangles> {};
 template<> struct fex_gen_config<XFindContext> {};
+
 template<> struct fex_gen_config<XFontsOfFontSet> {};
+template<> struct fex_gen_param<XFontsOfFontSet, 1, XFontStruct***> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<XFontsOfFontSet, 2, char***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XFreeColors> {};
 template<> struct fex_gen_config<XFreeModifiermap> {};
 template<> struct fex_gen_config<XGetClassHint> {};
@@ -301,7 +363,10 @@ template<> struct fex_gen_config<XGetRGBColormaps> {};
 template<> struct fex_gen_config<XGetWindowAttributes> {};
 template<> struct fex_gen_config<XGetWMClientMachine> {};
 template<> struct fex_gen_config<XGetWMName> {};
-template<> struct fex_gen_config<XGetWMNormalHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XGetWMNormalHints> {};
+
 template<> struct fex_gen_config<XGetWMProtocols> {};
 template<> struct fex_gen_config<XGrabButton> {};
 template<> struct fex_gen_config<XGrabKeyboard> {};
@@ -316,7 +381,10 @@ template<> struct fex_gen_config<XMapSubwindows> {};
 template<> struct fex_gen_config<XmbLookupString> {};
 template<> struct fex_gen_config<XmbTextEscapement> {};
 template<> struct fex_gen_config<XmbTextListToTextProperty> {};
+
 template<> struct fex_gen_config<XmbTextPropertyToTextList> {};
+template<> struct fex_gen_param<XmbTextPropertyToTextList, 2, char***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XParseColor> {};
 template<> struct fex_gen_config<XPutBackEvent> {};
 template<> struct fex_gen_config<XQueryColor> {};
@@ -376,13 +444,22 @@ template<> struct fex_gen_config<XUnionRegion> {};
 template<> struct fex_gen_config<XUnloadFont> {};
 template<> struct fex_gen_config<XUnmapSubwindows> {};
 template<> struct fex_gen_config<Xutf8TextListToTextProperty> {};
+
 template<> struct fex_gen_config<Xutf8TextPropertyToTextList> {};
+template<> struct fex_gen_param<Xutf8TextPropertyToTextList, 2, char***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XwcLookupString> {};
 template<> struct fex_gen_config<XwcTextEscapement> {};
 template<> struct fex_gen_config<XwcTextListToTextProperty> {};
+
 template<> struct fex_gen_config<XwcTextPropertyToTextList> {};
+template<> struct fex_gen_param<XwcTextPropertyToTextList, 2, wchar_t***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XWithdrawWindow> {};
-template<> struct fex_gen_config<XWMGeometry> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XWMGeometry> {};
+
 template<> struct fex_gen_config<XGetKeyboardMapping> {};
 template<> struct fex_gen_config<XStringToKeysym> {};
 template<> struct fex_gen_config<XExtendedMaxRequestSize> {};
@@ -402,7 +479,10 @@ template<> struct fex_gen_config<XSetAuthorization> {};
 template<> struct fex_gen_config<XSetRGBColormaps> {};
 template<> struct fex_gen_config<XSetWMIconName> {};
 template<> struct fex_gen_config<XSetWMName> {};
-template<> struct fex_gen_config<XSetWMProperties> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetWMProperties> {};
+
 template<> struct fex_gen_config<XUnsetICFocus> {};
 template<> struct fex_gen_config<XwcDrawImageString> {};
 template<> struct fex_gen_config<XwcDrawString> {};
@@ -418,7 +498,10 @@ template<> struct fex_gen_config<XQueryFont> {};
 template<> struct fex_gen_config<XListHosts> {};
 template<> struct fex_gen_config<XAllocIconSize> {};
 template<> struct fex_gen_config<XGetModifierMapping> {};
+
 template<> struct fex_gen_config<XCreateFontSet> {};
+template<> struct fex_gen_param<XCreateFontSet, 2, char***> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<XListPixmapFormats> {};
 template<> struct fex_gen_config<XCreateRegion> {};
 template<> struct fex_gen_config<XAllocSizeHints> {};
@@ -430,8 +513,12 @@ template<> struct fex_gen_config<XMapWindow> {};
 template<> struct fex_gen_config<XLookupKeysym> {};
 
 template<> struct fex_gen_config<XParseGeometry> {};
-template<> struct fex_gen_config<XSetNormalHints> {};
-template<> struct fex_gen_config<XSetStandardProperties> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetNormalHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetStandardProperties> {};
 
 template<> struct fex_gen_config<XGetICValues> {
     using uniform_va_type = unsigned long;
@@ -465,7 +552,10 @@ template<> struct fex_gen_config<XFreeExtensionList> {};
 template<> struct fex_gen_config<XFreeFont> {};
 template<> struct fex_gen_config<XFreeGC> {};
 template<> struct fex_gen_config<XFreePixmap> {};
+
 template<> struct fex_gen_config<XFree> {};
+template<> struct fex_gen_param<XFree, 0, void*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<XGetErrorDatabaseText> {};
 template<> struct fex_gen_config<XGetErrorText> {};
 template<> struct fex_gen_config<XGetEventData> {};
@@ -505,9 +595,15 @@ template<> struct fex_gen_config<XDestroyIC> {};
 template<> struct fex_gen_config<XFreeEventData> {};
 template<> struct fex_gen_config<XLockDisplay> {};
 template<> struct fex_gen_config<XSetICFocus> {};
-template<> struct fex_gen_config<XSetWMNormalHints> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<XSetWMNormalHints> {};
+
 template<> struct fex_gen_config<XUnlockDisplay> {};
-template<> struct fex_gen_config<Xutf8SetWMProperties> {};
+
+// TODO: XSizeHints contains anonymous struct
+//template<> struct fex_gen_config<Xutf8SetWMProperties> {};
+
 template<> struct fex_gen_config<XCreateWindow> {};
 template<> struct fex_gen_config<XLoadQueryFont> {};
 template<> struct fex_gen_config<XCreateGC> {};

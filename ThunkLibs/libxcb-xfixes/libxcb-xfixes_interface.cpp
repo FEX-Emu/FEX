@@ -9,20 +9,31 @@ void FEX_xcb_xfixes_init_extension(xcb_connection_t*, xcb_extension_t*);
 size_t FEX_usable_size(void*);
 void FEX_free_on_host(void*);
 
+template<> struct fex_gen_type<xcb_connection_t> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<xcb_extension_t> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<FEX_xcb_xfixes_init_extension> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<FEX_usable_size> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<FEX_usable_size, 0, void*> : fexgen::ptr_is_untyped_address {};
 template<> struct fex_gen_config<FEX_free_on_host> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<FEX_free_on_host, 0, void*> : fexgen::ptr_is_untyped_address {};
 
 template<> struct fex_gen_config<xcb_xfixes_query_version> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<xcb_xfixes_query_version_unchecked> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<xcb_xfixes_query_version_reply> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_xfixes_query_version_reply, 2, xcb_generic_error_t**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_change_save_set_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_change_save_set> {};
 template<> struct fex_gen_config<xcb_xfixes_select_selection_input_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_select_selection_input> {};
 template<> struct fex_gen_config<xcb_xfixes_select_cursor_input_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_select_cursor_input> {};
+
+// TODO: _sizeof functions compute the size of serialized objects, so this parameter can be treated as an opaque object of unspecified type
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_get_cursor_image_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_unchecked> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_cursor_image> {};
@@ -30,9 +41,14 @@ template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_cursor_image_length
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_cursor_image_end> {};
 
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_reply> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_xfixes_get_cursor_image_reply, 2, xcb_generic_error_t**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_region_next> {};
 template<> struct fex_gen_config<xcb_xfixes_region_end> {};
+
 template<> struct fex_gen_config<xcb_xfixes_create_region_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_create_region_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_create_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_create_region> {};
 template<> struct fex_gen_config<xcb_xfixes_create_region_rectangles> {};
@@ -49,7 +65,10 @@ template<> struct fex_gen_config<xcb_xfixes_create_region_from_picture_checked> 
 template<> struct fex_gen_config<xcb_xfixes_create_region_from_picture> {};
 template<> struct fex_gen_config<xcb_xfixes_destroy_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_destroy_region> {};
+
 template<> struct fex_gen_config<xcb_xfixes_set_region_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_set_region_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_set_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_set_region> {};
 template<> struct fex_gen_config<xcb_xfixes_set_region_rectangles> {};
@@ -70,7 +89,10 @@ template<> struct fex_gen_config<xcb_xfixes_translate_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_translate_region> {};
 template<> struct fex_gen_config<xcb_xfixes_region_extents_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_region_extents> {};
+
 template<> struct fex_gen_config<xcb_xfixes_fetch_region_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_fetch_region_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_fetch_region> {};
 template<> struct fex_gen_config<xcb_xfixes_fetch_region_unchecked> {};
 template<> struct fex_gen_config<xcb_xfixes_fetch_region_rectangles> {};
@@ -78,13 +100,18 @@ template<> struct fex_gen_config<xcb_xfixes_fetch_region_rectangles_length> {};
 template<> struct fex_gen_config<xcb_xfixes_fetch_region_rectangles_iterator> {};
 
 template<> struct fex_gen_config<xcb_xfixes_fetch_region_reply> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_xfixes_fetch_region_reply, 2, xcb_generic_error_t**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_set_gc_clip_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_set_gc_clip_region> {};
 template<> struct fex_gen_config<xcb_xfixes_set_window_shape_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_set_window_shape_region> {};
 template<> struct fex_gen_config<xcb_xfixes_set_picture_clip_region_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_set_picture_clip_region> {};
+
 template<> struct fex_gen_config<xcb_xfixes_set_cursor_name_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_set_cursor_name_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_set_cursor_name_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_set_cursor_name> {};
 template<> struct fex_gen_config<xcb_xfixes_set_cursor_name_name> {};
@@ -92,6 +119,8 @@ template<> struct fex_gen_config<xcb_xfixes_set_cursor_name_name_length> {};
 template<> struct fex_gen_config<xcb_xfixes_set_cursor_name_name_end> {};
 
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_name_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_get_cursor_name_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_name> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_name_unchecked> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_name_name> {};
@@ -99,7 +128,11 @@ template<> struct fex_gen_config<xcb_xfixes_get_cursor_name_name_length> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_name_name_end> {};
 
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_name_reply> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_xfixes_get_cursor_name_reply, 2, xcb_generic_error_t**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_get_cursor_image_and_name_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name_unchecked> {};
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name_cursor_image> {};
@@ -111,9 +144,14 @@ template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name_name_lengt
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name_name_end> {};
 
 template<> struct fex_gen_config<xcb_xfixes_get_cursor_image_and_name_reply> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_xfixes_get_cursor_image_and_name_reply, 2, xcb_generic_error_t**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_change_cursor_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_change_cursor> {};
+
 template<> struct fex_gen_config<xcb_xfixes_change_cursor_by_name_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_change_cursor_by_name_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_change_cursor_by_name_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_change_cursor_by_name> {};
 template<> struct fex_gen_config<xcb_xfixes_change_cursor_by_name_name> {};
@@ -128,7 +166,10 @@ template<> struct fex_gen_config<xcb_xfixes_show_cursor_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_show_cursor> {};
 template<> struct fex_gen_config<xcb_xfixes_barrier_next> {};
 template<> struct fex_gen_config<xcb_xfixes_barrier_end> {};
+
 template<> struct fex_gen_config<xcb_xfixes_create_pointer_barrier_sizeof> {};
+template<> struct fex_gen_param<xcb_xfixes_create_pointer_barrier_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_xfixes_create_pointer_barrier_checked> {};
 template<> struct fex_gen_config<xcb_xfixes_create_pointer_barrier> {};
 template<> struct fex_gen_config<xcb_xfixes_create_pointer_barrier_devices> {};

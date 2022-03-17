@@ -14,10 +14,25 @@ size_t FEX_usable_size(void*);
 void FEX_free_on_host(void*);
 void FEX_GiveEvents(CrossArchEvent*, CrossArchEvent*, CBWork*);
 
+template<> struct fex_gen_type<xcb_special_event> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<xcb_connection_t> : fexgen::opaque_to_guest {};
+
+// TODO: Actually an ABI-stable union
+template<> struct fex_gen_type<xcb_client_message_data_t> : fexgen::opaque_to_guest {};
+
+// TODO: Most functions taking pointers to an iovec expect that vector[-1] and vector[-2] can be accessed
+template<> struct fex_gen_type<iovec> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<FEX_xcb_init_extension> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<FEX_usable_size> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<FEX_usable_size, 0, void*> : fexgen::ptr_is_untyped_address {};
 template<> struct fex_gen_config<FEX_free_on_host> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<FEX_free_on_host, 0, void*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<FEX_GiveEvents> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<FEX_GiveEvents, 0, CrossArchEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<FEX_GiveEvents, 1, CrossArchEvent*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<FEX_GiveEvents, 2, CBWork*> : fexgen::ptr_todo_only64 {};
 
 template<> struct fex_gen_config<xcb_flush> {};
 template<> struct fex_gen_config<xcb_get_maximum_request_length> {};
@@ -57,15 +72,24 @@ template<> struct fex_gen_config<xcb_send_request_with_fds> {};
 template<> struct fex_gen_config<xcb_send_request64> {};
 template<> struct fex_gen_config<xcb_send_request_with_fds64> {};
 template<> struct fex_gen_config<xcb_send_fd> {};
+
+// TODO: Function pointer support
 template<> struct fex_gen_config<xcb_take_socket> : fexgen::callback_guest, fexgen::custom_host_impl {};
+template<> struct fex_gen_param<xcb_take_socket, 2, void*> : fexgen::ptr_todo_only64 {};
 
 template<> struct fex_gen_config<xcb_writev> {};
 template<> struct fex_gen_config<xcb_wait_for_reply> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<xcb_wait_for_reply64> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_poll_for_reply> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_poll_for_reply, 2, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poll_for_reply64> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_param<xcb_poll_for_reply64, 2, void**> : fexgen::ptr_todo_only64 {};
 
 template<> struct fex_gen_config<xcb_get_reply_fds> {};
+template<> struct fex_gen_param<xcb_get_reply_fds, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_popcount> {};
 template<> struct fex_gen_config<xcb_sumof> {};
 
@@ -113,19 +137,26 @@ template<> struct fex_gen_config<xcb_format_next> {};
 template<> struct fex_gen_config<xcb_format_end> {};
 template<> struct fex_gen_config<xcb_visualtype_next> {};
 template<> struct fex_gen_config<xcb_visualtype_end> {};
+
 template<> struct fex_gen_config<xcb_depth_sizeof> {};
+template<> struct fex_gen_param<xcb_depth_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
 template<> struct fex_gen_config<xcb_depth_visuals> {};
 template<> struct fex_gen_config<xcb_depth_visuals_length> {};
 template<> struct fex_gen_config<xcb_depth_visuals_iterator> {};
 
 template<> struct fex_gen_config<xcb_depth_next> {};
 template<> struct fex_gen_config<xcb_depth_end> {};
+
 template<> struct fex_gen_config<xcb_screen_sizeof> {};
+template<> struct fex_gen_param<xcb_screen_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_screen_allowed_depths_length> {};
 template<> struct fex_gen_config<xcb_screen_allowed_depths_iterator> {};
 template<> struct fex_gen_config<xcb_screen_next> {};
 template<> struct fex_gen_config<xcb_screen_end> {};
+
 template<> struct fex_gen_config<xcb_setup_request_sizeof> {};
+template<> struct fex_gen_param<xcb_setup_request_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
 
 template<> struct fex_gen_config<xcb_setup_request_authorization_protocol_name> {};
 template<> struct fex_gen_config<xcb_setup_request_authorization_protocol_name_length> {};
@@ -137,21 +168,30 @@ template<> struct fex_gen_config<xcb_setup_request_authorization_protocol_data_e
 
 template<> struct fex_gen_config<xcb_setup_request_next> {};
 template<> struct fex_gen_config<xcb_setup_request_end> {};
+
 template<> struct fex_gen_config<xcb_setup_failed_sizeof> {};
+template<> struct fex_gen_param<xcb_setup_failed_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_setup_failed_reason> {};
 
 template<> struct fex_gen_config<xcb_setup_failed_reason_length> {};
 template<> struct fex_gen_config<xcb_setup_failed_reason_end> {};
 template<> struct fex_gen_config<xcb_setup_failed_next> {};
 template<> struct fex_gen_config<xcb_setup_failed_end> {};
+
 template<> struct fex_gen_config<xcb_setup_authenticate_sizeof> {};
+template<> struct fex_gen_param<xcb_setup_authenticate_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_setup_authenticate_reason> {};
 template<> struct fex_gen_config<xcb_setup_authenticate_reason_length> {};
 template<> struct fex_gen_config<xcb_setup_authenticate_reason_end> {};
 
 template<> struct fex_gen_config<xcb_setup_authenticate_next> {};
 template<> struct fex_gen_config<xcb_setup_authenticate_end> {};
+
 template<> struct fex_gen_config<xcb_setup_sizeof> {};
+template<> struct fex_gen_param<xcb_setup_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_setup_vendor> {};
 template<> struct fex_gen_config<xcb_setup_vendor_length> {};
 template<> struct fex_gen_config<xcb_setup_vendor_end> {};
@@ -164,23 +204,56 @@ template<> struct fex_gen_config<xcb_setup_roots_length> {};
 template<> struct fex_gen_config<xcb_setup_roots_iterator> {};
 template<> struct fex_gen_config<xcb_setup_next> {};
 template<> struct fex_gen_config<xcb_setup_end> {};
+
 template<> struct fex_gen_config<xcb_client_message_data_next> {};
 template<> struct fex_gen_config<xcb_client_message_data_end> {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_create_window_value_list_serialize> {};
+template<> struct fex_gen_param<xcb_create_window_value_list_serialize, 0, void**> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_create_window_value_list_unpack> {};
+template<> struct fex_gen_param<xcb_create_window_value_list_unpack, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_window_value_list_sizeof> {};
+template<> struct fex_gen_param<xcb_create_window_value_list_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_window_sizeof> {};
+template<> struct fex_gen_param<xcb_create_window_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_create_window_checked> {};
+template<> struct fex_gen_param<xcb_create_window_checked, 12, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_create_window> {};
+template<> struct fex_gen_param<xcb_create_window, 12, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_window_aux_checked> {};
 template<> struct fex_gen_config<xcb_create_window_aux> {};
 template<> struct fex_gen_config<xcb_create_window_value_list> {};
+
 template<> struct fex_gen_config<xcb_change_window_attributes_value_list_serialize> {};
+template<> struct fex_gen_param<xcb_change_window_attributes_value_list_serialize, 0, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_window_attributes_value_list_unpack> {};
+template<> struct fex_gen_param<xcb_change_window_attributes_value_list_unpack, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_window_attributes_value_list_sizeof> {};
+template<> struct fex_gen_param<xcb_change_window_attributes_value_list_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_window_attributes_sizeof> {};
+template<> struct fex_gen_param<xcb_change_window_attributes_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_change_window_attributes_checked> {};
+template<> struct fex_gen_param<xcb_change_window_attributes_checked, 3, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_change_window_attributes> {};
+template<> struct fex_gen_param<xcb_change_window_attributes, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_window_attributes_aux_checked> {};
 template<> struct fex_gen_config<xcb_change_window_attributes_aux> {};
 template<> struct fex_gen_config<xcb_change_window_attributes_value_list> {};
@@ -203,12 +276,27 @@ template<> struct fex_gen_config<xcb_unmap_window_checked> {};
 template<> struct fex_gen_config<xcb_unmap_window> {};
 template<> struct fex_gen_config<xcb_unmap_subwindows_checked> {};
 template<> struct fex_gen_config<xcb_unmap_subwindows> {};
+
 template<> struct fex_gen_config<xcb_configure_window_value_list_serialize> {};
+template<> struct fex_gen_param<xcb_configure_window_value_list_serialize, 0, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_configure_window_value_list_unpack> {};
+template<> struct fex_gen_param<xcb_configure_window_value_list_unpack, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_configure_window_value_list_sizeof> {};
+template<> struct fex_gen_param<xcb_configure_window_value_list_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_configure_window_sizeof> {};
+template<> struct fex_gen_param<xcb_configure_window_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_configure_window_checked> {};
+template<> struct fex_gen_param<xcb_configure_window_checked, 3, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_configure_window> {};
+template<> struct fex_gen_param<xcb_configure_window, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_configure_window_aux_checked> {};
 template<> struct fex_gen_config<xcb_configure_window_aux> {};
 template<> struct fex_gen_config<xcb_configure_window_value_list> {};
@@ -217,7 +305,10 @@ template<> struct fex_gen_config<xcb_circulate_window> {};
 template<> struct fex_gen_config<xcb_get_geometry> {};
 template<> struct fex_gen_config<xcb_get_geometry_unchecked> {};
 template<> struct fex_gen_config<xcb_get_geometry_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_query_tree_sizeof> {};
+template<> struct fex_gen_param<xcb_query_tree_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_query_tree> {};
 template<> struct fex_gen_config<xcb_query_tree_unchecked> {};
 template<> struct fex_gen_config<xcb_query_tree_children> {};
@@ -225,11 +316,17 @@ template<> struct fex_gen_config<xcb_query_tree_children_length> {};
 template<> struct fex_gen_config<xcb_query_tree_children_end> {};
 
 template<> struct fex_gen_config<xcb_query_tree_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_intern_atom_sizeof> {};
+template<> struct fex_gen_param<xcb_intern_atom_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_intern_atom> {};
 template<> struct fex_gen_config<xcb_intern_atom_unchecked> {};
 template<> struct fex_gen_config<xcb_intern_atom_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_get_atom_name_sizeof> {};
+template<> struct fex_gen_param<xcb_get_atom_name_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_atom_name> {};
 template<> struct fex_gen_config<xcb_get_atom_name_unchecked> {};
 template<> struct fex_gen_config<xcb_get_atom_name_name> {};
@@ -237,16 +334,28 @@ template<> struct fex_gen_config<xcb_get_atom_name_name_length> {};
 template<> struct fex_gen_config<xcb_get_atom_name_name_end> {};
 
 template<> struct fex_gen_config<xcb_get_atom_name_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_change_property_sizeof> {};
+template<> struct fex_gen_param<xcb_change_property_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_change_property_checked> {};
+template<> struct fex_gen_param<xcb_change_property_checked, 7, const void*> : fexgen::ptr_todo_only64 {};
+
+// TODO: Stable ABI (hopefully?)
 template<> struct fex_gen_config<xcb_change_property> {};
+template<> struct fex_gen_param<xcb_change_property, 7, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_property_data> {};
 template<> struct fex_gen_config<xcb_change_property_data_length> {};
 template<> struct fex_gen_config<xcb_change_property_data_end> {};
 
 template<> struct fex_gen_config<xcb_delete_property_checked> {};
 template<> struct fex_gen_config<xcb_delete_property> {};
+
 template<> struct fex_gen_config<xcb_get_property_sizeof> {};
+template<> struct fex_gen_param<xcb_get_property_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_property> {};
 template<> struct fex_gen_config<xcb_get_property_unchecked> {};
 template<> struct fex_gen_config<xcb_get_property_value> {};
@@ -254,7 +363,10 @@ template<> struct fex_gen_config<xcb_get_property_value_length> {};
 template<> struct fex_gen_config<xcb_get_property_value_end> {};
 
 template<> struct fex_gen_config<xcb_get_property_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_list_properties_sizeof> {};
+template<> struct fex_gen_param<xcb_list_properties_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_list_properties> {};
 template<> struct fex_gen_config<xcb_list_properties_unchecked> {};
 template<> struct fex_gen_config<xcb_list_properties_atoms> {};
@@ -302,7 +414,10 @@ template<> struct fex_gen_config<xcb_query_pointer_unchecked> {};
 template<> struct fex_gen_config<xcb_query_pointer_reply> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<xcb_timecoord_next> {};
 template<> struct fex_gen_config<xcb_timecoord_end> {};
+
 template<> struct fex_gen_config<xcb_get_motion_events_sizeof> {};
+template<> struct fex_gen_param<xcb_get_motion_events_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_motion_events> {};
 template<> struct fex_gen_config<xcb_get_motion_events_unchecked> {};
 template<> struct fex_gen_config<xcb_get_motion_events_events> {};
@@ -323,7 +438,10 @@ template<> struct fex_gen_config<xcb_get_input_focus_reply> : fexgen::custom_gue
 template<> struct fex_gen_config<xcb_query_keymap> {};
 template<> struct fex_gen_config<xcb_query_keymap_unchecked> {};
 template<> struct fex_gen_config<xcb_query_keymap_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_open_font_sizeof> {};
+template<> struct fex_gen_param<xcb_open_font_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_open_font_checked> {};
 template<> struct fex_gen_config<xcb_open_font> {};
 template<> struct fex_gen_config<xcb_open_font_name> {};
@@ -336,7 +454,10 @@ template<> struct fex_gen_config<xcb_fontprop_next> {};
 template<> struct fex_gen_config<xcb_fontprop_end> {};
 template<> struct fex_gen_config<xcb_charinfo_next> {};
 template<> struct fex_gen_config<xcb_charinfo_end> {};
+
 template<> struct fex_gen_config<xcb_query_font_sizeof> {};
+template<> struct fex_gen_param<xcb_query_font_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_query_font> {};
 template<> struct fex_gen_config<xcb_query_font_unchecked> {};
 template<> struct fex_gen_config<xcb_query_font_properties> {};
@@ -348,24 +469,36 @@ template<> struct fex_gen_config<xcb_query_font_char_infos_length> {};
 template<> struct fex_gen_config<xcb_query_font_char_infos_iterator> {};
 
 template<> struct fex_gen_config<xcb_query_font_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_query_text_extents_sizeof> {};
+template<> struct fex_gen_param<xcb_query_text_extents_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_query_text_extents> {};
 template<> struct fex_gen_config<xcb_query_text_extents_unchecked> {};
 template<> struct fex_gen_config<xcb_query_text_extents_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_str_sizeof> {};
+template<> struct fex_gen_param<xcb_str_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_str_name> {};
 template<> struct fex_gen_config<xcb_str_name_length> {};
 template<> struct fex_gen_config<xcb_str_name_end> {};
 
 template<> struct fex_gen_config<xcb_str_next> {};
 template<> struct fex_gen_config<xcb_str_end> {};
+
 template<> struct fex_gen_config<xcb_list_fonts_sizeof> {};
+template<> struct fex_gen_param<xcb_list_fonts_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_list_fonts> {};
 template<> struct fex_gen_config<xcb_list_fonts_unchecked> {};
 template<> struct fex_gen_config<xcb_list_fonts_names_length> {};
 template<> struct fex_gen_config<xcb_list_fonts_names_iterator> {};
 template<> struct fex_gen_config<xcb_list_fonts_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_list_fonts_with_info_sizeof> {};
+template<> struct fex_gen_param<xcb_list_fonts_with_info_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_list_fonts_with_info> {};
 template<> struct fex_gen_config<xcb_list_fonts_with_info_unchecked> {};
 template<> struct fex_gen_config<xcb_list_fonts_with_info_properties> {};
@@ -377,12 +510,18 @@ template<> struct fex_gen_config<xcb_list_fonts_with_info_name_length> {};
 template<> struct fex_gen_config<xcb_list_fonts_with_info_name_end> {};
 
 template<> struct fex_gen_config<xcb_list_fonts_with_info_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_set_font_path_sizeof> {};
+template<> struct fex_gen_param<xcb_set_font_path_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_set_font_path_checked> {};
 template<> struct fex_gen_config<xcb_set_font_path> {};
 template<> struct fex_gen_config<xcb_set_font_path_font_length> {};
 template<> struct fex_gen_config<xcb_set_font_path_font_iterator> {};
+
 template<> struct fex_gen_config<xcb_get_font_path_sizeof> {};
+template<> struct fex_gen_param<xcb_get_font_path_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_font_path> {};
 template<> struct fex_gen_config<xcb_get_font_path_unchecked> {};
 template<> struct fex_gen_config<xcb_get_font_path_path_length> {};
@@ -392,28 +531,57 @@ template<> struct fex_gen_config<xcb_create_pixmap_checked> {};
 template<> struct fex_gen_config<xcb_create_pixmap> {};
 template<> struct fex_gen_config<xcb_free_pixmap_checked> {};
 template<> struct fex_gen_config<xcb_free_pixmap> {};
+
 template<> struct fex_gen_config<xcb_create_gc_value_list_serialize> {};
+template<> struct fex_gen_param<xcb_create_gc_value_list_serialize, 0, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_gc_value_list_unpack> {};
+template<> struct fex_gen_param<xcb_create_gc_value_list_unpack, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_gc_value_list_sizeof> {};
+template<> struct fex_gen_param<xcb_create_gc_value_list_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_gc_sizeof> {};
+template<> struct fex_gen_param<xcb_create_gc_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_gc_checked> {};
+template<> struct fex_gen_param<xcb_create_gc_checked, 4, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_gc> {};
+template<> struct fex_gen_param<xcb_create_gc, 4, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_create_gc_aux_checked> {};
 template<> struct fex_gen_config<xcb_create_gc_aux> {};
 template<> struct fex_gen_config<xcb_create_gc_value_list> {};
+
 template<> struct fex_gen_config<xcb_change_gc_value_list_serialize> {};
+template<> struct fex_gen_param<xcb_change_gc_value_list_serialize, 0, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_gc_value_list_unpack> {};
+template<> struct fex_gen_param<xcb_change_gc_value_list_unpack, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_gc_value_list_sizeof> {};
+template<> struct fex_gen_param<xcb_change_gc_value_list_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_gc_sizeof> {};
+template<> struct fex_gen_param<xcb_change_gc_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_gc_checked> {};
+template<> struct fex_gen_param<xcb_change_gc_checked, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_gc> {};
+template<> struct fex_gen_param<xcb_change_gc, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_gc_aux_checked> {};
 template<> struct fex_gen_config<xcb_change_gc_aux> {};
 template<> struct fex_gen_config<xcb_change_gc_value_list> {};
 
 template<> struct fex_gen_config<xcb_copy_gc_checked> {};
 template<> struct fex_gen_config<xcb_copy_gc> {};
+
 template<> struct fex_gen_config<xcb_set_dashes_sizeof> {};
+template<> struct fex_gen_param<xcb_set_dashes_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_set_dashes_checked> {};
 template<> struct fex_gen_config<xcb_set_dashes> {};
 template<> struct fex_gen_config<xcb_set_dashes_dashes> {};
@@ -421,6 +589,8 @@ template<> struct fex_gen_config<xcb_set_dashes_dashes_length> {};
 template<> struct fex_gen_config<xcb_set_dashes_dashes_end> {};
 
 template<> struct fex_gen_config<xcb_set_clip_rectangles_sizeof> {};
+template<> struct fex_gen_param<xcb_set_clip_rectangles_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_set_clip_rectangles_checked> {};
 template<> struct fex_gen_config<xcb_set_clip_rectangles> {};
 template<> struct fex_gen_config<xcb_set_clip_rectangles_rectangles> {};
@@ -435,7 +605,10 @@ template<> struct fex_gen_config<xcb_copy_area_checked> {};
 template<> struct fex_gen_config<xcb_copy_area> {};
 template<> struct fex_gen_config<xcb_copy_plane_checked> {};
 template<> struct fex_gen_config<xcb_copy_plane> {};
+
 template<> struct fex_gen_config<xcb_poly_point_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_point_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_point_checked> {};
 template<> struct fex_gen_config<xcb_poly_point> {};
 template<> struct fex_gen_config<xcb_poly_point_points> {};
@@ -443,6 +616,8 @@ template<> struct fex_gen_config<xcb_poly_point_points_length> {};
 template<> struct fex_gen_config<xcb_poly_point_points_iterator> {};
 
 template<> struct fex_gen_config<xcb_poly_line_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_line_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_line_checked> {};
 template<> struct fex_gen_config<xcb_poly_line> {};
 template<> struct fex_gen_config<xcb_poly_line_points> {};
@@ -451,7 +626,10 @@ template<> struct fex_gen_config<xcb_poly_line_points_iterator> {};
 
 template<> struct fex_gen_config<xcb_segment_next> {};
 template<> struct fex_gen_config<xcb_segment_end> {};
+
 template<> struct fex_gen_config<xcb_poly_segment_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_segment_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_segment_checked> {};
 template<> struct fex_gen_config<xcb_poly_segment> {};
 template<> struct fex_gen_config<xcb_poly_segment_segments> {};
@@ -459,6 +637,8 @@ template<> struct fex_gen_config<xcb_poly_segment_segments_length> {};
 template<> struct fex_gen_config<xcb_poly_segment_segments_iterator> {};
 
 template<> struct fex_gen_config<xcb_poly_rectangle_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_rectangle_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_rectangle_checked> {};
 template<> struct fex_gen_config<xcb_poly_rectangle> {};
 template<> struct fex_gen_config<xcb_poly_rectangle_rectangles> {};
@@ -466,6 +646,8 @@ template<> struct fex_gen_config<xcb_poly_rectangle_rectangles_length> {};
 template<> struct fex_gen_config<xcb_poly_rectangle_rectangles_iterator> {};
 
 template<> struct fex_gen_config<xcb_poly_arc_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_arc_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_arc_checked> {};
 template<> struct fex_gen_config<xcb_poly_arc> {};
 template<> struct fex_gen_config<xcb_poly_arc_arcs> {};
@@ -473,6 +655,8 @@ template<> struct fex_gen_config<xcb_poly_arc_arcs_length> {};
 template<> struct fex_gen_config<xcb_poly_arc_arcs_iterator> {};
 
 template<> struct fex_gen_config<xcb_fill_poly_sizeof> {};
+template<> struct fex_gen_param<xcb_fill_poly_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_fill_poly_checked> {};
 template<> struct fex_gen_config<xcb_fill_poly> {};
 template<> struct fex_gen_config<xcb_fill_poly_points> {};
@@ -480,6 +664,8 @@ template<> struct fex_gen_config<xcb_fill_poly_points_length> {};
 template<> struct fex_gen_config<xcb_fill_poly_points_iterator> {};
 
 template<> struct fex_gen_config<xcb_poly_fill_rectangle_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_fill_rectangle_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_fill_rectangle_checked> {};
 template<> struct fex_gen_config<xcb_poly_fill_rectangle> {};
 template<> struct fex_gen_config<xcb_poly_fill_rectangle_rectangles> {};
@@ -487,6 +673,8 @@ template<> struct fex_gen_config<xcb_poly_fill_rectangle_rectangles_length> {};
 template<> struct fex_gen_config<xcb_poly_fill_rectangle_rectangles_iterator> {};
 
 template<> struct fex_gen_config<xcb_poly_fill_arc_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_fill_arc_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_fill_arc_checked> {};
 template<> struct fex_gen_config<xcb_poly_fill_arc> {};
 template<> struct fex_gen_config<xcb_poly_fill_arc_arcs> {};
@@ -494,6 +682,8 @@ template<> struct fex_gen_config<xcb_poly_fill_arc_arcs_length> {};
 template<> struct fex_gen_config<xcb_poly_fill_arc_arcs_iterator> {};
 
 template<> struct fex_gen_config<xcb_put_image_sizeof> {};
+template<> struct fex_gen_param<xcb_put_image_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_put_image_checked> {};
 template<> struct fex_gen_config<xcb_put_image> {};
 template<> struct fex_gen_config<xcb_put_image_data> {};
@@ -501,6 +691,8 @@ template<> struct fex_gen_config<xcb_put_image_data_length> {};
 template<> struct fex_gen_config<xcb_put_image_data_end> {};
 
 template<> struct fex_gen_config<xcb_get_image_sizeof> {};
+template<> struct fex_gen_param<xcb_get_image_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_image> {};
 template<> struct fex_gen_config<xcb_get_image_unchecked> {};
 template<> struct fex_gen_config<xcb_get_image_data> {};
@@ -508,7 +700,10 @@ template<> struct fex_gen_config<xcb_get_image_data_length> {};
 template<> struct fex_gen_config<xcb_get_image_data_end> {};
 
 template<> struct fex_gen_config<xcb_get_image_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_poly_text_8_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_text_8_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_text_8_checked> {};
 template<> struct fex_gen_config<xcb_poly_text_8> {};
 template<> struct fex_gen_config<xcb_poly_text_8_items> {};
@@ -516,6 +711,8 @@ template<> struct fex_gen_config<xcb_poly_text_8_items_length> {};
 template<> struct fex_gen_config<xcb_poly_text_8_items_end> {};
 
 template<> struct fex_gen_config<xcb_poly_text_16_sizeof> {};
+template<> struct fex_gen_param<xcb_poly_text_16_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_poly_text_16_checked> {};
 template<> struct fex_gen_config<xcb_poly_text_16> {};
 template<> struct fex_gen_config<xcb_poly_text_16_items> {};
@@ -523,6 +720,8 @@ template<> struct fex_gen_config<xcb_poly_text_16_items_length> {};
 template<> struct fex_gen_config<xcb_poly_text_16_items_end> {};
 
 template<> struct fex_gen_config<xcb_image_text_8_sizeof> {};
+template<> struct fex_gen_param<xcb_image_text_8_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_image_text_8_checked> {};
 template<> struct fex_gen_config<xcb_image_text_8> {};
 template<> struct fex_gen_config<xcb_image_text_8_string> {};
@@ -530,6 +729,8 @@ template<> struct fex_gen_config<xcb_image_text_8_string_length> {};
 template<> struct fex_gen_config<xcb_image_text_8_string_end> {};
 
 template<> struct fex_gen_config<xcb_image_text_16_sizeof> {};
+template<> struct fex_gen_param<xcb_image_text_16_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_image_text_16_checked> {};
 template<> struct fex_gen_config<xcb_image_text_16> {};
 template<> struct fex_gen_config<xcb_image_text_16_string> {};
@@ -546,7 +747,10 @@ template<> struct fex_gen_config<xcb_install_colormap_checked> {};
 template<> struct fex_gen_config<xcb_install_colormap> {};
 template<> struct fex_gen_config<xcb_uninstall_colormap_checked> {};
 template<> struct fex_gen_config<xcb_uninstall_colormap> {};
+
 template<> struct fex_gen_config<xcb_list_installed_colormaps_sizeof> {};
+template<> struct fex_gen_param<xcb_list_installed_colormaps_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_list_installed_colormaps> {};
 template<> struct fex_gen_config<xcb_list_installed_colormaps_unchecked> {};
 template<> struct fex_gen_config<xcb_list_installed_colormaps_cmaps> {};
@@ -557,11 +761,17 @@ template<> struct fex_gen_config<xcb_list_installed_colormaps_reply> : fexgen::c
 template<> struct fex_gen_config<xcb_alloc_color> {};
 template<> struct fex_gen_config<xcb_alloc_color_unchecked> {};
 template<> struct fex_gen_config<xcb_alloc_color_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_alloc_named_color_sizeof> {};
+template<> struct fex_gen_param<xcb_alloc_named_color_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_alloc_named_color> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<xcb_alloc_named_color_unchecked> {};
 template<> struct fex_gen_config<xcb_alloc_named_color_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_alloc_color_cells_sizeof> {};
+template<> struct fex_gen_param<xcb_alloc_color_cells_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_alloc_color_cells> {};
 template<> struct fex_gen_config<xcb_alloc_color_cells_unchecked> {};
 template<> struct fex_gen_config<xcb_alloc_color_cells_pixels> {};
@@ -573,7 +783,10 @@ template<> struct fex_gen_config<xcb_alloc_color_cells_masks_length> {};
 template<> struct fex_gen_config<xcb_alloc_color_cells_masks_end> {};
 
 template<> struct fex_gen_config<xcb_alloc_color_cells_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_alloc_color_planes_sizeof> {};
+template<> struct fex_gen_param<xcb_alloc_color_planes_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_alloc_color_planes> {};
 template<> struct fex_gen_config<xcb_alloc_color_planes_unchecked> {};
 template<> struct fex_gen_config<xcb_alloc_color_planes_pixels> {};
@@ -581,7 +794,10 @@ template<> struct fex_gen_config<xcb_alloc_color_planes_pixels_length> {};
 template<> struct fex_gen_config<xcb_alloc_color_planes_pixels_end> {};
 
 template<> struct fex_gen_config<xcb_alloc_color_planes_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_free_colors_sizeof> {};
+template<> struct fex_gen_param<xcb_free_colors_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_free_colors_checked> {};
 template<> struct fex_gen_config<xcb_free_colors> {};
 template<> struct fex_gen_config<xcb_free_colors_pixels> {};
@@ -590,7 +806,10 @@ template<> struct fex_gen_config<xcb_free_colors_pixels_end> {};
 
 template<> struct fex_gen_config<xcb_coloritem_next> {};
 template<> struct fex_gen_config<xcb_coloritem_end> {};
+
 template<> struct fex_gen_config<xcb_store_colors_sizeof> {};
+template<> struct fex_gen_param<xcb_store_colors_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_store_colors_checked> {};
 template<> struct fex_gen_config<xcb_store_colors> {};
 template<> struct fex_gen_config<xcb_store_colors_items> {};
@@ -598,6 +817,8 @@ template<> struct fex_gen_config<xcb_store_colors_items_length> {};
 template<> struct fex_gen_config<xcb_store_colors_items_iterator> {};
 
 template<> struct fex_gen_config<xcb_store_named_color_sizeof> {};
+template<> struct fex_gen_param<xcb_store_named_color_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_store_named_color_checked> {};
 template<> struct fex_gen_config<xcb_store_named_color> {};
 template<> struct fex_gen_config<xcb_store_named_color_name> {};
@@ -606,7 +827,10 @@ template<> struct fex_gen_config<xcb_store_named_color_name_length> {};
 template<> struct fex_gen_config<xcb_store_named_color_name_end> {};
 template<> struct fex_gen_config<xcb_rgb_next> {};
 template<> struct fex_gen_config<xcb_rgb_end> {};
+
 template<> struct fex_gen_config<xcb_query_colors_sizeof> {};
+template<> struct fex_gen_param<xcb_query_colors_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_query_colors> {};
 template<> struct fex_gen_config<xcb_query_colors_unchecked> {};
 template<> struct fex_gen_config<xcb_query_colors_colors> {};
@@ -614,7 +838,10 @@ template<> struct fex_gen_config<xcb_query_colors_colors_length> {};
 template<> struct fex_gen_config<xcb_query_colors_colors_iterator> {};
 
 template<> struct fex_gen_config<xcb_query_colors_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_lookup_color_sizeof> {};
+template<> struct fex_gen_param<xcb_lookup_color_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_lookup_color> {};
 template<> struct fex_gen_config<xcb_lookup_color_unchecked> {};
 template<> struct fex_gen_config<xcb_lookup_color_reply> : fexgen::custom_guest_entrypoint {};
@@ -629,17 +856,26 @@ template<> struct fex_gen_config<xcb_recolor_cursor> {};
 template<> struct fex_gen_config<xcb_query_best_size> {};
 template<> struct fex_gen_config<xcb_query_best_size_unchecked> {};
 template<> struct fex_gen_config<xcb_query_best_size_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_query_extension_sizeof> {};
+template<> struct fex_gen_param<xcb_query_extension_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_query_extension> {};
 template<> struct fex_gen_config<xcb_query_extension_unchecked> {};
 template<> struct fex_gen_config<xcb_query_extension_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_list_extensions_sizeof> {};
+template<> struct fex_gen_param<xcb_list_extensions_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_list_extensions> {};
 template<> struct fex_gen_config<xcb_list_extensions_unchecked> {};
 template<> struct fex_gen_config<xcb_list_extensions_names_length> {};
 template<> struct fex_gen_config<xcb_list_extensions_names_iterator> {};
 template<> struct fex_gen_config<xcb_list_extensions_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_mapping_sizeof> {};
+template<> struct fex_gen_param<xcb_change_keyboard_mapping_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_mapping_checked> {};
 template<> struct fex_gen_config<xcb_change_keyboard_mapping> {};
 template<> struct fex_gen_config<xcb_change_keyboard_mapping_keysyms> {};
@@ -647,6 +883,8 @@ template<> struct fex_gen_config<xcb_change_keyboard_mapping_keysyms_length> {};
 template<> struct fex_gen_config<xcb_change_keyboard_mapping_keysyms_end> {};
 
 template<> struct fex_gen_config<xcb_get_keyboard_mapping_sizeof> {};
+template<> struct fex_gen_param<xcb_get_keyboard_mapping_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_keyboard_mapping> {};
 template<> struct fex_gen_config<xcb_get_keyboard_mapping_unchecked> {};
 template<> struct fex_gen_config<xcb_get_keyboard_mapping_keysyms> {};
@@ -654,12 +892,25 @@ template<> struct fex_gen_config<xcb_get_keyboard_mapping_keysyms_length> {};
 template<> struct fex_gen_config<xcb_get_keyboard_mapping_keysyms_end> {};
 
 template<> struct fex_gen_config<xcb_get_keyboard_mapping_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control_value_list_serialize> {};
+template<> struct fex_gen_param<xcb_change_keyboard_control_value_list_serialize, 0, void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control_value_list_unpack> {};
+template<> struct fex_gen_param<xcb_change_keyboard_control_value_list_unpack, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control_value_list_sizeof> {};
+template<> struct fex_gen_param<xcb_change_keyboard_control_value_list_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control_sizeof> {};
+template<> struct fex_gen_param<xcb_change_keyboard_control_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control_checked> {};
+template<> struct fex_gen_param<xcb_change_keyboard_control_checked, 2, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control> {};
+template<> struct fex_gen_param<xcb_change_keyboard_control, 2, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_keyboard_control_aux_checked> {};
 template<> struct fex_gen_config<xcb_change_keyboard_control_aux> {};
 template<> struct fex_gen_config<xcb_change_keyboard_control_value_list> {};
@@ -679,7 +930,10 @@ template<> struct fex_gen_config<xcb_set_screen_saver> {};
 template<> struct fex_gen_config<xcb_get_screen_saver> {};
 template<> struct fex_gen_config<xcb_get_screen_saver_unchecked> {};
 template<> struct fex_gen_config<xcb_get_screen_saver_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_change_hosts_sizeof> {};
+template<> struct fex_gen_param<xcb_change_hosts_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_change_hosts_checked> {};
 template<> struct fex_gen_config<xcb_change_hosts> {};
 template<> struct fex_gen_config<xcb_change_hosts_address> {};
@@ -687,13 +941,18 @@ template<> struct fex_gen_config<xcb_change_hosts_address_length> {};
 template<> struct fex_gen_config<xcb_change_hosts_address_end> {};
 
 template<> struct fex_gen_config<xcb_host_sizeof> {};
+template<> struct fex_gen_param<xcb_host_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_host_address> {};
 template<> struct fex_gen_config<xcb_host_address_length> {};
 template<> struct fex_gen_config<xcb_host_address_end> {};
 
 template<> struct fex_gen_config<xcb_host_next> {};
 template<> struct fex_gen_config<xcb_host_end> {};
+
 template<> struct fex_gen_config<xcb_list_hosts_sizeof> {};
+template<> struct fex_gen_param<xcb_list_hosts_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_list_hosts> {};
 template<> struct fex_gen_config<xcb_list_hosts_unchecked> {};
 template<> struct fex_gen_config<xcb_list_hosts_hosts_length> {};
@@ -705,7 +964,10 @@ template<> struct fex_gen_config<xcb_set_close_down_mode_checked> {};
 template<> struct fex_gen_config<xcb_set_close_down_mode> {};
 template<> struct fex_gen_config<xcb_kill_client_checked> {};
 template<> struct fex_gen_config<xcb_kill_client> {};
+
 template<> struct fex_gen_config<xcb_rotate_properties_sizeof> {};
+template<> struct fex_gen_param<xcb_rotate_properties_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_rotate_properties_checked> {};
 template<> struct fex_gen_config<xcb_rotate_properties> {};
 template<> struct fex_gen_config<xcb_rotate_properties_atoms> {};
@@ -714,11 +976,17 @@ template<> struct fex_gen_config<xcb_rotate_properties_atoms_end> {};
 
 template<> struct fex_gen_config<xcb_force_screen_saver_checked> {};
 template<> struct fex_gen_config<xcb_force_screen_saver> {};
+
 template<> struct fex_gen_config<xcb_set_pointer_mapping_sizeof> {};
+template<> struct fex_gen_param<xcb_set_pointer_mapping_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_set_pointer_mapping> {};
 template<> struct fex_gen_config<xcb_set_pointer_mapping_unchecked> {};
 template<> struct fex_gen_config<xcb_set_pointer_mapping_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_get_pointer_mapping_sizeof> {};
+template<> struct fex_gen_param<xcb_get_pointer_mapping_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_pointer_mapping> {};
 template<> struct fex_gen_config<xcb_get_pointer_mapping_unchecked> {};
 template<> struct fex_gen_config<xcb_get_pointer_mapping_map> {};
@@ -726,11 +994,17 @@ template<> struct fex_gen_config<xcb_get_pointer_mapping_map_length> {};
 template<> struct fex_gen_config<xcb_get_pointer_mapping_map_end> {};
 
 template<> struct fex_gen_config<xcb_get_pointer_mapping_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_set_modifier_mapping_sizeof> {};
+template<> struct fex_gen_param<xcb_set_modifier_mapping_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_set_modifier_mapping> {};
 template<> struct fex_gen_config<xcb_set_modifier_mapping_unchecked> {};
 template<> struct fex_gen_config<xcb_set_modifier_mapping_reply> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<xcb_get_modifier_mapping_sizeof> {};
+template<> struct fex_gen_param<xcb_get_modifier_mapping_sizeof, 0, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<xcb_get_modifier_mapping> {};
 template<> struct fex_gen_config<xcb_get_modifier_mapping_unchecked> {};
 template<> struct fex_gen_config<xcb_get_modifier_mapping_keycodes> {};

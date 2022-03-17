@@ -7,6 +7,9 @@ struct fex_gen_config {
     unsigned version = 3;
 };
 
+template<> struct fex_gen_type<Display> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XGC> : fexgen::opaque_to_guest {};
+
 template<> struct fex_gen_config<XFixesGetCursorName> {};
 template<> struct fex_gen_config<XFixesQueryExtension> {};
 template<> struct fex_gen_config<XFixesQueryVersion> {};

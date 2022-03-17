@@ -15,6 +15,20 @@ template<auto>
 struct fex_gen_config {
 };
 
+// TODO: Can we use the non-underscored symbols here instead? (GLXContext etc)
+//       Currently using the internal symbols since they don't have a pointer that needs to be stripped away for this annotation
+template<> struct fex_gen_type<__GLXFBConfigRec> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<__GLXcontextRec> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<__GLsync> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_cl_context> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_cl_event> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<Display> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but has several issues right now: Has function pointer members, has XExtData pointers as members
+template<> struct fex_gen_type<XExtData> : fexgen::opaque_to_guest {};
+
+// TODO: Most (const) void* pointers of these functions have guaranteed stable ABI across platforms
+
 template<> struct fex_gen_config<glXQueryCurrentRendererStringMESA> {};
 template<> struct fex_gen_config<glXQueryRendererStringMESA> {};
 template<> struct fex_gen_config<glXGetContextIDEXT> {};
@@ -79,7 +93,10 @@ template<> struct fex_gen_config<glXDestroyGLXPixmap> {};
 template<> struct fex_gen_config<glXDestroyPbuffer> {};
 template<> struct fex_gen_config<glXDestroyPixmap> {};
 template<> struct fex_gen_config<glXDestroyWindow> {};
+
 template<> struct fex_gen_config<glXFreeMemoryNV> {};
+template<> struct fex_gen_param<glXFreeMemoryNV, 0, GLvoid*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<glXGetSelectedEvent> {};
 template<> struct fex_gen_config<glXQueryDrawable> {};
 template<> struct fex_gen_config<glXSelectEvent> {};
@@ -108,13 +125,31 @@ template<> struct fex_gen_config<glFogCoordd> {};
 template<> struct fex_gen_config<glFogCoorddv> {};
 template<> struct fex_gen_config<glFogCoordf> {};
 template<> struct fex_gen_config<glFogCoordfv> {};
+
 template<> struct fex_gen_config<glFogCoordPointer> {};
+template<auto, size_t, typename> struct fex_gen_param; // TODO: Should not be necessary
+// TODO: gl*Pointer void* parameters are fine, as they always point to data with well-defined ABI
+template<> struct fex_gen_param<glFogCoordPointer, 2, const void*> : fexgen::ptr_todo_only64 {};
+
+
 template<> struct fex_gen_config<glGetnColorTableARB> {};
+template<> struct fex_gen_param<glGetnColorTableARB, 4, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnConvolutionFilterARB> {};
+template<> struct fex_gen_param<glGetnConvolutionFilterARB, 4, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnHistogramARB> {};
+template<> struct fex_gen_param<glGetnHistogramARB, 5, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnColorTable> {};
+template<> struct fex_gen_param<glGetnColorTable, 4, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnConvolutionFilter> {};
+template<> struct fex_gen_param<glGetnConvolutionFilter, 4, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnHistogram> {};
+template<> struct fex_gen_param<glGetnHistogram, 5, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnMapdv> {};
 template<> struct fex_gen_config<glGetnMapfv> {};
 template<> struct fex_gen_config<glGetnMapiv> {};
@@ -122,17 +157,32 @@ template<> struct fex_gen_config<glGetnPixelMapfv> {};
 template<> struct fex_gen_config<glGetnPixelMapuiv> {};
 template<> struct fex_gen_config<glGetnPixelMapusv> {};
 template<> struct fex_gen_config<glGetnPolygonStipple> {};
+
 template<> struct fex_gen_config<glGetnSeparableFilter> {};
+template<> struct fex_gen_param<glGetnSeparableFilter, 4, void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glGetnSeparableFilter, 6, void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glGetnSeparableFilter, 7, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnMinmax> {};
+template<> struct fex_gen_param<glGetnMinmax, 5, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnMapdvARB> {};
 template<> struct fex_gen_config<glGetnMapfvARB> {};
 template<> struct fex_gen_config<glGetnMapivARB> {};
+
 template<> struct fex_gen_config<glGetnMinmaxARB> {};
+template<> struct fex_gen_param<glGetnMinmaxARB, 5, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGetnPixelMapfvARB> {};
 template<> struct fex_gen_config<glGetnPixelMapuivARB> {};
 template<> struct fex_gen_config<glGetnPixelMapusvARB> {};
 template<> struct fex_gen_config<glGetnPolygonStippleARB> {};
+
 template<> struct fex_gen_config<glGetnSeparableFilterARB> {};
+template<> struct fex_gen_param<glGetnSeparableFilterARB, 4, void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glGetnSeparableFilterARB, 6, void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glGetnSeparableFilterARB, 7, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glMultiTexCoordP1ui> {};
 template<> struct fex_gen_config<glMultiTexCoordP1uiv> {};
 template<> struct fex_gen_config<glMultiTexCoordP2ui> {};
@@ -161,7 +211,10 @@ template<> struct fex_gen_config<glSecondaryColor3us> {};
 template<> struct fex_gen_config<glSecondaryColor3usv> {};
 template<> struct fex_gen_config<glSecondaryColorP3ui> {};
 template<> struct fex_gen_config<glSecondaryColorP3uiv> {};
+
 template<> struct fex_gen_config<glSecondaryColorPointer> {};
+template<> struct fex_gen_param<glSecondaryColorPointer, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glTexCoordP1ui> {};
 template<> struct fex_gen_config<glTexCoordP1uiv> {};
 template<> struct fex_gen_config<glTexCoordP2ui> {};
@@ -266,9 +319,16 @@ template<> struct fex_gen_config<glGetGraphicsResetStatus> {};
 template<> struct fex_gen_config<glGetGraphicsResetStatusARB> {};
 template<> struct fex_gen_config<glObjectPurgeableAPPLE> {};
 template<> struct fex_gen_config<glObjectUnpurgeableAPPLE> {};
+
 template<> struct fex_gen_config<glPathGlyphIndexArrayNV> {};
+template<> struct fex_gen_param<glPathGlyphIndexArrayNV, 2, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glPathGlyphIndexRangeNV> {};
+template<> struct fex_gen_param<glPathGlyphIndexRangeNV, 1, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glPathMemoryGlyphIndexArrayNV> {};
+template<> struct fex_gen_param<glPathMemoryGlyphIndexArrayNV, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVideoCaptureNV> {};
 template<> struct fex_gen_config<glGetPathLengthNV> {};
 template<> struct fex_gen_config<glCreateProgramObjectARB> {};
@@ -312,8 +372,13 @@ template<> struct fex_gen_config<glBindTextureUnitParameterEXT> {};
 template<> struct fex_gen_config<glCreateProgram> {};
 template<> struct fex_gen_config<glCreateProgressFenceNVX> {};
 template<> struct fex_gen_config<glCreateShader> {};
+
 template<> struct fex_gen_config<glCreateShaderProgramEXT> {};
+template<> struct fex_gen_param<glCreateShaderProgramEXT, 1, const GLchar*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glCreateShaderProgramv> {};
+template<> struct fex_gen_param<glCreateShaderProgramv, 2, const GLchar* const*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glGenAsyncMarkersSGIX> {};
 template<> struct fex_gen_config<glGenFragmentShadersATI> {};
 template<> struct fex_gen_config<glGenLists> {};
@@ -327,11 +392,24 @@ template<> struct fex_gen_config<glGetDebugMessageLog> {};
 template<> struct fex_gen_config<glGetProgramResourceIndex> {};
 template<> struct fex_gen_config<glGetSubroutineIndex> {};
 template<> struct fex_gen_config<glGetUniformBlockIndex> {};
+
 template<> struct fex_gen_config<glNewObjectBufferATI> {};
+template<> struct fex_gen_param<glNewObjectBufferATI, 1, const void*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<glGetStageIndexNV> {};
+
 template<> struct fex_gen_config<glVDPAURegisterOutputSurfaceNV> {};
+template<> struct fex_gen_param<glVDPAURegisterOutputSurfaceNV, 0, const void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glVDPAURegisterOutputSurfaceNV, 3, const GLuint*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVDPAURegisterVideoSurfaceNV> {};
+template<> struct fex_gen_param<glVDPAURegisterVideoSurfaceNV, 0, const void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glVDPAURegisterVideoSurfaceNV, 3, const GLuint*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVDPAURegisterVideoSurfaceWithPictureStructureNV> {};
+template<> struct fex_gen_param<glVDPAURegisterVideoSurfaceWithPictureStructureNV, 0, const void*> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glVDPAURegisterVideoSurfaceWithPictureStructureNV, 3, const GLuint*> : fexgen::ptr_in {};
+
 template<> struct fex_gen_config<glAccum> {};
 template<> struct fex_gen_config<glAccumxOES> {};
 template<> struct fex_gen_config<glActiveProgramEXT> {};
@@ -425,7 +503,10 @@ template<> struct fex_gen_config<glBinormal3iEXT> {};
 template<> struct fex_gen_config<glBinormal3ivEXT> {};
 template<> struct fex_gen_config<glBinormal3sEXT> {};
 template<> struct fex_gen_config<glBinormal3svEXT> {};
+
 template<> struct fex_gen_config<glBinormalPointerEXT> {};
+template<> struct fex_gen_param<glBinormalPointerEXT, 2, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glBitmap> {};
 template<> struct fex_gen_config<glBitmapxOES> {};
 template<> struct fex_gen_config<glBlendBarrierKHR> {};
@@ -459,16 +540,37 @@ template<> struct fex_gen_config<glBlitFramebuffer> {};
 template<> struct fex_gen_config<glBlitNamedFramebuffer> {};
 template<> struct fex_gen_config<glBufferAddressRangeNV> {};
 template<> struct fex_gen_config<glBufferAttachMemoryNV> {};
+
 template<> struct fex_gen_config<glBufferDataARB> {};
+template<> struct fex_gen_param<glBufferDataARB, 2, const void*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<glBufferData> {};
+template<> struct fex_gen_param<glBufferData, 2, const void*> : fexgen::ptr_is_untyped_address {};
+
 template<> struct fex_gen_config<glBufferPageCommitmentARB> {};
 template<> struct fex_gen_config<glBufferParameteriAPPLE> {};
 template<> struct fex_gen_config<glBufferStorageExternalEXT> {};
+template<> struct fex_gen_param<glBufferStorageExternalEXT, 1, GLintptr> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glBufferStorageExternalEXT, 2, GLsizeiptr> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glBufferStorageExternalEXT, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glBufferStorage> {};
+template<> struct fex_gen_param<glBufferStorage, 2, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glBufferStorageMemEXT> {};
+
 template<> struct fex_gen_config<glBufferSubDataARB> {};
+template<> struct fex_gen_param<glBufferSubDataARB, 1, GLintptrARB> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glBufferSubDataARB, 2, GLsizeiptrARB> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glBufferSubDataARB, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glBufferSubData> {};
+template<> struct fex_gen_param<glBufferSubData, 1, GLintptr> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glBufferSubData, 2, GLsizeiptr> : fexgen::ptr_todo_only64 {};
+template<> struct fex_gen_param<glBufferSubData, 3, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glCallCommandListNV> {};
+#if 0
 template<> struct fex_gen_config<glCallList> {};
 template<> struct fex_gen_config<glCallLists> {};
 template<> struct fex_gen_config<glClampColorARB> {};
@@ -569,7 +671,10 @@ template<> struct fex_gen_config<glColorMaski> {};
 template<> struct fex_gen_config<glColorMaskIndexedEXT> {};
 template<> struct fex_gen_config<glColorMaterial> {};
 template<> struct fex_gen_config<glColorPointerEXT> {};
+
 template<> struct fex_gen_config<glColorPointer> {};
+template<> struct fex_gen_param<glColorPointer, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glColorPointerListIBM> {};
 template<> struct fex_gen_config<glColorPointervINTEL> {};
 template<> struct fex_gen_config<glColorSubTableEXT> {};
@@ -823,9 +928,16 @@ template<> struct fex_gen_config<glDrawTransformFeedbackStreamInstanced> {};
 template<> struct fex_gen_config<glDrawVkImageNV> {};
 template<> struct fex_gen_config<glEdgeFlagFormatNV> {};
 template<> struct fex_gen_config<glEdgeFlag> {};
+
 template<> struct fex_gen_config<glEdgeFlagPointerEXT> {};
+template<> struct fex_gen_param<glEdgeFlagPointerEXT, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glEdgeFlagPointer> {};
+template<> struct fex_gen_param<glEdgeFlagPointer, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glEdgeFlagPointerListIBM> {};
+template<> struct fex_gen_param<glEdgeFlagPointerListIBM, 1, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glEdgeFlagv> {};
 template<> struct fex_gen_config<glEGLImageTargetRenderbufferStorageOES> {};
 template<> struct fex_gen_config<glEGLImageTargetTexStorageEXT> {};
@@ -909,6 +1021,8 @@ template<> struct fex_gen_config<glFogCoordfvEXT> {};
 template<> struct fex_gen_config<glFogCoordhNV> {};
 template<> struct fex_gen_config<glFogCoordhvNV> {};
 template<> struct fex_gen_config<glFogCoordPointerEXT> {};
+//template<> struct fex_gen_param<glFogCoordPointerEXT, 2, const void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glFogCoordPointerListIBM> {};
 template<> struct fex_gen_config<glFogf> {};
 template<> struct fex_gen_config<glFogFuncSGIS> {};
@@ -1419,7 +1533,10 @@ template<> struct fex_gen_config<glIndexiv> {};
 template<> struct fex_gen_config<glIndexMask> {};
 template<> struct fex_gen_config<glIndexMaterialEXT> {};
 template<> struct fex_gen_config<glIndexPointerEXT> {};
+
 template<> struct fex_gen_config<glIndexPointer> {};
+template<> struct fex_gen_param<glIndexPointer, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glIndexPointerListIBM> {};
 template<> struct fex_gen_config<glIndexs> {};
 template<> struct fex_gen_config<glIndexsv> {};
@@ -1794,10 +1911,19 @@ template<> struct fex_gen_config<glNormal3sv> {};
 template<> struct fex_gen_config<glNormal3xOES> {};
 template<> struct fex_gen_config<glNormal3xvOES> {};
 template<> struct fex_gen_config<glNormalFormatNV> {};
+
 template<> struct fex_gen_config<glNormalPointerEXT> {};
+template<> struct fex_gen_param<glNormalPointerEXT, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glNormalPointer> {};
+template<> struct fex_gen_param<glNormalPointer, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glNormalPointerListIBM> {};
+template<> struct fex_gen_param<glNormalPointerListIBM, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glNormalPointervINTEL> {};
+template<> struct fex_gen_param<glNormalPointervINTEL, 1, const void**> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glNormalStream3bATI> {};
 template<> struct fex_gen_config<glNormalStream3bvATI> {};
 template<> struct fex_gen_config<glNormalStream3dATI> {};
@@ -2377,10 +2503,19 @@ template<> struct fex_gen_config<glTexCoord4sv> {};
 template<> struct fex_gen_config<glTexCoord4xOES> {};
 template<> struct fex_gen_config<glTexCoord4xvOES> {};
 template<> struct fex_gen_config<glTexCoordFormatNV> {};
+
 template<> struct fex_gen_config<glTexCoordPointerEXT> {};
+template<> struct fex_gen_param<glTexCoordPointerEXT, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glTexCoordPointer> {};
+template<> struct fex_gen_param<glTexCoordPointer, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glTexCoordPointerListIBM> {};
+template<> struct fex_gen_param<glTexCoordPointerListIBM, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glTexCoordPointervINTEL> {};
+template<> struct fex_gen_param<glTexCoordPointervINTEL, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glTexEnvf> {};
 template<> struct fex_gen_config<glTexEnvfv> {};
 template<> struct fex_gen_config<glTexEnvi> {};
@@ -2876,8 +3011,13 @@ template<> struct fex_gen_config<glVertexAttribI4usvEXT> {};
 template<> struct fex_gen_config<glVertexAttribI4usv> {};
 template<> struct fex_gen_config<glVertexAttribIFormat> {};
 template<> struct fex_gen_config<glVertexAttribIFormatNV> {};
+
 template<> struct fex_gen_config<glVertexAttribIPointerEXT> {};
+template<> struct fex_gen_param<glVertexAttribIPointerEXT, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribIPointer> {};
+template<> struct fex_gen_param<glVertexAttribIPointer, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribL1dEXT> {};
 template<> struct fex_gen_config<glVertexAttribL1d> {};
 template<> struct fex_gen_config<glVertexAttribL1dvEXT> {};
@@ -2914,8 +3054,13 @@ template<> struct fex_gen_config<glVertexAttribL4ui64NV> {};
 template<> struct fex_gen_config<glVertexAttribL4ui64vNV> {};
 template<> struct fex_gen_config<glVertexAttribLFormat> {};
 template<> struct fex_gen_config<glVertexAttribLFormatNV> {};
+
 template<> struct fex_gen_config<glVertexAttribLPointerEXT> {};
+template<> struct fex_gen_param<glVertexAttribLPointerEXT, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribLPointer> {};
+template<> struct fex_gen_param<glVertexAttribLPointer, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribP1ui> {};
 template<> struct fex_gen_config<glVertexAttribP1uiv> {};
 template<> struct fex_gen_config<glVertexAttribP2ui> {};
@@ -2925,9 +3070,16 @@ template<> struct fex_gen_config<glVertexAttribP3uiv> {};
 template<> struct fex_gen_config<glVertexAttribP4ui> {};
 template<> struct fex_gen_config<glVertexAttribP4uiv> {};
 template<> struct fex_gen_config<glVertexAttribParameteriAMD> {};
+
 template<> struct fex_gen_config<glVertexAttribPointerARB> {};
+template<> struct fex_gen_param<glVertexAttribPointerARB, 5, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribPointer> {};
+template<> struct fex_gen_param<glVertexAttribPointer, 5, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribPointerNV> {};
+template<> struct fex_gen_param<glVertexAttribPointerNV, 4, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexAttribs1dvNV> {};
 template<> struct fex_gen_config<glVertexAttribs1fvNV> {};
 template<> struct fex_gen_config<glVertexAttribs1hvNV> {};
@@ -2950,10 +3102,19 @@ template<> struct fex_gen_config<glVertexBlendARB> {};
 template<> struct fex_gen_config<glVertexBlendEnvfATI> {};
 template<> struct fex_gen_config<glVertexBlendEnviATI> {};
 template<> struct fex_gen_config<glVertexFormatNV> {};
+
 template<> struct fex_gen_config<glVertexPointerEXT> {};
+template<> struct fex_gen_param<glVertexPointerEXT, 4, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexPointer> {};
+template<> struct fex_gen_param<glVertexPointer, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexPointerListIBM> {};
+template<> struct fex_gen_param<glVertexPointerListIBM, 3, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexPointervINTEL> {};
+template<> struct fex_gen_param<glVertexPointervINTEL, 2, void*> : fexgen::ptr_todo_only64 {};
+
 template<> struct fex_gen_config<glVertexStream1dATI> {};
 template<> struct fex_gen_config<glVertexStream1dvATI> {};
 template<> struct fex_gen_config<glVertexStream1fATI> {};
@@ -3056,4 +3217,5 @@ template<> struct fex_gen_config<glWindowPos4sMESA> {};
 template<> struct fex_gen_config<glWindowPos4svMESA> {};
 template<> struct fex_gen_config<glWindowRectanglesEXT> {};
 template<> struct fex_gen_config<glWriteMaskEXT> {};
+#endif
 } // namespace internal

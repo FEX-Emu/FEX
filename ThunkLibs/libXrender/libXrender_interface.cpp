@@ -1,11 +1,22 @@
 #include <common/GeneratorInterface.h>
 
 #include <X11/extensions/Xrender.h>
+#include <X11/Xregion.h>
 
 template<auto>
 struct fex_gen_config {
     unsigned version = 1;
 };
+
+template<> struct fex_gen_type<Display> : fexgen::opaque_to_guest {};
+template<> struct fex_gen_type<_XRegion> : fexgen::opaque_to_guest {};
+
+// TODO: Should not be opaque, but has several issues right now: Has function pointer members, has XExtData pointers as members
+template<> struct fex_gen_type<XExtData> : fexgen::opaque_to_guest {};
+
+//// TODO: Function pointer support
+//template<> struct fex_gen_config<&XExtData::free_private> : fexgen::ptr_todo_only64 {};
+//template<> struct fex_gen_config<&XExtData::private_data> : fexgen::ptr_todo_only64 {};
 
 template<> struct fex_gen_config<XRenderCreateAnimCursor> {};
 template<> struct fex_gen_config<XRenderCreateCursor> {};
@@ -45,7 +56,8 @@ template<> struct fex_gen_config<XRenderFreePicture> {};
 template<> struct fex_gen_config<XRenderSetPictureClipRectangles> {};
 template<> struct fex_gen_config<XRenderSetPictureClipRegion> {};
 template<> struct fex_gen_config<XRenderSetPictureFilter> {};
-template<> struct fex_gen_config<XRenderSetPictureTransform> {};
+// Requires ABI description for XTransform (requires nested array)
+//template<> struct fex_gen_config<XRenderSetPictureTransform> {};
 template<> struct fex_gen_config<XRenderQueryFilters> {};
 template<> struct fex_gen_config<XRenderQueryPictIndexValues> {};
 template<> struct fex_gen_config<XRenderFindFormat> {};
