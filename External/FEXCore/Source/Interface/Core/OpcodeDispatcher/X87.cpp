@@ -621,8 +621,8 @@ void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
-  // Init FCW to 0x037
-  auto NewFCW = _Constant(16, 0x037);
+  // Init FCW to 0x037F
+  auto NewFCW = _Constant(16, 0x037F);
   _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
