@@ -62,6 +62,9 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
 
 void AssertHandler(char const *Message) {
   fmt::print("[ASSERT] {}\n", Message);
+
+  // make sure buffers are flushed
+  fflush(nullptr);
 }
 
 namespace {
