@@ -1175,6 +1175,8 @@ private:
     else
       return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
+
+  void InstallHostSpecificOpcodeHandlers();
 };
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode);
