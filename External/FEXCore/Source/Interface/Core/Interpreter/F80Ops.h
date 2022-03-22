@@ -260,7 +260,7 @@ struct OpHandlers<IR::OP_F64ATAN> {
 template<>
 struct OpHandlers<IR::OP_F64FPREM> {
   static double handle(double src1, double src2) {
-    return remainder(src1, src2);
+    return fmod(src1, src2);
   }
 };
 

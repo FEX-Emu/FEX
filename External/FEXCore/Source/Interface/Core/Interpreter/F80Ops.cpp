@@ -397,7 +397,7 @@ DEF_OP(F64FPREM) {
   auto Op = IROp->C<IR::IROp_F64FPREM>();
   double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
   double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double Tmp = remainder(Src1, Src2);
+  double Tmp = fmod(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(double));
 }
