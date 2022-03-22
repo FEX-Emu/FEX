@@ -92,6 +92,13 @@ class LLVMCore;
     virtual void CopyNecessaryDataForCompileThread(CPUBackend *Original) {}
     virtual bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const { return false; }
 
+    /**
+     * @brief Does this CPUBackend need its IR to stick around for correct emulation
+     *
+     * This should only be used on the interpreter, all other backends can clear their IR
+     */
+    virtual bool NeedsRetainedIRCopy() const { return false; }
+
     using AsmDispatch = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame);
     using JITCallback = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
 

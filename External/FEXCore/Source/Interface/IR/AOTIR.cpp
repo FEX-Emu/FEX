@@ -349,9 +349,17 @@ namespace FEXCore::IR {
 
       // Insert to caches if we generated IR
       if (GeneratedIR) {
-        // Add to thread local ir cache
-        Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
-        Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
+        if (Thread->CPUBackend->NeedsRetainedIRCopy()) {
+          // Add to thread local ir cache
+          Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+          Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
+        }
+        else {
+          // If the IR doesn't need to be retained then we can just delete it now
+          delete DebugData;
+          delete RAData;
+          delete IRList;
+        }
       }
     }
 
