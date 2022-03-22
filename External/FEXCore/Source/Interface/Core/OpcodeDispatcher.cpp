@@ -6042,10 +6042,10 @@ constexpr uint16_t PF_F2 = 3;
 
     {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::FSTF64<64>},
 
-    {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
+    {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTORF64},
 
     // 5 = Invalid
-    {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
+    {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVEF64},
 
     {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
 

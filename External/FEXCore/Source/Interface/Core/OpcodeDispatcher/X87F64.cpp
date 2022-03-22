@@ -37,8 +37,6 @@ class OrderedNode;
 //FSTCW
 //LDSW
 //FNSTSW
-//FNSAVE
-//FRSTOR
 //FXCH
 //FCMOV
 //FST(register to register)
@@ -809,6 +807,188 @@ void OpDispatchBuilder::X87ATANF64(OpcodeArgs) {
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
+}
+
+//This function converts to F80 on save for compatibility
+
+void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
+  // 14 bytes for 16bit
+  // 2 Bytes : FCW
+  // 2 Bytes : FSW
+  // 2 bytes : FTW
+  // 2 bytes : Instruction offset
+  // 2 bytes : Instruction CS selector
+  // 2 bytes : Data offset
+  // 2 bytes : Data selector
+
+  // 28 bytes for 32bit
+  // 4 bytes : FCW
+  // 4 bytes : FSW
+  // 4 bytes : FTW
+  // 4 bytes : Instruction pointer
+  // 2 bytes : instruction pointer selector
+  // 2 bytes : Opcode
+  // 4 bytes : data pointer offset
+  // 4 bytes : data pointer selector
+
+  auto Size = GetDstSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
+
+  OrderedNode *Top = GetX87Top();
+  {
+    auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
+    _StoreMem(GPRClass, Size, Mem, FCW, Size);
+  }
+
+  {
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+    // We must construct the FSW from our various bits
+    OrderedNode *FSW = _Constant(0);
+    FSW = _Or(FSW, _Lshl(Top, _Constant(11)));
+
+    auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
+    auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
+    auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
+    auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
+
+    FSW = _Or(FSW, _Lshl(C0, _Constant(8)));
+    FSW = _Or(FSW, _Lshl(C1, _Constant(9)));
+    FSW = _Or(FSW, _Lshl(C2, _Constant(10)));
+    FSW = _Or(FSW, _Lshl(C3, _Constant(14)));
+    _StoreMem(GPRClass, Size, MemLocation, FSW, Size);
+  }
+
+  auto ZeroConst = _Constant(0);
+
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    auto FTW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FTW));
+    _StoreMem(GPRClass, Size, MemLocation, FTW, Size);
+  }
+
+  {
+    // Instruction Offset
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 3));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+  }
+
+  {
+    // Instruction CS selector (+ Opcode)
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 4));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+  }
+
+  {
+    // Data pointer offset
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 5));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+  }
+
+  {
+    // Data pointer selector
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 6));
+    _StoreMem(GPRClass, Size, MemLocation, ZeroConst, Size);
+  }
+
+  OrderedNode *ST0Location = _Add(Mem, _Constant(Size * 7));
+
+  auto OneConst = _Constant(1);
+  auto SevenConst = _Constant(7);
+  auto TenConst = _Constant(10);
+  for (int i = 0; i < 7; ++i) {
+    OrderedNode* data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
+    data = _F80CVTTo(data, 8);
+    _StoreMem(FPRClass, 16, ST0Location, data, 1);
+    ST0Location = _Add(ST0Location, TenConst);
+    Top = _And(_Add(Top, OneConst), SevenConst);
+  }
+
+  // The final st(7) needs a bit of special handling here
+  OrderedNode* data = _LoadContextIndexed(Top, 8, MMBaseOffset(), 16, FPRClass);
+  data = _F80CVTTo(data, 8);
+  // ST7 broken in to two parts
+  // Lower 64bits [63:0]
+  // upper 16 bits [79:64]
+  _StoreMem(FPRClass, 8, ST0Location, data, 1);
+  ST0Location = _Add(ST0Location, _Constant(8));
+  auto topBytes = _VExtractElement(16, 2, data, 4);
+  _StoreMem(FPRClass, 2, ST0Location, topBytes, 1);
+
+  // reset to default
+  FNINIT(Op);
+}
+
+//This function converts from F80 on load for compatibility
+
+void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
+
+  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  _F80LoadFCW(NewFCW);
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+
+  OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+
+  // Strip out the FSW information
+  OrderedNode *Top = _Bfe(3, 11, NewFSW);
+  SetX87Top(Top);
+
+  auto C0 = _Bfe(1, 8,  NewFSW);
+  auto C1 = _Bfe(1, 9,  NewFSW);
+  auto C2 = _Bfe(1, 10, NewFSW);
+  auto C3 = _Bfe(1, 14, NewFSW);
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    auto NewFTW = _LoadMem(GPRClass, Size, MemLocation, Size);
+    _StoreContext(2, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, FTW));
+  }
+
+  OrderedNode *ST0Location = _Add(Mem, _Constant(Size * 7));
+
+  auto OneConst = _Constant(1);
+  auto SevenConst = _Constant(7);
+  auto TenConst = _Constant(10);
+
+  auto low = _Constant(~0ULL);
+  auto high = _Constant(0xFFFF);
+  OrderedNode *Mask = _VCastFromGPR(16, 8, low);
+  Mask = _VInsGPR(16, 8, 1, Mask, high);
+
+  for (int i = 0; i < 7; ++i) {
+    OrderedNode *Reg = _LoadMem(FPRClass, 16, ST0Location, 1);
+    // Mask off the top bits
+    Reg = _VAnd(16, 16, Reg, Mask);
+    //Convert to double precision
+    Reg = _F80CVT(8, Reg);
+    _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
+
+    ST0Location = _Add(ST0Location, TenConst);
+    Top = _And(_Add(Top, OneConst), SevenConst);
+  }
+
+  // The final st(7) needs a bit of special handling here
+  // ST7 broken in to two parts
+  // Lower 64bits [63:0]
+  // upper 16 bits [79:64]
+
+  OrderedNode *Reg = _LoadMem(FPRClass, 8, ST0Location, 1);
+  ST0Location = _Add(ST0Location, _Constant(8));
+  OrderedNode *RegHigh = _LoadMem(FPRClass, 2, ST0Location, 1);
+  Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
+  Reg = _F80CVT(8, Reg); //Convert to double precision
+  _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
 

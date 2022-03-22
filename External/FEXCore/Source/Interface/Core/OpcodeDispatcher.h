@@ -505,6 +505,8 @@ public:
   void X87FYL2XF64(OpcodeArgs);
   void X87TANF64(OpcodeArgs);
   void X87ATANF64(OpcodeArgs);
+  void X87FNSAVEF64(OpcodeArgs);
+  void X87FRSTORF64(OpcodeArgs);
   void X87FXAMF64(OpcodeArgs);
 
   template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
