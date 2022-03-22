@@ -826,11 +826,30 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0000h(uint32_t Leaf) {
   // CPUID documentation information:
   // 4000_0000h - 4FFF_FFFFh - No existing or future CPU will return information in this range
   // Reserved entirely for VMs to do whatever they want.
-  Res.eax = 0x40000000;
+  Res.eax = 0x40000001;
 
   // EBX, EDX, ECX become the hypervisor ID signature
   constexpr static char HypervisorID[12] = "FEXIFEXIEMU";
   memcpy(&Res.ebx, HypervisorID, sizeof(HypervisorID));
+  return Res;
+}
+
+// Hypervisor CPUID information leaf
+FEXCore::CPUID::FunctionResults CPUIDEmu::Function_4000_0001h(uint32_t Leaf) {
+  FEXCore::CPUID::FunctionResults Res{};
+  if (Leaf == 0) {
+    // EAX[3:0] Is the host architecture that FEX is running under
+#ifdef _M_X86_64
+    // EAX[3:0] = 1 = x86_64 host architecture
+    Res.eax |= 0b0001;
+#elif defined(_M_ARM_64)
+    // EAX[3:0] = 2 = AArch64 host architecture
+    Res.eax |= 0b0010;
+#else
+    // EAX[3:0] = 0 = Unknown architecture
+#endif
+  }
+
   return Res;
 }
 
@@ -1228,6 +1247,7 @@ void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
 #endif
   // Hypervisor CPUID information leaf
   RegisterFunction(0x4000'0000, &CPUIDEmu::Function_4000_0000h);
+  RegisterFunction(0x4000'0001, &CPUIDEmu::Function_4000_0001h);
 
   // Largest extended function number
   RegisterFunction(0x8000'0000, &CPUIDEmu::Function_8000_0000h);

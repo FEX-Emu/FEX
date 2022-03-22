@@ -80,6 +80,7 @@ private:
   FEXCore::CPUID::FunctionResults Function_15h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_1Ah(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_4000_0000h(uint32_t Leaf);
+  FEXCore::CPUID::FunctionResults Function_4000_0001h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0000h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0001h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_0002h(uint32_t Leaf);
