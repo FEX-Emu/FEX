@@ -4888,6 +4888,7 @@ void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCor
 OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::Context *ctx)
   : CTX {ctx} {
   ResetWorkingList();
+  InstallHostSpecificOpcodeHandlers();
 }
 
 void OpDispatchBuilder::ResetWorkingList() {
@@ -5232,6 +5233,91 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
 }
 
 #undef OpcodeArgs
+
+
+void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
+  static bool Initialized = false;
+  if (!CTX || Initialized) {
+    // IRCompaction doesn't set a CTX and doesn't need this anyway
+    return;
+  }
+#define OPD(prefix, opcode) (((prefix) << 8) | opcode)
+  constexpr uint16_t PF_38_66   = (1U << 0);
+  constexpr uint16_t PF_38_F2   = (1U << 1);
+
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_AES[] = {
+    {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
+    {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
+    {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp},
+    {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
+    {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
+  };
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_CRC[] = {
+    {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
+    {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
+
+    {OPD(PF_38_66 | PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
+    {OPD(PF_38_66 | PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
+  };
+#undef OPD
+
+#define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
+#define PF_3A_NONE 0
+#define PF_3A_66   1
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_AES[] = {
+    {OPD(0, PF_3A_66,   0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
+  };
+#undef PF_3A_NONE
+#undef PF_3A_66
+#undef OPD
+
+#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
+  constexpr uint16_t PF_NONE = 0;
+  constexpr uint16_t PF_66 = 2;
+
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOp_RDRAND[] = {
+    // GROUP 9
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
+  };
+#undef OPD
+
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOp_CLZero[] = {
+    {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
+  };
+
+  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
+    for (auto Op : LocalTable) {
+      auto OpNum = std::get<0>(Op);
+      auto Dispatcher = std::get<2>(Op);
+      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
+        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
+        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
+      }
+    }
+  };
+
+  if (CTX->HostFeatures.SupportsCRC) {
+    InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_CRC);
+  }
+
+  if (CTX->HostFeatures.SupportsAES) {
+    InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_AES);
+    InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3A_AES);
+  }
+
+  if (CTX->HostFeatures.SupportsCLZERO) {
+    InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOp_CLZero);
+  }
+
+  if (CTX->HostFeatures.SupportsRAND) {
+    InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOp_RDRAND);
+  }
+  Initialized = true;
+}
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable[] = {
@@ -5794,15 +5880,8 @@ constexpr uint16_t PF_F2 = 3;
 
     // GROUP 9
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
-
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
-
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F2, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
 
     // GROUP 12
@@ -5868,7 +5947,6 @@ constexpr uint16_t PF_F2 = 3;
 
     // REG /7
     {((3 << 3) | 1), 1, &OpDispatchBuilder::RDTSCPOp},
-    {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
 
   };
 // Top bit indicating if it needs to be repeated with {0x40, 0x80} or'd in
@@ -6110,7 +6188,6 @@ constexpr uint16_t PF_F2 = 3;
 #define OPD(prefix, opcode) (((prefix) << 8) | opcode)
   constexpr uint16_t PF_38_NONE = 0;
   constexpr uint16_t PF_38_66   = (1U << 0);
-  constexpr uint16_t PF_38_F2   = (1U << 1);
   constexpr uint16_t PF_38_F3   = (1U << 2);
 
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38Table[] = {
@@ -6176,24 +6253,13 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x40), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 4>},
     {OPD(PF_38_66,   0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
 
-    {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
-    {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
-    {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp},
-    {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
-    {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
-
     {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
     {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
-
-    {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
-    {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
-
-    {OPD(PF_38_66 | PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
-    {OPD(PF_38_66 | PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
 
     {OPD(PF_38_66, 0xF6), 1, &OpDispatchBuilder::ADXOp},
     {OPD(PF_38_F3, 0xF6), 1, &OpDispatchBuilder::ADXOp},
   };
+
 #undef OPD
 
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
@@ -6225,8 +6291,6 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(0, PF_3A_66,   0x40), 1, &OpDispatchBuilder::DPPOp<4>},
     {OPD(0, PF_3A_66,   0x41), 1, &OpDispatchBuilder::DPPOp<8>},
     {OPD(0, PF_3A_66,   0x42), 1, &OpDispatchBuilder::MPSADBWOp},
-
-    {OPD(0, PF_3A_66,   0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
 #undef PF_3A_NONE
 #undef PF_3A_66
