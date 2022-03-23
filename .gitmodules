@@ -49,3 +49,6 @@
 	shallow = true
 	path = External/robin-map
 	url = https://github.com/Tessil/robin-map.git
+[submodule "External/biscuit"]
+	path = External/biscuit
+	url = https://github.com/lioncash/biscuit.git

@@ -58,6 +58,9 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     break;
   }
   fmt::print("[{}] {}\n", CharLevel, Message);
+
+  // make sure buffers are flushed
+  fflush(nullptr);
 }
 
 void AssertHandler(char const *Message) {

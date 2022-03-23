@@ -26,6 +26,9 @@ $end_info$
 #elif _M_ARM_64
 #include "Tests/LinuxSyscalls/Arm64/SyscallsEnum.h"
 #define SYSCALL_ARCH_NAME Arm64
+#elif _M_RISCV_64
+#include "Tests/LinuxSyscalls/RISCV/SyscallsEnum.h"
+#define SYSCALL_ARCH_NAME Riscv
 #endif
 
 #define CONCAT_(a, b) a ## b
@@ -324,6 +327,8 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     if (flags & X86_64_FLAG_O_DIRECTORY) { flags = (flags & ~X86_64_FLAG_O_DIRECTORY); new_flags |= AARCH64_FLAG_O_DIRECTORY; }
     if (flags & X86_64_FLAG_O_NOFOLLOW) {  flags = (flags & ~X86_64_FLAG_O_NOFOLLOW);  new_flags |= AARCH64_FLAG_O_NOFOLLOW; }
     flags |= new_flags;
+#elif defined(_M_RISCV_64)
+    // XXX: Check this
 #else
 #error Unknown flag remappings for this host platform
 #endif
@@ -350,6 +355,8 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     if (flags & AARCH64_FLAG_O_DIRECTORY) { flags = (flags & ~AARCH64_FLAG_O_DIRECTORY); new_flags |= X86_64_FLAG_O_DIRECTORY; }
     if (flags & AARCH64_FLAG_O_NOFOLLOW) {  flags = (flags & ~AARCH64_FLAG_O_NOFOLLOW);  new_flags |= X86_64_FLAG_O_NOFOLLOW; }
     flags |= new_flags;
+#elif defined(_M_RISCV_64)
+    // XXX: Check this
 #else
 #error Unknown flag remappings for this host platform
 #endif

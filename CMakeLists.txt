@@ -81,6 +81,11 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   add_definitions(-D_M_ARM_64=1)
 endif()
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
+  set(_M_RISCV_64 1)
+  add_definitions(-D_M_RISCV_64=1)
+endif()
+
 if (ENABLE_CCACHE)
   find_program(CCACHE_PROGRAM ccache)
   if(CCACHE_PROGRAM)
@@ -280,6 +285,8 @@ include_directories(External/robin-map/include/)
 
 add_subdirectory(External/vixl/)
 include_directories(External/vixl/src/)
+
+add_subdirectory(External/biscuit/)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # This means we were attempted to get compiled with GCC

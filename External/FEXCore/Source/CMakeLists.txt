@@ -97,9 +97,11 @@ set (SRCS
   Interface/Core/X86HelperGen.cpp
   Interface/Core/ArchHelpers/Arm64_stubs.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
+  Interface/Core/ArchHelpers/RISCVEmitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Dispatcher/X86Dispatcher.cpp
   Interface/Core/Dispatcher/Arm64Dispatcher.cpp
+  Interface/Core/Dispatcher/RISCVDispatcher.cpp
   Interface/Core/Interpreter/InterpreterFallbacks.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
@@ -202,6 +204,23 @@ if (ENABLE_JIT_ARM64)
     Interface/Core/JIT/Arm64/MiscOps.cpp
     Interface/Core/JIT/Arm64/MoveOps.cpp
     Interface/Core/JIT/Arm64/VectorOps.cpp)
+endif()
+
+if (ENABLE_JIT_RISCV64)
+  list(APPEND DEFINES -DJIT_RISCV64)
+  list(APPEND SRCS
+    Interface/Core/ArchHelpers/RISCV.cpp
+    Interface/Core/JIT/RISCV/JIT.cpp
+    Interface/Core/JIT/RISCV/ALUOps.cpp
+    Interface/Core/JIT/RISCV/AtomicOps.cpp
+    Interface/Core/JIT/RISCV/BranchOps.cpp
+    Interface/Core/JIT/RISCV/ConversionOps.cpp
+    Interface/Core/JIT/RISCV/EncryptionOps.cpp
+    Interface/Core/JIT/RISCV/FlagOps.cpp
+    Interface/Core/JIT/RISCV/MemoryOps.cpp
+    Interface/Core/JIT/RISCV/MiscOps.cpp
+    Interface/Core/JIT/RISCV/MoveOps.cpp
+    Interface/Core/JIT/RISCV/VectorOps.cpp)
 endif()
 
 set (LIBS vixl dl xxhash tiny-json)
@@ -354,7 +373,7 @@ endfunction()
 
 # Build FEXCore_Config static library
 add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
-target_link_libraries(FEXCore_Base fmt::fmt tiny-json)
+target_link_libraries(FEXCore_Base fmt::fmt tiny-json biscuit::biscuit)
 AddDefaultOptionsToTarget(FEXCore_Base)
 
 function(AddObject Name Type)

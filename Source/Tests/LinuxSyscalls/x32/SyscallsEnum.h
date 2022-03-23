@@ -464,6 +464,7 @@ enum Syscalls_x86 {
   SYSCALL_x86_memfd_secret = 447,
   SYSCALL_x86_process_mrelease = 448,
   SYSCALL_x86_futex_waitv = 449,
+  SYSCALL_x86_set_mempolicy_home_node = 450,
   SYSCALL_x86_MAX = 512,
 };
 

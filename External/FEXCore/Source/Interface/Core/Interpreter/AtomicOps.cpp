@@ -14,7 +14,7 @@ $end_info$
 
 namespace FEXCore::CPU {
 
-#ifdef _M_X86_64
+#if defined(_M_X86_64) || defined(_M_RISCV_64)
 uint8_t AtomicFetchNeg(uint8_t *Addr) {
   using Type = uint8_t;
   std::atomic<Type> *MemData = reinterpret_cast<std::atomic<Type>*>(Addr);

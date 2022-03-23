@@ -43,6 +43,7 @@ class SyscallDefinition:
 Syscallx64File = "/arch/x86/entry/syscalls/syscall_64.tbl"
 Syscallx86File = "/arch/x86/entry/syscalls/syscall_32.tbl"
 SyscallArm64File = "/include/uapi/asm-generic/unistd.h"
+SyscallRiscvFile = "/include/uapi/asm-generic/unistd.h"
 
 Definitions_x64 = []
 Definitions_x64_dict = {}
@@ -50,6 +51,9 @@ Definitions_x86 = []
 Definitions_x86_dict = {}
 Definitions_Arm64 = []
 Definitions_Arm64_dict = {}
+
+Definitions_Riscv = []
+Definitions_Riscv_dict = {}
 
 NumArches = 0
 SyscallDefinitions = {}
@@ -227,7 +231,7 @@ def ExportCommonSyscallDefines():
 
     # Find a max between all architectures
     Maximums = []
-    for Defs in [Definitions_x64, Definitions_x86, Definitions_Arm64]:
+    for Defs in [Definitions_x64, Definitions_x86, Definitions_Arm64, Definitions_Riscv]:
         Maximums.append(1 << (int(math.log(len(Defs), 2)) + 1))
     print("  SYSCALL_MAX = {},".format(max(Maximums)))
 
@@ -247,10 +251,12 @@ def main():
     ParseArchSyscalls(Definitions_x86, Definitions_x86_dict, "x86", LinuxPath + Syscallx86File, [])
     ParseArchSyscalls(Definitions_x64, Definitions_x64_dict, "x64", LinuxPath + Syscallx64File, ["x32"])
     ParseCommonArchSyscalls(Definitions_Arm64, Definitions_Arm64_dict, "Arm64", LinuxPath + SyscallArm64File)
+    ParseCommonArchSyscalls(Definitions_Riscv, Definitions_Riscv_dict, "Riscv", LinuxPath + SyscallRiscvFile)
 
     ExportSyscallDefines(Definitions_x86, Definitions_x86_dict, "x86",[])
     ExportSyscallDefines(Definitions_x64, Definitions_x64_dict, "x64", [Definitions_x86])
     ExportSyscallDefines(Definitions_Arm64, Definitions_Arm64_dict, "Arm64", [Definitions_x86, Definitions_x64])
+    ExportSyscallDefines(Definitions_Riscv, Definitions_Riscv_dict, "Riscv", [Definitions_x86, Definitions_x64])
 
     ExportCommonSyscallDefines()
 

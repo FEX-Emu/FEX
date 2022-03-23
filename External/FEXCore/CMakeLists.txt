@@ -13,8 +13,14 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(_M_ARM_64 1)
 endif()
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
+  set(_M_RISCV_64 1)
+endif()
+
 set(ENABLE_JIT_X86_64 ${_M_X86_64} CACHE BOOL "Enable the x86_64 JIT")
 set(ENABLE_JIT_ARM64 ${_M_ARM_64} CACHE BOOL "Enable the ARM64 JIT")
+set(ENABLE_JIT_RISCV64 ${_M_RISCV_64} CACHE BOOL "Enable the RISCV64 JIT")
+
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

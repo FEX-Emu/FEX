@@ -59,6 +59,13 @@ static bool IsImmAddSub(uint64_t imm) { return vixl::aarch64::Assembler::IsImmAd
 static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
   return Scale  == AccessSize;
 }
+#elif defined(_M_RISCV_64)
+// XXX: Unsupported on RISC-V
+static bool IsImmLogical(uint64_t imm, unsigned width) { return false; }
+static bool IsImmAddSub(uint64_t imm) { return false; }
+static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
+  return false;
+}
 #else
 #error No inline constant heuristics for this target
 #endif

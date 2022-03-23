@@ -26,7 +26,7 @@ struct X80SoftFloat {
 #define BIGFLOAT __float128
 #define BIGFLOATSIZE 16
 #endif
-#elif defined(_M_ARM_64)
+#elif defined(_M_ARM_64) || defined(_M_RISCV_64)
 #define BIGFLOAT long double
 #define BIGFLOATSIZE 16
 #else

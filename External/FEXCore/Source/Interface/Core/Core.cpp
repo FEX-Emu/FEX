@@ -202,6 +202,8 @@ namespace FEXCore::Context {
       FEXCore::CPU::InitializeX86JITSignalHandlers(this);
 #elif (_M_ARM_64 && JIT_ARM64)
       FEXCore::CPU::InitializeArm64JITSignalHandlers(this);
+#elif (_M_RISCV_64 && JIT_RISCV64)
+      FEXCore::CPU::InitializeRISCVJITSignalHandlers(this);
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif
@@ -531,6 +533,8 @@ namespace FEXCore::Context {
       State->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, State, CompileThread);
 #elif (_M_ARM_64 && JIT_ARM64)
       State->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, State, CompileThread);
+#elif (_M_RISCV_64 && JIT_RISCV64)
+      State->CPUBackend = FEXCore::CPU::CreateRISCVJITCore(this, State, CompileThread);
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif

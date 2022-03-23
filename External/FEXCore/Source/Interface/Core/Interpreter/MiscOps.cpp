@@ -8,6 +8,7 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
 
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstdint>
@@ -75,11 +76,29 @@ DEF_OP(GetRoundingMode) {
     GuestRounding |= IR::ROUND_MODE_NEGATIVE_INFINITY;
   else if (RoundingMode == 3)
     GuestRounding |= IR::ROUND_MODE_TOWARDS_ZERO;
-#else
+#elif defined(_M_X86_64)
   GuestRounding = _mm_getcsr();
 
   // Extract the rounding
   GuestRounding = (GuestRounding >> 13) & 0b111;
+#elif defined(_M_RISCV_64)
+  uint64_t Tmp{};
+  __asm(R"(
+  frrm %[Tmp]
+  )"
+  : [Tmp] "=r" (Tmp));
+
+  // RISCV doesn't support FTZ
+  if (Tmp == 0)
+    GuestRounding |= IR::ROUND_MODE_NEAREST;
+  else if (Tmp == 1)
+    GuestRounding |= IR::ROUND_MODE_TOWARDS_ZERO;
+  else if (Tmp == 2)
+    GuestRounding |= IR::ROUND_MODE_NEGATIVE_INFINITY;
+  else if (Tmp == 3)
+    GuestRounding |= IR::ROUND_MODE_POSITIVE_INFINITY;
+#else
+  ERROR_AND_DIE_FMT("Unable to get the host rounding mode");
 #endif
   memcpy(GDP, &GuestRounding, sizeof(GuestRounding));
 }
@@ -112,7 +131,7 @@ DEF_OP(SetRoundingMode) {
     msr FPCR, %[Tmp];
   )"
   :: [Tmp] "r" (HostRounding));
-#else
+#elif defined(_M_X86_64)
   uint32_t HostRounding = _mm_getcsr();
 
   // Cut out the host rounding mode
@@ -121,6 +140,25 @@ DEF_OP(SetRoundingMode) {
   // Insert our new rounding mode
   HostRounding |= GuestRounding << 13;
   _mm_setcsr(HostRounding);
+#elif defined(_M_RISCV_64)
+  uint32_t HostRounding{};
+
+  uint8_t RoundingMode = GuestRounding & 0b11;
+  if (RoundingMode == IR::ROUND_MODE_NEAREST)
+    HostRounding |= 0;
+  else if (RoundingMode == IR::ROUND_MODE_POSITIVE_INFINITY)
+    HostRounding |= 3;
+  else if (RoundingMode == IR::ROUND_MODE_NEGATIVE_INFINITY)
+    HostRounding |= 2;
+  else if (RoundingMode == IR::ROUND_MODE_TOWARDS_ZERO)
+    HostRounding |= 1;
+
+  __asm(R"(
+  fsrm %[Tmp]
+  )"
+  :: [Tmp] "r" (HostRounding));
+#else
+  ERROR_AND_DIE_FMT("Unable to set the host rounding mode");
 #endif
 }
 

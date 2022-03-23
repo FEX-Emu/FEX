@@ -96,7 +96,7 @@ HostFeatures::HostFeatures() {
 
   SupportsFlushInputsToZero = true;
   SupportsFloatExceptions = true;
-#else
+#elif defined(_M_ARM_64)
   // Test if this CPU supports float exception trapping by attempting to enable
   // On unsupported these bits are architecturally defined as RAZ/WI
   constexpr uint32_t ExceptionEnableTraps =
@@ -115,6 +115,12 @@ HostFeatures::HostFeatures() {
 
   // Set FPCR back to original just in case anything changed
   SetFPCR(OriginalFPCR);
+#else
+  // Unknown features on this architecture
+#endif
+
+#ifdef _M_RISCV_64
+  SupportsAtomics = true; // XXX: Actually check
 #endif
 
   // Check if we can support cacheline clears

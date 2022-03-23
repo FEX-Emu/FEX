@@ -379,10 +379,14 @@ int main(int argc, char **argv, char **const envp) {
     ucontext_t* _context = (ucontext_t*)ucontext;
     auto &mcontext = _context->uc_mcontext;
     uint64_t PC{};
-#ifdef _M_ARM_64
+#if defined(_M_ARM_64)
     PC = mcontext.pc;
-#else
+#elif defined(_M_X86_64)
     PC = mcontext.gregs[REG_RIP];
+#elif defined(_M_RISCV_64)
+    // XXX:
+#else
+#error Unknown way to host program counter
 #endif
     if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
       // This is a host side assert. Don't deliver this to the guest

@@ -349,7 +349,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
   }
 }
 
-#else
+#elif defined(_M_X86_64)
 static uint32_t GetCycleCounterFrequency() {
   uint32_t eax, ebx, ecx, edx;
   __cpuid(0, eax, ebx, ecx, edx);
@@ -372,6 +372,21 @@ void CPUIDEmu::SetupHostHybridFlag() {
     Hybrid = (edx & (1U << 15)) != 0;
   }
 
+  size_t CPUs = CalculateNumberOfCPUs();
+  PerCPUData.resize(CPUs);
+  for (size_t i = 0; i < CPUs; ++i) {
+    PerCPUData[i].IsBig = true;
+    PerCPUData[i].ProductName = ProductNames::UNKNOWN;
+  }
+}
+
+#else
+static uint32_t GetCycleCounterFrequency() {
+  // XXX: Unknown counter frequency
+  return 0;
+}
+
+void CPUIDEmu::SetupHostHybridFlag() {
   size_t CPUs = CalculateNumberOfCPUs();
   PerCPUData.resize(CPUs);
   for (size_t i = 0; i < CPUs; ++i) {

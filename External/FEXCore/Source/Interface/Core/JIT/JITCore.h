@@ -23,4 +23,9 @@ void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX);
                                                              bool CompileThread);
 void InitializeArm64JITSignalHandlers(FEXCore::Context::Context *CTX);
 
+[[nodiscard]] std::unique_ptr<CPUBackend> CreateRISCVJITCore(FEXCore::Context::Context *ctx,
+                                                             FEXCore::Core::InternalThreadState *Thread,
+                                                             bool CompileThread);
+void InitializeRISCVJITSignalHandlers(FEXCore::Context::Context *CTX);
+
 } // namespace FEXCore::CPU

@@ -48,10 +48,14 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   # Format is "<Test Arguments>" "<Test Name>"
   set(TEST_ARGS
-    "--no-silent -g -c irjit -n 1   --no-multiblock"    "jit_1"     "jit"
-    "--no-silent -g -c irjit -n 500 --no-multiblock"    "jit_500"   "jit"
-    "--no-silent -g -c irjit -n 500 --multiblock"       "jit_500_m" "jit"
+  )
+  if (_M_X86_64 OR _M_ARM_64 OR _M_RISCV_64)
+    list(APPEND TEST_ARGS
+      "--no-silent -g -c irjit -n 1   --no-multiblock"    "jit_1"     "jit"
+      "--no-silent -g -c irjit -n 500 --no-multiblock"    "jit_500"   "jit"
+      "--no-silent -g -c irjit -n 500 --multiblock"       "jit_500_m" "jit"
     )
+  endif()
 
   if (_M_X86_64)
     list(APPEND TEST_ARGS

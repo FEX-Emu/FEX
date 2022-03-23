@@ -62,6 +62,26 @@ struct ArmContextBackup {
   static constexpr int RedZoneSize = 0;
 };
 
+struct RISCVContextBackup {
+  // Host State
+  uint64_t GPRs[32];
+  uint64_t sa_mask;
+
+  bool FaultToTopAndGeneratedException;
+
+  // Guest state
+  int Signal;
+  uint32_t Flags;
+  uint64_t OriginalRIP;
+  uint64_t FPStateLocation;
+  uint64_t UContextLocation;
+  uint64_t SigInfoLocation;
+  FEXCore::Core::CPUState GuestState;
+
+  // RISCV64 doesn't have a red zone
+  static constexpr int RedZoneSize = 0;
+};
+
 static inline ucontext_t* GetUContext(void* ucontext) {
   ucontext_t* _context = (ucontext_t*)ucontext;
   return _context;
@@ -263,5 +283,67 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 }
 
 #endif
+
+#ifdef _M_RISCV_64
+static inline uint64_t GetSp(void* ucontext) {
+  return GetMContext(ucontext)->__gregs[REG_SP];
+}
+
+static inline uint64_t GetPc(void* ucontext) {
+  return GetMContext(ucontext)->__gregs[REG_PC];
+}
+
+static inline void SetSp(void* ucontext, uint64_t val) {
+  GetMContext(ucontext)->__gregs[REG_SP] = val;
+}
+
+static inline void SetPc(void* ucontext, uint64_t val) {
+  GetMContext(ucontext)->__gregs[REG_PC] = val;
+}
+
+static inline uint64_t GetState(void* ucontext) {
+  return GetMContext(ucontext)->__gregs[27];
+}
+
+static inline void SetState(void* ucontext, uint64_t val) {
+  GetMContext(ucontext)->__gregs[27] = val;
+}
+
+static inline uint64_t GetArmReg(void* ucontext, uint32_t id) {
+  ERROR_AND_DIE_FMT("Not implemented for RISCV host");
+}
+
+static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
+  ERROR_AND_DIE_FMT("Not implemented for RISCV host");
+}
+
+static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
+  ERROR_AND_DIE_FMT("Not implemented for RISCV host");
+}
+
+using ContextBackup = RISCVContextBackup;
+template <typename T>
+static inline void RestoreContext(void* ucontext, T *Backup) {
+  // XXX: No support for signals atm
+  ERROR_AND_DIE_FMT("Not implemented for RISCV host");
+}
+
+template <typename T>
+static inline void BackupContext(void* ucontext, T *Backup) {
+  if constexpr (std::is_same<T, RISCVContextBackup>::value) {
+    auto _ucontext = GetUContext(ucontext);
+    auto _mcontext = GetMContext(ucontext);
+
+    memcpy(&Backup->GPRs[0], &_mcontext->__gregs[0], 32 * sizeof(uint64_t));
+
+    // Save the signal mask so we can restore it
+    memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+  } else {
+    // This must be a runtime error
+    ERROR_AND_DIE_FMT("Wrong context type");
+  }
+}
+#endif
+
 
 } // namespace FEXCore::ArchHelpers::Context
