@@ -17,7 +17,7 @@ This command will walk you through installing FEX through a PPA, and downloading
 Ubuntu PPA is updated with our monthly releases.
 
 ### For everyone else
-Follow the guide on the official FEX-Emu Wiki [Here](https://wiki.fex-emu.org/index.php/QuickStartGuide)
+Please see [Building FEX](#building-fex).
 
 ## Getting Started
 FEX has been tested to build and run on ARMv8.0, ARMv8.1+, and x86-64(AVX or newer) hardware.
@@ -29,43 +29,8 @@ On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#Ro
 ### Navigating the Source
 See the [Source Outline](docs/SourceOutline.md) for more information.
 
-### Dependencies
-* cmake (version 3.14 minimum)
-* ninja-build
-* clang (version 10 minimum for C++20)
-* libglfw3-dev (For GUI)
-* libsdl2-dev (For GUI)
-* libepoxy-dev (For GUI)
-* g++-x86-64-linux-gnu (For building thunks)
-* nasm (only if building tests)
-
 ### Building FEX
-After installing the dependencies you can now build FEX.
-```Shell
-git clone https://github.com/FEX-Emu/FEX.git
-cd FEX
-git submodule update --init
-mkdir Build
-cd Build
-CC=clang CXX=clang++ cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=True -DBUILD_TESTS=False -G Ninja ..
-ninja
-```
-
-### Installation
-```Shell
-sudo ninja install
-```
-
-#### On AArch64 Hosts
-You can install a binfmt_misc handler for both 32bit and 64bit x86 execution directly from the environment. If you already have box86's 32bit binfmt_misc handler installed then I don't recommend installing FEX's until it is useful. Make sure to have run install prior to this, otherwise binfmt_misc will install an old handler even if the executable has been updated.
-```Shell
-sudo ninja binfmt_misc_32
-sudo ninja binfmt_misc_64
-```
-
-### More information
-This wiki page can contain more information about setting up FEX on your device
-https://wiki.fex-emu.org/index.php/Development:Setting_up_FEX
+Follow the guide on the official FEX-Emu Wiki [here](https://wiki.fex-emu.org/index.php/Development:Setting_up_FEX).
 
 ### RootFS generation
 AArch64 hosts require a rootfs for running applications.
