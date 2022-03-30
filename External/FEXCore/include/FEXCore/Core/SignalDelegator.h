@@ -8,6 +8,7 @@
 #include <utility>
 #include <signal.h>
 #include <stddef.h>
+#include <vector>
 
 namespace FEXCore {
 namespace Core {
