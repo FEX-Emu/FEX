@@ -436,6 +436,88 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     b(&LoopTop);
   }
 
+  // Long division helpers
+  uint64_t LUDIVHandler{};
+  uint64_t LDIVHandler{};
+  uint64_t LUREMHandler{};
+  uint64_t LREMHandler{};
+
+  {
+    LUDIVHandler = GetCursorAddress<uint64_t>();
+
+    PushDynamicRegsAndLR();
+
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIV)));
+
+    SpillStaticRegs();
+    blr(x3);
+    FillStaticRegs();
+
+    // Result is now in x0
+    // Fix the stack and any values that were stepped on
+    PopDynamicRegsAndLR();
+
+    // Go back to our code block
+    ret();
+  }
+
+  {
+    LDIVHandler = GetCursorAddress<uint64_t>();
+
+    PushDynamicRegsAndLR();
+
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIV)));
+
+    SpillStaticRegs();
+    blr(x3);
+    FillStaticRegs();
+
+    // Result is now in x0
+    // Fix the stack and any values that were stepped on
+    PopDynamicRegsAndLR();
+
+    // Go back to our code block
+    ret();
+  }
+
+  {
+    LUREMHandler = GetCursorAddress<uint64_t>();
+
+    PushDynamicRegsAndLR();
+
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREM)));
+
+    SpillStaticRegs();
+    blr(x3);
+    FillStaticRegs();
+
+    // Result is now in x0
+    // Fix the stack and any values that were stepped on
+    PopDynamicRegsAndLR();
+
+    // Go back to our code block
+    ret();
+  }
+
+  {
+    LREMHandler = GetCursorAddress<uint64_t>();
+
+    PushDynamicRegsAndLR();
+
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREM)));
+
+    SpillStaticRegs();
+    blr(x3);
+    FillStaticRegs();
+
+    // Result is now in x0
+    // Fix the stack and any values that were stepped on
+    PopDynamicRegsAndLR();
+
+    // Go back to our code block
+    ret();
+  }
+
   place(&l_PagePtr);
   place(&l_CTX);
   place(&l_Sleep);
@@ -470,6 +552,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
     Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
     Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
+    Pointers.LUDIVHandler = LUDIVHandler;
+    Pointers.LDIVHandler = LDIVHandler;
+    Pointers.LUREMHandler = LUREMHandler;
+    Pointers.LREMHandler = LREMHandler;
   }
 }
 
