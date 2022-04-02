@@ -636,24 +636,42 @@ DEF_OP(LDiv) {
     break;
     }
     case 8: {
-      PushDynamicRegsAndLR();
+      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
+      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      Label Only64Bit{};
+      Label LongDIVRet{};
 
-      mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
+      // Check if the upper bits match the top bit of the lower 64-bits
+      // Sign extend the top bit of lower bits
+      sbfx(TMP1, Lower64Bit, 63, 1);
+      eor(TMP1, TMP1, Upper64Bit);
 
-      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIV)));
+      // If the sign bit matches then the result is zero
+      cbz(TMP1, &Only64Bit);
 
-      SpillStaticRegs();
-      blr(x3);
-      FillStaticRegs();
+      // Long divide
+      {
+        mov(x0, Upper64Bit);
+        mov(x1, Lower64Bit);
+        mov(x2, Divisor);
 
-      // Result is now in x0
-      // Fix the stack and any values that were stepped on
-      PopDynamicRegsAndLR();
+        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIVHandler)));
+        blr(x3);
+        // Move result to its destination register
+        mov(GetReg<RA_64>(Node), x0);
 
-      // Move result to its destination register
-      mov(GetReg<RA_64>(Node), x0);
+        // Skip 64-bit path
+        b(&LongDIVRet);
+      }
+
+      bind(&Only64Bit);
+      // 64-Bit only
+      {
+        sdiv(GetReg<RA_64>(Node), Lower64Bit, Divisor);
+      }
+
+      bind(&LongDIVRet);
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", Size); break;
@@ -680,23 +698,38 @@ DEF_OP(LUDiv) {
     break;
     }
     case 8: {
-      PushDynamicRegsAndLR();
+      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
+      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      Label Only64Bit{};
+      Label LongDIVRet{};
 
-      mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
+      // Check the upper bits for zero
+      // If the upper bits are zero then we can do a 64-bit divide
+      cbz(Upper64Bit, &Only64Bit);
 
-      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIV)));
-      SpillStaticRegs();
-      blr(x3);
-      FillStaticRegs();
+      // Long divide
+      {
+        mov(x0, Upper64Bit);
+        mov(x1, Lower64Bit);
+        mov(x2, Divisor);
 
-      // Result is now in x0
-      // Fix the stack and any values that were stepped on
-      PopDynamicRegsAndLR();
+        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIVHandler)));
+        blr(x3);
+        // Move result to its destination register
+        mov(GetReg<RA_64>(Node), x0);
 
-      // Move result to its destination register
-      mov(GetReg<RA_64>(Node), x0);
+        // Skip 64-bit path
+        b(&LongDIVRet);
+      }
+
+      bind(&Only64Bit);
+      // 64-Bit only
+      {
+        udiv(GetReg<RA_64>(Node), Lower64Bit, Divisor);
+      }
+
+      bind(&LongDIVRet);
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", Size); break;
@@ -733,23 +766,42 @@ DEF_OP(LRem) {
     break;
     }
     case 8: {
-      PushDynamicRegsAndLR();
+      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
+      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      Label Only64Bit{};
+      Label LongDIVRet{};
 
-      mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
+      // Check if the upper bits match the top bit of the lower 64-bits
+      // Sign extend the top bit of lower bits
+      sbfx(TMP1, Lower64Bit, 63, 1);
+      eor(TMP1, TMP1, Upper64Bit);
 
-      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREM)));
-      SpillStaticRegs();
-      blr(x3);
-      FillStaticRegs();
+      // If the sign bit matches then the result is zero
+      cbz(TMP1, &Only64Bit);
 
-      // Result is now in x0
-      // Fix the stack and any values that were stepped on
-      PopDynamicRegsAndLR();
+      // Long divide
+      {
+        mov(x0, Upper64Bit);
+        mov(x1, Lower64Bit);
+        mov(x2, Divisor);
 
-      // Move result to its destination register
-      mov(GetReg<RA_64>(Node), x0);
+        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREMHandler)));
+        blr(x3);
+        // Move result to its destination register
+        mov(GetReg<RA_64>(Node), x0);
+
+        // Skip 64-bit path
+        b(&LongDIVRet);
+      }
+
+      bind(&Only64Bit);
+      // 64-Bit only
+      {
+        sdiv(TMP1, Lower64Bit, Divisor);
+        msub(GetReg<RA_64>(Node), TMP1, Divisor, Lower64Bit);
+      }
+      bind(&LongDIVRet);
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", Size); break;
@@ -782,24 +834,39 @@ DEF_OP(LURem) {
     break;
     }
     case 8: {
+      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
+      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      Label Only64Bit{};
+      Label LongDIVRet{};
 
-      PushDynamicRegsAndLR();
+      // Check the upper bits for zero
+      // If the upper bits are zero then we can do a 64-bit divide
+      cbz(Upper64Bit, &Only64Bit);
 
-      mov(x0, GetReg<RA_64>(Op->Header.Args[1].ID()));
-      mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      mov(x2, GetReg<RA_64>(Op->Header.Args[2].ID()));
+      // Long divide
+      {
+        mov(x0, Upper64Bit);
+        mov(x1, Lower64Bit);
+        mov(x2, Divisor);
 
-      ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREM)));
-      SpillStaticRegs();
-      blr(x3);
-      FillStaticRegs();
+        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREMHandler)));
+        blr(x3);
+        // Move result to its destination register
+        mov(GetReg<RA_64>(Node), x0);
 
-      // Fix the stack and any values that were stepped on
-      PopDynamicRegsAndLR();
+        // Skip 64-bit path
+        b(&LongDIVRet);
+      }
 
-      // Result is now in x0
-      // Move result to its destination register
-      mov(GetReg<RA_64>(Node), x0);
+      bind(&Only64Bit);
+      // 64-Bit only
+      {
+        udiv(TMP1, Lower64Bit, Divisor);
+        msub(GetReg<RA_64>(Node), TMP1, Divisor, Lower64Bit);
+      }
+
+      bind(&LongDIVRet);
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize); break;

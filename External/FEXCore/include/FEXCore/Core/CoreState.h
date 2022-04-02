@@ -113,6 +113,10 @@ namespace FEXCore::Core {
       uint64_t OverflowExceptionHandler{};
       uint64_t SignalReturnHandler{};
       uint64_t L1Pointer{};
+      uint64_t LUDIVHandler{};
+      uint64_t LDIVHandler{};
+      uint64_t LUREMHandler{};
+      uint64_t LREMHandler{};
       /**  @} */
     } AArch64;
 
