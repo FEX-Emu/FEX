@@ -94,10 +94,10 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(shmat, [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(_shmat, [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
       uint32_t ResultAddr{};
       uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-          shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
+          Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
       if (Result == 0) {
         return ResultAddr;
       }
@@ -106,9 +106,9 @@ namespace FEX::HLE::x32 {
       }
     });
 
-    REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(_shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
       uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-        shmdt(shmaddr);
+        Shmdt(shmaddr);
       SYSCALL_ERRNO();
     });
   }

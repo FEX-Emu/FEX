@@ -47,8 +47,8 @@ public:
   void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
   int munmap(void *addr, size_t length) override;
   void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override;
-  uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override;
-  uint64_t shmdt(const void* shmaddr) override;
+  uint64_t Shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override;
+  uint64_t Shmdt(const void* shmaddr) override;
   static constexpr bool SearchDown = true;
 
   // PageAddr is a page already shifted to page index
@@ -434,7 +434,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
   return reinterpret_cast<void*>(-errno);
 }
 
-uint64_t MemAllocator32Bit::shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) {
+uint64_t MemAllocator32Bit::Shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
 
   if (shmaddr != nullptr) {
@@ -547,7 +547,7 @@ restart:
     }
   }
 }
-uint64_t MemAllocator32Bit::shmdt(const void* shmaddr) {
+uint64_t MemAllocator32Bit::Shmdt(const void* shmaddr) {
   uint32_t AddrPage = reinterpret_cast<uint64_t>(shmaddr) >> FHU::FEX_PAGE_SHIFT;
   auto it = PageToShm.find(AddrPage);
 
@@ -584,7 +584,7 @@ public:
     return reinterpret_cast<void*>(Result);
   }
 
-  uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override {
+  uint64_t Shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override {
     uint64_t Result = (uint64_t)::shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg);
     if (Result != ~0ULL) {
       *ResultAddress = Result;
@@ -593,7 +593,7 @@ public:
     SYSCALL_ERRNO();
   }
 
-  uint64_t shmdt(const void* shmaddr) override {
+  uint64_t Shmdt(const void* shmaddr) override {
     uint64_t Result = ::shmdt(shmaddr);
     SYSCALL_ERRNO();
   }
