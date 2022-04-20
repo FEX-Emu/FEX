@@ -26,6 +26,7 @@ $end_info$
 #include <strings.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <unistd.h>
 #include <sys/user.h>
 #include <utility>
 #include <vector>
@@ -63,7 +64,6 @@ namespace {
   };
 
   static_assert(sizeof(RegisterNode) == 128 * 4);
-  constexpr size_t REGISTER_NODES_PER_PAGE = FHU::FEX_PAGE_SIZE / sizeof(RegisterNode);
 
   struct RegisterSet {
     std::vector<RegisterClass> Classes;
@@ -145,6 +145,7 @@ namespace {
   }
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount) {
+    const size_t REGISTER_NODES_PER_PAGE = getpagesize() / sizeof(RegisterNode);
     NodeCount = FEXCore::AlignUp(NodeCount, REGISTER_NODES_PER_PAGE);
 
     // Clear to free the Bucketlists which have unique_ptrs

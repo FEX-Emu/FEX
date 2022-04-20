@@ -93,6 +93,8 @@ namespace FEXCore::Allocator {
 #pragma GCC diagnostic pop
 
   FEX_DEFAULT_VISIBILITY size_t DetermineVASize() {
+    const int32_t PageSize = getpagesize();
+
     static constexpr std::array<uintptr_t, 7> TLBSizes = {
       57,
       52,
@@ -107,14 +109,14 @@ namespace FEXCore::Allocator {
       uintptr_t Size = 1ULL << Bits;
       // Just try allocating
       // We can't actually determine VA size on ARM safely
-      auto Find = [](uintptr_t Size) -> bool {
+      auto Find = [PageSize](uintptr_t Size) -> bool {
         for (int i = 0; i < 64; ++i) {
           // Try grabbing a some of the top pages of the range
           // x86 allocates some high pages in the top end
-          void *Ptr = ::mmap(reinterpret_cast<void*>(Size - FHU::FEX_PAGE_SIZE * i), FHU::FEX_PAGE_SIZE, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+          void *Ptr = ::mmap(reinterpret_cast<void*>(Size - PageSize * i), PageSize, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
           if (Ptr != (void*)~0ULL) {
-            ::munmap(Ptr, FHU::FEX_PAGE_SIZE);
-            if (Ptr == (void*)(Size - FHU::FEX_PAGE_SIZE * i)) {
+            ::munmap(Ptr, PageSize);
+            if (Ptr == (void*)(Size - PageSize * i)) {
               return true;
             }
           }
