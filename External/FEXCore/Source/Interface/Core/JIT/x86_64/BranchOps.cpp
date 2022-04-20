@@ -91,7 +91,7 @@ DEF_OP(ExitFunction) {
     jmp(qword[rax]);
 
     L(l_BranchHost);
-    dq(ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress);
+    dq(Dispatcher->ExitFunctionLinkerAddress);
     L(l_BranchGuest);
     dq(NewRIP);
   } else {

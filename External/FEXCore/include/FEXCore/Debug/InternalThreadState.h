@@ -97,7 +97,6 @@ namespace FEXCore::Core {
 
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
-    uint32_t CompileBlockReentrantRefCount{};
     std::shared_ptr<FEXCore::CompileService> CompileService;
     bool IsCompileService{false};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself

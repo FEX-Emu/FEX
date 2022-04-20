@@ -80,7 +80,6 @@ set (SRCS
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
-  Interface/Core/CompileService.cpp
   Interface/Core/Core.cpp
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp

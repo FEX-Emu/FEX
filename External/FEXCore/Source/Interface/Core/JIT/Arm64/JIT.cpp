@@ -71,11 +71,6 @@ static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
 
 namespace FEXCore::CPU {
 
-void Arm64JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
-  Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Original);
-  ThreadSharedData = Core->ThreadSharedData;
-}
-
 using namespace vixl;
 using namespace vixl::aarch64;
 
@@ -357,7 +352,7 @@ void Arm64JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
   Dispatcher->RemoveCodeBuffer(Buffer.Ptr);
 }
 
-Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
+Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
   : Arm64Emitter(ctx, 0)
   , CTX {ctx}
   , ThreadState {Thread} {
@@ -409,15 +404,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     Dispatcher = std::make_unique<Arm64Dispatcher>(CTX, ThreadState, config);
     DispatchPtr = Dispatcher->DispatchPtr;
     CallbackPtr = Dispatcher->CallbackPtr;
-  }
-
-  if (!CompileThread) {
-    ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
-    ThreadSharedData.SignalReturnInstruction = Dispatcher->SignalHandlerReturnAddress;
-    ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
-    ThreadSharedData.OverflowExceptionInstructionAddress = Dispatcher->OverflowExceptionInstructionAddress;
-
-    ThreadSharedData.Dispatcher = Dispatcher.get();
   }
 
   {
@@ -499,7 +485,7 @@ void Arm64JITCore::EmitDetectionString() {
 void Arm64JITCore::ClearCache() {
   // Get the backing code buffer
   auto Buffer = GetBuffer();
-  if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
+  if (Dispatcher->SignalHandlerRefCounter == 0) {
     if (!CodeBuffers.empty()) {
       // If we have more than one code buffer we are tracking then walk them and delete
       // This is a cleanup step
@@ -823,11 +809,11 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   if (!HostCode) {
     //fmt::print("ExitFunctionLink: Aborting, {:X} not in cache\n", GuestRip);
     Frame->State.rip = GuestRip;
-    return core->ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress;
+    return core->Dispatcher->AbsoluteLoopTopAddress;
   }
 
   uintptr_t branch = (uintptr_t)(record) - 8;
-  auto LinkerAddress = core->ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress;
+  auto LinkerAddress = core->Dispatcher->ExitFunctionLinkerAddress;
 
   auto offset = HostCode/4 - branch/4;
   if (IsInt26(offset)) {
@@ -863,8 +849,8 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   return HostCode;
 }
 
-std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return std::make_unique<Arm64JITCore>(ctx, Thread, CompileThread);
+std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return std::make_unique<Arm64JITCore>(ctx, Thread);
 }
 
 void InitializeArm64JITSignalHandlers(FEXCore::Context::Context *CTX) {

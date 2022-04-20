@@ -21,8 +21,7 @@ using DestMapType = std::vector<uint32_t>;
 class InterpreterCore final : public CPUBackend {
 public:
   explicit InterpreterCore(FEXCore::Context::Context *ctx,
-                           FEXCore::Core::InternalThreadState *Thread,
-                           bool CompileThread);
+                           FEXCore::Core::InternalThreadState *Thread);
 
   [[nodiscard]] std::string GetName() override { return "Interpreter"; }
 

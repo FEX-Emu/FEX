@@ -108,8 +108,7 @@ namespace FEXCore::IR {
         FEXCore::IR::RegisterAllocationData *RAData,
         FEXCore::IR::IRListView *IRList,
         FEXCore::Core::DebugData *DebugData,
-        bool GeneratedIR,
-        bool DecrementRefCount);
+        bool GeneratedIR);
 
       void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
       void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);

@@ -299,8 +299,7 @@ namespace FEXCore::IR {
     FEXCore::IR::RegisterAllocationData *RAData,
     FEXCore::IR::IRListView *IRList,
     FEXCore::Core::DebugData *DebugData,
-    bool GeneratedIR,
-    bool DecrementRefCount) {
+    bool GeneratedIR) {
     // Both generated ir and LibraryJITName need a named region lookup
     if (GeneratedIR || CTX->Config.LibraryJITNaming()) {
       std::shared_lock lk(AOTIRCacheLock);
@@ -335,13 +334,7 @@ namespace FEXCore::IR {
 
           if (CTX->Config.AOTIRGenerate()) {
             // cleanup memory and early exit here -- we're not running the application
-
-            if (DecrementRefCount) {
-              --Thread->CompileBlockReentrantRefCount;
-            }
-
             Thread->CPUBackend->ClearCache();
-
             return true;
           }
         }

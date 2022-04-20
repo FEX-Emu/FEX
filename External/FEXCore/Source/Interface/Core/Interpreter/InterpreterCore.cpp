@@ -34,14 +34,11 @@ static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
   InterpreterOps::InterpretIR(Thread, Thread->CurrentFrame->State.rip, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
 }
 
-InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread)
+InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CTX {ctx}
   , State {Thread} {
 
-  if (!CompileThread &&
-      CTX->Config.Core == FEXCore::Config::CONFIG_INTERPRETER) {
-    CreateAsmDispatch(ctx, Thread);
-  }
+  CreateAsmDispatch(ctx, Thread);
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
@@ -70,8 +67,8 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
   return reinterpret_cast<void*>(InterpreterExecution);
 }
 
-std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return std::make_unique<InterpreterCore>(ctx, Thread, CompileThread);
+std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return std::make_unique<InterpreterCore>(ctx, Thread);
 }
 
 void InitializeInterpreterSignalHandlers(FEXCore::Context::Context *CTX) {

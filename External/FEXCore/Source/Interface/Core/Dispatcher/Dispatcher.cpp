@@ -2,7 +2,6 @@
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/Core/CompileService.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
@@ -759,7 +758,7 @@ void Dispatcher::RemoveCodeBuffer(uint8_t* start_to_remove) {
   }
 }
 
-bool Dispatcher::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher, bool IncludeCompileService) const {
+bool Dispatcher::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) const {
   for (auto [start, end] : CodeBuffers) {
     if (Address >= start && Address < end) {
       return true;
@@ -770,9 +769,6 @@ bool Dispatcher::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher, bo
     return true;
   }
 
-  if (IncludeCompileService &&  ThreadState->CompileService && ThreadState->CompileService->IsAddressInJITCode(Address)) {
-    return true;
-  }
   return false;
 }
 

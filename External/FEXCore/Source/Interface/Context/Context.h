@@ -196,18 +196,6 @@ namespace FEXCore::Context {
     // same as CompileBlock, but aborts on failure
     void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
-    /**
-     * @brief Initializes the JIT compilers for the thread
-     *
-     * @param State The internal FEX thread state object
-     * @param CompileThread Is this for the compile service or not?
-     *
-     * InitializeCompiler is called inside of CreateThread, so you likely don't need this
-     * This is exposed because the CompileService needs to initialize compilers while copying data from
-     * the paired InternalThreadState that it is compiling code for
-     */
-    void InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread);
-
     // Used for thread creation from syscalls
     /**
      * @brief Used to create FEX thread objects in preparation for creating a true OS thread
@@ -309,6 +297,15 @@ namespace FEXCore::Context {
      * InitCore and CreateThread both call this to finish up thread object initialization
      */
     void InitializeThreadData(FEXCore::Core::InternalThreadState *Thread);
+
+    /**
+     * @brief Initializes the JIT compilers for the thread
+     *
+     * @param State The internal FEX thread state object
+     *
+     * InitializeCompiler is called inside of CreateThread, so you likely don't need this
+     */
+    void InitializeCompiler(FEXCore::Core::InternalThreadState* State);
 
     void WaitForIdleWithTimeout();
 
