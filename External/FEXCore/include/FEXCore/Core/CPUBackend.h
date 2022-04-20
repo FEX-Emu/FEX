@@ -89,8 +89,7 @@ class LLVMCore;
     }
 
     virtual void ClearCache() {}
-    virtual void CopyNecessaryDataForCompileThread(CPUBackend *Original) {}
-    virtual bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const { return false; }
+    virtual bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const { return false; }
 
     /**
      * @brief Does this CPUBackend need its IR to stick around for correct emulation

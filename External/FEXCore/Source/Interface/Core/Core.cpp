@@ -9,7 +9,6 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
-#include "Interface/Core/CompileService.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
@@ -158,10 +157,6 @@ namespace FEXCore::Context {
       }
 
       for (auto &Thread : Threads) {
-
-        if (Thread->CompileService) {
-          Thread->CompileService->Shutdown();
-        }
         delete Thread;
       }
       Threads.clear();
@@ -494,7 +489,7 @@ namespace FEXCore::Context {
     Thread->StartRunning.NotifyAll();
   }
 
-  void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* State, bool CompileThread) {
+  void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* State) {
     State->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
     State->OpDispatcher->SetMultiblock(Config.Multiblock);
     State->LookupCache = std::make_unique<FEXCore::LookupCache>(this);
@@ -521,16 +516,16 @@ namespace FEXCore::Context {
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
-      State->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, State, CompileThread);
+      State->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, State);
       break;
 #endif
     case FEXCore::Config::CONFIG_IRJIT:
       State->PassManager->InsertRegisterAllocationPass(DoSRA);
 
 #if (_M_X86_64 && JIT_X86_64)
-      State->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, State, CompileThread);
+      State->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, State);
 #elif (_M_ARM_64 && JIT_ARM64)
-      State->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, State, CompileThread);
+      State->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, State);
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif
@@ -562,7 +557,7 @@ namespace FEXCore::Context {
     // Set up the thread manager state
     Thread->ThreadManager.parent_tid = ParentTID;
 
-    InitializeCompiler(Thread, false);
+    InitializeCompiler(Thread);
     InitializeThreadData(Thread);
 
     return Thread;
@@ -624,12 +619,6 @@ namespace FEXCore::Context {
 
     // Clean up dead stacks
     FEXCore::Threads::Thread::CleanupAfterFork();
-
-    if (LiveThread->CompileService) {
-      // If this live thread had a compile service then it no longer exists
-      // Erase the shared_ptr
-      LiveThread->CompileService.reset();
-    }
   }
 
   void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
@@ -639,9 +628,6 @@ namespace FEXCore::Context {
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
     Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
-    if (Thread->CompileService) {
-      Thread->CompileService->ClearCache(Thread);
-    }
 
     if (AlsoClearIRCache) {
       Thread->LocalIRCache.clear();
@@ -944,47 +930,19 @@ namespace FEXCore::Context {
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData *RAData {};
 
-    bool DecrementRefCount = false;
     bool GeneratedIR {};
     uint64_t StartAddr {}, Length {};
 
-    if (Thread->CompileBlockReentrantRefCount != 0) {
-      if (!Thread->CompileService) {
-        Thread->CompileService = std::make_shared<FEXCore::CompileService>(this, Thread);
-        Thread->CompileService->Initialize();
-      }
-
-      auto* WorkItem = Thread->CompileService->CompileCode(GuestRIP);
-      WorkItem->ServiceWorkDone.Wait();
-      // Return here with the data in place
-      CodePtr = WorkItem->CodePtr;
-      IRList = WorkItem->IRList;
-      DebugData = WorkItem->DebugData;
-      RAData = WorkItem->RAData;
-      StartAddr = WorkItem->StartAddr;
-      Length = WorkItem->Length;
-      WorkItem->SafeToClear = true;
-
-      // The compile service will always generate IR + DebugData + RAData
-      // Remove the entries here to make sure we don't fail to insert later on
-      RemoveCodeEntry(Thread, GuestRIP);
-      GeneratedIR = true;
-    } else {
-      ++Thread->CompileBlockReentrantRefCount;
-      DecrementRefCount = true;
-      auto [Code, IR, Data, RA, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
-      CodePtr = Code;
-      IRList = IR;
-      DebugData = Data;
-      RAData = RA;
-      GeneratedIR = Generated;
-      StartAddr = _StartAddr;
-      Length = _Length;
-    }
+    auto [Code, IR, Data, RA, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
+    CodePtr = Code;
+    IRList = IR;
+    DebugData = Data;
+    RAData = RA;
+    GeneratedIR = Generated;
+    StartAddr = _StartAddr;
+    Length = _Length;
 
     if (CodePtr == nullptr) {
-      if (DecrementRefCount)
-        --Thread->CompileBlockReentrantRefCount;
       return 0;
     }
 
@@ -1010,14 +968,10 @@ namespace FEXCore::Context {
         RAData,
         IRList,
         DebugData,
-        GeneratedIR,
-        DecrementRefCount)) {
+        GeneratedIR)) {
       // Early exit
       return (uintptr_t)CodePtr;
     }
-
-    if (DecrementRefCount)
-      --Thread->CompileBlockReentrantRefCount;
 
     // Insert to lookup cache
     AddBlockMapping(Thread, GuestRIP, CodePtr, StartAddr, Length);

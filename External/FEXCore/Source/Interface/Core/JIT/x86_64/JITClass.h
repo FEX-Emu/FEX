@@ -58,8 +58,7 @@ class X86JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
   explicit X86JITCore(FEXCore::Context::Context *ctx,
                       FEXCore::Core::InternalThreadState *Thread,
-                      CodeBuffer Buffer,
-                      bool CompileThread);
+                      CodeBuffer Buffer);
   ~X86JITCore() override;
 
   [[nodiscard]] std::string GetName() override { return "JIT"; }
@@ -77,10 +76,9 @@ public:
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
-  void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
 
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const override {
-    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher, IncludeCompileService);
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const override {
+    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher);
   }
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
@@ -168,17 +166,6 @@ private:
 
   // This is the current code buffer that we are tracking
   CodeBuffer *CurrentCodeBuffer{};
-
-  struct CompilerSharedData {
-    uint64_t SignalHandlerReturnAddress{};
-    uint64_t UnimplementedInstructionAddress{};
-    uint64_t OverflowExceptionInstructionAddress{};
-
-    uint32_t *SignalHandlerRefCounterPtr{};
-    FEXCore::CPU::Dispatcher *Dispatcher{};
-  };
-
-  CompilerSharedData ThreadSharedData;
 
   uint32_t SpillSlots{};
   using SetCC = void (X86JITCore::*)(const Operand& op);

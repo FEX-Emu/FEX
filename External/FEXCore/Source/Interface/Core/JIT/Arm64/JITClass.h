@@ -43,8 +43,7 @@ public:
   };
 
   explicit Arm64JITCore(FEXCore::Context::Context *ctx,
-                        FEXCore::Core::InternalThreadState *Thread,
-                        bool CompileThread);
+                        FEXCore::Core::InternalThreadState *Thread);
   ~Arm64JITCore() override;
 
   [[nodiscard]] std::string GetName() override { return "JIT"; }
@@ -63,9 +62,8 @@ public:
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
   [[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
 
-  void CopyNecessaryDataForCompileThread(CPUBackend *Original) override;
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true, bool IncludeCompileService = true) const override {
-    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher, IncludeCompileService);
+  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const override {
+    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher);
   }
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
@@ -174,17 +172,6 @@ private:
 #endif
 
   static uint64_t ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
-
-  struct CompilerSharedData {
-    uint64_t SignalReturnInstruction{};
-    uint64_t UnimplementedInstructionAddress{};
-    uint64_t OverflowExceptionInstructionAddress{};
-
-    uint32_t *SignalHandlerRefCounterPtr{};
-    FEXCore::CPU::Dispatcher *Dispatcher{};
-  };
-
-  CompilerSharedData ThreadSharedData;
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();

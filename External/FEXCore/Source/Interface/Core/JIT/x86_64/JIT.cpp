@@ -75,11 +75,6 @@ void FreeCodeBuffer(CodeBuffer Buffer) {
   FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
 }
 
-void X86JITCore::CopyNecessaryDataForCompileThread(CPUBackend *Original) {
-  X86JITCore *Core = reinterpret_cast<X86JITCore*>(Original);
-  ThreadSharedData = Core->ThreadSharedData;
-}
-
 void X86JITCore::PushRegs() {
   sub(rsp, 16 * RAXMM_x.size());
   for (size_t i = 0; i < RAXMM_x.size(); ++i) {
@@ -298,7 +293,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 void X86JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
-X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer, bool CompileThread)
+X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
   : CodeGenerator(Buffer.Size, Buffer.Ptr, nullptr)
   , CTX {ctx}
   , ThreadState {Thread}
@@ -334,23 +329,14 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   RegisterVectorHandlers();
   RegisterEncryptionHandlers();
 
-  if (!CompileThread) {
-    DispatcherConfig config;
-    config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
-    config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
-    config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
+  DispatcherConfig config;
+  config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
+  config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
+  config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
 
-    Dispatcher = std::make_unique<X86Dispatcher>(CTX, ThreadState, config);
-    DispatchPtr = Dispatcher->DispatchPtr;
-    CallbackPtr = Dispatcher->CallbackPtr;
-
-    ThreadSharedData.SignalHandlerRefCounterPtr = &Dispatcher->SignalHandlerRefCounter;
-    ThreadSharedData.SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress;
-    ThreadSharedData.UnimplementedInstructionAddress = Dispatcher->UnimplementedInstructionAddress;
-    ThreadSharedData.OverflowExceptionInstructionAddress = Dispatcher->OverflowExceptionInstructionAddress;
-
-    ThreadSharedData.Dispatcher = Dispatcher.get();
-  }
+  Dispatcher = std::make_unique<X86Dispatcher>(CTX, ThreadState, config);
+  DispatchPtr = Dispatcher->DispatchPtr;
+  CallbackPtr = Dispatcher->CallbackPtr;
 
   {
     // Set up pointers that the JIT needs to load
@@ -416,7 +402,7 @@ void X86JITCore::EmitDetectionString() {
 }
 
 void X86JITCore::ClearCache() {
-  if (*ThreadSharedData.SignalHandlerRefCounterPtr == 0) {
+  if (Dispatcher->SignalHandlerRefCounter == 0) {
     if (!CodeBuffers.empty()) {
       // If we have more than one code buffer we are tracking then walk them and delete
       // This is a cleanup step
@@ -650,7 +636,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
     je(RunBlock);
     // Else we need to pause now
-    mov(rax, ThreadSharedData.Dispatcher->ThreadPauseHandlerAddress);
+    mov(rax, Dispatcher->ThreadPauseHandlerAddress);
     jmp(rax);
     ud2();
 
@@ -800,10 +786,10 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 
   if (!HostCode) {
     Thread->CurrentFrame->State.rip = GuestRip;
-    return core->ThreadSharedData.Dispatcher->AbsoluteLoopTopAddress;
+    return core->Dispatcher->AbsoluteLoopTopAddress;
   }
 
-  auto LinkerAddress = core->ThreadSharedData.Dispatcher->ExitFunctionLinkerAddress;
+  auto LinkerAddress = core->Dispatcher->ExitFunctionLinkerAddress;
   Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;
@@ -813,8 +799,8 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
   return HostCode;
 }
 
-std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, bool CompileThread) {
-  return std::make_unique<X86JITCore>(ctx, Thread, AllocateNewCodeBuffer(ctx, CompileThread ? X86JITCore::MAX_CODE_SIZE : X86JITCore::INITIAL_CODE_SIZE), CompileThread);
+std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return std::make_unique<X86JITCore>(ctx, Thread, AllocateNewCodeBuffer(ctx, X86JITCore::INITIAL_CODE_SIZE));
 }
 
 void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX) {

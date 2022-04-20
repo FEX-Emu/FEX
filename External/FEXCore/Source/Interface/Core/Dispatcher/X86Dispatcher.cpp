@@ -193,9 +193,36 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     ret();
   }
 
+  constexpr bool SignalSafeCompile = true;
   // Block creation
   {
     L(NoBlock);
+
+    if (SignalSafeCompile) {
+      // When compiling code, mask all signals to reduce the chance of reentrant allocations
+      // RDI: SETMASK
+      // RSI: Pointer to mask value (uint64_t)
+      // RDX: Pointer to old mask value (uint64_t)
+      // R10: Size of mask, sizeof(uint64_t)
+      // RAX: Syscall
+
+      // Backup rdx
+      mov(r9, rdx);
+
+      mov(rdi, ~0ULL);
+      sub(rsp, 16);
+      mov(qword [rsp], rdi);
+      mov(qword [rsp + 8], rdi);
+
+      mov(rdi, SIG_SETMASK);
+      mov(rsi, rsp);
+      mov(rdx, rsp);
+      mov(r10, 8);
+      mov(rax, SYS_rt_sigprocmask);
+      syscall();
+
+      mov(rdx, r9);
+    }
 
     // {rdi, rsi, rdx}
     mov(rdi, reinterpret_cast<uint64_t>(CTX));
@@ -204,12 +231,57 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
     call(rax);
 
+    if (SignalSafeCompile) {
+      // Now restore the signal mask
+      // Living in the same location
+      // Backup rdx
+      mov(r9, rdx);
+
+      mov(rdi, SIG_SETMASK);
+      mov(rsi, rsp);
+      mov(rdx, 0); // Don't care about result
+      mov(r10, 8);
+      mov(rax, SYS_rt_sigprocmask);
+      syscall();
+
+      // Bring stack back
+      add(rsp, 16);
+
+      mov(rdx, r9);
+    }
+
     // rdx already contains RIP here
     jmp(LoopTop);
   }
 
   {
     ExitFunctionLinkerAddress = getCurr<uint64_t>();
+    if (SignalSafeCompile) {
+      // When compiling code, mask all signals to reduce the chance of reentrant allocations
+      // RDI: SETMASK
+      // RSI: Pointer to mask value (uint64_t)
+      // RDX: Pointer to old mask value (uint64_t)
+      // R10: Size of mask, sizeof(uint64_t)
+      // RAX: Syscall
+
+      // Backup rax
+      mov(r9, rax);
+
+      mov(rdi, ~0ULL);
+      sub(rsp, 16);
+      mov(qword [rsp], rdi);
+      mov(qword [rsp + 8], rdi);
+
+      mov(rdi, SIG_SETMASK);
+      mov(rsi, rsp);
+      mov(rdx, rsp);
+      mov(r10, 8);
+      mov(rax, SYS_rt_sigprocmask);
+      syscall();
+
+      mov(rax, r9);
+    }
+
     // {rdi, rsi, rdx}
     mov(rdi, config.ExitFunctionLinkThis);
     mov(rsi, STATE);
@@ -217,7 +289,28 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
     mov(rax, config.ExitFunctionLink);
     call(rax);
-    jmp(rax);
+
+    if (SignalSafeCompile) {
+      // Now restore the signal mask
+      // Living in the same location
+      // Backup rax
+      mov(r9, rax);
+
+      mov(rdi, SIG_SETMASK);
+      mov(rsi, rsp);
+      mov(rdx, 0); // Don't care about result
+      mov(r10, 8);
+      mov(rax, SYS_rt_sigprocmask);
+      syscall();
+
+      // Bring stack back
+      add(rsp, 16);
+
+      jmp(r9);
+    }
+    else {
+      jmp(rax);
+    }
   }
 
   {
