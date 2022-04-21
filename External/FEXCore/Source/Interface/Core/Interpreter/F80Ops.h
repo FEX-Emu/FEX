@@ -223,6 +223,73 @@ struct OpHandlers<IR::OP_F80SCALE> {
 };
 
 template<>
+struct OpHandlers<IR::OP_F64SIN> {
+  static double handle(double src) {
+    return sin(src);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64COS> {
+  static double handle(double src) {
+    return cos(src);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64TAN> {
+  static double handle(double src) {
+    return tan(src);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64F2XM1> {
+  static double handle(double src) {
+    return exp2(src) - 1.0;
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64ATAN> {
+  static double handle(double src1, double src2) {
+    return atan2(src1, src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64FPREM> {
+  static double handle(double src1, double src2) {
+    return fmod(src1, src2);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64FPREM1> {
+  static double handle(double src1, double src2) {
+    return remainder(src1, src2);
+  }
+};
+
+
+template<>
+struct OpHandlers<IR::OP_F64FYL2X> {
+  static double handle(double src1, double src2) {
+    return src2 * log2(src1);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64SCALE> {
+  static double handle(double src1, double src2) {
+    double trunc = (double)(int64_t)(src2); //truncate
+    return src1 * exp2(trunc);
+  }
+};
+
+
+
+template<>
 struct OpHandlers<IR::OP_F80BCDSTORE> {
   static X80SoftFloat handle(X80SoftFloat Src1) {
     bool Negative = Src1.Sign;

@@ -198,6 +198,43 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       }
       break;
 
+      case FABI_F64_F64: {
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        blr(x0);
+
+        PopDynamicRegsAndLR();
+
+        FillStaticRegs();
+
+        mov(GetDst(Node).D(), v0.D());
+
+      }
+      break;
+
+      case FABI_F64_F64_F64: {
+        SpillStaticRegs();
+
+        PushDynamicRegsAndLR();
+
+        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
+        mov(v1.D(), GetSrc(IROp->Args[1].ID()).D());
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        blr(x0);
+
+        PopDynamicRegsAndLR();
+
+        FillStaticRegs();
+
+        mov(GetDst(Node).D(), v0.D());
+
+      }
+      break;
+
       case FABI_I16_F80:{
         SpillStaticRegs();
 

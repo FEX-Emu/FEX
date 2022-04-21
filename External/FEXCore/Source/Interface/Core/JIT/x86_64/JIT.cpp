@@ -191,6 +191,33 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       }
       break;
 
+      case FABI_F64_F64: {
+        PushRegs();
+
+        movsd(xmm0, GetSrc(IROp->Args[0].ID()));
+
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+
+        PopRegs();
+
+        movsd(GetDst(Node), xmm0);
+      }
+      break;
+
+      case FABI_F64_F64_F64: {
+        PushRegs();
+
+        movsd(xmm0, GetSrc(IROp->Args[0].ID()));
+        movsd(xmm1, GetSrc(IROp->Args[1].ID()));
+
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+
+        PopRegs();
+
+        movsd(GetDst(Node), xmm0);
+      }
+      break;
+
       case FABI_I16_F80:{
         PushRegs();
 

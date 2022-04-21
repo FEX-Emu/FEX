@@ -526,6 +526,13 @@ namespace {
         ConfigChanged = true;
       }
 
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_X87REDUCEDPRECISION);
+      bool X87ReducedPrecision = Value.has_value() && **Value == "1";
+      if (ImGui::Checkbox("X87 Reduced Precision", &X87ReducedPrecision)) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_X87REDUCEDPRECISION, X87ReducedPrecision ? "1" : "0");
+        ConfigChanged = true;
+      }
+
       ImGui::Text("SMC Checks: ");
       int SMCChecks = FEXCore::Config::CONFIG_SMC_MMAN;
 

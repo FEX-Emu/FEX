@@ -28,6 +28,8 @@ namespace FEXCore::CPU {
     FABI_F80_I32,
     FABI_F32_F80,
     FABI_F64_F80,
+    FABI_F64_F64,
+    FABI_F64_F64_F64,
     FABI_I16_F80,
     FABI_I32_F80,
     FABI_I64_F80,
@@ -328,6 +330,17 @@ namespace FEXCore::CPU {
   DEF_OP(F80CMP);
   DEF_OP(F80BCDLOAD);
   DEF_OP(F80BCDSTORE);
+
+  //< F64 ops
+  DEF_OP(F64SIN);
+  DEF_OP(F64COS);
+  DEF_OP(F64TAN);
+  DEF_OP(F64F2XM1);
+  DEF_OP(F64ATAN);
+  DEF_OP(F64FPREM);
+  DEF_OP(F64FPREM1);
+  DEF_OP(F64FYL2X);
+  DEF_OP(F64SCALE);
 #undef DEF_OP
   template<typename unsigned_type, typename signed_type, typename float_type>
   [[nodiscard]] static bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {

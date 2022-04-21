@@ -463,6 +463,55 @@ public:
   template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
   void FCOMI(OpcodeArgs);
 
+  // F64 X87 Ops
+  template<size_t width>
+  void FLDF64(OpcodeArgs);
+  template<uint64_t num>
+  void FLDF64_Const(OpcodeArgs);
+
+  void FBLDF64(OpcodeArgs);
+  void FBSTPF64(OpcodeArgs);
+
+  void FILDF64(OpcodeArgs);
+
+  template<size_t width>
+  void FSTF64(OpcodeArgs);
+
+  void FSTF64(OpcodeArgs);
+
+  template<bool Truncate>
+  void FISTF64(OpcodeArgs);
+
+  template<size_t width, bool Integer, OpResult ResInST0>
+  void FADDF64(OpcodeArgs);
+  template<size_t width, bool Integer, OpResult ResInST0>
+  void FMULF64(OpcodeArgs);
+  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
+  void FDIVF64(OpcodeArgs);
+  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
+  void FSUBF64(OpcodeArgs);
+  void FCHSF64(OpcodeArgs);
+  void FABSF64(OpcodeArgs);
+  void FTSTF64(OpcodeArgs);
+  void FRNDINTF64(OpcodeArgs);
+  void FXTRACTF64(OpcodeArgs);
+  
+  void FSQRTF64(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp>
+  void X87UnaryOpF64(OpcodeArgs);
+  template<FEXCore::IR::IROps IROp>
+  void X87BinaryOpF64(OpcodeArgs);
+  void X87SinCosF64(OpcodeArgs);
+  void X87FYL2XF64(OpcodeArgs);
+  void X87TANF64(OpcodeArgs);
+  void X87ATANF64(OpcodeArgs);
+  void X87FNSAVEF64(OpcodeArgs);
+  void X87FRSTORF64(OpcodeArgs);
+  void X87FXAMF64(OpcodeArgs);
+
+  template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
+  void FCOMIF64(OpcodeArgs);
+
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
 
