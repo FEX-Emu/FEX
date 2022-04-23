@@ -26,18 +26,26 @@ static std::string get_fdpath(int fd)
 
 namespace FEX::HLE::x32 {
   void RegisterMemory() {
-    REGISTER_SYSCALL_IMPL_X32(mmap, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t addr, uint32_t length, int prot, int flags, int fd, int32_t offset) -> uint64_t {
+    struct old_mmap_struct {
+      uint32_t addr;
+      uint32_t len;
+      uint32_t prot;
+      uint32_t flags;
+      uint32_t fd;
+      uint32_t offset;
+    };
+    REGISTER_SYSCALL_IMPL_X32(mmap, [](FEXCore::Core::CpuStateFrame *Frame, old_mmap_struct const* arg) -> uint64_t {
       auto Result = (uint64_t)static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-        mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
+        mmap(reinterpret_cast<void*>(arg->addr), arg->len, arg->prot, arg->flags, arg->fd, arg->offset);
 
       auto Thread = Frame->Thread;
       if (!FEX::HLE::HasSyscallError(Result)) {
-        if (!(flags & MAP_ANONYMOUS)) {
-          auto filename = get_fdpath(fd);
+        if (!(arg->flags & MAP_ANONYMOUS)) {
+          auto filename = get_fdpath(arg->fd);
 
-          FEXCore::Context::AddNamedRegion(Thread->CTX, Result, length, offset, filename);
+          FEXCore::Context::AddNamedRegion(Thread->CTX, Result, arg->len, arg->offset, filename);
         }
-        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)Result, length);
+        FEXCore::Context::FlushCodeRange(Thread, (uintptr_t)Result, arg->len);
       }
       return Result;
     });
