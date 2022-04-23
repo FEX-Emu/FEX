@@ -17,7 +17,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterMemory() {
+  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_FLAGS(brk, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
@@ -104,5 +104,16 @@ namespace FEX::HLE {
         uint64_t Result = syscall(SYSCALL_DEF(membarrier), cmd, flags);
         SYSCALL_ERRNO();
     });
+
+    if (Handler->IsHostKernelVersionAtLeast(5, 17, 0)) {
+      REGISTER_SYSCALL_IMPL_PASS_FLAGS(set_mempolicy_home_node, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+        [](FEXCore::Core::CpuStateFrame *Frame, uint64_t start, uint64_t len, uint64_t home_node, uint64_t flags) -> uint64_t {
+        uint64_t Result = ::syscall(SYSCALL_DEF(set_mempolicy_home_node), start, len, home_node, flags);
+        SYSCALL_ERRNO();
+      });
+    }
+    else {
+      REGISTER_SYSCALL_IMPL(set_mempolicy_home_node, UnimplementedSyscallSafe);
+    }
   }
 }

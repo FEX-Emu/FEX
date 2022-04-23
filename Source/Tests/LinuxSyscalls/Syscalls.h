@@ -54,7 +54,7 @@ class SignalDelegator;
   void RegisterIO();
   void RegisterIOUring(FEX::HLE::SyscallHandler *const Handler);
   void RegisterKey();
-  void RegisterMemory();
+  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler);
   void RegisterMsg();
   void RegisterNamespace(FEX::HLE::SyscallHandler *const Handler);
   void RegisterNuma();
