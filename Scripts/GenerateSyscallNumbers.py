@@ -6,6 +6,16 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
+# Usage of this script is `Scripts/GenerateSyscallNumbers.py <Path to Linux directory>`
+# This will then parse the syscall headers and format them in an enum
+# Then this will be output in stdout
+# This output should then be checked and copied to the following headers, splitting up the enums:
+#   - Source/Tests/LinuxSyscalls/x32/SyscallsEnum.h
+#   - Source/Tests/LinuxSyscalls/x64/SyscallsEnum.h
+#   - Source/Tests/LinuxSyscalls/Arm64/SyscallsEnum.h
+# `FEX_Syscalls_Common` is provided in the output as just an indicator for which syscalls are using the common
+# syscall interface.
+
 @dataclass
 class SyscallDefinition:
     arch: str
@@ -43,6 +53,14 @@ class SyscallDefinition:
 Syscallx64File = "/arch/x86/entry/syscalls/syscall_64.tbl"
 Syscallx86File = "/arch/x86/entry/syscalls/syscall_32.tbl"
 SyscallArm64File = "/include/uapi/asm-generic/unistd.h"
+
+# Syscall names that had naming conflict with some global definitions
+# Renamed to work around that issue
+DefinitionRenameDict = {
+    "pread64": "pread_64",
+    "pwrite64": "pwrite_64",
+    "prlimit64": "prlimit_64"
+}
 
 Definitions_x64 = []
 Definitions_x64_dict = {}
@@ -85,6 +103,9 @@ def ParseArchSyscalls(Defs, DefsDict, Arch, FilePath, IgnoreArch):
             EntryName = "<None>"
         else:
             EntryName = split_text[3]
+
+        if Name in DefinitionRenameDict:
+            Name = DefinitionRenameDict[Name]
 
         Def = SyscallDefinition(Arch, Num, ABI, Name, EntryName)
 
@@ -153,6 +174,9 @@ def ParseCommonArchSyscalls(Defs, DefsDict, Arch, FilePath):
         Num = SyscallNumbers[Name]
         ABI = Arch
         EntryName = split_text[1].strip().split(")")[0]
+
+        if Name in DefinitionRenameDict:
+            Name = DefinitionRenameDict[Name]
 
         Def = SyscallDefinition(Arch, Num, ABI, Name, EntryName)
 
