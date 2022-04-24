@@ -113,7 +113,7 @@ namespace FEX::HLE::x64 {
     FEX::HLE::RegisterIO();
     FEX::HLE::RegisterIOUring(this);
     FEX::HLE::RegisterKey();
-    FEX::HLE::RegisterMemory();
+    FEX::HLE::RegisterMemory(this);
     FEX::HLE::RegisterMsg();
     FEX::HLE::RegisterNamespace(this);
     FEX::HLE::RegisterSched();

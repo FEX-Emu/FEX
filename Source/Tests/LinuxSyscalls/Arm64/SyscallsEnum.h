@@ -335,6 +335,7 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_memfd_secret = 447,
   SYSCALL_Arm64_process_mrelease = 448,
   SYSCALL_Arm64_futex_waitv = 449,
+  SYSCALL_Arm64_set_mempolicy_home_node = 450,
   SYSCALL_Arm64_MAX = 512,
 
   // Unsupported syscalls on this host
