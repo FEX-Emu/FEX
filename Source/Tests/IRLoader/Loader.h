@@ -41,6 +41,7 @@ namespace FEX::IRLoader {
       uint64_t EntryRIP{};
       std::unique_ptr<IREmitter> ParsedCode;
 
+      FEXCore::Utils::PooledAllocatorMalloc Allocator;
       FEX::HarnessHelper::ConfigLoader Config;
   };
 }

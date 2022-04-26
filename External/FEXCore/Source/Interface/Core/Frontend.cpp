@@ -177,17 +177,12 @@ static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
 
 Decoder::Decoder(FEXCore::Context::Context *ctx)
   : CTX {ctx}
-  , OSABI { ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN } {
-  // Using mmap is a start-up time optimization
-  // Take advantage of page faulting to reduce startup time for minimal runtime cost
-  DecodedBuffer =
-    reinterpret_cast<FEXCore::X86Tables::DecodedInst *>(
-      FEXCore::Allocator::mmap(0, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize,
-      PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  , OSABI { ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN }
+  , PoolObject {ctx->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {
 }
 
 Decoder::~Decoder() {
-  FEXCore::Allocator::munmap(DecodedBuffer, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize);
+  PoolObject.UnclaimBuffer();
 }
 
 uint8_t Decoder::ReadByte() {
@@ -1148,6 +1143,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
   DecodedSize = 0;
   MaxCondBranchForward = 0;
   MaxCondBranchBackwards = ~0ULL;
+  DecodedBuffer = PoolObject.ReownOrClaimBuffer();
 
   // XXX: Load symbol data
   SymbolAvailable = false;

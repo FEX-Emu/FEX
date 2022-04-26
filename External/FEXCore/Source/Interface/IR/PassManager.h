@@ -7,6 +7,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/ThreadPoolAllocator.h>
 
 #include <functional>
 #include <memory>
@@ -39,7 +40,7 @@ protected:
 class PassManager final {
   friend class SyscallOptimization;
 public:
-  void AddDefaultPasses(bool InlineConstants, bool StaticRegisterAllocation);
+  void AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
   Pass* InsertPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
     Pass->RegisterPassManager(this);

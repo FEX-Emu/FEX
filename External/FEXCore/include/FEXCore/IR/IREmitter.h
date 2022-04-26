@@ -19,9 +19,18 @@ friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 
   public:
-    IREmitter()
-      : DualListData {8 * 1024 * 1024} {
+    IREmitter(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator)
+      : DualListData {ThreadAllocator, 8 * 1024 * 1024} {
+      ReownOrClaimBuffer();
       ResetWorkingList();
+    }
+
+    void ReownOrClaimBuffer() {
+      DualListData.ReownOrClaimBuffer();
+    }
+
+    void DelayedDisownBuffer() {
+      DualListData.DelayedDisownBuffer();
     }
 
     IRListView ViewIR() { return IRListView(&DualListData, false); }
@@ -343,7 +352,7 @@ friend class FEXCore::IR::PassManager;
     OrderedNode *CurrentWriteCursor = nullptr;
 
     // These could be combined with a little bit of work to be more efficient with memory usage. Isn't a big deal
-    DualIntrusiveAllocator DualListData;
+    DualIntrusiveAllocatorThreadPool DualListData;
 
     OrderedNode *InvalidNode;
     OrderedNode *CurrentCodeBlock{};

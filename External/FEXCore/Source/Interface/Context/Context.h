@@ -285,6 +285,9 @@ namespace FEXCore::Context {
       IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
     }
 
+    FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
+    FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
 

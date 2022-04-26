@@ -507,7 +507,7 @@ namespace FEXCore::Context {
     bool DoSRA = false;
     #endif
 
-    State->PassManager->AddDefaultPasses(Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
+    State->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
     State->PassManager->AddDefaultValidationPasses();
 
     State->PassManager->RegisterSyscallHandler(SyscallHandler);
@@ -663,15 +663,16 @@ namespace FEXCore::Context {
     }
   };
 
-  static void ValidateIR(FEXCore::Core::InternalThreadState *Thread) {
+  static void ValidateIR(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
     // Convert to text, Parse, Convert to text again and make sure the texts match
     std::stringstream out;
-    static auto compaction = IR::CreateIRCompaction();
+    static auto compaction = IR::CreateIRCompaction(ctx->OpDispatcherAllocator);
     compaction->Run(Thread->OpDispatcher.get());
     auto NewIR = Thread->OpDispatcher->ViewIR();
     Dump(&out, &NewIR, nullptr);
     out.seekg(0);
-    auto reparsed = IR::Parse(&out);
+    FEXCore::Utils::PooledAllocatorMalloc Allocator;
+    auto reparsed = IR::Parse(Allocator, &out);
     if (reparsed == nullptr) {
       LOGMAN_MSG_A_FMT("Failed to parse IR\n");
     } else {
@@ -699,6 +700,8 @@ namespace FEXCore::Context {
 
     auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
 
+    Thread->OpDispatcher->ReownOrClaimBuffer();
+    Thread->OpDispatcher->ResetWorkingList();
     Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
 
     const uint8_t GPRSize = GetGPRSize();
@@ -799,7 +802,7 @@ namespace FEXCore::Context {
       }
 
       if (Thread->CTX->Config.ValidateIRarser) {
-        ValidateIR(Thread);
+        ValidateIR(this, Thread);
       }
     }
 
@@ -823,7 +826,8 @@ namespace FEXCore::Context {
     auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
     auto IRList = Thread->OpDispatcher->CreateIRCopy();
 
-    Thread->OpDispatcher->ResetWorkingList();
+    Thread->OpDispatcher->DelayedDisownBuffer();
+    Thread->FrontendDecoder->DelayedDisownBuffer();
 
     return {
       .IRList = IRList,
