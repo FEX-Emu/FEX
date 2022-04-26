@@ -1,6 +1,7 @@
 #pragma once
 #include "IR.h"
 #include <FEXCore/Utils/Allocator.h>
+#include <cstring>
 
 namespace FEXCore::IR {
 
@@ -46,6 +47,14 @@ class FEX_PACKED RegisterAllocationData {
       return sizeof(RegisterAllocationData) + NodeCount * sizeof(Map[0]);
     }
 
+    RegisterAllocationData* CreateCopy() {
+      auto copy = (RegisterAllocationData*)FEXCore::Allocator::malloc(Size(MapCount));
+      memcpy((void*)&copy->Map[0], (void*)&Map[0], MapCount * sizeof(Map[0]));
+      copy->SpillSlotCount = SpillSlotCount;
+      copy->MapCount = MapCount;
+      copy->IsShared = IsShared;
+      return copy;
+    }
     void Serialize(std::ostream& stream) const {
       stream.write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
       stream.write((const char*)&MapCount, sizeof(MapCount));

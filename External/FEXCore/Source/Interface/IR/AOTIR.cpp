@@ -321,7 +321,9 @@ namespace FEXCore::IR {
           auto LocalRIP = GuestRIP - file->second.Start + file->second.Offset;
           auto LocalStartAddr = StartAddr - file->second.Start + file->second.Offset;
           auto fileid = file->second.fileid;
-          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRList, RAData, fileid]() {
+          auto RADataCopy = RAData->CreateCopy();
+          auto IRListCopy = IRList->CreateCopy();
+          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy, fileid]() {
             auto *AotFile = &AOTIRCaptureCacheMap[fileid];
 
             if (!AotFile->Stream) {
@@ -329,7 +331,9 @@ namespace FEXCore::IR {
               uint64_t tag = FEXCore::IR::AOTIR_COOKIE;
               AotFile->Stream->write((char*)&tag, sizeof(tag));
             }
-            AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRList, RAData);
+            AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy);
+            FEXCore::Allocator::free(RADataCopy);
+            delete IRListCopy;
           });
 
           if (CTX->Config.AOTIRGenerate()) {
