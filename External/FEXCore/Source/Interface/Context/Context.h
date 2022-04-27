@@ -4,7 +4,7 @@
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/IR/AOTIR.h"
+#include <FEXCore/IR/AOTIR.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>

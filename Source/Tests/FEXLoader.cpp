@@ -16,6 +16,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 #include "Linux/Utils/ELFContainer.h"
+#include "fmt/core.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -58,6 +59,30 @@ namespace {
 static bool SilentLog;
 static int OutputFD {STDERR_FILENO};
 static bool ExecutedWithFD {false};
+
+pid_t pidfile_acquire(const std::string& filename) {
+  auto fd = open(filename.c_str(), O_RDONLY);
+  if (fd < 0) {
+    return 0;
+  } else {
+    pid_t pid;
+    read(fd, (void*)&pid, sizeof(pid));
+    return pid;
+  }
+}
+
+bool pidfile_create(const std::string& filename) {
+  auto fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_EXCL, 0644);
+  if (fd < 0) {
+    return false;
+  } else {
+    lockf(fd, F_LOCK, 0);
+    pid_t self = getpid();
+    write(fd, (void*)&self, sizeof(self));
+    lockf(fd, F_ULOCK, 0);
+  }
+  return true;
+}
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   if (SilentLog) {
@@ -237,6 +262,9 @@ int main(int argc, char **argv, char **const envp) {
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
   FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
+  FEX_CONFIG_OPT(AOTIRMergePID, AOTIRMERGEPIDFILE);
+  auto AOTIRMergePIDFile = AOTIRMergePID();
+
   ::SilentLog = SilentLog();
 
   if (::SilentLog) {
@@ -430,7 +458,7 @@ int main(int argc, char **argv, char **const envp) {
   });
 
   FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir." + std::to_string(gettid()) + ".tmp");
     auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
     if (*AOTWrite) {
       std::filesystem::resize_file(filepath, 0);
@@ -442,18 +470,23 @@ int main(int argc, char **argv, char **const envp) {
     return AOTWrite;
   });
 
-  FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
-    auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
-    // Rename the temporary file to atomically update the file
-    std::filesystem::rename(TmpFilepath, NewFilepath);
-  });
-
   for(const auto &Section: Loader.Sections) {
     FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
   }
 
+  if (AOTIRCapture() || AOTIRGenerate()) {
+    auto MergePID = pidfile_acquire(AOTIRMergePIDFile.c_str());
+    if ( MergePID == 0) {
+      auto pid = fork();
+      if (pid == 0) {
+        if (!pidfile_create(AOTIRMergePIDFile.c_str())) exit(0);
+        char* argv[] = {(char*)"", NULL};
+        execv("AOTIRMerge", argv);
+      }
+    } else {
+      kill(MergePID, SIGUSR1);
+    }
+  }
   if (AOTIRGenerate()) {
     for(auto &Section: Loader.Sections) {
       FEX::AOT::AOTGenSection(CTX, Section);
@@ -475,7 +508,10 @@ int main(int argc, char **argv, char **const envp) {
 
   if (AOTIRCapture() || AOTIRGenerate()) {
     FEXCore::Context::FinalizeAOTIRCache(CTX);
-    LogMan::Msg::IFmt("AOTIR Cache Stored");
+    auto MergePID = pidfile_acquire(AOTIRMergePIDFile.c_str());
+    if ( MergePID) {
+      kill(MergePID, SIGUSR2);
+    }
   }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);

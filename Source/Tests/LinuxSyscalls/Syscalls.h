@@ -143,6 +143,9 @@ public:
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   FEX_CONFIG_OPT(ThreadsConfig, THREADS);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+  FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
+  FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
+  FEX_CONFIG_OPT(AOTIRMergePID, AOTIRMERGEPIDFILE);
 
   uint32_t GetHostKernelVersion() const { return HostKernelVersion; }
   uint32_t GetGuestKernelVersion() const { return GuestKernelVersion; }

@@ -33,10 +33,34 @@ $end_info$
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/fsuid.h>
+#include <fcntl.h>
 
 ARG_TO_STR(idtype_t, "%u")
 
 namespace FEX::HLE {
+
+  static const auto pidfile_acquire = [](const char* filename) -> int {
+    auto fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+      return 0;
+    } else {
+      pid_t pid;
+      read(fd, (void*)&pid, sizeof(pid));
+      return pid;
+    }
+  };
+
+  static const auto SignalToAOTIRMerge = [](SyscallHandler* handler, int signo) {
+    static const bool AOTIRMerge = (handler->AOTIRCapture() || handler->AOTIRGenerate());
+    if (AOTIRMerge) {
+      static const auto AOTIRMergePIDFile = handler->AOTIRMergePID();
+      auto MergePID = pidfile_acquire(AOTIRMergePIDFile.c_str());
+      if (MergePID) { 
+        kill(MergePID, signo);
+      }
+    }
+  };
+
   FEXCore::Core::InternalThreadState *CreateNewThread(FEXCore::Context:: Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *args) {
     uint64_t flags = args->flags;
     FEXCore::Core::CPUState NewThreadState{};
@@ -200,6 +224,8 @@ namespace FEX::HLE {
       // Clear all the other threads that are being tracked
       FEXCore::Context::CleanupAfterFork(Thread->CTX, Frame->Thread);
 
+      // signal to AOTIRMerge
+      SignalToAOTIRMerge(_SyscallHandler, SIGUSR1);
       // only a  single thread running so no need to remove anything from the thread array
 
       // Handle child setup now
@@ -288,6 +314,7 @@ namespace FEX::HLE {
           0);
       }
 
+      SignalToAOTIRMerge(_SyscallHandler, SIGUSR2);
       Thread->StatusCode = status;
       FEXCore::Context::StopThread(Thread->CTX, Thread);
 
@@ -495,6 +522,7 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
       [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
+      SignalToAOTIRMerge(_SyscallHandler, SIGUSR2);
       auto Thread = Frame->Thread;
       Thread->StatusCode = status;
       FEXCore::Context::Stop(Thread->CTX);

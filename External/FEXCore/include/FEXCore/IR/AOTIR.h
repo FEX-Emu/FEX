@@ -59,13 +59,13 @@ namespace FEXCore::IR {
     uint64_t DataBase;
     AOTIRInlineIndexEntry Entries[0];
 
-    AOTIRInlineEntry *Find(uint64_t GuestStart);
+    AOTIRInlineEntry *Find(uint64_t GuestStart, uint64_t GuestRIP);
     AOTIRInlineEntry *GetInlineEntry(uint64_t DataOffset);
   };
 
   struct AOTIRCaptureCacheEntry {
     std::unique_ptr<std::ofstream> Stream;
-    std::map<uint64_t, uint64_t> Index;
+    std::map<uint64_t, std::multimap<uint64_t, uint64_t>> Index;
 
     void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData);
   };

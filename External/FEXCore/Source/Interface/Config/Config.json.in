@@ -306,6 +306,13 @@
         "Desc": [
           "Loads an AOT IR cache for the loaded executable."
         ]
+      },
+      "AOTIRMergePIDFile": {
+        "Type": "strarray",
+        "Default": "/tmp/FEX_AOTIRMerge.pid",
+        "Desc": [
+          "Specify the pidfile path of AOTIRMerge."
+        ]
       }
     }
   },

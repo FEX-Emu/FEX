@@ -192,3 +192,25 @@ target_link_libraries(IRLoader
     fmt::fmt
 )
 
+add_executable(AOTIRMerge
+  AOTIRMerge.cpp
+)
+
+target_include_directories(AOTIRMerge
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+)
+
+target_link_libraries(AOTIRMerge
+  PRIVATE
+    ${LIBS}
+    LinuxEmulation
+    ${STATIC_PIE_OPTIONS}
+    fmt::fmt
+)
+
+install(TARGETS AOTIRMerge
+  RUNTIME
+    DESTINATION bin
+    COMPONENT runtime
+)
