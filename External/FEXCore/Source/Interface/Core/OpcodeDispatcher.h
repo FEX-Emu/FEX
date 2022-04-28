@@ -503,6 +503,7 @@ public:
   template<FEXCore::IR::IROps IROp>
   void X87BinaryOpF64(OpcodeArgs);
   void X87SinCosF64(OpcodeArgs);
+  void X87FLDCWF64(OpcodeArgs);
   void X87FYL2XF64(OpcodeArgs);
   void X87TANF64(OpcodeArgs);
   void X87ATANF64(OpcodeArgs);

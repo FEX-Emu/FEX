@@ -33,13 +33,25 @@ class OrderedNode;
 //LDENV
 //FNSTENV
 //FNINIT
-//FLDCW
 //FSTCW
 //LDSW
 //FNSTSW
 //FXCH
 //FCMOV
 //FST(register to register)
+
+void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
+  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  //ignore the rounding precision, we're always 64-bit in F64.
+  //extract rounding mode
+  OrderedNode *roundingMode = NewFCW;
+  auto shift = _Constant(10);
+  auto mask = _Constant(3);
+  roundingMode = _Lshr(roundingMode, shift);
+  roundingMode = _And(roundingMode, mask);
+  _SetRoundingMode(roundingMode);
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+}
 
 template<size_t width>
 void OpDispatchBuilder::FLDF64(OpcodeArgs) {
