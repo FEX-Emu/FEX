@@ -496,7 +496,7 @@ public:
   void FTSTF64(OpcodeArgs);
   void FRNDINTF64(OpcodeArgs);
   void FXTRACTF64(OpcodeArgs);
-  
+  void FNINITF64(OpcodeArgs);
   void FSQRTF64(OpcodeArgs);
   template<FEXCore::IR::IROps IROp>
   void X87UnaryOpF64(OpcodeArgs);
@@ -510,7 +510,8 @@ public:
   void X87FNSAVEF64(OpcodeArgs);
   void X87FRSTORF64(OpcodeArgs);
   void X87FXAMF64(OpcodeArgs);
-
+  void X87LDENVF64(OpcodeArgs);
+  
   template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
   void FCOMIF64(OpcodeArgs);
 
