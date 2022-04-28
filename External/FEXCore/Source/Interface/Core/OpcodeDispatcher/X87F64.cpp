@@ -30,16 +30,96 @@ class OrderedNode;
 //X87ModifySTP
 //EMMS
 //FFREE
-//LDENV
 //FNSTENV
-//FNINIT
-//FLDCW
 //FSTCW
 //LDSW
 //FNSTSW
 //FXCH
 //FCMOV
 //FST(register to register)
+
+// State loading duplicated from X87.cpp, setting host rounding mode
+// See issue 
+void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
+  // Init FCW to 0x037F
+  auto NewFCW = _Constant(16, 0x037F);
+  _F80LoadFCW(NewFCW);
+  // Init host rounding mode to zero
+  auto Zero = _Constant(0);
+  _SetRoundingMode(Zero);
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+
+  // Init FSW to 0
+  SetX87Top(_Constant(0));
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Constant(0));
+
+  // Tags all get set to 0b11
+  _StoreContext(2, GPRClass, _Constant(0xFFFF), offsetof(FEXCore::Core::CPUState, FTW));
+}
+
+void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
+  auto Size = GetSrcSize(Op);
+  OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
+  Mem = AppendSegmentOffset(Mem, Op->Flags);
+
+  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  //ignore the rounding precision, we're always 64-bit in F64.
+  //extract rounding mode
+  OrderedNode *roundingMode = NewFCW;
+  auto roundShift = _Constant(10);
+  auto roundMask = _Constant(3);
+  roundingMode = _Lshr(roundingMode, roundShift);
+  roundingMode = _And(roundingMode, roundMask);
+  _SetRoundingMode(roundingMode);
+  _F80LoadFCW(NewFCW);
+  
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+
+  OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
+  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+
+  // Strip out the FSW information
+  auto Top = _Bfe(3, 11, NewFSW);
+  SetX87Top(Top);
+
+  auto C0 = _Bfe(1, 8,  NewFSW);
+  auto C1 = _Bfe(1, 9,  NewFSW);
+  auto C2 = _Bfe(1, 10, NewFSW);
+  auto C3 = _Bfe(1, 14, NewFSW);
+
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+
+  {
+    // FTW
+    OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 2));
+    auto NewFTW = _LoadMem(GPRClass, Size, MemLocation, Size);
+    _StoreContext(2, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, FTW));
+  }
+}
+
+
+void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
+  OrderedNode *NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  _F80LoadFCW(NewFCW); //keeps BCD code working
+  //ignore the rounding precision, we're always 64-bit in F64.
+  //extract rounding mode
+  OrderedNode *roundingMode = NewFCW;
+  auto shift = _Constant(10);
+  auto mask = _Constant(3);
+  roundingMode = _Lshr(roundingMode, shift);
+  roundingMode = _And(roundingMode, mask);
+  _SetRoundingMode(roundingMode);
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+}
+
+// F64 ops
 
 template<size_t width>
 void OpDispatchBuilder::FLDF64(OpcodeArgs) {
@@ -931,7 +1011,16 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  //ignore the rounding precision, we're always 64-bit in F64.
+  //extract rounding mode
+  OrderedNode *roundingMode = NewFCW;
+  auto roundShift = _Constant(10);
+  auto roundMask = _Constant(3);
+  roundingMode = _Lshr(roundingMode, roundShift);
+  roundingMode = _And(roundingMode, roundMask);
+  _SetRoundingMode(roundingMode);
   _F80LoadFCW(NewFCW);
+  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
