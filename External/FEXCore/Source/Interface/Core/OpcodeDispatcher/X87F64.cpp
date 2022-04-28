@@ -153,7 +153,10 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   size_t read_width = GetSrcSize(Op);
   // Read from memory
   auto data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], read_width, Op->Flags, -1);
-  auto converted = _Float_FromGPR_S(8, 8, data);
+  if(read_width == 2) {
+    data = _Sext(read_width * 8, data);
+  }
+  auto converted = _Float_FromGPR_S(8, read_width == 4 ? 4 : 8, data);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
 }
@@ -198,9 +201,9 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   OrderedNode *data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   if constexpr (Truncate) {
-    data = _Float_ToGPR_ZS(8, 8, data);
+    data = _Float_ToGPR_ZS(Size == 4 ? 4 : 8, 8, data);
   } else {
-    data = _Float_ToGPR_S(8, 8, data);
+    data = _Float_ToGPR_S(Size == 4 ? 4 : 8, 8, data);
   }
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, 1);
 
