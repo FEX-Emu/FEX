@@ -548,6 +548,8 @@ restart:
   }
 }
 uint64_t MemAllocator32Bit::shmdt(const void* shmaddr) {
+  std::scoped_lock<std::mutex> lk{AllocMutex};
+  
   uint32_t AddrPage = reinterpret_cast<uint64_t>(shmaddr) >> FHU::FEX_PAGE_SHIFT;
   auto it = PageToShm.find(AddrPage);
 
@@ -558,7 +560,8 @@ uint64_t MemAllocator32Bit::shmdt(const void* shmaddr) {
 
   uint64_t Result = ::shmdt(shmaddr);
   PageToShm.erase(it);
-  return Result;
+
+  SYSCALL_ERRNO();
 }
 
 class MemAllocatorPassThrough final : public FEX::HLE::MemAllocator {
