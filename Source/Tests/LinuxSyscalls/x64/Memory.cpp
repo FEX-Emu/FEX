@@ -23,15 +23,35 @@ $end_info$
 #include <fstream>
 #include <filesystem>
 
-static std::string get_fdpath(int fd)
-{
-  std::error_code ec;
-  return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
-}
-
 namespace FEX::HLE::x64 {
+
+
   void RegisterMemory(FEX::HLE::SyscallHandler *const Handler) {
     using namespace FEXCore::IR;
+
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(mmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+      [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
+      uint64_t Result{};
+
+      bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
+      if (Map32Bit) {
+        Result = (uint64_t)static_cast<FEX::HLE::SyscallHandler*>(FEX::HLE::_SyscallHandler)->Get32BitAllocator()->
+          mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
+        if (FEX::HLE::HasSyscallError(Result)) {
+          errno = -Result;
+          Result = -1;
+        }
+      }
+      else
+      {
+        Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset));
+      }
+
+      if (Result != -1) {
+        FEX::HLE::_SyscallHandler->TrackMmap(Result, length, prot, flags, fd, offset);
+      }
+      SYSCALL_ERRNO();
+    });
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(munmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length) -> uint64_t {
@@ -51,48 +71,18 @@ namespace FEX::HLE::x64 {
       }
 
       if (Result != -1) {
-        auto CTX = Frame->Thread->CTX;
-        FEXCore::Context::RemoveNamedRegion(CTX, (uintptr_t)addr, length);
-        FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)addr, length);
+        FEX::HLE::_SyscallHandler->TrackMunmap((uintptr_t)addr, length);
       }
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(mmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
-      static FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
-
-      uint64_t Result{};
-
-      bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
-      if (Map32Bit) {
-        Result = (uint64_t)static_cast<FEX::HLE::SyscallHandler*>(FEX::HLE::_SyscallHandler)->Get32BitAllocator()->
-          mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
-        if (FEX::HLE::HasSyscallError(Result)) {
-          errno = -Result;
-          Result = -1;
-        }
-      }
-      else
-      {
-        Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset));
-      }
-
-      if (Result != -1) {
-        auto CTX = Frame->Thread->CTX;
-        if (!(flags & MAP_ANONYMOUS)) {
-          auto filename = get_fdpath(fd);
-
-          FEXCore::Context::AddNamedRegion(CTX, Result, length, offset, filename);
-        }
-        FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Result, length);
-      }
-      SYSCALL_ERRNO();
-    });
-
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(mremap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(mremap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
       uint64_t Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
+
+      if (Result != -1) {
+        FEX::HLE::_SyscallHandler->TrackMremap((uintptr_t)old_address, old_size, new_size, flags, Result);
+      }
       SYSCALL_ERRNO();
     });
 
@@ -100,9 +90,8 @@ namespace FEX::HLE::x64 {
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t len, int prot) -> uint64_t {
       uint64_t Result = ::mprotect(addr, len, prot);
 
-      if (Result != -1 && prot & PROT_EXEC) {
-        auto CTX = Frame->Thread->CTX;
-        FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)addr, len);
+      if (Result != -1) {
+        FEX::HLE::_SyscallHandler->TrackMprotect((uintptr_t)addr, len, prot);
       }
       SYSCALL_ERRNO();
     });
@@ -119,15 +108,23 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
       uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
+
+      if (Result != -1) {
+        FEX::HLE::_SyscallHandler->TrackShmat(shmid, Result, shmflg);
+      }
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
       uint64_t Result = ::shmdt(shmaddr);
+
+      if (Result != -1) {
+        FEX::HLE::_SyscallHandler->TrackShmdt((uintptr_t)shmaddr);
+      }
       SYSCALL_ERRNO();
     });
 

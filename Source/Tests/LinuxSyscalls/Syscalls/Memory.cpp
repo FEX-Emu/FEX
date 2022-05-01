@@ -38,9 +38,13 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_FLAGS(madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int32_t advice) -> uint64_t {
       uint64_t Result = ::madvise(addr, length, advice);
+
+      if (Result != -1) {
+        FEX::HLE::_SyscallHandler->TrackMadvise((uintptr_t)addr, length, advice);
+      }
       SYSCALL_ERRNO();
     });
 
