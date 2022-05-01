@@ -328,15 +328,6 @@ int main(int argc, char **argv, char **const envp) {
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists
     Base48Bit = FEXCore::Allocator::Steal48BitVA();
-    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
-    }, [](void *addr, size_t length) {
-      return FEXCore::Allocator::munmap(addr, length);
-    })) {
-      // failed to map
-      LogMan::Msg::EFmt("Failed to map 64-bit elf file.");
-      return -ENOEXEC;
-    }
   } else {
     FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
     if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
@@ -354,16 +345,6 @@ int main(int argc, char **argv, char **const envp) {
     }
     else {
       Allocator = FEX::HLE::CreatePassthroughAllocator();
-    }
-
-    if (!Loader.MapMemory([&Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return Allocator->mmap(addr, length, prot, flags, fd, offset);
-    }, [&Allocator](void *addr, size_t length) {
-      return Allocator->munmap(addr, length);
-    })) {
-      // failed to map
-      LogMan::Msg::EFmt("Failed to map 32-bit elf file.");
-      return -ENOEXEC;
     }
   }
 
@@ -395,6 +376,15 @@ int main(int argc, char **argv, char **const envp) {
 
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+
+  auto Mapper = [&SyscallHandler](auto && ...args){ return SyscallHandler->GuestMmap(args...); };
+  auto Unmapper = [&SyscallHandler](auto && ...args){ return SyscallHandler->GuestMunmap(args...); };
+
+  if (!Loader.MapMemory(Mapper, Unmapper)) {
+    // failed to map
+    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+    return -ENOEXEC;
+  }
 
   SyscallHandler->SetCodeLoader(&Loader);
 
@@ -449,10 +439,6 @@ int main(int argc, char **argv, char **const envp) {
     // Rename the temporary file to atomically update the file
     std::filesystem::rename(TmpFilepath, NewFilepath);
   });
-
-  for(const auto &Section: Loader.Sections) {
-    FEXCore::Context::AddNamedRegion(CTX, Section.Base, Section.Size, Section.Offs, Section.Filename);
-  }
 
   if (AOTIRGenerate()) {
     for(auto &Section: Loader.Sections) {

@@ -145,17 +145,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::InitializeContext(CTX);
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-
-  if (Loader.Is64BitMode()) {
-    if (!Loader.MapMemory([](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset);
-    }, [](void *addr, size_t length) {
-      return FEXCore::Allocator::munmap(addr, length);
-    })) {
-      // failed to map
-      return -ENOEXEC;
-    }
-  } else {
+   
+  if (!Loader.Is64BitMode()) {
     // Setup our userspace allocator
     uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
     if (KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
@@ -168,21 +159,20 @@ int main(int argc, char **argv, char **const envp) {
     else {
       Allocator = FEX::HLE::CreatePassthroughAllocator();
     }
-
-    if (!Loader.MapMemory([&Allocator](void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return Allocator->mmap(addr, length, prot, flags, fd, offset);
-    }, [&Allocator](void *addr, size_t length) {
-      return Allocator->munmap(addr, length);
-    })) {
-      // failed to map
-      LogMan::Msg::EFmt("Failed to map 32-bit elf file.");
-      return -ENOEXEC;
-    }
   }
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+
+  auto Mapper = [&SyscallHandler](auto && ...args){ return SyscallHandler->GuestMmap(args...); };
+  auto Unmapper = [&SyscallHandler](auto && ...args){ return SyscallHandler->GuestMunmap(args...); };
+
+  if (!Loader.MapMemory(Mapper, Unmapper)) {
+    // failed to map
+    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+    return -ENOEXEC;
+  }
 
   bool DidFault = false;
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {

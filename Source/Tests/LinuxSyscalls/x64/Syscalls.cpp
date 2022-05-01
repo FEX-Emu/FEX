@@ -74,13 +74,6 @@ namespace FEX::HLE::x64 {
       });
   }
 
-  class x64SyscallHandler final : public FEX::HLE::SyscallHandler {
-  public:
-    x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
-
-  private:
-    void RegisterSyscallHandlers();
-  };
 
   x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
     : SyscallHandler {ctx, _SignalDelegation} {
