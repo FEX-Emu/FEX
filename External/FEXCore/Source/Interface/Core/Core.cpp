@@ -352,6 +352,9 @@ namespace FEXCore::Context {
       // Walk the threads and tell them to clear their caches
       // Useful when our block size is set to a large number and we need to step a single instruction
       for (auto &Thread : Threads) {
+        // Wait for thread to be fully constructed
+        // XXX: Look into thread partial construction issues
+        while(Thread->RunningEvents.WaitingToStart.load()) ;
         ClearCodeCache(Thread, true);
       }
     }
@@ -632,7 +635,10 @@ namespace FEXCore::Context {
   }
 
   void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
-    Thread->LookupCache->AddBlockMapping(Address, Ptr, Start, Length);
+    // Only call MarkGuestExecutableRange if new pages are marked as containing code
+    if (Thread->LookupCache->AddBlockMapping(Address, Ptr, Start, Length)) {
+      Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
+    }
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
@@ -1177,25 +1183,18 @@ namespace FEXCore::Context {
     return Result;
   }
 
-  void Context::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
-    IRCaptureCache.AddNamedRegion(Base, Size, Offset, filename);
+  IR::AOTIRCacheEntry *Context::LoadAOTIRCacheEntry(const std::string &filename) {
+    auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
     }
-
-    if (CodeObjectCacheService) {
-      CodeObjectCacheService->AsyncAddNamedRegionJob(Base, Size, Offset, filename);
-    }
+    return rv;
   }
 
-  void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
-    IRCaptureCache.RemoveNamedRegion(Base, Size);
+  void Context::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry) {
+    IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
-    }
-
-    if (CodeObjectCacheService) {
-      CodeObjectCacheService->AsyncRemoveNamedRegionJob(Base, Size);
     }
   }
 

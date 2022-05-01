@@ -72,18 +72,19 @@ namespace FEXCore::IR {
 
   struct AOTIRCacheEntry {
     AOTIRInlineIndex *Array;
-    void *mapping;
-    size_t size;
+    void *FilePtr;
+    size_t Size;
+    std::string FileId;
+    std::string Filename;
+    bool ContainsCode;
   };
 
   using AOTCacheType = std::unordered_map<std::string, FEXCore::IR::AOTIRCacheEntry>;
-  bool LoadAOTIRCache(AOTCacheType *AOTIRCache, int streamfd);
 
   class AOTIRCaptureCache final {
     public:
 
       AOTIRCaptureCache(FEXCore::Context::Context *ctx) : CTX {ctx} {}
-      ~AOTIRCaptureCache();
 
       void FinalizeAOTIRCache();
       void AOTIRCaptureCacheWriteoutQueue_Flush();
@@ -110,8 +111,8 @@ namespace FEXCore::IR {
         FEXCore::Core::DebugData *DebugData,
         bool GeneratedIR);
 
-      void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
-      void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);
+      AOTIRCacheEntry *LoadAOTIRCacheEntry(const std::string &filename);
+      void UnloadAOTIRCacheEntry(AOTIRCacheEntry *Entry);
 
       // Callbacks
       void SetAOTIRLoader(std::function<int(const std::string&)> CacheReader) {
@@ -135,27 +136,11 @@ namespace FEXCore::IR {
 
       std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
 
-      std::map<std::string, std::string> FilesWithCode;
-
-      struct AddrToFileEntry {
-        uint64_t Start;
-        uint64_t Len;
-        uint64_t Offset;
-        std::string fileid;
-        std::string filename;
-        void *CachedFileEntry;
-        bool ContainsCode;
-      };
-
-      using AddrToFileMapType = std::map<uint64_t, AddrToFileEntry>;
-      AddrToFileMapType AddrToFile;
       FEXCore::IR::AOTCacheType AOTIRCache;
 
       std::function<int(const std::string&)> AOTIRLoader;
       std::function<std::unique_ptr<std::ofstream>(const std::string&)> AOTIRWriter;
       std::function<void(const std::string&)> AOTIRRenamer;
       std::unordered_map<std::string, FEXCore::IR::AOTIRCaptureCacheEntry> AOTIRCaptureCacheMap;
-
-      AddrToFileMapType::iterator FindAddrForFile(uint64_t Entry, uint64_t Length);
   };
 }

@@ -6,6 +6,8 @@ add_library(LinuxEmulation STATIC
     LinuxAllocator.cpp
     SignalDelegator.cpp
     Syscalls.cpp
+    SyscallsSMCTracking.cpp
+    SyscallsVMATracking.cpp
     x32/Syscalls.cpp
     x32/EPoll.cpp
     x32/FD.cpp

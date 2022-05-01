@@ -234,14 +234,15 @@
     "Hacks": {
       "SMCChecks": {
         "Type": "uint8",
-        "Default": "FEXCore::Config::CONFIG_SMC_MMAN",
-        "TextDefault": "mman",
+        "Default": "FEXCore::Config::CONFIG_SMC_MTRACK",
+        "TextDefault": "mtrack",
         "ArgumentHandler": "SMCCheckHandler",
         "Desc": [
           "Checks code for modification before execution.",
           "\tnone: No checks",
-          "\tmman: Invalidate on mmap, mprotect, munmap",
-          "\tfull: Validate code before every run (slow)"
+          "\tmtrack: Page tracking based invalidation",
+          "\tfull: Validate code before every run (slow)",
+          "\tmman: Invalidate on mmap, mprotect, munmap (deprecated, use mtrack)"
         ]
       },
       "TSOEnabled": {

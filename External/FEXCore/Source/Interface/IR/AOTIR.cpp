@@ -1,10 +1,11 @@
 #include "Interface/Context/Context.h"
 #include "Interface/IR/AOTIR.h"
-#include "Interface/Core/LookupCache.h"
 
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/HLE/SyscallHandler.h>
+#include <Interface/Core/LookupCache.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -78,7 +79,7 @@ namespace FEXCore::IR {
       return true;
   }
 
-  bool LoadAOTIRCache(AOTCacheType *AOTIRCache, int streamfd) {
+  static bool LoadAOTIRCache(AOTIRCacheEntry *Entry, int streamfd) {
     uint64_t tag;
 
     if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != FEXCore::IR::AOTIR_COOKIE)
@@ -100,6 +101,10 @@ namespace FEXCore::IR {
     if (!readAll(streamfd,  (char*)&Module[0], Module.size()))
       return false;
 
+    if (Entry->FileId != Module) {
+      return false;
+    }
+
     lseek(streamfd, -sizeof(ModSize) - ModSize - sizeof(IndexSize), SEEK_END);
 
     if (!readAll(streamfd,  (char*)&IndexSize, sizeof(IndexSize)))
@@ -120,17 +125,14 @@ namespace FEXCore::IR {
 
     auto Array = (AOTIRInlineIndex *)((char*)FilePtr + IndexOffset);
 
-    AOTIRCache->insert({Module, {Array, FilePtr, Size}});
+    LOGMAN_THROW_A_FMT(Entry->Array == nullptr && Entry->FilePtr == nullptr, "Entry must not be initialized here");
+    Entry->Array = Array;
+    Entry->FilePtr = FilePtr;
+    Entry->Size = Size;
 
     LogMan::Msg::DFmt("AOTIR: Module {} has {} functions", Module, Array->Count);
 
     return true;
-  }
-
-  AOTIRCaptureCache::~AOTIRCaptureCache() {
-    for (auto &Mod: AOTIRCache) {
-      FEXCore::Allocator::munmap(Mod.second.mapping, Mod.second.size);
-    }
   }
 
   void AOTIRCaptureCache::FinalizeAOTIRCache() {
@@ -231,39 +233,27 @@ namespace FEXCore::IR {
 
   void AOTIRCaptureCache::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
     std::shared_lock lk(AOTIRCacheLock);
-    for( const auto &File: FilesWithCode) {
-      Writer(File.first, File.second);
+    for( const auto &Entry: AOTIRCache) {
+      if (Entry.second.ContainsCode) {
+        Writer(Entry.second.FileId, Entry.second.Filename);
+      }
     }
   }
 
   AOTIRCaptureCache::PreGenerateIRFetchResult AOTIRCaptureCache::PreGenerateIRFetch(uint64_t GuestRIP, FEXCore::IR::IRListView *IRList) {
-    {
-      std::shared_lock lk(AOTIRCacheLock);
-      auto file = AddrToFile.lower_bound(GuestRIP);
-      if (file != AddrToFile.begin()) {
-        --file;
-        if (!file->second.ContainsCode) {
-          file->second.ContainsCode = true;
-          FilesWithCode[file->second.fileid] = file->second.filename;
-        }
-      }
-    }
-
+    auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+    
     PreGenerateIRFetchResult Result{};
-    if (IRList == nullptr && CTX->Config.AOTIRLoad()) {
-      std::shared_lock lk(AOTIRCacheLock);
-      auto file = AddrToFile.lower_bound(GuestRIP);
-      if (file != AddrToFile.begin()) {
-        --file;
-        auto Mod = (FEXCore::IR::AOTIRInlineIndex*)file->second.CachedFileEntry;
+    
+    if (AOTIRCacheEntry.Entry) {
+      AOTIRCacheEntry.Entry->ContainsCode = true;
 
-        if (Mod == nullptr) {
-          file->second.CachedFileEntry = Mod = AOTIRCache[file->second.fileid].Array;
-        }
+      if (IRList == nullptr && CTX->Config.AOTIRLoad()) {
+        auto Mod = AOTIRCacheEntry.Entry->Array;
 
         if (Mod != nullptr)
         {
-          auto AOTEntry = Mod->Find(GuestRIP - file->second.Start + file->second.Offset);
+          auto AOTEntry = Mod->Find(GuestRIP - AOTIRCacheEntry.Offset);
 
           if (AOTEntry) {
             // verify hash
@@ -303,14 +293,12 @@ namespace FEXCore::IR {
     bool GeneratedIR) {
     // Both generated ir and LibraryJITName need a named region lookup
     if (GeneratedIR || CTX->Config.LibraryJITNaming()) {
-      std::shared_lock lk(AOTIRCacheLock);
 
-      auto file = FindAddrForFile(StartAddr, Length);
+      auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
 
-      // Only go down this path if we actually found a library region
-      if (file != AddrToFile.end()) {
+      if (AOTIRCacheEntry.Entry) {
         if (DebugData && CTX->Config.LibraryJITNaming()) {
-          CTX->Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize, file->second.filename);
+          CTX->Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize, AOTIRCacheEntry.Entry->Filename);
         }
 
         // Add to AOT cache if aot generation is enabled
@@ -319,16 +307,20 @@ namespace FEXCore::IR {
 
           auto hash = XXH3_64bits((void*)StartAddr, Length);
 
-          auto LocalRIP = GuestRIP - file->second.Start + file->second.Offset;
-          auto LocalStartAddr = StartAddr - file->second.Start + file->second.Offset;
-          auto fileid = file->second.fileid;
+          auto LocalRIP = GuestRIP - AOTIRCacheEntry.Offset;
+          auto LocalStartAddr = StartAddr - AOTIRCacheEntry.Offset;
+          auto FileId = AOTIRCacheEntry.Entry->FileId;
           auto RADataCopy = RAData->CreateCopy();
           auto IRListCopy = IRList->CreateCopy();
-          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy, fileid]() {
-            auto *AotFile = &AOTIRCaptureCacheMap[fileid];
+          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy, FileId]() {
+
+            // It is guaranteed via AOTIRCaptureCacheWriteoutLock and AOTIRCaptureCacheWriteoutFlusing that this will not run concurrently
+            // Memory coherency is guaranteed via AOTIRCaptureCacheWriteoutLock
+            
+            auto *AotFile = &AOTIRCaptureCacheMap[FileId];
 
             if (!AotFile->Stream) {
-              AotFile->Stream = AOTIRWriter(fileid);
+              AotFile->Stream = AOTIRWriter(FileId);
               uint64_t tag = FEXCore::IR::AOTIR_COOKIE;
               AotFile->Stream->write((char*)&tag, sizeof(tag));
             }
@@ -366,21 +358,7 @@ namespace FEXCore::IR {
     return false;
   }
 
-  AOTIRCaptureCache::AddrToFileMapType::iterator AOTIRCaptureCache::FindAddrForFile(uint64_t Entry, uint64_t Length) {
-    // Thread safety here! We are returning an iterator to the map object
-    // This needs the AOTIRCacheLock locked prior to coming in to the function
-    auto file = AddrToFile.lower_bound(Entry);
-    if (file != AddrToFile.begin()) {
-      --file;
-      if (file->second.Start <= Entry && (file->second.Start + file->second.Len) >= (Entry + Length)) {
-        return file;
-      }
-    }
-    return AddrToFile.end();
-  }
-
-  void AOTIRCaptureCache::AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
-    // TODO: Support overlapping maps and region splitting
+  AOTIRCacheEntry *AOTIRCaptureCache::LoadAOTIRCacheEntry(const std::string &filename) {
     auto base_filename = std::filesystem::path(filename).filename().string();
 
     if (!base_filename.empty()) {
@@ -396,21 +374,32 @@ namespace FEXCore::IR {
 
       std::unique_lock lk(AOTIRCacheLock);
 
-      AddrToFile.insert({ Base, { Base, Size, Offset, fileid, filename, nullptr, false} });
+      auto Inserted = AOTIRCache.insert({fileid, AOTIRCacheEntry{0, 0, 0, fileid, filename, false}});
+      auto Entry = &(Inserted.first->second);
 
-      if (CTX->Config.AOTIRLoad && !AOTIRCache.contains(fileid) && AOTIRLoader) {
+      LOGMAN_THROW_A_FMT(Entry->Array == nullptr, "Duplicate LoadAOTIRCacheEntry");
+
+      if (CTX->Config.AOTIRLoad && AOTIRLoader) {
         auto streamfd = AOTIRLoader(fileid);
         if (streamfd != -1) {
-          FEXCore::IR::LoadAOTIRCache(&AOTIRCache, streamfd);
+          FEXCore::IR::LoadAOTIRCache(Entry, streamfd);
           close(streamfd);
         }
       }
+      return Entry;
     }
+
+    return nullptr;
   }
 
-  void AOTIRCaptureCache::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
-    std::unique_lock lk(AOTIRCacheLock);
-    // TODO: Support partial removing
-    AddrToFile.erase(Base);
+  void AOTIRCaptureCache::UnloadAOTIRCacheEntry(AOTIRCacheEntry *Entry) {
+    LOGMAN_THROW_A_FMT(Entry != nullptr, "Removing not existing entry");
+
+    if (Entry->Array) {
+      FEXCore::Allocator::munmap(Entry->FilePtr, Entry->Size);
+      Entry->Array = nullptr;
+      Entry->FilePtr = nullptr;
+      Entry->Size = 0;
+    }
   }
 }
