@@ -12,7 +12,7 @@
 
 namespace FHU {
   /**
-   * @brief A class that masks signals and locks a mutex until it goes out of scope
+   * @brief A class that masks signals and locks a mutex until it goes out of scope. It is NOT SAFE to move across threads.
    *
    * Constructor order:
    * 1) Mask signals
@@ -61,7 +61,7 @@ namespace FHU {
   };
 
   /**
-   * @brief A class that masks signals and shared locks a shared mutex until it goes out of scope
+   * @brief A class that masks signals and shared locks a shared mutex until it goes out of scope. It is NOT SAFE to move across threads.
    *
    * Constructor order:
    * 1) Mask signals
@@ -110,7 +110,7 @@ namespace FHU {
 
 
   /**
-   * @brief A class that masks signals and unique locks a shared mutex until it goes out of scope
+   * @brief A class that masks signals and unique locks a shared mutex until it goes out of scope. It is NOT SAFE to move across threads.
    *
    * Constructor order:
    * 1) Mask signals
