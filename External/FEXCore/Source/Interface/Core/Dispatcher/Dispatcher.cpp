@@ -212,12 +212,20 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
         Frame->State.flags[9] = 1;
 
         Frame->State.rip = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP];
-        Frame->State.cs = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS];
-        Frame->State.ds = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS];
-        Frame->State.es = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES];
-        Frame->State.fs = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS];
-        Frame->State.gs = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS];
-        Frame->State.ss = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS];
+        Frame->State.cs_idx = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS];
+        Frame->State.ds_idx = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS];
+        Frame->State.es_idx = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES];
+        Frame->State.fs_idx = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS];
+        Frame->State.gs_idx = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS];
+        Frame->State.ss_idx = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS];
+
+        Frame->State.cs_cached = Frame->State.gdt[Frame->State.cs_idx >> 3].base;
+        Frame->State.ds_cached = Frame->State.gdt[Frame->State.ds_idx >> 3].base;
+        Frame->State.es_cached = Frame->State.gdt[Frame->State.es_idx >> 3].base;
+        Frame->State.fs_cached = Frame->State.gdt[Frame->State.fs_idx >> 3].base;
+        Frame->State.gs_cached = Frame->State.gdt[Frame->State.gs_idx >> 3].base;
+        Frame->State.ss_cached = Frame->State.gdt[Frame->State.ss_idx >> 3].base;
+
 #define COPY_REG(x) \
       Frame->State.gregs[X86State::REG_##x] = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x];
         COPY_REG(RDI);
@@ -565,10 +573,13 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       auto *xstate = reinterpret_cast<x86::xstate*>(FPStateLocation);
       SetXStateInfo(xstate, IsAVXEnabled);
 
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS] = Frame->State.gs;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES] = Frame->State.es;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs_idx;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds_idx;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES] = Frame->State.es_idx;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs_idx;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS] = Frame->State.gs_idx;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS] = Frame->State.ss_idx;
+
       if (ContextBackup->FaultToTopAndGeneratedException) {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = Frame->SynchronousFaultData.TrapNo;
         guest_siginfo->si_code = Frame->SynchronousFaultData.si_code;
@@ -581,10 +592,8 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
       }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = 0;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_UESP] = 0;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_SS] = Frame->State.ss;
 
 #define COPY_REG(x) \
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x] = Frame->State.gregs[X86State::REG_##x];

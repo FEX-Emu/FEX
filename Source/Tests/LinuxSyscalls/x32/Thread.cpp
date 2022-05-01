@@ -68,6 +68,29 @@ namespace FEX::HLE::x32 {
     // Now we need to update the thread's GDT to handle this change
     auto GDT = &Frame->State.gdt[u_info->entry_number];
     GDT->base = u_info->base_addr;
+
+    // With the segment register optimization we need to check all of the segment registers and update.
+    const auto GetEntry = [](auto value) {
+      return value >> 3;
+    };
+    if (GetEntry(Frame->State.cs_idx) == u_info->entry_number) {
+      Frame->State.cs_cached = GDT->base;
+    }
+    if (GetEntry(Frame->State.ds_idx) == u_info->entry_number) {
+      Frame->State.ds_cached = GDT->base;
+    }
+    if (GetEntry(Frame->State.es_idx) == u_info->entry_number) {
+      Frame->State.es_cached = GDT->base;
+    }
+    if (GetEntry(Frame->State.fs_idx) == u_info->entry_number) {
+      Frame->State.fs_cached = GDT->base;
+    }
+    if (GetEntry(Frame->State.gs_idx) == u_info->entry_number) {
+      Frame->State.gs_cached = GDT->base;
+    }
+    if (GetEntry(Frame->State.ss_idx) == u_info->entry_number) {
+      Frame->State.ss_cached = GDT->base;
+    }
     return 0;
   }
 

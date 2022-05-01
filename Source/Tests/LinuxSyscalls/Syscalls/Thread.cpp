@@ -455,7 +455,7 @@ namespace FEX::HLE {
             // Ignore a non-canonical address
             return -EPERM;
           }
-          Frame->State.gs = addr;
+          Frame->State.gs_cached = addr;
           Result = 0;
         break;
         case 0x1002: // ARCH_SET_FS
@@ -463,15 +463,15 @@ namespace FEX::HLE {
             // Ignore a non-canonical address
             return -EPERM;
           }
-          Frame->State.fs = addr;
+          Frame->State.fs_cached = addr;
           Result = 0;
         break;
         case 0x1003: // ARCH_GET_FS
-          *reinterpret_cast<uint64_t*>(addr) = Frame->State.fs;
+          *reinterpret_cast<uint64_t*>(addr) = Frame->State.fs_cached;
           Result = 0;
         break;
         case 0x1004: // ARCH_GET_GS
-          *reinterpret_cast<uint64_t*>(addr) = Frame->State.gs;
+          *reinterpret_cast<uint64_t*>(addr) = Frame->State.gs_cached;
           Result = 0;
         break;
         case 0x3001: // ARCH_CET_STATUS

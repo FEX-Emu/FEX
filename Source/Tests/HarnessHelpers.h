@@ -127,13 +127,13 @@ namespace FEX::HarnessHelper {
 
     // GS
     if (MatchMask & 1) {
-      CheckGPRs("GS", State1.gs, State2.gs);
+      CheckGPRs("GS", State1.gs_cached, State2.gs_cached);
     }
     MatchMask >>= 1;
 
     // FS
     if (MatchMask & 1) {
-      CheckGPRs("FS", State1.fs, State2.fs);
+      CheckGPRs("FS", State1.fs_cached, State2.fs_cached);
     }
     MatchMask >>= 1;
 
@@ -233,8 +233,8 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, xmm.avx.data[13][0]),
           offsetof(FEXCore::Core::CPUState, xmm.avx.data[14][0]),
           offsetof(FEXCore::Core::CPUState, xmm.avx.data[15][0]),
-          offsetof(FEXCore::Core::CPUState, gs),
-          offsetof(FEXCore::Core::CPUState, fs),
+          offsetof(FEXCore::Core::CPUState, gs_cached),
+          offsetof(FEXCore::Core::CPUState, fs_cached),
           offsetof(FEXCore::Core::CPUState, flags),
           offsetof(FEXCore::Core::CPUState, mm[0][0]),
           offsetof(FEXCore::Core::CPUState, mm[1][0]),
@@ -280,8 +280,8 @@ namespace FEX::HarnessHelper {
           offsetof(FEXCore::Core::CPUState, xmm.sse.data[13][0]),
           offsetof(FEXCore::Core::CPUState, xmm.sse.data[14][0]),
           offsetof(FEXCore::Core::CPUState, xmm.sse.data[15][0]),
-          offsetof(FEXCore::Core::CPUState, gs),
-          offsetof(FEXCore::Core::CPUState, fs),
+          offsetof(FEXCore::Core::CPUState, gs_cached),
+          offsetof(FEXCore::Core::CPUState, fs_cached),
           offsetof(FEXCore::Core::CPUState, flags),
           offsetof(FEXCore::Core::CPUState, mm[0][0]),
           offsetof(FEXCore::Core::CPUState, mm[1][0]),
