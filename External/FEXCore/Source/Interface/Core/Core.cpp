@@ -1037,7 +1037,7 @@ namespace FEXCore::Context {
     }
   }
 
-  static void FlushThreadCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+  static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
@@ -1050,11 +1050,11 @@ namespace FEXCore::Context {
     }
   }
 
-  void FlushCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
+  void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
     std::lock_guard<std::mutex> lk(CTX->ThreadCreationMutex);
     for (auto &Thread : CTX->Threads) {
       if (Thread->RunningEvents.Running.load()) {
-        FlushThreadCodeRange(Thread, Start, Length);
+        InvalidateGuestThreadCodeRange(Thread, Start, Length);
       }
     }
   }

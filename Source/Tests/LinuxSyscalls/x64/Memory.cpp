@@ -53,7 +53,7 @@ namespace FEX::HLE::x64 {
       if (Result != -1) {
         auto CTX = Frame->Thread->CTX;
         FEXCore::Context::RemoveNamedRegion(CTX, (uintptr_t)addr, length);
-        FEXCore::Context::FlushCodeRange(CTX, (uintptr_t)addr, length);
+        FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)addr, length);
       }
       SYSCALL_ERRNO();
     });
@@ -85,7 +85,7 @@ namespace FEX::HLE::x64 {
 
           FEXCore::Context::AddNamedRegion(CTX, Result, length, offset, filename);
         }
-        FEXCore::Context::FlushCodeRange(CTX, (uintptr_t)Result, length);
+        FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Result, length);
       }
       SYSCALL_ERRNO();
     });
@@ -102,7 +102,7 @@ namespace FEX::HLE::x64 {
 
       if (Result != -1 && prot & PROT_EXEC) {
         auto CTX = Frame->Thread->CTX;
-        FEXCore::Context::FlushCodeRange(CTX, (uintptr_t)addr, len);
+        FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)addr, len);
       }
       SYSCALL_ERRNO();
     });
