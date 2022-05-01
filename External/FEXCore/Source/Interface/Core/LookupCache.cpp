@@ -61,6 +61,7 @@ void LookupCache::HintUsedRange(uint64_t Address, uint64_t Size) {
 }
 
 void LookupCache::ClearL2Cache() {
+  std::lock_guard<std::recursive_mutex> lk(WriteLock);
   // Clear out the page memory
   madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8, MADV_DONTNEED);
   madvise(reinterpret_cast<void*>(PageMemory), CODE_SIZE, MADV_DONTNEED);
@@ -68,6 +69,8 @@ void LookupCache::ClearL2Cache() {
 }
 
 void LookupCache::ClearCache() {
+  std::lock_guard<std::recursive_mutex> lk(WriteLock);
+
   // Clear L1
   madvise(reinterpret_cast<void*>(L1Pointer), L1_SIZE, MADV_DONTNEED);
   // Clear L2

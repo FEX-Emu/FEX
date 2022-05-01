@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <utility>
 #include <vector>
+#include <mutex>
 
 namespace FEXCore {
 namespace Context {
@@ -28,24 +29,51 @@ public:
   uintptr_t End() { return 0; }
 
   uintptr_t FindBlock(uint64_t Address) {
-    auto HostCode = FindCodePointerForAddress(Address);
-    if (HostCode) {
-      return HostCode;
-    } else {
-      auto HostCode = BlockList.find(Address);
+    // Try L1, no lock needed
+    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
+    if (L1Entry.GuestCode == Address) {
+      return L1Entry.HostCode;
+    }
 
-      if (HostCode != BlockList.end()) {
-        CacheBlockMapping(Address, HostCode->second);
-        return HostCode->second;
-      } else {
-        return 0;
+    // L2 and L3 need to be locked
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+
+    // Try L2
+    auto PageIndex = Address & (VirtualMemSize -1);
+
+    uint64_t PageOffset = Address & (0x0FFF);
+    PageIndex >>= 12;
+    uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+    uint64_t LocalPagePointer = Pointers[PageIndex];
+    // Do we a page pointer for this address?
+    if (LocalPagePointer) {
+      // Find there pointer for the address in the blocks
+      auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
+
+      if (BlockPointers[PageOffset].GuestCode == Address)
+      {
+        L1Entry.GuestCode = Address;
+        return L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
       }
     }
+    
+    // Try L3
+    auto HostCode = BlockList.find(Address);
+
+    if (HostCode != BlockList.end()) {
+      CacheBlockMapping(Address, HostCode->second);
+      return HostCode->second;
+    }
+      
+    // Failed to find
+    return 0;
   }
 
   std::map<uint64_t, std::vector<uint64_t>> CodePages;
 
-  void AddBlockMapping(uint64_t Address, void *HostCode, uint64_t Start, uint64_t Length) { 
+  void AddBlockMapping(uint64_t Address, void *HostCode, uint64_t Start, uint64_t Length) {
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+    
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto InsertPoint =
 #endif
@@ -65,6 +93,8 @@ public:
 
   void Erase(uint64_t Address) {
 
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+
     // Sever any links to this block
     auto lower = BlockLinks.lower_bound({Address, 0});
     auto upper = BlockLinks.upper_bound({Address, UINTPTR_MAX});
@@ -78,7 +108,10 @@ public:
     // Do L1
     auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
-      L1Entry.GuestCode = L1Entry.HostCode = 0;
+      L1Entry.GuestCode = 0;
+      // Leave L1Entry.HostCode as is, so that concurrent lookups won't read a null pointer
+      // This is a soft guarantee for cross thread invalidation, as atomics are not used
+      // and it hasn't been thoroughly tested
     }
 
     // Do full map
@@ -101,6 +134,8 @@ public:
 
 
   void AddBlockLink(uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+
     BlockLinks.insert({{GuestDestination, HostLink}, delinker});
   }
 
@@ -116,8 +151,19 @@ public:
   constexpr static size_t L1_ENTRIES = 1 * 1024 * 1024; // Must be a power of 2
   constexpr static size_t L1_ENTRIES_MASK = L1_ENTRIES - 1;
 
+  // This needs to be taken before reads or writes to L2, L3, CodePages, Thread::LocalIRCache,
+  // and before writes to L1. Concurrent access from a thread that this LookupCache doesn't belong to 
+  // can only happen during cross thread invalidation (::Erase).
+  // All other operations must be done from the owning thread.
+  // Some care is taken so that L1 lookups can be done without locks, and even tearing happens
+  // it is unlikely to lead to a crash. This approach has not been fully vetted yet.
+  // Also note that L1 lookups might be inlined in the JIT Dispatcher and/or block ends.
+  std::recursive_mutex WriteLock;
+
 private:
   void CacheBlockMapping(uint64_t Address, uintptr_t HostCode) { 
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+
     // Do L1
     auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     L1Entry.GuestCode = Address;
@@ -174,6 +220,8 @@ private:
     if (L1Entry.GuestCode == Address) {
       return L1Entry.HostCode;
     }
+
+    std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     auto FullAddress = Address;
     Address = Address & (VirtualMemSize -1);

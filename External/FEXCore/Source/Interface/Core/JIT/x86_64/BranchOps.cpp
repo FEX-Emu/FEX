@@ -259,7 +259,7 @@ DEF_OP(ValidateCode) {
   }
 }
 
-DEF_OP(RemoveCodeEntry) {
+DEF_OP(RemoveThreadCodeEntry) {
   auto NumPush = RA64.size();
 
   for (auto &Reg : RA64)
@@ -272,7 +272,7 @@ DEF_OP(RemoveCodeEntry) {
   mov(rax, Entry); // imm64 move
   mov(rsi, rax);
 
-  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.RemoveCodeEntryFromJIT)]);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.RemoveThreadCodeEntryFromJIT)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
@@ -330,7 +330,7 @@ void X86JITCore::RegisterBranchHandlers() {
   REGISTER_OP(SYSCALL,           Syscall);
   REGISTER_OP(THUNK,             Thunk);
   REGISTER_OP(VALIDATECODE,      ValidateCode);
-  REGISTER_OP(REMOVECODEENTRY,   RemoveCodeEntry);
+  REGISTER_OP(REMOVETHREADCODEENTRY,   RemoveThreadCodeEntry);
   REGISTER_OP(CPUID,             CPUID);
 #undef REGISTER_OP
 }

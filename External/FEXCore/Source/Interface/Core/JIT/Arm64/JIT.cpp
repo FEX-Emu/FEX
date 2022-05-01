@@ -453,7 +453,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     Pointers.LREM = reinterpret_cast<uint64_t>(LREM);
     Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
+    Pointers.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
     Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {

@@ -1,5 +1,6 @@
 #include "Interface/Context/Context.h"
 #include "Interface/IR/AOTIR.h"
+#include "Interface/Core/LookupCache.h"
 
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
@@ -349,6 +350,8 @@ namespace FEXCore::IR {
         if (Thread->CPUBackend->NeedsRetainedIRCopy()) {
           // Add to thread local ir cache
           Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+          
+          std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
           Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
         }
         else {

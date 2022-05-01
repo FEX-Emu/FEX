@@ -371,7 +371,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     // Process specific
     Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveCodeEntryFromJit);
+    Pointers.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
     Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {

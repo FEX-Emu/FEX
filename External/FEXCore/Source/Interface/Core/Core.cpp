@@ -447,6 +447,7 @@ namespace FEXCore::Context {
           : nullptr),
         decltype(Entry.DebugData)(new Core::DebugData())
       };
+      std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
       Thread->LocalIRCache.insert({Addr, std::move(Entry)});
     };
 
@@ -626,6 +627,8 @@ namespace FEXCore::Context {
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
+    std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+
     Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
 
@@ -738,7 +741,7 @@ namespace FEXCore::Context {
           Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
-          Thread->OpDispatcher->_RemoveCodeEntry();
+          Thread->OpDispatcher->_RemoveThreadCodeEntry();
           Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
@@ -847,6 +850,7 @@ namespace FEXCore::Context {
     uint64_t StartAddr {};
     uint64_t Length {};
 
+    std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
     // Do we already have this in the IR cache?
     auto LocalEntry = Thread->LocalIRCache.find(GuestRIP);
 
@@ -1033,21 +1037,31 @@ namespace FEXCore::Context {
     }
   }
 
-  void FlushCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+  static void FlushThreadCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+    std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
-    if (Thread->CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN) {
-      auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
-      auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length) >> 12);
+    auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
+    auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length) >> 12);
 
-      for (auto it = lower; it != upper; it++) {
-        for (auto Address: it->second)
-          Context::RemoveCodeEntry(Thread, Address);
-        it->second.clear();
+    for (auto it = lower; it != upper; it++) {
+      for (auto Address: it->second)
+      Context::RemoveThreadCodeEntry(Thread, Address);
+      it->second.clear();
+    }
+  }
+
+  void FlushCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
+    std::lock_guard<std::mutex> lk(CTX->ThreadCreationMutex);
+    for (auto &Thread : CTX->Threads) {
+      if (Thread->RunningEvents.Running.load()) {
+        FlushThreadCodeRange(Thread, Start, Length);
       }
     }
   }
 
-  void Context::RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  void Context::RemoveThreadCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+
     Thread->LocalIRCache.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
   }
@@ -1058,7 +1072,7 @@ namespace FEXCore::Context {
     Thread->CurrentFrame->State.rip = RIP;
 
     // Erase the RIP from all the storage backings if it exists
-    RemoveCodeEntry(Thread, RIP);
+    RemoveThreadCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
     CompileBlock(Thread->CurrentFrame, RIP);
@@ -1075,6 +1089,7 @@ namespace FEXCore::Context {
   }
 
   bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
+    std::lock_guard<std::recursive_mutex> lk(ParentThread->LookupCache->WriteLock);
     auto it = ParentThread->LocalIRCache.find(RIP);
     if (it == ParentThread->LocalIRCache.end()) {
       return false;
