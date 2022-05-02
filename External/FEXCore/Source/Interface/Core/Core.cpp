@@ -1041,11 +1041,12 @@ namespace FEXCore::Context {
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
-    auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length) >> 12);
+    auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length - 1) >> 12);
 
     for (auto it = lower; it != upper; it++) {
-      for (auto Address: it->second)
-      Context::RemoveThreadCodeEntry(Thread, Address);
+      for (auto Address: it->second) {
+        Context::RemoveThreadCodeEntry(Thread, Address);
+      }
       it->second.clear();
     }
   }

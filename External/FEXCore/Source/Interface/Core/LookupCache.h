@@ -39,12 +39,12 @@ public:
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     // Try L2
-    auto PageIndex = Address & (VirtualMemSize -1);
+    const auto PageIndex = (Address & (VirtualMemSize -1)) >> 12;
+    const auto PageOffset = Address & (0x0FFF);
 
-    uint64_t PageOffset = Address & (0x0FFF);
-    PageIndex >>= 12;
-    uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-    uint64_t LocalPagePointer = Pointers[PageIndex];
+    const auto Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
+    auto LocalPagePointer = Pointers[PageIndex];
+
     // Do we a page pointer for this address?
     if (LocalPagePointer) {
       // Find there pointer for the address in the blocks
@@ -53,7 +53,8 @@ public:
       if (BlockPointers[PageOffset].GuestCode == Address)
       {
         L1Entry.GuestCode = Address;
-        return L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
+        L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
+        return L1Entry.HostCode;
       }
     }
     
@@ -153,10 +154,10 @@ public:
 
   // This needs to be taken before reads or writes to L2, L3, CodePages, Thread::LocalIRCache,
   // and before writes to L1. Concurrent access from a thread that this LookupCache doesn't belong to 
-  // can only happen during cross thread invalidation (::Erase).
+  // may only happen during cross thread invalidation (::Erase).
   // All other operations must be done from the owning thread.
-  // Some care is taken so that L1 lookups can be done without locks, and even tearing happens
-  // it is unlikely to lead to a crash. This approach has not been fully vetted yet.
+  // Some care is taken so that L1 lookups can be done without locks, and even tearing is unlikely to lead to a crash.
+  // This approach has not been fully vetted yet.
   // Also note that L1 lookups might be inlined in the JIT Dispatcher and/or block ends.
   std::recursive_mutex WriteLock;
 
@@ -211,40 +212,6 @@ private:
 
     AllocateOffset = NewEnd;
     return PageMemory + NewBase;
-  }
-
-  uintptr_t FindCodePointerForAddress(uint64_t Address) {
-    
-    // Do L1
-    auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
-    if (L1Entry.GuestCode == Address) {
-      return L1Entry.HostCode;
-    }
-
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
-
-    auto FullAddress = Address;
-    Address = Address & (VirtualMemSize -1);
-
-    uint64_t PageOffset = Address & (0x0FFF);
-    Address >>= 12;
-    uintptr_t *Pointers = reinterpret_cast<uintptr_t*>(PagePointer);
-    uint64_t LocalPagePointer = Pointers[Address];
-    if (!LocalPagePointer) {
-      // We don't have a page pointer for this address
-      return 0;
-    }
-
-    // Find there pointer for the address in the blocks
-    auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
-
-    if (BlockPointers[PageOffset].GuestCode == FullAddress)
-    {
-      L1Entry.GuestCode = FullAddress;
-      return L1Entry.HostCode = BlockPointers[PageOffset].HostCode;
-    }
-    else
-      return 0;
   }
 
   uintptr_t PagePointer;
