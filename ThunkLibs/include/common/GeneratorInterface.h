@@ -80,6 +80,16 @@ struct ptr_is_untyped_address {};
 struct opaque_to_guest {};
 struct opaque_to_host {};
 
+// Helper struct used to annotate function parameters via fex_gen_config,
+// e.g. template<> struct fex_gen_config<fexgen::annotate_parameter<malloc, 0, void*>> {}
+// Type is just for consistency checking, may be omitted by using 'void' for complicated types
+template<auto F, int ParamIdx, typename Type>
+struct annotate_param;
+
+// Like annotate_parameter, but for the function return value
+template<auto F, int ParamIdx, typename Type = decltype(nullptr)>
+struct annotate_retval {};
+
 // Used for padding members that need not be present on all architectures
 struct is_padding_member {};
 
