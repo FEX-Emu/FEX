@@ -147,8 +147,8 @@ DEF_OP(ValidateCode) {
   }
 }
 
-DEF_OP(RemoveCodeEntry) {
-  Data->State->CTX->RemoveCodeEntry(Data->State, Data->CurrentEntry);
+DEF_OP(RemoveThreadCodeEntry) {
+  Data->State->CTX->RemoveThreadCodeEntry(Data->State, Data->CurrentEntry);
 }
 
 DEF_OP(CPUID) {

@@ -101,7 +101,7 @@ namespace FEXCore::Core {
       uint64_t LREM{};
       uint64_t PrintValue{};
       uint64_t PrintVectorValue{};
-      uint64_t RemoveCodeEntryFromJIT{};
+      uint64_t RemoveThreadCodeEntryFromJIT{};
       uint64_t CPUIDObj{};
       uint64_t CPUIDFunction{};
       uint64_t SyscallHandlerObj{};
@@ -134,7 +134,7 @@ namespace FEXCore::Core {
       // Process specific
       uint64_t PrintValue{};
       uint64_t PrintVectorValue{};
-      uint64_t RemoveCodeEntryFromJIT{};
+      uint64_t RemoveThreadCodeEntryFromJIT{};
       uint64_t CPUIDObj{};
       uint64_t CPUIDFunction{};
       uint64_t SyscallHandlerObj{};

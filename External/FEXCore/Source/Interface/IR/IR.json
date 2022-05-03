@@ -187,7 +187,7 @@
         "DestSize": "8"
       },
 
-      "RemoveCodeEntry": {
+      "RemoveThreadCodeEntry": {
         "HasSideEffects": true
       },
 

@@ -155,11 +155,13 @@ namespace FEXCore::Context {
     void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
     void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
-    static void RemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    // Must be called from owning thread
+    static void RemoveThreadCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
     // Wrapper which takes CpuStateFrame instead of InternalThreadState
-    static void RemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
-      RemoveCodeEntry(Frame->Thread, GuestRIP);
+    // Must be called from owning thread
+    static void RemoveThreadCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+      RemoveThreadCodeEntry(Frame->Thread, GuestRIP);
     }
 
     // Debugger interface

@@ -153,7 +153,7 @@ namespace FEXCore::CPU {
   DEF_OP(InlineSyscall);
   DEF_OP(Thunk);
   DEF_OP(ValidateCode);
-  DEF_OP(RemoveCodeEntry);
+  DEF_OP(RemoveThreadCodeEntry);
   DEF_OP(CPUID);
 
   ///< Conversion ops
