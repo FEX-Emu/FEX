@@ -75,6 +75,12 @@ int main(int argc, char* argv[]) {
 
     ABITable abi = ABITable::standard();
     ClangTool Tool(*compile_db, { filename });
+    auto force_enable_color_output = [](const clang::tooling::CommandLineArguments &Args, clang::StringRef) {
+        clang::tooling::CommandLineArguments AdjustedArgs = Args;
+        AdjustedArgs.push_back("-fdiagnostics-color");
+        return AdjustedArgs;
+    };
+    Tool.appendArgumentsAdjuster(force_enable_color_output);
     // TODO: Error check
     auto ret = Tool.run(std::make_unique<AnalyzeABIActionFactory>(abi.host()).get());
     if (ret != 0) {
@@ -94,6 +100,7 @@ int main(int argc, char* argv[]) {
 
         auto compile_db = FixedCompilationDatabase(".", commands);
         ClangTool ToolGuest(compile_db, { filename });
+        ToolGuest.appendArgumentsAdjuster(force_enable_color_output);
         auto ret = ToolGuest.run(std::make_unique<AnalyzeABIActionFactory>(abi).get());
         if (ret != 0) {
             std::cerr << "Aborting because ABI analysis failed for " << abi_commands->second[1] << "\n";
