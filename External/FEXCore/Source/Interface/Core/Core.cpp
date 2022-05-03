@@ -996,12 +996,22 @@ namespace FEXCore::Context {
     // The core managed to compile the code.
     if (Config.BlockJITNaming()) {
       if (DebugData) {
+        auto GuestRIPLookup = this->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+
         if (DebugData->Subblocks.size()) {
           for (auto& Subblock: DebugData->Subblocks) {
+            if (GuestRIPLookup.Entry) {
+              Symbols.Register(CodePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
+            } else {
             Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
           }
+          }
+        } else {
+          if (GuestRIPLookup.Entry) {
+            Symbols.Register(CodePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
         } else {
           Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
+          }
         }
       }
     }
