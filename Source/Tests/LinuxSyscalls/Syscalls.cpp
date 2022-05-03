@@ -586,8 +586,9 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
   DataSpaceStartingSize = Size;
 }
 
-SyscallHandler::SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
-  : FM {ctx}
+SyscallHandler::SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation)
+  : FM {_CTX}
+  , CTX {_CTX}
   , SignalDelegation {_SignalDelegation} {
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
@@ -674,6 +675,56 @@ uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t Sysc
 
 uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber) {
   return -ENOSYS;
+}
+
+
+//// VMA Tracking ////
+static std::string get_fdpath(int fd)
+{
+      std::error_code ec;
+      return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
+}
+
+void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
+  if (!(Flags & MAP_ANONYMOUS)) {
+    auto filename = get_fdpath(fd);
+
+    FEXCore::Context::AddNamedRegion(CTX, Base, Size, Offset, filename);
+  }
+  if (SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN) {
+    FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Base, Size);
+  }
+}
+
+void SyscallHandler::TrackMunmap(uintptr_t Base, uintptr_t Size) {  
+  if (SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN) {
+    FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Base, Size);
+  }
+}
+
+void SyscallHandler::TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot) {
+  if (SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN && Prot & PROT_EXEC) {
+    FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Base, Size);
+  }
+}
+
+void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress) {
+  if (SMCChecks == FEXCore::Config::CONFIG_SMC_MMAN) {
+    FEXCore::Context::InvalidateGuestCodeRange(CTX, OldAddress, OldSize);
+    FEXCore::Context::InvalidateGuestCodeRange(CTX, NewAddress, NewSize);
+  }
+}
+
+void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
+  // TODO
+}
+
+void SyscallHandler::TrackShmdt(uintptr_t Base) {
+  // TODO
+}
+
+void SyscallHandler::TrackMadvise(uintptr_t Base, uintptr_t Size, int advice) {
+  // TODO
 }
 
 }

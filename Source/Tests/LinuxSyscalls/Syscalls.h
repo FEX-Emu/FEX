@@ -81,7 +81,6 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler {
 public:
-  SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here
@@ -143,6 +142,7 @@ public:
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   FEX_CONFIG_OPT(ThreadsConfig, THREADS);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+  FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
 
   uint32_t GetHostKernelVersion() const { return HostKernelVersion; }
   uint32_t GetGuestKernelVersion() const { return GuestKernelVersion; }
@@ -164,7 +164,17 @@ public:
 
   FEX::HLE::MemAllocator *Get32BitAllocator() { return Alloc32Handler.get(); }
 
+  void TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
+  void TrackMunmap(uintptr_t Base, uintptr_t Size);
+  void TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot);
+  void TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
+  void TrackShmat(int shmid, uintptr_t Base, int shmflg);
+  void TrackShmdt(uintptr_t Base);
+  void TrackMadvise(uintptr_t Base, uintptr_t Size, int advice);
+  
 protected:
+  SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
+
   std::vector<SyscallFunctionDefinition> Definitions{};
   std::mutex MMapMutex;
 
@@ -177,6 +187,8 @@ protected:
   // (Major << 24) | (Minor << 16) | Patch
   uint32_t HostKernelVersion{};
   uint32_t GuestKernelVersion{};
+
+  FEXCore::Context::Context *CTX;
 
 private:
 
