@@ -38,6 +38,17 @@
           "Number of physical hardware threads to tell the process we have.",
           "0 will auto detect."
         ]
+      },
+      "CacheObjectCodeCompilation": {
+        "Type": "uint32",
+        "Default": "FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE",
+        "TextDefault": "none",
+        "Choices": [ "none", "read", "readwrite" ],
+        "ArgumentHandler": "CacheObjectCodeHandler",
+        "Desc": [
+          "Cache JIT object code to drive.",
+          "Allows JIT code to be shared between applications"
+        ]
       }
     },
     "Emulation": {
