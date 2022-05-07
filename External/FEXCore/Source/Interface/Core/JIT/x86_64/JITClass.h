@@ -8,6 +8,7 @@ $end_info$
 
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/Core/ObjectCache/Relocations.h"
 
 #define XBYAK64
 #include <xbyak/xbyak.h>
@@ -84,6 +85,67 @@ public:
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
 
 private:
+
+  /**
+   * @name Relocations
+   * @{ */
+    uint64_t GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+    void LoadConstantWithPadding(Xbyak::Reg Reg, uint64_t Constant);
+
+    /**
+     * @brief A literal pair relocation object for named symbol literals
+     */
+    struct NamedSymbolLiteralPair {
+      Label Offset;
+      Relocation MoveABI{};
+    };
+
+    /**
+     * @brief Inserts a thunk relocation
+     *
+     * @param Reg - The GPR to move the thunk handler in to
+     * @param Sum - The hash of the thunk
+     */
+    void InsertNamedThunkRelocation(Xbyak::Reg Reg, const IR::SHA256Sum &Sum);
+
+    /**
+     * @brief Inserts a guest GPR move relocation
+     *
+     * @param Reg - The GPR to move the guest RIP in to
+     * @param Constant - The guest RIP that will be relocated
+     */
+    void InsertGuestRIPMove(Xbyak::Reg Reg, uint64_t Constant);
+
+    /**
+     * @brief Inserts a named symbol as a literal in memory
+     *
+     * Need to use `PlaceNamedSymbolLiteral` with the return value to place the literal in the desired location
+     *
+     * @param Op The named symbol to place
+     *
+     * @return A temporary `NamedSymbolLiteralPair`
+     */
+    NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+
+    /**
+     * @brief Place the named symbol literal relocation in memory
+     *
+     * @param Lit - Which literal to place
+     */
+
+    void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
+
+    std::vector<FEXCore::CPU::Relocation> Relocations;
+
+    ///< Relocation code loading
+    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+
+    /**
+    * @brief Current guest RIP entrypoint
+    */
+    uint64_t CursorEntry{};
+  /**  @} */
+
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
   FEXCore::Core::InternalThreadState *ThreadState;
