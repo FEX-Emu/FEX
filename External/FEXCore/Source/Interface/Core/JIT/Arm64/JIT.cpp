@@ -739,9 +739,9 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   // X1-X3 = Temp
   // X4-r18 = RA
 
-  auto GuestEntry = GetCursorAddress<uint64_t>();
+  GuestEntry = GetCursorAddress<uint64_t>();
 
- if (CTX->GetGdbServerStatus()) {
+  if (CTX->GetGdbServerStatus()) {
     aarch64::Label RunBlock;
 
     // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
@@ -831,6 +831,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(GuestEntry);
   }
+  Relocations.clear();
 
   this->IR = nullptr;
 
