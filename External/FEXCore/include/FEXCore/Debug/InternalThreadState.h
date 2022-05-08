@@ -9,6 +9,7 @@
 #include <FEXCore/Utils/Threads.h>
 
 #include <unordered_map>
+#include <shared_mutex>
 
 namespace FEXCore {
   class LookupCache;
@@ -103,7 +104,8 @@ namespace FEXCore::Core {
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
     std::shared_ptr<FEXCore::CompileService> CompileService;
-    bool IsCompileService{false};
+
+    std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
