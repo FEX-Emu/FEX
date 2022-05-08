@@ -19,6 +19,10 @@ namespace FEXCore::Context {
   struct Context;
 }
 
+namespace FEXCore::CPU {
+  union Relocation;
+}
+
 namespace FEXCore::Frontend {
   class Decoder;
 }
@@ -48,6 +52,7 @@ namespace FEXCore::Core {
   struct DebugData {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     std::vector<DebugDataSubblock> Subblocks;
+    std::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 
   enum class SignalEvent {
