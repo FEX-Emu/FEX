@@ -85,6 +85,8 @@ set (SRCS
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
   Interface/Core/HostFeatures.cpp
+  Interface/Core/ObjectCache/JobHandling.cpp
+  Interface/Core/ObjectCache/ObjectCacheService.cpp
   Interface/Core/OpcodeDispatcher/Crypto.cpp
   Interface/Core/OpcodeDispatcher/Flags.cpp
   Interface/Core/OpcodeDispatcher/Vector.cpp
