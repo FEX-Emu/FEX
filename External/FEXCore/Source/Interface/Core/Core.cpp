@@ -13,6 +13,7 @@ $end_info$
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/GdbServer.h"
+#include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
@@ -146,10 +147,17 @@ namespace FEXCore::Context {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
+    if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
+      CodeObjectCacheService = std::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
+    }
   }
 
   Context::~Context() {
     {
+      if (CodeObjectCacheService) {
+        CodeObjectCacheService->Shutdown();
+      }
+
       for (auto &Thread : Threads) {
         if (Thread->ExecutionThread->joinable()) {
           Thread->ExecutionThread->join(nullptr);
@@ -627,6 +635,11 @@ namespace FEXCore::Context {
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
+    {
+      // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
+      // Use the thread's object cache ref counter for this
+      CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
+    }
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     Thread->LookupCache->ClearCache();
@@ -866,6 +879,25 @@ namespace FEXCore::Context {
       GeneratedIR = false;
     }
 
+    // JIT Code object cache lookup
+    if (CodeObjectCacheService) {
+      auto CodeCacheEntry = CodeObjectCacheService->FetchCodeObjectFromCache(GuestRIP);
+      if (CodeCacheEntry) {
+        auto CompiledCode = Thread->CPUBackend->RelocateJITObjectCode(GuestRIP, CodeCacheEntry);
+        if (CompiledCode) {
+          return {
+            .CompiledCode = CompiledCode,
+            .IRData      = nullptr, // No IR data generated
+            .DebugData   = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
+            .RAData      = nullptr, // No RA data generated
+            .GeneratedIR = false, // nullptr here ensures IR cache mechanisms won't run
+            .StartAddr   = 0, // Unused
+            .Length      = 0, // Unused
+          };
+        }
+      }
+    }
+
     // AOT IR bookkeeping and cache
     {
       auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(GuestRIP, IRList);
@@ -967,6 +999,24 @@ namespace FEXCore::Context {
       }
     }
 
+    // Tell the object cache service to serialize the code if enabled
+    if (CodeObjectCacheService &&
+        Config.CacheObjectCodeCompilation == FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE &&
+        DebugData) {
+      CodeObjectCacheService->AsyncAddSerializationJob(std::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(
+        CodeSerialize::AsyncJobHandler::SerializationJobData {
+          .GuestRIP = GuestRIP,
+          .GuestCodeLength = Length,
+          .GuestCodeHash = 0,
+          .HostCodeBegin = CodePtr,
+          .HostCodeLength = DebugData->HostCodeSize,
+          .HostCodeHash = 0,
+          .ThreadJobRefCount = &Thread->ObjectCacheRefCounter,
+          .Relocations = std::move(*DebugData->Relocations),
+        }
+      ));
+    }
+
     if (IRCaptureCache.PostCompileCode(
         Thread,
         CodePtr,
@@ -1013,6 +1063,12 @@ namespace FEXCore::Context {
       Thread->CPUBackend->ExecuteDispatch(Thread->CurrentFrame);
 
       Thread->RunningEvents.Running = false;
+    }
+
+    {
+      // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
+      // Use the thread's object cache ref counter for this
+      CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
     }
 
     // If it is the parent thread that died then just leave
