@@ -1,6 +1,8 @@
 #pragma once
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
+#include "Interface/Core/ObjectCache/CodeObjectSerializationConfig.h"
+#include "Interface/IR/AOTIR.h"
 
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
@@ -10,12 +12,11 @@
 #include <shared_mutex>
 #include <string>
 #include <vector>
+#include <tsl/robin_map.h>
 
 namespace FEXCore::CodeSerialize {
-  struct CodeRegionEntry {
-    // XXX: File out code region entry
-  };
-
+  // XXX: Does this need to be signal safe?
+  using CodeSerializationMutex = std::shared_mutex;
   struct CodeSerializationData {
   };
 
@@ -28,12 +29,113 @@ namespace FEXCore::CodeSerialize {
     const char *Relocations;
   };
 
+  /**
+   * @brief This is the file header that lives at the start of an object cache file
+   *
+   * This header is updated from multiple processes!
+   * Care must be taken to use OS locks when updating the file backing including this header
+   */
+  struct CodeObjectSerializationHeader {
+    // The configuration that this file has
+    CodeObjectSerializationConfig Config;
+    // The original RIP that this object section was mapped at
+    uint64_t OriginalBase{};
+    // The original offset in to the file that this object section was loaded from
+    uint64_t OriginalOffset{};
+    // Total amount of code that should be in this file
+    uint64_t TotalCodeSize{};
+    // Used to reserve the TSL map
+    uint64_t NumCodeEntries{};
+    // The number of relocations that point to this section
+    uint64_t NumRelocationsTo{};
+    // Total relocations in this file
+    uint64_t TotalRelocationsCount{};
+  };
+
+  struct CodeRegionEntry {
+    /**
+     * @name Threaded initialization objects for the initial object creation
+     * @{ */
+      // Base address in memory where the code region is at
+      uint64_t Base{};
+
+      // Size of this code entry
+      uint64_t Size{};
+
+      // The offset inside the file that is mapped to Base
+      uint64_t Offset{};
+
+      // Filename of the object
+      std::string Filename{};
+
+      CodeObjectSerializationHeader EntryHeader{};
+    /**  @} */
+
+    // The filename of the object cache for this entry
+    std::string ObjectEntrySourceFilename{};
+
+    // In the case of file corruption that we can detect, we can disable serialization early for an entry
+    // We should be resiliant to corruption but things happen
+    bool StillSerializing {true};
+
+    // Long lived FD for serialization if we have multiple jobs to serialize
+    // Bursts of code entries are common and this reduces file lock overhead
+    //
+    // Especially useful over network mounts where file locks are very slow
+    int CurrentSerializedFD {-1};
+
+    /**
+     * @name Objects required to sync objects between threads
+     * @{ */
+      // Refcount for the number of outstanding code entries waiting to be written for this object section
+      CodeSerializationMutex ObjectJobRefCountMutex;
+
+      // Refcount for outstanding named object region entry loading itself
+      // Will block JIT code cache look up when this has a unique_lock held
+      CodeSerializationMutex NamedJobRefCountMutex;
+    /**  @} */
+
+    /**
+     * @name Object Entry data management
+     * @{ */
+
+      /**
+       * @name This is the raw file data that we loaded from the code region entry file
+       * @{ */
+        char *CodeData{};
+        size_t FileSize{};
+
+        std::vector<CodeObjectFileSection> FileCodeSections;
+      /**  @} */
+
+      // This per section map takes the most time to load and needs to be quick
+      // This is the map of all code segments for this entry
+      tsl::robin_map<uint64_t, CodeObjectFileSection*> SectionLookupMap{};
+    /**  @} */
+
+    // Default initialization
+    CodeRegionEntry() = default;
+
+    // Initializer specifically for threaded loading
+    CodeRegionEntry(uint64_t Base,
+      uint64_t Size,
+      uint64_t Offset,
+      std::string const &Filename,
+      CodeObjectSerializationHeader const &DefaultHeader)
+      : Base {Base}
+      , Size {Size}
+      , Offset {Offset}
+      , Filename {Filename}
+      , EntryHeader {DefaultHeader} {
+      }
+  };
+
   // Map type must use an interator that isn't invalidation on erase/insert
   using CodeRegionMapType = std::map<uint64_t, std::unique_ptr<CodeRegionEntry>>;
   using CodeRegionPtrMapType = std::map<uint64_t, CodeRegionEntry*>;
 
-  // XXX: Does this need to be signal safe?
-  using CodeSerializationMutex = std::shared_mutex;
+  class NamedRegionObjectHandler;
+  class CodeObjectSerializeService;
 
   class AsyncJobHandler final {
     public:
@@ -74,8 +176,13 @@ namespace FEXCore::CodeSerialize {
         /**  @} */
       };
 
+      AsyncJobHandler(NamedRegionObjectHandler *NamedRegionHandler, CodeObjectSerializeService *CodeObjectCacheService)
+        : NamedRegionHandler {NamedRegionHandler}
+        , CodeObjectCacheService {CodeObjectCacheService} {}
+
     protected:
       friend class CodeObjectSerializeService;
+      friend class NamedRegionObjectHandler;
       /**
        * @name Async job submission functions
        * @{ */
@@ -84,7 +191,6 @@ namespace FEXCore::CodeSerialize {
         void AsyncAddSerializationJob(std::unique_ptr<SerializationJobData> Data);
       /**  @} */
 
-    private:
       /**
        * @name Async named region handling
        * @{ */
@@ -128,16 +234,100 @@ namespace FEXCore::CodeSerialize {
 
         class WorkItemRemoveNamedRegion : public NamedRegionWorkItem {
           public:
-            WorkItemRemoveNamedRegion(uint64_t base, uint64_t size, CodeRegionMapType::iterator entry)
+            WorkItemRemoveNamedRegion(uint64_t base, uint64_t size, std::unique_ptr<CodeRegionEntry> entry)
               : NamedRegionWorkItem {NamedRegionJobType::JOB_REMOVE_NAMED_REGION}
               , Base {base}
               , Size {size}
-              , Entry {entry} {}
+              , Entry {std::move(entry)} {}
 
             uint64_t Base;
             uint64_t Size;
-            CodeRegionMapType::iterator Entry;
+            std::unique_ptr<CodeRegionEntry> Entry;
         };
+      /**  @} */
+
+    private:
+      NamedRegionObjectHandler *NamedRegionHandler;
+      CodeObjectSerializeService *CodeObjectCacheService;
+  };
+
+  class NamedRegionObjectHandler final {
+    public:
+      NamedRegionObjectHandler(FEXCore::Context::Context *ctx);
+
+      void HandleNamedRegionObjectJobs();
+
+      CodeObjectSerializationConfig const &GetDefaultSerializationConfig() const {
+        return DefaultSerializationConfig;
+      }
+
+    protected:
+      friend class AsyncJobHandler;
+
+      // Return a default code header based off the default serialization config
+      CodeObjectSerializationHeader DefaultCodeHeader(uint64_t Base, uint64_t Offset) const {
+        return CodeObjectSerializationHeader {
+          .Config = DefaultSerializationConfig,
+          .OriginalBase = Base,
+          .OriginalOffset = Offset,
+          .NumCodeEntries = 0,
+          .NumRelocationsTo = 0,
+          .TotalRelocationsCount = 0,
+        };
+      }
+
+      /**
+       * @brief Adds an asynchronous add named region work item to the object queue
+       *
+       * This adds the job that will do the loading of file resources and data tracking.
+       */
+      void AsyncAddNamedRegionWorkItem(const std::string &base, const std::string &filename, bool executable, CodeRegionMapType::iterator entry) {
+        std::unique_lock lk {NamedWorkQueueMutex};
+        WorkQueue.emplace(std::make_unique<AsyncJobHandler::WorkItemAddNamedRegion> (
+          base,
+          filename,
+          executable,
+          entry
+        ));
+        ++NamedWorkQueueJobs;
+      }
+
+      void AsyncRemoveNamedRegionWorkItem(uint64_t Base, uint64_t Size, std::unique_ptr<CodeRegionEntry> Entry) {
+        std::unique_lock lk {NamedWorkQueueMutex};
+        WorkQueue.emplace(std::make_unique<AsyncJobHandler::WorkItemRemoveNamedRegion> (
+          Base,
+          Size,
+          std::move(Entry)
+        ));
+        ++NamedWorkQueueJobs;
+      }
+
+    private:
+      // Code version. If the code emission changes then this needs to increment
+      constexpr static uint32_t CODE_VERSION = 0x0;
+
+      // Default cookie header for the file header
+      constexpr static uint64_t CODE_COOKIE = FEXCore::IR::COOKIE_VERSION("FEXC", CODE_VERSION);
+
+      // Code serialization config for our current process configuration
+      CodeObjectSerializationConfig DefaultSerializationConfig;
+
+      // Atomic counter for number of jobs in the queue without needing to pull the mutex to check
+      std::atomic<uint64_t> NamedWorkQueueJobs{};
+
+      // Mutex for ading new jobs to the work queue
+      std::mutex NamedWorkQueueMutex{};
+
+      // The job queue itself
+      // Jobs get consumed as a FIFO
+      // Jobs always get appended to the end
+      std::queue<std::unique_ptr<AsyncJobHandler::NamedRegionWorkItem>> WorkQueue{};
+
+      /**
+       * @name Named Region object handling
+       * @{ */
+        void AddNamedRegionObject(CodeRegionMapType::iterator Entry, const std::string &base_filename, const std::string &filename, bool Executable);
+        void RemoveNamedRegionObject(uintptr_t Base, uintptr_t Size, std::unique_ptr<CodeRegionEntry> Entry);
       /**  @} */
   };
 
@@ -229,6 +419,8 @@ namespace FEXCore::CodeSerialize {
       void ExecutionThread();
 
     protected:
+      friend class AsyncJobHandler;
+
       /**
        * @brief Safely closes out code object regions from the map
        *
@@ -236,14 +428,31 @@ namespace FEXCore::CodeSerialize {
        */
       void DoCodeRegionClosure(uint64_t Base, CodeRegionEntry *it);
 
+      CodeSerializationMutex &GetEntryMapMutex() { return EntryMapMutex; }
+      CodeSerializationMutex &GetUnrelocatedEntryMapMutex() { return EntryMapMutex; }
+
+      CodeRegionMapType &GetEntryMap() { return AddressToEntryMap; }
+      CodeRegionPtrMapType &GetUnrelocatedEntryMap() { return UnrelocatedAddressToEntryMap; }
+
+      /**
+       * @brief Notify the async thread that it has work to do
+       */
+      void NotifyWork() { WorkAvailable.NotifyOne(); }
+
     private:
       FEXCore::Context::Context *CTX;
 
       Event WorkAvailable{};
       std::unique_ptr<FEXCore::Threads::Thread> WorkerThread;
       std::atomic_bool WorkerThreadShuttingDown {false};
-      AsyncJobHandler AsyncHandler{};
+      AsyncJobHandler AsyncHandler;
+      NamedRegionObjectHandler NamedRegionHandler;
 
+      // Mutex to hold when modifying the entry maps
+      CodeSerializationMutex EntryMapMutex;
+      CodeSerializationMutex UnrelocatedEntryMapMutex;
+
+      // Entry maps
       CodeRegionMapType AddressToEntryMap;
       CodeRegionPtrMapType UnrelocatedAddressToEntryMap;
   };

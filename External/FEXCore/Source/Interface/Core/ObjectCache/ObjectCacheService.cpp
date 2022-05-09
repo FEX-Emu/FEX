@@ -14,7 +14,9 @@ namespace {
 
 namespace FEXCore::CodeSerialize {
   CodeObjectSerializeService::CodeObjectSerializeService(FEXCore::Context::Context *ctx)
-    : CTX {ctx} {
+    : CTX {ctx}
+    , AsyncHandler { &NamedRegionHandler , this }
+    , NamedRegionHandler { ctx } {
     Initialize();
   }
 
@@ -65,7 +67,8 @@ namespace FEXCore::CodeSerialize {
       // Wait for work
       WorkAvailable.Wait();
 
-      // XXX: Handle named region async jobs first. Highest priority
+      // Handle named region async jobs first. Highest priority
+      NamedRegionHandler.HandleNamedRegionObjectJobs();
 
       // XXX: Handle code serialization jobs second.
     }

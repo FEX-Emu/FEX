@@ -104,6 +104,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
       FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
       FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
+      FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
     } Config;
 
     using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
