@@ -42,12 +42,57 @@ void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, 
   }
 
   int NumMoves = 1;
-  movz(Reg, (Constant) & 0xFFFF, 0);
-  for (int i = 1; i < Segments; ++i) {
+  int RequiredMoveSegments{};
+
+  // Count the number of move segments
+  // We only want to use ADRP+ADD if we have more than 1 segment
+  for (size_t i = 0; i < Segments; ++i) {
     uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
-    if (Part) {
-      movk(Reg, Part, i * 16);
-      ++NumMoves;
+    if (Part != 0) {
+      ++RequiredMoveSegments;
+    }
+  }
+
+  // ADRP+ADD is specifically optimized in hardware
+  // Check if we can use this
+  auto PC = GetCursorAddress<uint64_t>();
+
+  // PC aligned to page
+  uint64_t AlignedPC = PC & ~0xFFFULL;
+
+  // Offset from aligned PC
+  int64_t AlignedOffset = static_cast<int64_t>(Constant) - static_cast<int64_t>(AlignedPC);
+
+  // If the aligned offset is within the 4GB window then we can use ADRP+ADD
+  // and the number of move segments more than 1
+  if (RequiredMoveSegments > 1 && vixl::IsInt32(AlignedOffset)) {
+    // If this is 4k page aligned then we only need ADRP
+    if ((AlignedOffset & 0xFFF) == 0) {
+      adrp(Reg, AlignedOffset >> 12);
+    }
+    else {
+      // If the constant is within 1MB of PC then we can still use ADR to load in a single instruction
+      // 21-bit signed integer here
+      int64_t SmallOffset = static_cast<int64_t>(Constant) - static_cast<int64_t>(PC);
+      if (vixl::IsInt21(SmallOffset)) {
+        adr(Reg, SmallOffset);
+      }
+      else {
+        // Need to use ADRP + ADD
+        adrp(Reg, AlignedOffset >> 12);
+        add(Reg, Reg, Constant & 0xFFF);
+        NumMoves = 2;
+      }
+    }
+  }
+  else {
+    movz(Reg, (Constant) & 0xFFFF, 0);
+    for (int i = 1; i < Segments; ++i) {
+      uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
+      if (Part) {
+        movk(Reg, Part, i * 16);
+        ++NumMoves;
+      }
     }
   }
 
