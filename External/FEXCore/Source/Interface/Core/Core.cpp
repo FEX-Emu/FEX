@@ -1180,12 +1180,20 @@ namespace FEXCore::Context {
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
     }
+
+    if (CodeObjectCacheService) {
+      CodeObjectCacheService->AsyncAddNamedRegionJob(Base, Size, Offset, filename);
+    }
   }
 
   void Context::RemoveNamedRegion(uintptr_t Base, uintptr_t Size) {
     IRCaptureCache.RemoveNamedRegion(Base, Size);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
+    }
+
+    if (CodeObjectCacheService) {
+      CodeObjectCacheService->AsyncRemoveNamedRegionJob(Base, Size);
     }
   }
 
