@@ -1,5 +1,6 @@
 #include "Common/Config.h"
 #include "Common/FileFormatCheck.h"
+#include "FEXCore/Config/Config.h"
 #include "Tools/CommonGUI/IMGui.h"
 
 #include <FEXCore/Utils/Event.h>
@@ -458,6 +459,32 @@ namespace {
       bool AOTLoad = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("Load", &AOTLoad)) {
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_AOTIRLOAD, AOTLoad ? "1" : "0");
+        ConfigChanged = true;
+      }
+
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CACHEOBJECTCODECOMPILATION);
+
+      ImGui::Text("Cache JIT object code:");
+      int CacheJITObjectCode = 0;
+
+      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CACHEOBJECTCODECOMPILATION);
+      if (Value.has_value()) {
+        if (**Value == "0") {
+          CacheJITObjectCode = FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE;
+        } else if (**Value == "1") {
+          CacheJITObjectCode = FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READ;
+        } else if (**Value == "2") {
+          CacheJITObjectCode = FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE;
+        }
+      }
+
+      bool CacheChanged = false;
+      CacheChanged |= ImGui::RadioButton("Off", &CacheJITObjectCode, FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE); ImGui::SameLine();
+      CacheChanged |= ImGui::RadioButton("Read-only", &CacheJITObjectCode, FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READ); ImGui::SameLine();
+      CacheChanged |= ImGui::RadioButton("Read/Write", &CacheJITObjectCode, FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE);
+
+      if (CacheChanged) {
+        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_CACHEOBJECTCODECOMPILATION, std::to_string(CacheJITObjectCode));
         ConfigChanged = true;
       }
 

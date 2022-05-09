@@ -33,6 +33,15 @@ namespace Handler {
       return "2";
     return "0";
   }
+  static inline std::string_view CacheObjectCodeHandler(std::string_view Value) {
+    if (Value == "none")
+      return "0";
+    else if (Value == "read")
+      return "1";
+    else if (Value == "write")
+      return "2";
+    return "0";
+  }
 }
 
   enum ConfigOption {
@@ -50,6 +59,12 @@ namespace Handler {
     CONFIG_SMC_NONE,
     CONFIG_SMC_MMAN,
     CONFIG_SMC_FULL,
+  };
+
+  enum ConfigObjectCodeHandler {
+    CONFIG_NONE,
+    CONFIG_READ,
+    CONFIG_READWRITE,
   };
 
   enum class LayerType {
