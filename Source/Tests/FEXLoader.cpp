@@ -377,8 +377,8 @@ int main(int argc, char **argv, char **const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
-  auto Mapper = [&SyscallHandler](auto && ...args){ return SyscallHandler->GuestMmap(args...); };
-  auto Unmapper = [&SyscallHandler](auto && ...args){ return SyscallHandler->GuestMunmap(args...); };
+  auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
+  auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
 
   if (!Loader.MapMemory(Mapper, Unmapper)) {
     // failed to map
