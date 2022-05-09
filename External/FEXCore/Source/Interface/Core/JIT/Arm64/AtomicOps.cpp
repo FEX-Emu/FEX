@@ -509,10 +509,10 @@ DEF_OP(AtomicSwap) {
   if (CTX->HostFeatures.SupportsAtomics) {
     mov(TMP2, GetReg<RA_64>(Op->Value.ID()));
     switch (IROp->Size) {
-    case 1: swplb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: swplh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: swpl(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: swpl(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
+    case 1: swpalb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 2: swpalh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 4: swpal(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
+    case 8: swpal(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
     }
   }

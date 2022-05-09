@@ -59,11 +59,7 @@ HostFeatures::HostFeatures() {
 
   // Only supported when FEAT_AFP is supported
   SupportsFlushInputsToZero = Features.Has(vixl::CPUFeatures::Feature::kAFP);
-
-  // RCPC is bugged on Snapdragon 865
-  // Causes glibc cond16 test to immediately throw assert
-  // __pthread_mutex_cond_lock: Assertion `mutex->__data.__owner == 0'
-  SupportsRCPC = false; //Features.Has(vixl::CPUFeatures::Feature::kRCpc);
+  SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
 
   // We need to get the CPU's cache line size
   // We expect sane targets that have correct cacheline sizes across clusters
