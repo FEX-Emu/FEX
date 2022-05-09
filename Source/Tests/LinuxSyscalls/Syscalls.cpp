@@ -529,7 +529,9 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
 
         uint64_t RemainingSize = DataSpaceMaxSize - NewSizeAligned;
         // We have pages we can unmap
-        FEXCore::Allocator::munmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
+        auto ok = GuestMunmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
+        LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
+                
         DataSpaceMaxSize = NewSizeAligned;
       }
       else if (NewSize > DataSpaceMaxSize) {
@@ -542,24 +544,14 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
         }
 
         uint64_t NewBRK{};
-        if (Is64BitMode()) {
-          NewBRK = (uint64_t)FEXCore::Allocator::mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        }
-        else {
-          NewBRK = (uint64_t)static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-            mmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        }
+        NewBRK = (uint64_t)GuestMmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
 
         if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
           // Couldn't allocate that the region we wanted
           // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
-          if (Is64BitMode()) {
-            FEXCore::Allocator::munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
-          }
-          else {
-            static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-              munmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
-          }
+          int ok = GuestMunmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
           NewBRK = ~0ULL;
         }
 

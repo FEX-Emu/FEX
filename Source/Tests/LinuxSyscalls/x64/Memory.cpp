@@ -25,54 +25,63 @@ $end_info$
 
 namespace FEX::HLE::x64 {
 
+  void *x64SyscallHandler::GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+    uint64_t Result{};
+
+    bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
+    if (Map32Bit) {
+      Result = (uint64_t)Get32BitAllocator()->mmap(addr, length, prot,flags, fd, offset);
+      if (FEX::HLE::HasSyscallError(Result)) {
+        errno = -Result;
+        Result = -1;
+      }
+    } else {
+      Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(addr), length, prot, flags, fd, offset));
+    }
+
+    if (Result != -1) {
+      FEX::HLE::_SyscallHandler->TrackMmap((uintptr_t)Result, length, prot, flags, fd, offset);
+    }
+
+    return reinterpret_cast<void*>(Result);
+  }
+
+  int x64SyscallHandler::GuestMunmap(void *addr, uint64_t length) {
+    uint64_t Result{};
+    if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
+      Result = Get32BitAllocator()->munmap(addr, length);
+
+      if (FEX::HLE::HasSyscallError(Result)) {
+        errno = -Result;
+        Result = -1;
+      }
+    } else {
+      Result = FEXCore::Allocator::munmap(addr, length);
+    }
+
+    if (Result != -1) {
+      FEX::HLE::_SyscallHandler->TrackMunmap(reinterpret_cast<uintptr_t>(addr), length);
+    }
+
+    return Result;
+  }
 
   void RegisterMemory(FEX::HLE::SyscallHandler *const Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(mmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
-      uint64_t Result{};
+        uint64_t Result = (uint64_t) static_cast<FEX::HLE::x64::x64SyscallHandler*>(FEX::HLE::_SyscallHandler)->
+          GuestMmap(addr, length, prot, flags, fd, offset);
 
-      bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
-      if (Map32Bit) {
-        Result = (uint64_t)static_cast<FEX::HLE::SyscallHandler*>(FEX::HLE::_SyscallHandler)->Get32BitAllocator()->
-          mmap(reinterpret_cast<void*>(addr), length, prot,flags, fd, offset);
-        if (FEX::HLE::HasSyscallError(Result)) {
-          errno = -Result;
-          Result = -1;
-        }
-      }
-      else
-      {
-        Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(addr, length, prot, flags, fd, offset));
-      }
-
-      if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMmap(Result, length, prot, flags, fd, offset);
-      }
-      SYSCALL_ERRNO();
+        SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(munmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length) -> uint64_t {
-      uint64_t Result{};
-      if (addr < (void*)0x1'0000'0000ULL) {
-        Result = (uint64_t)static_cast<FEX::HLE::SyscallHandler*>(FEX::HLE::_SyscallHandler)->Get32BitAllocator()->
-          munmap(addr, length);
-        return Result;
+        uint64_t Result = static_cast<FEX::HLE::x64::x64SyscallHandler*>(FEX::HLE::_SyscallHandler)->
+          GuestMunmap(addr, length);
 
-        if (FEX::HLE::HasSyscallError(Result)) {
-          errno = -Result;
-          Result = -1;
-        }
-      }
-      else {
-        Result = FEXCore::Allocator::munmap(addr, length);
-      }
-
-      if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMunmap((uintptr_t)addr, length);
-      }
       SYSCALL_ERRNO();
     });
 

@@ -28,6 +28,17 @@ struct InternalThreadState;
 namespace FEX::HLE::x64 {
 #include "SyscallsEnum.h"
 
+class x64SyscallHandler final : public FEX::HLE::SyscallHandler {
+  public:
+    x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+    
+    void *GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
+    int GuestMunmap(void *addr, uint64_t length) override;
+
+  private:
+    void RegisterSyscallHandlers();
+};
+
 std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
 
 void RegisterSyscallInternal(int SyscallNumber,
