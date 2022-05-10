@@ -41,6 +41,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXHeaderUtils/TodoDefines.h>
 
 #include <algorithm>
 #include <array>
@@ -1016,7 +1017,8 @@ namespace FEXCore::Context {
     }
 
     // If it is the parent thread that died then just leave
-    // XXX: This doesn't make sense when the parent thread doesn't outlive its children
+    FEX_TODO("This doesn't make sense when the parent thread doesn't outlive its children");
+
     if (Thread->ThreadManager.parent_tid == 0) {
       CoreShuttingDown.store(true);
       Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
