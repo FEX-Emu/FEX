@@ -69,6 +69,7 @@ PRIVATE
   -Werror=implicit-fallthrough
 
   -Wno-trigraphs
+  -fwrapv
 )
 
 target_include_directories(LinuxEmulation
