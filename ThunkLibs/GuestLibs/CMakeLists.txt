@@ -89,6 +89,8 @@ function(add_guest_lib_with_name NAME LIBNAME)
 
   ## Tell GCC to not complain about ignored attributes
   target_compile_options(${LIBNAME}-guest PRIVATE -Wno-attributes)
+  ## Make signed overflow well defined 2's complement overflow
+  target_compile_options(${LIBNAME}-guest PRIVATE -fwrapv)
   target_compile_options(${LIBNAME}-guest PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   if (GENERATE_GUEST_INSTALL_TARGETS)

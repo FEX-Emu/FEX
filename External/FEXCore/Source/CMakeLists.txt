@@ -329,6 +329,7 @@ function(AddDefaultOptionsToTarget Name)
 
     -Wno-trigraphs
     -ffunction-sections
+    -fwrapv
   )
 
   if (GCC_COLOR)

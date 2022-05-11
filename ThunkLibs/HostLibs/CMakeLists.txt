@@ -71,6 +71,8 @@ function(add_host_lib_with_name NAME LIBNAME)
   target_include_directories(${LIBNAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}")
   target_link_libraries(${LIBNAME}-host PRIVATE dl)
   target_link_libraries(${LIBNAME}-host PRIVATE lib${LIBNAME}-deps)
+  ## Make signed overflow well defined 2's complement overflow
+  target_compile_options(${LIBNAME}-host PRIVATE -fwrapv)
   target_compile_options(${LIBNAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
