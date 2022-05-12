@@ -2209,6 +2209,8 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[-1] = DMB;
         PC[0] = LDUR;
         PC[1] = DMB;
+        // Back up one instruction and have another go
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
       }
     }
     else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
@@ -2234,6 +2236,8 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[-1] = DMB;
         PC[0] = STUR;
         PC[1] = DMB;
+        // Back up one instruction and have another go
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
       }
     }
     else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
