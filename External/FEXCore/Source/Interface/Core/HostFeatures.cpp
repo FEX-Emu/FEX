@@ -60,6 +60,7 @@ HostFeatures::HostFeatures() {
   // Only supported when FEAT_AFP is supported
   SupportsFlushInputsToZero = Features.Has(vixl::CPUFeatures::Feature::kAFP);
   SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
+  SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
 
   // We need to get the CPU's cache line size
   // We expect sane targets that have correct cacheline sizes across clusters
@@ -79,6 +80,8 @@ HostFeatures::HostFeatures() {
   SupportsAES = Features.has(Xbyak::util::Cpu::tAESNI);
   SupportsCRC = Features.has(Xbyak::util::Cpu::tSSE42);
   SupportsRAND = Features.has(Xbyak::util::Cpu::tRDRAND) && Features.has(Xbyak::util::Cpu::tRDSEED);
+  SupportsRCPC = true;
+  SupportsTSOImm9 = true;
 
   // xbyak doesn't know how to check for CLZero
   uint32_t eax, ebx, ecx, edx;

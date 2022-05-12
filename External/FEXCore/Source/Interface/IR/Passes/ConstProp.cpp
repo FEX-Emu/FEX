@@ -65,11 +65,20 @@ static bool IsMemoryScale(uint64_t Scale, uint8_t AccessSize) {
 
 static bool IsImmMemory(uint64_t imm, uint8_t AccessSize) {
   if ( ((int64_t)imm >= -255) && ((int64_t)imm <= 256) )
-	  return true;
+    return true;
   else if ( (imm & (AccessSize-1)) == 0 &&  imm/AccessSize <= 4095 )
-	  return true;
+    return true;
   else {
-	  return false;
+    return false;
+  }
+}
+
+static bool IsTSOImm9(uint64_t imm) {
+  // RCPC2 only has a 9-bit signed offset
+  if ( ((int64_t)imm >= -256) && ((int64_t)imm <= 255) )
+    return true;
+  else {
+    return false;
   }
 }
 
@@ -128,30 +137,30 @@ static std::tuple<MemOffsetType, uint8_t, OrderedNode*, OrderedNode*> MemExtende
 }
 
 static OrderedNodeWrapper RemoveUselessMasking(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t mask) {
-  #if 1 // HOTFIX: We need to clear up the meaning of opsize and dest size. See #594
-    return src;
-  #else
-    auto IROp = IREmit->GetOpHeader(src);
-    if (IROp->Op == OP_AND) {
-      auto Op = IROp->C<IR::IROp_And>();
-      uint64_t imm;
-      if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
+#if 1 // HOTFIX: We need to clear up the meaning of opsize and dest size. See #594
+  return src;
+#else
+  auto IROp = IREmit->GetOpHeader(src);
+  if (IROp->Op == OP_AND) {
+    auto Op = IROp->C<IR::IROp_And>();
+    uint64_t imm;
+    if (IREmit->IsValueConstant(IROp->Args[1], &imm) && ((imm & mask) == mask)) {
+      return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
+    }
+  } else if (IROp->Op == OP_BFE) {
+    auto Op = IROp->C<IR::IROp_Bfe>();
+    if (Op->lsb == 0) {
+      uint64_t imm = 1ULL << (Op->Width-1);
+      imm = (imm-1) *2 + 1;
+
+      if ((imm & mask) == mask) {
         return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
       }
-    } else if (IROp->Op == OP_BFE) {
-      auto Op = IROp->C<IR::IROp_Bfe>();
-      if (Op->lsb == 0) {
-        uint64_t imm = 1ULL << (Op->Width-1);
-        imm = (imm-1) *2 + 1;
-
-        if ((imm & mask) == mask) {
-          return RemoveUselessMasking(IREmit, IROp->Args[0], mask);
-        }
-      }
     }
+  }
 
-    return src;
-  #endif
+  return src;
+#endif
 }
 
 static bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t Width) {
@@ -167,7 +176,9 @@ static bool IsBfeAlreadyDone(IREmitter *IREmit, OrderedNodeWrapper src, uint64_t
 
 class ConstProp final : public FEXCore::IR::Pass {
 public:
-  explicit ConstProp(bool DoInlineConstants) : InlineConstants(DoInlineConstants) { }
+  explicit ConstProp(bool DoInlineConstants, bool SupportsTSOImm9)
+    : InlineConstants(DoInlineConstants)
+    , SupportsTSOImm9 {SupportsTSOImm9} { }
 
   bool Run(IREmitter *IREmit) override;
 
@@ -179,13 +190,14 @@ private:
   void FCMPOptimization(IREmitter *IREmit, const IRListView& CurrentIR);
   void LoadMemStoreMemImmediatePooling(IREmitter *IREmit, const IRListView& CurrentIR);
   bool ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& CurrentIR,
-                                 OrderedNode* CodeNode, IROp_Header* IROp);
+      OrderedNode* CodeNode, IROp_Header* IROp);
   bool ConstantPropagation(IREmitter *IREmit, const IRListView& CurrentIR,
-                           OrderedNode* CodeNode, IROp_Header* IROp);
+      OrderedNode* CodeNode, IROp_Header* IROp);
   bool ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR);
 
   std::unordered_map<uint64_t, OrderedNode*> ConstPool;
   std::map<OrderedNode*, uint64_t> AddressgenConsts;
+  bool SupportsTSOImm9{};
 };
 
 bool ConstProp::HandleConstantPools(IREmitter *IREmit, const IRListView& CurrentIR) {
@@ -229,8 +241,8 @@ void ConstProp::CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& Cur
         // the value isn't used after the select otherwise
         // make sure the sizes match
         if (SelectOpHdr->Size == UnaryOpHdr->Size && SelectOpHdr->Op == OP_SELECT && SelectOpNode->NumUses == 1
-          && IREmit->IsValueConstant(SelectOp->TrueVal)
-          && IREmit->IsValueConstant(SelectOp->FalseVal)) {
+            && IREmit->IsValueConstant(SelectOp->TrueVal)
+            && IREmit->IsValueConstant(SelectOp->FalseVal)) {
 
           IREmit->SetWriteCursor(IREmit->UnwrapNode(SelectOpNode->Header.Previous));
 
@@ -526,8 +538,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
     case OP_FINDLSB:
     case OP_FINDMSB:
     case OP_REV:
-    case OP_SBFE:
-    {
+    case OP_SBFE: {
       uint64_t Constant1;
 
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
@@ -835,7 +846,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
-
       case OP_ADD:
       case OP_SUB:
       {
@@ -853,7 +863,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
-
       case OP_SELECT:
       {
         auto Op = IROp->C<IR::IROp_Select>();
@@ -884,7 +893,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
         break;
       }
-
       case OP_CONDJUMP:
       {
         auto Op = IROp->C<IR::IROp_CondJump>();
@@ -901,7 +909,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
-
       case OP_EXITFUNCTION:
       {
         auto Op = IROp->C<IR::IROp_ExitFunction>();
@@ -926,7 +933,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
-
       case OP_OR:
       case OP_XOR:
       case OP_AND:
@@ -945,7 +951,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
-
       case OP_LOADMEM:
       {
         auto Op = IROp->CW<IR::IROp_LoadMem>();
@@ -962,7 +967,6 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
-
       case OP_STOREMEM:
       {
         auto Op = IROp->CW<IR::IROp_StoreMem>();
@@ -979,7 +983,42 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
+      case OP_LOADMEMTSO:
+      {
+        auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
 
+        uint64_t Constant2{};
+        if (SupportsTSOImm9) {
+          if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+            if (IsTSOImm9(Constant2)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
+
+              IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
+
+              Changed = true;
+            }
+          }
+        }
+        break;
+      }
+      case OP_STOREMEMTSO:
+      {
+        auto Op = IROp->CW<IR::IROp_StoreMemTSO>();
+
+        uint64_t Constant2{};
+        if (SupportsTSOImm9) {
+          if (Op->OffsetType == MEM_OFFSET_SXTX && IREmit->IsValueConstant(Op->Offset, &Constant2)) {
+            if (IsTSOImm9(Constant2)) {
+              IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
+
+              IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
+
+              Changed = true;
+            }
+          }
+        }
+        break;
+      }
       default:
         break;
     }
@@ -1018,8 +1057,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants) {
-  return std::make_unique<ConstProp>(InlineConstants);
+std::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9) {
+  return std::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9);
 }
 
 }

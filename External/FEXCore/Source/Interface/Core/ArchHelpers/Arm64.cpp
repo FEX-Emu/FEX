@@ -1579,7 +1579,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
   return false;
 }
 
-bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr) {
+bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
@@ -1592,7 +1592,7 @@ bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr) {
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  uint64_t Addr = mcontext->regs[AddressReg];
+  uint64_t Addr = mcontext->regs[AddressReg] + Offset;
 
   if (Size == 2) {
     auto Res = DoLoad16(Addr);
@@ -1622,7 +1622,7 @@ bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr) {
   return false;
 }
 
-bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr) {
+bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset) {
   mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
   siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
@@ -1635,7 +1635,7 @@ bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr) {
   uint32_t DataReg = Instr & 0x1F;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  uint64_t Addr = mcontext->regs[AddressReg];
+  uint64_t Addr = mcontext->regs[AddressReg] + Offset;
 
   constexpr bool DoRetry = false;
   if (Size == 2) {
@@ -2140,7 +2140,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
     if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
         (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
       if (ParanoidTSO) {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr)) {
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, 0)) {
           // Skip this instruction now
           ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
           return true;
@@ -2164,7 +2164,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
     }
     else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
       if (ParanoidTSO) {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr)) {
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, 0)) {
           // Skip this instruction now
           ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
           return true;
@@ -2184,6 +2184,56 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[1] = DMB;
         // Back up one instruction and have another go
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+      }
+    }
+    else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
+      // Extract the 9-bit offset from the instruction
+      int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
+      if (ParanoidTSO) {
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, Offset)) {
+          // Skip this instruction now
+          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+          return true;
+        }
+        else {
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAPUR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+          return false;
+        }
+      }
+      else {
+        uint32_t LDUR = 0b0011'1000'0100'0000'0000'0000'0000'0000;
+        LDUR |= Size << 30;
+        LDUR |= AddrReg << 5;
+        LDUR |= DataReg;
+        LDUR |= Instr & (0b1'1111'1111 << 9);
+        PC[-1] = DMB;
+        PC[0] = LDUR;
+        PC[1] = DMB;
+      }
+    }
+    else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
+      // Extract the 9-bit offset from the instruction
+      int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
+      if (ParanoidTSO) {
+        if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, Offset)) {
+          // Skip this instruction now
+          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
+          return true;
+        }
+        else {
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
+          return false;
+        }
+      }
+      else {
+        uint32_t STUR = 0b0011'1000'0000'0000'0000'0000'0000'0000;
+        STUR |= Size << 30;
+        STUR |= AddrReg << 5;
+        STUR |= DataReg;
+        STUR |= Instr & (0b1'1111'1111 << 9);
+        PC[-1] = DMB;
+        PC[0] = STUR;
+        PC[1] = DMB;
       }
     }
     else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
