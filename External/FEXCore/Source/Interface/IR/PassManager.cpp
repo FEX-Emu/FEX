@@ -30,7 +30,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineCo
 
     InsertPass(CreateDeadStoreElimination());
     InsertPass(CreatePassDeadCodeElimination());
-    InsertPass(CreateConstProp(InlineConstants));
+    InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9));
 
     ////// InsertPass(CreateDeadFlagCalculationEliminination());
 

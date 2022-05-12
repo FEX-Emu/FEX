@@ -617,13 +617,43 @@ DEF_OP(LoadMem) {
 DEF_OP(LoadMemTSO) {
   auto Op = IROp->C<IR::IROp_LoadMemTSO>();
 
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Header.Args[0].ID()));
+  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  if (!Op->Offset.IsInvalid()) {
-    LOGMAN_MSG_A_FMT("LoadMemTSO: No offset allowed");
+  if (CTX->HostFeatures.SupportsTSOImm9) {
+    // RCPC2 means that the offset must be an inline constant
+    LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false, "RCPC2 doesn't support register offset. Only Immediate offset");
+  }
+  else {
+    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "LoadMemTSO: No offset allowed");
   }
 
-  if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+    if (IROp->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      auto Dst = GetReg<RA_64>(Node);
+      ldapurb(Dst, MemSrc);
+    }
+    else {
+      // Aligned
+      nop();
+      auto Dst = GetReg<RA_64>(Node);
+      switch (IROp->Size) {
+        case 2:
+          ldapurh(Dst, MemSrc);
+          break;
+        case 4:
+          ldapur(Dst.W(), MemSrc);
+          break;
+        case 8:
+          ldapur(Dst, MemSrc);
+          break;
+        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+      }
+      nop();
+    }
+  }
+  else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       auto Dst = GetReg<RA_64>(Node);
@@ -744,13 +774,41 @@ DEF_OP(StoreMem) {
 
 DEF_OP(StoreMemTSO) {
   auto Op = IROp->C<IR::IROp_StoreMemTSO>();
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Addr.ID()));
 
-  if (!Op->Offset.IsInvalid()) {
-    LOGMAN_MSG_A_FMT("StoreMemTSO: No offset allowed");
+  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+  if (CTX->HostFeatures.SupportsTSOImm9) {
+    // RCPC2 means that the offset must be an inline constant
+    LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false, "RCPC2 doesn't support register offset. Only Immediate offset");
+  }
+  else {
+    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "StoreMemTSO: No offset allowed");
   }
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+    if (IROp->Size == 1) {
+      // 8bit load is always aligned to natural alignment
+      stlurb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
+    }
+    else {
+      nop();
+      switch (IROp->Size) {
+        case 2:
+          stlurh(GetReg<RA_64>(Op->Value.ID()), MemSrc);
+          break;
+        case 4:
+          stlur(GetReg<RA_32>(Op->Value.ID()), MemSrc);
+          break;
+        case 8:
+          stlur(GetReg<RA_64>(Op->Value.ID()), MemSrc);
+          break;
+        default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
+      }
+      nop();
+    }
+  }
+  else if (Op->Class == FEXCore::IR::GPRClass) {
     if (IROp->Size == 1) {
       // 8bit load is always aligned to natural alignment
       stlrb(GetReg<RA_64>(Op->Value.ID()), MemSrc);

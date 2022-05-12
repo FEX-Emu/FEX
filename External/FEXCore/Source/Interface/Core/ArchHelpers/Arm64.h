@@ -12,6 +12,10 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t ATOMIC_MEM_MASK = 0x3B200C00;
   constexpr uint32_t ATOMIC_MEM_INST = 0x38200000;
 
+  constexpr uint32_t RCPC2_MASK  = 0x3F'E0'0C'00;
+  constexpr uint32_t LDAPUR_INST = 0x19'40'00'00;
+  constexpr uint32_t STLUR_INST  = 0x19'00'00'00;
+
   constexpr uint32_t LDAXP_MASK = 0xBF'FF'80'00;
   constexpr uint32_t LDAXP_INST = 0x88'7F'80'00;
 
@@ -83,8 +87,8 @@ namespace FEXCore::ArchHelpers::Arm64 {
     return (Instr >> RM_OFFSET) & REGISTER_MASK;
   }
 
-  bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr);
-  bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr);
+  bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset);
+  bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset);
   bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr);
   uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info);
   bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr);
