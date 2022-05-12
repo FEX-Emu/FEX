@@ -566,9 +566,10 @@ bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr) {
         (AddrReg << 5) |
         DataReg;
 
-      PC[0] = DMB;
+      // Follows half-barrier logic here: https://github.com/dotnet/runtime/issues/8072
+      PC[0] = DMB_ALL;
       PC[1] = STP;
-      PC[2] = DMB;
+      PC[2] = NOP;
       // Back up one instruction and have another go
       vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[0], 16);
       return true;
@@ -2155,11 +2156,9 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         LDR |= Size << 30;
         LDR |= AddrReg << 5;
         LDR |= DataReg;
-        PC[-1] = DMB;
+        // Follows half-barrier logic here: https://github.com/dotnet/runtime/issues/8072
         PC[0] = LDR;
-        PC[1] = DMB;
-        // Back up one instruction and have another go
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+        PC[1] = DMB_READ;
       }
     }
     else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
@@ -2179,9 +2178,9 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         STR |= Size << 30;
         STR |= AddrReg << 5;
         STR |= DataReg;
-        PC[-1] = DMB;
+        // Follows half-barrier logic here: https://github.com/dotnet/runtime/issues/8072
+        PC[-1] = DMB_ALL;
         PC[0] = STR;
-        PC[1] = DMB;
         // Back up one instruction and have another go
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
       }
@@ -2206,9 +2205,9 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         LDUR |= AddrReg << 5;
         LDUR |= DataReg;
         LDUR |= Instr & (0b1'1111'1111 << 9);
-        PC[-1] = DMB;
+        // Follows half-barrier logic here: https://github.com/dotnet/runtime/issues/8072
         PC[0] = LDUR;
-        PC[1] = DMB;
+        PC[1] = DMB_READ;
       }
     }
     else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
@@ -2231,9 +2230,11 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         STUR |= AddrReg << 5;
         STUR |= DataReg;
         STUR |= Instr & (0b1'1111'1111 << 9);
-        PC[-1] = DMB;
+        // Follows half-barrier logic here: https://github.com/dotnet/runtime/issues/8072
+        PC[-1] = DMB_ALL;
         PC[0] = STUR;
-        PC[1] = DMB;
+        // Back up one instruction and have another go
+        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
       }
     }
     else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP

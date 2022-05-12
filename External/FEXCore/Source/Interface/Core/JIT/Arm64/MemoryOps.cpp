@@ -636,7 +636,6 @@ DEF_OP(LoadMemTSO) {
     }
     else {
       // Aligned
-      nop();
       auto Dst = GetReg<RA_64>(Node);
       switch (IROp->Size) {
         case 2:
@@ -662,7 +661,6 @@ DEF_OP(LoadMemTSO) {
     else {
       // Aligned
       auto Dst = GetReg<RA_64>(Node);
-      nop();
       switch (IROp->Size) {
         case 2:
           ldaprh(Dst, MemSrc);
@@ -687,7 +685,6 @@ DEF_OP(LoadMemTSO) {
     else {
       // Aligned
       auto Dst = GetReg<RA_64>(Node);
-      nop();
       switch (IROp->Size) {
         case 2:
           ldarh(Dst, MemSrc);
@@ -704,7 +701,7 @@ DEF_OP(LoadMemTSO) {
     }
   }
   else {
-    dmb(InnerShareable, BarrierAll);
+    dmb(InnerShareable, BarrierWrites);
     auto Dst = GetDst(Node);
     switch (IROp->Size) {
       case 2:
@@ -721,7 +718,6 @@ DEF_OP(LoadMemTSO) {
         break;
       default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
     }
-    dmb(InnerShareable, BarrierAll);
   }
 }
 
@@ -805,7 +801,6 @@ DEF_OP(StoreMemTSO) {
           break;
         default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
       }
-      nop();
     }
   }
   else if (Op->Class == FEXCore::IR::GPRClass) {
@@ -827,11 +822,10 @@ DEF_OP(StoreMemTSO) {
           break;
         default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
       }
-      nop();
     }
   }
   else {
-    dmb(InnerShareable, BarrierAll);
+    dmb(InnerShareable, BarrierReads);
     auto Src = GetSrc(Op->Value.ID());
     switch (IROp->Size) {
       case 1:
@@ -851,7 +845,6 @@ DEF_OP(StoreMemTSO) {
         break;
       default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
     }
-    dmb(InnerShareable, BarrierAll);
   }
 }
 
@@ -972,7 +965,7 @@ DEF_OP(ParanoidStoreMemTSO) {
           // ldaxp must not have both the destination registers be the same
           ldaxp(xzr, TMP3, MemSrc); // <- Can hit SIGBUS. Overwritten with DMB
           stlxp(TMP3, TMP1, TMP2, MemSrc); // <- Can also hit SIGBUS
-          cbnz(TMP3, &B); // < Overwritten with DMB
+          cbnz(TMP3, &B); // < Overwritten with NOP
           break;
         }
         default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", IROp->Size);
