@@ -343,8 +343,8 @@ void InitializeSecondaryGroupTables() {
 
     {OPD(TYPE_GROUP_15, PF_F3, 0), 1, X86InstInfo{"RDFSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 1), 1, X86InstInfo{"RDGSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_F3, 2), 1, X86InstInfo{"WRFSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_F3, 3), 1, X86InstInfo{"WRGSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_F3, 2), 1, X86InstInfo{"WRFSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_F3, 3), 1, X86InstInfo{"WRGSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 4), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 5), 1, X86InstInfo{"INCSSPQ", TYPE_INST, FLAGS_MODRM,                    0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 6), 1, X86InstInfo{"CLRSSBSY", TYPE_INST, FLAGS_NONE,                    0, nullptr}},

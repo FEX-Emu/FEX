@@ -3353,7 +3353,9 @@ void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
 
 template<OpDispatchBuilder::Segment Seg>
 void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  // Documentation claims that the 32-bit version of this instruction inserts in to the lower 32-bits of the segment
+  // This is incorrect and it instead zero extends the 32-bit value to 64-bit
+  auto Size = GetDstSize(Op);
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   if constexpr (Seg == Segment::FS) {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs));
