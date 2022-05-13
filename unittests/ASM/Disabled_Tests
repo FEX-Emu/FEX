@@ -5,10 +5,6 @@ Test_TwoByte/0F_52.asm
 Test_TwoByte/0F_53.asm
 
 # Not supported in userspace in all cases
-Test_Secondary/15_F3_00.asm
-Test_Secondary/15_F3_01.asm
-Test_Secondary/15_F3_02.asm
-Test_Secondary/15_F3_03.asm
 Test_Primary/Primary_D7.asm
 
 # Can't test this in a real environment

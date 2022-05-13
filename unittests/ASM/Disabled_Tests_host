@@ -44,3 +44,11 @@ Test_3DNow/B6.asm
 Test_3DNow/B7.asm
 Test_3DNow/BB.asm
 Test_3DNow/BF.asm
+
+# Intel CI doesn't have a new enough kernel to support this
+Test_Secondary/15_F3_00.asm
+Test_Secondary/15_F3_01.asm
+Test_Secondary/15_F3_02.asm
+Test_Secondary/15_F3_03.asm
+Test_Secondary/15_F3_02_2.asm
+Test_Secondary/15_F3_03_2.asm
