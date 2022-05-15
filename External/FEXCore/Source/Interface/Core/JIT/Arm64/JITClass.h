@@ -68,6 +68,8 @@ public:
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
 
+  void ClearRelocations() override { Relocations.clear(); }
+
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
 

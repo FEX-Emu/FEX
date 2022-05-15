@@ -804,7 +804,6 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(GuestExit) - reinterpret_cast<uintptr_t>(GuestEntry);
     DebugData->Relocations = &Relocations;
   }
-  Relocations.clear();
 
   return GuestEntry;
 }

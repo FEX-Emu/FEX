@@ -112,6 +112,11 @@ class LLVMCore;
      */
     virtual bool NeedsRetainedIRCopy() const { return false; }
 
+    /**
+     * @brief Clear any relocations after JIT compiling
+     */
+    virtual void ClearRelocations() {}
+
     using AsmDispatch = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame);
     using JITCallback = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
 

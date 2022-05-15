@@ -1017,6 +1017,9 @@ namespace FEXCore::Context {
       ));
     }
 
+    // Clear any relocations that might have been generated
+    Thread->CPUBackend->ClearRelocations();
+
     if (IRCaptureCache.PostCompileCode(
         Thread,
         CodePtr,
