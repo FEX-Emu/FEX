@@ -8,6 +8,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
+#include <fcntl.h>
 #include <fstream>
 #include <sys/mman.h>
 #include <sys/user.h>
@@ -363,7 +364,10 @@ namespace FEX::HarnessHelper {
   public:
 
     HarnessCodeLoader(std::string const &Filename, const char *ConfigFilename) {
-      ReadFile(Filename, &RawFile);
+      TestFD = open(Filename.c_str(), O_CLOEXEC | O_RDONLY);
+      TestFileSize = lseek(TestFD, 0, SEEK_END);
+      lseek(TestFD, 0, SEEK_SET);
+
       if (ConfigFilename) {
         Config.Init(ConfigFilename);
       }
@@ -414,9 +418,8 @@ namespace FEX::HarnessHelper {
       }
 
       // Map in the memory region for the test file
-      size_t Length = FEXCore::AlignUp(RawFile.size(), FHU::FEX_PAGE_SIZE);
-      Code_start_page = reinterpret_cast<uint64_t>(DoMMap(Code_start_page, Length));
-      mprotect(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC);
+      size_t Length = FEXCore::AlignUp(TestFileSize, FHU::FEX_PAGE_SIZE);
+      Mapper(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE, TestFD, 0);
       RIP = Code_start_page;
 
       // Map the memory regions the test file asks for
@@ -432,7 +435,6 @@ namespace FEX::HarnessHelper {
     void LoadMemory() {
       // Memory base here starts at the start location we passed back with GetLayout()
       // This will write at [CODE_START_RANGE + 0, RawFile.size() )
-      memcpy(reinterpret_cast<void*>(RIP), &RawFile.at(0), RawFile.size());
       Config.LoadMemory();
     }
 
@@ -453,7 +455,8 @@ namespace FEX::HarnessHelper {
     uint64_t Code_start_page = 0x1'0000;
     uint64_t RIP {};
 
-    std::vector<char> RawFile;
+    int TestFD{};
+    size_t TestFileSize{};
     ConfigLoader Config;
   };
 
