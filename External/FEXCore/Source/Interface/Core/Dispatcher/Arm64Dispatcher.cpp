@@ -39,7 +39,7 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE x28
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
-  : Dispatcher(ctx, Thread), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
+  : FEXCore::CPU::Dispatcher(ctx, Thread), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
   SRAEnabled = config.StaticRegisterAssignment;
   SetAllowAssembler(true);
 

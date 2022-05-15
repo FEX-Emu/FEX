@@ -184,7 +184,9 @@ if (ENABLE_JIT_X86_64)
     Interface/Core/JIT/x86_64/MemoryOps.cpp
     Interface/Core/JIT/x86_64/MiscOps.cpp
     Interface/Core/JIT/x86_64/MoveOps.cpp
-    Interface/Core/JIT/x86_64/VectorOps.cpp)
+    Interface/Core/JIT/x86_64/VectorOps.cpp
+    Interface/Core/JIT/x86_64/x64Relocations.cpp
+    )
   list(APPEND DEFINES -DJIT_X86_64)
 endif()
 
