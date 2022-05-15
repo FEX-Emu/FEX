@@ -830,8 +830,8 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(GuestEntry);
+    DebugData->Relocations = &Relocations;
   }
-  Relocations.clear();
 
   this->IR = nullptr;
 

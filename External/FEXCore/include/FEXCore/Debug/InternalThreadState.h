@@ -9,6 +9,7 @@
 #include <FEXCore/Utils/Threads.h>
 
 #include <unordered_map>
+#include <shared_mutex>
 
 namespace FEXCore {
   class LookupCache;
@@ -17,6 +18,10 @@ namespace FEXCore {
 
 namespace FEXCore::Context {
   struct Context;
+}
+
+namespace FEXCore::CPU {
+  union Relocation;
 }
 
 namespace FEXCore::Frontend {
@@ -48,6 +53,7 @@ namespace FEXCore::Core {
   struct DebugData {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     std::vector<DebugDataSubblock> Subblocks;
+    std::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 
   enum class SignalEvent {
@@ -98,7 +104,8 @@ namespace FEXCore::Core {
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
     std::shared_ptr<FEXCore::CompileService> CompileService;
-    bool IsCompileService{false};
+
+    std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};

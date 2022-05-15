@@ -25,6 +25,10 @@ namespace Core {
   struct CpuStateFrame;
 }
 
+namespace CodeSerialize {
+  struct CodeObjectFileSection;
+}
+
 namespace CPU {
 class InterpreterCore;
 class JITCore;
@@ -58,6 +62,16 @@ class LLVMCore;
                                             FEXCore::IR::IRListView const *IR,
                                             FEXCore::Core::DebugData *DebugData,
                                             FEXCore::IR::RegisterAllocationData *RAData) = 0;
+
+    /**
+     * @brief Relocates a block of code from the JIT code object cache
+     *
+     * @param Entry - RIP of the entry
+     * @param SerializationData - Serialization data referring to the object cache for `Entry`
+     *
+     * @return An executable function pointer relocated from the cache object
+     */
+    [[nodiscard]] virtual void *RelocateJITObjectCode(uint64_t Entry, CodeSerialize::CodeObjectFileSection const *SerializationData) { return nullptr; }
 
     /**
      * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required
@@ -97,6 +111,11 @@ class LLVMCore;
      * This should only be used on the interpreter, all other backends can clear their IR
      */
     virtual bool NeedsRetainedIRCopy() const { return false; }
+
+    /**
+     * @brief Clear any relocations after JIT compiling
+     */
+    virtual void ClearRelocations() {}
 
     using AsmDispatch = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame);
     using JITCallback = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
