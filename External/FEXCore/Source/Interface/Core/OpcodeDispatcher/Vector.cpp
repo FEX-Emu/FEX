@@ -1815,7 +1815,6 @@ void OpDispatchBuilder::VPFCMPOp(OpcodeArgs) {
   }
 
   StoreResult(FPRClass, Op, Result, -1);
-  ShouldDump = true;
 }
 
 template
