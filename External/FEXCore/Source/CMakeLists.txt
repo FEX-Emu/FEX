@@ -86,6 +86,7 @@ set (SRCS
   Interface/Core/GdbServer.cpp
   Interface/Core/HostFeatures.cpp
   Interface/Core/ObjectCache/JobHandling.cpp
+  Interface/Core/ObjectCache/NamedRegionObjectHandler.cpp
   Interface/Core/ObjectCache/ObjectCacheService.cpp
   Interface/Core/OpcodeDispatcher/Crypto.cpp
   Interface/Core/OpcodeDispatcher/Flags.cpp
