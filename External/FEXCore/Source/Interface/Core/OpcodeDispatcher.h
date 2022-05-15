@@ -162,7 +162,9 @@ public:
   void UnhandledOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void MOVGPROp(OpcodeArgs);
+  void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorOp(OpcodeArgs);
+  void MOVVectorNTOp(OpcodeArgs);
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
@@ -632,12 +634,22 @@ private:
 
   OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
 
+  enum class MemoryAccessType {
+    // Choose TSO or Non-TSO depending on access type
+    ACCESS_DEFAULT,
+    // TSO access behaviour
+    ACCESS_TSO,
+    // Non-TSO access behaviour
+    ACCESS_NONTSO,
+    // Non-temporal streaming
+    ACCESS_STREAM,
+  };
   OrderedNode *GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset = 0);
-  OrderedNode *LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
-  OrderedNode *LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false);
-  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align);
+  OrderedNode *LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
+  OrderedNode *LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
+  void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
 
   [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
     LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");

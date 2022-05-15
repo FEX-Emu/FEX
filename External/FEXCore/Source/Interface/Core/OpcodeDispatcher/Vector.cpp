@@ -28,6 +28,11 @@ void OpDispatchBuilder::MOVVectorOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1);
 }
 
+void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1, true, false, MemoryAccessType::ACCESS_STREAM);
+  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
+}
+
 void OpDispatchBuilder::MOVAPSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   StoreResult(FPRClass, Op, Src, -1);
@@ -1194,7 +1199,8 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
       {
         auto DestByte = _Bfe(8, 8 * Select, DestElement);
         auto MemLocation = _Add(MemDest, _Constant(Element * 8 + Select));
-        _StoreMemAutoTSO(GPRClass, 1, MemLocation, DestByte, 1);
+        // MASKMOVDQU/MASKMOVQ is explicitly weakly-ordered on its store
+        _StoreMem(GPRClass, 1, MemLocation, DestByte, 1);
       }
       auto Jump = _Jump();
       auto NextJumpTarget = CreateNewCodeBlockAfter(StoreBlock);

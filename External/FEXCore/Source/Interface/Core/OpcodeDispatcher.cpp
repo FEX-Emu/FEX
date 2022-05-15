@@ -4606,7 +4606,7 @@ OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t
   return Value;
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
+OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
   LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
                      Operand.IsLiteral() ||
                      Operand.IsGPRDirect() ||
@@ -4617,7 +4617,6 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 
   OrderedNode *Src {nullptr};
   bool LoadableType = false;
-  bool StackAccess = false;
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
@@ -4646,7 +4645,9 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   else if (Operand.IsGPRDirect()) {
     Src = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]));
     LoadableType = true;
-    StackAccess = Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP;
+    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
+      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    }
   }
   else if (Operand.IsGPRIndirect()) {
     auto GPR = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]));
@@ -4655,7 +4656,9 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 		Src = _Add(GPR, Constant);
 
     LoadableType = true;
-    StackAccess = Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP;
+    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
+      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    }
   }
   else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
@@ -4677,7 +4680,9 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
         Tmp = _Mul(Tmp, Constant);
       }
-      StackAccess |= Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP;
+      if (Operand.Data.SIB.Index == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
+        AccessType = MemoryAccessType::ACCESS_NONTSO;
+      }
     }
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
@@ -4689,7 +4694,10 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       else {
         Tmp = GPR;
       }
-      StackAccess |= Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP;
+
+      if (Operand.Data.SIB.Base == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
+        AccessType = MemoryAccessType::ACCESS_NONTSO;
+      }
     }
 
     if (Operand.Data.SIB.Offset) {
@@ -4724,7 +4732,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   if ((LoadableType && LoadData) || ForceLoad) {
     Src = AppendSegmentOffset(Src, Flags);
 
-    if (StackAccess) {
+    if (AccessType == MemoryAccessType::ACCESS_NONTSO || AccessType == MemoryAccessType::ACCESS_STREAM) {
       Src = _LoadMem(Class, OpSize, Src, Align == -1 ? OpSize : Align);
     }
     else {
@@ -4739,12 +4747,12 @@ OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp con
   return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
 }
 
-OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad) {
+OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
   const uint8_t OpSize = GetSrcSize(Op);
-  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad);
+  return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Align, LoadData, ForceLoad, AccessType);
 }
 
-void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align) {
+void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, uint8_t OpSize, int8_t Align, MemoryAccessType AccessType) {
   LOGMAN_THROW_A_FMT(Operand.IsGPR() ||
                      Operand.IsLiteral() ||
                      Operand.IsGPRDirect() ||
@@ -4757,7 +4765,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   // 32bit ops ZEXT the result to 64bit
   OrderedNode *MemStoreDst {nullptr};
   bool MemStore = false;
-  bool StackAccess = false;
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint32_t AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
@@ -4791,7 +4798,9 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   else if (Operand.IsGPRDirect()) {
     MemStoreDst = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]));
     MemStore = true;
-    StackAccess = Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP;
+    if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
+      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    }
   }
   else if (Operand.IsGPRIndirect()) {
     auto GPR = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]));
@@ -4799,7 +4808,9 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
     MemStoreDst = _Add(GPR, Constant);
     MemStore = true;
-    StackAccess = Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP;
+    if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
+      AccessType = MemoryAccessType::ACCESS_NONTSO;
+    }
   }
   else if (Operand.IsRIPRelative()) {
     if (CTX->Config.Is64BitMode) {
@@ -4869,7 +4880,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       auto DestAddr = _Add(MemStoreDst, _Constant(8));
       _StoreMem(GPRClass, 2, DestAddr, Upper, std::min<uint8_t>(Align, 8));
     } else {
-      if (StackAccess) {
+      if (AccessType == MemoryAccessType::ACCESS_NONTSO || AccessType == MemoryAccessType::ACCESS_STREAM) {
         _StoreMem(Class, OpSize, MemStoreDst, Src, Align == -1 ? OpSize : Align);
       }
       else {
@@ -4879,12 +4890,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
 }
 
-void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align) {
-  StoreResult_WithOpSize(Class, Op, Operand, Src, GetDstSize(Op), Align);
+void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, FEXCore::X86Tables::DecodedOperand const& Operand, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType) {
+  StoreResult_WithOpSize(Class, Op, Operand, Src, GetDstSize(Op), Align, AccessType);
 }
 
-void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align) {
-  StoreResult(Class, Op, Op->Dest, Src, Align);
+void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType) {
+  StoreResult(Class, Op, Op->Dest, Src, Align, AccessType);
 }
 
 OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::Context *ctx)
@@ -4915,6 +4926,11 @@ template<uint32_t SrcIndex>
 void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, 1);
   StoreResult(GPRClass, Op, Src, 1);
+}
+
+void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, 1);
+  StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
 
 void OpDispatchBuilder::ALUOp(OpcodeArgs) {
@@ -5454,7 +5470,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xBD, 1, &OpDispatchBuilder::BSROp}, // BSF
     {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
     {0xC0, 2, &OpDispatchBuilder::XADDOp},
-    {0xC3, 1, &OpDispatchBuilder::MOVGPROp<0>},
+    {0xC3, 1, &OpDispatchBuilder::MOVGPRNTOp},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
     {0xC5, 1, &OpDispatchBuilder::PExtrOp<2>},
     {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
@@ -5468,7 +5484,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
     {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
     {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, false>},
-    {0x2B, 1, &OpDispatchBuilder::MOVAPSOp},
+    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0x2C, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
     {0x2D, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, true>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
@@ -5530,7 +5546,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xE3, 1, &OpDispatchBuilder::PAVGOp<2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
-    {0xE7, 1, &OpDispatchBuilder::MOVUPSOp},
+    {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0xE8, 1, &OpDispatchBuilder::PSUBSOp<1, true>},
     {0xE9, 1, &OpDispatchBuilder::PSUBSOp<2, true>},
     {0xEA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>},
@@ -5758,7 +5774,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x19, 7, &OpDispatchBuilder::NOPOp},
     {0x28, 2, &OpDispatchBuilder::MOVAPSOp},
     {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, true>},
-    {0x2B, 1, &OpDispatchBuilder::MOVAPSOp},
+    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, false>},
     {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<8>},
@@ -5832,7 +5848,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, false>},
-    {0xE7, 1, &OpDispatchBuilder::MOVVectorOp},
+    {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0xE8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 1>},
     {0xE9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 2>},
     {0xEA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>},
@@ -6475,7 +6491,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(PF_38_66,   0x25), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, true>},
     {OPD(PF_38_66,   0x28), 1, &OpDispatchBuilder::PMULLOp<4, true>},
     {OPD(PF_38_66,   0x29), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 8>},
-    {OPD(PF_38_66,   0x2A), 1, &OpDispatchBuilder::MOVAPSOp},
+    {OPD(PF_38_66,   0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
     {OPD(PF_38_66,   0x2B), 1, &OpDispatchBuilder::PACKUSOp<4>},
     {OPD(PF_38_66,   0x30), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, false>},
     {OPD(PF_38_66,   0x31), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, false>},
