@@ -31,6 +31,10 @@ namespace FEXCore::HLE {
   class SyscallHandler;
 }
 
+namespace FEXCore::IR {
+  struct AOTIRCacheEntry;
+}
+
 namespace FEXCore::Context {
   struct Context;
   enum ExitReason {
@@ -236,8 +240,9 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf);
   FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf, uint32_t CPU);
 
-  FEX_DEFAULT_VISIBILITY void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name);
-  FEX_DEFAULT_VISIBILITY void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length);
+  FEX_DEFAULT_VISIBILITY FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(FEXCore::Context::Context *CTX, const std::string& Name);
+  FEX_DEFAULT_VISIBILITY void UnloadAOTIRCacheEntry(FEXCore::Context::Context *CTX, FEXCore::IR::AOTIRCacheEntry *Entry);
+
   FEX_DEFAULT_VISIBILITY void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader);
   FEX_DEFAULT_VISIBILITY void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter);
   FEX_DEFAULT_VISIBILITY void SetAOTIRRenamer(FEXCore::Context::Context *CTX, std::function<void(const std::string&)> CacheRenamer);

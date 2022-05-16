@@ -72,7 +72,8 @@ public:
 
   std::map<uint64_t, std::vector<uint64_t>> CodePages;
 
-  void AddBlockMapping(uint64_t Address, void *HostCode, uint64_t Start, uint64_t Length) {
+  // Returns true if new pages are marked as containing code
+  bool AddBlockMapping(uint64_t Address, void *HostCode, uint64_t Start, uint64_t Length) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
     
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -81,7 +82,10 @@ public:
     BlockList.emplace(Address, (uintptr_t)HostCode);
     LOGMAN_THROW_A_FMT(InsertPoint.second == true, "Dupplicate block mapping added");
 
+    bool rv = false;
+
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length) >> 12; CurrentPage <= EndPage; CurrentPage++) {
+      rv |= CodePages[CurrentPage].size() == 0;
       CodePages[CurrentPage].push_back(Address);
     }
 
@@ -90,6 +94,8 @@ public:
     auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     L1Entry.GuestCode = Address;
     L1Entry.HostCode = (uintptr_t)HostCode;
+
+    return rv;
   }
 
   void Erase(uint64_t Address) {

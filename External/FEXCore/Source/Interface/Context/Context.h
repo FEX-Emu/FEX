@@ -266,8 +266,8 @@ namespace FEXCore::Context {
 
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
-    void AddNamedRegion(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
-    void RemoveNamedRegion(uintptr_t Base, uintptr_t Size);
+    IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const std::string &filename);
+    void UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry);
 
     FEXCore::JITSymbols Symbols;
 

@@ -149,7 +149,7 @@ namespace FEXCore::Context {
   void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
     CTX->CleanupAfterFork(Thread);
   }
-
+  
   void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {
     CTX->SignalDelegation = SignalDelegation;
   }
@@ -186,11 +186,11 @@ namespace FEXCore::Context {
     CTX->WriteFilesWithCode(Writer);
   }
 
-  void AddNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length, uintptr_t Offset, const std::string& Name) {
-    return CTX->AddNamedRegion(Base, Length, Offset, Name);
+  IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(FEXCore::Context::Context *CTX, const std::string &Name) {
+    return CTX->LoadAOTIRCacheEntry(Name);
   }
-  void RemoveNamedRegion(FEXCore::Context::Context *CTX, uintptr_t Base, uintptr_t Length) {
-    return CTX->RemoveNamedRegion(Base, Length);
+  void UnloadAOTIRCacheEntry(FEXCore::Context::Context *CTX, IR::AOTIRCacheEntry *Entry) {
+    return CTX->UnloadAOTIRCacheEntry(Entry);
   }
 
 namespace Debug {

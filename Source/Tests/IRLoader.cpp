@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 
 #include <functional>
 #include <memory>
@@ -119,6 +120,25 @@ private:
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
 
+class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
+  public:
+
+  uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) override {
+    LOGMAN_MSG_A_FMT("Syscalls not implemented");
+    return 0;
+  }
+
+  FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
+    LOGMAN_MSG_A_FMT("Syscalls not implemented");
+    return {0, false, 0 };
+  }
+
+  std::shared_mutex Mutex;
+  FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) override {
+    return {0, 0, FHU::ScopedSignalMaskWithSharedLock {Mutex}};
+  }
+};
+
 int main(int argc, char **argv, char **const envp)
 {
   LogMan::Throw::InstallHandler(AssertHandler);
@@ -141,6 +161,7 @@ int main(int argc, char **argv, char **const envp)
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
+  FEXCore::Context::SetSyscallHandler(CTX, new DummySyscallHandler());
 
   FEX::IRLoader::Loader Loader(Args[0], Args[1]);
 

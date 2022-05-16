@@ -1,11 +1,17 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <shared_mutex>
 
 #include <FEXCore/IR/IR.h>
+#include <FEXHeaderUtils/ScopedSignalMask.h>
 
 namespace FEXCore {
   class CodeLoader;
+}
+
+namespace FEXCore::IR {
+  struct AOTIRCacheEntry;
 }
 
 namespace FEXCore::Context {
@@ -43,6 +49,24 @@ namespace FEXCore::HLE {
     OS_HANGOVER,
   };
 
+  class SyscallHandler;
+  struct AOTIRCacheEntryLookupResult {
+    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t Offset, FHU::ScopedSignalMaskWithSharedLock &&lk)
+      : Entry(Entry), Offset(Offset), lk(std::move(lk))
+    {
+
+    }
+
+    AOTIRCacheEntryLookupResult(AOTIRCacheEntryLookupResult&&) = default;
+
+    FEXCore::IR::AOTIRCacheEntry *Entry;
+    uintptr_t Offset;
+
+    friend class SyscallHandler;
+    protected:
+    FHU::ScopedSignalMaskWithSharedLock lk;
+  };
+
   class SyscallHandler {
   public:
     virtual ~SyscallHandler() = default;
@@ -53,6 +77,8 @@ namespace FEXCore::HLE {
 
     SyscallOSABI GetOSABI() const { return OSABI; }
     virtual FEXCore::CodeLoader *GetCodeLoader() const { return nullptr; }
+    virtual void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) { }
+    virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) = 0;
 
   protected:
     SyscallOSABI OSABI;
