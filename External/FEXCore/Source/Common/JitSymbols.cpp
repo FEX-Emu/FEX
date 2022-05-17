@@ -34,6 +34,14 @@ namespace FEXCore {
     fmt::print(fp.get(), "{} {:x} {}_{}\n", HostAddr, CodeSize, Name, HostAddr);
   }
 
+  void JITSymbols::Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name, uintptr_t Offset) {
+    if (!fp) return;
+
+    // Linux perf format is very straightforward
+    // `<HostPtr> <Size> <Name>\n`
+    fmt::print(fp.get(), "{} {:x} {}+0x{:x} ({})\n", HostAddr, CodeSize, Name, Offset, HostAddr);
+  }
+
   void JITSymbols::RegisterNamedRegion(const void *HostAddr, uint32_t CodeSize, std::string_view Name) {
     if (!fp) return;
 
