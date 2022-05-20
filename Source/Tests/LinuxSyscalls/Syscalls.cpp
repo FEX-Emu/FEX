@@ -313,6 +313,7 @@ static void PrintFlags(uint64_t Flags){
   FLAGPRINT(CLONE_NEWPID,         0x20000000);
   FLAGPRINT(CLONE_NEWNET,         0x40000000);
   FLAGPRINT(CLONE_IO,             0x80000000);
+  FLAGPRINT(CLONE_PIDFD,          0x00001000);
 #undef FLAGPRINT
 };
 
@@ -482,7 +483,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       reinterpret_cast<pid_t*>(args->args.child_tid),
       reinterpret_cast<void*>(args->args.tls));
   } else {
-    auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, &args->args);
+    auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
 
     // Return the new threads TID
     uint64_t Result = NewThread->ThreadManager.GetTID();
