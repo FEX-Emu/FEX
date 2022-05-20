@@ -331,7 +331,7 @@ namespace DistroQuery {
 }
 
 namespace WebFileFetcher {
-	struct FileTargets {
+  struct FileTargets {
     // These two are for matching version checks
     std::string DistroMatch;
     std::string VersionMatch;
@@ -366,7 +366,7 @@ namespace WebFileFetcher {
     auto PathName = Path + filename;
 
     std::string BigArgs =
-    fmt::format("curl -C - {} -o {}", URL, PathName);
+    fmt::format("curl - {} -o {}", URL, PathName);
     std::vector<const char*> ExecveArgs = {
       "/bin/sh",
       "-c",
