@@ -121,10 +121,15 @@ namespace GUI {
 
   static void FDClosedHandler(int FD) {
     std::unique_lock lk{PIDMappingMutex};
-    std::erase_if(PIDs, [FD](auto& Entry) {
-      Entry.second.FDs.erase(FD);
-      return Entry.second.FDs.empty();
-    });
+    for (auto it = PIDs.begin(); it != PIDs.end(); ) {
+      it->second.FDs.erase(FD);
+      if (it->second.FDs.empty()) {
+        it = PIDs.erase(it);
+      }
+      else {
+        ++it;
+      }
+    }
     FEX::GUI::HadUpdate();
   }
 
