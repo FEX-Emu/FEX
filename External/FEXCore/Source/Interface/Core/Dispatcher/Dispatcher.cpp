@@ -118,7 +118,13 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
 
     if (!(Context->Flags & ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT)) {
       auto *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
-      [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
+      auto *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
+      
+      auto HostUctx = (ucontext_t*)ucontext;
+      // guest might have modified uc_sigmask here
+      // FEX_TODO_ISSUE(1682, "Handle actual sigmask size in a better way here")
+      CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&guest_uctx->uc_sigmask);
+      memcpy(&HostUctx->uc_sigmask, &guest_uctx->uc_sigmask, sizeof(uint64_t));
 
       // If the guest modified the RIP then we need to take special precautions here
       if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] ||
@@ -177,7 +183,14 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
     }
     else {
       auto *guest_uctx = reinterpret_cast<FEXCore::x86::ucontext_t*>(Context->UContextLocation);
-      [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(Context->SigInfoLocation);
+      auto *guest_siginfo = reinterpret_cast<FEXCore::x86::siginfo_t*>(Context->SigInfoLocation);
+
+      auto HostUctx = (ucontext_t*)ucontext;
+      // guest might have modified uc_sigmask here
+      // FEX_TODO_ISSUE(1682, "Handle actual sigmask size in a better way here")
+      CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&guest_uctx->uc_sigmask);
+      memcpy(&HostUctx->uc_sigmask, &guest_uctx->uc_sigmask, sizeof(uint64_t));
+
       // If the guest modified the RIP then we need to take special precautions here
       if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] ||
           Context->FaultToTopAndGeneratedException) {
@@ -629,6 +642,19 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   memset(Frame->State.mm, 0, sizeof(Frame->State.mm));
   Frame->State.FCW = 0x37F;
   Frame->State.FTW = 0xFFFF;
+
+  auto HostUctx = (ucontext_t*)ucontext;
+
+
+  //FEX_TODO("Move this to the frontend")
+  if (!(GuestAction->sa_flags & SA_NODEFER)) {
+    // The host signal handler returns here, make sure the sa_mask after host signal return matches
+    // the signal mask guest expects during signal handling. The original sa_mask 
+    auto NewMask = GuestAction->sa_mask;
+    NewMask.Val |= (1ULL << (Signal-1));
+    CTX->SignalDelegation->NotifyGuestMaskChange(&NewMask);
+    memcpy(&HostUctx->uc_sigmask, &NewMask, sizeof(NewMask));
+  }
 
   return true;
 }

@@ -55,6 +55,9 @@ namespace FEX::HLE {
     /**  @} */
 
       void UninstallHostHandler(int Signal);
+
+      void NotifyGuestMaskChange(FEXCore::GuestSAMask *NewMask);
+
   protected:
     // Called from the thunk handler to handle the signal
     void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) override;

@@ -23,7 +23,7 @@ struct X86ContextBackup {
   // RIP and RSP is stored in GPRs here
   uint64_t GPRs[23];
   FEXCore::x86_64::_libc_fpstate FPRState;
-  uint64_t sa_mask;
+  uint64_t sigmask;
   bool FaultToTopAndGeneratedException;
 
   // Guest state
@@ -46,7 +46,7 @@ struct ArmContextBackup {
   uint32_t FPSR;
   uint32_t FPCR;
   __uint128_t FPRs[32];
-  uint64_t sa_mask;
+  uint64_t sigmask;
   bool FaultToTopAndGeneratedException;
 
   // Guest state
@@ -149,7 +149,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     memcpy(&Backup->FPRs[0], &HostState->FPRs[0], 32 * sizeof(__uint128_t));
 
     // Save the signal mask so we can restore it
-    memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+    memcpy(&Backup->sigmask, &_ucontext->uc_sigmask, sizeof(uint64_t));
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -175,7 +175,7 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
     memcpy(&_mcontext->regs[0], &Backup->GPRs[0], 31 * sizeof(uint64_t));
 
     // Restore the signal mask now
-    memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
+    memcpy(&_ucontext->uc_sigmask, &Backup->sigmask, sizeof(uint64_t));
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -236,7 +236,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
     // XXX: Save 256bit and 512bit AVX register state
 
     // Save the signal mask so we can restore it
-    memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+    memcpy(&Backup->sigmask, &_ucontext->uc_sigmask, sizeof(uint64_t));
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -255,7 +255,7 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
     memcpy(_mcontext->fpregs, &Backup->FPRState, sizeof(X86ContextBackup::FPRState));
 
     // Restore the signal mask now
-    memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
+    memcpy(&_ucontext->uc_sigmask, &Backup->sigmask, sizeof(uint64_t));
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");

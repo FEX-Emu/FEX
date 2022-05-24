@@ -171,6 +171,18 @@ namespace FEX::HLE {
     return Result;
   }
 
+  void SignalDelegator::NotifyGuestMaskChange(FEXCore::GuestSAMask *NewMask) {
+    uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
+    ThreadData.CurrentSignalMask.Val = NewMask->Val & IgnoredSignalsMask;
+
+      for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+        if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
+          // If it is a required host signal then we can't mask it
+          NewMask->Val &= ~(1ULL << i);
+        }
+      }
+  }
+
   bool SignalDelegator::UpdateHostThunk(int Signal) {
     SignalHandler &SignalHandler = HostHandlers[Signal];
 
