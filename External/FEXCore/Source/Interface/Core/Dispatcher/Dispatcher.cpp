@@ -123,7 +123,6 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
       auto HostUctx = (ucontext_t*)ucontext;
       // guest might have modified uc_sigmask here
       // FEX_TODO_ISSUE(1682, "Handle actual sigmask size in a better way here")
-      CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&guest_uctx->uc_sigmask);
       memcpy(&HostUctx->uc_sigmask, &guest_uctx->uc_sigmask, sizeof(uint64_t));
 
       // If the guest modified the RIP then we need to take special precautions here
@@ -188,7 +187,6 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
       auto HostUctx = (ucontext_t*)ucontext;
       // guest might have modified uc_sigmask here
       // FEX_TODO_ISSUE(1682, "Handle actual sigmask size in a better way here")
-      CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&guest_uctx->uc_sigmask);
       memcpy(&HostUctx->uc_sigmask, &guest_uctx->uc_sigmask, sizeof(uint64_t));
 
       // If the guest modified the RIP then we need to take special precautions here
@@ -252,6 +250,10 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
       }
     }
   }
+
+  //FEX_TODO("This is a bit of a hack")
+  auto HostUctx = (ucontext_t*)ucontext;
+  CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&HostUctx->uc_sigmask);
 }
 
 static uint32_t ConvertSignalToTrapNo(int Signal, siginfo_t *HostSigInfo) {
