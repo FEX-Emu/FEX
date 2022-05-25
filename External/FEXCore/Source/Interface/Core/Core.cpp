@@ -42,7 +42,6 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/TodoDefines.h>
 
 #include <algorithm>
 #include <array>

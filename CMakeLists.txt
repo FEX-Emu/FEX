@@ -478,6 +478,7 @@ endif()
 
 add_subdirectory(FEXHeaderUtils/)
 include_directories(FEXHeaderUtils/)
+add_definitions(-include FEXHeaderUtils/FEXGlobalIncludes.h)
 
 add_subdirectory(External/FEXCore)
 
