@@ -755,7 +755,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   }
   else {
     // If we are storing to memory then we store the size of the element extracted
-    StoreResult(GPRClass, Op, Result, -1);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, ElementSize, -1);
   }
 }
 
