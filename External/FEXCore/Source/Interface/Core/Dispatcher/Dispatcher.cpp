@@ -480,6 +480,11 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
       Frame->State.gregs[X86State::REG_RSI] = SigInfoLocation;
       Frame->State.gregs[X86State::REG_RDX] = UContextLocation;
+
+      //FEX_TODO("nicer size here")
+      memcpy(&guest_uctx->uc_sigmask, &GuestAction->sa_mask, sizeof(uint64_t));
+      //FEX_TODO("nicer types here")
+      CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&guest_uctx->uc_sigmask);
     }
     else {
       ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT;
@@ -609,6 +614,11 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       *(uint32_t*)NewGuestSP = SigInfoLocation;
       NewGuestSP -= 4;
       *(uint32_t*)NewGuestSP = Signal;
+
+      //FEX_TODO("nicer size here")
+      memcpy(&guest_uctx->uc_sigmask, &GuestAction->sa_mask, sizeof(uint64_t));
+      //FEX_TODO("nicer types here")
+      CTX->SignalDelegation->NotifyGuestMaskChange((GuestSAMask*)&guest_uctx->uc_sigmask);
     }
 
     Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
