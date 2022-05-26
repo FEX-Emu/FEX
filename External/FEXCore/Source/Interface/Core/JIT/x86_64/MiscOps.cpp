@@ -166,6 +166,10 @@ DEF_OP(RDRAND) {
   setc(Dst.second.cvt8());
 }
 
+DEF_OP(Yield) {
+  pause();
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -184,6 +188,7 @@ void X86JITCore::RegisterMiscHandlers() {
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
   REGISTER_OP(PROCESSORID,   ProcessorID);
   REGISTER_OP(RDRAND, RDRAND);
+  REGISTER_OP(YIELD, Yield);
 #undef REGISTER_OP
 }
 }
