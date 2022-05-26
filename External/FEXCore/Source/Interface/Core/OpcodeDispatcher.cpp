@@ -1443,6 +1443,11 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     // But this would result in a zext on 64bit, which would ruin the no-op nature of the instruction
     // So x86-64 spec mandates this special case that even though it is a 32bit instruction and
     // is supposed to zext the result, it is a true no-op
+    if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
+      // If this instruction has a REP prefix then this is architectually defined to be a `PAUSE` instruction.
+      // On older processors this ends up being a true `REP NOP` which is why they stuck this here.
+      _Yield();
+    }
     return;
   }
 
