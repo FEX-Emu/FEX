@@ -157,6 +157,11 @@ DEF_OP(RDRAND) {
   // Second result is if we managed to read a valid random number or not
   DstPtr[1] = Result == 8 ? 1 : 0;
 }
+
+DEF_OP(Yield) {
+  // Nop implementation
+}
+
 #undef DEF_OP
 
 } // namespace FEXCore::CPU

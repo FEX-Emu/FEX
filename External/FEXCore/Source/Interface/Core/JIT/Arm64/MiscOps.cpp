@@ -219,6 +219,10 @@ DEF_OP(RDRAND) {
   cset(Dst.second, Condition::ne);
 }
 
+DEF_OP(Yield) {
+  hint(SystemHint::YIELD);
+}
+
 #undef DEF_OP
 void Arm64JITCore::RegisterMiscHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
@@ -237,6 +241,7 @@ void Arm64JITCore::RegisterMiscHandlers() {
   REGISTER_OP(INVALIDATEFLAGS,   NoOp);
   REGISTER_OP(PROCESSORID,   ProcessorID);
   REGISTER_OP(RDRAND, RDRAND);
+  REGISTER_OP(YIELD, Yield);
 
 #undef REGISTER_OP
 }
