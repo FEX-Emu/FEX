@@ -1,6 +1,7 @@
 namespace fexgen {
 struct returns_guest_pointer {};
 struct custom_host_impl {};
+struct no_host_impl {};
 struct custom_guest_entrypoint {};
 
 struct generate_guest_symtable {};
