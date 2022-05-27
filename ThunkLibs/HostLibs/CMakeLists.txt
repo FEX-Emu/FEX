@@ -100,6 +100,7 @@ generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp function
 add_host_lib(GL)
 target_link_libraries(GL-host PRIVATE X11)
 target_link_libraries(GL-host PRIVATE GLX)
+target_link_libraries(GL-host PRIVATE EGL)
 target_link_libraries(GL-host PRIVATE GL)
 
 find_package(OpenGL REQUIRED)

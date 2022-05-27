@@ -8,21 +8,35 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#include <EGL/egl.h>
+
 #undef GL_ARB_viewport_array
 #include "glcorearb.h"
 
-#include "private_api.h"
+#include "libGL_private.h"
 
 
 template<auto>
 struct fex_gen_config {};
 // : fexgen::generate_guest_symtable { };
 
-template<> struct fex_gen_config<fgl_HostToGuest>: fexgen::custom_host_impl {};
-template<> struct fex_gen_config<fgl_GuestToHost>: fexgen::custom_host_impl{};
+// internal
+template<> struct fex_gen_config<fgl_HostToGuestX11>: fexgen::custom_host_impl {};
+template<> struct fex_gen_config<fgl_GuestToHostX11>: fexgen::custom_host_impl{};
 template<> struct fex_gen_config<fgl_XFree>: fexgen::custom_host_impl {};
-template<> struct fex_gen_config<fgl_FlushFromGuest>: fexgen::custom_host_impl {};
+template<> struct fex_gen_config<fgl_FlushFromGuestX11>: fexgen::custom_host_impl {};
 
+template<> struct fex_gen_config<fgl_HostToXGuestEGL>: fexgen::custom_host_impl {};
+template<> struct fex_gen_config<fgl_XGuestToXHostEGL>: fexgen::custom_host_impl {};
+template<> struct fex_gen_config<fgl_FlushFromHostEGL>: fexgen::custom_host_impl {};
+
+namespace glx {
+template<auto>
+struct fex_gen_config : fexgen::generate_guest_symtable {
+    const char* load_host_endpoint_via = "symbolFromGlXGetProcAddr";
+};
+
+// GLX
 template<> struct fex_gen_config<glXGetContextIDEXT> {};
 template<> struct fex_gen_config<glXCreateContextWithConfigSGIX>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXImportContextEXT>: fexgen::custom_guest_entrypoint {};
@@ -93,6 +107,65 @@ template<> struct fex_gen_config<glXWaitGL>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXWaitX>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXChooseVisual>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXGetVisualFromFBConfig>: fexgen::custom_guest_entrypoint {};
+}
+
+namespace egl {
+template<auto>
+struct fex_gen_config : fexgen::generate_guest_symtable {
+    const char* load_host_endpoint_via = "symbolFromEglGetProcAddr";
+};
+
+// EGL
+template<> struct fex_gen_config<eglGetDisplay>: fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+
+template<> struct fex_gen_config<eglChooseConfig>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglDestroyContext>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglDestroySurface>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglInitialize>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglMakeCurrent>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglQuerySurface>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglSurfaceAttrib>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglSwapBuffers>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglTerminate>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreateContext>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreateWindowSurface>: fexgen::custom_guest_entrypoint {};
+
+template<> struct fex_gen_config<eglBindAPI>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglGetError> {};
+template<> struct fex_gen_config<eglGetCurrentContext> {};
+template<> struct fex_gen_config<eglGetCurrentDisplay> {};
+template<> struct fex_gen_config<eglGetCurrentSurface> {};
+
+// new ones
+template<> struct fex_gen_config<eglBindTexImage>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglClientWaitSync>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCopyBuffers>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreateImage>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreatePbufferFromClientBuffer>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreatePbufferSurface>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreatePixmapSurface>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreatePlatformPixmapSurface>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreatePlatformWindowSurface>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglCreateSync>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglDestroyImage>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglDestroySync>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglGetConfigAttrib>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglGetConfigs>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglGetPlatformDisplay>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglGetSyncAttrib>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglQueryContext>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglQueryString>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglReleaseTexImage>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglSwapInterval>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<eglWaitSync>: fexgen::custom_guest_entrypoint {};
+
+template<> struct fex_gen_config<eglQueryAPI> {};
+template<> struct fex_gen_config<eglReleaseThread> {};
+template<> struct fex_gen_config<eglWaitClient> {};
+template<> struct fex_gen_config<eglWaitGL> {};
+template<> struct fex_gen_config<eglWaitNative> {};
+}
+
 
 // Symbols exposed through glXGetProcAddr
 namespace internal {

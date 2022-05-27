@@ -20,17 +20,22 @@ $end_info$
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#include <EGL/egl.h>
+
 #include "common/Host.h"
 #include <shared_mutex>
 #include <map>
 
-#include "private_api.h"
+#include "libGL_private.h"
 
+#include "ldr_ptrs.inl"
+
+namespace fglx {
 static std::shared_mutex DisplayMapLock;
 static std::map<Display *, Display *> GuestToHost;
 static std::map<Display *, Display *> HostToGuest;
 
-static Display *fexfn_impl_libGL_fgl_HostToGuest(Display *Host) {
+static Display *fexfn_impl_libGL_fgl_HostToGuestX11(Display *Host) {
     std::shared_lock lk(DisplayMapLock);
 
     auto rv = HostToGuest.find(Host);
@@ -42,7 +47,7 @@ static Display *fexfn_impl_libGL_fgl_HostToGuest(Display *Host) {
     }
 }
 
-static Display *fexfn_impl_libGL_fgl_GuestToHost(Display *Guest, const char *DisplayName) {
+static Display *fexfn_impl_libGL_fgl_GuestToHostX11(Display *Guest, const char *DisplayName) {
     std::unique_lock lk(DisplayMapLock);
     auto rv = GuestToHost.find(Guest);
 
@@ -65,14 +70,101 @@ static Display *fexfn_impl_libGL_fgl_GuestToHost(Display *Guest, const char *Dis
 static void fexfn_impl_libGL_fgl_XFree(void *p) {
     XFree(p);
 }
-static void fexfn_impl_libGL_fgl_FlushFromGuest(Display *Guest, const char *DisplayName) {
-    auto Host = fexfn_impl_libGL_fgl_GuestToHost(Guest, DisplayName);
+
+static void fexfn_impl_libGL_fgl_FlushFromGuestX11(Display *Guest, const char *DisplayName) {
+    auto Host = fexfn_impl_libGL_fgl_GuestToHostX11(Guest, DisplayName);
 
     if (Host) {
         XFlush(Host);
     }
 }
 
+}
+
+namespace fegl {
+static std::shared_mutex DisplayMapLockEGL;
+static std::map<EGLDisplay, Display *> HostToXGuestEGL;
+static std::map<EGLDisplay, Display *> HostToXHostEGL;
+static std::map<Display *, Display *> XHostToXGuestEGL;
+static std::map<Display *, Display *> XGuestToXHostEGL;
+
+static Display *fexfn_impl_libGL_fgl_XGuestToXHostEGL(Display *XGuest, const char *DisplayName) {
+    std::unique_lock lk(DisplayMapLockEGL);
+    auto rv = XGuestToXHostEGL.find(XGuest);
+
+    if (rv != XGuestToXHostEGL.end()) {
+        return rv->second;
+    } else {
+        auto XHost = XOpenDisplay(DisplayName);
+        if (XHost) {
+            dbgf("fegl: Mapping Guest Display %p ('%s') to Host %p\n", XGuest, DisplayName, XHost);
+            XGuestToXHostEGL[XGuest] = XHost;
+            XHostToXGuestEGL[XHost] = XGuest;
+            return XHost;
+        } else {
+            dbgf("fegl: Failed to open Guest Display %p ('%s') on Host\n", XGuest, DisplayName);
+            return nullptr;
+        }
+    }
+}
+
+static Display *fexfn_impl_libGL_fgl_HostToXGuestEGL(EGLDisplay Host) {
+    std::shared_lock lk(DisplayMapLockEGL);
+
+    auto XGuest = HostToXGuestEGL.find(Host);
+
+    if (XGuest != HostToXGuestEGL.end()) {
+        return XGuest->second;
+    } else {
+        return nullptr;
+    }
+}
+
+static Display *fexfn_impl_libGL_fgl_FlushFromHostEGL(EGLDisplay Host) {
+    std::shared_lock lk(DisplayMapLockEGL);
+
+    auto XHost = HostToXHostEGL.find(Host);
+
+    if (XHost != HostToXHostEGL.end()) {
+        XFlush(XHost->second);
+    }
+
+    // same as fexfn_impl_libGL_fgl_HostToXGuestEGL
+    auto XGuest = HostToXGuestEGL.find(Host);
+
+    if (XGuest != HostToXGuestEGL.end()) {
+        return XGuest->second;
+    } else {
+        return nullptr;
+    }
+}
+
+static EGLDisplay fexfn_impl_libGL_eglGetDisplay(NativeDisplayType native_display) {
+    if (native_display == EGL_DEFAULT_DISPLAY) {
+        return fexldr_ptr_libGL_eglGetDisplay(native_display);
+    } else {
+        auto XHost = (Display*)native_display;
+
+        auto Host = fexldr_ptr_libGL_eglGetDisplay(native_display);
+
+        if (Host == EGL_NO_DISPLAY) {
+            return Host;
+        } else {
+            std::unique_lock lk(DisplayMapLockEGL);
+            auto XGuest = XHostToXGuestEGL.find(XHost);
+            if (XGuest == XHostToXGuestEGL.end()) {
+                dbgf("fegl: eglGetDisplay failed to map XHost %p, Host %p to XGuest\n", XHost, Host);
+            } else {
+                HostToXHostEGL[Host] = XHost;
+                HostToXGuestEGL[Host] = XGuest->second;
+
+                dbgf("fegl: eglGetDisplay mapped Host %p to (XHost %p, XGuest %p)\n", Host, XHost, XGuest->second);
+            }
+            return Host;
+        }
+    }
+}
+}
 
 static void fexfn_impl_libGL_glDebugMessageCallbackAMD_internal(GLDEBUGPROCAMD, const void*) {
     fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
@@ -86,11 +178,16 @@ static void fexfn_impl_libGL_glDebugMessageCallback_internal(GLDEBUGPROC, const 
     fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
 }
 
-static void* symbolFromGlXGetProcAddr(void*, const char* name) {
+static void *symbolFromGlXGetProcAddr(void *, const char *name) {
     return (void*)glXGetProcAddress((const GLubyte*)name);
 }
 
-#include "ldr_ptrs.inl"
+static void *symbolFromEglGetProcAddr(void *, const char *name) {
+    return (void*)eglGetProcAddress(name);
+}
+
+using namespace fglx;
+using namespace fegl;
 #include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
