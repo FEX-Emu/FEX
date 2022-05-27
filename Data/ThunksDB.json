@@ -1,5 +1,62 @@
 {
   "DB": {
+    "FGL": {
+      "Library": "libGL-guest.so",
+      "Overlay": [
+        "/usr/lib/x86_64-linux-gnu/libGL.so",
+        "/usr/lib/x86_64-linux-gnu/libGL.so.1",
+        "/usr/lib/x86_64-linux-gnu/libGL.so.1.2.0",
+        "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so.1.2.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGL.so.1.7.0",
+        "/lib/x86_64-linux-gnu/libGL.so",
+        "/lib/x86_64-linux-gnu/libGL.so.1",
+        "/lib/x86_64-linux-gnu/libGL.so.1.2.0",
+        "/lib/x86_64-linux-gnu/libGL.so.1.7.0",
+
+        "/usr/lib/x86_64-linux-gnu/libGLX.so",
+        "/usr/lib/x86_64-linux-gnu/libGLX.so.0",
+        "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGLX.so",
+        "/usr/local/lib/x86_64-linux-gnu/libGLX.so.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGLX.so.0.0.0",
+        "/lib/x86_64-linux-gnu/libGLX.so",
+        "/lib/x86_64-linux-gnu/libGLX.so.0",
+        "/lib/x86_64-linux-gnu/libGLX.so.0.0.0",
+
+        "/usr/lib/x86_64-linux-gnu/libEGL.so",
+        "/usr/lib/x86_64-linux-gnu/libEGL.so.1",
+        "/usr/lib/x86_64-linux-gnu/libEGL.so.1.1.0",
+        "/usr/local/lib/x86_64-linux-gnu/libEGL.so",
+        "/usr/local/lib/x86_64-linux-gnu/libEGL.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libEGL.so.1.1.0",
+        "/lib/x86_64-linux-gnu/libEGL.so",
+        "/lib/x86_64-linux-gnu/libEGL.so.1",
+        "/lib/x86_64-linux-gnu/libEGL.so.1.1.0",
+
+	      "/usr/lib/x86_64-linux-gnu/libGLESv1_CM.so",
+        "/usr/lib/x86_64-linux-gnu/libGLESv1_CM.so.1",
+        "/usr/lib/x86_64-linux-gnu/libGLESv1_CM.so.1.2.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv1_CM.so",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv1_CM.so.1",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv1_CM.so.1.2.0",
+        "/lib/x86_64-linux-gnu/libGLESv1_CM.so",
+        "/lib/x86_64-linux-gnu/libGLESv1_CM.so.1",
+        "/lib/x86_64-linux-gnu/libGLESv1_CM.so.1.2.0",
+
+        "/usr/lib/x86_64-linux-gnu/libGLESv2.so",
+        "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2",
+        "/usr/lib/x86_64-linux-gnu/libGLESv2.so.2.1.0",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv2.so",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv2.so.2",
+        "/usr/local/lib/x86_64-linux-gnu/libGLESv2.so.2.1.0",
+        "/lib/x86_64-linux-gnu/libGLESv2.so",
+        "/lib/x86_64-linux-gnu/libGLESv2.so.2",
+        "/lib/x86_64-linux-gnu/libGLESv2.so.2.1.0"
+      ]
+    },
     "GL": {
       "Library" : "libGL-guest.so",
       "Depends": [
