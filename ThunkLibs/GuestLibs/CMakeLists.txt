@@ -83,6 +83,7 @@ function(add_guest_lib_with_name NAME LIBNAME)
   endif()
 
   add_library(${LIBNAME}-guest ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
+  set_property(TARGET ${LIBNAME}-guest PROPERTY CXX_VISIBILITY_PRESET hidden)
   target_include_directories(${LIBNAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}")
   target_compile_definitions(${LIBNAME}-guest PRIVATE GUEST_THUNK_LIBRARY)
   target_link_libraries(${LIBNAME}-guest PRIVATE lib${LIBNAME}-guest-deps)
@@ -92,6 +93,8 @@ function(add_guest_lib_with_name NAME LIBNAME)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${LIBNAME}-guest PRIVATE -fwrapv)
   target_compile_options(${LIBNAME}-guest PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
+
+  target_link_options(${LIBNAME}-guest PRIVATE "LINKER:--no-undefined")
 
   if (GENERATE_GUEST_INSTALL_TARGETS)
     install(TARGETS ${LIBNAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
@@ -111,11 +114,12 @@ endfunction()
 #generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp thunks function_packs function_packs_public)
 #add_guest_lib(asound)
 
-generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(EGL)
+#generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp thunks function_packs function_packs_public)
+#add_guest_lib(EGL)
 
 generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(GL)
+target_link_libraries(GL-guest PRIVATE X11)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)

@@ -1,13 +1,17 @@
 //FEX_TODO("Make these static")
 
-Display *fgl_HostToGuestX11(Display *Host);
-Display *fgl_GuestToHostX11(Display *Guest, const char *DisplayName);
-void fgl_FlushFromGuestX11(Display *Guest, const char *DisplayName);
-void fgl_XFree(void *p);
+extern "C" {
+Display *IMPL(fgl_HostToGuestX11)(Display *Host);
+Display *IMPL(fgl_GuestToHostX11)(Display *Guest, const char *DisplayName);
+void IMPL(fgl_FlushFromGuestX11)(Display *Guest, const char *DisplayName);
+void IMPL(fgl_XFree)(void *p);
 
-Display *fgl_HostToXGuestEGL(EGLDisplay Host);
-Display *fgl_XGuestToXHostEGL(Display *XGuest, const char *DisplayName);
-Display *fgl_FlushFromHostEGL(EGLDisplay Host);
+Display *IMPL(fgl_HostToXGuestEGL)(EGLDisplay Host);
+Display *IMPL(fgl_XGuestToXHostEGL)(Display *XGuest, const char *DisplayName);
+Display *IMPL(fgl_FlushFromHostEGL)(EGLDisplay Host);
+}
+
+//#define TRACE
 
 #define CONCAT(a, b, c) a##_##b##_##c
 #define EVAL(a, b) CONCAT(fexldr_ptr, a, b)

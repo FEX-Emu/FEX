@@ -26,9 +26,12 @@ $end_info$
 #include <shared_mutex>
 #include <map>
 
+#define IMPL(x) x
+
 #include "libGL_private.h"
 
 #include "ldr_ptrs.inl"
+
 
 namespace fglx {
 static std::shared_mutex DisplayMapLock;

@@ -13,6 +13,7 @@
 #undef GL_ARB_viewport_array
 #include "glcorearb.h"
 
+#define IMPL(x) x
 #include "libGL_private.h"
 
 
@@ -38,35 +39,35 @@ struct fex_gen_config : fexgen::generate_guest_symtable {
 
 // GLX
 template<> struct fex_gen_config<glXGetContextIDEXT> {};
-template<> struct fex_gen_config<glXCreateContextWithConfigSGIX>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXImportContextEXT>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetCurrentReadDrawableSGI>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXChooseFBConfigSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetFBConfigFromVisualSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXCreateGLXPbufferSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXCreateGLXPixmapWithConfigSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXSwapBuffersMscOML>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetFBConfigAttribSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetMscRateOML>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetSwapIntervalMESA>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetSyncValuesOML>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetVideoSyncSGI>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXMakeCurrentReadSGI>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXQueryContextInfoEXT>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXSwapIntervalMESA>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXSwapIntervalSGI>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXWaitForMscOML>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXWaitForSbcOML>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXWaitVideoSyncSGI>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXBindTexImageEXT>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXCopySubBufferMESA>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXDestroyGLXPbufferSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXFreeContextEXT>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetSelectedEventSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXQueryGLXPbufferSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXReleaseTexImageEXT>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXSelectEventSGIX>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXGetVisualFromFBConfigSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXCreateContextWithConfigSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetCurrentReadDrawableSGI> {};
+//template<> struct fex_gen_config<glXChooseFBConfigSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetFBConfigFromVisualSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXCreateGLXPbufferSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXCreateGLXPixmapWithConfigSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXSwapBuffersMscOML>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetFBConfigAttribSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetMscRateOML>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetSwapIntervalMESA>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetSyncValuesOML>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetVideoSyncSGI>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXMakeCurrentReadSGI>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXQueryContextInfoEXT>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXSwapIntervalMESA>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXSwapIntervalSGI>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXWaitForMscOML>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXWaitForSbcOML>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXWaitVideoSyncSGI>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXBindTexImageEXT>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXCopySubBufferMESA>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXDestroyGLXPbufferSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXFreeContextEXT>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetSelectedEventSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXQueryGLXPbufferSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXReleaseTexImageEXT>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXSelectEventSGIX>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXGetVisualFromFBConfigSGIX>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXGetClientString>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXQueryExtensionsString>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXQueryServerString>: fexgen::custom_guest_entrypoint {};
@@ -90,14 +91,14 @@ template<> struct fex_gen_config<glXMakeCurrent>: fexgen::custom_guest_entrypoin
 template<> struct fex_gen_config<glXQueryContext>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXQueryExtension>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXQueryVersion>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXAllocateMemoryNV>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXAllocateMemoryNV>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXCopyContext>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXDestroyContext>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXDestroyGLXPixmap>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXDestroyPbuffer>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXDestroyPixmap>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXDestroyWindow>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXFreeMemoryNV>: fexgen::custom_guest_entrypoint {};
+//template<> struct fex_gen_config<glXFreeMemoryNV>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXGetSelectedEvent>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXQueryDrawable>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXSelectEvent>: fexgen::custom_guest_entrypoint {};
@@ -107,6 +108,17 @@ template<> struct fex_gen_config<glXWaitGL>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXWaitX>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXChooseVisual>: fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<glXGetVisualFromFBConfig>: fexgen::custom_guest_entrypoint {};
+
+//template<> struct fex_gen_config<glXCreateContextAttribs>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<glXCreateContextAttribsARB>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<glXSwapIntervalEXT>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<glXQueryCurrentRendererIntegerMESA> {}; // passthrough
+template<> struct fex_gen_config<glXQueryCurrentRendererStringMESA> {}; // passthrough
+template<> struct fex_gen_config<glXQueryRendererIntegerMESA>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<glXQueryRendererStringMESA>: fexgen::custom_guest_entrypoint {};
+
+template<> struct fex_gen_config<glXGetProcAddress>: fexgen::custom_guest_entrypoint, fexgen::no_host_impl, fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<glXGetProcAddressARB>: fexgen::custom_guest_entrypoint, fexgen::no_host_impl, fexgen::returns_guest_pointer {};
 }
 
 namespace egl {
@@ -164,25 +176,18 @@ template<> struct fex_gen_config<eglReleaseThread> {};
 template<> struct fex_gen_config<eglWaitClient> {};
 template<> struct fex_gen_config<eglWaitGL> {};
 template<> struct fex_gen_config<eglWaitNative> {};
+
+template<> struct fex_gen_config<eglGetProcAddress>: fexgen::custom_guest_entrypoint, fexgen::no_host_impl, fexgen::returns_guest_pointer {};
 }
 
 
-// Symbols exposed through glXGetProcAddr
-namespace internal {
+// Symbols looked up through glXGetProcAddr
+namespace gl {
 
 template<auto>
 struct fex_gen_config : fexgen::generate_guest_symtable {
     const char* load_host_endpoint_via = "symbolFromGlXGetProcAddr";
 };
-
-// GLX
-//template<> struct fex_gen_config<glXCreateContextAttribs>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXCreateContextAttribsARB>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXSwapIntervalEXT>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXQueryCurrentRendererIntegerMESA> {}; // passthrough
-template<> struct fex_gen_config<glXQueryCurrentRendererStringMESA> {}; // passthrough
-template<> struct fex_gen_config<glXQueryRendererIntegerMESA>: fexgen::custom_guest_entrypoint {};
-template<> struct fex_gen_config<glXQueryRendererStringMESA>: fexgen::custom_guest_entrypoint {};
 
 // GL
 template<> struct fex_gen_config<glColorP3ui> {};
