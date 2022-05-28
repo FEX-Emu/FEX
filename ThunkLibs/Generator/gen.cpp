@@ -82,6 +82,9 @@ struct ThunkedAPIFunction : FunctionParams {
 
     // if true, no host code will be generated
     bool no_host_impl;
+    
+    // if true, no export will be generated for the host
+    bool no_guest_export;
 
     bool is_variadic;
 
@@ -126,6 +129,7 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
         bool custom_host_impl = false;
         bool no_host_impl = false;
         bool custom_guest_entrypoint = false;
+        bool no_guest_export = false;
 
         bool returns_guest_pointer = false;
 
@@ -194,6 +198,8 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
                 ret.callback_strategy = CallbackStrategy::Guest;
             } else if (annotation == "fexgen::custom_guest_entrypoint") {
                 ret.custom_guest_entrypoint = true;
+            } else if (annotation == "fexgen::no_guest_export") {
+                ret.no_guest_export = true;
             } else {
                 throw Error(base.getSourceRange().getBegin(), "Unknown annotation");
             }
@@ -337,6 +343,7 @@ public:
                                                     namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
                                                     has_nonstub_callbacks || data.is_variadic || annotations.custom_guest_entrypoint,
                                                     annotations.no_host_impl,
+                                                    annotations.no_guest_export,
                                                     data.is_variadic,
                                                     std::nullopt });
         if (namespace_info.generate_guest_symtable) {
@@ -483,7 +490,8 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
 
         file << "extern \"C\" {\n";
         for (auto& data : thunked_api) {
-
+            if (data.no_guest_export)
+                continue;
             const auto& function_name = data.function_name;
 
             file << "__attribute__((alias(\"fexfn_" << (data.custom_guest_impl ? "impl" : "pack") << "_" << function_name << "\"), visibility(\"default\"))) auto " << function_name << "(";

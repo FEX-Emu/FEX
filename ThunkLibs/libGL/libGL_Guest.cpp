@@ -118,6 +118,28 @@ static GLXFBConfig *MapGLXFBConfigHostToGuest(GLXFBConfig *Host, int count) {
 	return rv;
 }
 
+static GLXFBConfigSGIX *MapGLXFBConfigSGIXHostToGuest(GLXFBConfigSGIX *Host, int count) {
+	if (!Host || count <= 0) {
+		dbgf("MapGLXFBConfigSGIXHostToGuest: Host (%p) is null or count (%d) <= 0\n", Host, count);
+		return nullptr;
+	}
+
+	auto rv = (GLXFBConfigSGIX *)Xmalloc(sizeof(GLXFBConfigSGIX) *count);
+
+	if (!rv) {
+		dbgf("MapGLXFBConfigSGIXHostToGuest: Xmalloc failed\n");
+		return nullptr;
+	}
+
+	for (int i = 0; i < count; i++) {
+		rv[i] = Host[i];
+	}
+	
+	PACKER(fgl_XFree)(Host);
+
+	return rv;
+}
+
 extern "C" {
 
 XVisualInfo *IMPL(glXChooseVisual)( Display *dpy, int screen, int *attribList ) {
@@ -199,34 +221,6 @@ int IMPL(glXGetConfig)( Display *dpy, XVisualInfo *visual, int attrib, int *valu
 	SYNC_HOST_GUEST();
 	return rv;
 }
-
-// FEX_TODO("Sync?")
-GLXContext IMPL(glXGetCurrentContext)( void ) {
-	auto rv = TRACE(PACKER(glXGetCurrentContext()));
-	return rv;
-}
-
-// FEX_TODO("Sync?")
-GLXDrawable IMPL(glXGetCurrentDrawable)( void ) {
-	auto rv = TRACE(PACKER(glXGetCurrentDrawable()));
-	return rv;
-}
-
-// FEX_TODO("Sync?")
-void IMPL(glXWaitGL)( void ) {
-	TRACEV(PACKER(glXWaitGL()));
-}
-
-// FEX_TODO("Sync?")
-void IMPL(glXWaitX)( void ) {
-	TRACEV(PACKER(glXWaitX()));
-}
-
-/*
-void IMPL(glXUseXFont)( Font font, int first, int count, int list ) {
-	STUB();
-}
-*/
 
 /*GLX 1.1 and later */
 const char *IMPL(glXQueryExtensionsString)( Display *dpy, int screen ) {
@@ -449,30 +443,157 @@ GLXContext IMPL(glXImportContextEXT)(Display *dpy, GLXContextID contextID) {
   return rv;
 }
 
-#if 0
-// These are not directly exported?
-GLXContext IMPL(glXCreateContextWithConfigSGIX)(Display *dpy, GLXFBConfigSGIX config, int render_type, GLXContext share_list,
-                                                 Bool direct) {
+void IMPL(glXCopySubBufferMESA)(Display *dpy, GLXDrawable drawable, int x, int y, int width, int height) {
+	SYNC_GUEST_HOST();
+	TRACEV(PACKER(glXCopySubBufferMESA)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, x, y, width, height));
+	SYNC_HOST_GUEST();
+}
+
+Bool IMPL(glXMakeCurrentReadSGI)(Display* dpy, GLXDrawable draw, GLXDrawable read, GLXContext ctx) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXMakeCurrentReadSGI)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), draw, read, ctx));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+Bool IMPL(glXGetSyncValuesOML)(Display* dpy, GLXDrawable drawable, int64_t* ust, int64_t* msc, int64_t* sbc) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXGetSyncValuesOML)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, ust, msc, sbc));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+Bool IMPL(glXGetMscRateOML)(Display* dpy, GLXDrawable drawable, int32_t* numerator, int32_t* denominator) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXGetMscRateOML)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, numerator, denominator));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+int64_t IMPL(glXSwapBuffersMscOML)(Display* dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXSwapBuffersMscOML)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, target_msc, divisor, remainder));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+Bool IMPL(glXWaitForMscOML)(Display* dpy, GLXDrawable drawable, int64_t target_msc, int64_t divisor, int64_t remainder, int64_t* ust, int64_t* msc, int64_t* sbc) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXWaitForMscOML)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, target_msc, divisor, remainder, ust, msc, sbc));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+Bool IMPL(glXWaitForSbcOML)(Display* dpy, GLXDrawable drawable, int64_t target_sbc, int64_t* ust, int64_t* msc, int64_t* sbc) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXWaitForSbcOML)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, target_sbc, ust, msc, sbc));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+int IMPL(glXQueryContextInfoEXT)(Display * dpy, GLXContext ctx, int attribute, int *value) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXQueryContextInfoEXT)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), ctx, attribute, value));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+void IMPL(glXBindTexImageEXT)(Display *dpy, GLXDrawable drawable, int buffer, const int *attrib_list) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXBindTexImageEXT)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, buffer, attrib_list));
+  SYNC_HOST_GUEST();
+}
+
+void IMPL(glXReleaseTexImageEXT) (Display *dpy, GLXDrawable drawable, int buffer) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXReleaseTexImageEXT)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, buffer));
+  SYNC_HOST_GUEST();
+}
+
+void IMPL(glXFreeContextEXT)(Display * dpy, GLXContext ctx) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXFreeContextEXT)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), ctx));
+  SYNC_HOST_GUEST();
+}
+
+
+GLXPbuffer IMPL(glXCreateGLXPbufferSGIX)(Display *dpy, GLXFBConfig config, unsigned int width, unsigned int height, int *attrib_list) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXCreateGLXPbufferSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), config, width, height, attrib_list));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+void IMPL(glXDestroyGLXPbufferSGIX)(Display *dpy, GLXPbuffer pbuf) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXDestroyGLXPbufferSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), pbuf));
+  SYNC_HOST_GUEST();
+}
+
+void IMPL(glXQueryGLXPbufferSGIX)(Display *dpy, GLXPbuffer pbuf, int attribute, unsigned int *value) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXQueryGLXPbufferSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), pbuf, attribute, value));
+  SYNC_HOST_GUEST();
+}
+
+void IMPL(glXSelectEventSGIX)(Display *dpy, GLXDrawable drawable, unsigned long mask) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXSelectEventSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, mask));
+  SYNC_HOST_GUEST();
+}
+
+void IMPL(glXGetSelectedEventSGIX)(Display *dpy, GLXDrawable drawable, unsigned long *mask) {
+  SYNC_GUEST_HOST();
+  TRACEV(PACKER(glXGetSelectedEventSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), drawable, mask));
+  SYNC_HOST_GUEST();
+}
+
+XVisualInfo *IMPL(glXGetVisualFromFBConfigSGIX)(Display *dpy, GLXFBConfigSGIX config) {
+  SYNC_GUEST_HOST();
+  auto rv = MapVisualInfoHostToGuest(dpy, TRACE(PACKER(glXGetVisualFromFBConfigSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), config)));
+  SYNC_HOST_GUEST();
+  return rv;
+}
+
+
+GLXContext IMPL(glXCreateContextWithConfigSGIX)(Display *dpy, GLXFBConfigSGIX config, int render_type, GLXContext share_list, Bool direct)	{
   SYNC_GUEST_HOST();
   auto rv = TRACE(PACKER(glXCreateContextWithConfigSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), config, render_type, share_list, direct));
   SYNC_HOST_GUEST();
   return rv;
 }
 
+
+GLXFBConfigSGIX *IMPL(glXChooseFBConfigSGIX)(Display *dpy, int screen, int *attrib_list, int *nelements) {
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXChooseFBConfigSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), screen, attrib_list, nelements));
+  SYNC_HOST_GUEST();
+  return MapGLXFBConfigSGIXHostToGuest(rv, *nelements);
+}
+
+
 GLXFBConfigSGIX IMPL(glXGetFBConfigFromVisualSGIX)(Display *dpy, XVisualInfo *vis) {
   SYNC_GUEST_HOST();
-  auto rv = TRACE(PACKER(glXGetFBConfigFromVisualSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), vis));
+  auto rv = TRACE(PACKER(glXGetFBConfigFromVisualSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), MapVisualInfoGuestToHost(dpy, vis)));
   SYNC_HOST_GUEST();
   return rv;
 }
 
-GLXPbufferSGIX IMPL(glXCreateGLXPbufferSGIX)(Display *dpy, GLXFBConfigSGIX config, unsigned int width, unsigned int height,
-                                             int *attrib_list) {
+
+GLXPixmap IMPL(glXCreateGLXPixmapWithConfigSGIX)(Display *dpy, GLXFBConfigSGIX config, Pixmap pixmap)	{
   SYNC_GUEST_HOST();
-  auto rv = TRACE(PACKER(glXCreateGLXPbufferSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), width, height, attrib_list));
+  auto rv = TRACE(PACKER(glXCreateGLXPixmapWithConfigSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), config, pixmap));
   SYNC_HOST_GUEST();
+  return rv;
 }
-#endif
+
+
+int IMPL(glXGetFBConfigAttribSGIX)(Display *dpy, GLXFBConfigSGIX config, int attribute, int *value)	{
+  SYNC_GUEST_HOST();
+  auto rv = TRACE(PACKER(glXGetFBConfigAttribSGIX)(PACKER(fgl_GuestToHostX11)(dpy, dpy->display_name), config, attribute, value));
+  SYNC_HOST_GUEST();
+  return rv;
+}
 
 /*
 
