@@ -25,7 +25,7 @@
 #include "glcorearb.h"
 
 #define IMPL(x) x
-#include "libGL_private.h"
+#include "libFGL_private.h"
 
 
 namespace fgl_internal {

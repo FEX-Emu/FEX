@@ -97,14 +97,14 @@ endfunction()
 #generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 #add_host_lib(EGL)
 
-generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
-add_host_lib(GL)
-target_link_libraries(GL-host PRIVATE X11)
-target_link_libraries(GL-host PRIVATE GLX)
-target_link_libraries(GL-host PRIVATE EGL)
+generate(libFGL ${CMAKE_CURRENT_SOURCE_DIR}/../libFGL/libFGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+add_host_lib(FGL)
+target_link_libraries(FGL-host PRIVATE X11)
+target_link_libraries(FGL-host PRIVATE GLX)
+target_link_libraries(FGL-host PRIVATE EGL)
 
 find_package(OpenGL REQUIRED)
-target_link_libraries(GL-host PRIVATE OpenGL::GL)
+target_link_libraries(FGL-host PRIVATE OpenGL::GL)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)

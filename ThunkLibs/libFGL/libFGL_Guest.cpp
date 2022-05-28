@@ -37,9 +37,9 @@ $end_info$
 
 typedef void voidFunc();
 
-#define STUB() do { errf("GLX: Stub\n"); assert(false && __FUNCTION__); } while (0)
+#define STUB() do { errf("FGL: Stub\n"); assert(false && __FUNCTION__); } while (0)
 
-#include "libGL_private.h"
+#include "libFGL_private.h"
 
 #if defined(TRACE)
 template<typename T>
@@ -931,4 +931,4 @@ voidFunc *IMPL(eglGetProcAddress)(const char *procname) {
 }
 }
 
-LOAD_LIB(libGL)
+LOAD_LIB(libFGL)
