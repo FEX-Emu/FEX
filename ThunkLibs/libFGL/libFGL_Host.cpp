@@ -10,17 +10,7 @@ $end_info$
 #include <cstdio>
 #include <dlfcn.h>
 
-#define GL_GLEXT_PROTOTYPES 1
-#define GLX_GLXEXT_PROTOTYPES 1
-
-#include "glcorearb.h"
-
-#include <GL/glx.h>
-#include <GL/glxext.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
-
-#include <EGL/egl.h>
+#include "glincludes.inl"
 
 #include "common/Host.h"
 #include <shared_mutex>
@@ -38,7 +28,7 @@ static std::shared_mutex DisplayMapLock;
 static std::map<Display *, Display *> GuestToHost;
 static std::map<Display *, Display *> HostToGuest;
 
-static Display *fexfn_impl_libFGL_fgl_HostToGuestX11(Display *Host) {
+static Display *fexfn_impl_libGL_fgl_HostToGuestX11(Display *Host) {
     std::shared_lock lk(DisplayMapLock);
 
     auto rv = HostToGuest.find(Host);
@@ -50,7 +40,7 @@ static Display *fexfn_impl_libFGL_fgl_HostToGuestX11(Display *Host) {
     }
 }
 
-static Display *fexfn_impl_libFGL_fgl_GuestToHostX11(Display *Guest, const char *DisplayName) {
+static Display *fexfn_impl_libGL_fgl_GuestToHostX11(Display *Guest, const char *DisplayName) {
     std::unique_lock lk(DisplayMapLock);
     auto rv = GuestToHost.find(Guest);
 
@@ -70,12 +60,12 @@ static Display *fexfn_impl_libFGL_fgl_GuestToHostX11(Display *Guest, const char 
     }
 }
 
-static void fexfn_impl_libFGL_fgl_XFree(void *p) {
+static void fexfn_impl_libGL_fgl_XFree(void *p) {
     XFree(p);
 }
 
-static void fexfn_impl_libFGL_fgl_FlushFromGuestX11(Display *Guest, const char *DisplayName) {
-    auto Host = fexfn_impl_libFGL_fgl_GuestToHostX11(Guest, DisplayName);
+static void fexfn_impl_libGL_fgl_FlushFromGuestX11(Display *Guest, const char *DisplayName) {
+    auto Host = fexfn_impl_libGL_fgl_GuestToHostX11(Guest, DisplayName);
 
     if (Host) {
         XFlush(Host);
@@ -91,7 +81,7 @@ static std::map<EGLDisplay, Display *> HostToXHostEGL;
 static std::map<Display *, Display *> XHostToXGuestEGL;
 static std::map<Display *, Display *> XGuestToXHostEGL;
 
-static Display *fexfn_impl_libFGL_fgl_XGuestToXHostEGL(Display *XGuest, const char *DisplayName) {
+static Display *fexfn_impl_libGL_fgl_XGuestToXHostEGL(Display *XGuest, const char *DisplayName) {
     std::unique_lock lk(DisplayMapLockEGL);
     auto rv = XGuestToXHostEGL.find(XGuest);
 
@@ -111,7 +101,7 @@ static Display *fexfn_impl_libFGL_fgl_XGuestToXHostEGL(Display *XGuest, const ch
     }
 }
 
-static Display *fexfn_impl_libFGL_fgl_HostToXGuestEGL(EGLDisplay Host) {
+static Display *fexfn_impl_libGL_fgl_HostToXGuestEGL(EGLDisplay Host) {
     std::shared_lock lk(DisplayMapLockEGL);
 
     auto XGuest = HostToXGuestEGL.find(Host);
@@ -123,7 +113,7 @@ static Display *fexfn_impl_libFGL_fgl_HostToXGuestEGL(EGLDisplay Host) {
     }
 }
 
-static Display *fexfn_impl_libFGL_fgl_FlushFromHostEGL(EGLDisplay Host) {
+static Display *fexfn_impl_libGL_fgl_FlushFromHostEGL(EGLDisplay Host) {
     std::shared_lock lk(DisplayMapLockEGL);
 
     auto XHost = HostToXHostEGL.find(Host);
@@ -132,7 +122,7 @@ static Display *fexfn_impl_libFGL_fgl_FlushFromHostEGL(EGLDisplay Host) {
         XFlush(XHost->second);
     }
 
-    // same as fexfn_impl_libFGL_fgl_HostToXGuestEGL
+    // same as fexfn_impl_libGL_fgl_HostToXGuestEGL
     auto XGuest = HostToXGuestEGL.find(Host);
 
     if (XGuest != HostToXGuestEGL.end()) {
@@ -142,13 +132,13 @@ static Display *fexfn_impl_libFGL_fgl_FlushFromHostEGL(EGLDisplay Host) {
     }
 }
 
-static EGLDisplay fexfn_impl_libFGL_eglGetDisplay(NativeDisplayType native_display) {
+static EGLDisplay fexfn_impl_libGL_eglGetDisplay(NativeDisplayType native_display) {
     if (native_display == EGL_DEFAULT_DISPLAY) {
-        return fexldr_ptr_libFGL_eglGetDisplay(native_display);
+        return fexldr_ptr_libGL_eglGetDisplay(native_display);
     } else {
         auto XHost = (Display*)native_display;
 
-        auto Host = fexldr_ptr_libFGL_eglGetDisplay(native_display);
+        auto Host = fexldr_ptr_libGL_eglGetDisplay(native_display);
 
         if (Host == EGL_NO_DISPLAY) {
             return Host;
@@ -169,15 +159,15 @@ static EGLDisplay fexfn_impl_libFGL_eglGetDisplay(NativeDisplayType native_displ
 }
 }
 
-static void fexfn_impl_libFGL_glDebugMessageCallbackAMD_internal(GLDEBUGPROCAMD, const void*) {
+static void fexfn_impl_libGL_glDebugMessageCallbackAMD_internal(GLDEBUGPROCAMD, const void*) {
     fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
 }
 
-static void fexfn_impl_libFGL_glDebugMessageCallbackARB_internal(GLDEBUGPROCARB, const void*) {
+static void fexfn_impl_libGL_glDebugMessageCallbackARB_internal(GLDEBUGPROCARB, const void*) {
     fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
 }
 
-static void fexfn_impl_libFGL_glDebugMessageCallback_internal(GLDEBUGPROC, const void*) {
+static void fexfn_impl_libGL_glDebugMessageCallback_internal(GLDEBUGPROC, const void*) {
     fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
 }
 
@@ -200,4 +190,4 @@ static ExportEntry exports[] = {
 
 #include "ldr.inl"
 
-EXPORTS(libFGL)
+EXPORTS(libGL)

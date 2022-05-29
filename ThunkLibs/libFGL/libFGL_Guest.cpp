@@ -7,16 +7,7 @@ $end_info$
 
 #define XLIB_ILLEGAL_ACCESS
 
-#define GL_GLEXT_PROTOTYPES 1
-#define GLX_GLXEXT_PROTOTYPES 1
-
-#include "glcorearb.h"
-#include <GL/glx.h>
-#include <GL/glxext.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
-
-#include <EGL/egl.h>
+#include "glincludes.inl"
 
 #include <stdio.h>
 #include <cstring>
@@ -29,8 +20,8 @@ $end_info$
 
 // Thank you x11 devs
 #define Xmalloc malloc
+
 #include <cstdlib>
-//#include <X11/Xlibint.h>
 
 #define PACKER(name) fexfn_pack_##name
 #define IMPL(name) fexfn_impl_##name
@@ -931,4 +922,4 @@ voidFunc *IMPL(eglGetProcAddress)(const char *procname) {
 }
 }
 
-LOAD_LIB(libFGL)
+LOAD_LIB(libGL)
