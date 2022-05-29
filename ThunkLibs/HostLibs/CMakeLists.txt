@@ -110,6 +110,15 @@ add_host_lib(GL)
 find_package(OpenGL REQUIRED)
 target_link_libraries(GL-host PRIVATE OpenGL::GL)
 
+generate(FGL LIBNAME GL ${CMAKE_CURRENT_SOURCE_DIR}/../libFGL/libFGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
+add_host_lib(FGL LIBNAME GL)
+target_link_libraries(FGL-host PRIVATE X11)
+target_link_libraries(FGL-host PRIVATE GLX)
+target_link_libraries(FGL-host PRIVATE EGL)
+
+find_package(OpenGL REQUIRED)
+target_link_libraries(FGL-host PRIVATE OpenGL::GL)
+
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
 # generate(libSDL2 function_unpacks tab_function_unpacks ldr ldr_ptrs)
