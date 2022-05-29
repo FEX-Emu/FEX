@@ -21,19 +21,19 @@ function(generate NAME)
   endif()
 
   # Interface target for the user to add include directories
-  add_library(${LIBNAME}-deps INTERFACE)
-  target_include_directories(${LIBNAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  add_library(${NAME}-deps INTERFACE)
+  target_include_directories(${NAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
-  set(prop "$<TARGET_PROPERTY:${LIBNAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
+  set(prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
 
   # Target for IDE integration
-  add_library(${LIBNAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
-  target_link_libraries(${LIBNAME}-interface PRIVATE ${LIBNAME}-deps)
+  add_library(${NAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
+  target_link_libraries(${NAME}-interface PRIVATE ${NAME}-deps)
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
-    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${LIBNAME}")
+    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}")
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
     add_custom_command(OUTPUT ${OUTFOLDER}
@@ -44,7 +44,7 @@ function(generate NAME)
       DEPENDS "${OUTFOLDER}"
       DEPENDS "${SOURCE_FILE}"
       DEPENDS thunkgen
-      COMMAND thunkgen "${SOURCE_FILE}" "${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
+      COMMAND thunkgen "${SOURCE_FILE}" "lib${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
             # Expand include directories to space-separated list of -isystem parameters
            "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
       VERBATIM
@@ -53,10 +53,20 @@ function(generate NAME)
 
     list(APPEND OUTPUTS "${OUTFILE}")
   endforeach()
-  set(GEN_${LIBNAME} ${OUTPUTS} PARENT_SCOPE)
+  set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
-function(add_host_lib_with_name NAME LIBNAME)
+function(add_host_lib NAME)
+  cmake_parse_arguments(PARSE_ARGV 1 ARGS "" "LIBNAME" "")
+  set(ARGN ${ARGS_UNPARSED_ARGUMENTS})
+  list(POP_FRONT ARGN SOURCE_FILE)
+
+  if (ARGS_LIBNAME)
+    set(LIBNAME ${ARGS_LIBNAME})
+  else()
+    set(LIBNAME ${NAME})
+  endif()
+
   set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Host.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
@@ -67,23 +77,21 @@ function(add_host_lib_with_name NAME LIBNAME)
     endif()
   endif()
 
-  add_library(${LIBNAME}-host SHARED ${SOURCE_FILE} ${GEN_lib${LIBNAME}})
-  target_include_directories(${LIBNAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${LIBNAME}")
-  target_link_libraries(${LIBNAME}-host PRIVATE dl)
-  target_link_libraries(${LIBNAME}-host PRIVATE lib${LIBNAME}-deps)
+  add_library(${NAME}-host SHARED ${SOURCE_FILE} ${GEN_${NAME}})
+  set_property(TARGET ${NAME}-host PROPERTY CXX_VISIBILITY_PRESET hidden)
+  target_include_directories(${NAME}-host PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}")
+  target_link_libraries(${NAME}-host PRIVATE dl)
+  target_link_libraries(${NAME}-host PRIVATE ${NAME}-deps)
   ## Make signed overflow well defined 2's complement overflow
-  target_compile_options(${LIBNAME}-host PRIVATE -fwrapv)
-  target_compile_options(${LIBNAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
+  target_compile_options(${NAME}-host PRIVATE -fwrapv)
+  target_compile_options(${NAME}-host PRIVATE -DLIB_NAME=${LIBNAME} -DLIBLIB_NAME=lib${LIBNAME})
 
   # generated files forward-declare functions that need to be implemented manually, so pass --no-undefined to make sure errors are detected at compile-time rather than runtime
-  target_link_options(${LIBNAME}-host PRIVATE "LINKER:--no-undefined")
+  target_link_options(${NAME}-host PRIVATE "LINKER:--no-undefined")
 
-  install(TARGETS ${LIBNAME}-host DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
+  install(TARGETS ${NAME}-host DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
 endfunction()
 
-function(add_host_lib NAME)
-  add_host_lib_with_name(${NAME} ${NAME} ${ARGV})
-endfunction()
 
 #add_host_lib(fex_malloc_symbols)
 
