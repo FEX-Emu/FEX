@@ -244,16 +244,10 @@ bool IRValidation::Run(IREmitter *IREmit) {
       // Blocks need to have an instruction that leaves the block in some way before the EndBlock instruction
       {
         auto Op = GetOp(CodeCurrent);
-        switch (Op) {
-          case OP_EXITFUNCTION:
-          case OP_JUMP:
-          case OP_CONDJUMP:
-          case OP_BREAK:
-            break;
-          default:
-            HadError |= true;
-            Errors << "%ssa" << BlockID << " Didn't have an exit IR op as its last instruction" << std::endl;
-        };
+        if (!IsBlockExit(Op)) {
+          HadError |= true;
+          Errors << "%ssa" << BlockID << " Didn't have a block exit IR op as its last instruction" << std::endl;
+        }
       }
     }
   }

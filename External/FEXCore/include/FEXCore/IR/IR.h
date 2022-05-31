@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 
 namespace FEXCore::IR {
+
 class OrderedNode;
 class RegisterAllocationPass;
 class RegisterAllocationData;
@@ -567,6 +568,9 @@ template<typename Type>
 inline NodeID NodeWrapperBase<Type>::ID() const {
   return NodeID(NodeOffset / sizeof(IR::OrderedNode));
 }
+
+bool IsFragmentExit(FEXCore::IR::IROps Op);
+bool IsBlockExit(FEXCore::IR::IROps Op);
 
 } // namespace FEXCore::IR
 
