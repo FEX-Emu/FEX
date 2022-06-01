@@ -115,6 +115,13 @@
           "This can be useful for setting environment variables that thunks can pick up.",
           "Typically isn't necessary since the guest libc isn't thunked. But is possible."
         ]
+      },
+      "AdditionalArguments": {
+        "Type": "strarray",
+        "Default": "",
+        "Desc": [
+          "Allows the user to pass additional arguments to the application"
+        ]
       }
     },
     "Debug": {

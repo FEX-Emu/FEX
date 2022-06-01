@@ -1,0 +1,5 @@
+{
+  "Config": {
+    "AdditionalArguments": "--no-sandbox"
+  }
+}

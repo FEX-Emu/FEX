@@ -255,6 +255,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       Args.erase(Args.begin());
     }
 
+    // Append any additional arguments from config
+    for (auto &Arg : AdditionalArguments.All()) {
+      Args.emplace_back(Arg);
+    }
+
     if (!MainElf.InterpreterElf.empty()) {
       if (!InterpElf.ReadElf(ResolveRootfsFile(MainElf.InterpreterElf, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf))
         return;
@@ -651,5 +656,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
   uint64_t BaseOffset{};
+  FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
 
 };
