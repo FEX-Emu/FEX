@@ -89,6 +89,7 @@ void InitializeH0F38Tables() {
 
     {OPD(PF_38_NONE, 0xC8), 1, X86InstInfo{"SHA1NEXTE",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_NONE, 0xC9), 1, X86InstInfo{"SHA1MSG1",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(PF_38_NONE, 0xCA), 1, X86InstInfo{"SHA1MSG2",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(PF_38_66,   0xDB), 1, X86InstInfo{"AESIMC",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(PF_38_66,   0xDC), 1, X86InstInfo{"AESENC",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},

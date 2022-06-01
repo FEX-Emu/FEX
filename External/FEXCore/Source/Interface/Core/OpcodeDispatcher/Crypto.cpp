@@ -47,6 +47,29 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, D0, -1);
 }
 
+void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  // ROR by 31 is equivalent to a ROL by 1
+  auto ThirtyOne = _Constant(32, 31);
+
+  auto W13 = _VExtractToGPR(16, 4, Src, 2);
+  auto W14 = _VExtractToGPR(16, 4, Src, 1);
+  auto W15 = _VExtractToGPR(16, 4, Src, 0);
+  auto W16 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 3), W13), ThirtyOne);
+  auto W17 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 2), W14), ThirtyOne);
+  auto W18 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 1), W15), ThirtyOne);
+  auto W19 = _Ror(_Xor(_VExtractToGPR(16, 4, Dest, 0), W16), ThirtyOne);
+
+  auto D3 = _VInsGPR(16, 4, 3, Dest, W16);
+  auto D2 = _VInsGPR(16, 4, 2, D3, W17);
+  auto D1 = _VInsGPR(16, 4, 1, D2, W18);
+  auto D0 = _VInsGPR(16, 4, 0, D1, W19);
+
+  StoreResult(FPRClass, Op, D0, -1);
+}
+
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _VAESImc(Src);
