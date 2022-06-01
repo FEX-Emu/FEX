@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(FEX)
 
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
+option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires g++/g++-multilib or g++-x86-64-linux-gnu/g++-multilib-x86-64-linux-gnu" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)

@@ -1,0 +1,39 @@
+###
+### Disabled tests ###
+###
+
+# These sometimes crash FEX with SIGSEGV
+timer-sigev-thread.32
+timer-sigev-thread.64
+
+# These fail on arm because of sigbus handling
+synchronous-signal-block-sbus.32
+synchronous-signal-block-sbus.64
+synchronous-signal-block-abus.32
+synchronous-signal-block-abus.64
+
+# These fail on arm because we don't raise FPE
+synchronous-signal-block-sfpe.32
+synchronous-signal-block-sfpe.64
+
+###
+### Failing Tests ###
+###
+
+# these will be fixed with FEX_TICKET(1725)
+sigtest_samask.32
+sigtest_samask.64
+sigtest_sigmask.32
+sigtest_sigmask.64
+
+# These fail to do default signal catching behaviour
+synchronous-signal-block-ssegv.32
+synchronous-signal-block-ssegv.64
+synchronous-signal-block-sill.32
+synchronous-signal-block-sill.64
+
+# These fail to queue the signals
+synchronous-signal-block-asegv.32
+synchronous-signal-block-asegv.64
+synchronous-signal-block-aill.32
+synchronous-signal-block-aill.64

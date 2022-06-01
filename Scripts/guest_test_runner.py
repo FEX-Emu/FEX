@@ -14,7 +14,8 @@ known_failures_file = sys.argv[1]
 expected_output_file = sys.argv[2]
 disabled_tests_file = sys.argv[3]
 test_name = sys.argv[4]
-fexecutable = sys.argv[5]
+mode = sys.argv[5]
+fexecutable = sys.argv[6]
 
 known_failures = { }
 expected_output = { }
@@ -46,14 +47,15 @@ RunnerArgs = []
 
 RunnerArgs.append(fexecutable)
 
-ROOTFS_ENV = os.getenv("ROOTFS")
-if ROOTFS_ENV != None:
-    RunnerArgs.append("-R")
-    RunnerArgs.append(ROOTFS_ENV)
+if (mode == "guest"):
+    ROOTFS_ENV = os.getenv("ROOTFS")
+    if ROOTFS_ENV != None:
+        RunnerArgs.append("-R")
+        RunnerArgs.append(ROOTFS_ENV)
 
 # Add the rest of the arguments
-for i in range(len(sys.argv) - 6):
-    RunnerArgs.append(sys.argv[6 + i])
+for i in range(len(sys.argv) - 7):
+    RunnerArgs.append(sys.argv[7 + i])
 
 #print(RunnerArgs)
 

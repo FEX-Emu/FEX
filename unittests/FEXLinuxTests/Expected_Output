@@ -1,0 +1,8 @@
+synchronous-signal-block-ssegv.32 -11
+synchronous-signal-block-ssegv.64 -11
+synchronous-signal-block-sill.32 -4
+synchronous-signal-block-sill.64 -4
+synchronous-signal-block-sbus.32 -7
+synchronous-signal-block-sbus.64 -7
+synchronous-signal-block-sfpe.32 -8
+synchronous-signal-block-sfpe.64 -8
