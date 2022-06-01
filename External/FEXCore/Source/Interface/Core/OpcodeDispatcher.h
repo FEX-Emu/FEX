@@ -589,6 +589,8 @@ public:
 
   void PSADBW(OpcodeArgs);
 
+  void SHA1NEXTEOp(OpcodeArgs);
+
   void AESImcOp(OpcodeArgs);
   void AESEncOp(OpcodeArgs);
   void AESEncLastOp(OpcodeArgs);

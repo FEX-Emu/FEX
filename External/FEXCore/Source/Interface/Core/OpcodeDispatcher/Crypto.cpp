@@ -17,6 +17,17 @@ class OrderedNode;
 
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
+void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto Tmp = _Ror(_VExtractToGPR(16, 4, Dest, 3), _Constant(32, 2));
+  auto Top = _Add(_VExtractToGPR(16, 4, Src, 3), Tmp);
+  auto Result = _VInsGPR(16, 4, 3, Src, Top);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _VAESImc(Src);
