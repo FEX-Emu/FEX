@@ -28,6 +28,25 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto W0 = _VExtractToGPR(16, 4, Dest, 3);
+  auto W1 = _VExtractToGPR(16, 4, Dest, 2);
+  auto W2 = _VExtractToGPR(16, 4, Dest, 1);
+  auto W3 = _VExtractToGPR(16, 4, Dest, 0);
+  auto W4 = _VExtractToGPR(16, 4, Src, 3);
+  auto W5 = _VExtractToGPR(16, 4, Src, 2);
+
+  auto D3 = _VInsGPR(16, 4, 3, Dest, _Xor(W2, W0));
+  auto D2 = _VInsGPR(16, 4, 2, D3,   _Xor(W3, W1));
+  auto D1 = _VInsGPR(16, 4, 1, D2,   _Xor(W4, W2));
+  auto D0 = _VInsGPR(16, 4, 0, D1,   _Xor(W5, W3));
+
+  StoreResult(FPRClass, Op, D0, -1);
+}
+
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _VAESImc(Src);

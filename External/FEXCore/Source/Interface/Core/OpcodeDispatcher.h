@@ -590,6 +590,7 @@ public:
   void PSADBW(OpcodeArgs);
 
   void SHA1NEXTEOp(OpcodeArgs);
+  void SHA1MSG1Op(OpcodeArgs);
 
   void AESImcOp(OpcodeArgs);
   void AESEncOp(OpcodeArgs);
