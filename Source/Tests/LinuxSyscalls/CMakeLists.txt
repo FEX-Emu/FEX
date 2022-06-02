@@ -89,7 +89,8 @@ PRIVATE
 set(HEADERS_TO_VERIFY
   x32/Types.h          x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/asound.h   x86_32 # This needs to match structs to 32bit structs
-  x32/Ioctl/drm.h      x86_32 # This needs to match structs to 32bit structs
+  # DRM disabled for now while investigation occurs
+  # x32/Ioctl/drm.h      x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/streams.h  x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/usbdev.h   x86_32 # This needs to match structs to 32bit structs
   x32/Ioctl/input.h    x86_32 # This needs to match structs to 32bit structs
@@ -104,7 +105,8 @@ math(EXPR ARG_COUNT "${ARG_COUNT}-1")
 set (ARGS
   "-x" "c++"
   "-std=c++20"
-  "-fno-operator-names")
+  "-fno-operator-names"
+  "-I${PROJECT_SOURCE_DIR}/External/drm-headers/include/")
 # Global include directories
 get_directory_property (INC_DIRS INCLUDE_DIRECTORIES)
 list(TRANSFORM INC_DIRS PREPEND "-I")

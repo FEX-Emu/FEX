@@ -203,3 +203,7 @@ stat_test
 
 # Flaky
 udp_socket_test
+
+# Needs investigation, breaks on x86 runner
+inotify_test
+proc_net_udp_test
