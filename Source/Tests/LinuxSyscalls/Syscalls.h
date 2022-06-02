@@ -184,7 +184,10 @@ public:
   
   ///// VMA (Virtual Memory Area) tracking /////
   static bool HandleSegfault(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
-  virtual void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) override;
+  void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) override;
+  // AOTIRCacheEntryLookupResult also includes a shared lock guard, so the pointed AOTIRCacheEntry return can be safely used
+  FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) final override;
+  std::shared_lock<std::shared_mutex> CompileCodeLock(uint64_t Start) override;
 
   ///// FORK tracking /////
   void LockBeforeFork();
@@ -223,9 +226,6 @@ private:
   std::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler{};
   
   ///// VMA (Virtual Memory Area) tracking /////
-
-  // AOTIRCacheEntryLookupResult also includes a shared lock guard, so the pointed AOTIRCacheEntry return can be safely used
-  FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) final override;
 
 
   struct SpecialDev {
@@ -293,7 +293,11 @@ private:
 
   struct VMATracking {
     using VMAEntry = SyscallHandler::VMAEntry;
+    // Held while reading/writing this struct
     std::shared_mutex Mutex;
+
+    // Held unique {invalidate, mprotect change} to guarantee mt invalidation correctness
+    std::shared_mutex InvalidationMutex;
     
     // Memory ranges indexed by page aligned starting address
     std::map<uint64_t, VMAEntry> VMAs;

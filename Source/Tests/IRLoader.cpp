@@ -137,6 +137,11 @@ class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
   FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) override {
     return {0, 0, FHU::ScopedSignalMaskWithSharedLock {Mutex}};
   }
+
+  std::shared_mutex Mutex2;
+  std::shared_lock<std::shared_mutex> CompileCodeLock(uint64_t Start) {
+    return std::shared_lock(Mutex2);
+  }
 };
 
 int main(int argc, char **argv, char **const envp)
