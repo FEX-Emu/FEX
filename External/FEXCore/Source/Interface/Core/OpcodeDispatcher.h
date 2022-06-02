@@ -592,6 +592,7 @@ public:
   void SHA1NEXTEOp(OpcodeArgs);
   void SHA1MSG1Op(OpcodeArgs);
   void SHA1MSG2Op(OpcodeArgs);
+  void SHA1RNDS4Op(OpcodeArgs);
 
   void AESImcOp(OpcodeArgs);
   void AESEncOp(OpcodeArgs);

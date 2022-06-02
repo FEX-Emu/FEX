@@ -10,7 +10,10 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include "Interface/Core/OpcodeDispatcher.h"
 
-#include <stdint.h>
+#include <array>
+#include <cstdint>
+#include <tuple>
+#include <utility>
 
 namespace FEXCore::IR {
 class OrderedNode;
@@ -68,6 +71,88 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   auto D0 = _VInsGPR(16, 4, 0, D1, W19);
 
   StoreResult(FPRClass, Op, D0, -1);
+}
+
+void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(),
+                     "Src1 needs to be literal here to indicate function and constants");
+
+  using FnType = OrderedNode* (*)(OpDispatchBuilder&, OrderedNode*, OrderedNode*, OrderedNode*);
+
+  const auto f0 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
+    return Self._Xor(Self._And(B, C), Self._And(Self._Not(B), D));
+  };
+  const auto f1 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
+    return Self._Xor(Self._Xor(B, C), D);
+  };
+  const auto f2 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
+    return Self._Xor(Self._Xor(Self._And(B, C), Self._And(B, D)), Self._And(C, D));
+  };
+  const auto f3 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
+    return Self._Xor(Self._Xor(B, C), D);
+  };
+
+  constexpr std::array<uint32_t, 4> k_array{
+    0x5A827999U,
+    0x6ED9EBA1U,
+    0x8F1BBCDCU,
+    0xCA62C1D6U,
+  };
+
+  constexpr std::array<FnType, 4> fn_array{
+    f0, f1, f2, f3,
+  };
+
+  const uint64_t Imm8 = Op->Src[1].Data.Literal.Value & 0b11;
+  const FnType Fn = fn_array[Imm8];
+  auto K = _Constant(32, k_array[Imm8]);
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto W0E = _VExtractToGPR(16, 4, Src, 3);
+  auto W1  = _VExtractToGPR(16, 4, Src, 2);
+  auto W2  = _VExtractToGPR(16, 4, Src, 1);
+  auto W3  = _VExtractToGPR(16, 4, Src, 0);
+
+  using RoundResult = std::tuple<OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*>;
+
+  const auto Round0 = [&]() -> RoundResult {
+    auto A = _VExtractToGPR(16, 4, Dest, 3);
+    auto B = _VExtractToGPR(16, 4, Dest, 2);
+    auto C = _VExtractToGPR(16, 4, Dest, 1);
+    auto D = _VExtractToGPR(16, 4, Dest, 0);
+
+    auto A1 = _Add(_Add(_Add(Fn(*this, B, C, D), _Ror(A, _Constant(32, 27))), W0E), K);
+    auto B1 = A;
+    auto C1 = _Ror(B, _Constant(32, 2));
+    auto D1 = C;
+    auto E1 = D;
+
+    return {A1, B1, C1, D1, E1};
+  };
+  const auto Round1To3 = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C,
+                             OrderedNode *D, OrderedNode *E, OrderedNode *W) -> RoundResult {
+    auto ANext = _Add(_Add(_Add(_Add(Fn(*this, B, C, D), _Ror(A, _Constant(32, 27))), W), E), K);
+    auto BNext = A;
+    auto CNext = _Ror(B, _Constant(32, 2));
+    auto DNext = C;
+    auto ENext = D;
+
+    return {ANext, BNext, CNext, DNext, ENext};
+  };
+
+  auto [A1, B1, C1, D1, E1] = Round0();
+  auto [A2, B2, C2, D2, E2] = Round1To3(A1, B1, C1, D1, E1, W1);
+  auto [A3, B3, C3, D3, E3] = Round1To3(A2, B2, C2, D2, E2, W2);
+  auto Final                = Round1To3(A3, B3, C3, D3, E3, W3);
+
+  auto Dest3 = _VInsGPR(16, 4, 3, Dest,  std::get<0>(Final));
+  auto Dest2 = _VInsGPR(16, 4, 2, Dest3, std::get<1>(Final));
+  auto Dest1 = _VInsGPR(16, 4, 1, Dest2, std::get<2>(Final));
+  auto Dest0 = _VInsGPR(16, 4, 0, Dest1, std::get<3>(Final));
+
+  StoreResult(FPRClass, Op, Dest0, -1);
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
