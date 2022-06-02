@@ -5270,8 +5270,15 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     return;
   }
 #define OPD(prefix, opcode) (((prefix) << 8) | opcode)
+  constexpr uint16_t PF_38_NONE = 0;
   constexpr uint16_t PF_38_66   = (1U << 0);
   constexpr uint16_t PF_38_F2   = (1U << 1);
+
+  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_SHA1[] = {
+    {OPD(PF_38_NONE, 0xC8), 1, &OpDispatchBuilder::SHA1NEXTEOp},
+    {OPD(PF_38_NONE, 0xC9), 1, &OpDispatchBuilder::SHA1MSG1Op},
+    {OPD(PF_38_NONE, 0xCA), 1, &OpDispatchBuilder::SHA1MSG2Op},
+  };
 
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_AES[] = {
     {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
@@ -5331,6 +5338,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   if (CTX->HostFeatures.SupportsCRC) {
     InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_CRC);
   }
+
+  InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_SHA1);
 
   if (CTX->HostFeatures.SupportsAES) {
     InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_AES);
@@ -6554,6 +6563,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(0, PF_3A_66,   0x40), 1, &OpDispatchBuilder::DPPOp<4>},
     {OPD(0, PF_3A_66,   0x41), 1, &OpDispatchBuilder::DPPOp<8>},
     {OPD(0, PF_3A_66,   0x42), 1, &OpDispatchBuilder::MPSADBWOp},
+
+    {OPD(0, PF_3A_NONE, 0xCC), 1, &OpDispatchBuilder::SHA1RNDS4Op},
   };
 #undef PF_3A_NONE
 #undef PF_3A_66
