@@ -658,7 +658,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (0 << 26) | // Reserved
       (0 << 27) | // Reserved
       (0 << 28) | // Reserved
-      (0 << 29) | // SHA instructions
+      (1 << 29) | // SHA instructions
       (0 << 30) | // Reserved
       (0 << 31);  // Reserved
 
