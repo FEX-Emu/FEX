@@ -595,6 +595,7 @@ public:
   void SHA1RNDS4Op(OpcodeArgs);
 
   void SHA256MSG1Op(OpcodeArgs);
+  void SHA256MSG2Op(OpcodeArgs);
 
   void AESImcOp(OpcodeArgs);
   void AESEncOp(OpcodeArgs);

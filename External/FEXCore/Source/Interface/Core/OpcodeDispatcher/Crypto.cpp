@@ -182,6 +182,29 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, D0, -1);
 }
 
+void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
+  const auto Sigma1 = [this](OrderedNode* W) -> OrderedNode* {
+    return _Xor(_Xor(_Ror(W, _Constant(32, 17)), _Ror(W, _Constant(32, 19))), _Lshr(W, _Constant(32, 10)));
+  };
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  auto W14 = _VExtractToGPR(16, 4, Src, 2);
+  auto W15 = _VExtractToGPR(16, 4, Src, 3);
+  auto W16 = _Add(_VExtractToGPR(16, 4, Dest, 0), Sigma1(W14));
+  auto W17 = _Add(_VExtractToGPR(16, 4, Dest, 1), Sigma1(W15));
+  auto W18 = _Add(_VExtractToGPR(16, 4, Dest, 2), Sigma1(W16));
+  auto W19 = _Add(_VExtractToGPR(16, 4, Dest, 3), Sigma1(W17));
+
+  auto D3 = _VInsGPR(16, 4, 3, Dest, W19);
+  auto D2 = _VInsGPR(16, 4, 2, D3, W18);
+  auto D1 = _VInsGPR(16, 4, 1, D2, W17);
+  auto D0 = _VInsGPR(16, 4, 0, D1, W16);
+
+  StoreResult(FPRClass, Op, D0, -1);
+}
+
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _VAESImc(Src);
