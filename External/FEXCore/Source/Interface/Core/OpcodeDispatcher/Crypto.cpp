@@ -205,6 +205,64 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, D0, -1);
 }
 
+void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
+  const auto Ch = [this](OrderedNode *E, OrderedNode *F, OrderedNode *G) -> OrderedNode* {
+    return _Xor(_And(E, F), _And(_Not(E), G));
+  };
+  const auto Major = [this](OrderedNode *A, OrderedNode *B, OrderedNode *C) -> OrderedNode* {
+    return _Xor(_Xor(_And(A, B), _And(A, C)), _And(B, C));
+  };
+  const auto Sigma0 = [this](OrderedNode *A) -> OrderedNode* {
+    return _Xor(_Xor(_Ror(A, _Constant(32, 2)), _Ror(A, _Constant(32, 13))), _Ror(A, _Constant(32, 22)));
+  };
+  const auto Sigma1 = [this](OrderedNode *E) -> OrderedNode* {
+    return _Xor(_Xor(_Ror(E, _Constant(32, 6)), _Ror(E, _Constant(32, 11))), _Ror(E, _Constant(32, 25)));
+  };
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *XMM0 = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm[0]));
+
+  auto A0 = _VExtractToGPR(16, 4, Src, 3);
+  auto B0 = _VExtractToGPR(16, 4, Src, 2);
+  auto C0 = _VExtractToGPR(16, 4, Dest, 3);
+  auto D0 = _VExtractToGPR(16, 4, Dest, 2);
+  auto E0 = _VExtractToGPR(16, 4, Src, 1);
+  auto F0 = _VExtractToGPR(16, 4, Src, 0);
+  auto G0 = _VExtractToGPR(16, 4, Dest, 1);
+  auto H0 = _VExtractToGPR(16, 4, Dest, 0);
+  auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
+  auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
+
+  using RoundResult = std::tuple<OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*,
+                                 OrderedNode*, OrderedNode*, OrderedNode*, OrderedNode*>;
+  const auto Round = [&](OrderedNode *A, OrderedNode *B, OrderedNode *C, OrderedNode *D,
+                         OrderedNode *E, OrderedNode *F, OrderedNode *G, OrderedNode *H,
+                         OrderedNode* WK) -> RoundResult {
+    auto ANext = _Add(_Add(_Add(_Add(_Add(Ch(E, F, G), Sigma1(E)), WK), H), Major(A, B, C)), Sigma0(A));
+    auto BNext = A;
+    auto CNext = B;
+    auto DNext = C;
+    auto ENext = _Add(_Add(_Add(_Add(Ch(E, F, G), Sigma1(E)), WK), H), D);
+    auto FNext = E;
+    auto GNext = F;
+    auto HNext = G;
+
+    return {ANext, BNext, CNext, DNext, ENext, FNext, GNext, HNext};
+  };
+
+
+  auto [A1, B1, C1, D1, E1, F1, G1, H1] = Round(A0, B0, C0, D0, E0, F0, G0, H0, WK0);
+  auto Final                            = Round(A1, B1, C1, D1, E1, F1, G1, H1, WK1);
+
+  auto Res3 = _VInsGPR(16, 4, 3, Dest, std::get<0>(Final));
+  auto Res2 = _VInsGPR(16, 4, 2, Res3, std::get<1>(Final));
+  auto Res1 = _VInsGPR(16, 4, 1, Res2, std::get<4>(Final));
+  auto Res0 = _VInsGPR(16, 4, 0, Res1, std::get<5>(Final));
+
+  StoreResult(FPRClass, Op, Res0, -1);
+}
+
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Res = _VAESImc(Src);
