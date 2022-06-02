@@ -58,5 +58,7 @@ Test_H0F38/sha1msg1.asm
 Test_H0F38/sha1msg2.asm
 Test_H0F38/sha1nexte.asm
 Test_H0F3A/sha1rnds4.asm
- 
+Test_H0F38/sha256msg1.asm
+Test_H0F38/sha256msg2.asm
+Test_H0F38/sha256rnds2.asm
 
