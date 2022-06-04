@@ -204,6 +204,9 @@ stat_test
 # Flaky
 udp_socket_test
 
-# Needs investigation, breaks on x86 runner
-inotify_test
+# This test checks for the header layout from `/proc/net/udp` which has changed slightly with newer kernels
 proc_net_udp_test
+
+# This test is broken since kernel commit: 36e2c7421f02
+# Upstream gvisor has the offending tests removed
+inotify_test
