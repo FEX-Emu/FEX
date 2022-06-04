@@ -6,16 +6,19 @@
 #include "Tests/LinuxSyscalls/x64/Ioctl/HelperDefines.h"
 
 #include <cstdint>
-#include <drm/drm.h>
-#include <drm/drm_mode.h>
-#include <drm/i915_drm.h>
-#include <drm/amdgpu_drm.h>
-#include <drm/lima_drm.h>
-#include <drm/panfrost_drm.h>
-#include <drm/msm_drm.h>
-#include <drm/nouveau_drm.h>
-#include <drm/vc4_drm.h>
-#include <drm/v3d_drm.h>
+extern "C" {
+#include "fex-drm/drm.h"
+#include "fex-drm/drm_mode.h"
+#include "fex-drm/i915_drm.h"
+#include "fex-drm/amdgpu_drm.h"
+#include "fex-drm/lima_drm.h"
+#include "fex-drm/panfrost_drm.h"
+#include "fex-drm/msm_drm.h"
+#include "fex-drm/nouveau_drm.h"
+#include "fex-drm/vc4_drm.h"
+#include "fex-drm/v3d_drm.h"
+#include "fex-drm/virtgpu_drm.h"
+}
 #include <sys/ioctl.h>
 
 #define CPYT(x) val.x = x
