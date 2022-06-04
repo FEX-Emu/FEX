@@ -31,13 +31,19 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t CBNZ_MASK = 0x7F'00'00'00;
   constexpr uint32_t CBNZ_INST = 0x35'00'00'00;
 
-  constexpr uint32_t ALU_OP_MASK = 0x7F'00'00'00;
-  constexpr uint32_t ADD_INST    = 0x0B'00'00'00;
-  constexpr uint32_t SUB_INST    = 0x4B'00'00'00;
-  constexpr uint32_t CMP_INST    = 0x6B'00'00'00;
-  constexpr uint32_t AND_INST    = 0x0A'00'00'00;
-  constexpr uint32_t OR_INST     = 0x2A'00'00'00;
-  constexpr uint32_t EOR_INST    = 0x4A'00'00'00;
+  constexpr uint32_t ALU_OP_MASK    = 0x7F'20'00'00;
+  constexpr uint32_t ADD_INST       = 0x0B'00'00'00;
+  constexpr uint32_t SUB_INST       = 0x4B'00'00'00;
+  constexpr uint32_t ADD_SHIFT_INST = 0x0B'20'00'00;
+  constexpr uint32_t SUB_SHIFT_INST = 0x4B'20'00'00;
+  constexpr uint32_t CMP_INST       = 0x6B'00'00'00;
+  constexpr uint32_t CMP_SHIFT_INST = 0x6B'20'00'00;
+  constexpr uint32_t AND_INST       = 0x0A'00'00'00;
+  constexpr uint32_t BIC_INST       = 0x0A'20'00'00;
+  constexpr uint32_t OR_INST        = 0x2A'00'00'00;
+  constexpr uint32_t ORN_INST       = 0x2A'20'00'00;
+  constexpr uint32_t EOR_INST       = 0x4A'00'00'00;
+  constexpr uint32_t EON_INST       = 0x4A'20'00'00;
 
   constexpr uint32_t CCMP_MASK   = 0x7F'E0'0C'10;
   constexpr uint32_t CCMP_INST   = 0x7A'40'00'00;
@@ -50,8 +56,11 @@ namespace FEXCore::ArchHelpers::Arm64 {
     TYPE_ADD,
     TYPE_SUB,
     TYPE_AND,
+    TYPE_BIC,
     TYPE_OR,
+    TYPE_ORN,
     TYPE_EOR,
+    TYPE_EON,
     TYPE_NEG, // This is just a sub with zero. Need to know the differences
   };
 

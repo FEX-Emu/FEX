@@ -513,7 +513,8 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   //Only 32-bit pairs
   for(int i = 1; i < 10; i++) {
     uint32_t NextInstr = PC[i];
-    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
+    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST ||
+        (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_SHIFT_INST) {
        ExpectedReg1 = GetRmReg(NextInstr);
     } else if ((NextInstr & FEXCore::ArchHelpers::Arm64::CCMP_MASK) == FEXCore::ArchHelpers::Arm64::CCMP_INST) {
        ExpectedReg2 = GetRmReg(NextInstr);
@@ -1745,7 +1746,8 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
        #endif
        DesiredReg = GetRdReg(NextInstr);
      }
-     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
+     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST ||
+              (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_SHIFT_INST) {
        ExpectedReg = GetRmReg(NextInstr);
      }
   }
@@ -1828,11 +1830,13 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   // Scan forward at most five instructions to find our instructions
   for (size_t i = 1; i < 6; ++i) {
     uint32_t NextInstr = PC[i];
-    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ADD_INST) {
+    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ADD_INST ||
+        (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ADD_SHIFT_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_ADD;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::SUB_INST) {
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::SUB_INST ||
+             (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::SUB_SHIFT_INST) {
       uint32_t RnReg = GetRnReg(NextInstr);
       if (RnReg == REGISTER_MASK) {
         // Zero reg means neg
@@ -1843,19 +1847,32 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
       }
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST) {
-    	return HandleCAS_NoAtomics(_ucontext, _info); //ARMv8.0 CAS
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST ||
+             (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_SHIFT_INST ) {
+      return HandleCAS_NoAtomics(_ucontext, _info); //ARMv8.0 CAS
     }
     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::AND_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_AND;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::BIC_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_BIC;
       DataSourceReg = GetRmReg(NextInstr);
     }
     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::OR_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_OR;
       DataSourceReg = GetRmReg(NextInstr);
     }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ORN_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_ORN;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::EOR_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_EOR;
+      DataSourceReg = GetRmReg(NextInstr);
+    }
+    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::EON_INST) {
+      AtomicOp = ExclusiveAtomicPairType::TYPE_EON;
       DataSourceReg = GetRmReg(NextInstr);
     }
     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
@@ -1888,40 +1905,53 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   uint32_t Size = 1 << (Instr >> 30);
 
   constexpr bool DoRetry = true;
+
+  auto NOPExpected = []<typename AtomicType>(AtomicType SrcVal, AtomicType) -> AtomicType {
+    return SrcVal;
+  };
+
+  auto ADDDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal + Desired;
+  };
+
+  auto SUBDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal - Desired;
+  };
+
+  auto ANDDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal & Desired;
+  };
+
+  auto BICDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal & ~Desired;
+  };
+
+  auto ORDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal | Desired;
+  };
+
+  auto ORNDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal | ~Desired;
+  };
+
+  auto EORDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal ^ Desired;
+  };
+
+  auto EONDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return SrcVal ^ ~Desired;
+  };
+
+  auto NEGDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return -SrcVal;
+  };
+
+  auto SWAPDesired = []<typename AtomicType>(AtomicType SrcVal, AtomicType Desired) -> AtomicType {
+    return Desired;
+  };
+
   if (Size == 2) {
     using AtomicType = uint16_t;
-    auto NOPExpected = [](AtomicType SrcVal, AtomicType) -> AtomicType {
-      return SrcVal;
-    };
-
-    auto ADDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal + Desired;
-    };
-
-    auto SUBDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal - Desired;
-    };
-
-    auto ANDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal & Desired;
-    };
-
-    auto ORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal | Desired;
-    };
-
-    auto EORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal ^ Desired;
-    };
-
-    auto NEGDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return -SrcVal;
-    };
-
-    auto SWAPDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return Desired;
-    };
-
     CASDesiredFn<AtomicType> DesiredFunction{};
 
     switch (AtomicOp) {
@@ -1937,11 +1967,20 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
       case ExclusiveAtomicPairType::TYPE_AND:
         DesiredFunction = ANDDesired;
         break;
+      case ExclusiveAtomicPairType::TYPE_BIC:
+        DesiredFunction = BICDesired;
+        break;
       case ExclusiveAtomicPairType::TYPE_OR:
         DesiredFunction = ORDesired;
         break;
+      case ExclusiveAtomicPairType::TYPE_ORN:
+        DesiredFunction = ORNDesired;
+        break;
       case ExclusiveAtomicPairType::TYPE_EOR:
         DesiredFunction = EORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_EON:
+        DesiredFunction = EONDesired;
         break;
       case ExclusiveAtomicPairType::TYPE_NEG:
         DesiredFunction = NEGDesired;
@@ -1966,38 +2005,6 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   }
   else if (Size == 4) {
     using AtomicType = uint32_t;
-    auto NOPExpected = [](AtomicType SrcVal, AtomicType) -> AtomicType {
-      return SrcVal;
-    };
-
-    auto ADDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal + Desired;
-    };
-
-    auto SUBDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal - Desired;
-    };
-
-    auto ANDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal & Desired;
-    };
-
-    auto ORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal | Desired;
-    };
-
-    auto EORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal ^ Desired;
-    };
-
-    auto NEGDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return -SrcVal;
-    };
-
-    auto SWAPDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return Desired;
-    };
-
     CASDesiredFn<AtomicType> DesiredFunction{};
 
     switch (AtomicOp) {
@@ -2013,11 +2020,20 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
       case ExclusiveAtomicPairType::TYPE_AND:
         DesiredFunction = ANDDesired;
         break;
+      case ExclusiveAtomicPairType::TYPE_BIC:
+        DesiredFunction = BICDesired;
+        break;
       case ExclusiveAtomicPairType::TYPE_OR:
         DesiredFunction = ORDesired;
         break;
+      case ExclusiveAtomicPairType::TYPE_ORN:
+        DesiredFunction = ORNDesired;
+        break;
       case ExclusiveAtomicPairType::TYPE_EOR:
         DesiredFunction = EORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_EON:
+        DesiredFunction = EONDesired;
         break;
       case ExclusiveAtomicPairType::TYPE_NEG:
         DesiredFunction = NEGDesired;
@@ -2042,38 +2058,6 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   }
   else if (Size == 8) {
     using AtomicType = uint64_t;
-    auto NOPExpected = [](AtomicType SrcVal, AtomicType) -> AtomicType {
-      return SrcVal;
-    };
-
-    auto ADDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal + Desired;
-    };
-
-    auto SUBDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal - Desired;
-    };
-
-    auto ANDDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal & Desired;
-    };
-
-    auto ORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal | Desired;
-    };
-
-    auto EORDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return SrcVal ^ Desired;
-    };
-
-    auto NEGDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return -SrcVal;
-    };
-
-    auto SWAPDesired = [](AtomicType SrcVal, AtomicType Desired) -> AtomicType {
-      return Desired;
-    };
-
     CASDesiredFn<AtomicType> DesiredFunction{};
 
     switch (AtomicOp) {
@@ -2089,11 +2073,20 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
       case ExclusiveAtomicPairType::TYPE_AND:
         DesiredFunction = ANDDesired;
         break;
+      case ExclusiveAtomicPairType::TYPE_BIC:
+        DesiredFunction = BICDesired;
+        break;
       case ExclusiveAtomicPairType::TYPE_OR:
         DesiredFunction = ORDesired;
         break;
+      case ExclusiveAtomicPairType::TYPE_ORN:
+        DesiredFunction = ORNDesired;
+        break;
       case ExclusiveAtomicPairType::TYPE_EOR:
         DesiredFunction = EORDesired;
+        break;
+      case ExclusiveAtomicPairType::TYPE_EON:
+        DesiredFunction = EONDesired;
         break;
       case ExclusiveAtomicPairType::TYPE_NEG:
         DesiredFunction = NEGDesired;
