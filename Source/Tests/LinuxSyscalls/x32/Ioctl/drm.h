@@ -6,17 +6,19 @@
 #include "Tests/LinuxSyscalls/x32/Ioctl/HelperDefines.h"
 
 #include <cstdint>
-#include <drm/drm.h>
-#include <drm/drm_mode.h>
-#include <drm/i915_drm.h>
-#include <drm/amdgpu_drm.h>
-#include <drm/lima_drm.h>
-#include <drm/panfrost_drm.h>
-#include <drm/msm_drm.h>
-#include <drm/nouveau_drm.h>
-#include <drm/vc4_drm.h>
-#include <drm/v3d_drm.h>
-#include <drm/virtgpu_drm.h>
+extern "C" {
+#include "fex-drm/drm.h"
+#include "fex-drm/drm_mode.h"
+#include "fex-drm/i915_drm.h"
+#include "fex-drm/amdgpu_drm.h"
+#include "fex-drm/lima_drm.h"
+#include "fex-drm/panfrost_drm.h"
+#include "fex-drm/msm_drm.h"
+#include "fex-drm/nouveau_drm.h"
+#include "fex-drm/vc4_drm.h"
+#include "fex-drm/v3d_drm.h"
+#include "fex-drm/virtgpu_drm.h"
+}
 #include <sys/ioctl.h>
 
 #define CPYT(x) val.x = x
@@ -959,6 +961,36 @@ fex_drm_v3d_submit_csd {
 
   uint32_t out_sync;
 
+  /**
+   * @name This member were added in Linux 5.15
+   * Commit: 26a4dc29b74a137f45665089f6d3d633fcc9b662
+   *
+   * As far as I can tell this is an ABI break, Probably safe since this likely would have been padded to 8 bytes.
+   * Still pretty sketchy.
+   * @{ */
+
+  uint32_t perfmon_id;
+  /**  @} */
+
+  /**
+   * @name These members were added in Linux 5.17
+   * Commit: bb3425efdcd99f2b4e608e850226f7107b2f993e
+   * This added additional members to `drm_v3d_submit_cl` and `drm_v3d_submit_tfu` as well.
+   *
+   * As far as I can tell this is an ABI break for the `submit_tfu` and `submit_csd` structs.
+   * `submit_cl` is safe because it it already had a flags member.
+   *
+   * We just need to eat the fact that if the userspace isn't compiled against Linux 5.17 headers
+   * that copying this member may cause faults that we can't capture currently.
+   * @{ */
+
+  compat_uint64_t extensions;
+
+  uint32_t flags;
+
+  uint32_t pad;
+  /**  @} */
+
   fex_drm_v3d_submit_csd() = delete;
 
   operator drm_v3d_submit_csd() const {
@@ -969,6 +1001,10 @@ fex_drm_v3d_submit_csd {
     val.bo_handle_count = bo_handle_count;
     val.in_sync = in_sync;
     val.out_sync = out_sync;
+    val.perfmon_id = perfmon_id;
+    val.extensions = extensions;
+    val.flags = flags;
+    val.pad = pad;
     return val;
   }
   fex_drm_v3d_submit_csd(drm_v3d_submit_csd val) {
@@ -978,6 +1014,10 @@ fex_drm_v3d_submit_csd {
     bo_handle_count = val.bo_handle_count;
     in_sync = val.in_sync;
     out_sync = val.out_sync;
+    perfmon_id = val.perfmon_id;
+    extensions = val.extensions;
+    flags = val.flags;
+    pad = val.pad;
   }
 };
 

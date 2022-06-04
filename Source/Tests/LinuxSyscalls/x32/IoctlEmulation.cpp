@@ -18,10 +18,6 @@
 
 #include <cstdint>
 #include <functional>
-extern "C" {
-#include <drm/drm.h>
-#include <drm/msm_drm.h>
-}
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
