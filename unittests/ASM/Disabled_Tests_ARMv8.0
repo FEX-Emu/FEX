@@ -1,9 +1,3 @@
 # RNG tests unsupported on this runner
 Test_Secondary/09_XX_06.asm
 Test_Secondary/09_XX_07.asm
-
-# Interpreter tests for some atomics are broken on this runner
-# Probably due to clang version changing codegen
-Test_Primary/Primary_23_Atomic16.asm
-Test_Primary/Primary_23_Atomic32.asm
-Test_Primary/Primary_23_Atomic64.asm
