@@ -966,6 +966,9 @@ namespace FEXCore::Context {
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
+    // Needs to be held for SMC interactions around concurrent compile and invalidation hazards
+    auto InvalidationLk = Thread->CTX->SyscallHandler->CompileCodeLock(GuestRIP);
+
     // Is the code in the cache?
     // The backends only check L1 and L2, not L3
     if (auto HostCode = Thread->LookupCache->FindBlock(GuestRIP)) {

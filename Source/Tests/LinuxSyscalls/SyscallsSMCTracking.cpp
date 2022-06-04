@@ -63,6 +63,10 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
 
     auto FaultBase = FEXCore::AlignDown(FaultAddress, FHU::FEX_PAGE_SIZE);
 
+    // take lock, no code compilation happens between invalidation and prot change
+    // no need for signal mask, we have an outer one
+    std::unique_lock lk2(VMATracking->InvalidationMutex);
+
     if (Entry->second.Flags.Shared) {
       LOGMAN_THROW_A_FMT(Entry->second.Resource, "VMA tracking error");
 
@@ -75,23 +79,25 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
       do {
         if (VMA->Offset <= Offset && (VMA->Offset + VMA->Length) > Offset) {
           auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
+          FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
           if (VMA->Prot.Writable) {
             auto rv = mprotect((void *)FaultBaseMirrored, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE);
             LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
           }
-          FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
         }
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
-      // Mark as read write before flush, so that if code is compiled after the Flush but before returning, the segfault will be
-      // re-raised
+      FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBase, FHU::FEX_PAGE_SIZE);
       auto rv = mprotect((void *)FaultBase, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE);
       LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", FaultBase, FHU::FEX_PAGE_SIZE);
-      FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBase, FHU::FEX_PAGE_SIZE);
     }
 
     return true;
   }
+}
+
+std::shared_lock<std::shared_mutex> SyscallHandler::CompileCodeLock(uint64_t Start) {
+  return std::shared_lock(VMATracking.InvalidationMutex);
 }
 
 void SyscallHandler::MarkGuestExecutableRange(uint64_t Start, uint64_t Length) {
