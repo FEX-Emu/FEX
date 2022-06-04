@@ -1,4 +1,4 @@
-# FEX-2204
+# FEX-2206
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -58,6 +58,7 @@ IR to host code generation
 - [MiscOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/MiscOps.cpp)
 - [MoveOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/MoveOps.cpp)
 - [VectorOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/VectorOps.cpp)
+- [x64Relocations.cpp](../External/FEXCore/Source/Interface/Core/JIT/x86_64/x64Relocations.cpp): relocation logic of the x86-64 splatter backend
 
 
 
@@ -88,6 +89,7 @@ Metadata that drives the frontend x86/64 decoding
 - [Flags.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
 - [Vector.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
 - [X87.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
+- [X87F64.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
 - [OpcodeDispatcher.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 
@@ -165,6 +167,7 @@ Text -> IR
 - [Flags.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Flags.cpp): Handles x86/64 flag generation
 - [Vector.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/Vector.cpp): Handles x86/64 Vector instructions to IR
 - [X87.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87.cpp): Handles x86/64 x87 to IR
+- [X87F64.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher/X87F64.cpp): Handles x86/64 x87 to IR
 - [OpcodeDispatcher.cpp](../External/FEXCore/Source/Interface/Core/OpcodeDispatcher.cpp): Handles x86/64 ops to IR, no-pf opt, local-flags opt
 
 ## ThunkLibs
@@ -290,6 +293,8 @@ Linux syscall emulation, marshaling and passthrough
 - [SignalDelegator.h](../Source/Tests/LinuxSyscalls/SignalDelegator.h)
 - [Syscalls.cpp](../Source/Tests/LinuxSyscalls/Syscalls.cpp): Glue logic, brk allocations
 - [Syscalls.h](../Source/Tests/LinuxSyscalls/Syscalls.h): Glue logic, STRACE magic
+- [SyscallsSMCTracking.cpp](../Source/Tests/LinuxSyscalls/SyscallsSMCTracking.cpp): SMC/MMan Tracking
+- [SyscallsVMATracking.cpp](../Source/Tests/LinuxSyscalls/SyscallsVMATracking.cpp): VMA Tracking
 
 #### syscalls-arm64
 - [SyscallsEnum.h](../Source/Tests/LinuxSyscalls/Arm64/SyscallsEnum.h)
