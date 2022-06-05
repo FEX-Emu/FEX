@@ -1,7 +1,8 @@
 #!/bin/env bash
 
-PREVIOUS=FEX-$(date --date='-1 month' +%y%m)
-CURRENT=FEX-$(date +%y%m)
+# Allow release maintainer to override PREVIOUS and CURRENT by setting it before launching the script
+PREVIOUS=${PREVIOUS:-FEX-$(date --date='-1 month' +%y%m)}
+CURRENT=${CURRENT:-FEX-$(date +%y%m)}
 
 if ! git rev-list $PREVIOUS > /dev/null 2>&1 ;
 then
