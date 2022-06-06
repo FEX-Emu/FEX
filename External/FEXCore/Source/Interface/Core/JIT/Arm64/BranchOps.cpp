@@ -46,10 +46,10 @@ DEF_OP(CallbackReturn) {
   ResetStack();
 
   // We can now lower the ref counter again
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SignalHandlerRefCountPointer)));
-  ldr(w2, MemOperand(x0));
+  
+  ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
   sub(w2, w2, 1);
-  str(w2, MemOperand(x0));
+  str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));

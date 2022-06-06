@@ -42,9 +42,6 @@ public:
 
 private:
   FEXCore::Context::Context *CTX;
-  FEXCore::Core::InternalThreadState *State;
-
-  std::unique_ptr<Dispatcher> Dispatcher{};
 };
 
 template<typename T>

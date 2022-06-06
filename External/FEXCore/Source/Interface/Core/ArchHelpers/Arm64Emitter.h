@@ -63,8 +63,6 @@ class Arm64Emitter : public vixl::aarch64::Assembler {
 protected:
   Arm64Emitter(FEXCore::Context::Context *ctx, size_t size);
 
-  std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
-
   FEXCore::Context::Context *EmitterCTX;
   vixl::aarch64::CPU CPU;
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
@@ -83,68 +81,7 @@ protected:
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
 
-  void ResetStack();
   void Align16B();
-  /**
-   * @name Relocations
-   * @{ */
-
-    uint64_t GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
-
-    /**
-     * @brief A literal pair relocation object for named symbol literals
-     */
-    struct NamedSymbolLiteralPair {
-      Literal<uint64_t> Lit;
-      Relocation MoveABI{};
-    };
-
-    /**
-     * @brief Inserts a thunk relocation
-     *
-     * @param Reg - The GPR to move the thunk handler in to
-     * @param Sum - The hash of the thunk
-     */
-    void InsertNamedThunkRelocation(vixl::aarch64::Register Reg, const IR::SHA256Sum &Sum);
-
-    /**
-     * @brief Inserts a guest GPR move relocation
-     *
-     * @param Reg - The GPR to move the guest RIP in to
-     * @param Constant - The guest RIP that will be relocated
-     */
-    void InsertGuestRIPMove(vixl::aarch64::Register Reg, uint64_t Constant);
-
-    /**
-     * @brief Inserts a named symbol as a literal in memory
-     *
-     * Need to use `PlaceNamedSymbolLiteral` with the return value to place the literal in the desired location
-     *
-     * @param Op The named symbol to place
-     *
-     * @return A temporary `NamedSymbolLiteralPair`
-     */
-    NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
-
-    /**
-     * @brief Place the named symbol literal relocation in memory
-     *
-     * @param Lit - Which literal to place
-     */
-    void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
-
-    std::vector<FEXCore::CPU::Relocation> Relocations;
-
-    ///< Relocation code loading
-    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
-
-  /**  @} */
-
-  uint32_t SpillSlots{};
-  /**
-  * @brief Current guest RIP entrypoint
-  */
-  uint64_t GuestEntry{};
 
   FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
 };

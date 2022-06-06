@@ -367,32 +367,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 void Arm64JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
-Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
-  CodeBuffer Buffer;
-  Buffer.Size = Size;
-  Buffer.Ptr = static_cast<uint8_t*>(
-               FEXCore::Allocator::mmap(nullptr,
-                    Buffer.Size,
-                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS,
-                    -1, 0));
-  LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
-  Dispatcher->RegisterCodeBuffer(Buffer.Ptr, Buffer.Size);
-  if (CTX->Config.GlobalJITNaming()) {
-    CTX->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
-  }
-  return Buffer;
-}
-
-void Arm64JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
-  FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
-  Dispatcher->RemoveCodeBuffer(Buffer.Ptr);
-}
-
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : Arm64Emitter(ctx, 0)
-  , CTX {ctx}
-  , ThreadState {Thread} {
+  : CPUBackend(Thread, 1024 * 1024 * 16, 1024 * 1024 * 128)
+  , Arm64Emitter(ctx, 0)
+  , CTX {ctx} {
+
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
 #if DEBUG
@@ -466,18 +445,11 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
-
-    // Thread Specific
-    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
   }
 
-  // Can't allocate a code buffer until after dispatcher is created
-  InitialCodeBuffer = AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-  *GetBuffer() = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+  // Must be done after Dispatcher init
   SetAllowAssembler(true);
-  EmitDetectionString();
-
-  CurrentCodeBuffer = &InitialCodeBuffer;
+  ClearCache();
 }
 
 void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
@@ -521,54 +493,14 @@ void Arm64JITCore::EmitDetectionString() {
 
 void Arm64JITCore::ClearCache() {
   // Get the backing code buffer
-  auto Buffer = GetBuffer();
-  if (Dispatcher->SignalHandlerRefCounter == 0) {
-    if (!CodeBuffers.empty()) {
-      // If we have more than one code buffer we are tracking then walk them and delete
-      // This is a cleanup step
-      for (auto CodeBuffer : CodeBuffers) {
-        FreeCodeBuffer(CodeBuffer);
-      }
-      CodeBuffers.clear();
-
-      // Set the current code buffer to the initial
-      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-      CurrentCodeBuffer = &InitialCodeBuffer;
-    }
-
-    if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
-      // Rewind to the start of the code cache start
-      Buffer->Reset();
-    }
-    else {
-      FreeCodeBuffer(InitialCodeBuffer);
-
-      // Resize the code buffer and reallocate our code size
-      InitialCodeBuffer.Size *= 1.5;
-      InitialCodeBuffer.Size = std::min(InitialCodeBuffer.Size, MAX_CODE_SIZE);
-
-      InitialCodeBuffer = AllocateNewCodeBuffer(InitialCodeBuffer.Size);
-      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-    }
-  }
-  else {
-    // We have signal handlers that have generated code
-    // This means that we can not safely clear the code at this point in time
-    // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = Arm64JITCore::AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-    EmplaceNewCodeBuffer(NewCodeBuffer);
-    *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
-  }
+  
+  auto CodeBuffer = GetEmptyCodeBuffer();
+  *GetBuffer() = vixl::CodeBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
 }
 
 Arm64JITCore::~Arm64JITCore() {
-  for (auto CodeBuffer : CodeBuffers) {
-    FreeCodeBuffer(CodeBuffer);
-  }
-  CodeBuffers.clear();
 
-  FreeCodeBuffer(InitialCodeBuffer);
 }
 
 IR::PhysicalRegister Arm64JITCore::GetPhys(IR::NodeID Node) const {
@@ -885,6 +817,19 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   }
 
   return HostCode;
+}
+
+void Arm64JITCore::ResetStack() {
+  if (SpillSlots == 0)
+    return;
+
+  if (IsImmAddSub(SpillSlots * 16)) {
+    add(sp, sp, SpillSlots * 16);
+  } else {
+   // Too big to fit in a 12bit immediate
+   LoadConstant(x0, SpillSlots * 16);
+   add(sp, sp, x0);
+  }
 }
 
 std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

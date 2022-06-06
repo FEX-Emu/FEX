@@ -53,7 +53,7 @@ DEF_OP(CallbackReturn) {
   }
 
   // Make sure to adjust the refcounter so we don't clear the cache now
-  sub(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalHandlerRefCountPointer)], 1);
+  sub(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)], 1);
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
   add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])], 8);

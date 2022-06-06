@@ -55,7 +55,6 @@ public:
 
   /**  @} */
 
-  uint32_t SignalHandlerRefCounter{};
   struct SynchronousFaultDataStruct {
     bool FaultToTopAndGeneratedException{};
     uint32_t TrapNo;

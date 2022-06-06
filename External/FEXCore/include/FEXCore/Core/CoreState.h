@@ -110,7 +110,6 @@ namespace FEXCore::Core {
       uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
 
       // Thread Specific
-      uint64_t SignalHandlerRefCountPointer{};
 
       /**
        * @name Dispatcher pointers
@@ -143,7 +142,6 @@ namespace FEXCore::Core {
       uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
 
       // Thread Specific
-      uint64_t SignalHandlerRefCountPointer{};
 
       /**
        * @name Dispatcher pointers
@@ -177,8 +175,11 @@ namespace FEXCore::Core {
      * ARM64:
      *  - Bit 15: In syscall
      *  - Bit 14-0: Number of static registers spilled
-     */
+    */
     uint64_t InSyscallInfo{};
+
+    uint32_t SignalHandlerRefCounter{};
+
     InternalThreadState* Thread;
 
     // Pointers that the JIT needs to load to remove relocations

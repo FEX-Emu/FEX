@@ -280,7 +280,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 
   // Ref count our faults
   // We use this to track if it is safe to clear cache
-  ++SignalHandlerRefCounter;
+  ++ThreadState->CurrentFrame->SignalHandlerRefCounter;
 
   uint64_t OldPC = ArchHelpers::Context::GetPc(ucontext);
   // Set the new PC
@@ -640,7 +640,7 @@ bool Dispatcher::HandleSIGILL(int Signal, void *info, void *ucontext) {
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    --SignalHandlerRefCounter;
+    --ThreadState->CurrentFrame->SignalHandlerRefCounter;
     return true;
   }
 
@@ -649,7 +649,7 @@ bool Dispatcher::HandleSIGILL(int Signal, void *info, void *ucontext) {
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    --SignalHandlerRefCounter;
+    --ThreadState->CurrentFrame->SignalHandlerRefCounter;
     return true;
   }
 
@@ -681,7 +681,7 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    ++SignalHandlerRefCounter;
+    ++ThreadState->CurrentFrame->SignalHandlerRefCounter;
 
     ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
@@ -694,7 +694,7 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
 
     // Our ref counting doesn't matter anymore
-    SignalHandlerRefCounter = 0;
+    ThreadState->CurrentFrame->SignalHandlerRefCounter = 0;
 
     // Set the new PC
     if (SRAEnabled && IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), false)) {
@@ -727,7 +727,7 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    --SignalHandlerRefCounter;
+    --ThreadState->CurrentFrame->SignalHandlerRefCounter;
 
     ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;

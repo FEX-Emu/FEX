@@ -408,10 +408,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     mov(STATE, x0);
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    LoadConstant(x0, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
-    ldr(w2, MemOperand(x0));
+    ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
     add(w2, w2, 1);
-    str(w2, MemOperand(x0));
+    str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host

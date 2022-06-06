@@ -345,7 +345,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // XXX: XMM?
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalHandlerRefCountPointer)], 1);
+    add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)], 1);
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host

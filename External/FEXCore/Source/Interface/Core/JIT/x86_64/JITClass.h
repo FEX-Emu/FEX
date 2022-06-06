@@ -25,13 +25,6 @@ using namespace Xbyak;
 #include <tuple>
 
 namespace FEXCore::CPU {
-struct CodeBuffer {
-  uint8_t *Ptr;
-  size_t Size;
-};
-
-[[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
-void FreeCodeBuffer(CodeBuffer Buffer);
 
 // Temp registers
 // rax, rcx, rdx, rsi, r8, r9,
@@ -58,8 +51,7 @@ const std::array<Xbyak::Xmm, 11> RAXMM_x = {  xmm1, xmm2, xmm3, xmm4, xmm5, xmm6
 class X86JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
   explicit X86JITCore(FEXCore::Context::Context *ctx,
-                      FEXCore::Core::InternalThreadState *Thread,
-                      CodeBuffer Buffer);
+                      FEXCore::Core::InternalThreadState *Thread);
   ~X86JITCore() override;
 
   [[nodiscard]] std::string GetName() override { return "JIT"; }
@@ -150,9 +142,7 @@ private:
 
   Label* PendingTargetLabel{};
   FEXCore::Context::Context *CTX;
-  FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView const *IR;
-  std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   uint64_t Entry;
 
   std::unordered_map<IR::NodeID, Label> JumpTargets;
@@ -210,26 +200,10 @@ private:
   bool GetSamplingData {true};
 #endif
 
-  void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
-    CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
-  }
-
   static uint64_t ExitFunctionLink(X86JITCore* code, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
-
-  // This is the initial code buffer that we will fall back to
-  // In a program without signals and code clearing, we will typically
-  // only have this code buffer
-  CodeBuffer InitialCodeBuffer{};
-  // This is the array of /additional/ code buffers that we may need to allocate
-  // Allocation only occurs when we've hit signals and need to clear code cache
-  // For code safety we can't delete code buffers until outside of all signals
-  std::vector<CodeBuffer> CodeBuffers{};
-
-  // This is the current code buffer that we are tracking
-  CodeBuffer *CurrentCodeBuffer{};
 
   uint32_t SpillSlots{};
   using SetCC = void (X86JITCore::*)(const Operand& op);

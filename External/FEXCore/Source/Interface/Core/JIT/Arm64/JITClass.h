@@ -37,11 +37,6 @@ using namespace vixl::aarch64;
 
 class Arm64JITCore final : public CPUBackend, public Arm64Emitter  {
 public:
-  struct CodeBuffer {
-    uint8_t *Ptr;
-    size_t Size;
-  };
-
   explicit Arm64JITCore(FEXCore::Context::Context *ctx,
                         FEXCore::Core::InternalThreadState *Thread);
   ~Arm64JITCore() override;
@@ -60,7 +55,8 @@ public:
   void ClearCache() override;
 
   static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-  [[nodiscard]] CodeBuffer AllocateNewCodeBuffer(size_t Size);
+  // We don't want to move above 128MB atm because that means we will have to encode longer jumps
+  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
   bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const override {
     return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher);
@@ -73,10 +69,8 @@ public:
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
 
-  std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
   Label *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
-  FEXCore::Core::InternalThreadState *ThreadState;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
 
@@ -147,28 +141,6 @@ private:
   vixl::aarch64::Decoder Decoder;
 #endif
 
-  void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
-    CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
-  }
-
-  void FreeCodeBuffer(CodeBuffer Buffer);
-
-  // This is the initial code buffer that we will fall back to
-  // In a program without signals and code clearing, we will typically
-  // only have this code buffer
-  CodeBuffer InitialCodeBuffer{};
-  // This is the array of /additional/ code buffers that we may need to allocate
-  // Allocation only occurs when we've hit signals and need to clear code cache
-  // For code safety we can't delete code buffers until outside of all signals
-  std::vector<CodeBuffer> CodeBuffers{};
-
-  // This is the current code buffer that we are tracking
-  CodeBuffer *CurrentCodeBuffer{};
-
-  // We don't want to mvoe above 128MB atm because that means we will have to encode longer jumps
-  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
-  static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
-
 #if DEBUG
   vixl::aarch64::Disassembler Disasm;
 #endif
@@ -179,6 +151,68 @@ private:
   void EmitDetectionString();
   IR::RegisterAllocationPass *RAPass;
   IR::RegisterAllocationData *RAData;
+
+  void ResetStack();
+  /**
+   * @name Relocations
+   * @{ */
+
+    uint64_t GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+
+    /**
+     * @brief A literal pair relocation object for named symbol literals
+     */
+    struct NamedSymbolLiteralPair {
+      Literal<uint64_t> Lit;
+      Relocation MoveABI{};
+    };
+
+    /**
+     * @brief Inserts a thunk relocation
+     *
+     * @param Reg - The GPR to move the thunk handler in to
+     * @param Sum - The hash of the thunk
+     */
+    void InsertNamedThunkRelocation(vixl::aarch64::Register Reg, const IR::SHA256Sum &Sum);
+
+    /**
+     * @brief Inserts a guest GPR move relocation
+     *
+     * @param Reg - The GPR to move the guest RIP in to
+     * @param Constant - The guest RIP that will be relocated
+     */
+    void InsertGuestRIPMove(vixl::aarch64::Register Reg, uint64_t Constant);
+
+    /**
+     * @brief Inserts a named symbol as a literal in memory
+     *
+     * Need to use `PlaceNamedSymbolLiteral` with the return value to place the literal in the desired location
+     *
+     * @param Op The named symbol to place
+     *
+     * @return A temporary `NamedSymbolLiteralPair`
+     */
+    NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+
+    /**
+     * @brief Place the named symbol literal relocation in memory
+     *
+     * @param Lit - Which literal to place
+     */
+    void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
+
+    std::vector<FEXCore::CPU::Relocation> Relocations;
+
+    ///< Relocation code loading
+    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+
+  /**  @} */
+
+  uint32_t SpillSlots{};
+  /**
+  * @brief Current guest RIP entrypoint
+  */
+  uint64_t GuestEntry{};
 
   using OpHandler = void (Arm64JITCore::*)(IR::IROp_Header *IROp, IR::NodeID Node);
   std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers {};

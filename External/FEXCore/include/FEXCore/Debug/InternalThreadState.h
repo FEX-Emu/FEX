@@ -72,7 +72,7 @@ namespace FEXCore::Core {
   };
 
   struct InternalThreadState {
-    FEXCore::Core::CpuStateFrame* CurrentFrame = &BaseFrameState;
+    FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
     struct {
       std::atomic_bool Running {false};

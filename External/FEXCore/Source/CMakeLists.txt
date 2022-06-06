@@ -81,6 +81,7 @@ set (SRCS
   Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
   Interface/Core/Core.cpp
+  Interface/Core/CPUBackend.cpp
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
@@ -206,7 +207,9 @@ if (ENABLE_JIT_ARM64)
     Interface/Core/JIT/Arm64/MemoryOps.cpp
     Interface/Core/JIT/Arm64/MiscOps.cpp
     Interface/Core/JIT/Arm64/MoveOps.cpp
-    Interface/Core/JIT/Arm64/VectorOps.cpp)
+    Interface/Core/JIT/Arm64/VectorOps.cpp
+    Interface/Core/JIT/Arm64/Arm64Relocations.cpp
+    )
 endif()
 
 set (LIBS vixl dl xxhash tiny-json)
