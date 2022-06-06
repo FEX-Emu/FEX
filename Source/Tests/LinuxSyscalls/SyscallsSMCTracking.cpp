@@ -189,6 +189,10 @@ static std::string get_fdpath(int fd) {
 void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
 	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
+  if (Flags & MAP_SHARED) {
+    MarkMemoryShared(CTX);
+  }
+
   {
     FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
 
@@ -311,6 +315,8 @@ void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t Ne
 }
 
 void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
+  MarkMemoryShared(CTX);
+
   shmid_ds stat;
 
   auto res = shmctl(shmid, IPC_STAT, &stat);

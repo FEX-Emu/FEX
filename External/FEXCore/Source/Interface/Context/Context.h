@@ -86,6 +86,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(GdbServer, GDBSERVER);
       FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
       FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
+      FEX_CONFIG_OPT(TSOAutoMigration, TSOAUTOMIGRATION);
       FEX_CONFIG_OPT(ABILocalFlags, ABILOCALFLAGS);
       FEX_CONFIG_OPT(ABINoPF, ABINOPF);
       FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
@@ -297,6 +298,10 @@ namespace FEXCore::Context {
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
 
+    void MarkMemoryShared();
+
+    bool IsTSOEnabled() { return (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled; }
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
 
@@ -335,6 +340,7 @@ namespace FEXCore::Context {
     std::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
 
     bool StartPaused = false;
+    bool IsMemoryShared = false;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
   };
 

@@ -1140,6 +1140,32 @@ namespace FEXCore::Context {
     }
   }
 
+  void Context::MarkMemoryShared() {
+    if (!IsMemoryShared) {
+      IsMemoryShared = true;
+
+      if (Config.TSOAutoMigration) {
+        LogMan::Msg::IFmt("Migrating to shared memory mode");
+
+        std::lock_guard<std::mutex> lkThreads(ThreadCreationMutex);
+        LogMan::Throw::AFmt(Threads.size() == 1, "First MarkMemoryShared called must be before creating any threads");
+
+        auto Thread = Threads[0];
+
+        // Only the lookup cache is cleared here, so that old code can keep running until next compilation
+        std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
+        Thread->LookupCache->ClearCache();
+
+        // IR also needs to be re-generated
+        Thread->LocalIRCache.clear();
+      }
+    }
+  }
+
+  void MarkMemoryShared(FEXCore::Context::Context *CTX) {
+    CTX->MarkMemoryShared();
+  }
+
   void Context::RemoveThreadCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
