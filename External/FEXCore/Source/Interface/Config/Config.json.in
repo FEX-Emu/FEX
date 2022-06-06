@@ -260,6 +260,14 @@
           "Highly likely to break any multithreaded application if disabled."
         ]
       },
+      "TSOAutoMigration": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Automatically enables TSO when shared memory is used.",
+          "Should work without issues in most cases."
+        ]
+      },
       "X87ReducedPrecision": {
         "Type": "bool",
         "Default": "false",
