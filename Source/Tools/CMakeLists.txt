@@ -6,14 +6,13 @@ if (NOT TERMUX_BUILD)
   # Termux builds can't rely on X11 packages
   # SDL2 isn't even compiled with GL support so our GUIs wouldn't even work
   add_subdirectory(FEXConfig/)
-  add_subdirectory(FEXLogServer/)
 
   # Disable FEXRootFSFetcher on Termux, it doesn't even work there
   add_subdirectory(FEXRootFSFetcher/)
 endif()
 
 add_subdirectory(FEXGetConfig/)
-add_subdirectory(FEXMountDaemon/)
+add_subdirectory(FEXServer/)
 
 set(NAME Opt)
 set(SRCS Opt.cpp)

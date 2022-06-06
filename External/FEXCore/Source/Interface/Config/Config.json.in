@@ -219,22 +219,13 @@
           "Disables logging"
         ]
       },
-      "OutputSocket": {
-        "Type": "str",
-        "Default": "",
-        "Desc": [
-          "Socket to connect to",
-          "eg: localhost:8087",
-          "If set will override the OutputLog location"
-        ]
-      },
       "OutputLog": {
         "Type": "str",
-        "Default": "stderr",
+        "Default": "server",
         "ShortArg": "o",
         "Desc": [
           "File to write FEX output to.",
-          "[stdout, stderr, <Filename>]"
+          "[stdout, stderr, server, <Filename>]"
         ]
       }
     },

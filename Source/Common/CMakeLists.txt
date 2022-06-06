@@ -3,10 +3,9 @@ set(SRCS
   ArgumentLoader.cpp
   Config.cpp
   EnvironmentLoader.cpp
+  FEXServerClient.cpp
   FileFormatCheck.cpp
-  RootFSSetup.cpp
-  StringUtil.cpp
-  SocketLogging.cpp)
+  StringUtil.cpp)
 
 add_library(${NAME} STATIC ${SRCS})
 target_link_libraries(${NAME} FEXCore_Base cpp-optparse json-maker)

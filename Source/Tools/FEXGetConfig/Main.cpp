@@ -1,6 +1,6 @@
 #include "ConfigDefines.h"
 #include "OptionParser.h"
-#include "Common/RootFSSetup.h"
+#include "Common/FEXServerClient.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
 
@@ -30,14 +30,6 @@ int main(int argc, char **argv, char **envp) {
     .action("store_true")
     .help("Print the directory that contains the FEX rootfs. Mounted in the case of squashfs");
 
-  Parser.add_option("--current-rootfs-lock")
-    .action("store_true")
-    .help("SquashFS lock file if squashfs is mounted");
-
-  Parser.add_option("--current-rootfs-socket")
-    .action("store_true")
-    .help("SquashFS socket file if squashfs is mounted");
-
   Parser.add_option("--version")
     .action("store_true")
     .help("Print the installed FEX-Emu version");
@@ -62,26 +54,13 @@ int main(int argc, char **argv, char **envp) {
     fprintf(stdout, FEX_INSTALL_PREFIX "\n");
   }
 
-  if (Options.is_set_by_user("current_rootfs_lock")) {
-    auto LockFile = FEX::RootFS::GetRootFSLockFile();
-    if (FEX::RootFS::CheckLockExists(LockFile)) {
-      fprintf(stdout, "%s\n", LockFile.c_str());
-    }
-  }
-
-  if (Options.is_set_by_user("current_rootfs_socket")) {
-    auto LockFile = FEX::RootFS::GetRootFSLockFile();
-    std::string MountPath;
-    if (FEX::RootFS::CheckLockExists(LockFile, &MountPath)) {
-      std::string SocketPath = FEX::RootFS::GetRootFSSocketFile(MountPath);
-      fprintf(stdout, "%s\n", SocketPath.c_str());
-    }
-  }
-
   if (Options.is_set_by_user("current_rootfs")) {
-    auto MountPath = FEX::RootFS::GetRootFSPathIfExists();
-    if (!MountPath.empty()) {
-      fprintf(stdout, "%s\n", MountPath.c_str());
+    int ServerFD = FEXServerClient::ConnectToServer();
+    if (ServerFD != -1) {
+      auto RootFS = FEXServerClient::RequestRootFSPath(ServerFD);
+      if (!RootFS.empty()) {
+        fprintf(stdout, "%s\n", RootFS.c_str());
+      }
     }
   }
 
