@@ -446,7 +446,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (SUPPORTS_AVX << 28) | // AVX
     (0 << 29) | // F16C
     (CTX->HostFeatures.SupportsRAND << 30) | // RDRAND
-    (0 << 31);  // Hypervisor always returns zero
+    (1 << 31);  // Hypervisor always returns one
 
   Res.edx =
     (1 <<  0) | // FPU
