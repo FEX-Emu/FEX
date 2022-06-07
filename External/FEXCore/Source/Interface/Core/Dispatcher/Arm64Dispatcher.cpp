@@ -575,20 +575,4 @@ void Arm64Dispatcher::SpillSRA(void *ucontext, uint32_t IgnoreMask) {
   }
 }
 
-#ifdef _M_ARM_64
-
-void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  DispatcherConfig config;
-  config.ExecuteBlocksWithCall = true;
-
-  Dispatcher = std::make_unique<Arm64Dispatcher>(ctx, Thread, config);
-  DispatchPtr = Dispatcher->DispatchPtr;
-  CallbackPtr = Dispatcher->CallbackPtr;
-
-  // TODO: It feels wrong to initialize this way
-  ctx->InterpreterCallbackReturn = Dispatcher->ReturnPtr;
-}
-
-#endif
-
 }

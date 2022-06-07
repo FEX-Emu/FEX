@@ -18,6 +18,14 @@
 
 #include "InterpreterOps.h"
 
+#if defined(_M_X86_64)
+  #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
+#elif defined(_M_ARM_64)
+  #include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#else
+  #error missing arch
+#endif
+
 namespace FEXCore::IR {
   class IRListView;
   class RegisterAllocationData;
@@ -38,7 +46,23 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   : CTX {ctx}
   , State {Thread} {
 
-  CreateAsmDispatch(ctx, Thread);
+  DispatcherConfig config;
+  config.ExecuteBlocksWithCall = true;
+
+#if defined(_M_X86_64)
+  Dispatcher = std::make_unique<X86Dispatcher>(ctx, Thread, config);
+#elif defined(_M_ARM_64)
+  Dispatcher = std::make_unique<Arm64Dispatcher>(ctx, Thread, config);
+#else
+  #error missing arch
+#endif
+
+  DispatchPtr = Dispatcher->DispatchPtr;
+  CallbackPtr = Dispatcher->CallbackPtr;
+
+  // TODO: It feels wrong to initialize this way
+  ctx->InterpreterCallbackReturn = Dispatcher->ReturnPtr;
+}
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
