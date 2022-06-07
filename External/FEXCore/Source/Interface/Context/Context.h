@@ -108,9 +108,6 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
     } Config;
 
-    using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
-    IntCallbackReturn InterpreterCallbackReturn;
-
     FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;

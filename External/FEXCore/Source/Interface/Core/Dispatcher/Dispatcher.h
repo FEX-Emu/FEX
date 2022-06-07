@@ -35,7 +35,7 @@ public:
   virtual ~Dispatcher() = default;
   CPUBackend::AsmDispatch DispatchPtr;
   CPUBackend::JITCallback CallbackPtr;
-  FEXCore::Context::Context::IntCallbackReturn ReturnPtr;
+  CPUBackend::IntCallbackReturn ReturnPtr;
 
   /**
    * @name Dispatch Helper functions

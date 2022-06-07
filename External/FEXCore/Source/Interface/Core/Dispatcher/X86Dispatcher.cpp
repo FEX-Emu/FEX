@@ -156,7 +156,8 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     } else {
       L(CallBlock);
       mov(rdi, STATE);
-      call(rax);
+      mov(rsi, rax);
+      call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Interpreter.FragmentExecuter)]);
 
       if (CTX->GetGdbServerStatus()) {
         // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
@@ -396,7 +397,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   }
 
   {
-    ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();
+    ReturnPtr = getCurr<CPUBackend::IntCallbackReturn>();
 //  using CallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 
     // rdi = thread

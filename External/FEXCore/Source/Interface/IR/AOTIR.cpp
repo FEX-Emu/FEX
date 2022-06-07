@@ -339,7 +339,7 @@ namespace FEXCore::IR {
 
       // Insert to caches if we generated IR
       if (GeneratedIR) {
-        if (Thread->CPUBackend->NeedsRetainedIRCopy()) {
+        if (CTX->GetGdbServerStatus()) {
           // Add to thread local ir cache
           Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
           

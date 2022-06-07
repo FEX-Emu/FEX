@@ -334,7 +334,7 @@ void InterpreterOps::Op_Unhandled(FEXCore::IR::IROp_Header *IROp, IROpData *Data
 void InterpreterOps::Op_NoOp(FEXCore::IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node) {
 }
 
-void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData) {
+void InterpreterOps::InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::IR::IRListView const *CurrentIR) {
   volatile void *StackEntry = alloca(0);
 
   uintptr_t ListSize = CurrentIR->GetSSACount();
@@ -345,9 +345,9 @@ void InterpreterOps::InterpretIR(FEXCore::Core::InternalThreadState *Thread, uin
   auto BlockEnd = CurrentIR->GetBlocks().end();
 
   InterpreterOps::IROpData OpData{};
-  OpData.State = Thread;
+  OpData.State = Frame->Thread;
   OpData.SSAData = alloca(ListSize * 16);
-  OpData.CurrentEntry = Entry;
+  OpData.CurrentEntry = Frame->State.rip;
   OpData.CurrentIR = CurrentIR;
   OpData.StackEntry = StackEntry;
   OpData.BlockIterator = CurrentIR->GetBlocks().begin();

@@ -2,6 +2,7 @@
 
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Core/CPUBackend.h>
 
 #include <atomic>
 #include <cstddef>
@@ -144,6 +145,11 @@ namespace FEXCore::Core {
     struct {
       // None so far
     } X86;
+
+    struct {
+      uint64_t FragmentExecuter;
+      CPU::CPUBackend::IntCallbackReturn CallbackReturn;
+    } Interpreter;
   };
 
   // Each guest JIT frame has one of these

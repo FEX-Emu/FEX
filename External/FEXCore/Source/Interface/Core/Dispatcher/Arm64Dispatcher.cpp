@@ -169,6 +169,8 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
       } else {
         bind(&CallBlock);
         mov(x0, STATE);
+        mov(x1, x3);
+        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Interpreter.FragmentExecuter)));
         blr(x3);
 
         if (CTX->GetGdbServerStatus()) {

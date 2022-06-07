@@ -47,7 +47,7 @@ namespace FEXCore::CPU {
   class InterpreterOps {
 
     public:
-      static void InterpretIR(FEXCore::Core::InternalThreadState *Thread, uint64_t Entry, FEXCore::IR::IRListView *CurrentIR, FEXCore::Core::DebugData *DebugData);
+      static void InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::IR::IRListView const *IR);
       static void FillFallbackIndexPointers(uint64_t *Info);
       static bool GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info);
 

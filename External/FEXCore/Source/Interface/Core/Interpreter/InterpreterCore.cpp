@@ -34,14 +34,6 @@ namespace FEXCore::IR {
 namespace FEXCore::CPU {
 class CPUBackend;
 
-static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
-  auto Thread = Frame->Thread;
-
-  auto LocalEntry = Thread->LocalIRCache.find(Thread->CurrentFrame->State.rip);
-
-  InterpreterOps::InterpretIR(Thread, Thread->CurrentFrame->State.rip, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
-}
-
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CTX {ctx}
   , State {Thread} {
@@ -60,8 +52,10 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   DispatchPtr = Dispatcher->DispatchPtr;
   CallbackPtr = Dispatcher->CallbackPtr;
 
-  // TODO: It feels wrong to initialize this way
-  ctx->InterpreterCallbackReturn = Dispatcher->ReturnPtr;
+  auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
+
+  Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR); 
+  Interpreter.CallbackReturn = Dispatcher->ReturnPtr;
 }
 }
 
@@ -88,7 +82,14 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 }
 
 void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
-  return reinterpret_cast<void*>(InterpreterExecution);
+
+  auto dst = nullptr;
+
+  // check available size for 
+  auto sz = IR->GetInlineSize();
+  // serialize
+  IR->Serialize(dst);
+  return dst;
 }
 
 std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

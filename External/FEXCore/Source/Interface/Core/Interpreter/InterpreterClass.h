@@ -38,8 +38,6 @@ public:
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
 
-  bool NeedsRetainedIRCopy() const override { return true; }
-
 private:
   FEXCore::Context::Context *CTX;
 };

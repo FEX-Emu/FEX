@@ -189,6 +189,25 @@ public:
     stream.write((char*)GetListData(), ListSize);
   }
 
+  void Serialize(void *ptr) {
+    void *nul = nullptr;
+    //void *IRDataInternal;
+    ptr = memcpy(ptr, &nul, sizeof(nul));
+    //void *ListDataInternal;
+    ptr = memcpy(ptr, &nul, sizeof(nul));
+    //size_t DataSize;
+    ptr = memcpy(ptr, &DataSize, sizeof(DataSize));
+    //size_t ListSize;
+    ptr = memcpy(ptr, &ListSize, sizeof(ListSize));
+    //uint64_t Flags;
+    uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
+    ptr = memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags));
+    
+    // inline data
+    ptr = memcpy(ptr, (void*)GetData(), DataSize);
+    ptr = memcpy(ptr, (void*)GetListData(), ListSize);
+  }
+
   [[nodiscard]] size_t GetInlineSize() const {
     static_assert(sizeof(*this) == 40);
     return sizeof(*this) + DataSize + ListSize;
