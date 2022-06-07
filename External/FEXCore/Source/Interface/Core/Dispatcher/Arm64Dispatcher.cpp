@@ -104,7 +104,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   cmp(x0, RipReg);
   b(&FullLookup, Condition::ne);
 
-  if (!config.ExecuteBlocksWithCall) {
+  if (!config.InterpreterDispatch) {
     br(x3);
   } else {
     b(&CallBlock);
@@ -164,7 +164,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
       stp(x3, x2, MemOperand(x0));
 
       // Jump to the block
-      if (!config.ExecuteBlocksWithCall) {
+      if (!config.InterpreterDispatch) {
         br(x3);
       } else {
         bind(&CallBlock);

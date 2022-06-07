@@ -47,7 +47,7 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
   , State {Thread} {
 
   DispatcherConfig config;
-  config.ExecuteBlocksWithCall = true;
+  config.InterpreterDispatch = true;
 
 #if defined(_M_X86_64)
   Dispatcher = std::make_unique<X86Dispatcher>(ctx, Thread, config);

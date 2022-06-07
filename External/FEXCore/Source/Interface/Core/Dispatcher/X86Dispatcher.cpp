@@ -103,7 +103,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     cmp(qword[r13 + rax + 8], rdx);
     jne(FullLookup);
 
-    if (!config.ExecuteBlocksWithCall) {
+    if (!config.InterpreterDispatch) {
       jmp(qword[r13 + rax + 0]);
     } else {
       mov(rax, qword[r13 + rax + 0]);
@@ -151,7 +151,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     mov(qword[r13 + rcx*8 + 0], rax);
 
     // Real block if we made it here
-    if (!config.ExecuteBlocksWithCall) {
+    if (!config.InterpreterDispatch) {
       jmp(rax);
     } else {
       L(CallBlock);
