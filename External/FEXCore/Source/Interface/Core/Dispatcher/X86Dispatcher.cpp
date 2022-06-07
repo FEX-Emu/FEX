@@ -95,7 +95,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
     // L1 Cache
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
     mov(rax, rdx);
 
     and_(rax, LookupCache::L1_ENTRIES_MASK);
@@ -143,7 +143,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
     mov(rcx, rdx);
     and_(rcx, LookupCache::L1_ENTRIES_MASK);
     shl(rcx, 1);
@@ -432,16 +432,16 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
 
-    Pointers.DispatcherLoopTop = AbsoluteLoopTopAddress;
-    Pointers.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
-    Pointers.ThreadStopHandler = ThreadStopHandlerAddress;
-    Pointers.ThreadPauseHandler = ThreadPauseHandlerAddress;
-    Pointers.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
-    Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
-    Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
+    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddress;
+    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddress;
+    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
   }
 }
 

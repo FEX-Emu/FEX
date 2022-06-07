@@ -88,7 +88,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         uxth(w0, GetReg<RA_32>(IROp->Args[0].ID()));
-        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x1);
 
         PopDynamicRegsAndLR();
@@ -103,7 +103,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -122,7 +122,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -147,7 +147,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         else {
           mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
         }
-        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x1);
 
         PopDynamicRegsAndLR();
@@ -168,7 +168,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -187,7 +187,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -204,7 +204,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -223,7 +223,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         mov(v1.D(), GetSrc(IROp->Args[1].ID()).D());
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -243,7 +243,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -261,7 +261,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -279,7 +279,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -300,7 +300,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
         umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
-        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x4);
 
         PopDynamicRegsAndLR();
@@ -318,7 +318,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -341,7 +341,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
         umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
-        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x4);
 
         PopDynamicRegsAndLR();
@@ -424,27 +424,33 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
   {
     // Set up pointers that the JIT needs to load
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
-    // Process specific
-    Pointers.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
-    Pointers.LDIV = reinterpret_cast<uint64_t>(LDIV);
-    Pointers.LUREM = reinterpret_cast<uint64_t>(LUREM);
-    Pointers.LREM = reinterpret_cast<uint64_t>(LREM);
-    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
-    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
-    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+
+    // Common
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
+    
+    Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Common.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
+    Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {
       FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
-      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+      Common.CPUIDFunction = PMF.GetConvertedPointer();
     }
 
-    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
 
     // Fill in the fallback handlers
-    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
+    InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
+
+    // Platform Specific
+    auto &AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
+    
+    AArch64.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
+    AArch64.LDIV = reinterpret_cast<uint64_t>(LDIV);
+    AArch64.LUREM = reinterpret_cast<uint64_t>(LUREM);
+    AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
   // Must be done after Dispatcher init
@@ -692,7 +698,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
       str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
       // Stop the thread
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadPauseHandlerSpillSRA)));
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA)));
       br(x0);
     }
     bind(&RunBlock);

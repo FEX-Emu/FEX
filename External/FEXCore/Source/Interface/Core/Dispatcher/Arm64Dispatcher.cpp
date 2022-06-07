@@ -96,7 +96,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   auto RipReg = x2;
 
   // L1 Cache
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
 
   and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
   add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -157,7 +157,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
 
       and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
@@ -541,20 +541,22 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
 
-    Pointers.DispatcherLoopTop = AbsoluteLoopTopAddress;
-    Pointers.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
-    Pointers.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
-    Pointers.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
-    Pointers.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
-    Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
-    Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
-    Pointers.LUDIVHandler = LUDIVHandler;
-    Pointers.LDIVHandler = LDIVHandler;
-    Pointers.LUREMHandler = LUREMHandler;
-    Pointers.LREMHandler = LREMHandler;
+    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
+    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
+    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
+
+    auto &AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
+    AArch64.LUDIVHandler = LUDIVHandler;
+    AArch64.LDIVHandler = LDIVHandler;
+    AArch64.LUREMHandler = LUREMHandler;
+    AArch64.LREMHandler = LREMHandler;
   }
 }
 

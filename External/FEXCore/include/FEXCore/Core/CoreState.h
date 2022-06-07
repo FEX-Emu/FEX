@@ -93,12 +93,10 @@ namespace FEXCore::Core {
   };
 
   union JITPointers {
+
     struct {
       // Process specific
-      uint64_t LUDIV{};
-      uint64_t LDIV{};
-      uint64_t LUREM{};
-      uint64_t LREM{};
+
       uint64_t PrintValue{};
       uint64_t PrintVectorValue{};
       uint64_t RemoveThreadCodeEntryFromJIT{};
@@ -110,7 +108,6 @@ namespace FEXCore::Core {
       uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
 
       // Thread Specific
-
       /**
        * @name Dispatcher pointers
        * @{ */
@@ -122,6 +119,21 @@ namespace FEXCore::Core {
       uint64_t OverflowExceptionHandler{};
       uint64_t SignalReturnHandler{};
       uint64_t L1Pointer{};
+      /**  @} */
+    } Common;
+
+    struct {
+      // Process specific
+      uint64_t LUDIV{};
+      uint64_t LDIV{};
+      uint64_t LUREM{};
+      uint64_t LREM{};
+
+      // Thread Specific
+
+      /**
+       * @name Dispatcher pointers
+       * @{ */
       uint64_t LUDIVHandler{};
       uint64_t LDIVHandler{};
       uint64_t LUREMHandler{};
@@ -130,31 +142,7 @@ namespace FEXCore::Core {
     } AArch64;
 
     struct {
-      // Process specific
-      uint64_t PrintValue{};
-      uint64_t PrintVectorValue{};
-      uint64_t RemoveThreadCodeEntryFromJIT{};
-      uint64_t CPUIDObj{};
-      uint64_t CPUIDFunction{};
-      uint64_t SyscallHandlerObj{};
-      uint64_t SyscallHandlerFunc{};
-
-      uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
-
-      // Thread Specific
-
-      /**
-       * @name Dispatcher pointers
-       * @{ */
-      uint64_t DispatcherLoopTop{};
-      uint64_t DispatcherLoopTopFillSRA{};
-      uint64_t ThreadStopHandler{};
-      uint64_t ThreadPauseHandler{};
-      uint64_t UnimplementedInstructionHandler{};
-      uint64_t OverflowExceptionHandler{};
-      uint64_t SignalReturnHandler{};
-      uint64_t L1Pointer{};
-      /**  @} */
+      // None so far
     } X86;
   };
 

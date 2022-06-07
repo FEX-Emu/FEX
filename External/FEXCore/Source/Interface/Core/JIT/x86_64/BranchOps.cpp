@@ -43,7 +43,7 @@ DEF_OP(SignalReturn) {
     add(rsp, SpillSlots * 16); // + 8 to consume return address
   }
 
-  jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalReturnHandler)]);
+  jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)]);
 }
 
 DEF_OP(CallbackReturn) {
@@ -98,7 +98,7 @@ DEF_OP(ExitFunction) {
     Xbyak::Reg RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
 
     // L1 Cache
-    mov(rcx, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+    mov(rcx, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
 
     mov(rax, RipReg);
 
@@ -113,7 +113,7 @@ DEF_OP(ExitFunction) {
 
     L(FullLookup);
     mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], RipReg);
-    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.DispatcherLoopTop)]);
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop)]);
   }
 
 #ifdef BLOCKSTATS
@@ -181,13 +181,13 @@ DEF_OP(Syscall) {
   }
 
   mov(rsi, STATE); // Move thread in to rsi
-  mov(rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SyscallHandlerObj)]);
+  mov(rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerObj)]);
   mov(rdx, rsp);
 
   if (NumPush & 1)
     sub(rsp, 8); // Align
   // {rdi, rsi, rdx}
-  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SyscallHandlerFunc)]);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerFunc)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
@@ -272,7 +272,7 @@ DEF_OP(RemoveThreadCodeEntry) {
   mov(rax, Entry); // imm64 move
   mov(rsi, rax);
 
-  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.RemoveThreadCodeEntryFromJIT)]);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.RemoveThreadCodeEntryFromJIT)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
@@ -296,7 +296,7 @@ DEF_OP(CPUID) {
   // rsi can be in the source registers, so copy argument to edx first
   mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
   mov (esi, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-  mov (rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.CPUIDObj)]);
+  mov (rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj)]);
 
   auto NumPush = RA64.size();
 
@@ -304,7 +304,7 @@ DEF_OP(CPUID) {
     sub(rsp, 8); // Align
 
   // {rdi, rsi, rdx}
-  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.CPUIDFunction)]);
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction)]);
 
   if (NumPush & 1)
     add(rsp, 8); // Align
