@@ -355,7 +355,7 @@ namespace FEXCore::Context {
         // Wait for thread to be fully constructed
         // XXX: Look into thread partial construction issues
         while(Thread->RunningEvents.WaitingToStart.load()) ;
-        ClearCodeCache(Thread, true);
+        ClearCodeCache(Thread);
       }
     }
     CoreRunningMode PreviousRunningMode = this->Config.RunningMode;
@@ -637,7 +637,7 @@ namespace FEXCore::Context {
     Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
-  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
+  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) {
     {
       // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
       // Use the thread's object cache ref counter for this

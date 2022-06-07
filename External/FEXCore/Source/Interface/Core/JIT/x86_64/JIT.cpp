@@ -578,7 +578,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState, false);
+    ThreadState->CTX->ClearCodeCache(ThreadState);
   }
 
 	void *GuestEntry = getCurr<void*>();

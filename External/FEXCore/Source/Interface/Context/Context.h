@@ -302,7 +302,7 @@ namespace FEXCore::Context {
     bool IsTSOEnabled() { return (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled; }
 
   protected:
-    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
+    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
 
   private:
     /**
