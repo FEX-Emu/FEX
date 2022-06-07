@@ -344,7 +344,7 @@ namespace FEXCore::IR {
           Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
           
           std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
-          Thread->LocalIRCache.insert({GuestRIP, std::move(Entry)});
+          Thread->DebugStore.insert({GuestRIP, std::move(Entry)});
         }
         else {
           // If the IR doesn't need to be retained then we can just delete it now

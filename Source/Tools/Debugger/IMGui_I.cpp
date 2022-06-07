@@ -657,10 +657,7 @@ namespace IR {
     FEXCore::Core::ThreadState *State = FEXCore::Context::Debug::GetThreadState(FEX::DebuggerState::GetContext());
     FEXCore::Core::InternalThreadState *TS = reinterpret_cast<FEXCore::Core::InternalThreadState*>(State);
 
-    auto Local = TS->LocalIRCache;
-    auto &DebugData = TS->DebugData;
-
-    for (auto &LocalEntry : TS->LocalIRCache) {
+    for (auto &LocalEntry : TS->DebugStore) {
        std::ostringstream out;
        out << "0x" << std::hex << LocalEntry.first;
        IRDebugData DebugData;
