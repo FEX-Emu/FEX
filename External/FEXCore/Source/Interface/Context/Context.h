@@ -42,6 +42,7 @@ namespace CodeSerialize {
 namespace CPU {
   class Arm64JITCore;
   class X86JITCore;
+  class InterpreterCore;
 }
 namespace HLE {
 struct SyscallArguments;
@@ -72,6 +73,7 @@ namespace FEXCore::Context {
     friend class FEXCore::CPU::X86JITCore;
   #endif
 
+    friend class FEXCore::CPU::InterpreterCore;
     friend class FEXCore::IR::Validation::IRValidation;
 
     struct {

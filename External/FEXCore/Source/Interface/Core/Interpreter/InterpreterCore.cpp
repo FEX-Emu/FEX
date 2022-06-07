@@ -9,11 +9,11 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <memory>
 #include <signal.h>
 #include <stdint.h>
-#include <unordered_map>
 #include <utility>
 
 #include "InterpreterOps.h"
@@ -56,6 +56,8 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR); 
   Interpreter.CallbackReturn = Dispatcher->ReturnPtr;
+
+  ClearCache();
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
@@ -82,13 +84,23 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 
 void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
 
-  auto dst = nullptr;
+  auto Size = AlignUp(IR->GetInlineSize(), 16);
+  if ((BufferUsed + Size) > CurrentCodeBuffer->Size) {
+    ThreadState->CTX->ClearCodeCache(ThreadState, false);
+  }
 
-  // check available size for 
-  auto sz = IR->GetInlineSize();
-  // serialize
-  IR->Serialize(dst);
-  return dst;
+  auto DestBuffer = CurrentCodeBuffer->Ptr + BufferUsed;
+
+  IR->Serialize(DestBuffer);
+
+  BufferUsed += Size;
+
+  return DestBuffer;
+}
+
+void InterpreterCore::ClearCache() {
+  auto CodeBuffer = GetEmptyCodeBuffer();
+  BufferUsed = 0;
 }
 
 std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

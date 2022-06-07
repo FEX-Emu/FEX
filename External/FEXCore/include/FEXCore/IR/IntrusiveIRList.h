@@ -189,23 +189,23 @@ public:
     stream.write((const char*)GetListData(), ListSize);
   }
 
-  void Serialize(void *ptr) const {
+  void Serialize(uint8_t *ptr) const {
     void *nul = nullptr;
     //void *IRDataInternal;
-    ptr = memcpy(ptr, &nul, sizeof(nul));
+    memcpy(ptr, &nul, sizeof(nul)); ptr += sizeof(nul);
     //void *ListDataInternal;
-    ptr = memcpy(ptr, &nul, sizeof(nul));
+    memcpy(ptr, &nul, sizeof(nul)); ptr += sizeof(nul);
     //size_t DataSize;
-    ptr = memcpy(ptr, &DataSize, sizeof(DataSize));
+    memcpy(ptr, &DataSize, sizeof(DataSize)); ptr += sizeof(DataSize);
     //size_t ListSize;
-    ptr = memcpy(ptr, &ListSize, sizeof(ListSize));
+    memcpy(ptr, &ListSize, sizeof(ListSize)); ptr += sizeof(ListSize);
     //uint64_t Flags;
     uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
-    ptr = memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags));
+    memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags)); ptr += sizeof(WrittenFlags);
     
     // inline data
-    ptr = memcpy(ptr, (const void*)GetData(), DataSize);
-    ptr = memcpy(ptr, (const void*)GetListData(), ListSize);
+    memcpy(ptr, (const void*)GetData(), DataSize); ptr += DataSize;
+    memcpy(ptr, (const void*)GetListData(), ListSize); ptr += ListSize;
   }
 
   [[nodiscard]] size_t GetInlineSize() const {

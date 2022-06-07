@@ -37,9 +37,12 @@ public:
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
+  
+  void ClearCache() override;
 
 private:
   FEXCore::Context::Context *CTX;
+  size_t BufferUsed;
 };
 
 template<typename T>
