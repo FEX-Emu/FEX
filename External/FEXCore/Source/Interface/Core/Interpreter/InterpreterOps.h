@@ -54,7 +54,7 @@ namespace FEXCore::CPU {
       struct IROpData {
         FEXCore::Core::InternalThreadState *State{};
         uint64_t CurrentEntry{};
-        FEXCore::IR::IRListView *CurrentIR{};
+        FEXCore::IR::IRListView const *CurrentIR{};
         volatile void *StackEntry{};
         void *SSAData{};
         struct {
@@ -409,7 +409,7 @@ namespace FEXCore::CPU {
     return CompResult;
   }
 
-  static uint8_t GetOpSize(FEXCore::IR::IRListView *CurrentIR, IR::OrderedNodeWrapper Node) {
+  static uint8_t GetOpSize(FEXCore::IR::IRListView const *CurrentIR, IR::OrderedNodeWrapper Node) {
     auto IROp = CurrentIR->GetOp<FEXCore::IR::IROp_Header>(Node);
     return IROp->Size;
   }

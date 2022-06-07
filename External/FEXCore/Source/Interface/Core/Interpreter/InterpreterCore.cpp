@@ -19,9 +19,9 @@
 #include "InterpreterOps.h"
 
 #if defined(_M_X86_64)
-  #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
-#elif defined(_M_ARM_64)
   #include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#elif defined(_M_ARM_64)
+  #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #else
   #error missing arch
 #endif
@@ -35,8 +35,8 @@ namespace FEXCore::CPU {
 class CPUBackend;
 
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CTX {ctx}
-  , State {Thread} {
+  : CPUBackend(Thread, 1024 * 1024 * 16, 1024 * 1024 * 128)
+  , CTX {ctx} {
 
   DispatcherConfig config;
   config.InterpreterDispatch = true;
@@ -56,7 +56,6 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR); 
   Interpreter.CallbackReturn = Dispatcher->ReturnPtr;
-}
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
