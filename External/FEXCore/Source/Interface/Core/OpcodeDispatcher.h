@@ -621,6 +621,7 @@ public:
   void DPPOp(OpcodeArgs);
 
   void MPSADBWOp(OpcodeArgs);
+  void PCLMULQDQOp(OpcodeArgs);
 
   void CRC32(OpcodeArgs);
 

@@ -306,4 +306,15 @@ void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Selector needs to be literal here");
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto Selector = static_cast<uint8_t>(Op->Src[1].Data.Literal.Value);
+
+  auto Res = _PCLMUL(Dest, Src, Selector);
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
 }
