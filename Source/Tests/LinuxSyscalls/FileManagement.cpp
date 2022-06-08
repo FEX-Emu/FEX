@@ -333,7 +333,26 @@ std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
 uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[maybe_unused]] uint32_t mode) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
-  return ::open(SelfPath, flags, mode);
+  int fd = -1;
+
+  fd = EmuFD.OpenAt(AT_FDCWD, SelfPath, flags, mode);
+  if (fd == -1) {
+    auto Path = GetEmulatedPath(SelfPath, true);
+    if (!Path.empty()) {
+      fd = ::open(Path.c_str(), flags, mode);
+    }
+
+    if (fd == -1) {
+      fd = ::open(SelfPath, flags, mode);
+    }
+  }
+
+  if (fd != -1) {
+    FHU::ScopedSignalMaskWithMutex lk(FDLock);
+    FDToNameMap.insert_or_assign(fd, SelfPath);
+  }
+
+  return fd;
 }
 
 uint64_t FileManager::Close(int fd) {
