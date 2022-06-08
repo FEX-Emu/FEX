@@ -93,7 +93,7 @@ namespace FEXCore::Core {
     OPINDEX_MAX,
   };
 
-  union JITPointers {
+  struct JITPointers {
 
     struct {
       // Process specific
@@ -123,33 +123,35 @@ namespace FEXCore::Core {
       /**  @} */
     } Common;
 
-    struct {
-      // Process specific
-      uint64_t LUDIV{};
-      uint64_t LDIV{};
-      uint64_t LUREM{};
-      uint64_t LREM{};
+    union {
+      struct {
+        // Process specific
+        uint64_t LUDIV{};
+        uint64_t LDIV{};
+        uint64_t LUREM{};
+        uint64_t LREM{};
 
-      // Thread Specific
+        // Thread Specific
 
-      /**
-       * @name Dispatcher pointers
-       * @{ */
-      uint64_t LUDIVHandler{};
-      uint64_t LDIVHandler{};
-      uint64_t LUREMHandler{};
-      uint64_t LREMHandler{};
-      /**  @} */
-    } AArch64;
+        /**
+         * @name Dispatcher pointers
+         * @{ */
+        uint64_t LUDIVHandler{};
+        uint64_t LDIVHandler{};
+        uint64_t LUREMHandler{};
+        uint64_t LREMHandler{};
+        /**  @} */
+      } AArch64;
 
-    struct {
-      // None so far
-    } X86;
+      struct {
+        // None so far
+      } X86;
 
-    struct {
-      uint64_t FragmentExecuter;
-      CPU::CPUBackend::IntCallbackReturn CallbackReturn;
-    } Interpreter;
+      struct {
+        uint64_t FragmentExecuter;
+        CPU::CPUBackend::IntCallbackReturn CallbackReturn;
+      } Interpreter;
+    };
   };
 
   // Each guest JIT frame has one of these
