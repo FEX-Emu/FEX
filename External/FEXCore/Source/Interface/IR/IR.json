@@ -943,7 +943,7 @@
       },
 
       "FPR = VBitcast u8:#RegisterSize, u8:#ElementSize, FPR:$Source": {
-        "Dest": ["Workaround for issue with LLVM breaking when loading scalar elements to vectors"],
+        "Desc": ["Workaround for issue with LLVM breaking when loading scalar elements to vectors"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1277,12 +1277,12 @@
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUMull2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Dest": "Multiplies the high elements with size extension",
+        "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSMull2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "Dest": "Multiplies the high elements with size extension",
+        "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
@@ -1454,27 +1454,27 @@
     },
     "Crypto": {
       "FPR = VAESImc FPR:$Vector": {
-        "Dest": "Does a stage of the inverse mix column transformation",
+        "Desc": "Does a stage of the inverse mix column transformation",
         "DestSize": "16"
       },
       "FPR = VAESEnc FPR:$State, FPR:$Key": {
-        "Dest": "Does a step of AES encryption",
+        "Desc": "Does a step of AES encryption",
         "DestSize": "16"
       },
       "FPR = VAESEncLast FPR:$State, FPR:$Key": {
-        "Dest": "Does the last step of AES encryption",
+        "Desc": "Does the last step of AES encryption",
         "DestSize": "16"
       },
       "FPR = VAESDec FPR:$State, FPR:$Key": {
-        "Dest": "Does a step of AES decryption",
+        "Desc": "Does a step of AES decryption",
         "DestSize": "16"
       },
       "FPR = VAESDecLast FPR:$State, FPR:$Key": {
-        "Dest": "Does the last step of AES decryption",
+        "Desc": "Does the last step of AES decryption",
         "DestSize": "16"
       },
       "FPR = VAESKeyGenAssist FPR:$Src, u8:$RCON": {
-        "Dest": "Assists in key generation",
+        "Desc": "Assists in key generation",
         "DestSize": "16"
       },
       "GPR = CRC32 GPR:$Src1, GPR:$Src2, u8:$SrcSize": {
