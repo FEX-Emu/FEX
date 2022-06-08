@@ -140,7 +140,7 @@ class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
   }
 
   std::shared_mutex StubMutex2;
-  std::shared_lock<std::shared_mutex> CompileCodeLock(uint64_t Start) {
+  std::shared_lock<std::shared_mutex> CompileCodeLock(uint64_t Start) override {
     return std::shared_lock(StubMutex2);
   }
 };
