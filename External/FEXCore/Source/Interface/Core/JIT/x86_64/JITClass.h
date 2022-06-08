@@ -491,6 +491,7 @@ private:
   DEF_OP(AESDecLast);
   DEF_OP(AESKeyGenAssist);
   DEF_OP(CRC32);
+  DEF_OP(PCLMUL);
 #undef DEF_OP
 };
 

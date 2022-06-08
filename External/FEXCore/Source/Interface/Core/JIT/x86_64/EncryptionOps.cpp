@@ -75,16 +75,37 @@ DEF_OP(CRC32) {
   }
 }
 
+DEF_OP(PCLMUL) {
+  auto Op = IROp->C<IR::IROp_PCLMUL>();
+
+  auto Dst = GetDst(Node);
+  auto Src1 = GetSrc(Op->Src1.ID());
+  auto Src2 = GetSrc(Op->Src2.ID());
+
+  switch (Op->Selector) {
+  case 0b00000000:
+  case 0b00000001:
+  case 0b00010000:
+  case 0b00010001:
+    vpclmulqdq(Dst, Src1, Src2, Op->Selector);
+    break;
+  default:
+    LOGMAN_MSG_A_FMT("Unknown PCLMUL selector: {}", Op->Selector);
+    break;
+  }
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterEncryptionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
-  REGISTER_OP(VAESIMC,     AESImc);
-  REGISTER_OP(VAESENC,     AESEnc);
-  REGISTER_OP(VAESENCLAST, AESEncLast);
-  REGISTER_OP(VAESDEC,     AESDec);
-  REGISTER_OP(VAESDECLAST, AESDecLast);
-  REGISTER_OP(VAESKEYGENASSIST, AESKeyGenAssist);
+  REGISTER_OP(VAESIMC,           AESImc);
+  REGISTER_OP(VAESENC,           AESEnc);
+  REGISTER_OP(VAESENCLAST,       AESEncLast);
+  REGISTER_OP(VAESDEC,           AESDec);
+  REGISTER_OP(VAESDECLAST,       AESDecLast);
+  REGISTER_OP(VAESKEYGENASSIST,  AESKeyGenAssist);
   REGISTER_OP(CRC32,             CRC32);
+  REGISTER_OP(PCLMUL,            PCLMUL);
 #undef REGISTER_OP
 }
 }

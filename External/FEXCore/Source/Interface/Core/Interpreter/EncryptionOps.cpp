@@ -513,6 +513,44 @@ DEF_OP(CRC32) {
   memcpy(GDP, &Tmp, sizeof(Tmp));
 }
 
+DEF_OP(PCLMUL) {
+  auto Op = IROp->C<IR::IROp_PCLMUL>();
+
+  const auto Selector = Op->Selector;
+  auto* Dst  = GetDest<uint64_t*>(Data->SSAData, Node);
+  auto* Src1 = GetSrc<uint64_t*>(Data->SSAData, Op->Src1);
+  auto* Src2 = GetSrc<uint64_t*>(Data->SSAData, Op->Src2);
+
+  const uint64_t TMP1 = (Selector & 0x01) == 0 ? Src1[0] : Src1[1];
+  const uint64_t TMP2 = (Selector & 0x10) == 0 ? Src2[0] : Src2[1];
+  
+  const auto make_lo = [](uint64_t lhs, uint64_t rhs) {
+    uint64_t result = 0;
+
+    for (size_t i = 0; i < 64; i++) {
+      if ((lhs & (1ULL << i)) != 0) {
+        result ^= rhs << i;
+      }
+    }
+
+    return result;
+  };
+  const auto make_hi = [](uint64_t lhs, uint64_t rhs) {
+    uint64_t result = 0;
+
+    for (size_t i = 1; i < 64; i++) {
+      if ((lhs & (1ULL << i)) != 0) {
+        result ^= rhs >> (64 - i);
+      }
+    }
+
+    return result;
+  };
+
+  Dst[0] = make_lo(TMP1, TMP2);
+  Dst[1] = make_hi(TMP1, TMP2);
+}
+
 #undef DEF_OP
 
 } // namespace FEXCore::CPU
