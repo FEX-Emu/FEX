@@ -6650,6 +6650,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b11, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
 
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
+
     {OPD(3, 0b11, 0xF0), 1, &OpDispatchBuilder::RORX},
   };
 #undef OPD
