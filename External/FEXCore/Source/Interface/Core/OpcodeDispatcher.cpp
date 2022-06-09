@@ -6566,6 +6566,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(0, PF_3A_66,   0x40), 1, &OpDispatchBuilder::DPPOp<4>},
     {OPD(0, PF_3A_66,   0x41), 1, &OpDispatchBuilder::DPPOp<8>},
     {OPD(0, PF_3A_66,   0x42), 1, &OpDispatchBuilder::MPSADBWOp},
+    {OPD(0, PF_3A_66,   0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
 
     {OPD(0, PF_3A_NONE, 0xCC), 1, &OpDispatchBuilder::SHA1RNDS4Op},
   };
@@ -6648,6 +6649,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
     {OPD(2, 0b11, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
+
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
 
     {OPD(3, 0b11, 0xF0), 1, &OpDispatchBuilder::RORX},
   };

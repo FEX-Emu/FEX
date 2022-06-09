@@ -284,6 +284,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VAESDECLAST,            AESDecLast);
   REGISTER_OP(VAESKEYGENASSIST,       AESKeyGenAssist);
   REGISTER_OP(CRC32,                  CRC32);
+  REGISTER_OP(PCLMUL,                 PCLMUL);
 
   // F80 ops
   REGISTER_OP(F80LOADFCW,             F80LOADFCW);

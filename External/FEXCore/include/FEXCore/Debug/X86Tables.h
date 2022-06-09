@@ -186,7 +186,7 @@ struct DecodedInst {
   bool DecodedSIB;
 
   DecodedOperand Dest;
-  DecodedOperand Src[2];
+  DecodedOperand Src[3];
 
   // Constains the dispatcher handler pointer
   X86InstInfo const* TableInfo;
