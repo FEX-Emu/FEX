@@ -29,6 +29,20 @@ jobs:
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
 
+    - name: Set rootfs paths
+      run: |
+        echo "FEX_ROOTFS_MOUNT=/mnt/AutoNFS/rootfs/" >> $GITHUB_ENV
+        echo "FEX_ROOTFS_PATH=$HOME/Rootfs/" >> $GITHUB_ENV
+        echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
+        echo "ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
+
+    - name: Update RootFS cache
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
+
     - name : submodule checkout
       # Need to update submodules
       run: |
