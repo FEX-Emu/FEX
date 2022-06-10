@@ -19,6 +19,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 #include <set>
 #include <sys/mman.h>
 
@@ -1135,7 +1136,7 @@ const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC) {
+void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
   Blocks.clear();
   BlocksToDecode.clear();
   HasBlocks.clear();
@@ -1165,6 +1166,13 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
   // Entry is a jump target
   BlocksToDecode.emplace(PC);
 
+  uint64_t CurrentCodePage = PC & FHU::FEX_PAGE_MASK;
+
+  std::set<uint64_t> CodePages = { CurrentCodePage };
+
+  AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
+  
+
   while (!BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();
     uint64_t RIPToDecode = *BlockDecodeIt;
@@ -1181,10 +1189,31 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC)
     InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
 
     while (1) {
+
+      // This is worst case
+      auto OpMinAddress = RIPToDecode + PCOffset;
+      auto OpMaxAddress = OpMinAddress + MAX_INST_SIZE;
+
+      if ((OpMinAddress & FHU::FEX_PAGE_MASK) != CurrentCodePage) {
+        CurrentCodePage = OpMinAddress & FHU::FEX_PAGE_MASK;
+        if (!CodePages.contains(CurrentCodePage)) {
+          CodePages.insert(CurrentCodePage);
+          AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
+        }
+      }
+
+      if ((OpMaxAddress & FHU::FEX_PAGE_MASK) != CurrentCodePage) {
+        CurrentCodePage = OpMaxAddress & FHU::FEX_PAGE_MASK;
+        if (!CodePages.contains(CurrentCodePage)) {
+          CodePages.insert(CurrentCodePage);
+          AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
+        }
+      }
+
       bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
 
       if (ErrorDuringDecoding) {
-        LogMan::Msg::DFmt("Couldn't Decode something at 0x{:x}, Started at 0x{:x}", PC + PCOffset, PC);
+        LogMan::Msg::DFmt("Couldn't Decode something at 0x{:x}, Started at 0x{:x}", RIPToDecode + PCOffset, PC);
         // Put an invalid instruction in the stream so the core can raise SIGILL if hit
         CurrentBlockDecoding.HasInvalidInstruction = true;
         // Error while decoding instruction. We don't know the table or instruction size
