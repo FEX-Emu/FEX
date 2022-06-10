@@ -17,6 +17,7 @@ foreach(TEST ${TESTS})
     "${CMAKE_SOURCE_DIR}/unittests/gcc-target-tests-64/Expected_Output"
     "${CMAKE_SOURCE_DIR}/unittests/gcc-target-tests-64/Disabled_Tests"
     "${TEST_NAME}"
+    "guest"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
     "--no-silent" "-c" "irjit" "-n" "500" "--"
     "${TEST}")

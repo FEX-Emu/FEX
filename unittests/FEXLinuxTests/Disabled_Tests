@@ -1,0 +1,17 @@
+###
+### Disabled tests ###
+###
+
+# These sometimes crash FEX with SIGSEGV
+timer-sigev-thread.32
+timer-sigev-thread.64
+
+# These fail on arm because of sigbus handling
+synchronous-signal-block-sbus.32
+synchronous-signal-block-sbus.64
+synchronous-signal-block-abus.32
+synchronous-signal-block-abus.64
+
+# These fail on arm because we don't raise FPE
+synchronous-signal-block-sfpe.32
+synchronous-signal-block-sfpe.64
