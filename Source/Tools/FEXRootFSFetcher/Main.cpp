@@ -346,7 +346,7 @@ namespace WebFileFetcher {
     std::string Hash;
   };
 
-  const static std::string DownloadURL = "https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links.txt";
+  const static std::string DownloadURL = "https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links_XXH3.txt";
 
   std::string DownloadToString(const std::string &URL) {
     std::string BigArgs =
