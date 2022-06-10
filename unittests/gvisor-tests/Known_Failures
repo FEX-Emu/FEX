@@ -210,3 +210,6 @@ proc_net_udp_test
 # This test is broken since kernel commit: 36e2c7421f02
 # Upstream gvisor has the offending tests removed
 inotify_test
+
+# Needs testing
+semaphore_test
