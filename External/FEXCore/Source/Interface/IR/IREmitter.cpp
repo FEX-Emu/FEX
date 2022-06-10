@@ -16,6 +16,27 @@ $end_info$
 #include <vector>
 
 namespace FEXCore::IR {
+
+bool IsFragmentExit(FEXCore::IR::IROps Op) {
+  switch (Op) {
+    case OP_EXITFUNCTION:
+    case OP_BREAK:
+      return true;
+    default:
+    return false;
+  }
+}
+
+bool IsBlockExit(FEXCore::IR::IROps Op) {
+  switch(Op) {
+    case OP_JUMP:
+    case OP_CONDJUMP:
+      return true;
+    default:
+      return IsFragmentExit(Op);
+  }
+}
+
 FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(OrderedNode *Node) {
   auto Class = GetOpRegClass(Node);
   switch (Class) {
