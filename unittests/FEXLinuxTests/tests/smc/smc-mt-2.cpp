@@ -60,8 +60,12 @@ void *thread(void *) {
   return 0;
 }
 
-int main() {
+void RunIteration() {
+  printf("Starting Iteration\n");
   code = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
+  ready_for_modification = false;
+  thread_unblocked = false;
+  thread_counter = 0;
 
   pthread_t tid;
   pthread_create(&tid, 0, &thread, 0);
@@ -91,9 +95,17 @@ int main() {
     }
   }
 
-  printf("Should exit now\n");
+  printf("Iteration should finish now\n");
   void *rv;
   pthread_join(tid, &rv);
+  printf("Iteration done\n");
+  munmap(code, 4096);
+}
 
+int main() {
+  
+  for (int i = 0; i < 100; i++) {
+    RunIteration();
+  }
   return 0;
 }
