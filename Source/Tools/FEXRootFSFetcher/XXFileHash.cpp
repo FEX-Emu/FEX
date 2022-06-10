@@ -28,32 +28,31 @@ namespace XXFileHash {
     lseek(fd, 0, SEEK_SET);
 
     // Set up XXHash state
-    XXH64_state_t* const State = XXH64_createState();
+    XXH3_state_t* const State = XXH3_createState();
     XXH64_hash_t const Seed = 0;
 
     if (!State) {
       return HadError();
     }
 
-    if (XXH64_reset(State, Seed) == XXH_ERROR) {
+    if (XXH3_64bits_reset_withSeed(State, Seed) == XXH_ERROR) {
       return HadError();
     }
 
     std::vector<char> Data(BLOCK_SIZE);
-    off_t DataRemaining = Size - BLOCK_SIZE;
-    off_t DataTail = Size - DataRemaining;
     off_t CurrentOffset = 0;
     auto Now = std::chrono::high_resolution_clock::now();
 
     // Let the kernel know that we will be reading linearly
     posix_fadvise(fd, 0, Size, POSIX_FADV_SEQUENTIAL);
-    while (CurrentOffset < DataRemaining) {
+    while (CurrentOffset < Size) {
+
       ssize_t Result = pread(fd, Data.data(), BLOCK_SIZE, CurrentOffset);
       if (Result == -1) {
         return HadError();
       }
 
-      if (XXH64_update(State, Data.data(), BLOCK_SIZE) == XXH_ERROR) {
+      if (XXH3_64bits_update(State, Data.data(), Result) == XXH_ERROR) {
         return HadError();
       }
       auto Cur = std::chrono::high_resolution_clock::now();
@@ -62,21 +61,11 @@ namespace XXFileHash {
         fmt::print("{}% hashed\n", (double)CurrentOffset / SizeD);
         Now = Cur;
       }
-      CurrentOffset += BLOCK_SIZE;
+      CurrentOffset += Result;
     }
 
-    // Finish the tail
-    ssize_t Result = pread(fd, Data.data(), DataTail, CurrentOffset);
-    if (Result == -1) {
-      return HadError();
-    }
-
-    if (XXH64_update(State, Data.data(), DataTail) == XXH_ERROR) {
-      return HadError();
-    }
-
-    XXH64_hash_t const Hash = XXH64_digest(State);
-    XXH64_freeState(State);
+    XXH64_hash_t const Hash = XXH3_64bits_digest(State);
+    XXH3_freeState(State);
 
     close(fd);
     return {true, Hash};

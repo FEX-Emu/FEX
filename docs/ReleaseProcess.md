@@ -80,7 +80,7 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
 * Follow the Build_Data file's information for how to generate an image using `build_image.py`
   * This gives a squashfs image for the rootfs
 * Use FEXRootFSFetcher <image.sqsh> to generate the xxhash for the image
-* Update `https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links.txt` with the new rootfs image and hash
+* Update `https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links_XXH3.txt` with the new rootfs image and hash
   * This currently lives in a private FEX-Emu backblaze bucket with cloudflare servicing it.
   * Never publically give the direct backblaze link to the file. Will cause BW costs to skyrocket
   * Always pass through cloudflare
@@ -88,9 +88,9 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
 * Upload new image to Backblaze using the b2 upload tool
   * b2 upload-file <bucketname> <image.sqsh> <Image folder name>/<image.sqsh>
 
-* Upload the new RootFS_links.txt
+* Upload the new RootFS_links_XXH3.txt
   * Lives in the root of the bucket
-  * b2 upload-file <bucketname> RootFS_links.txt RootFS_links.txt
+  * b2 upload-file <bucketname> RootFS_links_XXH3.txt RootFS_links_XXH3.txt
 
 * Once uploaded it should propagate immediately
 * Might be worth thinking about the coherency problem of updating the hash versus image independently if overwriting an image
