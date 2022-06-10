@@ -26,16 +26,20 @@
   #error missing arch
 #endif
 
+static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
+
 namespace FEXCore::IR {
   class IRListView;
   class RegisterAllocationData;
 }
 
+
 namespace FEXCore::CPU {
 class CPUBackend;
 
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CPUBackend(Thread, 1024 * 1024 * 16, 1024 * 1024 * 128)
+  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , CTX {ctx} {
 
   DispatcherConfig config;

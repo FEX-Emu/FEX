@@ -43,6 +43,9 @@ $end_info$
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
 
+static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
+
 namespace {
 static void PrintValue(uint64_t Value) {
   LogMan::Msg::DFmt("Value: 0x{:x}", Value);
@@ -301,7 +304,7 @@ void X86JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
 X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CPUBackend(Thread, 1024 * 1024 * 16, 1024 * 1024 * 256)
+  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , CodeGenerator(0, this, nullptr) // this is not used here
   , CTX {ctx} {
 

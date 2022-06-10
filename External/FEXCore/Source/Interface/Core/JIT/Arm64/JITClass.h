@@ -54,10 +54,6 @@ public:
 
   void ClearCache() override;
 
-  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-  // We don't want to move above 128MB atm because that means we will have to encode longer jumps
-  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
-
   bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const override {
     return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher);
   }

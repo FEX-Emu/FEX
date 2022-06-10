@@ -67,9 +67,6 @@ public:
 
   void ClearCache() override;
 
-  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
-
   bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const override {
     return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher);
   }

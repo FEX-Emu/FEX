@@ -35,6 +35,10 @@ $end_info$
 #include <unistd.h>
 #include <string.h>
 
+static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+  // We don't want to move above 128MB atm because that means we will have to encode longer jumps
+static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
+
 namespace {
 static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
@@ -368,7 +372,7 @@ void Arm64JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CPUBackend(Thread, 1024 * 1024 * 16, 1024 * 1024 * 128)
+  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , Arm64Emitter(ctx, 0)
   , CTX {ctx} {
 
