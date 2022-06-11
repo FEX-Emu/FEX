@@ -91,9 +91,7 @@ public:
   void AddBlockMapping(uint64_t Address, void *HostCode) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
     
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-    auto InsertPoint =
-#endif
+    [[maybe_unused]] auto InsertPoint = BlockList.emplace(Address, (uintptr_t)HostCode);
     BlockList.emplace(Address, (uintptr_t)HostCode);
     LOGMAN_THROW_A_FMT(InsertPoint.second == true, "Dupplicate block mapping added");
 
