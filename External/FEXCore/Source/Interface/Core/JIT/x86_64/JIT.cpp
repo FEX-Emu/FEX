@@ -43,6 +43,9 @@ $end_info$
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
 
+static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 256;
+
 namespace {
 static void PrintValue(uint64_t Value) {
   LogMan::Msg::DFmt("Value: 0x{:x}", Value);
@@ -54,26 +57,6 @@ static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
 }
 
 namespace FEXCore::CPU {
-
-CodeBuffer AllocateNewCodeBuffer(FEXCore::Context::Context *CTX, size_t Size) {
-  CodeBuffer Buffer;
-  Buffer.Size = Size;
-  Buffer.Ptr = static_cast<uint8_t*>(
-               FEXCore::Allocator::mmap(nullptr,
-                    Buffer.Size,
-                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS,
-                    -1, 0));
-  LOGMAN_THROW_A_FMT(Buffer.Ptr != reinterpret_cast<uint8_t*>(~0ULL), "Couldn't allocate code buffer");
-  if (CTX->Config.GlobalJITNaming()) {
-    CTX->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
-  }
-  return Buffer;
-}
-
-void FreeCodeBuffer(CodeBuffer Buffer) {
-  FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
-}
 
 void X86JITCore::PushRegs() {
   sub(rsp, 16 * RAXMM_x.size());
@@ -115,7 +98,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       case FABI_VOID_U16: {
         PushRegs();
         mov(edi, GetSrc<RA_32>(IROp->Args[0].ID()));
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
         break;
@@ -124,7 +107,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         movss(xmm0, GetSrc(IROp->Args[0].ID()));
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -138,7 +121,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         movsd(xmm0, GetSrc(IROp->Args[0].ID()));
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -153,7 +136,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         mov(edi, GetSrc<RA_32>(IROp->Args[0].ID()));
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -169,7 +152,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -183,7 +166,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -196,7 +179,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         movsd(xmm0, GetSrc(IROp->Args[0].ID()));
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -210,7 +193,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movsd(xmm0, GetSrc(IROp->Args[0].ID()));
         movsd(xmm1, GetSrc(IROp->Args[1].ID()));
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -224,7 +207,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -237,7 +220,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -250,7 +233,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -266,7 +249,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdx, GetSrc(IROp->Args[1].ID()));
         pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -279,7 +262,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdi, GetSrc(IROp->Args[0].ID()));
         pextrq(rsi, GetSrc(IROp->Args[0].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -297,7 +280,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         movq(rdx, GetSrc(IROp->Args[1].ID()));
         pextrq(rcx, GetSrc(IROp->Args[1].ID()), 1);
 
-        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.FallbackHandlerPointers[Info.HandlerIndex])]);
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
 
         PopRegs();
 
@@ -320,14 +303,10 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 void X86JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
-X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, CodeBuffer Buffer)
-  : CodeGenerator(Buffer.Size, Buffer.Ptr, nullptr)
-  , CTX {ctx}
-  , ThreadState {Thread}
-  , InitialCodeBuffer {Buffer}
-{
-  CurrentCodeBuffer = &InitialCodeBuffer;
-  EmitDetectionString();
+X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  , CodeGenerator(0, this, nullptr) // this is not used here
+  , CTX {ctx} {
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
@@ -366,28 +345,27 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   CallbackPtr = Dispatcher->CallbackPtr;
 
   {
-    // Set up pointers that the JIT needs to load
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
-    // Process specific
-    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
-    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
-    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
+    
+    Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Common.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
+    Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {
       FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
-      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+      Common.CPUIDFunction = PMF.GetConvertedPointer();
     }
 
-    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
 
     // Fill in the fallback handlers
-    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
-
-    // Thread Specific
-    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
+    InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
   }
+
+  // Must be done after Dispatcher init
+  ClearCache();
 }
 
 void X86JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
@@ -412,13 +390,7 @@ void X86JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 }
 
 X86JITCore::~X86JITCore() {
-  for (auto CodeBuffer : CodeBuffers) {
-    FreeCodeBuffer(CodeBuffer);
-  }
-  CodeBuffers.clear();
 
-
-  FreeCodeBuffer(InitialCodeBuffer);
 }
 
 void X86JITCore::EmitDetectionString() {
@@ -429,44 +401,8 @@ void X86JITCore::EmitDetectionString() {
 }
 
 void X86JITCore::ClearCache() {
-  if (Dispatcher->SignalHandlerRefCounter == 0) {
-    if (!CodeBuffers.empty()) {
-      // If we have more than one code buffer we are tracking then walk them and delete
-      // This is a cleanup step
-      for (auto CodeBuffer : CodeBuffers) {
-        FreeCodeBuffer(CodeBuffer);
-      }
-      CodeBuffers.clear();
-
-      // Set the current code buffer to the initial
-      setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-      CurrentCodeBuffer = &InitialCodeBuffer;
-    }
-
-    if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
-      // Rewind to the start of the code cache start
-      reset();
-    }
-    else {
-      FreeCodeBuffer(InitialCodeBuffer);
-
-      // Resize the code buffer and reallocate our code size
-      CurrentCodeBuffer->Size *= 1.5;
-      CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MAX_CODE_SIZE);
-
-      InitialCodeBuffer = AllocateNewCodeBuffer(CTX, CurrentCodeBuffer->Size);
-      setNewBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-    }
-  }
-  else {
-    // We have signal handlers that have generated code
-    // This means that we can not safely clear the code at this point in time
-    // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = AllocateNewCodeBuffer(CTX, X86JITCore::INITIAL_CODE_SIZE);
-    EmplaceNewCodeBuffer(NewCodeBuffer);
-    setNewBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
-  }
-
+  auto CodeBuffer = GetEmptyCodeBuffer();
+  setNewBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
 }
 
@@ -645,7 +581,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState, false);
+    ThreadState->CTX->ClearCodeCache(ThreadState);
   }
 
 	void *GuestEntry = getCurr<void*>();
@@ -830,7 +766,7 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 }
 
 std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return std::make_unique<X86JITCore>(ctx, Thread, AllocateNewCodeBuffer(ctx, X86JITCore::INITIAL_CODE_SIZE));
+  return std::make_unique<X86JITCore>(ctx, Thread);
 }
 
 void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX) {

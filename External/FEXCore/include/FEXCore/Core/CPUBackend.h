@@ -11,6 +11,8 @@ $end_info$
 
 #include <cstdint>
 #include <string>
+#include <memory>
+#include <vector>
 
 namespace FEXCore {
 
@@ -23,6 +25,7 @@ namespace Core {
   struct DebugData;
   struct ThreadState;
   struct CpuStateFrame;
+  struct InternalThreadState;
 }
 
 namespace CodeSerialize {
@@ -30,13 +33,22 @@ namespace CodeSerialize {
 }
 
 namespace CPU {
-class InterpreterCore;
-class JITCore;
-class LLVMCore;
+class Dispatcher;
 
   class CPUBackend {
   public:
-    virtual ~CPUBackend() = default;
+    struct CodeBuffer {
+      uint8_t *Ptr;
+      size_t Size;
+    };
+
+    /**
+     * @param InitialCodeSize - Initial size for the code buffers
+     * @param MaxCodeSize - Max size for the code buffers
+    */
+    CPUBackend(FEXCore::Core::InternalThreadState *ThreadState, size_t InitialCodeSize, size_t MaxCodeSize);
+
+    virtual ~CPUBackend();
     /**
      * @return The name of this backend
      */
@@ -106,23 +118,39 @@ class LLVMCore;
     virtual bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const { return false; }
 
     /**
-     * @brief Does this CPUBackend need its IR to stick around for correct emulation
-     *
-     * This should only be used on the interpreter, all other backends can clear their IR
-     */
-    virtual bool NeedsRetainedIRCopy() const { return false; }
-
-    /**
      * @brief Clear any relocations after JIT compiling
      */
     virtual void ClearRelocations() {}
 
     using AsmDispatch = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame);
     using JITCallback = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
+    using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 
     JITCallback CallbackPtr{};
   protected:
+    FEXCore::Core::InternalThreadState *ThreadState;
+
+    size_t InitialCodeSize, MaxCodeSize;
+    [[nodiscard]] CodeBuffer *GetEmptyCodeBuffer();
+
+    // This is the current code buffer that we are tracking
+    CodeBuffer *CurrentCodeBuffer{};
+
+
     AsmDispatch DispatchPtr{};
+    std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
+
+  private:
+    CodeBuffer AllocateNewCodeBuffer(size_t Size);
+    void FreeCodeBuffer(CodeBuffer Buffer);
+
+    void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
+      CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
+    }
+
+    // This is the array of code buffers. Unless signals force us to keep more than
+    // buffer, there will be only one entry here
+    std::vector<CodeBuffer> CodeBuffers{};
   };
 
 }

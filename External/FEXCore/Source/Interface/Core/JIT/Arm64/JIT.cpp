@@ -35,6 +35,10 @@ $end_info$
 #include <unistd.h>
 #include <string.h>
 
+static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+  // We don't want to move above 128MB atm because that means we will have to encode longer jumps
+static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
+
 namespace {
 static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
@@ -88,7 +92,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         uxth(w0, GetReg<RA_32>(IROp->Args[0].ID()));
-        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x1);
 
         PopDynamicRegsAndLR();
@@ -103,7 +107,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -122,7 +126,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -147,7 +151,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         else {
           mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
         }
-        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x1);
 
         PopDynamicRegsAndLR();
@@ -168,7 +172,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -187,7 +191,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -204,7 +208,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR();
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -223,7 +227,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         mov(v1.D(), GetSrc(IROp->Args[1].ID()).D());
-        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x0);
 
         PopDynamicRegsAndLR();
@@ -243,7 +247,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -261,7 +265,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -279,7 +283,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -300,7 +304,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
         umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
-        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x4);
 
         PopDynamicRegsAndLR();
@@ -318,7 +322,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
-        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x2);
 
         PopDynamicRegsAndLR();
@@ -341,7 +345,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
         umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
-        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.FallbackHandlerPointers[Info.HandlerIndex])));
+        ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
         blr(x4);
 
         PopDynamicRegsAndLR();
@@ -367,32 +371,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 void Arm64JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
-Arm64JITCore::CodeBuffer Arm64JITCore::AllocateNewCodeBuffer(size_t Size) {
-  CodeBuffer Buffer;
-  Buffer.Size = Size;
-  Buffer.Ptr = static_cast<uint8_t*>(
-               FEXCore::Allocator::mmap(nullptr,
-                    Buffer.Size,
-                    PROT_READ | PROT_WRITE | PROT_EXEC,
-                    MAP_PRIVATE | MAP_ANONYMOUS,
-                    -1, 0));
-  LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
-  Dispatcher->RegisterCodeBuffer(Buffer.Ptr, Buffer.Size);
-  if (CTX->Config.GlobalJITNaming()) {
-    CTX->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
-  }
-  return Buffer;
-}
-
-void Arm64JITCore::FreeCodeBuffer(CodeBuffer Buffer) {
-  FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
-  Dispatcher->RemoveCodeBuffer(Buffer.Ptr);
-}
-
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : Arm64Emitter(ctx, 0)
-  , CTX {ctx}
-  , ThreadState {Thread} {
+  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  , Arm64Emitter(ctx, 0)
+  , CTX {ctx} {
+
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
 #if DEBUG
@@ -445,39 +428,38 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
   {
     // Set up pointers that the JIT needs to load
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
-    // Process specific
-    Pointers.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
-    Pointers.LDIV = reinterpret_cast<uint64_t>(LDIV);
-    Pointers.LUREM = reinterpret_cast<uint64_t>(LUREM);
-    Pointers.LREM = reinterpret_cast<uint64_t>(LREM);
-    Pointers.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
-    Pointers.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Pointers.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
-    Pointers.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+
+    // Common
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
+    
+    Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
+    Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
+    Common.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
+    Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {
       FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
-      Pointers.CPUIDFunction = PMF.GetConvertedPointer();
+      Common.CPUIDFunction = PMF.GetConvertedPointer();
     }
 
-    Pointers.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Pointers.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
+    Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
 
     // Fill in the fallback handlers
-    InterpreterOps::FillFallbackIndexPointers(Pointers.FallbackHandlerPointers);
+    InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
 
-    // Thread Specific
-    Pointers.SignalHandlerRefCountPointer = reinterpret_cast<uint64_t>(&Dispatcher->SignalHandlerRefCounter);
+    // Platform Specific
+    auto &AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
+    
+    AArch64.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
+    AArch64.LDIV = reinterpret_cast<uint64_t>(LDIV);
+    AArch64.LUREM = reinterpret_cast<uint64_t>(LUREM);
+    AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
-  // Can't allocate a code buffer until after dispatcher is created
-  InitialCodeBuffer = AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-  *GetBuffer() = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
+  // Must be done after Dispatcher init
   SetAllowAssembler(true);
-  EmitDetectionString();
-
-  CurrentCodeBuffer = &InitialCodeBuffer;
+  ClearCache();
 }
 
 void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
@@ -521,54 +503,14 @@ void Arm64JITCore::EmitDetectionString() {
 
 void Arm64JITCore::ClearCache() {
   // Get the backing code buffer
-  auto Buffer = GetBuffer();
-  if (Dispatcher->SignalHandlerRefCounter == 0) {
-    if (!CodeBuffers.empty()) {
-      // If we have more than one code buffer we are tracking then walk them and delete
-      // This is a cleanup step
-      for (auto CodeBuffer : CodeBuffers) {
-        FreeCodeBuffer(CodeBuffer);
-      }
-      CodeBuffers.clear();
-
-      // Set the current code buffer to the initial
-      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-      CurrentCodeBuffer = &InitialCodeBuffer;
-    }
-
-    if (CurrentCodeBuffer->Size == MAX_CODE_SIZE) {
-      // Rewind to the start of the code cache start
-      Buffer->Reset();
-    }
-    else {
-      FreeCodeBuffer(InitialCodeBuffer);
-
-      // Resize the code buffer and reallocate our code size
-      InitialCodeBuffer.Size *= 1.5;
-      InitialCodeBuffer.Size = std::min(InitialCodeBuffer.Size, MAX_CODE_SIZE);
-
-      InitialCodeBuffer = AllocateNewCodeBuffer(InitialCodeBuffer.Size);
-      *Buffer = vixl::CodeBuffer(InitialCodeBuffer.Ptr, InitialCodeBuffer.Size);
-    }
-  }
-  else {
-    // We have signal handlers that have generated code
-    // This means that we can not safely clear the code at this point in time
-    // Allocate some new code buffers that we can switch over to instead
-    auto NewCodeBuffer = Arm64JITCore::AllocateNewCodeBuffer(Arm64JITCore::INITIAL_CODE_SIZE);
-    EmplaceNewCodeBuffer(NewCodeBuffer);
-    *Buffer = vixl::CodeBuffer(NewCodeBuffer.Ptr, NewCodeBuffer.Size);
-  }
+  
+  auto CodeBuffer = GetEmptyCodeBuffer();
+  *GetBuffer() = vixl::CodeBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
 }
 
 Arm64JITCore::~Arm64JITCore() {
-  for (auto CodeBuffer : CodeBuffers) {
-    FreeCodeBuffer(CodeBuffer);
-  }
-  CodeBuffers.clear();
 
-  FreeCodeBuffer(InitialCodeBuffer);
 }
 
 IR::PhysicalRegister Arm64JITCore::GetPhys(IR::NodeID Node) const {
@@ -716,7 +658,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
   if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState, false);
+    ThreadState->CTX->ClearCodeCache(ThreadState);
   }
 
   // AAPCS64
@@ -760,7 +702,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
       str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
       // Stop the thread
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadPauseHandlerSpillSRA)));
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA)));
       br(x0);
     }
     bind(&RunBlock);
@@ -885,6 +827,19 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   }
 
   return HostCode;
+}
+
+void Arm64JITCore::ResetStack() {
+  if (SpillSlots == 0)
+    return;
+
+  if (IsImmAddSub(SpillSlots * 16)) {
+    add(sp, sp, SpillSlots * 16);
+  } else {
+   // Too big to fit in a 12bit immediate
+   LoadConstant(x0, SpillSlots * 16);
+   add(sp, sp, x0);
+  }
 }
 
 std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

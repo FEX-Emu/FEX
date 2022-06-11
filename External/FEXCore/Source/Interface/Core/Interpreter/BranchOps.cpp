@@ -38,7 +38,7 @@ DEF_OP(SignalReturn) {
 }
 
 DEF_OP(CallbackReturn) {
-  Data->State->CTX->InterpreterCallbackReturn(Data->State, Data->StackEntry);
+  Data->State->CurrentFrame->Pointers.Interpreter.CallbackReturn(Data->State, Data->StackEntry);
 }
 
 DEF_OP(ExitFunction) {

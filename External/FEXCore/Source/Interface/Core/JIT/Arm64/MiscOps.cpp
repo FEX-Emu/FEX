@@ -36,7 +36,7 @@ DEF_OP(Break) {
       break;
     case FEXCore::IR::Break_Overflow: // overflow
       ResetStack();
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.OverflowExceptionHandler)));
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.OverflowExceptionHandler)));
       br(TMP1);
       break;
     case FEXCore::IR::Break_Halt: { // HLT
@@ -46,13 +46,13 @@ DEF_OP(Break) {
       add(sp, TMP1, 0);
 
       // Now we need to jump to the thread stop handler
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadStopHandlerSpillSRA)));
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadStopHandlerSpillSRA)));
       br(TMP1);
       break;
     }
     case FEXCore::IR::Break_Interrupt3: { // INT3
       ResetStack();
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.ThreadPauseHandlerSpillSRA)));
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA)));
       br(TMP1);
       break;
     }
@@ -60,7 +60,7 @@ DEF_OP(Break) {
     {
       ResetStack();
 
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.UnimplementedInstructionHandler)));
+      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.UnimplementedInstructionHandler)));
       br(TMP1);
 
       break;
@@ -134,13 +134,13 @@ DEF_OP(Print) {
 
   if (IsGPR(Op->Header.Args[0].ID())) {
     mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.PrintValue)));
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue)));
   }
   else {
     fmov(x0, GetSrc(Op->Header.Args[0].ID()).V1D());
     // Bug in vixl that source vector needs to b V1D rather than V2D?
     fmov(x1, GetSrc(Op->Header.Args[0].ID()).V1D(), 1);
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.PrintVectorValue)));
+    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue)));
   }
   SpillStaticRegs();
   blr(x3);

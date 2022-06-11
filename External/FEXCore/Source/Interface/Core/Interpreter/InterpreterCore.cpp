@@ -9,36 +9,59 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <memory>
 #include <signal.h>
 #include <stdint.h>
-#include <unordered_map>
 #include <utility>
 
 #include "InterpreterOps.h"
+
+#if defined(_M_X86_64)
+  #include "Interface/Core/Dispatcher/X86Dispatcher.h"
+#elif defined(_M_ARM_64)
+  #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
+#else
+  #error missing arch
+#endif
+
+static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
 namespace FEXCore::IR {
   class IRListView;
   class RegisterAllocationData;
 }
 
+
 namespace FEXCore::CPU {
 class CPUBackend;
 
-static void InterpreterExecution(FEXCore::Core::CpuStateFrame *Frame) {
-  auto Thread = Frame->Thread;
-
-  auto LocalEntry = Thread->LocalIRCache.find(Thread->CurrentFrame->State.rip);
-
-  InterpreterOps::InterpretIR(Thread, Thread->CurrentFrame->State.rip, LocalEntry->second.IR.get(), LocalEntry->second.DebugData.get());
-}
-
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
-  : CTX {ctx}
-  , State {Thread} {
+  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  , CTX {ctx} {
 
-  CreateAsmDispatch(ctx, Thread);
+  DispatcherConfig config;
+  config.InterpreterDispatch = true;
+
+#if defined(_M_X86_64)
+  Dispatcher = std::make_unique<X86Dispatcher>(ctx, Thread, config);
+#elif defined(_M_ARM_64)
+  Dispatcher = std::make_unique<Arm64Dispatcher>(ctx, Thread, config);
+#else
+  #error missing arch
+#endif
+
+  DispatchPtr = Dispatcher->DispatchPtr;
+  CallbackPtr = Dispatcher->CallbackPtr;
+
+  auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
+
+  Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR); 
+  Interpreter.CallbackReturn = Dispatcher->ReturnPtr;
+
+  ClearCache();
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
@@ -64,7 +87,24 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 }
 
 void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
-  return reinterpret_cast<void*>(InterpreterExecution);
+
+  auto Size = AlignUp(IR->GetInlineSize(), 16);
+  if ((BufferUsed + Size) > CurrentCodeBuffer->Size) {
+    ThreadState->CTX->ClearCodeCache(ThreadState);
+  }
+
+  auto DestBuffer = CurrentCodeBuffer->Ptr + BufferUsed;
+
+  IR->Serialize(DestBuffer);
+
+  BufferUsed += Size;
+
+  return DestBuffer;
+}
+
+void InterpreterCore::ClearCache() {
+  auto CodeBuffer = GetEmptyCodeBuffer();
+  BufferUsed = 0;
 }
 
 std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

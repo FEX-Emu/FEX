@@ -96,7 +96,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   auto RipReg = x2;
 
   // L1 Cache
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
 
   and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
   add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -104,7 +104,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   cmp(x0, RipReg);
   b(&FullLookup, Condition::ne);
 
-  if (!config.ExecuteBlocksWithCall) {
+  if (!config.InterpreterDispatch) {
     br(x3);
   } else {
     b(&CallBlock);
@@ -157,18 +157,20 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
+      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
 
       and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
       stp(x3, x2, MemOperand(x0));
 
       // Jump to the block
-      if (!config.ExecuteBlocksWithCall) {
+      if (!config.InterpreterDispatch) {
         br(x3);
       } else {
         bind(&CallBlock);
         mov(x0, STATE);
+        mov(x1, x3);
+        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Interpreter.FragmentExecuter)));
         blr(x3);
 
         if (CTX->GetGdbServerStatus()) {
@@ -408,10 +410,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     mov(STATE, x0);
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    LoadConstant(x0, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
-    ldr(w2, MemOperand(x0));
+    ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
     add(w2, w2, 1);
-    str(w2, MemOperand(x0));
+    str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
@@ -542,20 +543,22 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.AArch64;
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
 
-    Pointers.DispatcherLoopTop = AbsoluteLoopTopAddress;
-    Pointers.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
-    Pointers.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
-    Pointers.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
-    Pointers.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
-    Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
-    Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
-    Pointers.LUDIVHandler = LUDIVHandler;
-    Pointers.LDIVHandler = LDIVHandler;
-    Pointers.LUREMHandler = LUREMHandler;
-    Pointers.LREMHandler = LREMHandler;
+    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
+    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
+    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
+
+    auto &AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
+    AArch64.LUDIVHandler = LUDIVHandler;
+    AArch64.LDIVHandler = LDIVHandler;
+    AArch64.LUREMHandler = LUREMHandler;
+    AArch64.LREMHandler = LREMHandler;
   }
 }
 
@@ -573,21 +576,5 @@ void Arm64Dispatcher::SpillSRA(void *ucontext, uint32_t IgnoreMask) {
     memcpy(&ThreadState->CurrentFrame->State.xmm[i][0], &FPR, sizeof(__uint128_t));
   }
 }
-
-#ifdef _M_ARM_64
-
-void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  DispatcherConfig config;
-  config.ExecuteBlocksWithCall = true;
-
-  Dispatcher = std::make_unique<Arm64Dispatcher>(ctx, Thread, config);
-  DispatchPtr = Dispatcher->DispatchPtr;
-  CallbackPtr = Dispatcher->CallbackPtr;
-
-  // TODO: It feels wrong to initialize this way
-  ctx->InterpreterCallbackReturn = Dispatcher->ReturnPtr;
-}
-
-#endif
 
 }

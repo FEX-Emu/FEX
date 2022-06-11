@@ -42,6 +42,7 @@ namespace CodeSerialize {
 namespace CPU {
   class Arm64JITCore;
   class X86JITCore;
+  class InterpreterCore;
 }
 namespace HLE {
 struct SyscallArguments;
@@ -72,6 +73,7 @@ namespace FEXCore::Context {
     friend class FEXCore::CPU::X86JITCore;
   #endif
 
+    friend class FEXCore::CPU::InterpreterCore;
     friend class FEXCore::IR::Validation::IRValidation;
 
     struct {
@@ -107,9 +109,6 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
     } Config;
-
-    using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
-    IntCallbackReturn InterpreterCallbackReturn;
 
     FEXCore::HostFeatures HostFeatures;
 
@@ -303,7 +302,7 @@ namespace FEXCore::Context {
     bool IsTSOEnabled() { return (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled; }
 
   protected:
-    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache);
+    void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
 
   private:
     /**

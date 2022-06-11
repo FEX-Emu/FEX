@@ -24,7 +24,7 @@ struct InternalThreadState;
 namespace FEXCore::CPU {
 
 struct DispatcherConfig {
-  bool ExecuteBlocksWithCall = false;
+  bool InterpreterDispatch = false;
   uintptr_t ExitFunctionLink = 0;
   uintptr_t ExitFunctionLinkThis = 0;
   bool StaticRegisterAssignment = false;
@@ -35,7 +35,7 @@ public:
   virtual ~Dispatcher() = default;
   CPUBackend::AsmDispatch DispatchPtr;
   CPUBackend::JITCallback CallbackPtr;
-  FEXCore::Context::Context::IntCallbackReturn ReturnPtr;
+  CPUBackend::IntCallbackReturn ReturnPtr;
 
   /**
    * @name Dispatch Helper functions
@@ -55,7 +55,6 @@ public:
 
   /**  @} */
 
-  uint32_t SignalHandlerRefCounter{};
   struct SynchronousFaultDataStruct {
     bool FaultToTopAndGeneratedException{};
     uint32_t TrapNo;

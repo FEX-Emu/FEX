@@ -170,23 +170,42 @@ public:
     }
   }
 
-  void Serialize(std::ostream& stream) {
+  void Serialize(std::ostream& stream) const {
     void *nul = nullptr;
     //void *IRDataInternal;
-    stream.write((char*)&nul, sizeof(nul));
+    stream.write((const char*)&nul, sizeof(nul));
     //void *ListDataInternal;
-    stream.write((char*)&nul, sizeof(nul));
+    stream.write((const char*)&nul, sizeof(nul));
     //size_t DataSize;
-    stream.write((char*)&DataSize, sizeof(DataSize));
+    stream.write((const char*)&DataSize, sizeof(DataSize));
     //size_t ListSize;
-    stream.write((char*)&ListSize, sizeof(ListSize));
+    stream.write((const char*)&ListSize, sizeof(ListSize));
     //uint64_t Flags;
     uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
-    stream.write((char*)&WrittenFlags, sizeof(WrittenFlags));
+    stream.write((const char*)&WrittenFlags, sizeof(WrittenFlags));
     
     // inline data
-    stream.write((char*)GetData(), DataSize);
-    stream.write((char*)GetListData(), ListSize);
+    stream.write((const char*)GetData(), DataSize);
+    stream.write((const char*)GetListData(), ListSize);
+  }
+
+  void Serialize(uint8_t *ptr) const {
+    void *nul = nullptr;
+    //void *IRDataInternal;
+    memcpy(ptr, &nul, sizeof(nul)); ptr += sizeof(nul);
+    //void *ListDataInternal;
+    memcpy(ptr, &nul, sizeof(nul)); ptr += sizeof(nul);
+    //size_t DataSize;
+    memcpy(ptr, &DataSize, sizeof(DataSize)); ptr += sizeof(DataSize);
+    //size_t ListSize;
+    memcpy(ptr, &ListSize, sizeof(ListSize)); ptr += sizeof(ListSize);
+    //uint64_t Flags;
+    uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
+    memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags)); ptr += sizeof(WrittenFlags);
+    
+    // inline data
+    memcpy(ptr, (const void*)GetData(), DataSize); ptr += DataSize;
+    memcpy(ptr, (const void*)GetListData(), ListSize); ptr += ListSize;
   }
 
   [[nodiscard]] size_t GetInlineSize() const {

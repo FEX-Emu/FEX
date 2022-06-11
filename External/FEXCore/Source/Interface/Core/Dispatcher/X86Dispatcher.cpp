@@ -95,7 +95,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
 
     // L1 Cache
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
     mov(rax, rdx);
 
     and_(rax, LookupCache::L1_ENTRIES_MASK);
@@ -103,7 +103,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     cmp(qword[r13 + rax + 8], rdx);
     jne(FullLookup);
 
-    if (!config.ExecuteBlocksWithCall) {
+    if (!config.InterpreterDispatch) {
       jmp(qword[r13 + rax + 0]);
     } else {
       mov(rax, qword[r13 + rax + 0]);
@@ -143,7 +143,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     je(NoBlock);
 
     // Update L1
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.L1Pointer)]);
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
     mov(rcx, rdx);
     and_(rcx, LookupCache::L1_ENTRIES_MASK);
     shl(rcx, 1);
@@ -151,12 +151,13 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     mov(qword[r13 + rcx*8 + 0], rax);
 
     // Real block if we made it here
-    if (!config.ExecuteBlocksWithCall) {
+    if (!config.InterpreterDispatch) {
       jmp(rax);
     } else {
       L(CallBlock);
       mov(rdi, STATE);
-      call(rax);
+      mov(rsi, rax);
+      call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Interpreter.FragmentExecuter)]);
 
       if (CTX->GetGdbServerStatus()) {
         // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
@@ -345,7 +346,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // XXX: XMM?
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.X86.SignalHandlerRefCountPointer)], 1);
+    add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)], 1);
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
@@ -396,7 +397,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   }
 
   {
-    ReturnPtr = getCurr<FEXCore::Context::Context::IntCallbackReturn>();
+    ReturnPtr = getCurr<CPUBackend::IntCallbackReturn>();
 //  using CallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 
     // rdi = thread
@@ -432,37 +433,21 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
 
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto &Pointers = ThreadState->CurrentFrame->Pointers.X86;
+    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
 
-    Pointers.DispatcherLoopTop = AbsoluteLoopTopAddress;
-    Pointers.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
-    Pointers.ThreadStopHandler = ThreadStopHandlerAddress;
-    Pointers.ThreadPauseHandler = ThreadPauseHandlerAddress;
-    Pointers.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Pointers.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
-    Pointers.SignalReturnHandler = SignalHandlerReturnAddress;
-    Pointers.L1Pointer = Thread->LookupCache->GetL1Pointer();
+    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddress;
+    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddress;
+    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
   }
 }
 
 X86Dispatcher::~X86Dispatcher() {
   FEXCore::Allocator::munmap(top_, MAX_DISPATCHER_CODE_SIZE);
 }
-
-#ifdef _M_X86_64
-
-void InterpreterCore::CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  DispatcherConfig config;
-  config.ExecuteBlocksWithCall = true;
-
-  Dispatcher = std::make_unique<X86Dispatcher>(ctx, Thread, config);
-  DispatchPtr = Dispatcher->DispatchPtr;
-  CallbackPtr = Dispatcher->CallbackPtr;
-
-  // TODO: It feels wrong to initialize this way
-  ctx->InterpreterCallbackReturn = Dispatcher->ReturnPtr;
-}
-
-#endif
 
 }

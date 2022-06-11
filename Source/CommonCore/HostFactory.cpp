@@ -63,7 +63,8 @@ namespace HostFactory {
   }
 
   HostCore::HostCore(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState *Thread, bool Fallback)
-    : CodeGenerator(4096) {
+    : CPUBackend(Thread, 0, 0)
+    , CodeGenerator(4096) {
     FEXCore::Context::RegisterHostSignalHandler(CTX, SIGSEGV,
       [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
         auto InternalThread = Thread;

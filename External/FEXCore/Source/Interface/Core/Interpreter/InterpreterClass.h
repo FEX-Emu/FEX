@@ -37,14 +37,12 @@ public:
   void CreateAsmDispatch(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread);
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
-
-  bool NeedsRetainedIRCopy() const override { return true; }
+  
+  void ClearCache() override;
 
 private:
   FEXCore::Context::Context *CTX;
-  FEXCore::Core::InternalThreadState *State;
-
-  std::unique_ptr<Dispatcher> Dispatcher{};
+  size_t BufferUsed;
 };
 
 template<typename T>

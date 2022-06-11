@@ -33,7 +33,7 @@ DEF_OP(SignalReturn) {
 
   // Now branch to our signal return helper
   // This can't be a direct branch since the code needs to live at a constant location
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SignalReturnHandler)));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)));
   br(x0);
 }
 
@@ -46,10 +46,10 @@ DEF_OP(CallbackReturn) {
   ResetStack();
 
   // We can now lower the ref counter again
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SignalHandlerRefCountPointer)));
-  ldr(w2, MemOperand(x0));
+  
+  ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
   sub(w2, w2, 1);
-  str(w2, MemOperand(x0));
+  str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
@@ -85,7 +85,7 @@ DEF_OP(ExitFunction) {
     RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
     // L1 Cache
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.L1Pointer)));
+    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
 
     and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
     add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -96,7 +96,7 @@ DEF_OP(ExitFunction) {
     br(x1);
 
     bind(&FullLookup);
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.DispatcherLoopTop)));
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop)));
     str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
     br(TMP1);
   }
@@ -199,8 +199,8 @@ DEF_OP(Syscall) {
     str(GetReg<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, i * 8));
   }
 
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SyscallHandlerObj)));
-  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.SyscallHandlerFunc)));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerObj)));
+  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerFunc)));
   mov(x1, STATE);
   mov(x2, sp);
   blr(x3);
@@ -452,7 +452,7 @@ DEF_OP(RemoveThreadCodeEntry) {
   mov(x0, STATE);
   LoadConstant(x1, Entry);
 
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.RemoveThreadCodeEntryFromJIT)));
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.RemoveThreadCodeEntryFromJIT)));
   SpillStaticRegs();
   blr(x2);
   FillStaticRegs();
@@ -469,8 +469,8 @@ DEF_OP(CPUID) {
   // x0 = CPUID Handler
   // x1 = CPUID Function
   // x2 = CPUID Leaf
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.CPUIDObj)));
-  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.CPUIDFunction)));
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj)));
+  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction)));
   mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
   mov(x2, GetReg<RA_64>(Op->Header.Args[1].ID()));
   SpillStaticRegs();

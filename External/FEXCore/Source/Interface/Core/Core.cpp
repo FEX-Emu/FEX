@@ -355,7 +355,7 @@ namespace FEXCore::Context {
         // Wait for thread to be fully constructed
         // XXX: Look into thread partial construction issues
         while(Thread->RunningEvents.WaitingToStart.load()) ;
-        ClearCodeCache(Thread, true);
+        ClearCodeCache(Thread);
       }
     }
     CoreRunningMode PreviousRunningMode = this->Config.RunningMode;
@@ -459,8 +459,7 @@ namespace FEXCore::Context {
           : nullptr),
         decltype(Entry.DebugData)(new Core::DebugData())
       };
-      std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
-      Thread->LocalIRCache.insert({Addr, std::move(Entry)});
+      Thread->PrecompiledIR.insert({Addr, std::move(Entry)});
     };
 
     LocalLoader->AddIR(IRHandler);
@@ -638,7 +637,7 @@ namespace FEXCore::Context {
     Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
-  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
+  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) {
     {
       // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
       // Use the thread's object cache ref counter for this
@@ -648,10 +647,7 @@ namespace FEXCore::Context {
 
     Thread->LookupCache->ClearCache();
     Thread->CPUBackend->ClearCache();
-
-    if (AlsoClearIRCache) {
-      Thread->LocalIRCache.clear();
-    }
+    Thread->DebugStore.clear();
   }
 
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
@@ -870,21 +866,23 @@ namespace FEXCore::Context {
     bool GeneratedIR {};
     uint64_t StartAddr {};
     uint64_t Length {};
+    
+    if (!Thread->PrecompiledIR.empty())
+    {
+      // This is only used for the IRLoader / IR Tests
+      auto LocalEntry = Thread->PrecompiledIR.find(GuestRIP);
 
-    std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
-    // Do we already have this in the IR cache?
-    auto LocalEntry = Thread->LocalIRCache.find(GuestRIP);
+      if (LocalEntry != Thread->PrecompiledIR.end()) {
+        // Entry already exists
+        // pull in the data
+        IRList = LocalEntry->second.IR.get();
+        DebugData = LocalEntry->second.DebugData.get();
+        RAData = LocalEntry->second.RAData.get();
+        StartAddr = LocalEntry->second.StartAddr;
+        Length = LocalEntry->second.Length;
 
-    if (LocalEntry != Thread->LocalIRCache.end()) {
-      // Entry already exists
-      // pull in the data
-      IRList = LocalEntry->second.IR.get();
-      DebugData = LocalEntry->second.DebugData.get();
-      RAData = LocalEntry->second.RAData.get();
-      StartAddr = LocalEntry->second.StartAddr;
-      Length = LocalEntry->second.Length;
-
-      GeneratedIR = false;
+        GeneratedIR = false;
+      }
     }
 
     // JIT Code object cache lookup
@@ -1158,8 +1156,8 @@ namespace FEXCore::Context {
         std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
         Thread->LookupCache->ClearCache();
 
-        // IR also needs to be re-generated
-        Thread->LocalIRCache.clear();
+        // DebugStore also needs to be cleared
+        Thread->DebugStore.clear();
       }
     }
   }
@@ -1171,7 +1169,7 @@ namespace FEXCore::Context {
   void Context::RemoveThreadCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
-    Thread->LocalIRCache.erase(GuestRIP);
+    Thread->DebugStore.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
   }
 
@@ -1199,8 +1197,8 @@ namespace FEXCore::Context {
 
   bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
     std::lock_guard<std::recursive_mutex> lk(ParentThread->LookupCache->WriteLock);
-    auto it = ParentThread->LocalIRCache.find(RIP);
-    if (it == ParentThread->LocalIRCache.end()) {
+    auto it = ParentThread->DebugStore.find(RIP);
+    if (it == ParentThread->DebugStore.end()) {
       return false;
     }
 
