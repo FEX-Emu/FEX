@@ -52,14 +52,6 @@ LookupCache::~LookupCache() {
   FEXCore::Allocator::munmap(reinterpret_cast<void*>(L1Pointer), L1_SIZE);
 }
 
-void LookupCache::HintUsedRange(uint64_t Address, uint64_t Size) {
-  // Tell the kernel we will definitely need [Address, Address+Size) mapped for the page pointer
-  // Page Pointer is allocated per page, so shift by page size
-  Address >>= 12;
-  Size >>= 12;
-  madvise(reinterpret_cast<void*>(PagePointer + Address), Size, MADV_WILLNEED);
-}
-
 void LookupCache::ClearL2Cache() {
   std::lock_guard<std::recursive_mutex> lk(WriteLock);
   // Clear out the page memory

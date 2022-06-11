@@ -328,7 +328,7 @@ namespace FEXCore::Context {
 
     void NotifyPause();
 
-    void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length);
+    void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
     FEXCore::CodeLoader *LocalLoader{};
 
     // Entry Cache

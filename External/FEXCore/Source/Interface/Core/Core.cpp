@@ -634,11 +634,8 @@ namespace FEXCore::Context {
     FEXCore::Threads::Thread::CleanupAfterFork();
   }
 
-  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr, uint64_t Start, uint64_t Length) {
-    // Only call MarkGuestExecutableRange if new pages are marked as containing code
-    if (Thread->LookupCache->AddBlockMapping(Address, Ptr, Start, Length)) {
-      Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
-    }
+  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
+    Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread, bool AlsoClearIRCache) {
@@ -719,7 +716,11 @@ namespace FEXCore::Context {
     uint64_t TotalInstructions {0};
     uint64_t TotalInstructionsLength {0};
 
-    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP);
+    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
+      if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
+        Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
+      }
+    });
 
     auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
 
@@ -1055,7 +1056,8 @@ namespace FEXCore::Context {
     }
 
     // Insert to lookup cache
-    AddBlockMapping(Thread, GuestRIP, CodePtr, StartAddr, Length);
+    // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
+    AddBlockMapping(Thread, GuestRIP, CodePtr);
 
     return (uintptr_t)CodePtr;
   }
