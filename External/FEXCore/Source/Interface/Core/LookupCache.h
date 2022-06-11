@@ -25,9 +25,6 @@ public:
   LookupCache(FEXCore::Context::Context *CTX);
   ~LookupCache();
 
-  using LookupCacheIter = uintptr_t;
-  uintptr_t End() { return 0; }
-
   uintptr_t FindBlock(uint64_t Address) {
     // Try L1, no lock needed
     auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
@@ -72,16 +69,17 @@ public:
 
   std::map<uint64_t, std::vector<uint64_t>> CodePages;
 
-  // Appends Block {Address} to the blocks contained between [Start, Start + Length)
+  // Appends Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
   bool AddBlockExecutableRange(uint64_t Address, uint64_t Start, uint64_t Length) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
     
     bool rv = false;
 
-    for (auto CurrentPage = Start >> 12, EndPage = (Start + Length) >> 12; CurrentPage <= EndPage; CurrentPage++) {
-      rv |= CodePages[CurrentPage].size() == 0;
-      CodePages[CurrentPage].push_back(Address);
+    for (auto CurrentPage = Start >> 12, EndPage = (Start + Length -1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
+      auto &CodePage = CodePages[CurrentPage];
+      rv |= CodePage.size() == 0;
+      CodePage.push_back(Address);
     }
 
     return rv;
@@ -91,9 +89,8 @@ public:
   void AddBlockMapping(uint64_t Address, void *HostCode) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
     
-    [[maybe_unused]] auto InsertPoint = BlockList.emplace(Address, (uintptr_t)HostCode);
-    BlockList.emplace(Address, (uintptr_t)HostCode);
-    LOGMAN_THROW_A_FMT(InsertPoint.second == true, "Dupplicate block mapping added");
+    [[maybe_unused]] auto Inserted = BlockList.emplace(Address, (uintptr_t)HostCode).second;
+    LOGMAN_THROW_A_FMT(Inserted, "Duplicate block mapping added");
 
     // There is no need to update L1 or L2, they will get updated on first lookup
     // However, adding to L1 here increases performance
@@ -152,8 +149,6 @@ public:
 
   void ClearCache();
   void ClearL2Cache();
-
-  void HintUsedRange(uint64_t Address, uint64_t Size);
 
   uintptr_t GetL1Pointer() const { return L1Pointer; }
   uintptr_t GetPagePointer() const { return PagePointer; }

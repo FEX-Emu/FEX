@@ -1190,22 +1190,24 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
 
     while (1) {
 
-      // This is worst case
+      // MAX_INST_SIZE assumes worst case
       auto OpMinAddress = RIPToDecode + PCOffset;
       auto OpMaxAddress = OpMinAddress + MAX_INST_SIZE;
 
-      if ((OpMinAddress & FHU::FEX_PAGE_MASK) != CurrentCodePage) {
-        CurrentCodePage = OpMinAddress & FHU::FEX_PAGE_MASK;
-        if (!CodePages.contains(CurrentCodePage)) {
-          CodePages.insert(CurrentCodePage);
+      auto OpMinPage = OpMinAddress & FHU::FEX_PAGE_MASK;
+      auto OpMaxPage = OpMaxAddress & FHU::FEX_PAGE_MASK;
+
+
+      if (OpMinPage != CurrentCodePage) {
+        CurrentCodePage = OpMinPage;
+        if (CodePages.insert(CurrentCodePage).second) {
           AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
         }
       }
 
-      if ((OpMaxAddress & FHU::FEX_PAGE_MASK) != CurrentCodePage) {
-        CurrentCodePage = OpMaxAddress & FHU::FEX_PAGE_MASK;
-        if (!CodePages.contains(CurrentCodePage)) {
-          CodePages.insert(CurrentCodePage);
+      if (OpMaxPage != CurrentCodePage) {
+        CurrentCodePage = OpMaxPage;
+        if (CodePages.insert(CurrentCodePage).second) {
           AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
         }
       }

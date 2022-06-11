@@ -1056,7 +1056,7 @@ namespace FEXCore::Context {
     }
 
     // Insert to lookup cache
-    // Block pages containing this blocks are added via AddBlockExecutableRange before each page gets accessed in the frontend
+    // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
     AddBlockMapping(Thread, GuestRIP, CodePtr);
 
     return (uintptr_t)CodePtr;
