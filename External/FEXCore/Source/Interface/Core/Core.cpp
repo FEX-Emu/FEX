@@ -967,8 +967,8 @@ namespace FEXCore::Context {
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
-    // Needs to be held for SMC interactions around concurrent compile and invalidation hazards
-    auto InvalidationLk = Thread->CTX->SyscallHandler->CompileCodeLock(GuestRIP);
+    // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
+    std::shared_lock lk(CodeInvalidationMutex);
 
     // Is the code in the cache?
     // The backends only check L1 and L2, not L3
@@ -1134,12 +1134,20 @@ namespace FEXCore::Context {
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    std::lock_guard<std::mutex> lk(CTX->ThreadCreationMutex);
+    std::lock_guard lk(CTX->ThreadCreationMutex);
+    
     for (auto &Thread : CTX->Threads) {
       if (Thread->RunningEvents.Running.load()) {
         InvalidateGuestThreadCodeRange(Thread, Start, Length);
       }
     }
+  }
+
+  void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
+    std::unique_lock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+
+    InvalidateGuestCodeRange(CTX, Start, Length);
+    CallAfter(Start, Length);
   }
 
   void Context::MarkMemoryShared() {
