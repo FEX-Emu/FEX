@@ -6,7 +6,6 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "IRLoader/Loader.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
@@ -16,6 +15,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/IR/IREmitter.h>
 
 #include <functional>
 #include <memory>
@@ -23,8 +23,11 @@ $end_info$
 #include <stdio.h>
 #include <sys/mman.h>
 #include <vector>
+#include <fstream>
 
 #include <fmt/format.h>
+
+#include "HarnessHelpers.h"
 
 namespace FEXCore::Context {
   struct Context;
@@ -72,51 +75,64 @@ void AssertHandler(char const *Message)
   fflush(stdout);
 }
 
-class IRCodeLoader final : public FEXCore::CodeLoader
-{
+using namespace FEXCore::IR;
+class IRCodeLoader final {
 public:
-  IRCodeLoader(FEX::IRLoader::Loader *Loader)
-      : IR{Loader}
-  {
+  IRCodeLoader(std::string const &Filename, std::string const &ConfigFilename) {
+    Config.Init(ConfigFilename);
+    std::fstream fp(Filename, std::fstream::binary | std::fstream::in);
+
+    if (!fp.is_open()) {
+      LogMan::Msg::EFmt("Couldn't open IR file '{}'", Filename);
+      return;
+    }
+
+    ParsedCode = FEXCore::IR::Parse(Allocator, &fp);
+
+    if (ParsedCode) {
+      EntryRIP = 0x40000;
+
+      std::stringstream out;
+      auto IR = ParsedCode->ViewIR();
+      FEXCore::IR::Dump(&out, &IR, nullptr);
+      fmt::print("IR:\n{}\n@@@@@\n", out.str());
+
+      for (auto &[region, size] : Config.GetMemoryRegions()) {
+        FEXCore::Allocator::mmap(reinterpret_cast<void *>(region), size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      }
+
+      Config.LoadMemory();
+    }
   }
 
-  uint64_t StackSize() const override
-  {
-    return STACK_SIZE;
+  bool LoadIR(FEXCore::Context::Context *CTX) const { 
+    if (!ParsedCode) {
+      return false;
+    }
+
+    return AddCustomIREntrypoint(CTX, EntryRIP, [ParsedCodePtr = ParsedCode.get()](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
+      emit->CopyData(*ParsedCodePtr);
+    });
   }
 
-  uint64_t GetStackPointer() override
+  bool CompareStates(FEXCore::Core::CPUState const *State) { return Config.CompareStates(State, nullptr); }  
+
+  uint64_t GetStackPointer()
   {
     return reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   }
 
-  uint64_t DefaultRIP() const override
+  uint64_t DefaultRIP() const
   {
-    return IR->GetEntryRIP();
-  }
-
-  bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override
-  {
-    // Map the memory regions the test file asks for
-    IR->MapRegions();
-
-    LoadMemory();
-
-    return true;
-  }
-
-  void LoadMemory()
-  {
-    IR->LoadMemory();
-  }
-
-  virtual void AddIR(IRHandler Handler) override
-  {
-    Handler(IR->GetEntryRIP(), IR->GetIREmitter());
+    return EntryRIP;
   }
 
 private:
-  FEX::IRLoader::Loader *IR;
+  uint64_t EntryRIP{};
+  std::unique_ptr<IREmitter> ParsedCode;
+
+  FEXCore::Utils::PooledAllocatorMalloc Allocator;
+  FEX::HarnessHelper::ConfigLoader Config;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
 
@@ -164,15 +180,14 @@ int main(int argc, char **argv, char **const envp)
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
   FEXCore::Context::SetSyscallHandler(CTX, new DummySyscallHandler());
 
-  FEX::IRLoader::Loader Loader(Args[0], Args[1]);
-
+  IRCodeLoader Loader(Args[0], Args[1]);
+  
   int Return{};
 
-  if (Loader.IsValid())
+  if (Loader.LoadIR(CTX))
   {
-    IRCodeLoader CodeLoader{&Loader};
-    CodeLoader.MapMemory(nullptr, nullptr);
-    FEXCore::Context::InitCore(CTX, &CodeLoader);
+    FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+
     auto ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
     // There might already be an exit handler, leave it installed

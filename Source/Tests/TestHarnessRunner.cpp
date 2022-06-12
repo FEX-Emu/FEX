@@ -182,7 +182,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
   FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
-  bool Result1 = FEXCore::Context::InitCore(CTX, &Loader);
+  bool Result1 = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
 
   if (!Result1)
     return 1;

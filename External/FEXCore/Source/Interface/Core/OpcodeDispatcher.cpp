@@ -4919,7 +4919,6 @@ void OpDispatchBuilder::ResetWorkingList() {
   JumpTargets.clear();
   BlockSetRIP = false;
   DecodeFailure = false;
-  ShouldDump = false;
   CurrentCodeBlock = nullptr;
 }
 

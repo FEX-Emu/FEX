@@ -144,7 +144,7 @@ namespace FEXCore::Context {
     Context();
     ~Context();
 
-    FEXCore::Core::InternalThreadState* InitCore(FEXCore::CodeLoader *Loader);
+    FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer);
     FEXCore::Context::ExitReason RunUntilExit();
     int GetProgramStatus() const;
     bool IsPaused() const { return !Running; }
@@ -172,6 +172,11 @@ namespace FEXCore::Context {
     static void RemoveThreadCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
       RemoveThreadCodeEntry(Frame->Thread, GuestRIP);
     }
+
+    // returns false if a handler was already registered
+    bool AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler);
+
+    void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
     // Debugger interface
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
@@ -330,10 +335,8 @@ namespace FEXCore::Context {
     void NotifyPause();
 
     void AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr);
-    FEXCore::CodeLoader *LocalLoader{};
 
     // Entry Cache
-    uint64_t StartingRIP;
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;
 
@@ -343,6 +346,9 @@ namespace FEXCore::Context {
     bool StartPaused = false;
     bool IsMemoryShared = false;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
+    
+    std::shared_mutex CustomIRMutex;
+    std::unordered_map<uint64_t, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>> CustomIRHandlers;
   };
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);

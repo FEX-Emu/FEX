@@ -76,7 +76,6 @@ public:
   OrderedNode* flagsOpSrcSigned{};
 
   FEXCore::Context::Context *CTX{};
-  bool ShouldDump {false};
 
   struct JumpTargetInfo {
     OrderedNode* BlockEntry;

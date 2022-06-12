@@ -33,6 +33,7 @@ namespace FEXCore::HLE {
 
 namespace FEXCore::IR {
   struct AOTIRCacheEntry;
+  class IREmitter;
 }
 
 namespace FEXCore::Context {
@@ -95,7 +96,7 @@ namespace FEXCore::Context {
    *
    * @return true if we loaded code
    */
-  FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
+  FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, uint64_t InitialRIP, uint64_t StackPointer);
 
   FEX_DEFAULT_VISIBILITY void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler);
   FEX_DEFAULT_VISIBILITY ExitHandler GetExitHandler(const FEXCore::Context::Context *CTX);
@@ -254,4 +255,5 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void MarkMemoryShared(FEXCore::Context::Context *CTX);
 
   FEX_DEFAULT_VISIBILITY void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
+  FEX_DEFAULT_VISIBILITY bool AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler);
 }
