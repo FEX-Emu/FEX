@@ -18,7 +18,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/mman.h>
-#include "xbyak/xbyak.h"
+#include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
