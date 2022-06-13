@@ -3,16 +3,17 @@
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
 
-#include "aarch64/assembler-aarch64.h"
-#include "aarch64/constants-aarch64.h"
-#include "aarch64/cpu-aarch64.h"
-#include "aarch64/operands-aarch64.h"
-#include "platform-vixl.h"
-#include "FEXCore/Config/Config.h"
+#include <aarch64/assembler-aarch64.h>
+#include <aarch64/constants-aarch64.h>
+#include <aarch64/cpu-aarch64.h>
+#include <aarch64/operands-aarch64.h>
+#include <platform-vixl.h>
+
+#include <FEXCore/Config/Config.h>
 
 #include <array>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <utility>
 
 namespace FEXCore::CPU {

@@ -7,12 +7,14 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 
-#include "aarch64/cpu-aarch64.h"
-#include "cpu-features.h"
-#include "aarch64/instructions-aarch64.h"
-#include "utils-vixl.h"
+#include <aarch64/cpu-aarch64.h>
+#include <aarch64/instructions-aarch64.h>
+#include <cpu-features.h>
+#include <utils-vixl.h>
 
+#include <array>
 #include <tuple>
+#include <utility>
 
 namespace FEXCore::CPU {
 #define STATE x28
