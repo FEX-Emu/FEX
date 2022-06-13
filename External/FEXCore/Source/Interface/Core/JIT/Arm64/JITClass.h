@@ -9,13 +9,18 @@ $end_info$
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
-#include "aarch64/assembler-aarch64.h"
-#include "aarch64/disasm-aarch64.h"
-#include "aarch64/assembler-aarch64.h"
+#include <aarch64/assembler-aarch64.h>
+#include <aarch64/disasm-aarch64.h>
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+
+#include <array>
+#include <cstdint>
+#include <map>
+#include <utility>
+#include <vector>
 
 #define STATE x28
 #define TMP1 x0
@@ -471,6 +476,4 @@ private:
 #undef DEF_OP
 };
 
-
-}
-
+} // namespace FEXCore::CPU
