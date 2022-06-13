@@ -138,13 +138,45 @@ void FileManager::LoadThunkDatabase(bool Global) {
           }
         }
         else if (strcmp(ItemName, "Overlay") == 0) {
+
+          auto AddWithReplacement = [DBObject](json_t const* Value) {
+            constexpr static std::array<const char*, 4> Prefixes = {
+              "/usr/lib",
+              "/usr/local/lib",
+              "/lib",
+              "/usr/lib/pressure-vessel/overrides/lib",
+            };
+
+            auto ReplacePrefix = [](std::string_view String, const char *Prefix, const char *NewPrefix) -> std::pair<bool, std::string> {
+              auto it = String.find(Prefix);
+              if (it != String.size()) {
+                size_t SizeOfOldPrefix = strlen(Prefix);
+                std::string Replacement {String};
+                Replacement.replace(it, SizeOfOldPrefix, NewPrefix);
+                return std::make_pair(true, std::move(Replacement));
+              }
+              else {
+                return std::make_pair(false, std::string(String));
+              }
+            };
+
+            std::string NonModifiedLibraryItem {static_cast<const char*>(json_getValue(Value))};
+            for (auto& prefix : Prefixes) {
+               auto [has_prefix, modified_library_item] = ReplacePrefix(NonModifiedLibraryItem, "@PREFIX_LIB@", prefix);
+               DBObject->second.Overlays.emplace_back(std::move(modified_library_item));
+               if (!has_prefix) {
+                 break;
+               }
+            }
+          };
+
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
-            DBObject->second.Overlays.emplace_back(json_getValue(LibraryItem));
+            AddWithReplacement(LibraryItem);
           }
           else if (PropertyType == JSON_ARRAY) {
             for (json_t const* Overlay = json_getChild(LibraryItem); Overlay != nullptr; Overlay = json_getSibling(Overlay)) {
-              DBObject->second.Overlays.emplace_back(json_getValue(Overlay));
+              AddWithReplacement(Overlay);
             }
           }
         }
