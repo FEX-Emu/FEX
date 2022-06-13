@@ -1,14 +1,14 @@
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
 
+#include <aarch64/cpu-aarch64.h>
+
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 
 #include <atomic>
-#include <stdint.h>
-
-#include <signal.h>
-#include "aarch64/cpu-aarch64.h"
+#include <csignal>
+#include <cstdint>
 
 namespace FEXCore::ArchHelpers::Arm64 {
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
