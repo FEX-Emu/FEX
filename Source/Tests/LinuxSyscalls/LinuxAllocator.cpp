@@ -209,7 +209,8 @@ restart:
                  MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FHU::FEX_PAGE_SHIFT)) {
           // Handles the case where MAP_FIXED_NOREPLACE failed with MAP_FAILED
           // or if the host system's kernel isn't new enough then it returns the wrong pointer
-          if (MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FHU::FEX_PAGE_SHIFT)) {
+          if (MappedPtr != MAP_FAILED &&
+              MappedPtr >= reinterpret_cast<void*>(TOP_KEY << FHU::FEX_PAGE_SHIFT)) {
             // Make sure to munmap this so we don't leak memory
             ::munmap(MappedPtr, length);
           }
@@ -227,10 +228,10 @@ restart:
           else {
             // Try again
             if (SearchDown) {
-              BottomPage -= PagesLength;
+              --BottomPage;
             }
             else {
-              BottomPage += PagesLength;
+              ++BottomPage;
             }
             goto restart;
           }
