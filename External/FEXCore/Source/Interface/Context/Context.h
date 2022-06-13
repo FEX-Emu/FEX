@@ -125,6 +125,8 @@ namespace FEXCore::Context {
     Event PauseWait;
     bool Running{};
 
+    std::shared_mutex CodeInvalidationMutex; 
+    
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;

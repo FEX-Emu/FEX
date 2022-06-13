@@ -250,6 +250,7 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void FinalizeAOTIRCache(FEXCore::Context::Context *CTX);
   FEX_DEFAULT_VISIBILITY void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer);
   FEX_DEFAULT_VISIBILITY void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length);
+  FEX_DEFAULT_VISIBILITY void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback);
   FEX_DEFAULT_VISIBILITY void MarkMemoryShared(FEXCore::Context::Context *CTX);
 
   FEX_DEFAULT_VISIBILITY void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);

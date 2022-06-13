@@ -79,7 +79,6 @@ namespace FEXCore::HLE {
     virtual FEXCore::CodeLoader *GetCodeLoader() const { return nullptr; }
     virtual void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) { }
     virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) = 0;
-    virtual std::shared_lock<std::shared_mutex> CompileCodeLock(uint64_t Start) = 0;
 
   protected:
     SyscallOSABI OSABI;
