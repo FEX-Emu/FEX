@@ -114,11 +114,11 @@ DEF_OP(PCLMUL) {
     pmull(Dst, Src1, Src2);
     break;
   case 0b00000001:
-    mov(VTMP1.V2D(), Src1, 1);
+    mov(VTMP1.V1D(), Src1, 1);
     pmull(Dst, VTMP1.V2D(), Src2);
     break;
   case 0b00010000:
-    mov(VTMP1.V2D(), Src2, 1);
+    mov(VTMP1.V1D(), Src2, 1);
     pmull(Dst, VTMP1.V2D(), Src1);
     break;
   case 0b00010001:
