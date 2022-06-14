@@ -161,7 +161,7 @@ int main(int argc, char **argv, char **const envp) {
   bool DidFault = false;
 
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-      DidFault = true;
+    DidFault = true;
     return false;
   }, true);
 
