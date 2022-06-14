@@ -5,6 +5,7 @@
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/IR/AOTIR.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -350,6 +351,7 @@ namespace FEXCore::Context {
     
     std::shared_mutex CustomIRMutex;
     std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);

@@ -4,6 +4,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "Interface/Context/Context.h"
 #include "FEXCore/IR/IR.h"
 #include "Interface/Core/LookupCache.h"
 

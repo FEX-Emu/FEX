@@ -4,6 +4,7 @@ tags: backend|interpreter
 $end_info$
 */
 
+#include "Interface/Core/CPUID.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"

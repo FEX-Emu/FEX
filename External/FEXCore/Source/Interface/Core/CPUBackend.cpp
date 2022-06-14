@@ -1,3 +1,4 @@
+#include "Interface/Context/Context.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include <FEXCore/Core/CPUBackend.h>
 

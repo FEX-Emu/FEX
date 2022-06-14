@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/ObjectCache/Relocations.h"

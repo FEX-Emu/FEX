@@ -4,6 +4,7 @@ tags: backend|arm64
 desc: relocation logic of the arm64 splatter backend
 $end_info$
 */
+#include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/HLE/Thunks/Thunks.h"
 

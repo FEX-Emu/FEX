@@ -4,6 +4,7 @@ tags: backend|x86-64
 $end_info$
 */
 
+#include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 
 #include <FEXCore/Core/CoreState.h>

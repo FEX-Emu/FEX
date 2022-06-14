@@ -1,8 +1,6 @@
 #pragma once
 
 #include <FEXCore/Core/CPUBackend.h>
-
-#include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <cstdint>
@@ -19,6 +17,10 @@ struct GuestSigAction;
 namespace FEXCore::Core {
 struct CpuStateFrame;
 struct InternalThreadState;
+}
+
+namespace FEXCore::Context {
+struct Context;
 }
 
 namespace FEXCore::CPU {

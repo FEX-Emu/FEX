@@ -4,6 +4,7 @@ tags: backend|x86-64
 desc: relocation logic of the x86-64 splatter backend
 $end_info$
 */
+#include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 #include "Interface/HLE/Thunks/Thunks.h"
 

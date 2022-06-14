@@ -195,7 +195,6 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
-    FEXCore::CPU::DispatcherConfig DispatcherConfig;
     // Initialize the CPU core signal handlers
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
@@ -512,11 +511,7 @@ namespace FEXCore::Context {
 
     Thread->CTX = this;
 
-    #if _M_ARM_64
-    bool DoSRA = State->CTX->Config.StaticRegisterAllocation;
-    #else
-    bool DoSRA = false;
-    #endif
+    bool DoSRA = Config.StaticRegisterAllocation && DispatcherConfig.SupportsStaticRegisterAllocation;
 
     Thread->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
     Thread->PassManager->AddDefaultValidationPasses();

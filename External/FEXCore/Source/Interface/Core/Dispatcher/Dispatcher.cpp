@@ -1,4 +1,5 @@
 
+#include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86HelperGen.h"
