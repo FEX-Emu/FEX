@@ -4,6 +4,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include <syscall.h>
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
