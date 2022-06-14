@@ -227,13 +227,11 @@ set(OUTPUT_IR_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/IR")
 set(OUTPUT_NAME "${OUTPUT_IR_FOLDER}/IRDefines.inc")
 set(INPUT_NAME "${CMAKE_CURRENT_SOURCE_DIR}/Interface/IR/IR.json")
 
-add_custom_target(CREATE_IR_FOLDER ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_IR_FOLDER}")
+file(MAKE_DIRECTORY "${OUTPUT_IR_FOLDER}")
 
 add_custom_command(
   OUTPUT "${OUTPUT_NAME}"
   DEPENDS "${INPUT_NAME}"
-  DEPENDS CREATE_IR_FOLDER
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_generator.py" "${INPUT_NAME}" "${OUTPUT_NAME}"
   )
@@ -247,7 +245,6 @@ set(OUTPUT_IR_DOC "${CMAKE_BINARY_DIR}/IR.md")
 add_custom_command(
   OUTPUT "${OUTPUT_IR_DOC}"
   DEPENDS "${INPUT_NAME}"
-  DEPENDS CREATE_IR_FOLDER
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/json_ir_doc_generator.py" "${INPUT_NAME}" "${OUTPUT_IR_DOC}"
   )
@@ -268,15 +265,13 @@ set(INPUT_CONFIG_NAME "${CMAKE_BINARY_DIR}/generated/Config/Config.json")
 set(OUTPUT_MAN_NAME "${CMAKE_BINARY_DIR}/generated/FEX.1")
 set(OUTPUT_MAN_NAME_COMPRESS "${CMAKE_BINARY_DIR}/generated/FEX.1.gz")
 
-add_custom_target(CREATE_CONFIG_FOLDER ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_CONFIG_FOLDER}")
+file(MAKE_DIRECTORY "${OUTPUT_CONFIG_FOLDER}")
 
 add_custom_command(
   OUTPUT "${OUTPUT_CONFIG_NAME}"
   OUTPUT "${OUTPUT_CONFIG_OPTION_NAME}"
   OUTPUT "${OUTPUT_MAN_NAME}"
   DEPENDS "${INPUT_CONFIG_NAME}"
-  DEPENDS CREATE_CONFIG_FOLDER
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py"
   COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/config_generator.py" "${INPUT_CONFIG_NAME}" "${OUTPUT_CONFIG_NAME}" "${OUTPUT_MAN_NAME}"
   "${OUTPUT_CONFIG_OPTION_NAME}"
