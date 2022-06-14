@@ -113,7 +113,6 @@ namespace FEXCore::Context {
     FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;
-    uint64_t ThreadID{};
     FEXCore::Core::InternalThreadState* ParentThread;
     std::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
@@ -209,7 +208,7 @@ namespace FEXCore::Context {
 
     // Used for thread creation from syscalls
     /**
-     * @brief Used to create FEX thread objects in preparation for creating a true OS thread
+     * @brief Used to create FEX thread objects in preparation for creating a true OS thread. Does set a TID or PID.
      *
      * @param NewThreadState The initial thread state to setup for our state
      * @param ParentTID The PID that was the parent thread that created this
@@ -232,7 +231,7 @@ namespace FEXCore::Context {
     FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
 
     /**
-     * @brief Initializes the TLS data for a thread
+     * @brief Initializes TID, PID and TLS data for a thread
      *
      * @param Thread The internal FEX thread state object
      */
