@@ -267,7 +267,7 @@ void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uin
   runner.DispatchPtr(InitialRip, StackPointer);
 }
 #else
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer, ,
+void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
                FEXCore::Core::CPUState *OutputState) {
   LOGMAN_MSG_A_FMT("RunAsHost doesn't exist for this host");
 }
