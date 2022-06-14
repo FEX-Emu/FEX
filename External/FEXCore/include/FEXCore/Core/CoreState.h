@@ -114,12 +114,14 @@ namespace FEXCore::Core {
        * @{ */
       uint64_t DispatcherLoopTop{};
       uint64_t DispatcherLoopTopFillSRA{};
+      uint64_t ExitFunctionLinker{};
       uint64_t ThreadStopHandlerSpillSRA{};
       uint64_t ThreadPauseHandlerSpillSRA{};
       uint64_t UnimplementedInstructionHandler{};
       uint64_t OverflowExceptionHandler{};
       uint64_t SignalReturnHandler{};
       uint64_t L1Pointer{};
+      uint64_t L2Pointer{};
       /**  @} */
     } Common;
 
@@ -149,7 +151,8 @@ namespace FEXCore::Core {
 
       struct {
         uint64_t FragmentExecuter;
-        CPU::CPUBackend::IntCallbackReturn CallbackReturn;
+        using IntCallbackReturn =  void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
+        IntCallbackReturn CallbackReturn;
       } Interpreter;
     };
   };
@@ -175,6 +178,13 @@ namespace FEXCore::Core {
     uint64_t InSyscallInfo{};
 
     uint32_t SignalHandlerRefCounter{};
+
+    struct SynchronousFaultDataStruct {
+      bool FaultToTopAndGeneratedException{};
+      uint32_t TrapNo;
+      uint32_t err_code;
+      uint32_t si_code;
+    } SynchronousFaultData;
 
     InternalThreadState* Thread;
 

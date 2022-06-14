@@ -12,7 +12,7 @@ namespace FEXCore::CPU {
 uint64_t Arm64JITCore::GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op) {
   switch (Op) {
     case FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER:
-      return Dispatcher->ExitFunctionLinkerAddress;
+      return ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker;
     break;
     default:
       ERROR_AND_DIE_FMT("Unknown named symbol literal: {}", static_cast<uint32_t>(Op));

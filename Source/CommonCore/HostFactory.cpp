@@ -214,7 +214,8 @@ namespace HostFactory {
   }
 
   void HostCore::Initialize() {
-    DispatchPtr = getCurr<CPUBackend::AsmDispatch>();
+    //FEX_TODO(FIXME)
+    //DispatchPtr = getCurr<AsmDispatch>();
     // x86-64 ABI has the stack aligned when /call/ happens
     // Which means the destination has a misaligned stack at that point
     push(rbx);

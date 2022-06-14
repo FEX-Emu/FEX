@@ -43,6 +43,7 @@ namespace CPU {
   class Arm64JITCore;
   class X86JITCore;
   class InterpreterCore;
+  class Dispatcher;
 }
 namespace HLE {
 struct SyscallArguments;
@@ -129,6 +130,7 @@ namespace FEXCore::Context {
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+    std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
     CustomCPUFactoryType CustomCPUFactory;
     FEXCore::Context::ExitHandler CustomExitHandler;
@@ -327,7 +329,7 @@ namespace FEXCore::Context {
      *
      * InitializeCompiler is called inside of CreateThread, so you likely don't need this
      */
-    void InitializeCompiler(FEXCore::Core::InternalThreadState* State);
+    void InitializeCompiler(FEXCore::Core::InternalThreadState* Thread);
 
     void WaitForIdleWithTimeout();
 

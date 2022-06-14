@@ -416,17 +416,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   RegisterEncryptionHandlers();
 
   {
-    DispatcherConfig config;
-    config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
-    config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
-    config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
-
-    Dispatcher = std::make_unique<Arm64Dispatcher>(CTX, ThreadState, config);
-    DispatchPtr = Dispatcher->DispatchPtr;
-    CallbackPtr = Dispatcher->CallbackPtr;
-  }
-
-  {
     // Set up pointers that the JIT needs to load
 
     // Common
@@ -464,29 +453,24 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
 void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
+    return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
 
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-
-    if (!Core->Dispatcher->IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext))) {
+    if (!Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
       // Wasn't a sigbus in JIT code
       return false;
     }
 
-    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Core->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
+    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Thread->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
   }, true);
 
   CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
+    return Thread->CTX->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
   }, true);
 
   auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-    Arm64JITCore *Core = reinterpret_cast<Arm64JITCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
+    return Thread->CTX->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
   };
 
   for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
@@ -780,7 +764,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   return reinterpret_cast<void*>(GuestEntry);
 }
 
-uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
@@ -789,11 +773,11 @@ uint64_t Arm64JITCore::ExitFunctionLink(Arm64JITCore *core, FEXCore::Core::CpuSt
   if (!HostCode) {
     //fmt::print("ExitFunctionLink: Aborting, {:X} not in cache\n", GuestRip);
     Frame->State.rip = GuestRip;
-    return core->Dispatcher->AbsoluteLoopTopAddress;
+    return Frame->Pointers.Common.DispatcherLoopTop;
   }
 
   uintptr_t branch = (uintptr_t)(record) - 8;
-  auto LinkerAddress = core->Dispatcher->ExitFunctionLinkerAddress;
+  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
 
   auto offset = HostCode/4 - branch/4;
   if (IsInt26(offset)) {
@@ -849,4 +833,12 @@ std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, F
 void InitializeArm64JITSignalHandlers(FEXCore::Context::Context *CTX) {
   Arm64JITCore::InitializeSignalHandlers(CTX);
 }
+
+void GetArm64JITDispatcherConfig(DispatcherConfig &config) {
+  config = DispatcherConfig {
+    .ExitFunctionLink = reinterpret_cast<uintptr_t>(&Arm64JITCore_ExitFunctionLink),
+    .SupportsStaticRegisterAllocation = true
+  };
+}
+
 }

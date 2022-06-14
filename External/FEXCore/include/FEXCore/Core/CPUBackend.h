@@ -33,8 +33,6 @@ namespace CodeSerialize {
 }
 
 namespace CPU {
-class Dispatcher;
-
   class CPUBackend {
   public:
     struct CodeBuffer {
@@ -110,23 +108,15 @@ class Dispatcher;
      */
     [[nodiscard]] virtual bool NeedsOpDispatch() = 0;
 
-    void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
-      DispatchPtr(Frame);
-    }
-
     virtual void ClearCache() {}
-    virtual bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const { return false; }
 
     /**
      * @brief Clear any relocations after JIT compiling
      */
     virtual void ClearRelocations() {}
 
-    using AsmDispatch = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame);
-    using JITCallback = FEX_NAKED void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
-    using IntCallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
+    bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
-    JITCallback CallbackPtr{};
   protected:
     FEXCore::Core::InternalThreadState *ThreadState;
 
@@ -135,10 +125,6 @@ class Dispatcher;
 
     // This is the current code buffer that we are tracking
     CodeBuffer *CurrentCodeBuffer{};
-
-
-    AsmDispatch DispatchPtr{};
-    std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
   private:
     CodeBuffer AllocateNewCodeBuffer(size_t Size);

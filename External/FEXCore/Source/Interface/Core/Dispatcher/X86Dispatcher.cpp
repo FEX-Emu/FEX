@@ -24,15 +24,17 @@ namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE r14
 
-X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
-  : Dispatcher(ctx, Thread)
+X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config)
+  : Dispatcher(ctx)
   , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE,
       FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
       nullptr) {
 
+  LOGMAN_THROW_A_FMT(!config.SupportsStaticRegisterAllocation, "X86 dispatcher does not support SRA");
+
   using namespace Xbyak;
   using namespace Xbyak::util;
-  DispatchPtr = getCurr<CPUBackend::AsmDispatch>();
+  DispatchPtr = getCurr<AsmDispatch>();
 
   // Temp registers
   // rax, rcx, rdx, rsi, r8, r9,
@@ -111,10 +113,10 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     }
 
     L(FullLookup);
-    mov(r13, Thread->LookupCache->GetPagePointer());
+    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L2Pointer)]);
 
     // Full lookup
-    uint64_t VirtualMemorySize = Thread->LookupCache->GetVirtualMemorySize();
+    uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
     mov(rax, rdx);
     mov(rbx, VirtualMemorySize - 1);
     and_(rax, rbx);
@@ -283,10 +285,9 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
       mov(rax, r9);
     }
 
-    // {rdi, rsi, rdx}
-    mov(rdi, config.ExitFunctionLinkThis);
-    mov(rsi, STATE);
-    mov(rdx, rax); // rax is set at the block end
+    // {rdi, rsi}
+    mov(rdi, STATE);
+    mov(rsi, rax); // rax is set at the block end
 
     mov(rax, config.ExitFunctionLink);
     call(rax);
@@ -331,7 +332,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
   }
 
   {
-    CallbackPtr = getCurr<CPUBackend::JITCallback>();
+    CallbackPtr = getCurr<JITCallback>();
 
     push(rbx);
     push(rbp);
@@ -386,18 +387,17 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     // ud2 = SIGILL
     // int3 = SIGTRAP
     // hlt = SIGSEGV
-
-    mov(rax, reinterpret_cast<uint64_t>(&SynchronousFaultData));
-    add(byte [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, FaultToTopAndGeneratedException)], 1);
-    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, TrapNo)], X86State::X86_TRAPNO_OF);
-    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, err_code)], 0);
-    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, si_code)], 0x80);
+  
+    add(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);
+    mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)], X86State::X86_TRAPNO_OF);
+    mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)], 0);
+    mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)], 0x80);
 
     hlt();
   }
 
   {
-    ReturnPtr = getCurr<CPUBackend::IntCallbackReturn>();
+    IntCallbackReturnAddress = getCurr<uint64_t>();
 //  using CallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
 
     // rdi = thread
@@ -431,23 +431,33 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::Inte
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(Start), End-Start);
   }
 
+}
+
+X86Dispatcher::~X86Dispatcher() {
+  FEXCore::Allocator::munmap(top_, MAX_DISPATCHER_CODE_SIZE);
+}
+
+void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {
   // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
-    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
+    auto &Common = Thread->CurrentFrame->Pointers.Common;
 
     Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
     Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
     Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddress;
     Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddress;
     Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
     Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
-    Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
+
+    auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
+    (uintptr_t&)Interpreter.CallbackReturn = IntCallbackReturnAddress;
   }
 }
 
-X86Dispatcher::~X86Dispatcher() {
-  FEXCore::Allocator::munmap(top_, MAX_DISPATCHER_CODE_SIZE);
+std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::Context *CTX, DispatcherConfig &Config) {
+  return std::make_unique<X86Dispatcher>(CTX, Config);
 }
 
 }

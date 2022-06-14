@@ -91,7 +91,8 @@ DEF_OP(ExitFunction) {
     jmp(qword[rax]);
 
     L(l_BranchHost);
-    dq(Dispatcher->ExitFunctionLinkerAddress);
+    //FEX_TODO(this is not per thread)
+    dq(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
     L(l_BranchGuest);
     dq(NewRIP);
   } else {
