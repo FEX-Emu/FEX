@@ -195,7 +195,7 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
-    // Initialize the CPU core signal handlers
+    // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
@@ -222,6 +222,30 @@ namespace FEXCore::Context {
       break;
     }
 
+#if (_M_X86_64)
+    Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
+#elif (_M_ARM_64)
+    Dispatcher = FEXCore::CPU::Dispatcher::CreateArm64(this, DispatcherConfig);
+#else
+    ERROR_AND_DIE_FMT("FEXCore has been compiled with an unknown target");
+#endif
+
+    // Initialize common signal handlers
+    
+    auto PauseHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      return Thread->CTX->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
+    };
+
+    SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, PauseHandler, true);
+
+    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+      return Thread->CTX->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
+    };
+
+    for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+      SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
+    }
+
     // Initialize GDBServer after the signal handlers are installed
     // It may install its own handlers that need to be executed AFTER the CPU cores
     if (Config.GdbServer) {
@@ -232,14 +256,6 @@ namespace FEXCore::Context {
     }
 
     ThunkHandler.reset(FEXCore::ThunkHandler::Create());
-
-#if (_M_X86_64)
-    Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
-#elif (_M_ARM_64)
-    Dispatcher = FEXCore::CPU::Dispatcher::CreateArm64(this, DispatcherConfig);
-#else
-    ERROR_AND_DIE_FMT("FEXCore has been compiled with an unknown target");
-#endif
 
     using namespace FEXCore::Core;
 

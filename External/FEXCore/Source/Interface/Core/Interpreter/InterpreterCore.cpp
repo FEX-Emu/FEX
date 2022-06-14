@@ -51,23 +51,12 @@ InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
-  CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return Thread->CTX->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
-  }, true);
 
 #ifdef _M_ARM_64
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
   }, true);
 #endif
-
-  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-    return Thread->CTX->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
-  };
-
-  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
-  }
 }
 
 void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
