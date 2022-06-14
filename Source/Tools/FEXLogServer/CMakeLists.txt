@@ -19,7 +19,7 @@ else()
   target_link_libraries(${NAME} PRIVATE ${SDL2_LIBRARIES})
 endif()
 
-target_link_libraries(${NAME} PRIVATE FEXCore Common CommonCore epoxy X11 EGL imgui ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_link_libraries(${NAME} PRIVATE FEXCore Common epoxy X11 EGL imgui ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(${NAME}

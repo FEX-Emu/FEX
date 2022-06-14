@@ -1,6 +1,6 @@
 add_subdirectory(LinuxSyscalls)
 
-list(APPEND LIBS FEXCore Common CommonCore)
+list(APPEND LIBS FEXCore Common)
 
 add_executable(FEXLoader
   FEXLoader.cpp
@@ -148,7 +148,7 @@ install(TARGETS FEXBash
     COMPONENT runtime
 )
 
-add_executable(TestHarnessRunner TestHarnessRunner.cpp)
+add_executable(TestHarnessRunner TestHarnessRunner/HostRunner.cpp TestHarnessRunner.cpp)
 target_include_directories(TestHarnessRunner
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/

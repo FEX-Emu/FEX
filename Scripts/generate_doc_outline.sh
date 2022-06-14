@@ -10,4 +10,3 @@ echo
 # These don't have useful documentation at this point
 #./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/Scripts" "../"
 #./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/Source/Common" "../"
-#./Scripts/doc_outline_generator.py  "`pwd`" "`pwd`/Source/CommonCore" "../"
