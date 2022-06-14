@@ -110,7 +110,7 @@ public:
       return false;
     }
 
-    return AddCustomIREntrypoint(CTX, EntryRIP, [ParsedCodePtr = ParsedCode.get()](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
+    return !!AddCustomIREntrypoint(CTX, EntryRIP, [ParsedCodePtr = ParsedCode.get()](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
       emit->CopyData(*ParsedCodePtr);
     });
   }

@@ -174,7 +174,7 @@ namespace FEXCore::Context {
     }
 
     // returns false if a handler was already registered
-    bool AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler);
+    CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data);
 
     void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
@@ -348,7 +348,7 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
     
     std::shared_mutex CustomIRMutex;
-    std::unordered_map<uint64_t, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>> CustomIRHandlers;
+    std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
   };
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);

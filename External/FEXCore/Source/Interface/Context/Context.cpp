@@ -193,8 +193,8 @@ namespace FEXCore::Context {
     return CTX->UnloadAOTIRCacheEntry(Entry);
   }
 
-  bool AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler) {
-    return CTX->AddCustomIREntrypoint(Entrypoint, Handler);
+  CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
+    return CTX->AddCustomIREntrypoint(Entrypoint, Handler, Creator, Data);
   }
 
 namespace Debug {

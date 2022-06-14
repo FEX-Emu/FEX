@@ -701,7 +701,7 @@ namespace FEXCore::Context {
     if (Handler != CustomIRHandlers.end()) {
       TotalInstructions = 1;
       TotalInstructionsLength = 1;
-      Handler->second(GuestRIP, Thread->OpDispatcher.get());
+      std::get<0>(Handler->second)(GuestRIP, Thread->OpDispatcher.get());
       lk.unlock();
     } else {
       lk.unlock();
@@ -1156,12 +1156,20 @@ namespace FEXCore::Context {
     Thread->LookupCache->Erase(GuestRIP);
   }
 
-  bool Context::AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler) {
+  CustomIRResult Context::AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
     LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
-    std::scoped_lock lk(CustomIRMutex);
+    std::unique_lock lk(CustomIRMutex);
 
-    return CustomIRHandlers.emplace(Entrypoint, Handler).second;
+    auto InsertedIterator = CustomIRHandlers.emplace(Entrypoint, std::tuple(Handler, Creator, Data));
+
+    if (!InsertedIterator.second) {
+      const auto &[fn, Creator, Data] = InsertedIterator.first->second;
+      return CustomIRResult(std::move(lk), Creator, Data);
+    } else {
+      lk.unlock();
+      return CustomIRResult(std::move(lk), 0, 0);
+    }
   }
 
   void Context::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
