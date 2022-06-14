@@ -552,6 +552,7 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
 
     Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
     Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
     Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
     Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
     Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
