@@ -16,15 +16,13 @@ foreach(ASM_SRC ${ASM_SOURCES})
   set(OUTPUT_ASM_FOLDER "${CMAKE_BINARY_DIR}/${ASM_DIR}")
 
   # Generate build directory
-  add_custom_command(OUTPUT ${OUTPUT_ASM_FOLDER}
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTPUT_ASM_FOLDER}")
+  file(MAKE_DIRECTORY "${OUTPUT_ASM_FOLDER}")
 
   # Generate a temporary file
   set(ASM_TMP "${ASM_NAME}_TMP.asm")
   set(TMP_FILE "${OUTPUT_ASM_FOLDER}/${ASM_TMP}")
 
   add_custom_command(OUTPUT ${TMP_FILE}
-    DEPENDS "${OUTPUT_ASM_FOLDER}"
     DEPENDS "${ASM_SRC}"
     COMMAND "cp" ARGS "${ASM_SRC}" "${TMP_FILE}"
     COMMAND "sed" ARGS "-i" "-e" "\'1s;^;BITS 32\\norg 10000h\\nmov eax, 0x17\\nmov ds, ax\\n;\'" "-e" "\'\$\$a\\ret\\n\'" "${TMP_FILE}"
@@ -39,7 +37,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   add_custom_command(OUTPUT ${OUTPUT_CONFIG_NAME}
     DEPENDS "${ASM_SRC}"
-    DEPENDS "${OUTPUT_ASM_FOLDER}"
     DEPENDS "${CMAKE_SOURCE_DIR}/Scripts/json_asm_config_parse.py"
     DEPENDS "${CMAKE_SOURCE_DIR}/Scripts/json_config_parse.py"
     COMMAND "python3" ARGS "${CMAKE_SOURCE_DIR}/Scripts/json_asm_config_parse.py" "${ASM_SRC}" "${OUTPUT_CONFIG_NAME}")

@@ -49,13 +49,11 @@ function(generate NAME)
     set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${LIBNAME}")
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    add_custom_command(OUTPUT ${OUTFOLDER}
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTFOLDER}")
+    file(MAKE_DIRECTORY "${OUTFOLDER}")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
       DEPENDS "${GENERATOR_EXE}"
-      DEPENDS "${OUTFOLDER}"
       DEPENDS "${SOURCE_FILE}"
       COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
             # Expand include directories to space-separated list of -isystem parameters

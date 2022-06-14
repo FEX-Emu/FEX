@@ -36,12 +36,10 @@ function(generate NAME)
     set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${LIBNAME}")
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    add_custom_command(OUTPUT ${OUTFOLDER}
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${OUTFOLDER}")
-
+    file(MAKE_DIRECTORY "${OUTFOLDER}")
+    
     add_custom_command(
       OUTPUT "${OUTFILE}"
-      DEPENDS "${OUTFOLDER}"
       DEPENDS "${SOURCE_FILE}"
       DEPENDS thunkgen
       COMMAND thunkgen "${SOURCE_FILE}" "${LIBNAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
