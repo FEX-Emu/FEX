@@ -82,7 +82,7 @@ DEF_OP(ExitFunction) {
     place(&l_BranchHost);
     place(&l_BranchGuest);
   } else {
-    RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+    RipReg = GetReg<RA_64>(Op->NewRIP.ID());
 
     // L1 Cache
     ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
@@ -104,9 +104,9 @@ DEF_OP(ExitFunction) {
 
 DEF_OP(Jump) {
   const auto Op = IROp->C<IR::IROp_Jump>();
-  const auto ArgID = Op->Args(0).ID();
+  const auto Target = Op->TargetBlock.ID();
 
-  PendingTargetLabel = &JumpTargets.try_emplace(ArgID).first->second;
+  PendingTargetLabel = &JumpTargets.try_emplace(Target).first->second;
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
@@ -383,7 +383,7 @@ DEF_OP(Thunk) {
 
   PushDynamicRegsAndLR();
 
-  mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
+  mov(x0, GetReg<RA_64>(Op->ArgPtr.ID()));
 
   auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(x2, (uintptr_t)thunkFn);
@@ -471,8 +471,8 @@ DEF_OP(CPUID) {
   // x2 = CPUID Leaf
   ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj)));
   ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction)));
-  mov(x1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-  mov(x2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+  mov(x1, GetReg<RA_64>(Op->Function.ID()));
+  mov(x2, GetReg<RA_64>(Op->Leaf.ID()));
   SpillStaticRegs();
   blr(x3);
   FillStaticRegs();
