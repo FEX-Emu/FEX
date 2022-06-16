@@ -351,9 +351,6 @@ namespace FEXCore::Context {
       // Walk the threads and tell them to clear their caches
       // Useful when our block size is set to a large number and we need to step a single instruction
       for (auto &Thread : Threads) {
-        // Wait for thread to be fully constructed
-        // XXX: Look into thread partial construction issues
-        while(Thread->RunningEvents.WaitingToStart.load()) ;
         ClearCodeCache(Thread);
       }
     }
@@ -537,14 +534,7 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
-    FEXCore::Core::InternalThreadState *Thread{};
-
-    // Grab the new thread object
-    {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
-      Thread = Threads.emplace_back(new FEXCore::Core::InternalThreadState{});
-      Thread->ThreadManager.TID = ++ThreadID;
-    }
+    FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
 
     // Copy over the new thread state to the new object
     memcpy(Thread->CurrentFrame, NewThreadState, sizeof(FEXCore::Core::CPUState));
@@ -556,13 +546,19 @@ namespace FEXCore::Context {
     InitializeCompiler(Thread);
     InitializeThreadData(Thread);
 
+    // Insert after the Thread object has been fully initialized
+    {
+      std::lock_guard lk(ThreadCreationMutex);
+      Threads.push_back(Thread);
+    }
+
     return Thread;
   }
 
   void Context::DestroyThread(FEXCore::Core::InternalThreadState *Thread) {
     // remove new thread object
     {
-      std::lock_guard<std::mutex> lk(ThreadCreationMutex);
+      std::lock_guard lk(ThreadCreationMutex);
 
       auto It = std::find(Threads.begin(), Threads.end(), Thread);
       LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
@@ -1112,9 +1108,7 @@ namespace FEXCore::Context {
     std::lock_guard lk(CTX->ThreadCreationMutex);
     
     for (auto &Thread : CTX->Threads) {
-      if (Thread->RunningEvents.Running.load()) {
-        InvalidateGuestThreadCodeRange(Thread, Start, Length);
-      }
+      InvalidateGuestThreadCodeRange(Thread, Start, Length);
     }
   }
 
