@@ -97,7 +97,7 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto Src = GetReg<RA_64>(Op->RoundMode.ID());
 
   // Setup the rounding flags correctly
   and_(TMP1, Src, 0b11);
@@ -132,14 +132,14 @@ DEF_OP(Print) {
 
   PushDynamicRegsAndLR();
 
-  if (IsGPR(Op->Header.Args[0].ID())) {
-    mov(x0, GetReg<RA_64>(Op->Header.Args[0].ID()));
+  if (IsGPR(Op->Value.ID())) {
+    mov(x0, GetReg<RA_64>(Op->Value.ID()));
     ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue)));
   }
   else {
-    fmov(x0, GetSrc(Op->Header.Args[0].ID()).V1D());
+    fmov(x0, GetSrc(Op->Value.ID()).V1D());
     // Bug in vixl that source vector needs to b V1D rather than V2D?
-    fmov(x1, GetSrc(Op->Header.Args[0].ID()).V1D(), 1);
+    fmov(x1, GetSrc(Op->Value.ID()).V1D(), 1);
     ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue)));
   }
   SpillStaticRegs();

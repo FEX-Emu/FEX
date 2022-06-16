@@ -58,26 +58,26 @@ DEF_OP(LoadContext) {
 
 DEF_OP(StoreContext) {
   auto Op = IROp->C<IR::IROp_StoreContext>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
     case 1:
-      strb(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+      strb(GetReg<RA_32>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
     break;
     case 2:
-      strh(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+      strh(GetReg<RA_32>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
     break;
     case 4:
-      str(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+      str(GetReg<RA_32>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
     break;
     case 8:
-      str(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, Op->Offset));
+      str(GetReg<RA_64>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
     break;
     default:  LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
     }
   }
   else {
-    auto Src =  GetSrc(Op->Header.Args[0].ID());
+    auto Src =  GetSrc(Op->Value.ID());
     switch (OpSize) {
     case 1:
       str(Src.B(), MemOperand(STATE, Op->Offset));
@@ -261,8 +261,8 @@ DEF_OP(StoreRegister) {
 
 DEF_OP(LoadContextIndexed) {
   auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-  size_t size = IROp->Size;
-  auto index = GetReg<RA_64>(Op->Header.Args[0].ID());
+  const size_t size = IROp->Size;
+  auto index = GetReg<RA_64>(Op->Index.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (Op->Stride) {
@@ -349,11 +349,11 @@ DEF_OP(LoadContextIndexed) {
 
 DEF_OP(StoreContextIndexed) {
   auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  size_t size = IROp->Size;
-  auto index = GetReg<RA_64>(Op->Header.Args[1].ID());
+  const size_t size = IROp->Size;
+  auto index = GetReg<RA_64>(Op->Index.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto value = GetReg<RA_64>(Op->Header.Args[0].ID());
+    auto value = GetReg<RA_64>(Op->Value.ID());
 
     switch (Op->Stride) {
     case 1:
@@ -392,7 +392,7 @@ DEF_OP(StoreContextIndexed) {
     }
   }
   else {
-    auto value = GetSrc(Op->Header.Args[0].ID());
+    auto value = GetSrc(Op->Value.ID());
 
     switch (Op->Stride) {
     case 1:
@@ -441,25 +441,25 @@ DEF_OP(StoreContextIndexed) {
 
 DEF_OP(SpillRegister) {
   auto Op = IROp->C<IR::IROp_SpillRegister>();
-  uint8_t OpSize = IROp->Size;
-  uint32_t SlotOffset = Op->Slot * 16;
+  const uint8_t OpSize = IROp->Size;
+  const uint32_t SlotOffset = Op->Slot * 16;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
     case 1: {
-      strb(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      strb(GetReg<RA_64>(Op->Value.ID()), MemOperand(sp, SlotOffset));
       break;
     }
     case 2: {
-      strh(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      strh(GetReg<RA_64>(Op->Value.ID()), MemOperand(sp, SlotOffset));
       break;
     }
     case 4: {
-      str(GetReg<RA_32>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      str(GetReg<RA_32>(Op->Value.ID()), MemOperand(sp, SlotOffset));
       break;
     }
     case 8: {
-      str(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      str(GetReg<RA_64>(Op->Value.ID()), MemOperand(sp, SlotOffset));
       break;
     }
     default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
@@ -467,15 +467,15 @@ DEF_OP(SpillRegister) {
   } else if (Op->Class == FEXCore::IR::FPRClass) {
     switch (OpSize) {
     case 4: {
-      str(GetSrc(Op->Header.Args[0].ID()).S(), MemOperand(sp, SlotOffset));
+      str(GetSrc(Op->Value.ID()).S(), MemOperand(sp, SlotOffset));
       break;
     }
     case 8: {
-      str(GetSrc(Op->Header.Args[0].ID()).D(), MemOperand(sp, SlotOffset));
+      str(GetSrc(Op->Value.ID()).D(), MemOperand(sp, SlotOffset));
       break;
     }
     case 16: {
-      str(GetSrc(Op->Header.Args[0].ID()), MemOperand(sp, SlotOffset));
+      str(GetSrc(Op->Value.ID()), MemOperand(sp, SlotOffset));
       break;
     }
     default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
@@ -539,7 +539,7 @@ DEF_OP(LoadFlag) {
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
-  strb(GetReg<RA_64>(Op->Header.Args[0].ID()), MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
+  strb(GetReg<RA_64>(Op->Value.ID()), MemOperand(STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag));
 }
 
 MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
@@ -570,7 +570,7 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
 DEF_OP(LoadMem) {
   auto Op = IROp->C<IR::IROp_LoadMem>();
 
-  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
   auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
@@ -992,7 +992,7 @@ DEF_OP(VStoreMemElement) {
 DEF_OP(CacheLineClear) {
   auto Op = IROp->C<IR::IROp_CacheLineClear>();
 
-  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
   // Clear dcache only
   // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
@@ -1007,7 +1007,7 @@ DEF_OP(CacheLineClear) {
 DEF_OP(CacheLineZero) {
   auto Op = IROp->C<IR::IROp_CacheLineZero>();
 
-  auto MemReg = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsCLZERO) {
     // We can use this instruction directly
