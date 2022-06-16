@@ -176,7 +176,6 @@ target_link_libraries(UnitTestGenerator
 
 add_executable(IRLoader
   IRLoader.cpp
-  IRLoader/Loader.cpp
 )
 target_include_directories(IRLoader
   PRIVATE

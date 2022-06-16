@@ -193,7 +193,7 @@ namespace FEXCore::Context {
     return NewThreadState;
   }
 
-  FEXCore::Core::InternalThreadState* Context::InitCore(FEXCore::CodeLoader *Loader) {
+  FEXCore::Core::InternalThreadState* Context::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
     // Initialize the CPU core signal handlers
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
@@ -229,7 +229,6 @@ namespace FEXCore::Context {
 
     ThunkHandler.reset(FEXCore::ThunkHandler::Create());
 
-    LocalLoader = Loader;
     using namespace FEXCore::Core;
 
     FEXCore::Core::CPUState NewThreadState = CreateDefaultCPUState();
@@ -238,9 +237,9 @@ namespace FEXCore::Context {
     // We are the parent thread
     ParentThread = Thread;
 
-    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = Loader->GetStackPointer();
+    Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
 
-    Thread->CurrentFrame->State.rip = StartingRIP = Loader->DefaultRIP();
+    Thread->CurrentFrame->State.rip = InitialRIP;
 
     InitializeThreadData(Thread);
     return Thread;
@@ -448,21 +447,6 @@ namespace FEXCore::Context {
 
   void Context::InitializeThreadData(FEXCore::Core::InternalThreadState *Thread) {
     Thread->CPUBackend->Initialize();
-
-    auto IRHandler = [Thread](uint64_t Addr, IR::IREmitter *IR) -> void {
-      // Run the passmanager over the IR from the dispatcher
-      Thread->PassManager->Run(IR);
-      Core::LocalIREntry Entry = {Addr, 0ULL,
-        decltype(Entry.IR)(IR->CreateIRCopy()),
-        decltype(Entry.RAData)(Thread->PassManager->HasPass("RA")
-          ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData()
-          : nullptr),
-        decltype(Entry.DebugData)(new Core::DebugData())
-      };
-      Thread->PrecompiledIR.insert({Addr, std::move(Entry)});
-    };
-
-    LocalLoader->AddIR(IRHandler);
   }
 
   struct ExecutionThreadHandler {
@@ -650,12 +634,13 @@ namespace FEXCore::Context {
     Thread->DebugStore.clear();
   }
 
-  static void IRDumper(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
+  static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
     FILE* f = nullptr;
     bool CloseAfter = false;
     const auto DumpIRStr = Thread->CTX->Config.DumpIR();
 
-    if (DumpIRStr =="stderr") {
+    // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
+    if (DumpIRStr =="stderr" || DumpIRStr =="no") {
       f = stderr;
     }
     else if (DumpIRStr =="stdout") {
@@ -669,7 +654,7 @@ namespace FEXCore::Context {
 
     if (f) {
       std::stringstream out;
-      auto NewIR = Thread->OpDispatcher->ViewIR();
+      auto NewIR = IREmitter->ViewIR();
       FEXCore::IR::Dump(&out, &NewIR, RA);
       fmt::print(f,"IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
 
@@ -679,12 +664,12 @@ namespace FEXCore::Context {
     }
   };
 
-  static void ValidateIR(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  static void ValidateIR(FEXCore::Context::Context *ctx, IR::IREmitter *IREmitter) {
     // Convert to text, Parse, Convert to text again and make sure the texts match
     std::stringstream out;
     static auto compaction = IR::CreateIRCompaction(ctx->OpDispatcherAllocator);
-    compaction->Run(Thread->OpDispatcher.get());
-    auto NewIR = Thread->OpDispatcher->ViewIR();
+    compaction->Run(IREmitter);
+    auto NewIR = IREmitter->ViewIR();
     Dump(&out, &NewIR, nullptr);
     out.seekg(0);
     FEXCore::Utils::PooledAllocatorMalloc Allocator;
@@ -703,151 +688,161 @@ namespace FEXCore::Context {
     }
   }
 
-  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    uint8_t const *GuestCode{};
-    GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
-
-    bool HadDispatchError {false};
+  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {    
+    Thread->OpDispatcher->ReownOrClaimBuffer();
+    Thread->OpDispatcher->ResetWorkingList();
 
     uint64_t TotalInstructions {0};
     uint64_t TotalInstructionsLength {0};
 
-    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
-      if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
-        Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
-      }
-    });
 
-    auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
+    std::shared_lock lk(CustomIRMutex);
+    
+    auto Handler = CustomIRHandlers.find(GuestRIP);
+    if (Handler != CustomIRHandlers.end()) {
+      TotalInstructions = 1;
+      TotalInstructionsLength = 1;
+      std::get<0>(Handler->second)(GuestRIP, Thread->OpDispatcher.get());
+      lk.unlock();
+    } else {
+      lk.unlock();
+      uint8_t const *GuestCode{};
+      GuestCode = reinterpret_cast<uint8_t const*>(GuestRIP);
 
-    Thread->OpDispatcher->ReownOrClaimBuffer();
-    Thread->OpDispatcher->ResetWorkingList();
-    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
+      bool HadDispatchError {false};
 
-    const uint8_t GPRSize = GetGPRSize();
-
-    for (size_t j = 0; j < CodeBlocks->size(); ++j) {
-      FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
-      // Set the block entry point
-      Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
-
-      uint64_t BlockInstructionsLength {};
-
-      // Reset any block-specific state
-      Thread->OpDispatcher->StartNewBlock();
-
-      uint64_t InstsInBlock = Block.NumInstructions;
-
-      for (size_t i = 0; i < InstsInBlock; ++i) {
-        FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
-        FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
-
-        TableInfo = Block.DecodedInstructions[i].TableInfo;
-        DecodedInfo = &Block.DecodedInstructions[i];
-        bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
-
-        if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
-          auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
-
-          auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
-
-          auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
-
-          auto CurrentBlock = Thread->OpDispatcher->GetCurrentBlock();
-          auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlockAtEnd();
-          Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
-
-          Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
-          Thread->OpDispatcher->_RemoveThreadCodeEntry();
-          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
-
-          auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
-
-          Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
-          Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
+      Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
+        if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
+          Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
         }
+      });
 
-        if (TableInfo && TableInfo->OpcodeDispatcher) {
-          auto Fn = TableInfo->OpcodeDispatcher;
-          Thread->OpDispatcher->HandledLock = false;
-          Thread->OpDispatcher->ResetDecodeFailure();
-          std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
-          if (Thread->OpDispatcher->HadDecodeFailure()) {
-            HadDispatchError = true;
-          }
-          else {
-            if (Thread->OpDispatcher->HandledLock != IsLocked) {
-              HadDispatchError = true;
-              LogMan::Msg::EFmt("Missing LOCK HANDLER at 0x{:x}{{'{}'}}", Block.Entry + BlockInstructionsLength, TableInfo->Name ?: "UND");
-            }
-            BlockInstructionsLength += DecodedInfo->InstSize;
-            TotalInstructionsLength += DecodedInfo->InstSize;
-            ++TotalInstructions;
-          }
-        }
-        else {
-          // Invalid instruction
-          Thread->OpDispatcher->InvalidOp(DecodedInfo);
-          Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
-        }
+      auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
 
-        // If we had a dispatch error then leave early
-        if (HadDispatchError) {
-          if (TotalInstructions == 0) {
-            // Couldn't handle any instruction in op dispatcher
-            Thread->OpDispatcher->ResetWorkingList();
-            return { nullptr, nullptr, 0, 0, 0, 0 };
-          }
-          else {
-            const uint8_t GPRSize = GetGPRSize();
+      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
 
-            // We had some instructions. Early exit
+      const uint8_t GPRSize = GetGPRSize();
+
+      for (size_t j = 0; j < CodeBlocks->size(); ++j) {
+        FEXCore::Frontend::Decoder::DecodedBlocks const &Block = CodeBlocks->at(j);
+        // Set the block entry point
+        Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
+
+        uint64_t BlockInstructionsLength {};
+
+        // Reset any block-specific state
+        Thread->OpDispatcher->StartNewBlock();
+
+        uint64_t InstsInBlock = Block.NumInstructions;
+
+        for (size_t i = 0; i < InstsInBlock; ++i) {
+          FEXCore::X86Tables::X86InstInfo const* TableInfo {nullptr};
+          FEXCore::X86Tables::DecodedInst const* DecodedInfo {nullptr};
+
+          TableInfo = Block.DecodedInstructions[i].TableInfo;
+          DecodedInfo = &Block.DecodedInstructions[i];
+          bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
+
+          if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
+            auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
+
+            auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1], (uintptr_t)ExistingCodePtr - GuestRIP, DecodedInfo->InstSize);
+
+            auto InvalidateCodeCond = Thread->OpDispatcher->_CondJump(CodeChanged);
+
+            auto CurrentBlock = Thread->OpDispatcher->GetCurrentBlock();
+            auto CodeWasChangedBlock = Thread->OpDispatcher->CreateNewCodeBlockAtEnd();
+            Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
+
+            Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
+            Thread->OpDispatcher->_RemoveThreadCodeEntry();
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
+
+            auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
+
+            Thread->OpDispatcher->SetFalseJumpTarget(InvalidateCodeCond, NextOpBlock);
+            Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
+          }
+
+          if (TableInfo && TableInfo->OpcodeDispatcher) {
+            auto Fn = TableInfo->OpcodeDispatcher;
+            Thread->OpDispatcher->HandledLock = false;
+            Thread->OpDispatcher->ResetDecodeFailure();
+            std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
+            if (Thread->OpDispatcher->HadDecodeFailure()) {
+              HadDispatchError = true;
+            }
+            else {
+              if (Thread->OpDispatcher->HandledLock != IsLocked) {
+                HadDispatchError = true;
+                LogMan::Msg::EFmt("Missing LOCK HANDLER at 0x{:x}{{'{}'}}", Block.Entry + BlockInstructionsLength, TableInfo->Name ?: "UND");
+              }
+              BlockInstructionsLength += DecodedInfo->InstSize;
+              TotalInstructionsLength += DecodedInfo->InstSize;
+              ++TotalInstructions;
+            }
+          }
+          else {
+            // Invalid instruction
+            Thread->OpDispatcher->InvalidOp(DecodedInfo);
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
+          }
+
+          // If we had a dispatch error then leave early
+          if (HadDispatchError) {
+            if (TotalInstructions == 0) {
+              // Couldn't handle any instruction in op dispatcher
+              Thread->OpDispatcher->ResetWorkingList();
+              return { nullptr, nullptr, 0, 0, 0, 0 };
+            }
+            else {
+              const uint8_t GPRSize = GetGPRSize();
+
+              // We had some instructions. Early exit
+              Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
+              break;
+            }
+          }
+
+          if (Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock)) {
             break;
           }
         }
-
-        if (Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock)) {
-          break;
-        }
       }
+      
+      Thread->OpDispatcher->Finalize();
+
+      Thread->FrontendDecoder->DelayedDisownBuffer();
     }
 
-    Thread->OpDispatcher->Finalize();
+    IR::IREmitter *IREmitter = Thread->OpDispatcher.get();
 
+    auto ShouldDump = Thread->CTX->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDump;
     // Debug
     {
-      if (Thread->CTX->Config.DumpIR() != "no") {
-        IRDumper(Thread, GuestRIP, nullptr);
+      if (ShouldDump) {
+        IRDumper(Thread, IREmitter, GuestRIP, nullptr);
       }
 
       if (Thread->CTX->Config.ValidateIRarser) {
-        ValidateIR(this, Thread);
+        ValidateIR(this, IREmitter);
       }
     }
 
     // Run the passmanager over the IR from the dispatcher
-    Thread->PassManager->Run(Thread->OpDispatcher.get());
+    Thread->PassManager->Run(IREmitter);
 
     // Debug
     {
-      if (Thread->CTX->Config.DumpIR() != "no") {
-        IRDumper(Thread, GuestRIP, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
-      }
-
-      if (Thread->OpDispatcher->ShouldDump) {
-        std::stringstream out;
-        auto NewIR = Thread->OpDispatcher->ViewIR();
-        FEXCore::IR::Dump(&out, &NewIR, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
-        LogMan::Msg::IFmt("IR 0x{:x}:\n{}\n@@@@@\n", GuestRIP, out.str());
+      if (ShouldDump) {
+        IRDumper(Thread, IREmitter, GuestRIP, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
       }
     }
 
     auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
-    auto IRList = Thread->OpDispatcher->CreateIRCopy();
+    auto IRList = IREmitter->CreateIRCopy();
 
-    Thread->OpDispatcher->DelayedDisownBuffer();
-    Thread->FrontendDecoder->DelayedDisownBuffer();
+    IREmitter->DelayedDisownBuffer();
 
     return {
       .IRList = IRList,
@@ -866,24 +861,6 @@ namespace FEXCore::Context {
     bool GeneratedIR {};
     uint64_t StartAddr {};
     uint64_t Length {};
-    
-    if (!Thread->PrecompiledIR.empty())
-    {
-      // This is only used for the IRLoader / IR Tests
-      auto LocalEntry = Thread->PrecompiledIR.find(GuestRIP);
-
-      if (LocalEntry != Thread->PrecompiledIR.end()) {
-        // Entry already exists
-        // pull in the data
-        IRList = LocalEntry->second.IR.get();
-        DebugData = LocalEntry->second.DebugData.get();
-        RAData = LocalEntry->second.RAData.get();
-        StartAddr = LocalEntry->second.StartAddr;
-        Length = LocalEntry->second.Length;
-
-        GeneratedIR = false;
-      }
-    }
 
     // JIT Code object cache lookup
     if (CodeObjectCacheService) {
@@ -1179,6 +1156,32 @@ namespace FEXCore::Context {
 
     Thread->DebugStore.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
+  }
+
+  CustomIRResult Context::AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
+    LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
+
+    std::unique_lock lk(CustomIRMutex);
+
+    auto InsertedIterator = CustomIRHandlers.emplace(Entrypoint, std::tuple(Handler, Creator, Data));
+
+    if (!InsertedIterator.second) {
+      const auto &[fn, Creator, Data] = InsertedIterator.first->second;
+      return CustomIRResult(std::move(lk), Creator, Data);
+    } else {
+      lk.unlock();
+      return CustomIRResult(std::move(lk), 0, 0);
+    }
+  }
+
+  void Context::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
+    LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
+
+    std::scoped_lock lk(CustomIRMutex);
+
+    InvalidateGuestCodeRange(this, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
+      CustomIRHandlers.erase(Entrypoint);
+    });
   }
 
   // Debug interface

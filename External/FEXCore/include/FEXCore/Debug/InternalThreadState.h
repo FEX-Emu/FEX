@@ -95,7 +95,6 @@ namespace FEXCore::Core {
     std::unique_ptr<FEXCore::LookupCache> LookupCache;
 
     std::unordered_map<uint64_t, LocalIREntry> DebugStore;
-    std::map<uint64_t, LocalIREntry> PrecompiledIR;
 
     std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     std::unique_ptr<FEXCore::IR::PassManager> PassManager;

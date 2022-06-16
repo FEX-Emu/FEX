@@ -49,7 +49,7 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
   bool Result{};
   if (ELF) {
     FEX::HarnessHelper::ELFCodeLoader Loader{Filename, {}, {}, {}};
-    Result = FEXCore::Context::InitCore(CTX, &Loader);
+    Result = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
   }
   else {
     std::string ConfigName = Filename;
@@ -58,7 +58,7 @@ void CreateCoreCallback(char const *Filename, bool ELF) {
     LogMan::Msg::IFmt("Opening '{}'", Filename);
     LogMan::Msg::IFmt("Opening '{}'", ConfigName);
     FEX::HarnessHelper::HarnessCodeLoader Loader{Filename, ConfigName.c_str()};
-    Result = FEXCore::Context::InitCore(CTX, &Loader);
+    Result = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
   }
 
   LOGMAN_THROW_A_FMT(Result, "Couldn't initialize CTX");

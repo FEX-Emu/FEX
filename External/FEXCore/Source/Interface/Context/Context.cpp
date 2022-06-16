@@ -43,8 +43,8 @@ namespace FEXCore::Context {
     delete CTX;
   }
 
-  FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader) {
-    return CTX->InitCore(Loader);
+  FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, uint64_t InitialRIP, uint64_t StackPointer) {
+    return CTX->InitCore(InitialRIP, StackPointer);
   }
 
   void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler) {
@@ -191,6 +191,10 @@ namespace FEXCore::Context {
   }
   void UnloadAOTIRCacheEntry(FEXCore::Context::Context *CTX, IR::AOTIRCacheEntry *Entry) {
     return CTX->UnloadAOTIRCacheEntry(Entry);
+  }
+
+  CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
+    return CTX->AddCustomIREntrypoint(Entrypoint, Handler, Creator, Data);
   }
 
 namespace Debug {
