@@ -21,12 +21,14 @@ DEF_OP(TruncElementPair) {
   switch (IROp->Size) {
     case 4: {
       auto Dst = GetSrcPair<RA_32>(Node);
-      auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+      auto Src = GetSrcPair<RA_32>(Op->Pair.ID());
       mov(Dst.first, Src.first);
       mov(Dst.second, Src.second);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size);
+      break;
   }
 }
 
@@ -68,26 +70,26 @@ DEF_OP(CycleCounter) {
 
 DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     switch (OpSize) {
       case 4:
-        add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), Const);
+        add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), Const);
         break;
       case 8:
-        add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), Const);
+        add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), Const);
         break;
       default: LOGMAN_MSG_A_FMT("Unsupported Add size: {}", OpSize);
     }
   } else {
     switch (OpSize) {
       case 4:
-        add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        add(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
         break;
       case 8:
-        add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+        add(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
         break;
       default: LOGMAN_MSG_A_FMT("Unsupported Add size: {}", OpSize);
     }
@@ -96,24 +98,24 @@ DEF_OP(Add) {
 
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     switch (OpSize) {
       case 4:
       case 8:
-        sub(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+        sub(GRS(Node), GRS(Op->Src1.ID()), Const);
         break;
       default: LOGMAN_MSG_A_FMT("Unsupported Sub size: {}", OpSize);
     }
   } else {
     switch (OpSize) {
       case 4:
-        sub(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        sub(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
         break;
       case 8:
-        sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+        sub(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
         break;
       default: LOGMAN_MSG_A_FMT("Unsupported Sub size: {}", OpSize);
     }
@@ -123,13 +125,13 @@ DEF_OP(Sub) {
 
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   switch (OpSize) {
     case 4:
-      neg(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      neg(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       break;
     case 8:
-      neg(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      neg(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported Neg size: {}", OpSize);
   }
@@ -137,15 +139,15 @@ DEF_OP(Neg) {
 
 DEF_OP(Mul) {
   auto Op = IROp->C<IR::IROp_Mul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   auto Dst = GetReg<RA_64>(Node);
 
   switch (OpSize) {
     case 4:
-      mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      mul(Dst.W(), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
     break;
     case 8:
-      mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      mul(Dst, GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Mul size: {}", OpSize);
   }
@@ -153,15 +155,15 @@ DEF_OP(Mul) {
 
 DEF_OP(UMul) {
   auto Op = IROp->C<IR::IROp_UMul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   auto Dst = GetReg<RA_64>(Node);
 
   switch (OpSize) {
     case 4:
-      mul(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      mul(Dst.W(), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
     break;
     case 8:
-      mul(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      mul(Dst, GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown UMul size: {}", OpSize);
   }
@@ -169,14 +171,14 @@ DEF_OP(UMul) {
 
 DEF_OP(Div) {
   auto Op = IROp->C<IR::IROp_Div>();
-  uint8_t OpSize = IROp->Size;
+
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  auto Size = OpSize;
-  switch (Size) {
+  const uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
     case 1: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
       sxtb(w2, Dividend);
       sxtb(w3, Divisor);
 
@@ -184,8 +186,8 @@ DEF_OP(Div) {
     break;
     }
     case 2: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
       sxth(w2, Dividend);
       sxth(w3, Divisor);
 
@@ -193,53 +195,59 @@ DEF_OP(Div) {
     break;
     }
     case 4: {
-      sdiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      sdiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
     break;
     }
     case 8: {
-      sdiv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      sdiv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
     break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown DIV Size: {}", Size); break;
+    default: {
+      LOGMAN_MSG_A_FMT("Unknown DIV Size: {}", OpSize);
+    break;
+    }
   }
 }
 
 DEF_OP(UDiv) {
   auto Op = IROp->C<IR::IROp_UDiv>();
-  uint8_t OpSize = IROp->Size;
+
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  auto Size = OpSize;
-  switch (Size) {
+  const uint8_t OpSize = IROp->Size;
+  switch (OpSize) {
     case 1: {
-      udiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      udiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
       break;
     }
     case 2: {
-      udiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      udiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
       break;
     }
     case 4: {
-      udiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+      udiv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
       break;
     }
     case 8: {
-      udiv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      udiv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown UDIV Size: {}", Size); break;
+    default: {
+      LOGMAN_MSG_A_FMT("Unknown UDIV Size: {}", OpSize);
+      break;
+    }
   }
 }
 
 DEF_OP(Rem) {
   auto Op = IROp->C<IR::IROp_Rem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 1: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
       sxtb(w2, Dividend);
       sxtb(w3, Divisor);
 
@@ -248,8 +256,8 @@ DEF_OP(Rem) {
     break;
     }
     case 2: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
 
       sxth(w2, Dividend);
       sxth(w3, Divisor);
@@ -259,16 +267,16 @@ DEF_OP(Rem) {
     break;
     }
     case 4: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
 
       sdiv(TMP1.W(), Dividend, Divisor);
       msub(GetReg<RA_32>(Node), TMP1, Divisor, Dividend);
     break;
     }
     case 8: {
-      auto Dividend = GetReg<RA_64>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_64>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_64>(Op->Src2.ID());
 
       sdiv(TMP1, Dividend, Divisor);
       msub(GetReg<RA_64>(Node), TMP1, Divisor, Dividend);
@@ -280,37 +288,37 @@ DEF_OP(Rem) {
 
 DEF_OP(URem) {
   auto Op = IROp->C<IR::IROp_URem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 1: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
 
       udiv(TMP1.W(), Dividend, Divisor);
       msub(GetReg<RA_32>(Node), TMP1, Divisor, Dividend);
     break;
     }
     case 2: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
 
       udiv(TMP1.W(), Dividend, Divisor);
       msub(GetReg<RA_32>(Node), TMP1, Divisor, Dividend);
     break;
     }
     case 4: {
-      auto Dividend = GetReg<RA_32>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_32>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_32>(Op->Src2.ID());
 
       udiv(TMP1.W(), Dividend, Divisor);
       msub(GetReg<RA_32>(Node), TMP1, Divisor, Dividend);
     break;
     }
     case 8: {
-      auto Dividend = GetReg<RA_64>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[1].ID());
+      auto Dividend = GetReg<RA_64>(Op->Src1.ID());
+      auto Divisor = GetReg<RA_64>(Op->Src2.ID());
 
       udiv(TMP1, Dividend, Divisor);
       msub(GetReg<RA_64>(Node), TMP1, Divisor, Dividend);
@@ -322,16 +330,16 @@ DEF_OP(URem) {
 
 DEF_OP(MulH) {
   auto Op = IROp->C<IR::IROp_MulH>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   switch (OpSize) {
     case 4:
-      sxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      sxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+      sxtw(TMP1, GetReg<RA_64>(Op->Src1.ID()));
+      sxtw(TMP2, GetReg<RA_64>(Op->Src2.ID()));
       mul(TMP1, TMP1, TMP2);
       ubfx(GetReg<RA_64>(Node), TMP1, 32, 32);
     break;
     case 8:
-      smulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      smulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Sext size: {}", OpSize);
   }
@@ -339,16 +347,16 @@ DEF_OP(MulH) {
 
 DEF_OP(UMulH) {
   auto Op = IROp->C<IR::IROp_UMulH>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   switch (OpSize) {
     case 4:
-      uxtw(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      uxtw(TMP2, GetReg<RA_64>(Op->Header.Args[1].ID()));
+      uxtw(TMP1, GetReg<RA_64>(Op->Src1.ID()));
+      uxtw(TMP2, GetReg<RA_64>(Op->Src2.ID()));
       mul(TMP1, TMP1, TMP2);
       ubfx(GetReg<RA_64>(Node), TMP1, 32, 32);
     break;
     case 8:
-      umulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      umulh(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Sext size: {}", OpSize);
   }
@@ -357,27 +365,27 @@ DEF_OP(UMulH) {
 DEF_OP(Or) {
   auto Op = IROp->C<IR::IROp_Or>();
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    orr(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    orr(GRS(Node), GRS(Op->Src1.ID()), Const);
   } else {
-    orr(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+    orr(GRS(Node), GRS(Op->Src1.ID()), GRS(Op->Src2.ID()));
   }
 }
 
 DEF_OP(And) {
   auto Op = IROp->C<IR::IROp_And>();
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    and_(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    and_(GRS(Node), GRS(Op->Src1.ID()), Const);
   } else {
-    and_(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+    and_(GRS(Node), GRS(Op->Src1.ID()), GRS(Op->Src2.ID()));
   }
 }
 
 DEF_OP(Andn) {
   auto Op = IROp->C<IR::IROp_Andn>();
-  const auto& Lhs = Op->Header.Args[0];
-  const auto& Rhs = Op->Header.Args[1];
+  const auto& Lhs = Op->Src1;
+  const auto& Rhs = Op->Src2;
   uint64_t Const{};
 
   if (IsInlineConstant(Rhs, &Const)) {
@@ -390,54 +398,54 @@ DEF_OP(Andn) {
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    eor(GRS(Node), GRS(Op->Header.Args[0].ID()), Const);
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    eor(GRS(Node), GRS(Op->Src1.ID()), Const);
   } else {
-    eor(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+    eor(GRS(Node), GRS(Op->Src1.ID()), GRS(Op->Src2.ID()));
   }
 }
 
 DEF_OP(Lshl) {
   auto Op = IROp->C<IR::IROp_Lshl>();
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    lsl(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    lsl(GRS(Node), GRS(Op->Src1.ID()), (unsigned int)Const);
   } else {
-    lslv(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+    lslv(GRS(Node), GRS(Op->Src1.ID()), GRS(Op->Src2.ID()));
   }
 }
 
 DEF_OP(Lshr) {
   auto Op = IROp->C<IR::IROp_Lshr>();
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
-    lsr(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    lsr(GRS(Node), GRS(Op->Src1.ID()), (unsigned int)Const);
   } else {
-    lsrv(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+    lsrv(GRS(Node), GRS(Op->Src1.ID()), GRS(Op->Src2.ID()));
   }
 }
 
 DEF_OP(Ashr) {
   auto Op = IROp->C<IR::IROp_Ashr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     if (OpSize >= 4) {
-      asr(GRS(Node), GRS(Op->Header.Args[0].ID()), (unsigned int)Const);
+      asr(GRS(Node), GRS(Op->Src1.ID()), (unsigned int)Const);
     }
     else {
-      sbfx(TMP1.X(), GetReg<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
+      sbfx(TMP1.X(), GetReg<RA_64>(Op->Src1.ID()), 0, OpSize * 8);
       asr(GetReg<RA_64>(Node), TMP1.X(), (unsigned int)Const);
       ubfx(GetReg<RA_64>(Node),GetReg<RA_64>(Node), 0, OpSize * 8);
     }
   } else {
     if (OpSize >= 4) {
-      asrv(GRS(Node), GRS(Op->Header.Args[0].ID()), GRS(Op->Header.Args[1].ID()));
+      asrv(GRS(Node), GRS(Op->Src1.ID()), GRS(Op->Src2.ID()));
     }
     else {
-      sbfx(TMP1.X(), GetReg<RA_64>(Op->Header.Args[0].ID()), 0, OpSize * 8);
-      asrv(GetReg<RA_64>(Node), TMP1.X(), GetReg<RA_64>(Op->Header.Args[1].ID()));
+      sbfx(TMP1.X(), GetReg<RA_64>(Op->Src1.ID()), 0, OpSize * 8);
+      asrv(GetReg<RA_64>(Node), TMP1.X(), GetReg<RA_64>(Op->Src2.ID()));
       ubfx(GetReg<RA_64>(Node),GetReg<RA_64>(Node), 0, OpSize * 8);
     }
   }
@@ -445,17 +453,17 @@ DEF_OP(Ashr) {
 
 DEF_OP(Ror) {
   auto Op = IROp->C<IR::IROp_Ror>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     switch (OpSize) {
       case 4: {
-        ror(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), (unsigned int)Const);
+        ror(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), (unsigned int)Const);
       break;
       }
       case 8: {
-        ror(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), (unsigned int)Const);
+        ror(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), (unsigned int)Const);
       break;
       }
 
@@ -464,11 +472,11 @@ DEF_OP(Ror) {
   } else {
     switch (OpSize) {
       case 4: {
-        rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()));
+        rorv(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src1.ID()), GetReg<RA_32>(Op->Src2.ID()));
       break;
       }
       case 8: {
-        rorv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()));
+        rorv(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src1.ID()), GetReg<RA_64>(Op->Src2.ID()));
       break;
       }
 
@@ -479,15 +487,15 @@ DEF_OP(Ror) {
 
 DEF_OP(Extr) {
   auto Op = IROp->C<IR::IROp_Extr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 4: {
-      extr(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), GetReg<RA_32>(Op->Header.Args[1].ID()), Op->LSB);
+      extr(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Upper.ID()), GetReg<RA_32>(Op->Lower.ID()), Op->LSB);
     break;
     }
     case 8: {
-      extr(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()), GetReg<RA_64>(Op->Header.Args[1].ID()), Op->LSB);
+      extr(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Upper.ID()), GetReg<RA_64>(Op->Lower.ID()), Op->LSB);
     break;
     }
 
@@ -499,8 +507,8 @@ DEF_OP(PDep) {
   auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
 
-  const Register Input = GRS(Op->Args(0).ID());
-  const Register Mask = GRS(Op->Args(1).ID());
+  const Register Input = GRS(Op->Input.ID());
+  const Register Mask = GRS(Op->Mask.ID());
   const Register Dest = GRS(Node);
 
   const Register ShiftedBitReg = OpSize <= 4 ? TMP1.W() : TMP1;
@@ -564,8 +572,8 @@ DEF_OP(PExt) {
   auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
 
-  const Register Input = GRS(Op->Args(0).ID());
-  const Register Mask = GRS(Op->Args(1).ID());
+  const Register Input = GRS(Op->Input.ID());
+  const Register Mask = GRS(Op->Mask.ID());
   const Register Dest = GRS(Node);
 
   const Register MaskReg    = OpSize <= 4 ? TMP1.W() : TMP1;
@@ -616,29 +624,29 @@ DEF_OP(PExt) {
 
 DEF_OP(LDiv) {
   auto Op = IROp->C<IR::IROp_LDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  auto Size = OpSize;
-  switch (Size) {
+  switch (OpSize) {
     case 2: {
-      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
-      sxth(TMP2.W(), GetReg<RA_32>(Op->Header.Args[2].ID()));
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Lower.ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Upper.ID()), 16, 16);
+      sxth(TMP2.W(), GetReg<RA_32>(Op->Divisor.ID()));
       sdiv(GetReg<RA_32>(Node), TMP1.W(), TMP2.W());
     break;
     }
     case 4: {
-      mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-      sxtw(TMP2, GetReg<RA_32>(Op->Header.Args[2].ID()));
+      mov(TMP1, GetReg<RA_64>(Op->Lower.ID()));
+      bfi(TMP1, GetReg<RA_64>(Op->Upper.ID()), 32, 32);
+      sxtw(TMP2, GetReg<RA_32>(Op->Divisor.ID()));
       sdiv(GetReg<RA_64>(Node), TMP1, TMP2);
     break;
     }
     case 8: {
-      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
-      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      auto Upper64Bit = GetReg<RA_64>(Op->Upper.ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Lower.ID());
+      auto Divisor = GetReg<RA_64>(Op->Divisor.ID());
       Label Only64Bit{};
       Label LongDIVRet{};
 
@@ -674,33 +682,35 @@ DEF_OP(LDiv) {
       bind(&LongDIVRet);
     break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", Size); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(LUDiv) {
   auto Op = IROp->C<IR::IROp_LUDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  auto Size = OpSize;
-  switch (Size) {
+  // So you can have up to a 128bit divide from x86-64=
+  switch (OpSize) {
     case 2: {
-      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
-      udiv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Header.Args[2].ID()));
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Lower.ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Upper.ID()), 16, 16);
+      udiv(GetReg<RA_32>(Node), TMP1.W(), GetReg<RA_32>(Op->Divisor.ID()));
     break;
     }
     case 4: {
-      mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), 32, 32);
-      udiv(GetReg<RA_64>(Node), TMP1, GetReg<RA_64>(Op->Header.Args[2].ID()));
+      mov(TMP1, GetReg<RA_64>(Op->Lower.ID()));
+      bfi(TMP1, GetReg<RA_64>(Op->Upper.ID()), 32, 32);
+      udiv(GetReg<RA_64>(Node), TMP1, GetReg<RA_64>(Op->Divisor.ID()));
     break;
     }
     case 8: {
-      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
-      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      auto Upper64Bit = GetReg<RA_64>(Op->Upper.ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Lower.ID());
+      auto Divisor = GetReg<RA_64>(Op->Divisor.ID());
       Label Only64Bit{};
       Label LongDIVRet{};
 
@@ -732,22 +742,24 @@ DEF_OP(LUDiv) {
       bind(&LongDIVRet);
     break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", Size); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(LRem) {
   auto Op = IROp->C<IR::IROp_LRem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  auto Size = OpSize;
-  switch (Size) {
+  switch (OpSize) {
     case 2: {
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[2].ID());
+      auto Divisor = GetReg<RA_32>(Op->Divisor.ID());
 
-      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Lower.ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Upper.ID()), 16, 16);
       sxth(w3, Divisor);
       sdiv(TMP2.W(), TMP1.W(), w3);
 
@@ -755,10 +767,10 @@ DEF_OP(LRem) {
     break;
     }
     case 4: {
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      auto Divisor = GetReg<RA_64>(Op->Divisor.ID());
 
-      mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), 32, 32);
+      mov(TMP1, GetReg<RA_64>(Op->Lower.ID()));
+      bfi(TMP1, GetReg<RA_64>(Op->Upper.ID()), 32, 32);
       sxtw(x3, Divisor);
       sdiv(TMP2, TMP1, x3);
 
@@ -766,9 +778,9 @@ DEF_OP(LRem) {
     break;
     }
     case 8: {
-      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
-      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      auto Upper64Bit = GetReg<RA_64>(Op->Upper.ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Lower.ID());
+      auto Divisor = GetReg<RA_64>(Op->Divisor.ID());
       Label Only64Bit{};
       Label LongDIVRet{};
 
@@ -804,39 +816,42 @@ DEF_OP(LRem) {
       bind(&LongDIVRet);
     break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", Size); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(LURem) {
   auto Op = IROp->C<IR::IROp_LURem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 2: {
-      auto Divisor = GetReg<RA_32>(Op->Header.Args[2].ID());
+      auto Divisor = GetReg<RA_32>(Op->Divisor.ID());
 
-      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), 16, 16);
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Lower.ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Upper.ID()), 16, 16);
       udiv(TMP2.W(), TMP1.W(), Divisor);
       msub(GetReg<RA_32>(Node), TMP2.W(), Divisor, TMP1.W());
     break;
     }
     case 4: {
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      auto Divisor = GetReg<RA_64>(Op->Divisor.ID());
 
-      mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), 32, 32);
+      mov(TMP1, GetReg<RA_64>(Op->Lower.ID()));
+      bfi(TMP1, GetReg<RA_64>(Op->Upper.ID()), 32, 32);
       udiv(TMP2, TMP1, Divisor);
 
       msub(GetReg<RA_64>(Node), TMP2, Divisor, TMP1);
     break;
     }
     case 8: {
-      auto Upper64Bit = GetReg<RA_64>(Op->Header.Args[1].ID());
-      auto Lower64Bit = GetReg<RA_64>(Op->Header.Args[0].ID());
-      auto Divisor = GetReg<RA_64>(Op->Header.Args[2].ID());
+      auto Upper64Bit = GetReg<RA_64>(Op->Upper.ID());
+      auto Lower64Bit = GetReg<RA_64>(Op->Lower.ID());
+      auto Divisor = GetReg<RA_64>(Op->Divisor.ID());
       Label Only64Bit{};
       Label LongDIVRet{};
 
@@ -869,19 +884,22 @@ DEF_OP(LURem) {
       bind(&LongDIVRet);
     break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(Not) {
   auto Op = IROp->C<IR::IROp_Not>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 4:
-      mvn(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      mvn(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       break;
     case 8:
-      mvn(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      mvn(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported Not size: {}", OpSize);
   }
@@ -889,27 +907,28 @@ DEF_OP(Not) {
 
 DEF_OP(Popcount) {
   auto Op = IROp->C<IR::IROp_Popcount>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 0x1:
-      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Src.ID()));
       // only use lowest byte
       cnt(VTMP1.V8B(), VTMP1.V8B());
       break;
     case 0x2:
-      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Src.ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
       // only count two lowest bytes
       addp(VTMP1.V8B(), VTMP1.V8B(), VTMP1.V8B());
       break;
     case 0x4:
-      fmov(VTMP1.S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.S(), GetReg<RA_32>(Op->Src.ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
       // fmov has zero extended, unused bytes are zero
       addv(VTMP1.B(), VTMP1.V8B());
       break;
     case 0x8:
-      fmov(VTMP1.D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      fmov(VTMP1.D(), GetReg<RA_64>(Op->Src.ID()));
       cnt(VTMP1.V8B(), VTMP1.V8B());
       // fmov has zero extended, unused bytes are zero
       addv(VTMP1.B(), VTMP1.V8B());
@@ -923,9 +942,10 @@ DEF_OP(Popcount) {
 
 DEF_OP(FindLSB) {
   auto Op = IROp->C<IR::IROp_FindLSB>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   auto Dst = GetReg<RA_64>(Node);
-  auto Src = GetReg<RA_64>(Op->Header.Args[0].ID());
+  auto Src = GetReg<RA_64>(Op->Src.ID());
   if (OpSize != 8) {
     ubfx(TMP1, Src, 0, OpSize * 8);
     cmp(TMP1, 0);
@@ -943,107 +963,122 @@ DEF_OP(FindLSB) {
 
 DEF_OP(FindMSB) {
   auto Op = IROp->C<IR::IROp_FindMSB>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   auto Dst = GetReg<RA_64>(Node);
   switch (OpSize) {
     case 2:
       movz(TMP1, OpSize * 8 - 1);
-      lsl(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()), 16);
+      lsl(Dst.W(), GetReg<RA_32>(Op->Src.ID()), 16);
       orr(Dst.W(), Dst.W(), 0x8000);
       clz(Dst.W(), Dst.W());
       sub(Dst, TMP1, Dst);
     break;
     case 4:
       movz(TMP1, OpSize * 8 - 1);
-      clz(Dst.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      clz(Dst.W(), GetReg<RA_32>(Op->Src.ID()));
       sub(Dst, TMP1, Dst);
       break;
     case 8:
       movz(TMP1, OpSize * 8 - 1);
-      clz(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()));
+      clz(Dst, GetReg<RA_64>(Op->Src.ID()));
       sub(Dst, TMP1, Dst);
       break;
-    default: LOGMAN_MSG_A_FMT("Unknown FindMSB size: {}", OpSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown FindMSB size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(FindTrailingZeros) {
   auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 2:
-      rbit(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      rbit(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       orr(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0x8000);
       clz(GetReg<RA_32>(Node), GetReg<RA_32>(Node));
     break;
     case 4:
-      rbit(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      rbit(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       clz(GetReg<RA_32>(Node), GetReg<RA_32>(Node));
       break;
     case 8:
-      rbit(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      rbit(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src.ID()));
       clz(GetReg<RA_64>(Node), GetReg<RA_64>(Node));
       break;
-    default: LOGMAN_MSG_A_FMT("Unknown FindTrailingZeros size: {}", OpSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown FindTrailingZeros size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(CountLeadingZeroes) {
   auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 2:
-      lsl(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()), 16);
+      lsl(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()), 16);
       orr(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 0x8000);
       clz(GetReg<RA_32>(Node), GetReg<RA_32>(Node));
     break;
     case 4:
-      clz(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      clz(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       break;
     case 8:
-      clz(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      clz(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src.ID()));
       break;
-    default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeroes size: {}", OpSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown CountLeadingZeroes size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(Rev) {
   auto Op = IROp->C<IR::IROp_Rev>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 2:
-      rev(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      rev(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       lsr(GetReg<RA_32>(Node), GetReg<RA_32>(Node), 16);
     break;
     case 4:
-      rev(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      rev(GetReg<RA_32>(Node), GetReg<RA_32>(Op->Src.ID()));
       break;
     case 8:
-      rev(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      rev(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Src.ID()));
       break;
-    default: LOGMAN_MSG_A_FMT("Unknown REV size: {}", OpSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown REV size: {}", OpSize);
+      break;
   }
 }
 
 DEF_OP(Bfi) {
   auto Op = IROp->C<IR::IROp_Bfi>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 1:
     case 2:
     case 4: {
       auto Dst = GetReg<RA_32>(Node);
-      mov(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
-      bfi(TMP1.W(), GetReg<RA_32>(Op->Header.Args[1].ID()), Op->lsb, Op->Width);
+      mov(TMP1.W(), GetReg<RA_32>(Op->Dest.ID()));
+      bfi(TMP1.W(), GetReg<RA_32>(Op->Src.ID()), Op->lsb, Op->Width);
       ubfx(Dst, TMP1.W(), 0, OpSize * 8);
       break;
     }
     case 8:
-      mov(TMP1, GetReg<RA_64>(Op->Header.Args[0].ID()));
-      bfi(TMP1, GetReg<RA_64>(Op->Header.Args[1].ID()), Op->lsb, Op->Width);
+      mov(TMP1, GetReg<RA_64>(Op->Dest.ID()));
+      bfi(TMP1, GetReg<RA_64>(Op->Src.ID()), Op->lsb, Op->Width);
       mov(GetReg<RA_64>(Node), TMP1);
       break;
-    default: LOGMAN_MSG_A_FMT("Unknown BFI size: {}", OpSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown BFI size: {}", OpSize);
+      break;
   }
 }
 
@@ -1053,7 +1088,7 @@ DEF_OP(Bfe) {
   LOGMAN_THROW_A_FMT(Op->Width != 0, "Invalid BFE width of 0");
 
   auto Dst = GetReg<RA_64>(Node);
-  ubfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
+  ubfx(Dst, GetReg<RA_64>(Op->Src.ID()), Op->lsb, Op->Width);
 }
 
 DEF_OP(Sbfe) {
@@ -1062,7 +1097,7 @@ DEF_OP(Sbfe) {
 
   auto Dst = GetReg<RA_64>(Node);
   if (OpSize == 8) {
-    sbfx(Dst, GetReg<RA_64>(Op->Header.Args[0].ID()), Op->lsb, Op->Width);
+    sbfx(Dst, GetReg<RA_64>(Op->Src.ID()), Op->lsb, Op->Width);
   } else {
     LogMan::Msg::DFmt("Unimplemented Sbfe size");
   }
@@ -1134,21 +1169,24 @@ DEF_OP(Select) {
 
 DEF_OP(VExtractToGPR) {
   auto Op = IROp->C<IR::IROp_VExtractToGPR>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
+
   switch (OpSize) {
     case 1:
-      umov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V16B(), Op->Index);
+      umov(GetReg<RA_32>(Node), GetSrc(Op->Vector.ID()).V16B(), Op->Index);
     break;
     case 2:
-      umov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V8H(), Op->Index);
+      umov(GetReg<RA_32>(Node), GetSrc(Op->Vector.ID()).V8H(), Op->Index);
     break;
     case 4:
-      umov(GetReg<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()).V4S(), Op->Index);
+      umov(GetReg<RA_32>(Node), GetSrc(Op->Vector.ID()).V4S(), Op->Index);
     break;
     case 8:
-      umov(GetReg<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()).V2D(), Op->Index);
+      umov(GetReg<RA_64>(Node), GetSrc(Op->Vector.ID()).V2D(), Op->Index);
     break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize);
+    break;
   }
 }
 
@@ -1157,10 +1195,10 @@ DEF_OP(Float_ToGPR_ZS) {
   aarch64::Register Dst{};
   aarch64::VRegister Src{};
   if (Op->SrcElementSize == 8) {
-    Src = GetSrc(Op->Header.Args[0].ID()).D();
+    Src = GetSrc(Op->Scalar.ID()).D();
   }
   else {
-    Src = GetSrc(Op->Header.Args[0].ID()).S();
+    Src = GetSrc(Op->Scalar.ID()).S();
   }
 
   if (IROp->Size == 8) {
@@ -1179,11 +1217,11 @@ DEF_OP(Float_ToGPR_S) {
   aarch64::Register Dst{};
   aarch64::VRegister Src{};
   if (Op->SrcElementSize == 8) {
-    frinti(VTMP1.D(), GetSrc(Op->Header.Args[0].ID()).D());
+    frinti(VTMP1.D(), GetSrc(Op->Scalar.ID()).D());
     Src = VTMP1.D();
   }
   else {
-    frinti(VTMP1.S(), GetSrc(Op->Header.Args[0].ID()).S());
+    frinti(VTMP1.S(), GetSrc(Op->Scalar.ID()).S());
     Src = VTMP1.S();
   }
 
@@ -1201,10 +1239,10 @@ DEF_OP(FCmp) {
   auto Op = IROp->C<IR::IROp_FCmp>();
 
   if (Op->ElementSize == 4) {
-    fcmp(GetSrc(Op->Header.Args[0].ID()).S(), GetSrc(Op->Header.Args[1].ID()).S());
+    fcmp(GetSrc(Op->Scalar1.ID()).S(), GetSrc(Op->Scalar2.ID()).S());
   }
   else {
-    fcmp(GetSrc(Op->Header.Args[0].ID()).D(), GetSrc(Op->Header.Args[1].ID()).D());
+    fcmp(GetSrc(Op->Scalar1.ID()).D(), GetSrc(Op->Scalar2.ID()).D());
   }
   auto Dst = GetReg<RA_64>(Node);
 
