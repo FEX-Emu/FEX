@@ -76,7 +76,10 @@ public:
   OrderedNode* flagsOpSrcSigned{};
 
   FEXCore::Context::Context *CTX{};
-
+  
+  // Used during new op bringup
+  bool ShouldDump {false};
+  
   struct JumpTargetInfo {
     OrderedNode* BlockEntry;
     bool HaveEmitted;

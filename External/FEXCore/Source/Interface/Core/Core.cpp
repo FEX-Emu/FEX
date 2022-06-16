@@ -639,7 +639,8 @@ namespace FEXCore::Context {
     bool CloseAfter = false;
     const auto DumpIRStr = Thread->CTX->Config.DumpIR();
 
-    if (DumpIRStr =="stderr") {
+    // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
+    if (DumpIRStr =="stderr" || DumpIRStr =="no") {
       f = stderr;
     }
     else if (DumpIRStr =="stdout") {
@@ -816,9 +817,10 @@ namespace FEXCore::Context {
 
     IR::IREmitter *IREmitter = Thread->OpDispatcher.get();
 
+    auto ShouldDump = Thread->CTX->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDump;
     // Debug
     {
-      if (Thread->CTX->Config.DumpIR() != "no") {
+      if (ShouldDump) {
         IRDumper(Thread, IREmitter, GuestRIP, nullptr);
       }
 
@@ -832,7 +834,7 @@ namespace FEXCore::Context {
 
     // Debug
     {
-      if (Thread->CTX->Config.DumpIR() != "no") {
+      if (ShouldDump) {
         IRDumper(Thread, IREmitter, GuestRIP, Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
       }
     }
