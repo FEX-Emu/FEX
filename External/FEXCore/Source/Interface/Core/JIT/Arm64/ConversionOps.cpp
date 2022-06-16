@@ -13,22 +13,22 @@ using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(VInsGPR) {
   auto Op = IROp->C<IR::IROp_VInsGPR>();
-  mov(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  mov(GetDst(Node), GetSrc(Op->DestVector.ID()));
   switch (Op->Header.ElementSize) {
     case 1: {
-      ins(GetDst(Node).V16B(), Op->DestIdx, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V16B(), Op->DestIdx, GetReg<RA_32>(Op->Src.ID()));
     break;
     }
     case 2: {
-      ins(GetDst(Node).V8H(), Op->DestIdx, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V8H(), Op->DestIdx, GetReg<RA_32>(Op->Src.ID()));
     break;
     }
     case 4: {
-      ins(GetDst(Node).V4S(), Op->DestIdx, GetReg<RA_32>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V4S(), Op->DestIdx, GetReg<RA_32>(Op->Src.ID()));
     break;
     }
     case 8: {
-      ins(GetDst(Node).V2D(), Op->DestIdx, GetReg<RA_64>(Op->Header.Args[1].ID()));
+      ins(GetDst(Node).V2D(), Op->DestIdx, GetReg<RA_64>(Op->Src.ID()));
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -39,18 +39,18 @@ DEF_OP(VCastFromGPR) {
   auto Op = IROp->C<IR::IROp_VCastFromGPR>();
   switch (Op->Header.ElementSize) {
     case 1:
-      uxtb(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      uxtb(TMP1.W(), GetReg<RA_32>(Op->Src.ID()));
       fmov(GetDst(Node).S(), TMP1.W());
       break;
     case 2:
-      uxth(TMP1.W(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      uxth(TMP1.W(), GetReg<RA_32>(Op->Src.ID()));
       fmov(GetDst(Node).S(), TMP1.W());
       break;
     case 4:
-      fmov(GetDst(Node).S(), GetReg<RA_32>(Op->Header.Args[0].ID()).W());
+      fmov(GetDst(Node).S(), GetReg<RA_32>(Op->Src.ID()).W());
       break;
     case 8:
-      fmov(GetDst(Node).D(), GetReg<RA_64>(Op->Header.Args[0].ID()).X());
+      fmov(GetDst(Node).D(), GetReg<RA_64>(Op->Src.ID()).X());
       break;
     default: LOGMAN_MSG_A_FMT("Unknown castGPR element size: {}", Op->Header.ElementSize);
   }
@@ -58,22 +58,22 @@ DEF_OP(VCastFromGPR) {
 
 DEF_OP(Float_FromGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
-  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
   switch (Conv) {
     case 0x0404: { // Float <- int32_t
-      scvtf(GetDst(Node).S(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      scvtf(GetDst(Node).S(), GetReg<RA_32>(Op->Src.ID()));
       break;
     }
     case 0x0408: { // Float <- int64_t
-      scvtf(GetDst(Node).S(), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      scvtf(GetDst(Node).S(), GetReg<RA_64>(Op->Src.ID()));
       break;
     }
     case 0x0804: { // Double <- int32_t
-      scvtf(GetDst(Node).D(), GetReg<RA_32>(Op->Header.Args[0].ID()));
+      scvtf(GetDst(Node).D(), GetReg<RA_32>(Op->Src.ID()));
       break;
     }
     case 0x0808: { // Double <- int64_t
-      scvtf(GetDst(Node).D(), GetReg<RA_64>(Op->Header.Args[0].ID()));
+      scvtf(GetDst(Node).D(), GetReg<RA_64>(Op->Src.ID()));
       break;
     }
   }
@@ -81,14 +81,14 @@ DEF_OP(Float_FromGPR_S) {
 
 DEF_OP(Float_FToF) {
   auto Op = IROp->C<IR::IROp_Float_FToF>();
-  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      fcvt(GetDst(Node).D(), GetSrc(Op->Header.Args[0].ID()).S());
+      fcvt(GetDst(Node).D(), GetSrc(Op->Scalar.ID()).S());
       break;
     }
     case 0x0408: { // Float <- Double
-      fcvt(GetDst(Node).S(), GetSrc(Op->Header.Args[0].ID()).D());
+      fcvt(GetDst(Node).S(), GetSrc(Op->Scalar.ID()).D());
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown FCVT sizes: 0x{:x}", Conv);
@@ -99,10 +99,10 @@ DEF_OP(Vector_SToF) {
   auto Op = IROp->C<IR::IROp_Vector_SToF>();
   switch (Op->Header.ElementSize) {
     case 4:
-      scvtf(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+      scvtf(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
     break;
     case 8:
-      scvtf(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      scvtf(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", Op->Header.ElementSize);
   }
@@ -112,10 +112,10 @@ DEF_OP(Vector_FToZS) {
   auto Op = IROp->C<IR::IROp_Vector_FToZS>();
   switch (Op->Header.ElementSize) {
     case 4:
-      fcvtzs(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+      fcvtzs(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
     break;
     case 8:
-      fcvtzs(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      fcvtzs(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToZS element size: {}", Op->Header.ElementSize);
   }
@@ -125,11 +125,11 @@ DEF_OP(Vector_FToS) {
   auto Op = IROp->C<IR::IROp_Vector_FToS>();
   switch (Op->Header.ElementSize) {
     case 4:
-      frinti(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+      frinti(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
       fcvtzs(GetDst(Node).V4S(), GetDst(Node).V4S());
     break;
     case 8:
-      frinti(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      frinti(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
       fcvtzs(GetDst(Node).V2D(), GetDst(Node).V2D());
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", Op->Header.ElementSize);
@@ -142,11 +142,11 @@ DEF_OP(Vector_FToF) {
 
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      fcvtl(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2S());
+      fcvtl(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2S());
       break;
     }
     case 0x0408: { // Float <- Double
-      fcvtn(GetDst(Node).V2S(), GetSrc(Op->Header.Args[0].ID()).V2D());
+      fcvtn(GetDst(Node).V2S(), GetSrc(Op->Vector.ID()).V2D());
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv); break;
@@ -159,50 +159,50 @@ DEF_OP(Vector_FToI) {
     case FEXCore::IR::Round_Nearest.Val:
       switch (Op->Header.ElementSize) {
         case 4:
-          frintn(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          frintn(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
         break;
         case 8:
-          frintn(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          frintn(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
         break;
       }
     break;
     case FEXCore::IR::Round_Negative_Infinity.Val:
       switch (Op->Header.ElementSize) {
         case 4:
-          frintm(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          frintm(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
         break;
         case 8:
-          frintm(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          frintm(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
         break;
       }
     break;
     case FEXCore::IR::Round_Positive_Infinity.Val:
       switch (Op->Header.ElementSize) {
         case 4:
-          frintp(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          frintp(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
         break;
         case 8:
-          frintp(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          frintp(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
         break;
       }
     break;
     case FEXCore::IR::Round_Towards_Zero.Val:
       switch (Op->Header.ElementSize) {
         case 4:
-          frintz(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          frintz(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
         break;
         case 8:
-          frintz(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          frintz(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
         break;
       }
     break;
     case FEXCore::IR::Round_Host.Val:
       switch (Op->Header.ElementSize) {
         case 4:
-          frinti(GetDst(Node).V4S(), GetSrc(Op->Header.Args[0].ID()).V4S());
+          frinti(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
         break;
         case 8:
-          frinti(GetDst(Node).V2D(), GetSrc(Op->Header.Args[0].ID()).V2D());
+          frinti(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
         break;
       }
     break;
