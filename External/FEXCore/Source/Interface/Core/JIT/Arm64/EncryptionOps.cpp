@@ -14,41 +14,41 @@ using namespace vixl::aarch64;
 
 DEF_OP(AESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
-  aesimc(GetDst(Node).V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+  aesimc(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B());
 }
 
 DEF_OP(AESEnc) {
 	auto Op = IROp->C<IR::IROp_VAESEnc>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
-  mov(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+  mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aese(VTMP1.V16B(), VTMP2.V16B());
   aesmc(VTMP1.V16B(), VTMP1.V16B());
-  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Key.ID()).V16B());
 }
 
 DEF_OP(AESEncLast) {
 	auto Op = IROp->C<IR::IROp_VAESEncLast>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
-  mov(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+  mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aese(VTMP1.V16B(), VTMP2.V16B());
-  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Key.ID()).V16B());
 }
 
 DEF_OP(AESDec) {
 	auto Op = IROp->C<IR::IROp_VAESDec>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
-  mov(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+  mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aesd(VTMP1.V16B(), VTMP2.V16B());
   aesimc(VTMP1.V16B(), VTMP1.V16B());
-  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Key.ID()).V16B());
 }
 
 DEF_OP(AESDecLast) {
 	auto Op = IROp->C<IR::IROp_VAESDecLast>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
-  mov(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+  mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aesd(VTMP1.V16B(), VTMP2.V16B());
-  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Header.Args[1].ID()).V16B());
+  eor(GetDst(Node).V16B(), VTMP1.V16B(), GetSrc(Op->Key.ID()).V16B());
 }
 
 DEF_OP(AESKeyGenAssist) {
@@ -59,7 +59,7 @@ DEF_OP(AESKeyGenAssist) {
 
   // Do a "regular" AESE step
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
-  mov(VTMP1.V16B(), GetSrc(Op->Header.Args[0].ID()).V16B());
+  mov(VTMP1.V16B(), GetSrc(Op->Src.ID()).V16B());
   aese(VTMP1.V16B(), VTMP2.V16B());
 
   // Do a table shuffle to undo ShiftRows
