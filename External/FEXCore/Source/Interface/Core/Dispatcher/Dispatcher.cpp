@@ -1,4 +1,5 @@
 
+#include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -39,7 +40,7 @@ void Dispatcher::SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuS
   ctx->IdleWaitCV.notify_all();
 }
 
-ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, void *ucontext) {
+ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext) {
   // We can end up getting a signal at any point in our host state
   // Jump to a handler that saves all state so we can safely return
   uint64_t OldSP = ArchHelpers::Context::GetSp(ucontext);
@@ -64,7 +65,7 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, vo
   // Save guest state
   // We can't guarantee if registers are in context or host GPRs
   // So we need to save everything
-  memcpy(&Context->GuestState, ThreadState->CurrentFrame, sizeof(FEXCore::Core::CPUState));
+  memcpy(&Context->GuestState, Thread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
 
   // Set the new SP
   ArchHelpers::Context::SetSp(ucontext, NewSP);
@@ -81,13 +82,13 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(int Signal, vo
   Context->SigInfoLocation = 0;
 
   // Store fault to top status and then reset it
-  Context->FaultToTopAndGeneratedException = SynchronousFaultData.FaultToTopAndGeneratedException;
-  SynchronousFaultData.FaultToTopAndGeneratedException = false;
+  Context->FaultToTopAndGeneratedException = Thread->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException;
+  Thread->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException = false;
 
   return Context;
 }
 
-void Dispatcher::RestoreThreadState(void *ucontext) {
+void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext) {
   uint64_t OldSP{};
   if (CTX->Config.Core() == FEXCore::Config::CONFIG_IRJIT) {
     OldSP = ArchHelpers::Context::GetSp(ucontext);
@@ -102,13 +103,13 @@ void Dispatcher::RestoreThreadState(void *ucontext) {
   auto Context = reinterpret_cast<ArchHelpers::Context::ContextBackup*>(NewSP);
 
   // First thing, reset the guest state
-  memcpy(ThreadState->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+  memcpy(Thread->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
   // Now restore host state
   ArchHelpers::Context::RestoreContext(ucontext, Context);
 
   if (Context->UContextLocation) {
-    auto Frame = ThreadState->CurrentFrame;
+    auto Frame = Thread->CurrentFrame;
 
     if (Context->Flags &ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT) {
       // XXX: Unsupported since it needs state reconstruction
@@ -273,14 +274,14 @@ static uint32_t ConvertSignalToError(int Signal, siginfo_t *HostSigInfo) {
   return 0;
 }
 
-bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
-  auto ContextBackup = StoreThreadState(Signal, ucontext);
+bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
+  auto ContextBackup = StoreThreadState(Thread, Signal, ucontext);
 
-  auto Frame = ThreadState->CurrentFrame;
+  auto Frame = Thread->CurrentFrame;
 
   // Ref count our faults
   // We use this to track if it is safe to clear cache
-  ++ThreadState->CurrentFrame->SignalHandlerRefCounter;
+  ++Thread->CurrentFrame->SignalHandlerRefCounter;
 
   uint64_t OldPC = ArchHelpers::Context::GetPc(ucontext);
   // Set the new PC
@@ -299,7 +300,7 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   // We are going to be returning to the top of the dispatcher which will fill again
   // Otherwise we might load garbage
   if (SRAEnabled) {
-    if (IsAddressInJITCode(OldPC, false)) {
+    if (Thread->CPUBackend->IsAddressInCodeBuffer(OldPC)) {
       uint32_t IgnoreMask{};
 #ifdef _M_ARM_64
       if (Frame->InSyscallInfo != 0) {
@@ -323,11 +324,11 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
 #endif
 
       // We are in jit, SRA must be spilled
-      SpillSRA(ucontext, IgnoreMask);
+      SpillSRA(Thread, ucontext, IgnoreMask);
 
       ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT;
     } else {
-      if (!IsAddressInJITCode(OldPC, true)) {
+      if (!IsAddressInDispatcher(OldPC)) {
         // This is likely to cause issues but in some cases it isn't fatal
         // This can also happen if we have put a signal on hold, then we just reenabled the signal
         // So we are in the syscall handler
@@ -409,11 +410,11 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       *guest_siginfo = *HostSigInfo;
 
       if (ContextBackup->FaultToTopAndGeneratedException) {
-        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = SynchronousFaultData.TrapNo;
-        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = SynchronousFaultData.err_code;
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = Frame->SynchronousFaultData.TrapNo;
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = Frame->SynchronousFaultData.err_code;
 
         // Overwrite si_code
-        guest_siginfo->si_code = SynchronousFaultData.si_code;
+        guest_siginfo->si_code = Thread->CurrentFrame->SynchronousFaultData.si_code;
       }
       else {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
@@ -500,9 +501,9 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ES] = Frame->State.es;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds;
       if (ContextBackup->FaultToTopAndGeneratedException) {
-        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = SynchronousFaultData.TrapNo;
-        guest_siginfo->si_code = SynchronousFaultData.si_code;
-        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = SynchronousFaultData.err_code;
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = Frame->SynchronousFaultData.TrapNo;
+        guest_siginfo->si_code = Frame->SynchronousFaultData.si_code;
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = Frame->SynchronousFaultData.err_code;
       }
       else {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
@@ -633,44 +634,44 @@ bool Dispatcher::HandleGuestSignal(int Signal, void *info, void *ucontext, Guest
   return true;
 }
 
-bool Dispatcher::HandleSIGILL(int Signal, void *info, void *ucontext) {
+bool Dispatcher::HandleSIGILL(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
 
   if (ArchHelpers::Context::GetPc(ucontext) == SignalHandlerReturnAddress) {
-    RestoreThreadState(ucontext);
+    RestoreThreadState(Thread, ucontext);
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    --ThreadState->CurrentFrame->SignalHandlerRefCounter;
+    --Thread->CurrentFrame->SignalHandlerRefCounter;
     return true;
   }
 
   if (ArchHelpers::Context::GetPc(ucontext) == PauseReturnInstruction) {
-    RestoreThreadState(ucontext);
+    RestoreThreadState(Thread, ucontext);
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    --ThreadState->CurrentFrame->SignalHandlerRefCounter;
+    --Thread->CurrentFrame->SignalHandlerRefCounter;
     return true;
   }
 
   return false;
 }
 
-bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
-  FEXCore::Core::SignalEvent SignalReason = ThreadState->SignalReason.load();
-  auto Frame = ThreadState->CurrentFrame;
+bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+  FEXCore::Core::SignalEvent SignalReason = Thread->SignalReason.load();
+  auto Frame = Thread->CurrentFrame;
 
   if (SignalReason == FEXCore::Core::SignalEvent::Pause) {
     // Store our thread state so we can come back to this
-    StoreThreadState(Signal, ucontext);
+    StoreThreadState(Thread, Signal, ucontext);
 
-    if (SRAEnabled && IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), false)) {
+    if (SRAEnabled && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
       // We are in jit, SRA must be spilled
       ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddressSpillSRA);
     } else {
       if (SRAEnabled) {
         // We are in non-jit, SRA is already spilled
-        LOGMAN_THROW_A_FMT(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true),
+        LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
                            "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddress);
@@ -681,9 +682,9 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    ++ThreadState->CurrentFrame->SignalHandlerRefCounter;
+    ++Thread->CurrentFrame->SignalHandlerRefCounter;
 
-    ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
+    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
   }
 
@@ -694,16 +695,16 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
 
     // Our ref counting doesn't matter anymore
-    ThreadState->CurrentFrame->SignalHandlerRefCounter = 0;
+    Thread->CurrentFrame->SignalHandlerRefCounter = 0;
 
     // Set the new PC
-    if (SRAEnabled && IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), false)) {
+    if (SRAEnabled && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
       // We are in jit, SRA must be spilled
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddressSpillSRA);
     } else {
       if (SRAEnabled) {
         // We are in non-jit, SRA is already spilled
-        LOGMAN_THROW_A_FMT(!IsAddressInJITCode(ArchHelpers::Context::GetPc(ucontext), true),
+        LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
                            "Signals in dispatcher have unsynchronized context");
       }
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
@@ -712,24 +713,24 @@ bool Dispatcher::HandleSignalPause(int Signal, void *info, void *ucontext) {
     // We need to be a little bit careful here
     // If we were already paused (due to GDB) and we are immediately stopping (due to gdb kill)
     // Then we need to ensure we don't double decrement our idle thread counter
-    if (ThreadState->RunningEvents.ThreadSleeping) {
+    if (Thread->RunningEvents.ThreadSleeping) {
       // If the thread was sleeping then its idle counter was decremented
       // Reincrement it here to not break logic
-      ++ThreadState->CTX->IdleWaitRefCount;
+      ++Thread->CTX->IdleWaitRefCount;
     }
 
-    ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
+    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::Return) {
-    RestoreThreadState(ucontext);
+    RestoreThreadState(Thread, ucontext);
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
-    --ThreadState->CurrentFrame->SignalHandlerRefCounter;
+    --Thread->CurrentFrame->SignalHandlerRefCounter;
 
-    ThreadState->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
+    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
     return true;
   }
 
@@ -746,30 +747,6 @@ uint64_t Dispatcher::GetCompileBlockPtr() {
   PtrCast CompileBlockPtr;
   CompileBlockPtr.ClassPtr = &FEXCore::Context::Context::CompileBlockJit;
   return CompileBlockPtr.Data;
-}
-
-void Dispatcher::RemoveCodeBuffer(uint8_t* start_to_remove) {
-  for (auto iter = CodeBuffers.begin(); iter != CodeBuffers.end(); ++iter) {
-    auto [start, end] = *iter;
-    if (start == reinterpret_cast<uint64_t>(start_to_remove)) {
-      CodeBuffers.erase(iter);
-      return;
-    }
-  }
-}
-
-bool Dispatcher::IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher) const {
-  for (auto [start, end] : CodeBuffers) {
-    if (Address >= start && Address < end) {
-      return true;
-    }
-  }
-
-  if (IncludeDispatcher && IsAddressInDispatcher(Address)) {
-    return true;
-  }
-
-  return false;
 }
 
 }

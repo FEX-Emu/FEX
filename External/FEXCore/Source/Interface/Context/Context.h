@@ -5,6 +5,7 @@
 #include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/IR/AOTIR.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -43,6 +44,7 @@ namespace CPU {
   class Arm64JITCore;
   class X86JITCore;
   class InterpreterCore;
+  class Dispatcher;
 }
 namespace HLE {
 struct SyscallArguments;
@@ -129,6 +131,7 @@ namespace FEXCore::Context {
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+    std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
     CustomCPUFactoryType CustomCPUFactory;
     FEXCore::Context::ExitHandler CustomExitHandler;
@@ -327,7 +330,7 @@ namespace FEXCore::Context {
      *
      * InitializeCompiler is called inside of CreateThread, so you likely don't need this
      */
-    void InitializeCompiler(FEXCore::Core::InternalThreadState* State);
+    void InitializeCompiler(FEXCore::Core::InternalThreadState* Thread);
 
     void WaitForIdleWithTimeout();
 
@@ -348,6 +351,7 @@ namespace FEXCore::Context {
     
     std::shared_mutex CustomIRMutex;
     std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args);

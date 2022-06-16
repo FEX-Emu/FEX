@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
@@ -66,10 +67,6 @@ public:
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void ClearCache() override;
-
-  bool IsAddressInJITCode(uint64_t Address, bool IncludeDispatcher = true) const override {
-    return Dispatcher->IsAddressInJITCode(Address, IncludeDispatcher);
-  }
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
 
@@ -197,7 +194,7 @@ private:
   bool GetSamplingData {true};
 #endif
 
-  static uint64_t ExitFunctionLink(X86JITCore* code, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
+  static uint64_t ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();

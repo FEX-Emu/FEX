@@ -17,6 +17,7 @@ $end_info$
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
+#include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/HLE/Thunks/Thunks.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
@@ -194,18 +195,21 @@ namespace FEXCore::Context {
   }
 
   FEXCore::Core::InternalThreadState* Context::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
-    // Initialize the CPU core signal handlers
+    // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
       FEXCore::CPU::InitializeInterpreterSignalHandlers(this);
+      FEXCore::CPU::GetInterpreterDispatcherConfig(DispatcherConfig);
       break;
 #endif
     case FEXCore::Config::CONFIG_IRJIT:
 #if (_M_X86_64 && JIT_X86_64)
       FEXCore::CPU::InitializeX86JITSignalHandlers(this);
+      FEXCore::CPU::GetX86JITDispatcherConfig(DispatcherConfig);
 #elif (_M_ARM_64 && JIT_ARM64)
       FEXCore::CPU::InitializeArm64JITSignalHandlers(this);
+      FEXCore::CPU::GetArm64JITDispatcherConfig(DispatcherConfig);
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif
@@ -216,6 +220,30 @@ namespace FEXCore::Context {
     default:
       ERROR_AND_DIE_FMT("Unknown core configuration");
       break;
+    }
+
+#if (_M_X86_64)
+    Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
+#elif (_M_ARM_64)
+    Dispatcher = FEXCore::CPU::Dispatcher::CreateArm64(this, DispatcherConfig);
+#else
+    ERROR_AND_DIE_FMT("FEXCore has been compiled with an unknown target");
+#endif
+
+    // Initialize common signal handlers
+    
+    auto PauseHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+      return Thread->CTX->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
+    };
+
+    SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, PauseHandler, true);
+
+    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
+      return Thread->CTX->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
+    };
+
+    for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
+      SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
     }
 
     // Initialize GDBServer after the signal handlers are installed
@@ -257,7 +285,7 @@ namespace FEXCore::Context {
   }
 
   void Context::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-    Thread->CPUBackend->CallbackPtr(Thread->CurrentFrame, RIP);
+    Thread->CTX->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
   }
 
   void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
@@ -482,50 +510,51 @@ namespace FEXCore::Context {
     Thread->StartRunning.NotifyAll();
   }
 
-  void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* State) {
-    State->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
-    State->OpDispatcher->SetMultiblock(Config.Multiblock);
-    State->LookupCache = std::make_unique<FEXCore::LookupCache>(this);
-    State->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
-    State->PassManager = std::make_unique<FEXCore::IR::PassManager>();
-    State->PassManager->RegisterExitHandler([this]() {
+  void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
+    Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
+    Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
+    Thread->LookupCache = std::make_unique<FEXCore::LookupCache>(this);
+    Thread->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
+    Thread->PassManager = std::make_unique<FEXCore::IR::PassManager>();
+    Thread->PassManager->RegisterExitHandler([this]() {
         Stop(false /* Ignore current thread */);
     });
 
-    State->CTX = this;
+    Thread->CurrentFrame->Pointers.Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
+    Thread->CurrentFrame->Pointers.Common.L2Pointer = Thread->LookupCache->GetPagePointer();
 
-    #if _M_ARM_64
-    bool DoSRA = State->CTX->Config.StaticRegisterAllocation;
-    #else
-    bool DoSRA = false;
-    #endif
+    Dispatcher->InitThreadPointers(Thread);
 
-    State->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
-    State->PassManager->AddDefaultValidationPasses();
+    Thread->CTX = this;
 
-    State->PassManager->RegisterSyscallHandler(SyscallHandler);
+    bool DoSRA = Config.StaticRegisterAllocation && DispatcherConfig.SupportsStaticRegisterAllocation;
+
+    Thread->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
+    Thread->PassManager->AddDefaultValidationPasses();
+
+    Thread->PassManager->RegisterSyscallHandler(SyscallHandler);
 
     // Create CPU backend
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
-      State->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, State);
+      Thread->CPUBackend = FEXCore::CPU::CreateInterpreterCore(this, Thread);
       break;
 #endif
     case FEXCore::Config::CONFIG_IRJIT:
-      State->PassManager->InsertRegisterAllocationPass(DoSRA);
+      Thread->PassManager->InsertRegisterAllocationPass(DoSRA);
 
 #if (_M_X86_64 && JIT_X86_64)
-      State->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, State);
+      Thread->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, Thread);
 #elif (_M_ARM_64 && JIT_ARM64)
-      State->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, State);
+      Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif
 
       break;
     case FEXCore::Config::CONFIG_CUSTOM:
-      State->CPUBackend = CustomCPUFactory(this, State);
+      Thread->CPUBackend = CustomCPUFactory(this, Thread);
       break;
     default:
       ERROR_AND_DIE_FMT("Unknown core configuration");
@@ -1056,7 +1085,7 @@ namespace FEXCore::Context {
 
       Thread->RunningEvents.Running = true;
 
-      Thread->CPUBackend->ExecuteDispatch(Thread->CurrentFrame);
+      Thread->CTX->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
       Thread->RunningEvents.Running = false;
     }

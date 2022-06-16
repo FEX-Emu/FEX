@@ -6,7 +6,7 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "CommonCore/HostFactory.h"
+#include "TestHarnessRunner/HostRunner.h"
 #include "HarnessHelpers.h"
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -137,12 +137,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-  auto CTX = FEXCore::Context::CreateNewContext();
-
-  FEXCore::Context::SetCustomCPUBackendFactory(CTX, HostFactory::CPUCreationFactory);
-
-  FEXCore::Context::InitializeContext(CTX);
+  FEX_CONFIG_OPT(Core, CORE);
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
    
@@ -162,46 +157,69 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
-                                             : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
-
-  auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-  auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
-
-  if (!Loader.MapMemory(Mapper, Unmapper)) {
-    // failed to map
-    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-    return -ENOEXEC;
-  }
-
+    
   bool DidFault = false;
+
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-      DidFault = true;
+    DidFault = true;
     return false;
   }, true);
 
-  FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
-  FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
-  bool Result1 = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
-
-  if (!Result1)
-    return 1;
-
-  FEXCore::Context::RunUntilExit(CTX);
-
-  // Just re-use compare state. It also checks against the expected values in config.
   FEXCore::Core::CPUState State;
-  FEXCore::Context::GetCPUState(CTX, &State);
+  if (Core != FEXCore::Config::CONFIG_CUSTOM) {
+    // Run through FEX
+    FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
+
+    auto CTX = FEXCore::Context::CreateNewContext();
+    
+    FEXCore::Context::InitializeContext(CTX);
+
+    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
+                                               : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+
+    auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
+    auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
+
+    if (!Loader.MapMemory(Mapper, Unmapper)) {
+      // failed to map
+      LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      return -ENOEXEC;
+    }
+
+    FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
+    FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
+    bool Result1 = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+
+    if (!Result1)
+      return 1;
+
+    FEXCore::Context::RunUntilExit(CTX);
+
+    // Just re-use compare state. It also checks against the expected values in config.
+    FEXCore::Context::GetCPUState(CTX, &State);
+
+    SyscallHandler.reset();
+    FEXCore::Context::DestroyContext(CTX);
+    FEXCore::Context::ShutdownStaticTables();
+  } else {
+    // Run as host
+    SignalDelegation->RegisterTLSState((FEXCore::Core::InternalThreadState*)UINTPTR_MAX);
+    if (!Loader.MapMemory(mmap, munmap)) {
+      // failed to map
+      LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      return -ENOEXEC;
+    }
+
+    RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
+  }
+
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr);
 
   LogMan::Msg::IFmt("Faulted? {}", DidFault ? "Yes" : "No");
   LogMan::Msg::IFmt("Passed? {}", Passed ? "Yes" : "No");
 
-  SyscallHandler.reset();
+  
   SignalDelegation.reset();
-
-  FEXCore::Context::DestroyContext(CTX);
-  FEXCore::Context::ShutdownStaticTables();
 
   FEXCore::Config::Shutdown();
 

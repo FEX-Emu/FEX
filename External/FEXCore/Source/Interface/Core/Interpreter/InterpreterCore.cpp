@@ -40,50 +40,23 @@ class CPUBackend;
 
 InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
-  , CTX {ctx} {
+  {
 
-  DispatcherConfig config;
-  config.InterpreterDispatch = true;
-
-#if defined(_M_X86_64)
-  Dispatcher = std::make_unique<X86Dispatcher>(ctx, Thread, config);
-#elif defined(_M_ARM_64)
-  Dispatcher = std::make_unique<Arm64Dispatcher>(ctx, Thread, config);
-#else
-  #error missing arch
-#endif
-
-  DispatchPtr = Dispatcher->DispatchPtr;
-  CallbackPtr = Dispatcher->CallbackPtr;
 
   auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
 
-  Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR); 
-  Interpreter.CallbackReturn = Dispatcher->ReturnPtr;
+  Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR);
 
   ClearCache();
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
-  CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
-  }, true);
 
 #ifdef _M_ARM_64
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
   }, true);
 #endif
-
-  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-    InterpreterCore *Core = reinterpret_cast<InterpreterCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-  };
-
-  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
-  }
 }
 
 void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
@@ -103,7 +76,8 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
 }
 
 void InterpreterCore::ClearCache() {
-  auto CodeBuffer = GetEmptyCodeBuffer();
+  // Calling this one is needed to setup the initial CurrentCodeBuffer
+  [[maybe_unused]] auto CodeBuffer = GetEmptyCodeBuffer();
   BufferUsed = 0;
 }
 
@@ -115,4 +89,9 @@ void InitializeInterpreterSignalHandlers(FEXCore::Context::Context *CTX) {
   InterpreterCore::InitializeSignalHandlers(CTX);
 }
 
+void GetInterpreterDispatcherConfig(DispatcherConfig &config) {
+  config = DispatcherConfig {
+    .InterpreterDispatch = true
+  };
+}
 }

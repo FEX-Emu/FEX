@@ -335,15 +335,6 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   RegisterVectorHandlers();
   RegisterEncryptionHandlers();
 
-  DispatcherConfig config;
-  config.ExitFunctionLink = reinterpret_cast<uintptr_t>(&ExitFunctionLink);
-  config.ExitFunctionLinkThis = reinterpret_cast<uintptr_t>(this);
-  config.StaticRegisterAssignment = ctx->Config.StaticRegisterAllocation;
-
-  Dispatcher = std::make_unique<X86Dispatcher>(CTX, ThreadState, config);
-  DispatchPtr = Dispatcher->DispatchPtr;
-  CallbackPtr = Dispatcher->CallbackPtr;
-
   {
     auto &Common = ThreadState->CurrentFrame->Pointers.Common;
     
@@ -370,23 +361,8 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
 void X86JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleSIGILL(Signal, info, ucontext);
+    return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
-
-  CTX->SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleSignalPause(Signal, info, ucontext);
-  }, true);
-
-  auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-    X86JITCore *Core = reinterpret_cast<X86JITCore*>(Thread->CPUBackend.get());
-    return Core->Dispatcher->HandleGuestSignal(Signal, info, ucontext, GuestAction, GuestStack);
-  };
-
-  for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-    CTX->SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
-  }
 }
 
 X86JITCore::~X86JITCore() {
@@ -600,7 +576,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
     je(RunBlock);
     // Else we need to pause now
-    mov(rax, Dispatcher->ThreadPauseHandlerAddress);
+    mov(rax, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
     jmp(rax);
     ud2();
 
@@ -744,7 +720,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   return GuestEntry;
 }
 
-uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
@@ -752,10 +728,10 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 
   if (!HostCode) {
     Thread->CurrentFrame->State.rip = GuestRip;
-    return core->Dispatcher->AbsoluteLoopTopAddress;
+    return Frame->Pointers.Common.DispatcherLoopTop;
   }
 
-  auto LinkerAddress = core->Dispatcher->ExitFunctionLinkerAddress;
+  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
   Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;
@@ -767,6 +743,12 @@ uint64_t X86JITCore::ExitFunctionLink(X86JITCore *core, FEXCore::Core::CpuStateF
 
 std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return std::make_unique<X86JITCore>(ctx, Thread);
+}
+
+void GetX86JITDispatcherConfig(DispatcherConfig &config) {
+  config = DispatcherConfig {
+    .ExitFunctionLink = reinterpret_cast<uintptr_t>(&X86JITCore_ExitFunctionLink)
+  };
 }
 
 void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX) {

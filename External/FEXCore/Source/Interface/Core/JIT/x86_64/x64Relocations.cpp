@@ -4,6 +4,7 @@ tags: backend|x86-64
 desc: relocation logic of the x86-64 splatter backend
 $end_info$
 */
+#include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
 #include "Interface/HLE/Thunks/Thunks.h"
 
@@ -11,7 +12,7 @@ namespace FEXCore::CPU {
 uint64_t X86JITCore::GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op) {
   switch (Op) {
     case FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER:
-      return Dispatcher->ExitFunctionLinkerAddress;
+      return ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker;
     break;
     default:
       ERROR_AND_DIE_FMT("Unknown named symbol literal: {}", static_cast<uint32_t>(Op));

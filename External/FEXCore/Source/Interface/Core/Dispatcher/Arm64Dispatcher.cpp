@@ -38,12 +38,12 @@ using namespace vixl::aarch64;
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE x28
 
-Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config)
-  : FEXCore::CPU::Dispatcher(ctx, Thread), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
-  SRAEnabled = config.StaticRegisterAssignment;
+Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config)
+  : FEXCore::CPU::Dispatcher(ctx), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
+  SRAEnabled = config.SupportsStaticRegisterAllocation && ctx->Config.StaticRegisterAllocation;
   SetAllowAssembler(true);
 
-  DispatchPtr = GetCursorAddress<CPUBackend::AsmDispatch>();
+  DispatchPtr = GetCursorAddress<AsmDispatch>();
 
   // while (true) {
   //    Ptr = FindBlock(RIP)
@@ -53,12 +53,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   //    Ptr();
   // }
 
-  Literal l_PagePtr {Thread->LookupCache->GetPagePointer()};
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
   Literal l_CompileBlock {GetCompileBlockPtr()};
   Literal l_ExitFunctionLink {config.ExitFunctionLink};
-  Literal l_ExitFunctionLinkThis {config.ExitFunctionLinkThis};
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -115,10 +113,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
 
   // This is the block cache lookup routine
   // It matches what is going on it LookupCache.h::FindBlock
-  ldr(x0, &l_PagePtr);
+  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L2Pointer)));
 
   // Mask the address by the virtual address size so we can check for aliases
-  uint64_t VirtualMemorySize = Thread->LookupCache->GetVirtualMemorySize();
+  uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
   if (std::popcount(VirtualMemorySize) == 1) {
     and_(x3, RipReg, VirtualMemorySize - 1);
   }
@@ -233,9 +231,8 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
       svc(0);
     }
 
-    ldr(x0, &l_ExitFunctionLinkThis);
-    mov(x1, STATE);
-    mov(x2, lr);
+    mov(x0, STATE);
+    mov(x1, lr);
 
     ldr(x3, &l_ExitFunctionLink);
     blr(x3);
@@ -347,15 +344,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     if (SRAEnabled)
       SpillStaticRegs();
 
-    LoadConstant(x0, reinterpret_cast<uint64_t>(&SynchronousFaultData));
     LoadConstant(w1, 1);
-    strb(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, FaultToTopAndGeneratedException)));
+    strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)));
     LoadConstant(w1, X86State::X86_TRAPNO_OF);
-    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, TrapNo)));
+    str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)));
     LoadConstant(w1, 0x80);
-    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, si_code)));
+    str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)));
     LoadConstant(x1, 0);
-    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, err_code)));
+    str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)));
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP
@@ -401,7 +397,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     // On return to the thunk, the thunk can get whatever its return value is from the thread context depending on ABI handling on its end
     // When the thunk itself returns, it'll do its regular return logic there
     // void ReentrantCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
-    CallbackPtr = GetCursorAddress<CPUBackend::JITCallback>();
+    CallbackPtr = GetCursorAddress<JITCallback>();
 
     // We expect the thunk to have previously pushed the registers it was using
     PushCalleeSavedRegisters();
@@ -437,14 +433,8 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     b(&LoopTop);
   }
 
-  // Long division helpers
-  uint64_t LUDIVHandler{};
-  uint64_t LDIVHandler{};
-  uint64_t LUREMHandler{};
-  uint64_t LREMHandler{};
-
   {
-    LUDIVHandler = GetCursorAddress<uint64_t>();
+    LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
 
@@ -463,7 +453,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    LDIVHandler = GetCursorAddress<uint64_t>();
+    LDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
 
@@ -482,7 +472,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    LUREMHandler = GetCursorAddress<uint64_t>();
+    LUREMHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
 
@@ -501,7 +491,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   }
 
   {
-    LREMHandler = GetCursorAddress<uint64_t>();
+    LREMHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
 
@@ -519,12 +509,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
     ret();
   }
 
-  place(&l_PagePtr);
   place(&l_CTX);
   place(&l_Sleep);
   place(&l_CompileBlock);
   place(&l_ExitFunctionLink);
-  place(&l_ExitFunctionLinkThis);
 
 
   FinalizeCode();
@@ -540,41 +528,47 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
   }
-
-  // Setup dispatcher specific pointers that need to be accessed from JIT code
-  {
-    auto &Common = ThreadState->CurrentFrame->Pointers.Common;
-
-    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
-    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
-    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
-    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
-    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
-    Common.SignalReturnHandler = SignalHandlerReturnAddress;
-    Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
-
-    auto &AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
-    AArch64.LUDIVHandler = LUDIVHandler;
-    AArch64.LDIVHandler = LDIVHandler;
-    AArch64.LUREMHandler = LUREMHandler;
-    AArch64.LREMHandler = LREMHandler;
-  }
 }
 
-void Arm64Dispatcher::SpillSRA(void *ucontext, uint32_t IgnoreMask) {
+void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
   for(int i = 0; i < SRA64.size(); i++) {
     if (IgnoreMask & (1U << SRA64[i].GetCode())) {
       // Skip this one, it's already spilled
       continue;
     }
-    ThreadState->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
+    Thread->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
   }
 
   for(int i = 0; i < SRAFPR.size(); i++) {
     auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].GetCode());
-    memcpy(&ThreadState->CurrentFrame->State.xmm[i][0], &FPR, sizeof(__uint128_t));
+    memcpy(&Thread->CurrentFrame->State.xmm[i][0], &FPR, sizeof(__uint128_t));
   }
+}
+
+void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {
+// Setup dispatcher specific pointers that need to be accessed from JIT code
+  {
+    auto &Common = Thread->CurrentFrame->Pointers.Common;
+
+    Common.DispatcherLoopTop = AbsoluteLoopTopAddress;
+    Common.DispatcherLoopTopFillSRA = AbsoluteLoopTopAddressFillSRA;
+    Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
+    Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
+    Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
+    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
+    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.SignalReturnHandler = SignalHandlerReturnAddress;
+
+    auto &AArch64 = Thread->CurrentFrame->Pointers.AArch64;
+    AArch64.LUDIVHandler = LUDIVHandlerAddress;
+    AArch64.LDIVHandler = LDIVHandlerAddress;
+    AArch64.LUREMHandler = LUREMHandlerAddress;
+    AArch64.LREMHandler = LREMHandlerAddress;
+  }
+}
+
+std::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::Context *CTX, DispatcherConfig &Config) {
+  return std::make_unique<Arm64Dispatcher>(CTX, Config);
 }
 
 }

@@ -17,7 +17,8 @@ namespace FEXCore::CPU {
 
 class X86Dispatcher final : public Dispatcher, public Xbyak::CodeGenerator {
   public:
-    X86Dispatcher(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread, DispatcherConfig &config);
+    X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config);
+    void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) override;
 
     virtual ~X86Dispatcher() override;
 };
