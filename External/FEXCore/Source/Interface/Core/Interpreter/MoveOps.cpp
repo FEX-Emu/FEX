@@ -14,15 +14,15 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
-  uintptr_t Src = GetSrc<uintptr_t>(Data->SSAData, Op->Header.Args[0]);
+  const auto Src = GetSrc<uintptr_t>(Data->SSAData, Op->Pair);
   memcpy(GDP,
     reinterpret_cast<void*>(Src + Op->Header.Size * Op->Element), Op->Header.Size);
 }
 
 DEF_OP(CreateElementPair) {
   auto Op = IROp->C<IR::IROp_CreateElementPair>();
-  void *Src_Lower = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src_Upper = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  const void *Src_Lower = GetSrc<void*>(Data->SSAData, Op->Lower);
+  const void *Src_Upper = GetSrc<void*>(Data->SSAData, Op->Upper);
 
   uint8_t *Dst = GetDest<uint8_t*>(Data->SSAData, Node);
 
@@ -32,9 +32,9 @@ DEF_OP(CreateElementPair) {
 
 DEF_OP(Mov) {
   auto Op = IROp->C<IR::IROp_Mov>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Header.Args[0]), OpSize);
+  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Value), OpSize);
 }
 
 #undef DEF_OP
