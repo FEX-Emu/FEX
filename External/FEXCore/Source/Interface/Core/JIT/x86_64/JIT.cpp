@@ -300,6 +300,27 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
   }
 }
 
+static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+  auto Thread = Frame->Thread;
+  auto GuestRip = record[1];
+
+  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
+
+  if (!HostCode) {
+    Thread->CurrentFrame->State.rip = GuestRip;
+    return Frame->Pointers.Common.DispatcherLoopTop;
+  }
+
+  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
+  Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    // undo the link
+    record[0] = LinkerAddress;
+  });
+
+  record[0] = HostCode;
+  return HostCode;
+}
+
 void X86JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
@@ -350,6 +371,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&X86JITCore_ExitFunctionLink);
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
@@ -547,7 +569,7 @@ std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::G
   return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
 }
 
-void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
@@ -555,32 +577,18 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   this->RAData = RAData;
 
   // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = SSACount * 16;
+  uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
   if ((getSize() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState);
+    CTX->ClearCodeCache(ThreadState);
   }
 
-	void *GuestEntry = getCurr<void*>();
+	auto GuestEntry = getCurr<uint8_t*>();
   CursorEntry = getSize();
   this->IR = IR;
 
-  if (CTX->GetGdbServerStatus()) {
-    Label RunBlock;
-
-    // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-    // This happens when single stepping
-    static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-    mov(rax, reinterpret_cast<uint64_t>(CTX));
-
-    // If the value == 0 then branch to the top
-    cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
-    je(RunBlock);
-    // Else we need to pause now
-    mov(rax, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
-    jmp(rax);
-    ud2();
-
-    L(RunBlock);
+  if (GDBEnabled) {
+    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);
+    setSize(getSize() + GDBSize);
   }
 
   LOGMAN_THROW_A_FMT(RAData != nullptr, "Needs RA");
@@ -720,35 +728,12 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   return GuestEntry;
 }
 
-static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
-  auto Thread = Frame->Thread;
-  auto GuestRip = record[1];
-
-  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
-
-  if (!HostCode) {
-    Thread->CurrentFrame->State.rip = GuestRip;
-    return Frame->Pointers.Common.DispatcherLoopTop;
-  }
-
-  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-  Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
-    // undo the link
-    record[0] = LinkerAddress;
-  });
-
-  record[0] = HostCode;
-  return HostCode;
-}
-
 std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return std::make_unique<X86JITCore>(ctx, Thread);
 }
 
-void GetX86JITDispatcherConfig(DispatcherConfig &config) {
-  config = DispatcherConfig {
-    .ExitFunctionLink = reinterpret_cast<uintptr_t>(&X86JITCore_ExitFunctionLink)
-  };
+CPUBackendFeatures GetX86JITBackendFeatures() {
+  return CPUBackendFeatures { };
 }
 
 void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX) {

@@ -52,7 +52,7 @@ public:
   [[nodiscard]] void *CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,
                                   FEXCore::Core::DebugData *DebugData,
-                                  FEXCore::IR::RegisterAllocationData *RAData) override;
+                                  FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -208,7 +208,7 @@ private:
   /**
   * @brief Current guest RIP entrypoint
   */
-  uint64_t GuestEntry{};
+  uint8_t *GuestEntry{};
 
   using OpHandler = void (Arm64JITCore::*)(IR::IROp_Header *IROp, IR::NodeID Node);
   std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers {};

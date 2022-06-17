@@ -15,8 +15,10 @@ namespace FEXCore::CPU {
 
 class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
   public:
-    Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config);
+    Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config);
     void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) override;
+    size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) override;
+    size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) override;
 
   protected:
     void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) override;
@@ -27,6 +29,7 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     uint64_t LDIVHandlerAddress{};
     uint64_t LUREMHandlerAddress{};
     uint64_t LREMHandlerAddress{};
+    DispatcherConfig config;
 };
 
 }

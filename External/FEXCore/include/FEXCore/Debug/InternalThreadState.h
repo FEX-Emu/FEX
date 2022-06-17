@@ -42,7 +42,7 @@ namespace FEXCore::Core {
   };
 
   struct DebugDataSubblock {
-    uintptr_t HostCodeStart;
+    uint32_t HostCodeOffset;
     uint32_t HostCodeSize;
   };
 

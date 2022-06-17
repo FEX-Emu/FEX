@@ -30,6 +30,9 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#define STATE_PTR(STATE_TYPE, FIELD) \
+  MemOperand(STATE, offsetof(FEXCore::Core::STATE_TYPE, FIELD))
+
 namespace FEXCore::CPU {
 
 using namespace vixl;
@@ -38,9 +41,9 @@ using namespace vixl::aarch64;
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE x28
 
-Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config)
-  : FEXCore::CPU::Dispatcher(ctx), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
-  SRAEnabled = config.SupportsStaticRegisterAllocation && ctx->Config.StaticRegisterAllocation;
+Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
+  : FEXCore::CPU::Dispatcher(ctx), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
+  , config(config) {
   SetAllowAssembler(true);
 
   DispatchPtr = GetCursorAddress<AsmDispatch>();
@@ -56,7 +59,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
   Literal l_CompileBlock {GetCompileBlockPtr()};
-  Literal l_ExitFunctionLink {config.ExitFunctionLink};
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -69,11 +71,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
   add(x0, sp, 0);
-  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)));
+  str(x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
 
   AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
 
-  if (SRAEnabled) {
+  if (config.StaticRegisterAllocation) {
     FillStaticRegs();
   }
 
@@ -90,11 +92,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
 
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
+  ldr(x2, STATE_PTR(CpuStateFrame, State.rip));
   auto RipReg = x2;
 
   // L1 Cache
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
+  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
   and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
   add(x0, x0, Operand(x3, Shift::LSL, 4));
@@ -102,18 +104,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   cmp(x0, RipReg);
   b(&FullLookup, Condition::ne);
 
-  if (!config.InterpreterDispatch) {
-    br(x3);
-  } else {
-    b(&CallBlock);
-  }
+  br(x3);
 
   // L1C check failed, do a full lookup
   bind(&FullLookup);
 
   // This is the block cache lookup routine
   // It matches what is going on it LookupCache.h::FindBlock
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L2Pointer)));
+  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
 
   // Mask the address by the virtual address size so we can check for aliases
   uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
@@ -155,46 +153,21 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
+      ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
       and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
       add(x0, x0, Operand(x1, Shift::LSL, 4));
       stp(x3, x2, MemOperand(x0));
 
       // Jump to the block
-      if (!config.InterpreterDispatch) {
-        br(x3);
-      } else {
-        bind(&CallBlock);
-        mov(x0, STATE);
-        mov(x1, x3);
-        ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Interpreter.FragmentExecuter)));
-        blr(x3);
-
-        if (CTX->GetGdbServerStatus()) {
-          // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-          // This happens when single stepping
-
-          static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-          ldr(x0, &l_CTX);
-          ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
-          // If the value == 0 then branch to the top
-          cbz(x0, &LoopTop);
-          // Else we need to pause now
-          b(&ThreadPauseHandler);
-        } else {
-          // Unconditionally loop to the top
-          // We will only stop on error when compiling a block or signal
-          b(&LoopTop);
-        }
-      }
+      br(x3);
     }
   }
 
   {
     bind(&ExitSpillSRA);
     ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
     ThreadStopHandlerAddress = GetCursorAddress<uint64_t>();
@@ -209,7 +182,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   constexpr bool SignalSafeCompile = true;
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
     if (SignalSafeCompile) {
@@ -234,7 +207,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
     mov(x0, STATE);
     mov(x1, lr);
 
-    ldr(x3, &l_ExitFunctionLink);
+    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
     blr(x3);
 
     if (SignalSafeCompile) {
@@ -255,7 +228,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
       mov(x0, x4);
     }
 
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       FillStaticRegs();
     br(x0);
   }
@@ -264,7 +237,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   {
     bind(&NoBlock);
 
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
     if (SignalSafeCompile) {
@@ -311,7 +284,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
       add(sp, sp, 16);
     }
 
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       FillStaticRegs();
 
     b(&LoopTop);
@@ -330,7 +303,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
     // Needs to be distinct from the SignalHandlerReturnAddress
     UnimplementedInstructionAddress = GetCursorAddress<uint64_t>();
 
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
     hlt(0);
@@ -341,17 +314,17 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
     // Needs to be distinct from the SignalHandlerReturnAddress
     OverflowExceptionInstructionAddress = GetCursorAddress<uint64_t>();
 
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
     LoadConstant(w1, 1);
-    strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)));
+    strb(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException));
     LoadConstant(w1, X86State::X86_TRAPNO_OF);
-    str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)));
+    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.TrapNo));
     LoadConstant(w1, 0x80);
-    str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)));
+    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.si_code));
     LoadConstant(x1, 0);
-    str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)));
+    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.err_code));
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP
@@ -362,7 +335,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
 
   {
     ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
     bind(&ThreadPauseHandler);
@@ -406,27 +379,27 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
     mov(STATE, x0);
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
+    ldr(w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
     add(w2, w2, 1);
-    str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
+    str(w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
     LoadConstant(x0, CTX->X86CodeGen.CallbackReturn);
 
-    ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
+    ldr(x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
     sub(x2, x2, 16);
-    str(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
+    str(x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
 
     // Store the trampoline to the guest stack
     // Guest stack is now correctly misaligned after a regular call instruction
     str(x0, MemOperand(x2));
 
     // Store RIP to the context state
-    str(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
+    str(x1, STATE_PTR(CpuStateFrame, State.rip));
 
     // load static regs
-    if (SRAEnabled)
+    if (config.StaticRegisterAllocation)
       FillStaticRegs();
 
     // Now go back to the regular dispatcher loop
@@ -438,7 +411,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
 
     PushDynamicRegsAndLR();
 
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIV)));
+    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
 
     SpillStaticRegs();
     blr(x3);
@@ -457,7 +430,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
 
     PushDynamicRegsAndLR();
 
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIV)));
+    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
 
     SpillStaticRegs();
     blr(x3);
@@ -476,7 +449,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
 
     PushDynamicRegsAndLR();
 
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREM)));
+    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
 
     SpillStaticRegs();
     blr(x3);
@@ -495,7 +468,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
 
     PushDynamicRegsAndLR();
 
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREM)));
+    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
 
     SpillStaticRegs();
     blr(x3);
@@ -512,7 +485,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   place(&l_CTX);
   place(&l_Sleep);
   place(&l_CompileBlock);
-  place(&l_ExitFunctionLink);
 
 
   FinalizeCode();
@@ -528,6 +500,62 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfi
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
   }
+}
+
+size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
+
+  *GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxGDBPauseCheckSize);
+
+  aarch64::Label RunBlock;
+
+  // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+  // This happens when single stepping
+
+  static_assert(sizeof(FEXCore::Context::Context::Config.RunningMode) == 4, "This is expected to be size of 4");
+  ldr(x0, STATE_PTR(CpuStateFrame, Thread)); // Get thread
+  ldr(x0, MemOperand(x0, offsetof(FEXCore::Core::InternalThreadState, CTX))); // Get Context
+  ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
+
+  // If the value == 0 then we don't need to stop
+  cbz(w0, &RunBlock);
+  {
+    // Make sure RIP is syncronized to the context
+    LoadConstant(x0, GuestRIP);
+    str(x0, STATE_PTR(CpuStateFrame, State.rip));
+
+    // Stop the thread
+    ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
+    br(x0);
+  }
+  bind(&RunBlock);
+  FinalizeCode();
+
+  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, GetBuffer()->GetCursorOffset());
+  return GetBuffer()->GetCursorOffset();
+}
+
+size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
+  LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
+  
+  *GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+
+  aarch64::Label InlineIRData;
+
+  mov(x0, STATE);
+  adr(x1, &InlineIRData);
+
+  ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
+  blr(x3);
+
+  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+  br(x0);
+
+  bind(&InlineIRData);
+
+  FinalizeCode();
+
+  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, GetBuffer()->GetCursorOffset());
+  return GetBuffer()->GetCursorOffset();
 }
 
 void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
@@ -567,7 +595,7 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::Context *CTX, DispatcherConfig &Config) {
+std::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::Context *CTX, const DispatcherConfig &Config) {
   return std::make_unique<Arm64Dispatcher>(CTX, Config);
 }
 

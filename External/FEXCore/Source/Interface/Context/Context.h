@@ -351,6 +351,7 @@ namespace FEXCore::Context {
     
     std::shared_mutex CustomIRMutex;
     std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    FEXCore::CPU::CPUBackendFeatures BackendFeatures;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
 
