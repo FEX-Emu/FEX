@@ -20,99 +20,90 @@ DEF_OP(F80LOADFCW) {
 
 DEF_OP(F80ADD) {
   auto Op = IROp->C<IR::IROp_F80Add>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FADD(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FADD(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80SUB) {
   auto Op = IROp->C<IR::IROp_F80Sub>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FSUB(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FSUB(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80MUL) {
   auto Op = IROp->C<IR::IROp_F80Mul>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FMUL(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FMUL(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80DIV) {
   auto Op = IROp->C<IR::IROp_F80Div>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FDIV(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FDIV(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80FYL2X) {
   auto Op = IROp->C<IR::IROp_F80FYL2X>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FYL2X(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FYL2X(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80ATAN) {
   auto Op = IROp->C<IR::IROp_F80ATAN>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FATAN(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FATAN(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80FPREM1) {
   auto Op = IROp->C<IR::IROp_F80FPREM1>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FREM1(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FREM1(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80FPREM) {
   auto Op = IROp->C<IR::IROp_F80FPREM>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FREM(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FREM(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80SCALE) {
   auto Op = IROp->C<IR::IROp_F80SCALE>();
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FSCALE(Src1, Src2);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
+  const auto Tmp = X80SoftFloat::FSCALE(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80CVT) {
   auto Op = IROp->C<IR::IROp_F80CVT>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
 
   switch (OpSize) {
     case 4: {
@@ -131,9 +122,9 @@ DEF_OP(F80CVT) {
 
 DEF_OP(F80CVTINT) {
   auto Op = IROp->C<IR::IROp_F80CVTInt>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
 
   switch (OpSize) {
     case 2: {
@@ -160,13 +151,13 @@ DEF_OP(F80CVTTO) {
 
   switch (Op->SrcSize) {
     case 4: {
-      float Src = *GetSrc<float *>(Data->SSAData, Op->Header.Args[0]);
+      float Src = *GetSrc<float *>(Data->SSAData, Op->X80Src);
       X80SoftFloat Tmp = Src;
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
     case 8: {
-      double Src = *GetSrc<double *>(Data->SSAData, Op->Header.Args[0]);
+      double Src = *GetSrc<double *>(Data->SSAData, Op->X80Src);
       X80SoftFloat Tmp = Src;
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
@@ -180,13 +171,13 @@ DEF_OP(F80CVTTOINT) {
 
   switch (Op->SrcSize) {
     case 2: {
-      int16_t Src = *GetSrc<int16_t*>(Data->SSAData, Op->Header.Args[0]);
+      int16_t Src = *GetSrc<int16_t*>(Data->SSAData, Op->Src);
       X80SoftFloat Tmp = Src;
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
     }
     case 4: {
-      int32_t Src = *GetSrc<int32_t*>(Data->SSAData, Op->Header.Args[0]);
+      int32_t Src = *GetSrc<int32_t*>(Data->SSAData, Op->Src);
       X80SoftFloat Tmp = Src;
       memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
       break;
@@ -197,77 +188,73 @@ DEF_OP(F80CVTTOINT) {
 
 DEF_OP(F80ROUND) {
   auto Op = IROp->C<IR::IROp_F80Round>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FRNDINT(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FRNDINT(Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80F2XM1) {
   auto Op = IROp->C<IR::IROp_F80F2XM1>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::F2XM1(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::F2XM1(Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80TAN) {
   auto Op = IROp->C<IR::IROp_F80TAN>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FTAN(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FTAN(Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80SQRT) {
   auto Op = IROp->C<IR::IROp_F80SQRT>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FSQRT(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FSQRT(Src);
 
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80SIN) {
   auto Op = IROp->C<IR::IROp_F80SIN>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FSIN(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FSIN(Src);
+
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80COS) {
   auto Op = IROp->C<IR::IROp_F80COS>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FCOS(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FCOS(Src);
+
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80XTRACT_EXP) {
   auto Op = IROp->C<IR::IROp_F80XTRACT_EXP>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FXTRACT_EXP(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FXTRACT_EXP(Src);
+
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80XTRACT_SIG) {
   auto Op = IROp->C<IR::IROp_F80XTRACT_SIG>();
-  X80SoftFloat Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Tmp;
-  Tmp = X80SoftFloat::FXTRACT_SIG(Src);
+  const auto Src = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src);
+  const auto Tmp = X80SoftFloat::FXTRACT_SIG(Src);
+
   memcpy(GDP, &Tmp, sizeof(X80SoftFloat));
 }
 
 DEF_OP(F80CMP) {
   auto Op = IROp->C<IR::IROp_F80Cmp>();
   uint32_t ResultFlags{};
-  X80SoftFloat Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]);
-  X80SoftFloat Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[1]);
+  const auto Src1 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src1);
+  const auto Src2 = *GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src2);
   bool eq, lt, nan;
   X80SoftFloat::FCMP(Src1, Src2, &eq, &lt, &nan);
   if (Op->Flags & (1 << IR::FCMP_FLAG_LT) &&
@@ -288,7 +275,7 @@ DEF_OP(F80CMP) {
 
 DEF_OP(F80BCDLOAD) {
   auto Op = IROp->C<IR::IROp_F80BCDLoad>();
-  uint8_t *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[0]);
+  const uint8_t *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->X80Src);
   uint64_t BCD{};
   // We walk through each uint8_t and pull out the BCD encoding
   // Each 4bit split is a digit
@@ -323,7 +310,7 @@ DEF_OP(F80BCDLOAD) {
 
 DEF_OP(F80BCDSTORE) {
   auto Op = IROp->C<IR::IROp_F80BCDStore>();
-  X80SoftFloat Src1 = X80SoftFloat::FRNDINT(*GetSrc<X80SoftFloat*>(Data->SSAData, Op->Header.Args[0]));
+  X80SoftFloat Src1 = X80SoftFloat::FRNDINT(*GetSrc<X80SoftFloat*>(Data->SSAData, Op->X80Src));
   bool Negative = Src1.Sign;
 
   // Clear the Sign bit
@@ -358,74 +345,74 @@ DEF_OP(F80BCDSTORE) {
 
 DEF_OP(F64SIN) {
   auto Op = IROp->C<IR::IROp_F64SIN>();
-  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Tmp = sin(Src);
+  const double Src = *GetSrc<double*>(Data->SSAData, Op->Src);
+  const double Tmp = sin(Src);
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64COS) {
   auto Op = IROp->C<IR::IROp_F64COS>();
-  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Tmp = cos(Src);
+  const double Src = *GetSrc<double*>(Data->SSAData, Op->Src);
+  const double Tmp = cos(Src);
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64TAN) {
   auto Op = IROp->C<IR::IROp_F64TAN>();
-  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Tmp = tan(Src);
+  const double Src = *GetSrc<double*>(Data->SSAData, Op->Src);
+  const double Tmp = tan(Src);
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64F2XM1) {
   auto Op = IROp->C<IR::IROp_F64F2XM1>();
-  double Src = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Tmp = exp2(Src) - 1.0;
+  const double Src = *GetSrc<double*>(Data->SSAData, Op->Src);
+  const double Tmp = exp2(Src) - 1.0;
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64ATAN) {
   auto Op = IROp->C<IR::IROp_F64ATAN>();
-  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double Tmp = atan2(Src1, Src2);
+  const double Src1 = *GetSrc<double*>(Data->SSAData, Op->Src1);
+  const double Src2 = *GetSrc<double*>(Data->SSAData, Op->Src2);
+  const double Tmp = atan2(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64FPREM) {
   auto Op = IROp->C<IR::IROp_F64FPREM>();
-  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double Tmp = fmod(Src1, Src2);
+  const double Src1 = *GetSrc<double*>(Data->SSAData, Op->Src1);
+  const double Src2 = *GetSrc<double*>(Data->SSAData, Op->Src2);
+  const double Tmp = fmod(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64FPREM1) {
   auto Op = IROp->C<IR::IROp_F64FPREM1>();
-  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double Tmp = remainder(Src1, Src2);
+  const double Src1 = *GetSrc<double*>(Data->SSAData, Op->Src1);
+  const double Src2 = *GetSrc<double*>(Data->SSAData, Op->Src2);
+  const double Tmp = remainder(Src1, Src2);
 
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64FYL2X) {
   auto Op = IROp->C<IR::IROp_F64FYL2X>();
-  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double Tmp = Src2 * log2(Src1);
+  const double Src1 = *GetSrc<double*>(Data->SSAData, Op->Src);
+  const double Src2 = *GetSrc<double*>(Data->SSAData, Op->Src2);
+  const double Tmp = Src2 * log2(Src1);
 
   memcpy(GDP, &Tmp, sizeof(double));
 }
 
 DEF_OP(F64SCALE) {
   auto Op = IROp->C<IR::IROp_F64SCALE>();
-  double Src1 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[0]);
-  double Src2 = *GetSrc<double*>(Data->SSAData, Op->Header.Args[1]);
-  double trunc = (double)(int64_t)(Src2); //truncate
-  double Tmp = Src1 * exp2(trunc);
+  const double Src1 = *GetSrc<double*>(Data->SSAData, Op->Src1);
+  const double Src2 = *GetSrc<double*>(Data->SSAData, Op->Src2);
+  const double trunc = (double)(int64_t)(Src2); //truncate
+  const double Tmp = Src1 * exp2(trunc);
 
   memcpy(GDP, &Tmp, sizeof(double));
 }
