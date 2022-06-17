@@ -24,15 +24,15 @@ public:
 };
 
 bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
-  const auto begin = offsetof(FEXCore::Core::CPUState, gregs[0]);
-  const auto end = offsetof(FEXCore::Core::CPUState, gregs[16]);
+  const auto begin = offsetof(Core::CPUState, gregs[0]);
+  const auto end = offsetof(Core::CPUState, gregs[16]);
 
   if (Offset >= begin && Offset < end) {
-    const auto reg = (Offset - begin) / 8;
+    const auto reg = (Offset - begin) / Core::CPUState::GPR_REG_SIZE;
     LOGMAN_THROW_A_FMT(Class == IR::GPRClass, "unexpected Class {}", Class);
 
     // 0..15 -> 16 in total
-    return reg < 16;
+    return reg < Core::CPUState::NUM_GPRS;
   }
 
   return false;
@@ -43,11 +43,11 @@ bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
   const auto end = offsetof(FEXCore::Core::CPUState, xmm[16][0]);
 
   if (Offset >= begin && Offset < end) {
-    const auto reg = (Offset - begin) / 16;
+    const auto reg = (Offset - begin) / Core::CPUState::XMM_REG_SIZE;
     LOGMAN_THROW_A_FMT(Class == IR::FPRClass || (AllowGpr && Class == IR::GPRClass), "unexpected Class {}, AllowGpr {}", Class, AllowGpr);
 
     // 0..15 -> 16 in total
-    return reg < 16;
+    return reg < Core::CPUState::NUM_XMMS;
   }
 
   return false;

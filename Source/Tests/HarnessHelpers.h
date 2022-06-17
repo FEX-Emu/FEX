@@ -101,14 +101,14 @@ namespace FEX::HarnessHelper {
     MatchMask >>= 1;
 
     // GPRS
-    for (unsigned i = 0; i < 16; ++i, MatchMask >>= 1) {
+    for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i, MatchMask >>= 1) {
       if (MatchMask & 1) {
         CheckGPRs("GPR" + std::to_string(i), State1.gregs[i], State2.gregs[i]);
       }
     }
 
     // XMM
-    for (unsigned i = 0; i < 16; ++i, MatchMask >>= 1) {
+    for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
       if (MatchMask & 1) {
         CheckGPRs("XMM0_" + std::to_string(i), State1.xmm[i][0], State2.xmm[i][0]);
         CheckGPRs("XMM1_" + std::to_string(i), State1.xmm[i][1], State2.xmm[i][1]);

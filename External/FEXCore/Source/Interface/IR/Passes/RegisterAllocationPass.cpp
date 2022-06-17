@@ -560,9 +560,11 @@ namespace {
     // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
     auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
       if (StaticClass == GPRFixedClass) {
-        return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0); // We need more meta info to support not-size-of-reg
+        // We need more meta info to support not-size-of-reg
+        return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0);
       } else if (StaticClass == FPRFixedClass) {
-        return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0); // We need more meta info to support not-size-of-reg
+        // We need more meta info to support not-size-of-reg
+        return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0);
       } else {
         LOGMAN_THROW_A_FMT(false, "Unexpected static class {}", StaticClass);
       }
@@ -578,10 +580,10 @@ namespace {
         auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
-          auto reg = (Offset - beginGpr) / 8;
+          auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return PhysicalRegister(GPRFixedClass, reg);
         } else if (Offset >= beginFpr && Offset < endFpr) {
-          auto reg = (Offset - beginFpr) / 16;
+          auto reg = (Offset - beginFpr) / Core::CPUState::XMM_REG_SIZE;
           return PhysicalRegister(FPRFixedClass, reg);
         } else {
           LOGMAN_THROW_A_FMT(false, "Unexpected Offset {}", Offset);
@@ -602,10 +604,10 @@ namespace {
         auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
         if (Offset >= beginGpr && Offset < endGpr) {
-          auto reg = (Offset - beginGpr) / 8;
+          auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return &StaticMaps[reg];
         } else if (Offset >= beginFpr && Offset < endFpr) {
-          auto reg = (Offset - beginFpr) / 16;
+          auto reg = (Offset - beginFpr) / Core::CPUState::XMM_REG_SIZE;
           return &StaticMaps[GprSize + reg];
         } else {
           LOGMAN_THROW_A_FMT(false, "Unexpected offset {}", Offset);

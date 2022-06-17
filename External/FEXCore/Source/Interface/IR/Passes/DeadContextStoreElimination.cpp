@@ -107,11 +107,11 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
           offsetof(FEXCore::Core::CPUState, gregs[0]) + sizeof(FEXCore::Core::CPUState::gregs[0]) * i,
-          sizeof(FEXCore::Core::CPUState::gregs[0]),
+          FEXCore::Core::CPUState::GPR_REG_SIZE,
         },
         DefaultAccess[1],
         FEXCore::IR::InvalidClass,
@@ -127,11 +127,11 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
           offsetof(FEXCore::Core::CPUState, xmm[0][0]) + sizeof(FEXCore::Core::CPUState::xmm[0]) * i,
-          sizeof(FEXCore::Core::CPUState::xmm[0]),
+          FEXCore::Core::CPUState::XMM_REG_SIZE,
         },
         DefaultAccess[3],
         FEXCore::IR::InvalidClass,
@@ -192,11 +192,11 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-    for (size_t i = 0; i < (sizeof(FEXCore::Core::CPUState::flags) / sizeof(FEXCore::Core::CPUState::flags[0])); ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
           offsetof(FEXCore::Core::CPUState, flags[0]) + sizeof(FEXCore::Core::CPUState::flags[0]) * i,
-          sizeof(FEXCore::Core::CPUState::flags[0]),
+          FEXCore::Core::CPUState::FLAG_SIZE,
         },
         DefaultAccess[10],
         FEXCore::IR::InvalidClass,
@@ -212,11 +212,11 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-    for (size_t i = 0; i < 8; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
           offsetof(FEXCore::Core::CPUState, mm[0][0]) + sizeof(FEXCore::Core::CPUState::mm[0]) * i,
-          sizeof(FEXCore::Core::CPUState::mm[0]),
+          FEXCore::Core::CPUState::MM_REG_SIZE
         },
         DefaultAccess[12],
         FEXCore::IR::InvalidClass,
@@ -224,7 +224,7 @@ namespace {
     }
 
     // GDTs
-    for (size_t i = 0; i < 32; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GDTS; ++i) {
       ContextClassification->emplace_back(ContextMemberInfo{
         ContextMemberClassification {
           offsetof(FEXCore::Core::CPUState, gdt[0]) + sizeof(FEXCore::Core::CPUState::gdt[0]) * i,
@@ -286,12 +286,12 @@ namespace {
     };
     size_t Offset = 0;
     SetAccess(Offset++, DefaultAccess[0]);
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
       SetAccess(Offset++, DefaultAccess[1]);
     }
     SetAccess(Offset++, DefaultAccess[2]);
 
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
       SetAccess(Offset++, DefaultAccess[3]);
     }
 
@@ -303,17 +303,17 @@ namespace {
     SetAccess(Offset++, DefaultAccess[9]);
 
 
-    for (size_t i = 0; i < (sizeof(FEXCore::Core::CPUState::flags) / sizeof(FEXCore::Core::CPUState::flags[0])); ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
       SetAccess(Offset++, DefaultAccess[10]);
     }
 
     SetAccess(Offset++, DefaultAccess[11]);
 
-    for (size_t i = 0; i < 8; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       SetAccess(Offset++, DefaultAccess[12]);
     }
 
-    for (size_t i = 0; i < 32; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GDTS; ++i) {
       SetAccess(Offset++, DefaultAccess[13]);
     }
 
@@ -623,7 +623,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         auto Op = IROp->CW<IR::IROp_InvalidateFlags>();
 
         // Loop through non-reserved flag stores and eliminate unused ones.
-        for (unsigned F = 0; F < 32; F++) {
+        for (size_t F = 0; F < Core::CPUState::NUM_EFLAG_BITS; F++) {
           if (!(Op->Flags & (1ULL << F))) {
             continue;
           }

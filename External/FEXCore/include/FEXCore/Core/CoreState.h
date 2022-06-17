@@ -28,6 +28,20 @@ namespace FEXCore::Core {
     } gdt[32];
     uint16_t FCW;
     uint16_t FTW;
+
+    static constexpr size_t FLAG_SIZE = sizeof(flags[0]);
+    static constexpr size_t GDT_SIZE = sizeof(gdt[0]);
+    static constexpr size_t GPR_REG_SIZE = sizeof(gregs[0]);
+    static constexpr size_t XMM_REG_SIZE = sizeof(xmm[0]);
+    static constexpr size_t MM_REG_SIZE = sizeof(mm[0]);
+
+    // Only the first 32 bits are defined.
+    static constexpr size_t NUM_EFLAG_BITS = 32;
+    static constexpr size_t NUM_FLAGS = sizeof(flags) / FLAG_SIZE;
+    static constexpr size_t NUM_GDTS = sizeof(gdt) / GDT_SIZE;
+    static constexpr size_t NUM_GPRS = sizeof(gregs) / GPR_REG_SIZE;
+    static constexpr size_t NUM_XMMS = sizeof(xmm) / XMM_REG_SIZE;
+    static constexpr size_t NUM_MMS = sizeof(mm) / MM_REG_SIZE;
   };
   static_assert(offsetof(CPUState, xmm) % 16 == 0, "xmm needs to be 128bit aligned!");
 
