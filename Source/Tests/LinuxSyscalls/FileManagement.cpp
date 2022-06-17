@@ -149,7 +149,7 @@ void FileManager::LoadThunkDatabase(bool Global) {
 
             auto ReplacePrefix = [](std::string_view String, const char *Prefix, const char *NewPrefix) -> std::pair<bool, std::string> {
               auto it = String.find(Prefix);
-              if (it != String.size()) {
+              if (it != String.npos) {
                 size_t SizeOfOldPrefix = strlen(Prefix);
                 std::string Replacement {String};
                 Replacement.replace(it, SizeOfOldPrefix, NewPrefix);
