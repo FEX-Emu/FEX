@@ -7,6 +7,7 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/x86_64/JITClass.h"
+#include "FEXCore/Debug/InternalThreadState.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -19,6 +20,12 @@ $end_info$
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
+
+DEF_OP(GuestOpcode) {
+  auto Op = IROp->C<IR::IROp_GuestOpcode>();
+  // metadata
+  DebugData->GuestOpcodes.push_back({Op->GuestEntryOffset, getCurr<uint8_t*>() - GuestEntry});
+}
 
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
@@ -178,6 +185,7 @@ void X86JITCore::RegisterMiscHandlers() {
   REGISTER_OP(CODEBLOCK,  NoOp);
   REGISTER_OP(BEGINBLOCK, NoOp);
   REGISTER_OP(ENDBLOCK,   NoOp);
+  REGISTER_OP(GUESTOPCODE, GuestOpcode);
   REGISTER_OP(FENCE,      Fence);
   REGISTER_OP(BREAK,      Break);
   REGISTER_OP(PHI,        NoOp);

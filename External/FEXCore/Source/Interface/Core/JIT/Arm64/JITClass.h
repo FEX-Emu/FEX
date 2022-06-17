@@ -147,6 +147,7 @@ private:
   void EmitDetectionString();
   IR::RegisterAllocationPass *RAPass;
   IR::RegisterAllocationData *RAData;
+  FEXCore::Core::DebugData *DebugData;
 
   void ResetStack();
   /**
@@ -348,7 +349,7 @@ private:
   DEF_OP(CacheLineZero);
 
   ///< Misc ops
-  DEF_OP(EndBlock);
+  DEF_OP(GuestOpcode);
   DEF_OP(Fence);
   DEF_OP(Break);
   DEF_OP(Phi);

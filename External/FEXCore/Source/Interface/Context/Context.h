@@ -49,6 +49,8 @@ namespace CPU {
 namespace HLE {
 struct SyscallArguments;
 class SyscallHandler;
+class SourcecodeResolver;
+struct SourcecodeMap;
 }
 }
 
@@ -107,6 +109,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
       FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
+      FEX_CONFIG_OPT(GDBSymbols, GDBSYMBOLS);
       FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
       FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
@@ -130,6 +133,7 @@ namespace FEXCore::Context {
     
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
+    FEXCore::HLE::SourcecodeResolver *SourcecodeResolver{};
     std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
     std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 

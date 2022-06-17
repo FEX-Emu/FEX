@@ -7,6 +7,7 @@ desc: Glues Frontend, OpDispatcher and IR Opts & Compilation, LookupCache, Dispa
 $end_info$
 */
 
+#include <cstdint>
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Core.h"
@@ -33,6 +34,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -50,7 +52,6 @@ $end_info$
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <fstream>
@@ -74,6 +75,7 @@ $end_info$
 #include <utility>
 #include <vector>
 #include <xxhash.h>
+
 
 namespace FEXCore::CPU {
   bool CreateCPUCore(FEXCore::Context::Context *CTX) {
@@ -770,6 +772,8 @@ namespace FEXCore::Context {
           DecodedInfo = &Block.DecodedInstructions[i];
           bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
+          Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
+          
           if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
             auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
@@ -896,15 +900,23 @@ namespace FEXCore::Context {
         auto CompiledCode = Thread->CPUBackend->RelocateJITObjectCode(GuestRIP, CodeCacheEntry);
         if (CompiledCode) {
           return {
-            .CompiledCode = CompiledCode,
-            .IRData      = nullptr, // No IR data generated
-            .DebugData   = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
-            .RAData      = nullptr, // No RA data generated
-            .GeneratedIR = false, // nullptr here ensures IR cache mechanisms won't run
-            .StartAddr   = 0, // Unused
-            .Length      = 0, // Unused
+              .CompiledCode = CompiledCode,
+              .IRData = nullptr,    // No IR data generated
+              .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
+              .RAData = nullptr,    // No RA data generated
+              .GeneratedIR = false, // nullptr here ensures IR cache mechanisms won't run
+              .StartAddr = 0,       // Unused
+              .Length = 0,          // Unused
           };
         }
+      }
+    }
+
+    if (SourcecodeResolver && Config.GDBSymbols()) {
+      auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+      if (AOTIRCacheEntry.Entry && !AOTIRCacheEntry.Entry->ContainsCode) {
+        AOTIRCacheEntry.Entry->SourcecodeMap =
+            SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
       }
     }
 
@@ -1002,20 +1014,20 @@ namespace FEXCore::Context {
       auto FragmentBasePtr = reinterpret_cast<uint8_t *>(CodePtr);
 
       if (DebugData) {
-        auto GuestRIPLookup = this->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+        auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
 
         if (DebugData->Subblocks.size()) {
           for (auto& Subblock: DebugData->Subblocks) {
             auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
             if (GuestRIPLookup.Entry) {
-              Symbols.Register(BlockBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
+              Symbols.Register(BlockBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.VAFileStart);
             } else {
-            Symbols.Register(BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
-          }
+              Symbols.Register(BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
+            }
           }
         } else {
           if (GuestRIPLookup.Entry) {
-            Symbols.Register(FragmentBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
+            Symbols.Register(FragmentBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.VAFileStart);
         } else {
           Symbols.Register(FragmentBasePtr, GuestRIP, DebugData->HostCodeSize);
           }

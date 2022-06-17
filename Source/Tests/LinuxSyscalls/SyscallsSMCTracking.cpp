@@ -173,7 +173,7 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
 
   if (Entry != _SyscallHandler->VMATracking.VMAs.end()) {
     rv.Entry = Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr;
-    rv.Offset = Entry->second.Base - Entry->second.Offset;
+    rv.VAFileStart = Entry->second.Base - Entry->second.Offset;
   }
 
   return rv;

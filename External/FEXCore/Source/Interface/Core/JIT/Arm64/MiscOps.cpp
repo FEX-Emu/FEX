@@ -6,11 +6,18 @@ $end_info$
 
 #include <syscall.h>
 #include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "FEXCore/Debug/InternalThreadState.h"
 
 namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
+
+DEF_OP(GuestOpcode) {
+  auto Op = IROp->C<IR::IROp_GuestOpcode>();
+  // metadata
+  DebugData->GuestOpcodes.push_back({Op->GuestEntryOffset, GetCursorAddress<uint8_t*>() - GuestEntry});
+}
 
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
@@ -232,6 +239,7 @@ void Arm64JITCore::RegisterMiscHandlers() {
   REGISTER_OP(CODEBLOCK,  NoOp);
   REGISTER_OP(BEGINBLOCK, NoOp);
   REGISTER_OP(ENDBLOCK,   NoOp);
+  REGISTER_OP(GUESTOPCODE, GuestOpcode);
   REGISTER_OP(FENCE,      Fence);
   REGISTER_OP(BREAK,      Break);
   REGISTER_OP(PHI,        NoOp);

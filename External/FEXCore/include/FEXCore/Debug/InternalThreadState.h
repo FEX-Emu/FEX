@@ -46,6 +46,11 @@ namespace FEXCore::Core {
     uint32_t HostCodeSize;
   };
 
+  struct DebugDataGuestOpcode {
+    uint64_t GuestEntryOffset;
+    ptrdiff_t HostEntryOffset;
+  };
+
   /**
    * @brief Contains debug data for a block of code for later debugger analysis
    *
@@ -54,6 +59,7 @@ namespace FEXCore::Core {
   struct DebugData {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     std::vector<DebugDataSubblock> Subblocks;
+    std::vector<DebugDataGuestOpcode> GuestOpcodes;
     std::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 
