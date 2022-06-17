@@ -103,14 +103,14 @@ namespace CPUState {
           "R15",
         };
 
-        for (unsigned i = 0; i < 16; ++i) {
+        for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
           DiffCol(gregs[i]);
           ImGui::Text("%s: 0x%016lx", GPRNames[i], State.gregs[i]);
           DiffPop(gregs[i]);
         }
       }
       if (ImGui::CollapsingHeader("XMMs")) {
-        for (unsigned i = 0; i < 16; ++i) {
+        for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
           DiffCol(xmm[i][0]);
           ImGui::Text("%2d: 0x%016lx - 0x%016lx", i, State.xmm[i][0], State.xmm[i][1]);
           DiffPop(xmm[i][0]);

@@ -125,7 +125,7 @@ static std::string hexstring(std::istringstream &ss, int delm) {
   return ret;
 }
 
-static std::string encodeHex(unsigned char *data, size_t length) {
+static std::string encodeHex(const unsigned char *data, size_t length) {
   std::ostringstream ss;
 
   for (size_t i=0; i < length; i++) {
@@ -251,15 +251,15 @@ void GdbServer::SendACK(std::ostream &stream, bool NACK) {
 }
 
 struct FEX_PACKED GDBContextDefinition {
-  uint64_t gregs[16];
+  uint64_t gregs[Core::CPUState::NUM_GPRS];
   uint64_t rip;
   uint32_t eflags;
   uint32_t cs, ss, ds, es, fs, gs;
-  X80SoftFloat mm[8];
+  X80SoftFloat mm[Core::CPUState::NUM_MMS];
   uint32_t fctrl;
   uint32_t fstat;
   uint32_t dummies[6];
-  uint64_t xmm[16][2];
+  uint64_t xmm[Core::CPUState::NUM_XMMS][2];
   uint32_t mxcsr;
 };
 
@@ -288,12 +288,12 @@ std::string GdbServer::readRegs() {
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
   memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
 
-  for (size_t i = 0; i < 32; ++i) {
+  for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
     uint64_t Flag = state.flags[i];
     GDB.eflags |= (Flag << i);
   }
 
-  for (size_t i = 0; i < 8; ++i) {
+  for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm));
   }
 
@@ -346,7 +346,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const std::string& packet) {
   }
   else if (addr == offsetof(GDBContextDefinition, eflags)) {
     uint32_t eflags{};
-    for (size_t i = 0; i < 32; ++i) {
+    for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
       uint64_t Flag = state.flags[i];
       eflags |= (Flag << i);
     }
@@ -382,7 +382,9 @@ GdbServer::HandledPacketType GdbServer::readReg(const std::string& packet) {
   }
   else if (addr >= offsetof(GDBContextDefinition, xmm[0][0]) &&
            addr < offsetof(GDBContextDefinition, xmm[16][0])) {
-    return {encodeHex((unsigned char *)(&state.xmm[(addr - offsetof(GDBContextDefinition, xmm[0][0])) / 16][0]), 16), HandledPacketType::TYPE_ACK};
+    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / Core::CPUState::XMM_REG_SIZE;
+    const auto *Data = (unsigned char *)&state.xmm[XmmIndex][0];
+    return {encodeHex(Data, Core::CPUState::XMM_REG_SIZE), HandledPacketType::TYPE_ACK};
   }
   else if (addr == offsetof(GDBContextDefinition, mxcsr)) {
     uint32_t Empty{};
@@ -424,7 +426,7 @@ std::string buildTargetXML() {
       // We want to just memcpy our x86 state to gdb, so we tell it the ordering.
 
       // GPRs
-      for (int i=0; i < 16; i++) {
+      for (uint32_t i = 0; i < Core::CPUState::NUM_GPRS; i++) {
         reg(FEXCore::Core::GetGRegName(i), "int64", 64);
       }
 
@@ -481,7 +483,7 @@ std::string buildTargetXML() {
         )";
 
       // SSE regs
-      for (int i=0; i < 16; i++) {
+      for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
           reg("xmm" + std::to_string(i), "vec128", 128);
       }
 

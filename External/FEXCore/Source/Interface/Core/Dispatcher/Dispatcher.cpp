@@ -133,7 +133,7 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
         Frame->State.rip = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP];
         // XXX: Full context setting
         uint32_t eflags = guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL];
-        for (size_t i = 0; i < 32; ++i) {
+        for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
           Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
         }
 
@@ -191,7 +191,7 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
         // XXX: Full context setting
         // First 32-bytes of flags is EFLAGS broken out
         uint32_t eflags = guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL];
-        for (size_t i = 0; i < 32; ++i) {
+        for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
           Frame->State.flags[i] = (eflags & (1U << i)) ? 1 : 0;
         }
 
@@ -219,7 +219,7 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
         FEXCore::x86::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86::_libc_fpstate*>(guest_uctx->uc_mcontext.fpregs);
 
         // Copy float registers
-        for (size_t i = 0; i < 8; ++i) {
+        for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
           // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
           memcpy(&Frame->State.mm[i], &fpstate->_st[i], 10);
         }
@@ -529,7 +529,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
 #undef COPY_REG
 
       // Copy float registers
-      for (size_t i = 0; i < 8; ++i) {
+      for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
         // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
         memcpy(&fpstate->_st[i], &Frame->State.mm[i], 10);
       }

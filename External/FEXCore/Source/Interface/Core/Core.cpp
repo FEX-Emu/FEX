@@ -178,15 +178,15 @@ namespace FEXCore::Context {
 
     // Initialize default CPU state
     NewThreadState.rip = ~0ULL;
-    for (int i = 0; i < 16; ++i) {
-      NewThreadState.gregs[i] = 0;
+    for (auto& greg : NewThreadState.gregs) {
+      greg = 0;
     }
 
-    for (int i = 0; i < 16; ++i) {
-      NewThreadState.xmm[i][0] = 0xDEADBEEFULL;
-      NewThreadState.xmm[i][1] = 0xBAD0DAD1ULL;
+    for (auto& xmm : NewThreadState.xmm) {
+      xmm[0] = 0xDEADBEEFULL;
+      xmm[1] = 0xBAD0DAD1ULL;
     }
-    memset(NewThreadState.flags, 0, 32);
+    memset(NewThreadState.flags, 0, Core::CPUState::NUM_EFLAG_BITS);
     NewThreadState.flags[1] = 1;
     NewThreadState.flags[9] = 1;
     NewThreadState.FCW = 0x37F;

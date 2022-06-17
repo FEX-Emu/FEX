@@ -149,13 +149,13 @@ public:
     OutState->gregs[FEXCore::X86State::REG_R15] = _mcontext->gregs[REG_R15];
     OutState->rip = _mcontext->gregs[REG_RIP];
 
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
       memcpy(&OutState->xmm[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
     }
 
     uint16_t CurrentOffset = (_mcontext->fpregs->swd >> 11) & 7;
 
-    for (size_t i = 0; i < 8; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       memcpy(&OutState->mm[(i + CurrentOffset) % 8], &_mcontext->fpregs->_st[i], sizeof(_mcontext->fpregs->_st[0]));
     }
 
