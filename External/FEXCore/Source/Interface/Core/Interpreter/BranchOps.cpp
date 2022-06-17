@@ -48,7 +48,7 @@ DEF_OP(ExitFunction) {
   uintptr_t* ContextPtr = reinterpret_cast<uintptr_t*>(Data->State->CurrentFrame);
 
   void *ContextData = reinterpret_cast<void*>(ContextPtr);
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->NewRIP);
 
   memcpy(ContextData, Src, OpSize);
 
@@ -57,22 +57,22 @@ DEF_OP(ExitFunction) {
 
 DEF_OP(Jump) {
   auto Op = IROp->C<IR::IROp_Jump>();
-  uintptr_t ListBegin = Data->CurrentIR->GetListData();
-  uintptr_t DataBegin = Data->CurrentIR->GetData();
+  const uintptr_t ListBegin = Data->CurrentIR->GetListData();
+  const uintptr_t DataBegin = Data->CurrentIR->GetData();
 
-  Data->BlockIterator = IR::NodeIterator(ListBegin, DataBegin, Op->Header.Args[0]);
+  Data->BlockIterator = IR::NodeIterator(ListBegin, DataBegin, Op->TargetBlock);
   Data->BlockResults.Redo = true;
 }
 
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
-  uintptr_t ListBegin = Data->CurrentIR->GetListData();
-  uintptr_t DataBegin = Data->CurrentIR->GetData();
+  const uintptr_t ListBegin = Data->CurrentIR->GetListData();
+  const uintptr_t DataBegin = Data->CurrentIR->GetData();
 
   bool CompResult;
 
-  uint64_t Src1 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp1);
-  uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp2);
+  const uint64_t Src1 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp1);
+  const uint64_t Src2 = *GetSrc<uint64_t*>(Data->SSAData, Op->Cmp2);
 
   if (Op->CompareSize == 4)
     CompResult = IsConditionTrue<uint32_t, int32_t, float>(Op->Cond.Val, Src1, Src2);
@@ -133,7 +133,7 @@ DEF_OP(Thunk) {
   auto Op = IROp->C<IR::IROp_Thunk>();
 
   auto thunkFn = Data->State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
-  thunkFn(*GetSrc<void**>(Data->SSAData, Op->Header.Args[0]));
+  thunkFn(*GetSrc<void**>(Data->SSAData, Op->ArgPtr));
 }
 
 DEF_OP(ValidateCode) {
@@ -154,8 +154,8 @@ DEF_OP(RemoveThreadCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
   uint64_t *DstPtr = GetDest<uint64_t*>(Data->SSAData, Node);
-  uint64_t Arg = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]);
-  uint64_t Leaf = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+  const uint64_t Arg = *GetSrc<uint64_t*>(Data->SSAData, Op->Function);
+  const uint64_t Leaf = *GetSrc<uint64_t*>(Data->SSAData, Op->Leaf);
 
   auto Results = Data->State->CTX->CPUID.RunFunction(Arg, Leaf);
   memcpy(DstPtr, &Results, sizeof(uint32_t) * 4);
