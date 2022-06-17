@@ -86,7 +86,7 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  uint8_t GuestRounding = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[0]);
+  const auto GuestRounding = *GetSrc<uint8_t*>(Data->SSAData, Op->RoundMode);
 #ifdef _M_ARM_64
   uint64_t HostRounding{};
   __asm volatile(R"(
@@ -126,16 +126,16 @@ DEF_OP(SetRoundingMode) {
 
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (OpSize <= 8) {
-    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]);
+    const auto Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
     LogMan::Msg::IFmt(">>>> Value in Arg: 0x{:x}, {}", Src, Src);
   }
   else if (OpSize == 16) {
-    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-    uint64_t Src0 = Src;
-    uint64_t Src1 = Src >> 64;
+    const auto Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Value);
+    const uint64_t Src0 = Src;
+    const uint64_t Src1 = Src >> 64;
     LogMan::Msg::IFmt(">>>> Value[0] in Arg: 0x{:x}, {}", Src0, Src0);
     LogMan::Msg::IFmt("     Value[1] in Arg: 0x{:x}, {}", Src1, Src1);
   }
