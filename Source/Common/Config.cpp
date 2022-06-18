@@ -71,6 +71,24 @@ namespace FEX::Config {
 
       // These layers load on initialization
       auto ProgramName = std::filesystem::path(Program).filename();
+      if (ProgramName == "wine" ||
+          ProgramName == "wine64") {
+
+        // If we are running wine or wine64 then we should check the second argument for the application name instead.
+        // wine will change the active program name with `setprogname` or `prctl(PR_SET_NAME`.
+        // Since FEX needs this data far earlier than libraries we need a different check.
+        if (Args.size() > 1) {
+          ProgramName = std::filesystem::path(Args[1]).filename();
+
+          // If this was path separated with '\' then we need to check that.
+          auto WinSeparator = ProgramName.string().find_last_of('\\');
+          if (WinSeparator != ProgramName.string().npos) {
+            // Used windows separators
+            ProgramName = ProgramName.string().substr(WinSeparator + 1);
+          }
+        }
+      }
+
       FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
       FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
       return Program;
