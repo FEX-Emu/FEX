@@ -6,6 +6,8 @@ desc: SMC/MMan Tracking
 $end_info$
 */
 
+#include "Common/FDUtils.h"
+
 #include <filesystem>
 #include <sys/shm.h>
 #include <sys/mman.h>
@@ -50,7 +52,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
 
   {
     FHU::ScopedSignalMaskWithSharedLock lk(_SyscallHandler->VMATracking.Mutex);
-    
+
     auto VMATracking = &_SyscallHandler->VMATracking;
 
     // If the write spans two pages, they will be flushed one at a time (generating two faults)
@@ -178,11 +180,6 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
 }
 
 // MMan Tracking
-static std::string get_fdpath(int fd) {
-  std::error_code ec;
-  return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
-}
-
 void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
 	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
@@ -206,7 +203,8 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
       Resource = &Iter->second;
 
       if (Inserted) {
-        auto filename = get_fdpath(fd);
+        auto filename = FEX::get_fdpath(fd);
+
         Resource->AOTIRCacheEntry = FEXCore::Context::LoadAOTIRCacheEntry(CTX, filename);
         Resource->Iterator = Iter;
       }
@@ -332,7 +330,7 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
     if (ResourceInserted.second) {
       Resource->Iterator = ResourceInserted.first;
     }
-    VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMAFlags::fromFlags(MAP_SHARED), 
+    VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMAFlags::fromFlags(MAP_SHARED),
       VMAProt::fromProt((shmflg & SHM_RDONLY) ? PROT_READ : (PROT_READ | PROT_WRITE))
     );
   }

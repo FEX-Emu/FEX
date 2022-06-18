@@ -5,6 +5,8 @@ desc: Rootfs overlay logic
 $end_info$
 */
 
+#include "Common/FDUtils.h"
+
 #include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -539,13 +541,9 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
         !pathname) &&
         dirfd != AT_FDCWD) {
-    auto get_fdpath = [](int fd) -> std::string {
-      std::error_code ec;
-      return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
-    };
     // Passed in a dirfd that isn't magic FDCWD
     // We need to get the path from the fd now
-    Path = get_fdpath(dirfd);
+    Path = FEX::get_fdpath(dirfd);
 
     if (pathname) {
       if (!Path.empty()) {

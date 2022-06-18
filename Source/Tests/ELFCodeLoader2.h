@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Common/Config.h"
+#include "Common/FDUtils.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
@@ -45,13 +46,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uintptr_t BrkStart;
   uintptr_t StackPointer;
 
-
-  static std::string get_fdpath(int fd)
-  {
-    std::error_code ec;
-    return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
-  }
-
   size_t CalculateTotalElfSize(const std::vector<Elf64_Phdr> &headers)
   {
     auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });
@@ -84,7 +78,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       LogMan::Msg::EFmt("MapFile: Some elf mapping failed, {}, fd: {}\n", errno, file.fd);
       return false;
     } else {
-      auto Filename = get_fdpath(file.fd);
+      auto Filename = FEX::get_fdpath(file.fd);
       Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
 
       return true;

@@ -5,6 +5,7 @@ desc: Emulated /proc/cpuinfo, version, osrelease, etc
 $end_info$
 */
 
+#include "Common/FDUtils.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
@@ -711,13 +712,9 @@ namespace FEX::EmulatedFile {
     if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
         !pathname) &&
         dirfs != AT_FDCWD) {
-      auto get_fdpath = [](int fd) -> std::string {
-        std::error_code ec;
-        return std::filesystem::canonical(std::filesystem::path("/proc/self/fd") / std::to_string(fd), ec).string();
-      };
       // Passed in a dirfd that isn't magic FDCWD
       // We need to get the path from the fd now
-      Path = get_fdpath(dirfs);
+      Path = FEX::get_fdpath(dirfs);
 
       if (pathname) {
         if (!Path.empty()) {

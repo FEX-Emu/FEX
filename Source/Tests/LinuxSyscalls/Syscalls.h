@@ -48,6 +48,7 @@ namespace FEXCore {
 }
 
 namespace FEX::HLE {
+
 class SyscallHandler;
 class SignalDelegator;
   void RegisterEpoll();
