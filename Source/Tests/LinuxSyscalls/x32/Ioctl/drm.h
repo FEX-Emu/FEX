@@ -991,7 +991,7 @@ fex_drm_v3d_submit_csd {
   uint32_t pad;
   /**  @} */
 
-  fex_drm_v3d_submit_csd() = delete;
+  fex_drm_v3d_submit_csd() = default;
 
   operator drm_v3d_submit_csd() const {
     drm_v3d_submit_csd val{};
@@ -1007,6 +1007,37 @@ fex_drm_v3d_submit_csd {
     val.pad = pad;
     return val;
   }
+
+  static void SafeConvertToGuest(fex_drm_v3d_submit_csd *Result, drm_v3d_submit_csd Src, size_t IoctlSize) {
+    // We need to be more careful since this API changes over time
+    fex_drm_v3d_submit_csd Tmp = Src;
+    memcpy(Result, &Tmp, IoctlSize);
+  }
+
+  static
+  drm_v3d_submit_csd SafeConvertToHost(fex_drm_v3d_submit_csd *Src, size_t IoctlSize) {
+    // We need to be more careful since this API changes over time
+    drm_v3d_submit_csd Result{};
+
+    // Copy the incoming variable over with memcpy
+    // This way if it is smaller than expected we will zero the remaining struct
+    fex_drm_v3d_submit_csd Tmp{};
+    memcpy(&Tmp, Src, std::min(IoctlSize, sizeof(fex_drm_v3d_submit_csd)));
+
+    memcpy(Result.cfg, Tmp.cfg, sizeof(cfg));
+    memcpy(Result.coef, Tmp.coef, sizeof(coef));
+    Result.bo_handles = Tmp.bo_handles;
+    Result.bo_handle_count = Tmp.bo_handle_count;
+    Result.in_sync = Tmp.in_sync;
+    Result.out_sync = Tmp.out_sync;
+    Result.perfmon_id = Tmp.perfmon_id;
+    Result.extensions = Tmp.extensions;
+    Result.flags = Tmp.flags;
+    Result.pad = Tmp.pad;
+
+    return Result;
+  }
+
   fex_drm_v3d_submit_csd(drm_v3d_submit_csd val) {
     memcpy(cfg, val.cfg, sizeof(cfg));
     memcpy(coef, val.coef, sizeof(coef));
