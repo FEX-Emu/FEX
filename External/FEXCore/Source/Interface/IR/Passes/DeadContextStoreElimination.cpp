@@ -121,7 +121,7 @@ namespace {
     ContextClassification->emplace_back(ContextMemberInfo{
       ContextMemberClassification {
         offsetof(FEXCore::Core::CPUState, gregs[16]),
-        sizeof(uint64_t),
+        sizeof(uint64_t) * 3,
       },
       DefaultAccess[2], ///< NOP padding
       FEXCore::IR::InvalidClass,
