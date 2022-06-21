@@ -373,10 +373,10 @@ namespace FEX::HLE::x32 {
       switch (_IOC_NR(cmd)) {
         case _IOC_NR(FEX_DRM_IOCTL_V3D_SUBMIT_CSD): {
           FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd *val = reinterpret_cast<FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd*>(args);
-          drm_v3d_submit_csd Host_val = *val;
+          drm_v3d_submit_csd Host_val = FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd::SafeConvertToHost(val, _IOC_SIZE(cmd));
           uint64_t Result = ::ioctl(fd, DRM_IOCTL_V3D_SUBMIT_CSD, &Host_val);
           if (Result != -1) {
-            *val = Host_val;
+            FEX::HLE::x32::V3D::fex_drm_v3d_submit_csd::SafeConvertToGuest(val, Host_val, _IOC_SIZE(cmd));
           }
           SYSCALL_ERRNO();
           break;
