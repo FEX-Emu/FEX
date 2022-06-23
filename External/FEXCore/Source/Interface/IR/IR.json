@@ -294,12 +294,6 @@
                 ],
         "DestSize": "16",
         "NumElements": "2"
-      },
-      "GuestCallDirect u64:$RIP, u64:$NextRIP": {
-        "HasSideEffects": true
-      },
-      "GuestCallIndirect GPR:$RIP, u64:$NextRIP": {
-        "HasSideEffects": true
       }
     },
     "Moves": {
