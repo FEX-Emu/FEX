@@ -263,7 +263,7 @@ namespace FEXCore::IR {
               Result.IRList = AOTEntry->GetIRData();
               //LogMan::Msg::DFmt("using {} + {:x} -> {:x}\n", file->second.fileid, AOTEntry->first, GuestRIP);
 
-              Result.RAData = AOTEntry->GetRAData();;
+              Result.RAData = AOTEntry->GetRAData()->CreateCopy();
               Result.DebugData = new FEXCore::Core::DebugData();
               Result.StartAddr = MappedStart;
               Result.Length = AOTEntry->GuestLength;
@@ -287,7 +287,7 @@ namespace FEXCore::IR {
     uint64_t GuestRIP,
     uint64_t StartAddr,
     uint64_t Length,
-    FEXCore::IR::RegisterAllocationData *RAData,
+    FEXCore::IR::RegisterAllocationData::UniquePtr RAData,
     FEXCore::IR::IRListView *IRList,
     FEXCore::Core::DebugData *DebugData,
     bool GeneratedIR) {
@@ -310,9 +310,13 @@ namespace FEXCore::IR {
           auto LocalRIP = GuestRIP - AOTIRCacheEntry.Offset;
           auto LocalStartAddr = StartAddr - AOTIRCacheEntry.Offset;
           auto FileId = AOTIRCacheEntry.Entry->FileId;
+          // The underlying pointer and the unique_ptr deleter for RAData must
+          // be marshalled separately to the lambda below. Otherwise, the
+          // lambda can't be used as an std::function due to being non-copyable
           auto RADataCopy = RAData->CreateCopy();
+          auto RADataCopyDeleter = RADataCopy.get_deleter();
           auto IRListCopy = IRList->CreateCopy();
-          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy, FileId]() {
+          AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy=RADataCopy.release(), RADataCopyDeleter, FileId]() {
 
             // It is guaranteed via AOTIRCaptureCacheWriteoutLock and AOTIRCaptureCacheWriteoutFlusing that this will not run concurrently
             // Memory coherency is guaranteed via AOTIRCaptureCacheWriteoutLock
@@ -325,7 +329,7 @@ namespace FEXCore::IR {
               AotFile->Stream->write((char*)&tag, sizeof(tag));
             }
             AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy);
-            FEXCore::Allocator::free(RADataCopy);
+            RADataCopyDeleter(RADataCopy);
             delete IRListCopy;
           });
 
@@ -341,7 +345,7 @@ namespace FEXCore::IR {
       if (GeneratedIR) {
         if (CTX->GetGdbServerStatus()) {
           // Add to thread local ir cache
-          Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+          Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), std::move(RAData), decltype(Entry.DebugData)(DebugData)};
           
           std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
           Thread->DebugStore.insert({GuestRIP, std::move(Entry)});
@@ -349,7 +353,6 @@ namespace FEXCore::IR {
         else {
           // If the IR doesn't need to be retained then we can just delete it now
           delete DebugData;
-          free(RAData);
           delete IRList;
         }
       }

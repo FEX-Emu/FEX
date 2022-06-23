@@ -873,7 +873,7 @@ namespace FEXCore::Context {
 
     return {
       .IRList = IRList,
-      .RAData = RAData.release(),
+      .RAData = std::move(RAData),
       .TotalInstructions = TotalInstructions,
       .TotalInstructionsLength = TotalInstructionsLength,
       .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
@@ -884,7 +884,7 @@ namespace FEXCore::Context {
   Context::CompileCodeResult Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
-    FEXCore::IR::RegisterAllocationData *RAData {};
+    FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
     bool GeneratedIR {};
     uint64_t StartAddr {};
     uint64_t Length {};
@@ -914,7 +914,7 @@ namespace FEXCore::Context {
       if (_GeneratedIR) {
         // Setup pointers to internal structures
         IRList = IRCopy;
-        RAData = RACopy;
+        RAData = std::move(RACopy);
         DebugData = DebugDataCopy;
         StartAddr = _StartAddr;
         Length = _Length;
@@ -928,7 +928,7 @@ namespace FEXCore::Context {
 
       // Setup pointers to internal structures
       IRList = IRCopy;
-      RAData = RACopy;
+      RAData = std::move(RACopy);
       DebugData = new FEXCore::Core::DebugData();
       StartAddr = _StartAddr;
       Length = _Length;
@@ -945,10 +945,10 @@ namespace FEXCore::Context {
     }
     // Attempt to get the CPU backend to compile this code
     return {
-      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData, GetGdbServerStatus()),
+      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData.get(), GetGdbServerStatus()),
       .IRData = IRList,
       .DebugData = DebugData,
-      .RAData = RAData,
+      .RAData = std::move(RAData),
       .GeneratedIR = GeneratedIR,
       .StartAddr = StartAddr,
       .Length = Length,
@@ -981,16 +981,14 @@ namespace FEXCore::Context {
     void *CodePtr {};
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
-    FEXCore::IR::RegisterAllocationData *RAData {};
 
     bool GeneratedIR {};
     uint64_t StartAddr {}, Length {};
 
-    auto [Code, IR, Data, RA, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
+    auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
     CodePtr = Code;
     IRList = IR;
     DebugData = Data;
-    RAData = RA;
     GeneratedIR = Generated;
     StartAddr = _StartAddr;
     Length = _Length;
@@ -1052,7 +1050,7 @@ namespace FEXCore::Context {
         GuestRIP,
         StartAddr,
         Length,
-        RAData,
+        std::move(RAData),
         IRList,
         DebugData,
         GeneratedIR)) {

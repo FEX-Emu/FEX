@@ -189,8 +189,7 @@ namespace FEXCore::Context {
 
     struct GenerateIRResult {
       FEXCore::IR::IRListView* IRList;
-      // User's responsibility to deallocate this.
-      FEXCore::IR::RegisterAllocationData* RAData;
+      FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
       uint64_t TotalInstructions;
       uint64_t TotalInstructionsLength;
       uint64_t StartAddr;
@@ -202,8 +201,7 @@ namespace FEXCore::Context {
       void* CompiledCode;
       FEXCore::IR::IRListView* IRData;
       FEXCore::Core::DebugData* DebugData;
-      // User's responsibility to deallocate this.
-      FEXCore::IR::RegisterAllocationData* RAData;
+      FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
       bool GeneratedIR;
       uint64_t StartAddr;
       uint64_t Length;

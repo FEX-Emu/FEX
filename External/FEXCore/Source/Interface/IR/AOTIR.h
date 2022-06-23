@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FEXCore/IR/RegisterAllocationData.h"
 #include <FEXCore/Config/Config.h>
 
 #include <atomic>
@@ -93,7 +94,7 @@ namespace FEXCore::IR {
 
       struct PreGenerateIRFetchResult {
         FEXCore::IR::IRListView *IRList {};
-        FEXCore::IR::RegisterAllocationData *RAData {};
+        FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
         FEXCore::Core::DebugData *DebugData {};
         uint64_t StartAddr {};
         uint64_t Length {};
@@ -106,7 +107,7 @@ namespace FEXCore::IR {
         uint64_t GuestRIP,
         uint64_t StartAddr,
         uint64_t Length,
-        FEXCore::IR::RegisterAllocationData *RAData,
+        FEXCore::IR::RegisterAllocationData::UniquePtr RAData,
         FEXCore::IR::IRListView *IRList,
         FEXCore::Core::DebugData *DebugData,
         bool GeneratedIR);

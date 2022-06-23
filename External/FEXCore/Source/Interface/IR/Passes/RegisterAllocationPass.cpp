@@ -89,7 +89,7 @@ namespace {
   };
 
   struct RegisterGraph {
-    std::unique_ptr<IR::RegisterAllocationData, IR::RegisterAllocationDataDeleter> AllocData;
+    IR::RegisterAllocationData::UniquePtr AllocData;
     RegisterSet Set;
     std::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
@@ -153,10 +153,7 @@ namespace {
     Graph->Nodes.resize(NodeCount);
 
     Graph->VisitedNodePredecessors.clear();
-    Graph->AllocData.reset((FEXCore::IR::RegisterAllocationData*)FEXCore::Allocator::malloc(FEXCore::IR::RegisterAllocationData::Size(NodeCount)));
-    memset(&Graph->AllocData->Map[0], PhysicalRegister::Invalid().Raw, NodeCount);
-    Graph->AllocData->MapCount = NodeCount;
-    Graph->AllocData->IsShared = false; // not shared by default
+    Graph->AllocData = RegisterAllocationData::Create(NodeCount);
     Graph->NodeCount = NodeCount;
   }
 
@@ -283,7 +280,7 @@ namespace {
        * Top 32bits is the class, lower 32bits is the register
        */
       RegisterAllocationData* GetAllocationData() override;
-      std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> PullAllocationData() override;
+      RegisterAllocationData::UniquePtr PullAllocationData() override;
 
     private:
       using BlockInterferences = std::vector<IR::NodeID>;
@@ -379,7 +376,7 @@ namespace {
     return Graph->AllocData.get();
   }
 
-  std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> ConstrainedRAPass::PullAllocationData() {
+  RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
     return std::move(Graph->AllocData);
   }
 
