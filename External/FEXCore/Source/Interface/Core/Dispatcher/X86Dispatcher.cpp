@@ -405,37 +405,40 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
 
 }
 
+// Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
+static thread_local Xbyak::CodeGenerator emit;
+
 size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
   using namespace Xbyak;
   using namespace Xbyak::util;
 
-  setNewBuffer(CodeBuffer, MaxGDBPauseCheckSize);
+  emit.setNewBuffer(CodeBuffer, MaxGDBPauseCheckSize);
   
   Label RunBlock;
 
   // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
   // This happens when single stepping
   static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-  mov(rax, reinterpret_cast<uint64_t>(CTX));
+  emit.mov(rax, reinterpret_cast<uint64_t>(CTX));
 
   // If the value == 0 then we don't need to stop
-  cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
-  je(RunBlock);
+  emit.cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
+  emit.je(RunBlock);
   {
     // Make sure RIP is syncronized to the context
-    mov(rax, GuestRIP);
-    mov(qword STATE_PTR(CpuStateFrame, State.rip), rax);
+    emit.mov(rax, GuestRIP);
+    emit.mov(qword STATE_PTR(CpuStateFrame, State.rip), rax);
 
     // Stop the thread
-    mov(rax, qword STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
-    jmp(rax);
+    emit.mov(rax, qword STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
+    emit.jmp(rax);
   }
 
-  L(RunBlock);
+  emit.L(RunBlock);
 
-  ready();
+  emit.ready();
 
-  return getSize();
+  return emit.getSize();
 }
 
 
@@ -443,21 +446,21 @@ size_t X86Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   using namespace Xbyak;
   using namespace Xbyak::util;
 
-  setNewBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+  emit.setNewBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
 
   Label InlineIRData;
   
-  mov(rdi, STATE);
-  lea(rsi, ptr[rip + InlineIRData]);
-  call(qword STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
+  emit.mov(rdi, STATE);
+  emit.lea(rsi, ptr[rip + InlineIRData]);
+  emit.call(qword STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
 
-  jmp(qword STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+  emit.jmp(qword STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
 
-  L(InlineIRData);
+  emit.L(InlineIRData);
 
-  ready();
+  emit.ready();
 
-  return getSize();
+  return emit.getSize();
 }
 
 X86Dispatcher::~X86Dispatcher() {
