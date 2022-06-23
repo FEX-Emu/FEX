@@ -34,7 +34,7 @@ class binder {
 
         static const offsets_t offsets;
 
-        static R canonical(Args... args) {
+        static R canonical(Args... args)  __attribute__((aligned(16))) {
             instance_info_t *instance_info;
             #if defined(_M_X86_64)
                 asm("lea 1f(%%rip), %0" :"=r"(instance_info));
@@ -82,18 +82,35 @@ class binder {
 
         [[maybe_unused]] auto align_minus_one = alignof(instance_info_t) - 1;
 
-        assert("Canonical misalignment" && (((uintptr_t)canonical) & align_minus_one));
+        assert("Canonical misalignment" && !(((uintptr_t)canonical) & align_minus_one));
 
         auto function_size = found_end_offset;
 
-        assert("function_size misalignment" && (function_size & align_minus_one));
+        assert("function_size misalignment" && !(function_size & align_minus_one));
 
         auto alloc_size = function_size + sizeof(instance_info_t);
 
         copyable_logf("function len: %d, alloc len: %d\n", (int)function_size, (int)alloc_size);
 
-        // alloc
-        auto instance = (uint8_t*)mmap(0, alloc_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        static uint8_t *InstanceDataPtr;
+        static size_t InstanceDataFree;
+        static std::mutex InstanceDataMutex;
+
+        uint8_t *instance;
+
+        {
+            std::lock_guard lk(InstanceDataMutex);
+            if (InstanceDataFree < alloc_size) {
+                InstanceDataFree = 16 * 1024;
+                InstanceDataPtr = (uint8_t*)mmap(0, InstanceDataFree, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+                assert(InstanceDataPtr != MAP_FAILED);
+            }
+
+            // alloc
+            instance = InstanceDataPtr;
+            InstanceDataFree -= alloc_size;
+            InstanceDataPtr += alloc_size;
+        }
         
         // copy
         memcpy(instance, canonical_fn_ptr, function_size);
