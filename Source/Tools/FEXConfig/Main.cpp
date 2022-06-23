@@ -494,8 +494,6 @@ namespace {
 
   void FillLoggingConfig() {
     char LogFile[256]{};
-    char LogSocket[256]{};
-
     char IRDump[256]{};
 
     if (ImGui::BeginTabItem("Logging")) {
@@ -512,15 +510,6 @@ namespace {
       }
       if (ImGui::InputText("Output log file:", LogFile, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_OUTPUTLOG, LogFile);
-        ConfigChanged = true;
-      }
-
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_OUTPUTSOCKET);
-      if (Value.has_value() && !(*Value)->empty()) {
-        strncpy(LogSocket, &(*Value)->at(0), 256);
-      }
-      if (ImGui::InputText("Output log Socket:", LogSocket, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_OUTPUTSOCKET, LogSocket);
         ConfigChanged = true;
       }
 

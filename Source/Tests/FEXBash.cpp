@@ -7,7 +7,7 @@ $end_info$
 
 #include "ConfigDefines.h"
 #include "Common/ArgumentLoader.h"
-#include "Common/RootFSSetup.h"
+#include "Common/FEXServerClient.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -32,9 +32,9 @@ int main(int argc, char **argv, char **const envp) {
 
   auto Args = FEX::ArgLoader::Get();
 
-  // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
-  if (!FEX::RootFS::Setup(envp)) {
-    fprintf(stderr, "RootFS configuration failed.");
+  // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
+  if (!FEXServerClient::SetupClient(argv[0])) {
+    LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
     return -1;
   }
 

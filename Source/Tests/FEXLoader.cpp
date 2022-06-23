@@ -7,8 +7,7 @@ $end_info$
 
 #include "AOT/AOTGenerator.h"
 #include "Common/ArgumentLoader.h"
-#include "Common/RootFSSetup.h"
-#include "Common/SocketLogging.h"
+#include "Common/FEXServerClient.h"
 #include "ELFCodeLoader2.h"
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -109,6 +108,17 @@ void AssertHandler(char const *Message) {
 }
 
 } // Anonymous namespace
+
+namespace FEXServerLogging {
+  int FEXServerFD{};
+  void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
+    FEXServerClient::MsgHandler(FEXServerFD, Level, Message);
+  }
+
+  void AssertHandler(char const *Message) {
+    FEXServerClient::AssertHandler(FEXServerFD, Message);
+  }
+}
 
 void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::vector<std::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
@@ -222,9 +232,9 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  // Ensure RootFS is setup before config options try to pull CONFIG_ROOTFS
-  if (!FEX::RootFS::Setup(envp)) {
-    LogMan::Msg::EFmt("RootFS failure");
+  // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
+  if (!FEXServerClient::SetupClient(argv[0])) {
+    LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
     return -1;
   }
 
@@ -233,7 +243,6 @@ int main(int argc, char **argv, char **const envp) {
   FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
   FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
-  FEX_CONFIG_OPT(OutputSocket, OUTPUTSOCKET);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
   FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
@@ -244,33 +253,32 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::UnInstallHandlers();
   }
   else {
-    if (OutputSocket().size()) {
+    auto LogFile = OutputLog();
+    // If stderr or stdout then we need to dup the FD
+    // In some cases some applications will close stderr and stdout
+    // then redirect the FD to either a log OR some cases just not use
+    // stderr/stdout and the FD will be reused for regular FD ops.
+    //
+    // We want to maintain the original output location otherwise we
+    // can run in to problems of writing to some file
+    if (LogFile == "stderr") {
+      OutputFD = dup(STDERR_FILENO);
+    }
+    else if (LogFile == "stdout") {
+      OutputFD = dup(STDOUT_FILENO);
+    }
+    else if (LogFile == "server") {
       LogMan::Throw::UnInstallHandlers();
       LogMan::Msg::UnInstallHandlers();
 
-      if (FEX::SocketLogging::Client::ConnectToClient(OutputSocket())) {
-        LogMan::Throw::InstallHandler(FEX::SocketLogging::Client::AssertHandler);
-        LogMan::Msg::InstallHandler(FEX::SocketLogging::Client::MsgHandler);
+      FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
+      if (FEXServerLogging::FEXServerFD != -1) {
+        LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
+        LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
       }
     }
-    else {
-      auto LogFile = OutputLog();
-      // If stderr or stdout then we need to dup the FD
-      // In some cases some applications will close stderr and stdout
-      // then redirect the FD to either a log OR some cases just not use
-      // stderr/stdout and the FD will be reused for regular FD ops.
-      //
-      // We want to maintain the original output location otherwise we
-      // can run in to problems of writing to some file
-      if (LogFile == "stderr") {
-        OutputFD = dup(STDERR_FILENO);
-      }
-      else if (LogFile == "stdout") {
-        OutputFD = dup(STDOUT_FILENO);
-      }
-      else if (!LogFile.empty()) {
-        OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
-      }
+    else if (!LogFile.empty()) {
+      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
     }
   }
 
@@ -475,8 +483,6 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Threads::Shutdown();
 
   Loader.FreeSections();
-
-  FEX::RootFS::Shutdown();
 
   FEXCore::Config::Shutdown();
 
