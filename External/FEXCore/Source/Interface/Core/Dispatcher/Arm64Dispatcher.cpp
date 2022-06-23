@@ -502,9 +502,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   }
 }
 
+// Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
+static thread_local vixl::aarch64::Assembler emit(nullptr, 1);
+
 size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
 
-  *GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxGDBPauseCheckSize);
+  *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxGDBPauseCheckSize);
+  
+  vixl::CodeBufferCheckScope scope(&emit, MaxGDBPauseCheckSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
 
   aarch64::Label RunBlock;
 
@@ -512,50 +517,56 @@ size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t Gues
   // This happens when single stepping
 
   static_assert(sizeof(FEXCore::Context::Context::Config.RunningMode) == 4, "This is expected to be size of 4");
-  ldr(x0, STATE_PTR(CpuStateFrame, Thread)); // Get thread
-  ldr(x0, MemOperand(x0, offsetof(FEXCore::Core::InternalThreadState, CTX))); // Get Context
-  ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
+  emit.ldr(x0, STATE_PTR(CpuStateFrame, Thread)); // Get thread
+  emit.ldr(x0, MemOperand(x0, offsetof(FEXCore::Core::InternalThreadState, CTX))); // Get Context
+  emit.ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
 
   // If the value == 0 then we don't need to stop
-  cbz(w0, &RunBlock);
+  emit.cbz(w0, &RunBlock);
   {
+    Literal l_GuestRIP {GuestRIP};
     // Make sure RIP is syncronized to the context
-    LoadConstant(x0, GuestRIP);
-    str(x0, STATE_PTR(CpuStateFrame, State.rip));
+    emit.ldr(x0, &l_GuestRIP);
+    emit.str(x0, STATE_PTR(CpuStateFrame, State.rip));
 
     // Stop the thread
-    ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
-    br(x0);
+    emit.ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
+    emit.br(x0);
+    emit.place(&l_GuestRIP);
   }
-  bind(&RunBlock);
-  FinalizeCode();
+  emit.bind(&RunBlock);
+  emit.FinalizeCode();
 
-  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, GetBuffer()->GetCursorOffset());
-  return GetBuffer()->GetCursorOffset();
+  auto UsedBytes = emit.GetBuffer()->GetCursorOffset();
+  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, UsedBytes);
+  return UsedBytes;
 }
 
 size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
   
-  *GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+  *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+
+  vixl::CodeBufferCheckScope scope(&emit, MaxInterpreterTrampolineSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
 
   aarch64::Label InlineIRData;
 
-  mov(x0, STATE);
-  adr(x1, &InlineIRData);
+  emit.mov(x0, STATE);
+  emit.adr(x1, &InlineIRData);
 
-  ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
-  blr(x3);
+  emit.ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
+  emit.blr(x3);
 
-  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
-  br(x0);
+  emit.ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+  emit.br(x0);
 
-  bind(&InlineIRData);
+  emit.bind(&InlineIRData);
 
-  FinalizeCode();
+  emit.FinalizeCode();
 
-  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, GetBuffer()->GetCursorOffset());
-  return GetBuffer()->GetCursorOffset();
+  auto UsedBytes = emit.GetBuffer()->GetCursorOffset();
+  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, UsedBytes);
+  return UsedBytes;
 }
 
 void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {

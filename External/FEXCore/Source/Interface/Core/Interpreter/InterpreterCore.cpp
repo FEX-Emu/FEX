@@ -67,7 +67,7 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
     ThreadState->CTX->ClearCodeCache(ThreadState);
   }
 
-  const auto BufferStart = CurrentCodeBuffer->Ptr + BufferUsed;;
+  const auto BufferStart = CurrentCodeBuffer->Ptr + BufferUsed;
 
   auto DestBuffer = BufferStart;
 
