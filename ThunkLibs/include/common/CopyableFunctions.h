@@ -10,6 +10,24 @@
 
 #include <sys/mman.h>
 
+// Copyable functions
+
+// Public API
+//
+// assuming typedef void some_fn_type(int, int);
+// DECL_COPYABLE_TRAMPLOLINE(some_fn_type) will generate the trampolines, static structures, canonical fn, etc
+// then
+// some_fn_type *binder::make_instance(some_fn_type *target, marshaler *marshaler) can be used to make a new bound function
+// some_fn_type *binder::get_target(some_fn_type *bound_fn) can be used to lookup the target function of a bound function
+
+
+// Internals
+//
+// binder::inner<type>::canonical has a special end-of-function marker using asm goto to resurrect dead code
+// binder::inner<type>::guest_to_host and binder::inner<type>::host_to_guest hold mappings. These are per type
+//  as functions might be called with different parameters
+// binder::inner<type>::mutex protects guest_to_host, host_to_guest
+
 #define copyable_logf(...)
 
 class binder {
