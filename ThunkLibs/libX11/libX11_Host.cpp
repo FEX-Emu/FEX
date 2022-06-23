@@ -180,18 +180,15 @@ void fexfn_impl_libX11_XRemoveConnectionWatch_internal(Display* a0, XRemoveConne
     return fexldr_ptr_libX11_XRemoveConnectionWatch(a0, fn, a2);
 }
 
-static XErrorHandler guest_handler;
-
 XSetErrorHandlerCBFN* fexfn_impl_libX11_XSetErrorHandler_internal(XSetErrorHandlerCBFN a_0) {
     auto fn = binder::make_instance(a_0, &CallbackMarshaler<XSetErrorHandlerCBFN>::marshal<offsetof(CallbackUnpacks, libX11_XSetErrorHandlerCB)>);
 
-    auto old = guest_handler;
-    guest_handler = a_0;
+    XSetErrorHandlerCBFN* old = fexldr_ptr_libX11_XSetErrorHandler(fn);
 
-    // FEX_TODO(Get return value from bound fn)
-    fexldr_ptr_libX11_XSetErrorHandler(fn);
+    auto guest = binder::get_target(old);
+    assert(guest != 0 || old == 0);
 
-    return old;
+    return guest;
 }
 
 #include "function_unpacks.inl"

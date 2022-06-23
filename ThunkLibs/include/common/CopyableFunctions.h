@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cassert>
 #include <tuple>
+#include <unordered_map>
+#include <shared_mutex>
 
 #include <sys/mman.h>
 
@@ -26,6 +28,10 @@ class binder {
         using target_t = R(Args...);
         using marshaler_t = R(Args..., target_t *target);
         
+        static std::unordered_map<target_t *, target_t *> guest_to_host;
+        static std::unordered_map<target_t *, target_t *> host_to_guest;
+        static std::shared_mutex mutex;
+
         static const offsets_t offsets;
 
         static R canonical(Args... args) {
@@ -108,14 +114,37 @@ class binder {
     }
 
 public:
-    template<typename T> 
+    template<typename T>
     static T *make_instance(T *target, typename inner<T>::marshaler_t *marshaler);
+
+    template<typename T>
+    static T *get_target(T *bound_instance);
 };
 
 
 #define DECL_COPYABLE_TRAMPLOLINE(fn_type) \
+template<> std::shared_mutex binder::inner<fn_type>::mutex{}; \
+template<> std::unordered_map<fn_type *, fn_type *> binder::inner<fn_type>::guest_to_host{}; \
+template<> std::unordered_map<fn_type *, fn_type *> binder::inner<fn_type>::host_to_guest{}; \
 template<> const binder::offsets_t binder::inner<fn_type>::offsets = init_offsets(reinterpret_cast<uint8_t*>(&canonical)); \
+template<> fn_type *binder::get_target<fn_type>(fn_type *bound_fn) { \
+    std::shared_lock lk(binder::inner<fn_type>::mutex); \
+    auto found = binder::inner<fn_type>::host_to_guest.find(bound_fn); \
+    if (found != binder::inner<fn_type>::host_to_guest.end()) return found->second; \
+    return nullptr; \
+} \
 template<> \
 fn_type *binder::make_instance<fn_type>(fn_type *target, binder::inner<fn_type>::marshaler_t *marshaler) { \
-    return reinterpret_cast<fn_type *>(binder::make_instance(reinterpret_cast<void*>(&binder::inner<fn_type>::canonical), reinterpret_cast<void*>(target), reinterpret_cast<void*>(marshaler), binder::inner<fn_type>::offsets)); \
+    { \
+        std::shared_lock lk(binder::inner<fn_type>::mutex); \
+        auto found = binder::inner<fn_type>::guest_to_host.find(target); \
+        if (found != binder::inner<fn_type>::guest_to_host.end()) return found->second;\
+    } \
+    auto rv = reinterpret_cast<fn_type *>(binder::make_instance(reinterpret_cast<void*>(&binder::inner<fn_type>::canonical), reinterpret_cast<void*>(target), reinterpret_cast<void*>(marshaler), binder::inner<fn_type>::offsets)); \
+    { \
+        std::lock_guard lk(binder::inner<fn_type>::mutex); \
+        binder::inner<fn_type>::guest_to_host[target] = rv; \
+        binder::inner<fn_type>::host_to_guest[rv] = target; \
+    } \
+    return rv; \
 }
