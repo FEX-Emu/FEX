@@ -8,6 +8,7 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 
 namespace FEXCore::CPU {
+class Dispatcher;
 class X86DispatchGenerator;
 class Arm64DispatchGenerator;
 
@@ -20,7 +21,7 @@ using DestMapType = std::vector<uint32_t>;
 
 class InterpreterCore final : public CPUBackend {
 public:
-  explicit InterpreterCore(FEXCore::Context::Context *ctx,
+  explicit InterpreterCore(Dispatcher *Dispatch,
                            FEXCore::Core::InternalThreadState *Thread);
 
   [[nodiscard]] std::string GetName() override { return "Interpreter"; }
@@ -28,7 +29,7 @@ public:
   [[nodiscard]] void *CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,
                                   FEXCore::Core::DebugData *DebugData,
-                                  FEXCore::IR::RegisterAllocationData *RAData) override;
+                                  FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -40,6 +41,7 @@ public:
 
 private:
   size_t BufferUsed;
+  Dispatcher *Dispatch;
 };
 
 template<typename T>

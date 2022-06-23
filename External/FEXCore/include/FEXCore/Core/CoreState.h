@@ -119,6 +119,7 @@ namespace FEXCore::Core {
       uint64_t CPUIDFunction{};
       uint64_t SyscallHandlerObj{};
       uint64_t SyscallHandlerFunc{};
+      uint64_t ExitFunctionLink{};
 
       uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
 

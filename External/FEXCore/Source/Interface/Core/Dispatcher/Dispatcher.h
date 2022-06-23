@@ -26,9 +26,7 @@ struct Context;
 namespace FEXCore::CPU {
 
 struct DispatcherConfig {
-  bool InterpreterDispatch = false;
-  uintptr_t ExitFunctionLink = 0;
-  bool SupportsStaticRegisterAllocation = false;
+  bool StaticRegisterAllocation = false;
 };
 
 class Dispatcher {
@@ -67,8 +65,15 @@ public:
 
   virtual void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) = 0;
 
-  static std::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::Context *CTX, DispatcherConfig &Config);
-  static std::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::Context *CTX, DispatcherConfig &Config);
+  // These are across all arches for now
+  static constexpr size_t MaxGDBPauseCheckSize = 128;
+  static constexpr size_t MaxInterpreterTrampolineSize = 128;
+
+  virtual size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) = 0;
+  virtual size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) = 0;
+
+  static std::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::Context *CTX, const DispatcherConfig &Config);
+  static std::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::Context *CTX, const DispatcherConfig &Config);
   
   void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
     DispatchPtr(Frame);

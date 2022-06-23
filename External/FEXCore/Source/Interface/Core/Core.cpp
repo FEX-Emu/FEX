@@ -200,16 +200,16 @@ namespace FEXCore::Context {
 #ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
       FEXCore::CPU::InitializeInterpreterSignalHandlers(this);
-      FEXCore::CPU::GetInterpreterDispatcherConfig(DispatcherConfig);
+      BackendFeatures = FEXCore::CPU::GetInterpreterBackendFeatures();
       break;
 #endif
     case FEXCore::Config::CONFIG_IRJIT:
 #if (_M_X86_64 && JIT_X86_64)
       FEXCore::CPU::InitializeX86JITSignalHandlers(this);
-      FEXCore::CPU::GetX86JITDispatcherConfig(DispatcherConfig);
+      BackendFeatures = FEXCore::CPU::GetX86JITBackendFeatures();
 #elif (_M_ARM_64 && JIT_ARM64)
       FEXCore::CPU::InitializeArm64JITSignalHandlers(this);
-      FEXCore::CPU::GetArm64JITDispatcherConfig(DispatcherConfig);
+      BackendFeatures = FEXCore::CPU::GetArm64JITBackendFeatures();
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
 #endif
@@ -221,6 +221,8 @@ namespace FEXCore::Context {
       ERROR_AND_DIE_FMT("Unknown core configuration");
       break;
     }
+
+    DispatcherConfig.StaticRegisterAllocation = Config.StaticRegisterAllocation && BackendFeatures.SupportsStaticRegisterAllocation;
 
 #if (_M_X86_64)
     Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
@@ -527,7 +529,7 @@ namespace FEXCore::Context {
 
     Thread->CTX = this;
 
-    bool DoSRA = Config.StaticRegisterAllocation && DispatcherConfig.SupportsStaticRegisterAllocation;
+    bool DoSRA = DispatcherConfig.StaticRegisterAllocation;
 
     Thread->PassManager->AddDefaultPasses(this, Config.Core == FEXCore::Config::CONFIG_IRJIT, DoSRA);
     Thread->PassManager->AddDefaultValidationPasses();
@@ -943,7 +945,7 @@ namespace FEXCore::Context {
     }
     // Attempt to get the CPU backend to compile this code
     return {
-      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData),
+      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData, GetGdbServerStatus()),
       .IRData = IRList,
       .DebugData = DebugData,
       .RAData = RAData,
@@ -999,22 +1001,25 @@ namespace FEXCore::Context {
 
     // The core managed to compile the code.
     if (Config.BlockJITNaming()) {
+      auto FragmentBasePtr = reinterpret_cast<uint8_t *>(CodePtr);
+
       if (DebugData) {
         auto GuestRIPLookup = this->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
 
         if (DebugData->Subblocks.size()) {
           for (auto& Subblock: DebugData->Subblocks) {
+            auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
             if (GuestRIPLookup.Entry) {
-              Symbols.Register(CodePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
+              Symbols.Register(BlockBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
             } else {
-            Symbols.Register((void*)Subblock.HostCodeStart, GuestRIP, Subblock.HostCodeSize);
+            Symbols.Register(BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
           }
           }
         } else {
           if (GuestRIPLookup.Entry) {
-            Symbols.Register(CodePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
+            Symbols.Register(FragmentBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.Offset);
         } else {
-          Symbols.Register(CodePtr, GuestRIP, DebugData->HostCodeSize);
+          Symbols.Register(FragmentBasePtr, GuestRIP, DebugData->HostCodeSize);
           }
         }
       }

@@ -17,8 +17,10 @@ namespace FEXCore::CPU {
 
 class X86Dispatcher final : public Dispatcher, public Xbyak::CodeGenerator {
   public:
-    X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config);
+    X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config);
     void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) override;
+    size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) override;
+    size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) override;
 
     virtual ~X86Dispatcher() override;
 };

@@ -20,17 +20,20 @@
 #include <sys/mman.h>
 #include <xbyak/xbyak.h>
 
+#define STATE_PTR(STATE_TYPE, FIELD) \
+  [STATE + offsetof(FEXCore::Core::STATE_TYPE, FIELD)]
+
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE r14
 
-X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &config)
+X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
   : Dispatcher(ctx)
   , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE,
       FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
       nullptr) {
 
-  LOGMAN_THROW_A_FMT(!config.SupportsStaticRegisterAllocation, "X86 dispatcher does not support SRA");
+  LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "X86 dispatcher does not support SRA");
 
   using namespace Xbyak;
   using namespace Xbyak::util;
@@ -80,11 +83,10 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
 
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
-  mov(qword [rdi + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)], rsp);
+  mov(qword STATE_PTR(CpuStateFrame, ReturningStackLocation), rsp);
 
   Label LoopTop;
   Label FullLookup;
-  Label CallBlock;
   Label NoBlock;
   Label ExitBlock;
   Label ThreadPauseHandler;
@@ -94,26 +96,21 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
 
   {
     // Load our RIP
-    mov(rdx, qword [STATE + offsetof(FEXCore::Core::CPUState, rip)]);
+    mov(rdx, qword STATE_PTR(CPUState, rip));
 
     // L1 Cache
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
+    mov(r13, qword STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
     mov(rax, rdx);
 
     and_(rax, LookupCache::L1_ENTRIES_MASK);
     shl(rax, 4);
-    cmp(qword[r13 + rax + 8], rdx);
+    cmp(qword[r13 + rax + offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode)], rdx);
     jne(FullLookup);
 
-    if (!config.InterpreterDispatch) {
-      jmp(qword[r13 + rax + 0]);
-    } else {
-      mov(rax, qword[r13 + rax + 0]);
-      jmp(CallBlock);
-    }
+    jmp(qword[r13 + rax + offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode)]);
 
     L(FullLookup);
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L2Pointer)]);
+    mov(r13, qword STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
 
     // Full lookup
     uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
@@ -145,7 +142,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
     je(NoBlock);
 
     // Update L1
-    mov(r13, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
+    mov(r13, qword STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
     mov(rcx, rdx);
     and_(rcx, LookupCache::L1_ENTRIES_MASK);
     shl(rcx, 1);
@@ -153,31 +150,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
     mov(qword[r13 + rcx*8 + 0], rax);
 
     // Real block if we made it here
-    if (!config.InterpreterDispatch) {
-      jmp(rax);
-    } else {
-      L(CallBlock);
-      mov(rdi, STATE);
-      mov(rsi, rax);
-      call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Interpreter.FragmentExecuter)]);
-
-      if (CTX->GetGdbServerStatus()) {
-        // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-        // This happens when single stepping
-        static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-        mov(rax, qword [STATE + (offsetof(FEXCore::Core::InternalThreadState, CTX))]);
-
-        // If the value == 0 then branch to the top
-        cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
-        je(LoopTop);
-        // Else we need to pause now
-        jmp(ThreadPauseHandler);
-        ud2();
-      }
-      else {
-        jmp(LoopTop);
-      }
-    }
+    jmp(rax);
   }
 
   {
@@ -289,8 +262,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
     mov(rdi, STATE);
     mov(rsi, rax); // rax is set at the block end
 
-    mov(rax, config.ExitFunctionLink);
-    call(rax);
+    call(qword STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
 
     if (SignalSafeCompile) {
       // Now restore the signal mask
@@ -347,7 +319,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
     // XXX: XMM?
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    add(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)], 1);
+    add(qword STATE_PTR(CpuStateFrame, SignalHandlerRefCounter), 1);
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
@@ -355,12 +327,12 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
 
     // Store the trampoline to the guest stack
     // Guest stack is now correctly misaligned after a regular call instruction
-    sub(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])], 16);
-    mov(rbx, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])]);
+    sub(qword STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]), 16);
+    mov(rbx, qword STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
     mov(qword [rbx], rax);
 
     // Store RIP to the context state
-    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], rsi);
+    mov(qword STATE_PTR(CpuStateFrame, State.rip), rsi);
 
     // Back to the loop top now
     jmp(LoopTop);
@@ -388,10 +360,10 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
     // int3 = SIGTRAP
     // hlt = SIGSEGV
   
-    add(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);
-    mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)], X86State::X86_TRAPNO_OF);
-    mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)], 0);
-    mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)], 0x80);
+    add(byte STATE_PTR(CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException), 1);
+    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.TrapNo), X86State::X86_TRAPNO_OF);
+    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.err_code), 0);
+    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.si_code), 0x80);
 
     hlt();
   }
@@ -433,6 +405,61 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, DispatcherConfig &c
 
 }
 
+size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
+  using namespace Xbyak;
+  using namespace Xbyak::util;
+
+  setNewBuffer(CodeBuffer, MaxGDBPauseCheckSize);
+  
+  Label RunBlock;
+
+  // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
+  // This happens when single stepping
+  static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
+  mov(rax, reinterpret_cast<uint64_t>(CTX));
+
+  // If the value == 0 then we don't need to stop
+  cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
+  je(RunBlock);
+  {
+    // Make sure RIP is syncronized to the context
+    mov(rax, GuestRIP);
+    mov(qword STATE_PTR(CpuStateFrame, State.rip), rax);
+
+    // Stop the thread
+    mov(rax, qword STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
+    jmp(rax);
+  }
+
+  L(RunBlock);
+
+  ready();
+
+  return getSize();
+}
+
+
+size_t X86Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
+  using namespace Xbyak;
+  using namespace Xbyak::util;
+
+  setNewBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+
+  Label InlineIRData;
+  
+  mov(rdi, STATE);
+  lea(rsi, ptr[rip + InlineIRData]);
+  call(qword STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
+
+  jmp(qword STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+
+  L(InlineIRData);
+
+  ready();
+
+  return getSize();
+}
+
 X86Dispatcher::~X86Dispatcher() {
   FEXCore::Allocator::munmap(top_, MAX_DISPATCHER_CODE_SIZE);
 }
@@ -456,7 +483,7 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::Context *CTX, DispatcherConfig &Config) {
+std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::Context *CTX, const DispatcherConfig &Config) {
   return std::make_unique<X86Dispatcher>(CTX, Config);
 }
 

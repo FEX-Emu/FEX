@@ -36,12 +36,11 @@ namespace FEXCore::IR {
 
 
 namespace FEXCore::CPU {
-class CPUBackend;
 
-InterpreterCore::InterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+InterpreterCore::InterpreterCore(Dispatcher *Dispatcher, FEXCore::Core::InternalThreadState *Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  , Dispatch(Dispatcher)
   {
-
 
   auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
 
@@ -59,20 +58,35 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 #endif
 }
 
-void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
 
-  auto Size = AlignUp(IR->GetInlineSize(), 16);
-  if ((BufferUsed + Size) > CurrentCodeBuffer->Size) {
+  const auto IRSize = AlignUp(IR->GetInlineSize(), 16);
+  const auto MaxSize = IRSize + Dispatcher::MaxInterpreterTrampolineSize + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
+
+  if ((BufferUsed + MaxSize) > CurrentCodeBuffer->Size) {
     ThreadState->CTX->ClearCodeCache(ThreadState);
   }
 
-  auto DestBuffer = CurrentCodeBuffer->Ptr + BufferUsed;
+  const auto BufferStart = CurrentCodeBuffer->Ptr + BufferUsed;;
+
+  auto DestBuffer = BufferStart;
+
+  if (GDBEnabled) {
+    const auto GDBSize = Dispatch->GenerateGDBPauseCheck(DestBuffer, Entry);
+    DestBuffer += GDBSize;
+    BufferUsed += GDBSize;
+  }
+
+  const auto TrampolineSize = Dispatch->GenerateInterpreterTrampoline(DestBuffer);
+  DestBuffer += TrampolineSize;
+  BufferUsed += TrampolineSize;
+
 
   IR->Serialize(DestBuffer);
+  DestBuffer += IRSize;
+  BufferUsed += IRSize;
 
-  BufferUsed += Size;
-
-  return DestBuffer;
+  return BufferStart;
 }
 
 void InterpreterCore::ClearCache() {
@@ -82,16 +96,14 @@ void InterpreterCore::ClearCache() {
 }
 
 std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return std::make_unique<InterpreterCore>(ctx, Thread);
+  return std::make_unique<InterpreterCore>(ctx->Dispatcher.get(), Thread);
 }
 
 void InitializeInterpreterSignalHandlers(FEXCore::Context::Context *CTX) {
   InterpreterCore::InitializeSignalHandlers(CTX);
 }
 
-void GetInterpreterDispatcherConfig(DispatcherConfig &config) {
-  config = DispatcherConfig {
-    .InterpreterDispatch = true
-  };
+CPUBackendFeatures GetInterpreterBackendFeatures() {
+  return CPUBackendFeatures { };
 }
 }

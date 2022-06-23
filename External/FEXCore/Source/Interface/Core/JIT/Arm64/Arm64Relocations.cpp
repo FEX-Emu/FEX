@@ -26,7 +26,7 @@ void Arm64JITCore::InsertNamedThunkRelocation(vixl::aarch64::Register Reg, const
   Relocation MoveABI{};
   MoveABI.NamedThunkMove.Header.Type = FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE;
   // Offset is the offset from the entrypoint of the block
-  auto CurrentCursor = GetCursorAddress<uint64_t>();
+  auto CurrentCursor = GetCursorAddress<uint8_t *>();
   MoveABI.NamedThunkMove.Offset = CurrentCursor - GuestEntry;
   MoveABI.NamedThunkMove.Symbol = Sum;
   MoveABI.NamedThunkMove.RegisterIndex = Reg.GetCode();
@@ -57,7 +57,7 @@ Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXC
 
 void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit) {
   // Offset is the offset from the entrypoint of the block
-  auto CurrentCursor = GetCursorAddress<uint64_t>();
+  auto CurrentCursor = GetCursorAddress<uint8_t *>();
   Lit.MoveABI.NamedSymbolLiteral.Offset = CurrentCursor - GuestEntry;
 
   place(&Lit.Lit);
@@ -68,7 +68,7 @@ void Arm64JITCore::InsertGuestRIPMove(vixl::aarch64::Register Reg, uint64_t Cons
   Relocation MoveABI{};
   MoveABI.GuestRIPMove.Header.Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE;
   // Offset is the offset from the entrypoint of the block
-  auto CurrentCursor = GetCursorAddress<uint64_t>();
+  auto CurrentCursor = GetCursorAddress<uint8_t *>();
   MoveABI.GuestRIPMove.Offset = CurrentCursor - GuestEntry;
   MoveABI.GuestRIPMove.GuestRIP = Constant;
   MoveABI.GuestRIPMove.RegisterIndex = Reg.GetCode();

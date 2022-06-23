@@ -368,6 +368,56 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
   }
 }
 
+
+static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+  auto Thread = Frame->Thread;
+  auto GuestRip = record[1];
+
+  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
+
+  if (!HostCode) {
+    //fmt::print("ExitFunctionLink: Aborting, {:X} not in cache\n", GuestRip);
+    Frame->State.rip = GuestRip;
+    return Frame->Pointers.Common.DispatcherLoopTop;
+  }
+
+  uintptr_t branch = (uintptr_t)(record) - 8;
+  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
+
+  auto offset = HostCode/4 - branch/4;
+  if (IsInt26(offset)) {
+    // optimal case - can branch directly
+    // patch the code
+    vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+    vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
+    emit.b(offset);
+    emit.FinalizeCode();
+    vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
+
+    // Add de-linking handler
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
+      vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+      vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
+      Literal l_BranchHost{LinkerAddress};
+      emit.ldr(x0, &l_BranchHost);
+      emit.blr(x0);
+      emit.place(&l_BranchHost);
+      emit.FinalizeCode();
+      vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
+    });
+  } else {
+    // fallback case - do a soft-er link by patching the pointer
+    record[0] = HostCode;
+
+    // Add de-linking handler
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+      record[0] = LinkerAddress;
+    });
+  }
+
+  return HostCode;
+}
+
 void Arm64JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
@@ -433,6 +483,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Arm64JITCore_ExitFunctionLink);
+
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
@@ -613,7 +665,7 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
-void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData) {
+void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
@@ -628,9 +680,9 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   this->IR = IR;
 
   // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = SSACount * 16;
+  uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
   if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState);
+    CTX->ClearCodeCache(ThreadState);
   }
 
   // AAPCS64
@@ -653,31 +705,11 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
   // X1-X3 = Temp
   // X4-r18 = RA
 
-  GuestEntry = GetCursorAddress<uint64_t>();
+  GuestEntry = GetCursorAddress<uint8_t *>();
 
-  if (CTX->GetGdbServerStatus()) {
-    aarch64::Label RunBlock;
-
-    // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
-    // This happens when single stepping
-
-    static_assert(sizeof(CTX->Config.RunningMode) == 4, "This is expected to be size of 4");
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Thread))); // Get thread
-    ldr(x0, MemOperand(x0, offsetof(FEXCore::Core::InternalThreadState, CTX))); // Get Context
-    ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
-
-    // If the value == 0 then we don't need to stop
-    cbz(w0, &RunBlock);
-    {
-      // Make sure RIP is syncronized to the context
-      LoadConstant(x0, Entry);
-      str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
-
-      // Stop the thread
-      ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA)));
-      br(x0);
-    }
-    bind(&RunBlock);
+  if (GDBEnabled) {
+    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);
+    GetBuffer()->CursorForward(GDBSize);
   }
 
   //LOGMAN_THROW_A_FMT(RAData->HasFullRA(), "Arm64 JIT only works with RA");
@@ -702,7 +734,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
-    uintptr_t BlockStartHostCode = GetCursorAddress<uintptr_t>();
+    auto BlockStartHostCode = GetCursorAddress<uint8_t *>();
     {
       const auto Node = IR->GetID(BlockNode);
       const auto IsTarget = JumpTargets.try_emplace(Node).first;
@@ -726,7 +758,10 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     }
 
     if (DebugData) {
-      DebugData->Subblocks.push_back({BlockStartHostCode, static_cast<uint32_t>(GetCursorAddress<uintptr_t>() - BlockStartHostCode)});
+      DebugData->Subblocks.push_back({
+        static_cast<uint32_t>(BlockStartHostCode - GuestEntry),
+        static_cast<uint32_t>(GetCursorAddress<uint8_t *>() - BlockStartHostCode)
+      });
     }
   }
 
@@ -739,66 +774,17 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 
   FinalizeCode();
 
-  auto CodeEnd = GetCursorAddress<uint64_t>();
-  CPU.EnsureIAndDCacheCoherency(reinterpret_cast<void*>(GuestEntry), CodeEnd - reinterpret_cast<uint64_t>(GuestEntry));
+  auto CodeEnd = GetCursorAddress<uint8_t *>();
+  CPU.EnsureIAndDCacheCoherency(GuestEntry, CodeEnd - GuestEntry);
 
   if (DebugData) {
-    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(CodeEnd) - reinterpret_cast<uintptr_t>(GuestEntry);
+    DebugData->HostCodeSize = CodeEnd - GuestEntry;
     DebugData->Relocations = &Relocations;
   }
 
   this->IR = nullptr;
 
-  return reinterpret_cast<void*>(GuestEntry);
-}
-
-static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
-  auto Thread = Frame->Thread;
-  auto GuestRip = record[1];
-
-  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
-
-  if (!HostCode) {
-    //fmt::print("ExitFunctionLink: Aborting, {:X} not in cache\n", GuestRip);
-    Frame->State.rip = GuestRip;
-    return Frame->Pointers.Common.DispatcherLoopTop;
-  }
-
-  uintptr_t branch = (uintptr_t)(record) - 8;
-  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-
-  auto offset = HostCode/4 - branch/4;
-  if (IsInt26(offset)) {
-    // optimal case - can branch directly
-    // patch the code
-    vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
-    vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
-    emit.b(offset);
-    emit.FinalizeCode();
-    vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
-
-    // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
-      vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
-      vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
-      Literal l_BranchHost{LinkerAddress};
-      emit.ldr(x0, &l_BranchHost);
-      emit.blr(x0);
-      emit.place(&l_BranchHost);
-      emit.FinalizeCode();
-      vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
-    });
-  } else {
-    // fallback case - do a soft-er link by patching the pointer
-    record[0] = HostCode;
-
-    // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
-      record[0] = LinkerAddress;
-    });
-  }
-
-  return HostCode;
+  return GuestEntry;
 }
 
 void Arm64JITCore::ResetStack() {
@@ -822,9 +808,8 @@ void InitializeArm64JITSignalHandlers(FEXCore::Context::Context *CTX) {
   Arm64JITCore::InitializeSignalHandlers(CTX);
 }
 
-void GetArm64JITDispatcherConfig(DispatcherConfig &config) {
-  config = DispatcherConfig {
-    .ExitFunctionLink = reinterpret_cast<uintptr_t>(&Arm64JITCore_ExitFunctionLink),
+CPUBackendFeatures GetArm64JITBackendFeatures() {
+  return CPUBackendFeatures {
     .SupportsStaticRegisterAllocation = true
   };
 }
