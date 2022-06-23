@@ -58,8 +58,10 @@ char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned lo
     }
 }
 
+DECL_COPYABLE_TRAMPLOLINE(XUnregisterIMInstantiateCallbackCBFN)
+DECL_COPYABLE_TRAMPLOLINE(XRemoveConnectionWatchCBFN)
 DECL_COPYABLE_TRAMPLOLINE(XIfEventCBFN)
-
+DECL_COPYABLE_TRAMPLOLINE(XSetErrorHandlerCBFN)
 
 template<typename Result, typename... Args>
 struct PackedArguments;
@@ -160,37 +162,35 @@ struct CallbackMarshaler<R(Args...)> {
 };
 
 int fexfn_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventCBFN* a2, XPointer a3) {
-    auto fn = binder::make_instance<XIfEventCBFN>(a2, &CallbackMarshaler<XIfEventCBFN>::marshal<offsetof(CallbackUnpacks, libX11_XIfEventCB)>);
+    auto fn = binder::make_instance(a2, &CallbackMarshaler<XIfEventCBFN>::marshal<offsetof(CallbackUnpacks, libX11_XIfEventCB)>);
 
     return fexldr_ptr_libX11_XIfEvent(a0, a1, fn, a3);
 }
 
 Bool fexfn_impl_libX11_XUnregisterIMInstantiateCallback_internal(
-    Display*, struct _XrmHashBucketRec*,
-    char*, char*, XUnregisterIMInstantiateCallbackCBFN*, XPointer) {
-    fprintf(stderr, "XUnregisterIMInstantiateCallback: Stubbed");
-    return true;
+    Display* a0, struct _XrmHashBucketRec* a1,
+    char* a2, char* a3, XUnregisterIMInstantiateCallbackCBFN* a4, XPointer a5) {
+    auto fn = binder::make_instance(a4, &CallbackMarshaler<XUnregisterIMInstantiateCallbackCBFN>::marshal<offsetof(CallbackUnpacks, libX11_XUnregisterIMInstantiateCallbackCB)>);
+    return fexldr_ptr_libX11_XUnregisterIMInstantiateCallback(a0, a1, a2, a3, fn, a5);
 }
 
-void fexfn_impl_libX11_XRemoveConnectionWatch_internal(Display*, XRemoveConnectionWatchCBFN*, XPointer) {
-    fprintf(stderr, "XRemoveConnectionWatch: Stubbed");
+void fexfn_impl_libX11_XRemoveConnectionWatch_internal(Display* a0, XRemoveConnectionWatchCBFN* a1, XPointer a2) {
+    auto fn = binder::make_instance(a1, &CallbackMarshaler<XRemoveConnectionWatchCBFN>::marshal<offsetof(CallbackUnpacks, libX11_XRemoveConnectionWatchCB)>);
+
+    return fexldr_ptr_libX11_XRemoveConnectionWatch(a0, fn, a2);
 }
 
-XErrorHandler guest_handler;
+static XErrorHandler guest_handler;
 
-int XSetErrorHandlerCB(Display* a_0, XErrorEvent* a_1) {
-    static XSetErrorHandlerCB_Args argsrv { a_0, a_1};
-    
-    call_guest(callback_unpacks->libX11_XSetErrorHandlerCB, (void*) guest_handler, &argsrv);
-    
-    return argsrv.rv;
-}
+XSetErrorHandlerCBFN* fexfn_impl_libX11_XSetErrorHandler_internal(XSetErrorHandlerCBFN a_0) {
+    auto fn = binder::make_instance(a_0, &CallbackMarshaler<XSetErrorHandlerCBFN>::marshal<offsetof(CallbackUnpacks, libX11_XSetErrorHandlerCB)>);
 
-XSetErrorHandlerCBFN* fexfn_impl_libX11_XSetErrorHandler_internal(XErrorHandler a_0) {
     auto old = guest_handler;
     guest_handler = a_0;
 
-    fexldr_ptr_libX11_XSetErrorHandler(&XSetErrorHandlerCB);
+    // FEX_TODO(Get return value from bound fn)
+    fexldr_ptr_libX11_XSetErrorHandler(fn);
+
     return old;
 }
 
