@@ -503,11 +503,13 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
 }
 
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
-static thread_local vixl::aarch64::Assembler emit;
+static thread_local vixl::aarch64::Assembler emit(nullptr, 1);
 
 size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
 
   *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxGDBPauseCheckSize);
+  
+  vixl::CodeBufferCheckScope scope(&emit, MaxGDBPauseCheckSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
 
   aarch64::Label RunBlock;
 
@@ -544,6 +546,8 @@ size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
   
   *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+
+  vixl::CodeBufferCheckScope scope(&emit, MaxInterpreterTrampolineSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
 
   aarch64::Label InlineIRData;
 

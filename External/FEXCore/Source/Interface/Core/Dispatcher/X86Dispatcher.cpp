@@ -406,7 +406,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
 }
 
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
-static thread_local Xbyak::CodeGenerator emit;
+static thread_local Xbyak::CodeGenerator emit(1, &emit); // actual emit target set with setNewBuffer
 
 size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
   using namespace Xbyak;
