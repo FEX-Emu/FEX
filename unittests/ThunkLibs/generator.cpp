@@ -281,7 +281,9 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
     const std::string full_code = std::string { prelude } + std::string { code };
     run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
 
-    std::string result = "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n";
+    std::string result =
+        "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n"
+        "#define FEX_PACKFN_LINKAGE\n";
     for (auto& filename : {
             output_filenames.thunks,
             output_filenames.function_packs_public,
