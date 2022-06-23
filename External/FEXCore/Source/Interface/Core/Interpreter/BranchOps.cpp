@@ -26,13 +26,6 @@ static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
 }
 
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
-DEF_OP(GuestCallDirect) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
-
-DEF_OP(GuestCallIndirect) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
 
 DEF_OP(SignalReturn) {
   SignalReturn(Data->State);

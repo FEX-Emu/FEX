@@ -29,13 +29,6 @@ $end_info$
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
-DEF_OP(GuestCallDirect) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
-
-DEF_OP(GuestCallIndirect) {
-  LogMan::Msg::DFmt("Unimplemented");
-}
 
 DEF_OP(SignalReturn) {
   // Adjust the stack first for a regular return
@@ -321,8 +314,6 @@ DEF_OP(CPUID) {
 #undef DEF_OP
 void X86JITCore::RegisterBranchHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
-  REGISTER_OP(GUESTCALLDIRECT,   GuestCallDirect);
-  REGISTER_OP(GUESTCALLINDIRECT, GuestCallIndirect);
   REGISTER_OP(SIGNALRETURN,      SignalReturn);
   REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
   REGISTER_OP(EXITFUNCTION,      ExitFunction);
