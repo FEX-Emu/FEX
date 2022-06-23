@@ -108,7 +108,8 @@ namespace FEX::HLE {
     return NewThread;
   }
 
-  uint64_t HandleNewClone(FEXCore::Core::InternalThreadState *Thread, FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *GuestArgs) {
+  uint64_t HandleNewClone(FEXCore::Core::InternalThreadState *Thread, FEXCore::Context::Context *CTX, FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *CloneArgs) {
+    auto GuestArgs = &CloneArgs->args;
     uint64_t flags = GuestArgs->flags;
     auto NewThread = Thread;
     if (flags & CLONE_THREAD) {
@@ -150,6 +151,11 @@ namespace FEX::HLE {
       }
     }
 
+    if (CloneArgs->Type == TYPE_CLONE3) {
+      // If we are coming from a clone3 handler then we need to adjust RSP.
+      Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] += CloneArgs->args.stack_size;
+    }
+
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
       if (flags & CLONE_SETTLS) {
         x64::SetThreadArea(NewThread->CurrentFrame, reinterpret_cast<void*>(GuestArgs->tls));
@@ -177,7 +183,7 @@ namespace FEX::HLE {
     return Thread->StatusCode;
   }
 
-  uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, pid_t *child_tid, void *tls) {
+  uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, size_t StackSize, pid_t *parent_tid, pid_t *child_tid, void *tls) {
     // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
     FEX::HLE::_SyscallHandler->LockBeforeFork();
     
@@ -210,7 +216,7 @@ namespace FEX::HLE {
       // Handle child setup now
       if (stack != nullptr) {
         // use specified stack
-        Frame->State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack);
+        Frame->State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack) + StackSize;
       } else {
         // In the case of fork and nullptr stack then the child uses the same stack space as the parent
         // Same virtual address, different addressspace
@@ -264,11 +270,11 @@ namespace FEX::HLE {
     });
 
     REGISTER_SYSCALL_IMPL_FLAGS(fork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0);
+      return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0, 0);
     });
 
     REGISTER_SYSCALL_IMPL_FLAGS(vfork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0);
+      return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0, 0);
     });
 
     REGISTER_SYSCALL_IMPL_FLAGS(clone3, SyscallFlags::DEFAULT, ([](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::kernel_clone3_args *cl_args, size_t size) -> uint64_t {
