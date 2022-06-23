@@ -29,6 +29,8 @@ union PhysicalRegister {
 
 static_assert(sizeof(PhysicalRegister) == 1);
 
+struct RegisterAllocationDataDeleter;
+
 // This class is serialized, can't have any holes in the structure
 // otherwise ASAN complains about reading uninitialized memory
 class FEX_PACKED RegisterAllocationData {
@@ -47,14 +49,12 @@ class FEX_PACKED RegisterAllocationData {
       return sizeof(RegisterAllocationData) + NodeCount * sizeof(Map[0]);
     }
 
-    RegisterAllocationData* CreateCopy() {
-      auto copy = (RegisterAllocationData*)FEXCore::Allocator::malloc(Size(MapCount));
-      memcpy((void*)&copy->Map[0], (void*)&Map[0], MapCount * sizeof(Map[0]));
-      copy->SpillSlotCount = SpillSlotCount;
-      copy->MapCount = MapCount;
-      copy->IsShared = IsShared;
-      return copy;
-    }
+    using UniquePtr = std::unique_ptr<FEXCore::IR::RegisterAllocationData, RegisterAllocationDataDeleter>;
+
+    static UniquePtr Create(uint32_t NodeCount);
+
+    UniquePtr CreateCopy() const;
+
     void Serialize(std::ostream& stream) const {
       stream.write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
       stream.write((const char*)&MapCount, sizeof(MapCount));
@@ -67,11 +67,27 @@ class FEX_PACKED RegisterAllocationData {
 };
 
 struct RegisterAllocationDataDeleter {
-  void operator()(RegisterAllocationData* r) {
+  void operator()(RegisterAllocationData* r) const {
     if (!r->IsShared) {
       FEXCore::Allocator::free(r);
     }
   }
 };
+
+inline auto RegisterAllocationData::Create(uint32_t NodeCount) -> UniquePtr {
+  auto Ret = (RegisterAllocationData*)FEXCore::Allocator::malloc(Size(NodeCount));
+  memset(&Ret->Map[0], PhysicalRegister::Invalid().Raw, NodeCount);
+  Ret->MapCount = NodeCount;
+  return UniquePtr { Ret };
+}
+
+inline auto RegisterAllocationData::CreateCopy() const -> UniquePtr {
+  auto copy = (RegisterAllocationData*)FEXCore::Allocator::malloc(Size(MapCount));
+  memcpy((void*)&copy->Map[0], (void*)&Map[0], MapCount * sizeof(Map[0]));
+  copy->SpillSlotCount = SpillSlotCount;
+  copy->MapCount = MapCount;
+  copy->IsShared = IsShared;
+  return UniquePtr { copy };
+}
 
 }
