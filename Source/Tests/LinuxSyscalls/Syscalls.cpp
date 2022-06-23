@@ -246,7 +246,7 @@ struct StackFrameData {
   FEXCore::Core::InternalThreadState *Thread{};
   FEXCore::Context::Context *CTX{};
   FEXCore::Core::CpuStateFrame NewFrame{};
-  FEX::HLE::kernel_clone3_args GuestArgs{};
+  FEX::HLE::clone3_args GuestArgs{};
   void *NewStack;
   size_t StackSize;
 };
@@ -321,7 +321,7 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   StackFrameData *Data = (StackFrameData *)FEXCore::Allocator::malloc(sizeof(StackFrameData));
   Data->Thread = Frame->Thread;
   Data->CTX = Frame->Thread->CTX;
-  Data->GuestArgs = args->args;
+  Data->GuestArgs = *args;
 
   // In the case of thread, we need a new stack
   Data->StackSize = 8 * 1024 * 1024;
@@ -357,7 +357,7 @@ static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   Data->Ret = (uint64_t)Clone3HandlerRet;
   Data->Data.Thread = Frame->Thread;
   Data->Data.CTX = Frame->Thread->CTX;
-  Data->Data.GuestArgs = args->args;
+  Data->Data.GuestArgs = *args;
 
   Data->Data.StackSize = StackSize;
   Data->Data.NewStack = NewStack;
@@ -483,6 +483,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
     return FEX::HLE::ForkGuest(Thread, Frame, flags,
       reinterpret_cast<void*>(args->args.stack),
+      args->args.stack_size,
       reinterpret_cast<pid_t*>(args->args.parent_tid),
       reinterpret_cast<pid_t*>(args->args.child_tid),
       reinterpret_cast<void*>(args->args.tls));

@@ -86,7 +86,7 @@ namespace FEX::HLE::x32 {
           .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
           .exit_signal = flags & CSIGNAL,
           .stack = reinterpret_cast<uint64_t>(stack),
-          .stack_size = ~0ULL, // This syscall isn't able to see the stack size
+          .stack_size = 0, // This syscall isn't able to see the stack size
           .tls = reinterpret_cast<uint64_t>(tls),
           .set_tid = 0, // This syscall isn't able to select TIDs
           .set_tid_size = 0,
