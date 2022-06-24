@@ -1,9 +1,11 @@
 #pragma once
 #include <algorithm>
-#include <optional>
 #include <string>
 #include <vector>
 #include <memory>
+#include <filesystem>
+
+#include <fmt/format.h>
 
 namespace FEXCore::IR {
   struct AOTIRCacheEntry;
@@ -23,6 +25,22 @@ struct SourcecodeSymbolMapping {
   uintptr_t FileGuestEnd;
 
   std::string Name;
+
+  static std::string SymName(const SourcecodeSymbolMapping *Sym, const std::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
+    if (Sym) {
+      auto SymOffset = FileBegin - Sym->FileGuestBegin;
+      if (SymOffset) {
+        return fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
+                              SymOffset, HostEntry);
+      } else {
+        return fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
+                              HostEntry);
+      }
+    } else {
+      return fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
+                            HostEntry);
+    }
+  }
 };
 
 struct SourcecodeMap {

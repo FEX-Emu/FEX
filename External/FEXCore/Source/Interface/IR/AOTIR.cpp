@@ -300,9 +300,9 @@ namespace FEXCore::IR {
 
   AOTIRCaptureCache::PreGenerateIRFetchResult AOTIRCaptureCache::PreGenerateIRFetch(uint64_t GuestRIP, FEXCore::IR::IRListView *IRList) {
     auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
-    
+
     PreGenerateIRFetchResult Result{};
-    
+
     if (AOTIRCacheEntry.Entry) {
       AOTIRCacheEntry.Entry->ContainsCode = true;
 
@@ -344,24 +344,11 @@ namespace FEXCore::IR {
     auto map = Entry->SourcecodeMap.get();
 
     if (map) {
-      auto FileBegin = GuestRIP - VAFileStart;
+      auto FileOffset = GuestRIP - VAFileStart;
 
-      auto Sym = map->FindSymbolMapping(FileBegin);
+      auto Sym = map->FindSymbolMapping(FileOffset);
 
-      std::string SymName;
-      if (Sym) {
-        auto SymOffset = FileBegin - Sym->FileGuestBegin;
-        if (SymOffset) {
-          SymName = fmt::format("{}: {}+{} @{:x}", std::filesystem::path(Entry->Filename).stem().string(), Sym->Name,
-                                SymOffset, HostEntry);
-        } else {
-          SymName = fmt::format("{}: {} @{:x}", std::filesystem::path(Entry->Filename).stem().string(), Sym->Name,
-                                HostEntry);
-        }
-      } else {
-        SymName = fmt::format("{}: +{} @{:x}", std::filesystem::path(Entry->Filename).stem().string(), FileBegin,
-                              HostEntry);
-      }
+      std::string SymName = HLE::SourcecodeSymbolMapping::SymName(Sym, Entry->Filename, HostEntry, FileOffset);
 
       std::vector<gdb_line_mapping> Lines;
       for (const auto &GuestOpcode : DebugData->GuestOpcodes) {
