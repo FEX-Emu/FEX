@@ -4,6 +4,7 @@ struct custom_host_impl {};
 struct custom_guest_entrypoint {};
 
 struct generate_guest_symtable {};
+struct indirect_guest_calls {};
 
 struct callback_annotation_base {
     // Prevent annotating multiple callback strategies
