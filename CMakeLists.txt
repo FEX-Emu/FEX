@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(FEX)
 
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
-option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires g++/g++-multilib or g++-x86-64-linux-gnu/g++-multilib-x86-64-linux-gnu" FALSE)
+option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)
@@ -25,8 +25,7 @@ option(ENABLE_INTERPRETER "Enables FEX's Interpreter" FALSE)
 option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
 option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
 
-set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
-set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+set (X86_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86.cmake" CACHE FILEPATH "Toolchain file for the x86 (cross-)compiler")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 # These options are meant for package management
@@ -76,6 +75,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   set(_M_X86_64 1)
   add_definitions(-D_M_X86_64=1)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
+  set (X86_TOOLCHAIN_FILE "")
 endif()
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
@@ -514,8 +514,7 @@ if (BUILD_THUNKS)
     BINARY_DIR "Guest"
     CMAKE_ARGS
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DX86_C_COMPILER:STRING=${X86_C_COMPILER}"
-      "-DX86_CXX_COMPILER:STRING=${X86_CXX_COMPILER}"
+      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"

@@ -5,13 +5,8 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
   set(CMAKE_CXX_STANDARD 17)
 
-  # These get passed in from the main cmake project
-  set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
-  set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
+  # This gets passed in from the main cmake project
   set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
-
-  set(CMAKE_C_COMPILER "${X86_C_COMPILER}")
-  set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
 
   set(TARGET_TYPE SHARED)
   set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
