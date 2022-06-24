@@ -15,6 +15,14 @@ template<auto>
 struct fex_gen_config {
 };
 
+template<> struct fex_gen_config<glXGetProcAddress> : fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+
+// Symbols queryable through glXGetProcAddr
+namespace internal {
+template<auto>
+struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {
+};
+
 template<> struct fex_gen_config<glXQueryCurrentRendererStringMESA> {};
 template<> struct fex_gen_config<glXQueryRendererStringMESA> {};
 template<> struct fex_gen_config<glXGetContextIDEXT> {};
@@ -92,13 +100,6 @@ template<> struct fex_gen_config<glXGetVisualFromFBConfig> {};
 //template<> struct fex_gen_config<glXCreateContextAttribs> {};
 template<> struct fex_gen_config<glXCreateContextAttribsARB> {};
 template<> struct fex_gen_config<glXSwapIntervalEXT> {};
-
-// Symbols exposed through glXGetProcAddr
-namespace internal {
-template<auto>
-struct fex_gen_config : fexgen::generate_guest_symtable {
-    const char* load_host_endpoint_via = "symbolFromGlXGetProcAddr";
-};
 
 template<> struct fex_gen_config<glColorP3ui> {};
 template<> struct fex_gen_config<glColorP3uiv> {};
@@ -696,9 +697,9 @@ template<> struct fex_gen_config<glCullFace> {};
 template<> struct fex_gen_config<glCullParameterdvEXT> {};
 template<> struct fex_gen_config<glCullParameterfvEXT> {};
 template<> struct fex_gen_config<glCurrentPaletteMatrixARB> {};
-template<> struct fex_gen_config<glDebugMessageCallbackAMD> {};
-template<> struct fex_gen_config<glDebugMessageCallbackARB> {};
-template<> struct fex_gen_config<glDebugMessageCallback> {};
+template<> struct fex_gen_config<glDebugMessageCallbackAMD> : fexgen::callback_stub {};
+template<> struct fex_gen_config<glDebugMessageCallbackARB> : fexgen::callback_stub {};
+template<> struct fex_gen_config<glDebugMessageCallback> : fexgen::callback_stub {};
 template<> struct fex_gen_config<glDebugMessageControlARB> {};
 template<> struct fex_gen_config<glDebugMessageControl> {};
 template<> struct fex_gen_config<glDebugMessageEnableAMD> {};

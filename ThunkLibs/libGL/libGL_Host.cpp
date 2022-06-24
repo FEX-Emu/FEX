@@ -18,6 +18,8 @@ $end_info$
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#include <cstdlib>
+
 #include "common/Host.h"
 
 void fexfn_impl_libGL_glDebugMessageCallbackAMD_internal(GLDEBUGPROCAMD, const void*) {

@@ -8,36 +8,56 @@ $end_info$
 #define GL_GLEXT_PROTOTYPES 1
 #define GLX_GLXEXT_PROTOTYPES 1
 
-#include "glcorearb.h"
-
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+
+#undef GL_ARB_viewport_array
+#include "glcorearb.h"
+
 #include <stdio.h>
-#include <cstring>
+#include <cstdlib>
+#include <functional>
+#include <string_view>
+#include <unordered_map>
 
 #include "common/Guest.h"
 
 #include "thunks.inl"
 #include "function_packs.inl"
 #include "function_packs_public.inl"
+#include "symbol_list.inl"
 
 typedef void voidFunc();
 
+// Maps OpenGL API function names to the address of a guest function which is
+// linked to the corresponding host function pointer
+const std::unordered_map<std::string_view, uintptr_t /* guest function address */> HostPtrInvokers =
+    std::invoke([]() {
+#define PAIR(name, unused) Ret[#name] = reinterpret_cast<uintptr_t>(GetCallerForHostThunkFromRuntimePointer<fexthunks_libGL_hostcall_##name>(name));
+        std::unordered_map<std::string_view, uintptr_t> Ret;
+        FOREACH_internal_SYMBOL(PAIR)
+        return Ret;
+#undef PAIR
+    });
+
 extern "C" {
 	voidFunc *glXGetProcAddress(const GLubyte *procname) {
+    auto Ret = fexfn_pack_glXGetProcAddress(procname);
+    if (!Ret) {
+        return nullptr;
+    }
 
-        for (int i = 0; internal_symtable[i].name; i++) {
-            if (strcmp(internal_symtable[i].name, (const char*)procname) == 0) {
-				// for debugging
-                //printf("glXGetProcAddress: looked up %s %s %p %p\n", procname, internal_symtable[i].name, internal_symtable[i].fn, &glXGetProcAddress);
-                return internal_symtable[i].fn;
-			}
-		}
+    auto TargetFuncIt = HostPtrInvokers.find(reinterpret_cast<const char*>(procname));
+    if (TargetFuncIt == HostPtrInvokers.end()) {
+      // Extension found in host but not in our interface definition => treat as fatal error
+      fprintf(stderr, "glXGetProcAddress: not found %s\n", procname);
+      __builtin_trap();
+    }
 
-		printf("glXGetProcAddress: not found %s\n", procname);
-		return nullptr;
+    LinkAddressToFunction((uintptr_t)Ret, TargetFuncIt->second);
+    return Ret;
 	}
 
 	voidFunc *glXGetProcAddressARB(const GLubyte *procname) {
