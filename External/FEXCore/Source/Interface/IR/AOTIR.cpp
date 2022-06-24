@@ -418,11 +418,6 @@ namespace FEXCore::IR {
       __jit_debug_descriptor.relevant_entry = entry;
       __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
       __jit_debug_register_code();
-      // LogMan::Msg::DFmt("Registered {} - blocks {}, lines {}, Code {:x}, Size {}", SymName, info->nblocks, info->nlines,
-      // HostEntry, DebugData->HostCodeSize);
-
-      // DebuggerHandle
-      // register?
     }
   }
   #endif

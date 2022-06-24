@@ -750,12 +750,13 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
   bool GenerateIndex = stat(GuestIndexFile.data(), &GuestIndexFileStat) != 0 || GuestSourceFileStat.st_mtime > GuestIndexFileStat.st_mtime;
 
   if (!GenerateIndex) {
-    LogMan::Msg::DFmt("GenerateMap: reading index '{}'", GuestIndexFile);
+    // Index file de-serialization
+    LogMan::Msg::DFmt("GenerateMap: Reading index '{}'", GuestIndexFile);
     
     std::ifstream Stream(GuestIndexFile);
 
     if (!Stream) {
-      LogMan::Msg::DFmt("GenerateMap: failed to open '{}'", GuestIndexFile);
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestIndexFile);
       goto DoGenerate;
     }
 
@@ -810,36 +811,30 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
       }
     }
 
-    LogMan::Msg::DFmt("GenerateMap: Finished reading index", GuestIndexFile);
+    LogMan::Msg::DFmt("GenerateMap: Finished reading index");
     return rv;
   } else {
+    // objdump output parsing,  index generation, index file serialization
     DoGenerate:
     LogMan::Msg::DFmt("GenerateMap: Generating index for '{}'", GuestSourceFile);
     std::ifstream Stream(GuestSourceFile);
 
     if (!Stream) {
-      LogMan::Msg::DFmt("GenerateMap: failed to open '{}'", GuestSourceFile);
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestSourceFile);
     }
 
     std::ofstream IndexStream(GuestIndexFile);
 
     if (!IndexStream) {
-      LogMan::Msg::DFmt("GenerateMap: failed to open '{}' for writing", GuestIndexFile);
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}' for writing", GuestIndexFile);
     }
 
     IndexStream.write("fexsrcindex0", strlen("fexsrcindex0"));
 
+    // objdump parsing
     std::string Line;
     int LineNum = 0;
-    auto Syntax = std::regex_constants::ECMAScript | std::regex_constants::optimize;
-
-    //"0000000000057030 <name>"
-    std::regex SymbolDefPattern(R"(^([0-9a-z]{8,16}) (<[^>]+>):$)", Syntax);
-
-    //"    addrhex:\t...."
-    //^ *([0-9a-z]+):\\t
-    std::regex OffsetDefPattern("^ +([0-9a-z]+)", Syntax);
-
+    
     bool PreviousLineWasEmpty = false;
 
     uintptr_t LastSymbolOffset{};
@@ -955,21 +950,6 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
             }
           }
         }
-#if WHY_REGEX_NO_WORKY_I_WONDER
-        std::cmatch Matches;
-        if (std::regex_match(Line.c_str(), Matches, SymbolDefPattern)) {
-          CurrentSymbolOffset = std::strtoul(Matches[0], nullptr, 16);
-          if (PreviousLineWasEmpty) {
-            EndSymbol();
-          }
-          LastSymbolOffset = CurrentSymbolOffset;
-          LastSymbolName = Matches[1];
-          LogMan::Msg::DFmt("Symbol {} @ {:x} -> Line {}", LastSymbolName, LastSymbolOffset, LineNum);
-        } else if (std::regex_match(Line.c_str(), Matches, OffsetDefPattern)) {
-          LastOffset = std::strtoul(Matches[0].second, nullptr, 16);
-          LogMan::Msg::DFmt("Offset {:x} -> Line {}", LastOffset, LineNum);
-        }
-#endif
         // something else -- keep going
       }
     }
@@ -980,12 +960,15 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     EndSymbol();
     EndLine();
 
+    // Index post processing - entires are sorted for faster lookups
+
     std::sort(rv->SortedLineMappings.begin(), rv->SortedLineMappings.end(),
-              [](const auto &One, const auto &Two) { return One.FileGuestEnd <= Two.FileGuestBegin; });
+              [](const auto &lhs, const auto &rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
 
     std::sort(rv->SortedSymbolMappings.begin(), rv->SortedSymbolMappings.end(),
-              [](const auto &One, const auto &Two) { return One.FileGuestEnd <= Two.FileGuestBegin; });
+              [](const auto &lhs, const auto &rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
 
+    // Index serialization
     {
       auto len = rv->SourceFile.size();
       IndexStream.write((const char*)&len, sizeof(len));
@@ -1021,6 +1004,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
       }
     }
 
+    LogMan::Msg::DFmt("GenerateMap: Finished generating index", GuestIndexFile);
     return rv;
   }
 
