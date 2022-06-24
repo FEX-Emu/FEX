@@ -118,19 +118,8 @@ add_host_lib(Xrender)
 generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xfixes)
 
-set (VULKAN_LIBS
-  vulkan_radeon
-  vulkan_lvp
-  vulkan_freedreno
-  vulkan_intel
-  vulkan_panfrost
-  vulkan_virtio
-)
-
-foreach (LIB IN LISTS VULKAN_LIBS)
-  generate(libvulkan_device LIBNAME lib${LIB} ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan_device/libvulkan_device_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs symbol_list)
-  add_host_lib_with_name(vulkan_device ${LIB})
-endforeach()
+generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs symbol_list)
+add_host_lib(vulkan)
 
 generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs callback_structs callback_unpacks_header callback_typedefs)
 add_host_lib(xcb)

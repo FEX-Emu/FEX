@@ -9,6 +9,15 @@ struct fex_gen_config;
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #include <vulkan/vulkan.h>
 
+template<> struct fex_gen_config<vkGetDeviceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+
+namespace internal {
+
+template<auto>
+struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {
+};
+
 template<> struct fex_gen_config<vkAcquireNextImage2KHR> {};
 template<> struct fex_gen_config<vkAcquireNextImageKHR> {};
 template<> struct fex_gen_config<vkAcquirePerformanceConfigurationINTEL> {};
@@ -282,7 +291,6 @@ template<> struct fex_gen_config<vkGetDeviceGroupSurfacePresentModesKHR> {};
 template<> struct fex_gen_config<vkGetDeviceMemoryCommitment> {};
 template<> struct fex_gen_config<vkGetDeviceMemoryOpaqueCaptureAddress> {};
 template<> struct fex_gen_config<vkGetDeviceMemoryOpaqueCaptureAddressKHR> {};
-template<> struct fex_gen_config<vkGetDeviceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<vkGetDeviceQueue> {};
 template<> struct fex_gen_config<vkGetDeviceQueue2> {};
 template<> struct fex_gen_config<vkGetDisplayModeProperties2KHR> {};
@@ -304,7 +312,6 @@ template<> struct fex_gen_config<vkGetImageSparseMemoryRequirements2KHR> {};
 template<> struct fex_gen_config<vkGetImageSubresourceLayout> {};
 template<> struct fex_gen_config<vkGetImageViewAddressNVX> {};
 template<> struct fex_gen_config<vkGetImageViewHandleNVX> {};
-template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<vkGetMemoryFdKHR> {};
 template<> struct fex_gen_config<vkGetMemoryFdPropertiesKHR> {};
 template<> struct fex_gen_config<vkGetMemoryHostPointerPropertiesEXT> {};
@@ -429,3 +436,5 @@ template<> struct fex_gen_config<vkWaitForFences> {};
 template<> struct fex_gen_config<vkWaitSemaphores> {};
 template<> struct fex_gen_config<vkWaitSemaphoresKHR> {};
 template<> struct fex_gen_config<vkWriteAccelerationStructuresPropertiesKHR> {};
+
+} // namespace internal
