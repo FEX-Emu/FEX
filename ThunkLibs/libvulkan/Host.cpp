@@ -12,6 +12,7 @@ $end_info$
 
 #include "common/Host.h"
 
+#include <algorithm>
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
@@ -71,6 +72,18 @@ static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocat
 static void FEXFN_IMPL(vkFreeMemory)(VkDevice a_0, VkDeviceMemory a_1, const VkAllocationCallbacks* a_2) {
   (void*&)LDR_PTR(vkFreeMemory) = (void*)LDR_PTR(vkGetDeviceProcAddr)(a_0, "vkFreeMemory");
   LDR_PTR(vkFreeMemory)(a_0, a_1, nullptr);
+}
+
+static VkResult FEXFN_IMPL(vkEnumerateInstanceExtensionProperties)(const char* a_0, uint32_t* a_1, VkExtensionProperties* a_2) {
+  auto ret = LDR_PTR(vkEnumerateInstanceExtensionProperties)(a_0, a_1, a_2);
+  if (a_2) {
+    const auto end = a_2 + *a_1;
+    auto it = std::remove_if(a_2, end, [](const VkExtensionProperties& prop) { return strcmp(prop.extensionName, "VK_EXT_debug_report") == 0 || strcmp(prop.extensionName, "VK_EXT_debug_utils") == 0; });
+    // Replace by dummy entry and reduce extension count
+    std::fill(it, end, VkExtensionProperties {});
+    *a_1 -= (end - it);
+  }
+  return ret;
 }
 
 static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
