@@ -5,6 +5,7 @@ namespace FEXServer::Config {
   struct FEXServerOptions {
     bool Kill;
     bool Foreground;
+    bool Wait;
     uint32_t PersistentTimeout;
   };
 

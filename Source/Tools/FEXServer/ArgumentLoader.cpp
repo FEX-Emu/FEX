@@ -31,6 +31,11 @@ namespace FEXServer::Config {
       .metavar("n")
       .help("Make FEXServer persistent. Optional number of seconds");
 
+    Parser.add_option("-w", "--wait")
+      .action("store_true")
+      .set_default(false)
+      .help("Wait for the FEXServer to shutdown");
+
     Parser.add_option("-v")
       .action("version")
       .help("Version string");
@@ -39,6 +44,10 @@ namespace FEXServer::Config {
 
     FEXOptions.Kill = Options.get("kill");
     FEXOptions.Foreground = Options.get("foreground");
+    FEXOptions.Wait = Options.get("wait");
+    if (FEXOptions.Wait) {
+      FEXOptions.Foreground = true;
+    }
     FEXOptions.PersistentTimeout = Options.get("persistent");
 
     return FEXOptions;

@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
 
@@ -144,6 +145,29 @@ int main(int argc, char **argv, char **const envp) {
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
+
+  if (Options.Wait) {
+    int ServerPipe = FEXServerClient::ConnectToServer();
+    if (ServerPipe != -1) {
+      int FEXServerPID = FEXServerClient::RequestPIDFD(ServerPipe);
+      close(ServerPipe);
+      if (FEXServerPID != -1) {
+        LogMan::Msg::IFmt("[FEXServer] Waiting for FEXServer to close");
+        // We can't use waitid (P_PIDFD) here because the active FEXServer isn't a child of this process.
+        // Use poll instead which will return once the pidfd closes.
+        pollfd PollFD;
+        PollFD.fd = FEXServerPID;
+        PollFD.events = POLLIN | POLLOUT | POLLRDHUP | POLLERR | POLLHUP | POLLNVAL;
+
+        // Wait for a result on the pipe that isn't EINTR
+        while (poll(&PollFD, 1, -1) == -1 && errno == EINTR);
+
+        LogMan::Msg::IFmt("[FEXServer] FEXServer shutdown");
+      }
+      PipeScanner::ClosePipes();
+    }
+    return 0;
+  }
 
   if (Options.Kill) {
     int ServerPipe = FEXServerClient::ConnectToServer();
