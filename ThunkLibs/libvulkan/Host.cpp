@@ -55,7 +55,25 @@ static VkResult FEXFN_IMPL(vkCreateShaderModule)(VkDevice a_0, const VkShaderMod
   return LDR_PTR(vkCreateShaderModule)(a_0, a_1, nullptr, a_3);
 }
 
+static VkBool32 DummyVkDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT, uint64_t, size_t,
+                                           int32_t, const char*, const char*, void*) {
+  return VK_FALSE;
+}
+
 static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, const VkAllocationCallbacks* a_1, VkInstance* a_2) {
+  VkDebugReportCallbackCreateInfoEXT stub_debug_report;
+  const VkBaseInStructure* vk_struct = reinterpret_cast<const VkBaseInStructure*>(a_0);
+  for (; vk_struct->pNext; vk_struct = vk_struct->pNext) {
+    // Override guest callbacks used for VK_EXT_debug_report
+    if (*reinterpret_cast<const VkStructureType*>(vk_struct->pNext) == VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT) {
+      memcpy(&stub_debug_report, a_0->pNext, sizeof(stub_debug_report));
+      stub_debug_report.pfnCallback = DummyVkDebugReportCallback;
+      // Overwrite the pNext pointer, ignoring its const-qualifier
+      memcpy(const_cast<void*>(a_0->pNext), &stub_debug_report, sizeof(a_0->pNext));
+      break;
+    }
+  }
+
   return LDR_PTR(vkCreateInstance)(a_0, nullptr, a_2);
 }
 
@@ -71,6 +89,18 @@ static VkResult FEXFN_IMPL(vkAllocateMemory)(VkDevice a_0, const VkMemoryAllocat
 static void FEXFN_IMPL(vkFreeMemory)(VkDevice a_0, VkDeviceMemory a_1, const VkAllocationCallbacks* a_2) {
   (void*&)LDR_PTR(vkFreeMemory) = (void*)LDR_PTR(vkGetDeviceProcAddr)(a_0, "vkFreeMemory");
   LDR_PTR(vkFreeMemory)(a_0, a_1, nullptr);
+}
+
+static VkResult FEXFN_IMPL(vkCreateDebugReportCallbackEXT)(VkInstance a_0, const VkDebugReportCallbackCreateInfoEXT* a_1, const VkAllocationCallbacks* a_2, VkDebugReportCallbackEXT* a_3) {
+  VkDebugReportCallbackCreateInfoEXT overridden_callback = *a_1;
+  overridden_callback.pfnCallback = DummyVkDebugReportCallback;
+  (void*&)LDR_PTR(vkCreateDebugReportCallbackEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkCreateDebugReportCallbackEXT");
+  return LDR_PTR(vkCreateDebugReportCallbackEXT)(a_0, &overridden_callback, nullptr, a_3);
+}
+
+static void FEXFN_IMPL(vkDestroyDebugReportCallbackEXT)(VkInstance a_0, VkDebugReportCallbackEXT a_1, const VkAllocationCallbacks* a_2) {
+  (void*&)LDR_PTR(vkDestroyDebugReportCallbackEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkDestroyDebugReportCallbackEXT");
+  LDR_PTR(vkDestroyDebugReportCallbackEXT)(a_0, a_1, nullptr);
 }
 
 static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
