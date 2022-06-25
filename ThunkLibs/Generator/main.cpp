@@ -70,5 +70,13 @@ int main(int argc, char* argv[]) {
     }
 
     ClangTool Tool(*compile_db, { filename });
+    if (CLANG_RESOURCE_DIR[0] != 0) {
+        auto set_resource_directory = [](const clang::tooling::CommandLineArguments &Args, clang::StringRef) {
+            clang::tooling::CommandLineArguments AdjustedArgs = Args;
+            AdjustedArgs.push_back(std::string { "-resource-dir=" } + CLANG_RESOURCE_DIR);
+            return AdjustedArgs;
+        };
+        Tool.appendArgumentsAdjuster(set_resource_directory);
+    }
     return Tool.run(std::make_unique<GenerateThunkLibsActionFactory>(std::move(libname), std::move(output_filenames)).get());
 }
