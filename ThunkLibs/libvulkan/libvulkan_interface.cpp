@@ -11,7 +11,6 @@ struct fex_gen_config;
 
 template<> struct fex_gen_config<vkGetDeviceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
-template<> struct fex_gen_config<vkEnumerateInstanceExtensionProperties> : fexgen::custom_host_impl {};
 
 namespace internal {
 
@@ -256,6 +255,7 @@ template<> struct fex_gen_config<vkDisplayPowerControlEXT> {};
 template<> struct fex_gen_config<vkEndCommandBuffer> {};
 template<> struct fex_gen_config<vkEnumerateDeviceExtensionProperties> {};
 template<> struct fex_gen_config<vkEnumerateDeviceLayerProperties> {};
+template<> struct fex_gen_config<vkEnumerateInstanceExtensionProperties> {};
 template<> struct fex_gen_config<vkEnumerateInstanceLayerProperties> {};
 template<> struct fex_gen_config<vkEnumerateInstanceVersion> {};
 template<> struct fex_gen_config<vkEnumeratePhysicalDeviceGroups> {};
