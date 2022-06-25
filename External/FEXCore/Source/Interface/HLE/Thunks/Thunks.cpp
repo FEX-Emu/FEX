@@ -10,6 +10,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/IR/IREmitter.h>
 #include "Thunks.h"
 
 #include <dlfcn.h>
@@ -41,8 +42,13 @@ namespace FEXCore {
         std::map<IR::SHA256Sum, ThunkedFunction*> Thunks = {
             {
                 // sha256(fex:loadlib)
-                { 0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80},
+                { 0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80 },
                 &LoadLib
+            },
+            {
+                // sha256(fex:link_address_to_function)
+                { 0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77 },
+                &LinkAddressToGuestFunction
             }
         };
 
@@ -54,6 +60,54 @@ namespace FEXCore {
           Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
 
           Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
+        }
+
+        /**
+         * Instructs the Core to redirect calls to functions at the given
+         * address to another function. The original callee address is passed
+         * to the target function through an implicit argument stored in r11.
+         *
+         * The primary use case of this is ensuring that host function pointers
+         * returned from thunked APIs can safely be called by the guest.
+         */
+        static void LinkAddressToGuestFunction(void* argsv) {
+            struct args_t {
+                uintptr_t original_callee;
+                uintptr_t target_addr;     // Guest function to call when branching to original_callee
+            };
+
+            auto args = reinterpret_cast<args_t*>(argsv);
+            auto CTX = Thread->CTX;
+
+            LOGMAN_THROW_A_FMT(args->original_callee, "Tried to link null pointer address to guest function");
+            LOGMAN_THROW_A_FMT(args->target_addr, "Tried to link address to null pointer guest function");
+            if (!CTX->Config.Is64BitMode) {
+                LOGMAN_THROW_A_FMT((args->original_callee >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+                LOGMAN_THROW_A_FMT((args->target_addr >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+            }
+
+            LogMan::Msg::DFmt("Thunks: Adding trampoline from address {:#x} to guest function {:#x}",
+                              args->original_callee, args->target_addr);
+
+            auto Result = Thread->CTX->AddCustomIREntrypoint(
+                    args->original_callee,
+                    [CTX, GuestThunkEntrypoint = args->target_addr](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
+                        auto IRHeader = emit->_IRHeader(emit->Invalid(), 0);
+                        auto Block = emit->CreateCodeNode();
+                        IRHeader.first->Blocks = emit->WrapNode(Block);
+                        emit->SetCurrentCodeBlock(Block);
+
+                        const uint8_t GPRSize = CTX->GetGPRSize();
+
+                        emit->_StoreContext(GPRSize, IR::GPRClass, emit->_Constant(Entrypoint), offsetof(Core::CPUState, gregs[X86State::REG_R11]));
+                        emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
+                    }, CTX->ThunkHandler.get(), (void*)args->target_addr);
+
+            if (!Result) {
+                if (Result.Creator != CTX->ThunkHandler.get() || Result.Data != (void*)args->target_addr) {
+                    ERROR_AND_DIE_FMT("Input address for LinkAddressToGuestFunction is already linked elsewhere");
+                }
+            }
         }
 
         static void LoadLib(void *ArgsV) {

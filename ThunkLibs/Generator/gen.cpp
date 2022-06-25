@@ -1,9 +1,11 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 
 #include <fstream>
+#include <numeric>
 #include <iostream>
 #include <iomanip>
 #include <string_view>
+#include <unordered_map>
 
 #include <openssl/sha.h>
 
@@ -44,6 +46,11 @@ struct ThunkedFunction : FunctionParams {
     // directly.
     // This is implied e.g. for thunks generated for variadic functions
     bool custom_host_impl = false;
+
+    // If true, the unpacking function will use an extra argument for a
+    // host function pointer that is called instead of calling the host library
+    // function directly.
+    bool is_hostcall = false;
 
     std::string GetOriginalFunctionName() const {
         const std::string suffix = "_internal";
@@ -96,6 +103,8 @@ struct NamespaceInfo {
     std::string host_loader;
 
     bool generate_guest_symtable;
+
+    bool indirect_guest_calls;
 };
 
 // List of namespaces with a non-specialized fex_gen_config definition (including the global namespace, represented with an empty name)
@@ -114,6 +123,7 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
         std::optional<unsigned> version;
         std::optional<std::string> load_host_endpoint_via;
         bool generate_guest_symtable = false;
+        bool indirect_guest_calls = false;
     };
 
     struct Annotations {
@@ -138,6 +148,8 @@ class ASTVisitor : public clang::RecursiveASTVisitor<ASTVisitor> {
             auto annotation = base.getType().getAsString();
             if (annotation == "fexgen::generate_guest_symtable") {
                 ret.generate_guest_symtable = true;
+            } else if (annotation == "fexgen::indirect_guest_calls") {
+                ret.indirect_guest_calls = true;
             } else {
                 throw Error(base.getSourceRange().getBegin(), "Unknown namespace annotation");
             }
@@ -231,7 +243,8 @@ public:
         auto namespace_decl = llvm::dyn_cast<clang::NamespaceDecl>(decl->getDeclContext());
         namespaces.push_back({  namespace_decl ? namespace_decl->getNameAsString() : "",
                                 annotations.load_host_endpoint_via.value_or(""),
-                                annotations.generate_guest_symtable });
+                                annotations.generate_guest_symtable,
+                                annotations.indirect_guest_calls });
 
         if (annotations.version) {
             if (namespace_decl) {
@@ -276,7 +289,6 @@ public:
 
         const auto annotations = GetAnnotations(decl);
         if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
-            // TODO: Should regular pointers require annotation, too?
             throw Error(decl->getBeginLoc(),
                         "Function pointer return types require explicit annotation\n");
         }
@@ -345,8 +357,19 @@ public:
             // This function is thunked through an "_internal" symbol since its signature
             // is different from the one in the native host/guest libraries.
             data.function_name = data.function_name + "_internal";
-            assert(!data.custom_host_impl && "Custom host impl requested but this is implied by the function signature already");
+            if (data.custom_host_impl) {
+                throw Error(decl->getBeginLoc(), "Custom host impl requested but this is implied by the function signature already");
+            }
             data.custom_host_impl = true;
+        }
+
+        // For indirect calls, register a second thunk with the callee pointer as an extra argument
+        if (namespace_info.indirect_guest_calls) {
+            auto hostcall_data = data;
+            hostcall_data.function_name = "hostcall_" + data.function_name;
+            hostcall_data.param_types.push_back(context.getUIntPtrType());
+            hostcall_data.is_hostcall = true;
+            thunks.push_back(std::move(hostcall_data));
         }
 
         thunks.push_back(std::move(data));
@@ -574,8 +597,18 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 }
             }
 
+            FunctionParams args = thunk;
+            auto function_to_call = "fexldr_ptr_" + libname + "_" + function_name;
+            if (thunk.is_hostcall) {
+                // Get the host function pointer by casting the last parameter to the correct signature
+                args.param_types.pop_back();
+                function_to_call = "reinterpret_cast<" + thunk.return_type.getAsString() + "(*)(" + format_function_params(args) + ")>(args->a_" + std::to_string(args.param_types.size()) + ")";
+            } else if (thunk.custom_host_impl) {
+                function_to_call = "fexfn_impl_" + libname + "_" + function_name;
+            }
+
             file << "static void fexfn_unpack_" << libname << "_" << function_name << "(fexfn_packed_args_" << libname << "_" << function_name << "* args) {\n";
-            file << (is_void ? "  " : "  args->rv = ") << (thunk.custom_host_impl ? "fexfn_impl_" : "fexldr_ptr_") << libname << "_" << function_name << "(";
+            file << (is_void ? "  " : "  args->rv = ") << function_to_call << "(";
             {
                 auto format_param = [&](std::size_t idx) {
                     auto cb = thunk.callbacks.find(idx);
@@ -589,7 +622,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                     }
                 };
 
-                file << format_function_args(thunk, format_param);
+                file << format_function_args(args, format_param);
             }
             file << ");\n";
             file << "}\n";
