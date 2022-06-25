@@ -7,6 +7,28 @@ $end_info$
 #pragma once
 #include <stdint.h>
 
+#include "CopyableFunctions.h"
+#include "PackedArguments.h"
+
+template<typename R, typename... Args>
+struct CallbackMarshaler;
+
+template<typename R, typename... Args>
+struct CallbackMarshaler<R(Args...)> {
+    template<const auto &callback_unpacks, const auto &call_guest, ptrdiff_t offset>
+    static R marshal(Args... args, R(*guest_fn)(Args...)) {
+        uintptr_t guest_unpack = *(uintptr_t*)((uintptr_t)callback_unpacks + offset);
+        PackedArguments<R, Args...> argsrv { args... };
+        call_guest(guest_unpack, (void*)guest_fn, &argsrv);
+        if constexpr (!std::is_void_v<R>) {
+            return argsrv.rv;
+        }
+    }
+};
+
+// This should be reworked, could be much nicer with some changes in gen.cpp
+#define BIND_CALLBACK(target, callback_unpack, libname) binder::make_instance(target, &CallbackMarshaler<callback_unpack##FN>::marshal<callback_unpacks, call_guest, offsetof(CallbackUnpacks, libname##_##callback_unpack)>)
+
 template<typename Fn>
 struct function_traits;
 template<typename Result, typename Arg>

@@ -4,6 +4,8 @@ tags: thunklibs|X11
 $end_info$
 */
 
+#include "common/Host.h"
+
 #include <stdio.h>
 
 #include <X11/Xlib.h>
@@ -38,7 +40,6 @@ extern "C" {
 #include <X11/extensions/syncproto.h>
 //#include <X11/extensions/XTest.h>
 
-#include "common/Host.h"
 #include <dlfcn.h>
 
 #include "ldr_ptrs.inl"
