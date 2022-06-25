@@ -23,7 +23,7 @@ static void WaitForWorkFunc(CrossArchEvent *Event) {
     }
 
     int Op = FUTEX_WAIT | FUTEX_PRIVATE_FLAG;
-    int Res = syscall(SYS_futex,
+    [[maybe_unused]] int Res = syscall(SYS_futex,
         &Event->Futex,
         Op,
         nullptr, // Timeout
