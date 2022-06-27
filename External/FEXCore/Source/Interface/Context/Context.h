@@ -199,7 +199,7 @@ namespace FEXCore::Context {
       uint64_t StartAddr;
       uint64_t Length;
     };
-    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo);
 
     struct CompileCodeResult {
       void* CompiledCode;

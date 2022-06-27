@@ -4,26 +4,9 @@
 #include <mutex>
 #include <string>
 
-#include "gdb/jit-reader.h"
+#include <FEXCore/Debug/GDBReaderInterface.h>
 
 GDB_DECLARE_GPL_COMPATIBLE_READER;
-
-// everything is stored inline as it is marshaled cross process by gdb
-
-struct blocks_t {
-  const char name[512];
-  GDB_CORE_ADDR start;
-  GDB_CORE_ADDR end;
-};
-
-struct info_t {
-  char filename[512];
-  long blocks_ofs;
-  long lines_ofs;
-
-  int nblocks;
-  int nlines;
-};
 
 #define debugf(...)
 

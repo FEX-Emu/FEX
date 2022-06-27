@@ -717,7 +717,7 @@ namespace FEXCore::Context {
     }
   }
 
-  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {    
+  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {    
     Thread->OpDispatcher->ReownOrClaimBuffer();
     Thread->OpDispatcher->ResetWorkingList();
 
@@ -772,7 +772,9 @@ namespace FEXCore::Context {
           DecodedInfo = &Block.DecodedInstructions[i];
           bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
-          Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
+          if (ExtendedDebugInfo) {
+            Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
+          }
           
           if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
             auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
@@ -936,7 +938,7 @@ namespace FEXCore::Context {
 
     if (IRList == nullptr) {
       // Generate IR + Meta Info
-      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP);
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols());
 
       // Setup pointers to internal structures
       IRList = IRCopy;
