@@ -51,7 +51,7 @@ static void fexfn_impl_libxcb_dri2_FEX_xcb_dri2_init_extension(xcb_connection_t 
 
   fexldr_ptr_libxcb_xcb_get_extension_data = (fexldr_type_libxcb_xcb_get_extension_data*)dlsym(RTLD_DEFAULT, "xcb_get_extension_data");
 
-  auto res = fexldr_ptr_libxcb_xcb_get_extension_data(a_0, ext);
+  [[maybe_unused]] auto res = fexldr_ptr_libxcb_xcb_get_extension_data(a_0, ext);
 
   // Copy over the global id
   a_1->global_id = ext->global_id;
