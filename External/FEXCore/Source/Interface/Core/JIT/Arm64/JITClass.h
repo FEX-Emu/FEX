@@ -64,6 +64,8 @@ public:
 
   void ClearRelocations() override { Relocations.clear(); }
 
+  static uint64_t ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
+
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
 

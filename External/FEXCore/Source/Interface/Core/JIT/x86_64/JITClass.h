@@ -72,6 +72,8 @@ public:
 
   void ClearRelocations() override { Relocations.clear(); }
 
+  static uint64_t ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
+
 private:
 
   /**
@@ -194,8 +196,6 @@ private:
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};
 #endif
-
-  static uint64_t ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record);
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();

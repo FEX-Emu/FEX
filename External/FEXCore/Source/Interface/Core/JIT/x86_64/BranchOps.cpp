@@ -80,8 +80,8 @@ DEF_OP(ExitFunction) {
     Label l_BranchHost;
     Label l_BranchGuest;
 
-    lea(rax, ptr[rip + l_BranchHost]);
-    jmp(qword[rax]);
+    lea(rsi, ptr[rip + l_BranchHost]);
+    jmp(qword[rsi]);
 
     L(l_BranchHost);
     //FEX_TODO(this is not per thread)

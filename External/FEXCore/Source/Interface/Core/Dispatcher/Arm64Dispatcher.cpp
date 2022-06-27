@@ -1,4 +1,5 @@
 #include "Interface/Core/LookupCache.h"
+#include "Interface/Core/JIT/Arm64/JITClass.h"
 
 #include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
@@ -26,6 +27,7 @@
 #include <aarch64/operands-aarch64.h>
 #include <code-buffer-vixl.h>
 #include <platform-vixl.h>
+#include <xbyak/xbyak.h>
 
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -39,339 +41,487 @@ using namespace vixl;
 using namespace vixl::aarch64;
 
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
-#define STATE x28
 
-Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
-  : FEXCore::CPU::Dispatcher(ctx), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
-  , config(config) {
-  SetAllowAssembler(true);
+/*
+ * Global register that holds a pointer to the emulator
+ * administration of the currently emulated x86 thread.
+ * The code below assumes that this is a callee saved
+ * register, and does not save and restore it around
+ * calls to C++ functions.
+ * NOTE: These definitions do not belong in this source.
+ */
+#define STATE       x28 
+#define STATE_STR  "x28"
 
-  DispatchPtr = GetCursorAddress<AsmDispatch>();
+static constexpr bool SignalSafeCompile = true;
 
-  // while (true) {
-  //    Ptr = FindBlock(RIP)
-  //    if (!Ptr)
-  //      Ptr = CTX->CompileBlock(RIP);
-  //
-  //    Ptr();
-  // }
+/* ---------------------------------------------------------------------------------- */
 
-  Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
-  Literal l_CompileBlock {GetCompileBlockPtr()};
+/*
+ * These functions are called directly from inline asm
+ * so declare them "C" and non-static to prevent the compiler 
+ * from giving them mangled or otherwise unrecognizable assembly
+ * names.
+ */
+extern "C" {
+    __attribute__((used)) void     Arm64PopAllDynamicRegs            ( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) void     Arm64PushAllDynamicRegs           ( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) void     Arm64SpillAllStaticRegs           ( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) void     Arm64FillAllStaticRegs            ( FEXCore::Core::CpuStateFrame *Frame );
 
-  // Push all the register we need to save
-  PushCalleeSavedRegisters();
+    __attribute__((used)) uint64_t Arm64CoreDispatchCode             ( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) uint64_t Arm64ExitFunctionLinkerCode       ( FEXCore::Core::CpuStateFrame *Frame, uint64_t *record );
+    __attribute__((used)) void     Arm64ThreadStopHandlerCode        ( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) void     Arm64ThreadPauseHandlerAddressCode( FEXCore::Core::CpuStateFrame *Frame );
+}
 
-  // Push our memory base to the correct register
-  // Move our thread pointer to the correct register
-  // This is passed in to parameter 0 (x0)
-  mov(STATE, x0);
+/* ---------------------------------------------------------------------------------- */
 
-  // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
-  // regardless of where we were in the stack
-  add(x0, sp, 0);
-  str(x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
-
-  AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
-
-  if (config.StaticRegisterAllocation) {
-    FillStaticRegs();
-  }
-
-  // We want to ensure that we are 16 byte aligned at the top of this loop
-  Align16B();
-  aarch64::Label FullLookup{};
-  aarch64::Label CallBlock{};
-  aarch64::Label LoopTop{};
-  aarch64::Label ExitSpillSRA{};
-  aarch64::Label ThreadPauseHandler{};
-
-  bind(&LoopTop);
-  AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
-
-  // Load in our RIP
-  // Don't modify x2 since it contains our RIP once the block doesn't exist
-  ldr(x2, STATE_PTR(CpuStateFrame, State.rip));
-  auto RipReg = x2;
-
-  // L1 Cache
-  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
-
-  and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
-  add(x0, x0, Operand(x3, Shift::LSL, 4));
-  ldp(x3, x0, MemOperand(x0));
-  cmp(x0, RipReg);
-  b(&FullLookup, Condition::ne);
-
-  br(x3);
-
-  // L1C check failed, do a full lookup
-  bind(&FullLookup);
-
-  // This is the block cache lookup routine
-  // It matches what is going on it LookupCache.h::FindBlock
-  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
-
-  // Mask the address by the virtual address size so we can check for aliases
-  uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
-  if (std::popcount(VirtualMemorySize) == 1) {
-    and_(x3, RipReg, VirtualMemorySize - 1);
-  }
-  else {
-    LoadConstant(x3, VirtualMemorySize);
-    and_(x3, RipReg, x3);
-  }
-
-  aarch64::Label NoBlock;
-  {
-    // Offset the address and add to our page pointer
-    lsr(x1, x3, 12);
-
-    // Load the pointer from the offset
-    ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
-
-    // If page pointer is zero then we have no block
-    cbz(x0, &NoBlock);
-
-    // Steal the page offset
-    and_(x1, x3, 0x0FFF);
-
-    // Shift the offset by the size of the block cache entry
-    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry))));
-
-    // Load the guest address first to ensure it maps to the address we are currently at
-    // This fixes aliasing problems
-    ldr(x1, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode)));
-    cmp(x1, RipReg);
-    b(&NoBlock, Condition::ne);
-
-    // Now load the actual host block to execute if we can
-    ldr(x3, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode)));
-    cbz(x3, &NoBlock);
-
-    // If we've made it here then we have a real compiled block
-    {
-      // update L1 cache
-      ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
-
-      and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
-      add(x0, x0, Operand(x1, Shift::LSL, 4));
-      stp(x3, x2, MemOperand(x0));
-
-      // Jump to the block
-      br(x3);
-    }
-  }
-
-  {
-    bind(&ExitSpillSRA);
-    ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
-
-    ThreadStopHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PopCalleeSavedRegisters();
-
-    // Return from the function
-    // LR is set to the correct return location now
-    ret();
-  }
-
-  constexpr bool SignalSafeCompile = true;
-  {
-    ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
-
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // Args:
-      // X0: SETMASK
-      // X1: Pointer to mask value (uint64_t)
-      // X2: Pointer to old mask value (uint64_t)
-      // X3: Size of mask, sizeof(uint64_t)
-      // X8: Syscall
-
-      LoadConstant(x0, ~0ULL);
-      stp(x0, x0, MemOperand(sp, -16, PreIndex));
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      add(x2, sp, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
-      svc(0);
-    }
-
-    mov(x0, STATE);
-    mov(x1, lr);
-
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
-    blr(x3);
-
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-
-      mov(x4, x0);
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      LoadConstant(x2, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
-      svc(0);
-
-      // Bring stack back
-      add(sp, sp, 16);
-
-      mov(x0, x4);
-    }
-
-    if (config.StaticRegisterAllocation)
-      FillStaticRegs();
-    br(x0);
-  }
-
-  // Need to create the block
-  {
-    bind(&NoBlock);
-
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
-
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // Args:
-      // X0: SETMASK
-      // X1: Pointer to mask value (uint64_t)
-      // X2: Pointer to old mask value (uint64_t)
-      // X3: Size of mask, sizeof(uint64_t)
-      // X8: Syscall
-
-      LoadConstant(x0, ~0ULL);
-      stp(x0, x2, MemOperand(sp, -16, PreIndex));
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      add(x2, sp, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
-      svc(0);
-
-      // Reload x2 to bring back RIP
-      ldr(x2, MemOperand(sp, 8, Offset));
-    }
-
-    ldr(x0, &l_CTX);
-    mov(x1, STATE);
-    ldr(x3, &l_CompileBlock);
-
-    // X2 contains our guest RIP
-    blr(x3); // { CTX, Frame, RIP}
+/*
+ * Register save/restore functions. Their definitions do not 
+ * belong here, but are related to the dynamic functions in
+ * Arm64Emitter.h. The only practical and clean way to deal
+ * with them is to generate them during the build, but that
+ * is not the purpose of this change.
+ */
+__attribute__((naked))
+//static
+void Arm64SpillAllStaticRegs( FEXCore::Core::CpuStateFrame *Frame )
+{
+    __asm__ __volatile__( "stp x4, x5,   [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 0] )));
+    __asm__ __volatile__( "stp x6, x7,   [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 2] )));
+    __asm__ __volatile__( "stp x8, x9,   [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 4] )));
+    __asm__ __volatile__( "stp x10, x11, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 6] )));
+    __asm__ __volatile__( "stp x12, x18, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 8] )));
+    __asm__ __volatile__( "stp x17, x16, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[10] )));
+    __asm__ __volatile__( "stp x15, x14, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[12] )));
+    __asm__ __volatile__( "stp x13, x29, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[14] )));
+    
+    __asm__ __volatile__( "stp q16, q17, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 0][0] )));
+    __asm__ __volatile__( "stp q18, q19, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 2][0] )));
+    __asm__ __volatile__( "stp q20, q21, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 4][0] )));
+    __asm__ __volatile__( "stp q22, q23, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 6][0] )));
+    __asm__ __volatile__( "stp q24, q25, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 8][0] )));
+    __asm__ __volatile__( "stp q26, q27, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[10][0] )));
+    __asm__ __volatile__( "stp q28, q29, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[12][0] )));
+    __asm__ __volatile__( "stp q30, q31, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[14][0] )));
+    asm("ret");
+}
 
 
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      LoadConstant(x2, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
-      svc(0);
+__attribute__((naked))
+//static
+void Arm64FillAllStaticRegs( FEXCore::Core::CpuStateFrame *Frame )
+{
+    __asm__ __volatile__( "ldp x4, x5,   [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 0] )));
+    __asm__ __volatile__( "ldp x6, x7,   [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 2] )));
+    __asm__ __volatile__( "ldp x8, x9,   [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 4] )));
+    __asm__ __volatile__( "ldp x10, x11, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 6] )));
+    __asm__ __volatile__( "ldp x12, x18, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[ 8] )));
+    __asm__ __volatile__( "ldp x17, x16, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[10] )));
+    __asm__ __volatile__( "ldp x15, x14, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[12] )));
+    __asm__ __volatile__( "ldp x13, x29, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.gregs[14] )));
+    
+    __asm__ __volatile__( "ldp q16, q17, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 0][0] )));
+    __asm__ __volatile__( "ldp q18, q19, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 2][0] )));
+    __asm__ __volatile__( "ldp q20, q21, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 4][0] )));
+    __asm__ __volatile__( "ldp q22, q23, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 6][0] )));
+    __asm__ __volatile__( "ldp q24, q25, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[ 8][0] )));
+    __asm__ __volatile__( "ldp q26, q27, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[10][0] )));
+    __asm__ __volatile__( "ldp q28, q29, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[12][0] )));
+    __asm__ __volatile__( "ldp q30, q31, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, State.xmm[14][0] )));
+    asm("ret");
+}
 
-      // Bring stack back
-      add(sp, sp, 16);
-    }
+__attribute__((naked))
+//static
+void Arm64PushAllDynamicRegs( FEXCore::Core::CpuStateFrame *Frame )
+{
+    asm("sub	sp,   sp, #0x110");
+    asm("str	q4,  [sp]");
+    asm("str	q5,  [sp, #16]");
+    asm("str	q6,  [sp, #32]");
+    asm("str	q7,  [sp, #48]");
+    asm("str	q8,  [sp, #64]");
+    asm("str	q9,  [sp, #80]");
+    asm("str	q10, [sp, #96]");
+    asm("str	q11, [sp, #112]");
+    asm("str	q12, [sp, #128]");
+    asm("str    q13, [sp, #144]");
+    asm("str    q14, [sp, #160]");
+    asm("str    q15, [sp, #176]");
+    asm("ret");
+}
 
-    if (config.StaticRegisterAllocation)
-      FillStaticRegs();
+__attribute__((naked))
+//static
+void Arm64PopAllDynamicRegs( FEXCore::Core::CpuStateFrame *Frame )
+{
+    asm("ldr    q4,  [sp]");
+    asm("ldr    q5,  [sp, #16]");
+    asm("ldr    q6,  [sp, #32]");
+    asm("ldr    q7,  [sp, #48]");
+    asm("ldr    q8,  [sp, #64]");
+    asm("ldr    q9,  [sp, #80]");
+    asm("ldr    q10, [sp, #96]");
+    asm("ldr    q11, [sp, #112]");
+    asm("ldr    q12, [sp, #128]");
+    asm("ldr    q13, [sp, #144]");
+    asm("ldr    q14, [sp, #160]");
+    asm("ldr    q15, [sp, #176]");
+    asm("add    sp, sp, #0x110");
+    asm("ret");
+}
 
-    b(&LoopTop);
-  }
 
-  {
-    SignalHandlerReturnAddress = GetCursorAddress<uint64_t>();
+/* ---------------------------------------------------------------------------------- */
 
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void Arm64SignalHandlerReturnAddressCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
     // Now to get back to our old location we need to do a fault dance
     // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
-    hlt(0);
-  }
+    asm("hlt 0");
+}
 
-  {
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void Arm64UnimplementedInstructionAddressCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    UnimplementedInstructionAddress = GetCursorAddress<uint64_t>();
+    asm("bl Arm64SpillAllStaticRegs" );
+    asm("hlt 0");
+}
 
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+// ---
 
-    hlt(0);
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void Arm64PauseReturnInstructionCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    // Fault to start running again
+    asm("hlt 0");
+}
+
+// ---
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void Arm64ThreadPauseHandlerAddressSpillSRACodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("bl Arm64SpillAllStaticRegs" );
+    
+    asm("adrp	x3,           Arm64ThreadPauseHandlerAddressCode");
+    asm("add	x3, x3, :lo12:Arm64ThreadPauseHandlerAddressCode");
+    asm("mov x0, " STATE_STR);
+    asm("br x3");
+}
+
+// ---
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void Arm64ThreadStopHandlerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("bl Arm64SpillAllStaticRegs" );
+    
+    asm("adrp	x3,           Arm64ThreadStopHandlerCode");
+    asm("add	x3, x3, :lo12:Arm64ThreadStopHandlerCode");
+    asm("mov x0, " STATE_STR);
+    asm("br x3");
+}
+
+
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Jump back to start of Arm64CoreDispatchCode from within JIT code.
+ * This sequence can be considered a *very* specialized longjmp:
+ * the only casaved regs are the first function parameter register, 
+ * which is hereby refilled, and the sp, which is 'sufficiently' restored
+ * for a noreturn function like Arm64CoreDispatchCode. Also, cesaved 
+ * regs are irrelevant for noreturn functions, so no need for any restore.
+ */
+__attribute__((naked))
+__attribute__((noreturn))
+static inline
+void Arm64CoreDispatchCodeAsmFillSRA( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("mov x0," STATE_STR);
+    asm("bl Arm64CoreDispatchCode");
+    
+    asm("bl Arm64FillAllStaticRegs");
+    
+    asm("br x0");
+}
+
+__attribute__((naked))
+__attribute__((noreturn))
+static inline
+void Arm64CoreDispatchCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("bl Arm64SpillAllStaticRegs");
+    
+    asm("mov x0," STATE_STR);
+    asm("bl Arm64CoreDispatchCode");
+    
+    asm("bl Arm64FillAllStaticRegs");
+    
+    asm("br x0");
+}
+
+
+__attribute__((naked))
+__attribute__((noreturn))
+static inline
+void Arm64FirstCoreDispatchCodeAsm( FEXCore::Core::CpuStateFrame *Frame )
+{
+    asm("mov " STATE_STR ",x0");
+    asm("bl Arm64CoreDispatchCode");
+    
+    asm("bl Arm64FillAllStaticRegs");
+    
+    asm("br x0");
+}
+
+
+/*
+ * JIT to C++ calling interface. Copy STATE register
+ * into the FillMe function parameter register,
+ * and forward to specified code. 
+ *
+ * JIT code ensures that the following functions
+ * are entered with an aligned SP. Because
+ * the C++ functions that they forward to expect
+ * them misaligned this is corrected here.
+ * 
+ * Very likely the repetion below can be defined 
+ * in a bit more compact way in C++:
+ */
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void Arm64ExitFunctionLinkerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe1, uint64_t *FillMe2 )
+{
+    asm("mov x0," STATE_STR);
+    asm("mov x1, lr");
+    asm("bl Arm64SpillAllStaticRegs" );
+    asm("bl	Arm64ExitFunctionLinkerCode");
+    asm("bl Arm64FillAllStaticRegs" );
+    asm("br x0");
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+__attribute__((naked)) uint64_t LUDIVAsm(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor)
+{
+    asm("str lr, [sp, #-16]!");
+    asm("bl Arm64SpillAllStaticRegs" );
+    asm("bl Arm64PushAllDynamicRegs" );
+    
+    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIV)));
+    asm("blr x3" );
+    
+    asm("bl Arm64PopAllDynamicRegs" );
+    asm("bl Arm64FillAllStaticRegs" );
+    asm("ldr lr, [sp], #16");
+    asm("ret");
+}
+
+__attribute__((naked)) uint64_t LUREMAsm(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor)
+{
+    asm("str lr, [sp, #-16]!");
+    asm("bl Arm64SpillAllStaticRegs" );
+    asm("bl Arm64PushAllDynamicRegs" );
+    
+    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREM)));
+    asm("blr x3" );
+    
+    asm("bl Arm64PopAllDynamicRegs" );
+    asm("bl Arm64FillAllStaticRegs" );
+    asm("ldr lr, [sp], #16");
+    asm("ret");
+}
+
+__attribute__((naked))  int64_t  LDIVAsm( int64_t SrcHigh,  int64_t SrcLow,  int64_t Divisor)
+{
+    asm("str lr, [sp, #-16]!");
+    asm("bl Arm64SpillAllStaticRegs" );
+    asm("bl Arm64PushAllDynamicRegs" );
+    
+    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIV)));
+    asm("blr x3" );
+    
+    asm("bl Arm64PopAllDynamicRegs" );
+    asm("bl Arm64FillAllStaticRegs" );
+    asm("ldr lr, [sp], #16");
+    asm("ret");
+}
+
+__attribute__((naked))  int64_t  LREMAsm( int64_t SrcHigh,  int64_t SrcLow,  int64_t Divisor)
+{
+    asm("str lr, [sp, #-16]!");
+    asm("bl Arm64SpillAllStaticRegs" );
+    asm("bl Arm64PushAllDynamicRegs" );
+    
+    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREM)));
+    asm("blr x3" );
+    
+    asm("bl Arm64PopAllDynamicRegs" );
+    asm("bl Arm64FillAllStaticRegs" );
+    asm("ldr lr, [sp], #16");
+    asm("ret");
+}
+
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Find host JIT entry for a guest RIP, and continue 
+ * with executing that code. First check the caches,
+ * and ultimately call the JIT compiler:
+ */
+//static
+uint64_t Arm64CoreDispatchCode( FEXCore::Core::CpuStateFrame *Frame )
+{ 
+  auto  Thread  = Frame->Thread;
+  auto  CTX     = Thread->CTX;
+  auto  Address = Frame->State.rip;
+  auto &L1Entry = reinterpret_cast<LookupCache::LookupCacheEntry*>(Frame->Pointers.Common.L1Pointer)[Address & LookupCache::L1_ENTRIES_MASK];
+
+  if (L1Entry.GuestCode != Address) {
+    uintptr_t  HostCode= Thread->LookupCache->FindBlock(Address);
+  
+    if ( !HostCode ) {
+      // When compiling code, mask all signals to reduce the chance of reentrant allocations
+      sigset_t ProcMask={(unsigned long)-1,(unsigned long)-1};
+      if (SignalSafeCompile) {sigprocmask( SIG_SETMASK, &ProcMask, &ProcMask); }
+      CTX->CompileBlockJit(Thread->CurrentFrame,Address);
+      if (SignalSafeCompile) {sigprocmask( SIG_SETMASK, &ProcMask, NULL); }
+
+      HostCode= Thread->LookupCache->FindBlock(Address);
+    }
+
+    L1Entry.HostCode  = HostCode;
+    L1Entry.GuestCode = Address;
   }
 
-  {
-    // Guest Overflow handler
-    // Needs to be distinct from the SignalHandlerReturnAddress
-    OverflowExceptionInstructionAddress = GetCursorAddress<uint64_t>();
+  return L1Entry.HostCode;
+}
 
-    if (config.StaticRegisterAllocation)
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Call Core::ExitFunctionLink to obtain a continuation
+ * address (which can be either LoopTop or a JIT entry), 
+ * and continue with executing that code. 
+ * TODO: Core::ExitFunctionLink has a potential 
+ * short return path, for which we may want to omit the 
+ * two calls to sigprocmask:
+ */
+//static
+uint64_t Arm64ExitFunctionLinkerCode( FEXCore::Core::CpuStateFrame *Frame, uint64_t *record )
+{ 
+  uint64_t HostCode;
+
+  if (!SignalSafeCompile) {
+    // Just compile the code
+    HostCode = Arm64JITCore::ExitFunctionLink(Frame,record);
+  } else {
+    // When compiling code, mask all signals to reduce the chance of reentrant allocations
+    sigset_t ProcMask={(unsigned long)-1,(unsigned long)-1};
+    sigprocmask( SIG_SETMASK, &ProcMask, &ProcMask);
+    HostCode = Arm64JITCore::ExitFunctionLink(Frame,record);
+    sigprocmask( SIG_SETMASK, &ProcMask, NULL);
+  }
+  
+  return HostCode;
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Call the dispatcher animation framework defined above, 
+ * while providing a quick termination via a longjmp:
+ */
+static 
+void Arm64DispatchCode( FEXCore::Core::CpuStateFrame *Frame )
+{
+  if (!setjmp(Frame->EmuContext)) {
+      uint32_t aligner MIE_ALIGN(16);
+      Frame->ReturningStackLocation = reinterpret_cast<uintptr_t>(&aligner);
+
+      Arm64FirstCoreDispatchCodeAsm(Frame);
+  }
+}
+
+__attribute__((noreturn))
+//static 
+void Arm64ThreadStopHandlerCode( FEXCore::Core::CpuStateFrame *Frame )
+{
+  longjmp(Frame->EmuContext,1);
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+    __attribute__((noreturn))
+    static void WaitUntilWeHitATestCase(){assert(0);}
+
+//static 
+void Arm64ThreadPauseHandlerAddressCode( FEXCore::Core::CpuStateFrame *Frame )
+#if 1
+{WaitUntilWeHitATestCase();}
+#else
+{
+  // Pause handler
+  SleepThread(Frame->Thread->CTX,Frame);
+  assert(false);
+}
+#endif
+  
+static 
+void Arm64OverflowExceptionInstructionAddressCode( FEXCore::Core::CpuStateFrame *Frame )
+#if 1
+// Does not seem to be used yet???
+{WaitUntilWeHitATestCase();}
+#else
+{
+    if (SRAEnabled)
       SpillStaticRegs();
 
+    LoadConstant(x0, reinterpret_cast<uint64_t>(&SynchronousFaultData));
     LoadConstant(w1, 1);
-    strb(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException));
+    strb(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, FaultToTopAndGeneratedException)));
     LoadConstant(w1, X86State::X86_TRAPNO_OF);
-    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.TrapNo));
+    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, TrapNo)));
     LoadConstant(w1, 0x80);
-    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.si_code));
+    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, si_code)));
     LoadConstant(x1, 0);
-    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.err_code));
+    str(w1, MemOperand(x0, offsetof(Dispatcher::SynchronousFaultDataStruct, err_code)));
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP
     // ??? = SIGSEGV
     // Force a SIGSEGV by loading zero
     ldr(x1, MemOperand(x1));
-  }
-
-  {
-    ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
-    if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
-
-    bind(&ThreadPauseHandler);
-    ThreadPauseHandlerAddress = GetCursorAddress<uint64_t>();
-    // We are pausing, this means the frontend should be waiting for this thread to idle
-    // We will have faulted and jumped to this location at this point
-
-    // Call our sleep handler
-    ldr(x0, &l_CTX);
-    mov(x1, STATE);
-    ldr(x2, &l_Sleep);
-    blr(x2);
-
-    PauseReturnInstruction = GetCursorAddress<uint64_t>();
-    // Fault to start running again
-    hlt(0);
-  }
-
-  {
-    // The expectation here is that a thunked function needs to call back in to the JIT in a reentrant safe way
-    // To do this safely we need to do some state tracking and register saving
-    //
-    // eg:
-    // JIT Call->
-    //  Thunk->
-    //    Thunk callback->
-    //
-    // The thunk callback needs to execute JIT code and when it returns, it needs to safely return to the thunk rather than JIT space
-    // This is handled by pushing a return address trampoline to the stack so when the guest address returns it hits our custom thunk return
-    //  - This will safely return us to the thunk
-    //
-    // On return to the thunk, the thunk can get whatever its return value is from the thread context depending on ABI handling on its end
-    // When the thunk itself returns, it'll do its regular return logic there
-    // void ReentrantCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
-    CallbackPtr = GetCursorAddress<JITCallback>();
-
+}
+#endif
+  
+  
+static 
+void Arm64CallbackPtrCode( FEXCore::Core::CpuStateFrame *Frame, uint64_t RSI )
+#if 1
+{WaitUntilWeHitATestCase();}
+#else
+{
     // We expect the thunk to have previously pushed the registers it was using
     PushCalleeSavedRegisters();
 
@@ -379,127 +529,62 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     mov(STATE, x0);
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    ldr(w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
+    LoadConstant(x0, reinterpret_cast<uint64_t>(&SignalHandlerRefCounter));
+    ldr(w2, MemOperand(x0));
     add(w2, w2, 1);
-    str(w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
+    str(w2, MemOperand(x0));
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
     LoadConstant(x0, CTX->X86CodeGen.CallbackReturn);
 
-    ldr(x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
+    ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
     sub(x2, x2, 16);
-    str(x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
+    str(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
 
     // Store the trampoline to the guest stack
     // Guest stack is now correctly misaligned after a regular call instruction
     str(x0, MemOperand(x2));
 
     // Store RIP to the context state
-    str(x1, STATE_PTR(CpuStateFrame, State.rip));
+    str(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
 
     // load static regs
-    if (config.StaticRegisterAllocation)
+    if (SRAEnabled)
       FillStaticRegs();
 
     // Now go back to the regular dispatcher loop
     b(&LoopTop);
-  }
+}
+#endif
+  
+/* ---------------------------------------------------------------------------------- */
 
-  {
-    LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
+Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
+  : FEXCore::CPU::Dispatcher(ctx), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
+  , config(config) {
+  SetAllowAssembler(true);
 
-    PushDynamicRegsAndLR();
+  DispatchPtr                         = reinterpret_cast<AsmDispatch>(Arm64DispatchCode);
+  AbsoluteLoopTopAddressFillSRA       = reinterpret_cast<uint64_t>(Arm64CoreDispatchCodeAsmFillSRA);
+  AbsoluteLoopTopAddress              = reinterpret_cast<uint64_t>(Arm64CoreDispatchCodeAsm);
+  ExitFunctionLinkerAddress           = reinterpret_cast<uint64_t>(Arm64ExitFunctionLinkerCodeAsm);
+  ThreadStopHandlerAddress            = reinterpret_cast<uint64_t>(Arm64ThreadStopHandlerCodeAsm);
+  ThreadStopHandlerAddressSpillSRA    = reinterpret_cast<uint64_t>(Arm64ThreadStopHandlerCodeAsm);
+  SignalHandlerReturnAddress          = reinterpret_cast<uint64_t>(Arm64SignalHandlerReturnAddressCodeAsm);
+  PauseReturnInstruction              = reinterpret_cast<uint64_t>(Arm64PauseReturnInstructionCodeAsm);
+  UnimplementedInstructionAddress     = reinterpret_cast<uint64_t>(Arm64UnimplementedInstructionAddressCodeAsm);
 
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
+  ThreadPauseHandlerAddress           = reinterpret_cast<uint64_t>(Arm64ThreadPauseHandlerAddressCode);
+  ThreadPauseHandlerAddressSpillSRA   = reinterpret_cast<uint64_t>(Arm64ThreadPauseHandlerAddressSpillSRACodeAsm);
+  OverflowExceptionInstructionAddress = reinterpret_cast<uint64_t>(Arm64OverflowExceptionInstructionAddressCode);
+  CallbackPtr                         = reinterpret_cast<JITCallback>(Arm64CallbackPtrCode);
 
-    SpillStaticRegs();
-    blr(x3);
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
-
-  {
-    LDIVHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegsAndLR();
-
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
-
-    SpillStaticRegs();
-    blr(x3);
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
-
-  {
-    LUREMHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegsAndLR();
-
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
-
-    SpillStaticRegs();
-    blr(x3);
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
-
-  {
-    LREMHandlerAddress = GetCursorAddress<uint64_t>();
-
-    PushDynamicRegsAndLR();
-
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
-
-    SpillStaticRegs();
-    blr(x3);
-    FillStaticRegs();
-
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
-
-    // Go back to our code block
-    ret();
-  }
-
-  place(&l_CTX);
-  place(&l_Sleep);
-  place(&l_CompileBlock);
-
-
-  FinalizeCode();
-  Start = reinterpret_cast<uint64_t>(DispatchPtr);
-  End = GetCursorAddress<uint64_t>();
-  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
-  GetBuffer()->SetExecutable();
-
-  if (CTX->Config.BlockJITNaming()) {
-    std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
-    CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr), Name);
-  }
-  if (CTX->Config.GlobalJITNaming()) {
-    CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
-  }
+  // Long division helpers
+  LDIVHandlerAddress	   	      = reinterpret_cast<uint64_t>(LDIVAsm);	     
+  LREMHandlerAddress	   	      = reinterpret_cast<uint64_t>(LREMAsm);	     
+  LUDIVHandlerAddress	   	      = reinterpret_cast<uint64_t>(LUDIVAsm);	     
+  LUREMHandlerAddress	   	      = reinterpret_cast<uint64_t>(LUREMAsm);	     
 }
 
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline

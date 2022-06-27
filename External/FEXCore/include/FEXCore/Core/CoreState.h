@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Core/CPUBackend.h>
 
+#include <setjmp.h>
 #include <atomic>
 #include <cstddef>
 #include <stdint.h>
@@ -205,6 +206,9 @@ namespace FEXCore::Core {
 
     // Pointers that the JIT needs to load to remove relocations
     JITPointers Pointers;
+    
+    jmp_buf   EmuContext;
+    jmp_buf   CallbackContext;
   };
   static_assert(offsetof(CpuStateFrame, State) == 0, "CPUState must be first member in CpuStateFrame");
   static_assert(offsetof(CpuStateFrame, State.rip) == 0, "rip must be zero offset in CpuStateFrame");

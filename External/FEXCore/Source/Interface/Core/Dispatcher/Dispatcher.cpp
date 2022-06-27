@@ -693,6 +693,7 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the core and get out safely
     ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
+    ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
     // Our ref counting doesn't matter anymore
     Thread->CurrentFrame->SignalHandlerRefCounter = 0;

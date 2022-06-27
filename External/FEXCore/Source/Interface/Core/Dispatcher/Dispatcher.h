@@ -83,6 +83,8 @@ public:
     CallbackPtr(Frame, RIP);
   }
 
+  static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame);
+
 protected:
   Dispatcher(FEXCore::Context::Context *ctx)
     : CTX {ctx}
@@ -96,8 +98,6 @@ protected:
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
 
   FEXCore::Context::Context *CTX;
-
-  static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame);
 
   static uint64_t GetCompileBlockPtr();
 

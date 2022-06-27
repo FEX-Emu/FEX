@@ -300,7 +300,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
   }
 }
 
-static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+uint64_t X86JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
@@ -371,7 +371,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
-    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&X86JITCore_ExitFunctionLink);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&X86JITCore::ExitFunctionLink);
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);

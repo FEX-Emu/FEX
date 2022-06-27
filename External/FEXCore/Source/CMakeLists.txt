@@ -102,8 +102,6 @@ set (SRCS
   Interface/Core/ArchHelpers/Arm64_stubs.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
-  Interface/Core/Dispatcher/X86Dispatcher.cpp
-  Interface/Core/Dispatcher/Arm64Dispatcher.cpp
   Interface/Core/Interpreter/InterpreterFallbacks.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
@@ -144,6 +142,19 @@ set (SRCS
   Utils/Telemetry.cpp
   Utils/Threads.cpp
   )
+
+if (_M_X86_64)
+  list(APPEND SRCS
+  Interface/Core/Dispatcher/X86Dispatcher.cpp
+  )
+endif()
+
+if (_M_ARM_64)
+  list(APPEND SRCS
+  Interface/Core/Dispatcher/Arm64Dispatcher.cpp
+  )
+endif()
+
 
 if (ENABLE_INTERPRETER)
   list(APPEND SRCS

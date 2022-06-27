@@ -1,4 +1,5 @@
 #include "Interface/Core/LookupCache.h"
+#include "Interface/Core/JIT/x86_64/JITClass.h"
 
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 
@@ -25,7 +26,316 @@
 
 namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
+
+/*
+ * Global register that holds a pointer to the emulator
+ * administration of the currently emulated x86 thread.
+ * The code below assumes that this is a callee saved
+ * register, and does not save and restore it around
+ * calls to C++ functions.
+ * NOTE: This definition does not belong in this source.
+ */
 #define STATE r14
+#define STATE_STR  "r14"
+
+static constexpr bool SignalSafeCompile = true;
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * These functions are called directly from inline asm
+ * so declare them "C" and non-static to prevent the compiler 
+ * from giving them mangled or otherwise unrecognizable assembly
+ * names.
+ */
+extern "C" {
+    __attribute__((used)) uint64_t X86CoreDispatchCode( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) uint64_t X86ExitFunctionLinkerCode( FEXCore::Core::CpuStateFrame *Frame, uint64_t *record );
+    __attribute__((used)) void X86ThreadStopHandlerCode( FEXCore::Core::CpuStateFrame *Frame );
+    __attribute__((used)) void X86IntCallbackReturnCode( FEXCore::Core::CpuStateFrame *Frame );
+}
+
+
+/* ---------------------------------------------------------------------------------- */
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void X86SignalHandlerReturnAddressCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    // Now to get back to our old location we need to do a fault dance
+    // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
+    asm("ud2");
+}
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void X86UnimplementedInstructionAddressCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    // Guest SIGILL handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    asm("ud2");
+}
+
+// ---
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void X86PauseReturnInstructionCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("ud2");
+}
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void X86IntCallbackReturnCodeAsm( FEXCore::Core::CpuStateFrame *Frame )
+{
+    asm("sub $8,%rsp");  // Misalign SP
+    asm("mov %" STATE_STR ",%rdi");
+    asm("jmp X86IntCallbackReturnCode");
+}
+
+// ---
+
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void X86ThreadStopHandlerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("sub $8,%rsp");  // Misalign SP
+    asm("mov %" STATE_STR ",%rdi");
+    asm("jmp X86ThreadStopHandlerCode");
+}
+
+
+/*
+ * Jump back to start of X86CoreDispatchCode from within JIT code.
+ * This sequence can be considered a *very* specialized longjmp:
+ * the only casaved regs are the first function parameter register, 
+ * which is hereby refilled, and the sp, which is 'sufficiently' restored
+ * for a noreturn function like X86CoreDispatchCode. Also, cesaved 
+ * regs are irrelevant for noreturn functions, so no need for any restore.
+ */
+__attribute__((naked))
+__attribute__((noreturn))
+static inline
+void X86CoreDispatchCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
+{
+    asm("mov %" STATE_STR ",%rdi");
+    asm("callq X86CoreDispatchCode");
+    asm("jmpq *%rax");
+}
+
+__attribute__((naked))
+__attribute__((noreturn))
+static inline
+void X86CallCoreDispatchCodeAsm( FEXCore::Core::CpuStateFrame *Frame )
+{
+    asm("push %rdi;");                 // Align SP
+    asm("callq X86CoreDispatchCode");
+    asm("movq (%rsp), %" STATE_STR);   // Keep SP aligned
+    asm("jmpq *%rax");
+}
+
+
+/*
+ * JIT to C++ calling interface. Copy STATE register
+ * into the FillMe function parameter register,
+ * and forward to specified code. 
+ *
+ * JIT code ensures that the following functions
+ * are entered with an aligned SP. Because
+ * the C++ functions that they forward to expect
+ * them misaligned this is corrected here.
+ * 
+ * Very likely the repetion below can be defined 
+ * in a bit more compact way in C++:
+ */
+__attribute__((naked))
+__attribute__((noreturn))
+static
+void X86ExitFunctionLinkerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe, uint64_t *record )
+{
+    asm("mov %" STATE_STR ",%rdi");
+    asm("callq X86ExitFunctionLinkerCode");
+    asm("jmpq *%rax");
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Find host JIT entry for a guest RIP, and continue 
+ * with executing that code. First check the caches,
+ * and ultimately call the JIT compiler:
+ */
+//static
+uint64_t X86CoreDispatchCode( FEXCore::Core::CpuStateFrame *Frame )
+{ 
+  auto  Thread  = Frame->Thread;
+  auto  CTX     = Thread->CTX;
+  auto  Address = Frame->State.rip;
+  auto &L1Entry = reinterpret_cast<LookupCache::LookupCacheEntry*>(Frame->Pointers.Common.L1Pointer)[Address & LookupCache::L1_ENTRIES_MASK];
+
+  if (L1Entry.GuestCode != Address) {
+    uintptr_t  HostCode= Thread->LookupCache->FindBlock(Address);
+  
+    if ( !HostCode ) {
+      // When compiling code, mask all signals to reduce the chance of reentrant allocations
+      sigset_t ProcMask={(unsigned long)-1,(unsigned long)-1};
+      if (SignalSafeCompile) {sigprocmask( SIG_SETMASK, &ProcMask, &ProcMask); }
+      CTX->CompileBlockJit(Thread->CurrentFrame,Address);
+      if (SignalSafeCompile) {sigprocmask( SIG_SETMASK, &ProcMask, NULL); }
+
+      HostCode= Thread->LookupCache->FindBlock(Address);
+    }
+
+    L1Entry.HostCode  = HostCode;
+    L1Entry.GuestCode = Address;
+  }
+
+  return L1Entry.HostCode;
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Call Core::ExitFunctionLink to obtain a continuation
+ * address (which can be either LoopTop or a JIT entry), 
+ * and continue with executing that code. 
+ * TODO: Core::ExitFunctionLink has a potential 
+ * short return path, for which we may want to omit the 
+ * two calls to sigprocmask:
+ */
+//static
+uint64_t X86ExitFunctionLinkerCode( FEXCore::Core::CpuStateFrame *Frame, uint64_t *record )
+{ 
+  uint64_t HostCode;
+
+  if (!SignalSafeCompile) {
+    // Just compile the code
+    HostCode = X86JITCore::ExitFunctionLink(Frame,record);
+  } else {
+    // When compiling code, mask all signals to reduce the chance of reentrant allocations
+    sigset_t ProcMask={(unsigned long)-1,(unsigned long)-1};
+    sigprocmask( SIG_SETMASK, &ProcMask, &ProcMask);
+    HostCode = X86JITCore::ExitFunctionLink(Frame,record);
+    sigprocmask( SIG_SETMASK, &ProcMask, NULL);
+  }
+  
+  return HostCode;
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+/*
+ * Call the dispatcher animation framework defined above, 
+ * while providing a quick termination via a longjmp:
+ */
+static 
+void X86DispatchCode( FEXCore::Core::CpuStateFrame *Frame )
+{
+  if (!setjmp(Frame->EmuContext)) {
+      uint32_t aligner MIE_ALIGN(16);
+      Frame->ReturningStackLocation = reinterpret_cast<uintptr_t>(&aligner);
+
+      X86CallCoreDispatchCodeAsm(Frame);
+  }
+}
+
+__attribute__((noreturn))
+//static 
+void X86ThreadStopHandlerCode( FEXCore::Core::CpuStateFrame *Frame )
+{
+  longjmp(Frame->EmuContext,1);
+}
+
+/* ---------------------------------------------------------------------------------- */
+
+    __attribute__((noreturn))
+    static void WaitUntilWeHitATestCase(){assert(0);}
+
+
+
+static 
+void X86ThreadPauseHandlerAddressCode( FEXCore::Core::CpuStateFrame *Frame )
+#if 1
+{WaitUntilWeHitATestCase();}
+#else
+{
+  // Pause handler
+  SleepThread(Frame->Thread->CTX,Frame);
+  assert(false);
+}
+#endif
+  
+  
+static 
+void X86OverflowExceptionInstructionAddressCode( FEXCore::Core::CpuStateFrame *Frame )
+#if 1
+// Does not seem to be used yet???
+{WaitUntilWeHitATestCase();}
+#else
+#endif
+ /*
+    // ud2 = SIGILL
+    // int3 = SIGTRAP
+    // hlt = SIGSEGV
+
+    mov(rax, reinterpret_cast<uint64_t>(&SynchronousFaultData));
+    add(byte [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, FaultToTopAndGeneratedException)], 1);
+    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, TrapNo)], X86State::X86_TRAPNO_OF);
+    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, err_code)], 0);
+    mov(dword [rax + offsetof(Dispatcher::SynchronousFaultDataStruct, si_code)], 0x80);
+
+    hlt();
+  */
+  
+  
+static 
+void X86CallbackPtrCode( FEXCore::Core::CpuStateFrame *Frame, uint64_t RSI )
+#if 1
+{WaitUntilWeHitATestCase();}
+#else
+{
+  if (!setjmp(Frame->CallbackContext)) {
+    // Make sure to adjust the refcounter so we don't clear the cache now
+    Frame->Pointers.Common.SignalHandlerRefCountPointer++);
+
+    // Now push the callback return trampoline to the guest stack
+    // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
+    mov(rax, CTX->X86CodeGen.CallbackReturn);
+
+    // Store the trampoline to the guest stack
+    // Guest stack is now correctly misaligned after a regular call instruction
+    Frame->State.gregs[X86State::REG_RSP] -= 16;
+    *reinterpret_cast<FEXCore::Context::Context::IntCallbackReturn*>(Frame->State.gregs[X86State::REG_RSP]) = 
+        reinterpret_cast<FEXCore::Context::Context::IntCallbackReturn>(X86IntCallbackReturnCodeAsm);
+
+    // Store RIP to the context state
+    Frame->State.rip = RSI;
+
+    // Back to the loop top now
+    X86CoreDispatchCode(Frame);
+  }
+}
+#endif
+  
+  
+//static 
+void X86IntCallbackReturnCode( FEXCore::Core::CpuStateFrame *Frame )
+#if 1
+{WaitUntilWeHitATestCase();}
+#else
+{
+  longjmp(Frame->CallbackContext,1);
+}
+#endif  
+  
+  
+/* ---------------------------------------------------------------------------------- */
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
   : Dispatcher(ctx)
@@ -35,374 +345,19 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
 
   LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "X86 dispatcher does not support SRA");
 
-  using namespace Xbyak;
-  using namespace Xbyak::util;
-  DispatchPtr = getCurr<AsmDispatch>();
-
-  // Temp registers
-  // rax, rcx, rdx, rsi, r8, r9,
-  // r10, r11
-  //
-  // Callee Saved
-  // rbx, rbp, r12, r13, r14, r15
-  //
-  // 1St Argument: rdi <ThreadState>
-  // XMM:
-  // All temp
-
-  // while (true) {
-  //    Ptr = FindBlock(RIP)
-  //    if (!Ptr)
-  //      Ptr = CTX->CompileBlock(RIP);
-  //
-  //    if (Ptr)
-  //      Ptr();
-  //    else
-  //    {
-  //      Ptr = FallbackCore->CompileBlock()
-  //      if (Ptr)
-  //        Ptr()
-  //      else {
-  //        ShouldStop = true;
-  //      }
-  //    }
-  // }
-  // Bunch of exit state stuff
-
-  // x86-64 ABI has the stack aligned when /call/ happens
-  // Which means the destination has a misaligned stack at that point
-  push(rbx);
-  push(rbp);
-  push(r12);
-  push(r13);
-  push(r14);
-  push(r15);
-  sub(rsp, 8);
-
-  mov(STATE, rdi);
-
-  // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
-  // regardless of where we were in the stack
-  mov(qword STATE_PTR(CpuStateFrame, ReturningStackLocation), rsp);
-
-  Label LoopTop;
-  Label FullLookup;
-  Label NoBlock;
-  Label ExitBlock;
-  Label ThreadPauseHandler;
-
-  L(LoopTop);
-  AbsoluteLoopTopAddressFillSRA = AbsoluteLoopTopAddress = getCurr<uint64_t>();
-
-  {
-    // Load our RIP
-    mov(rdx, qword STATE_PTR(CPUState, rip));
-
-    // L1 Cache
-    mov(r13, qword STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
-    mov(rax, rdx);
-
-    and_(rax, LookupCache::L1_ENTRIES_MASK);
-    shl(rax, 4);
-    cmp(qword[r13 + rax + offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode)], rdx);
-    jne(FullLookup);
-
-    jmp(qword[r13 + rax + offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode)]);
-
-    L(FullLookup);
-    mov(r13, qword STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
-
-    // Full lookup
-    uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
-    mov(rax, rdx);
-    mov(rbx, VirtualMemorySize - 1);
-    and_(rax, rbx);
-    shr(rax, 12);
-
-    // Load page pointer
-    mov(rdi, qword [r13 + rax * 8]);
-
-    cmp(rdi, 0);
-    je(NoBlock);
-
-    mov (rax, rdx);
-    and_(rax, 0x0FFF);
-
-    shl(rax, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
-
-    // check for aliasing
-    mov(rcx, qword [rdi + rax + 8]);
-    cmp(rcx, rdx);
-    jne(NoBlock);
-
-    // Load the block pointer
-    mov(rax, qword [rdi + rax]);
-
-    cmp(rax, 0);
-    je(NoBlock);
-
-    // Update L1
-    mov(r13, qword STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
-    mov(rcx, rdx);
-    and_(rcx, LookupCache::L1_ENTRIES_MASK);
-    shl(rcx, 1);
-    mov(qword[r13 + rcx*8 + 8], rdx);
-    mov(qword[r13 + rcx*8 + 0], rax);
-
-    // Real block if we made it here
-    jmp(rax);
-  }
-
-  {
-    L(ExitBlock);
-    ThreadStopHandlerAddress = getCurr<uint64_t>();
-
-    add(rsp, 8);
-
-    pop(r15);
-    pop(r14);
-    pop(r13);
-    pop(r12);
-    pop(rbp);
-    pop(rbx);
-
-    ret();
-  }
-
-  constexpr bool SignalSafeCompile = true;
-  // Block creation
-  {
-    L(NoBlock);
-
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // RDI: SETMASK
-      // RSI: Pointer to mask value (uint64_t)
-      // RDX: Pointer to old mask value (uint64_t)
-      // R10: Size of mask, sizeof(uint64_t)
-      // RAX: Syscall
-
-      // Backup rdx
-      mov(r9, rdx);
-
-      mov(rdi, ~0ULL);
-      sub(rsp, 16);
-      mov(qword [rsp], rdi);
-      mov(qword [rsp + 8], rdi);
-
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, rsp);
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
-
-      mov(rdx, r9);
-    }
-
-    // {rdi, rsi, rdx}
-    mov(rdi, reinterpret_cast<uint64_t>(CTX));
-    mov(rsi, STATE);
-    mov(rax, GetCompileBlockPtr());
-
-    call(rax);
-
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-      // Backup rdx
-      mov(r9, rdx);
-
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, 0); // Don't care about result
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
-
-      // Bring stack back
-      add(rsp, 16);
-
-      mov(rdx, r9);
-    }
-
-    // rdx already contains RIP here
-    jmp(LoopTop);
-  }
-
-  {
-    ExitFunctionLinkerAddress = getCurr<uint64_t>();
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // RDI: SETMASK
-      // RSI: Pointer to mask value (uint64_t)
-      // RDX: Pointer to old mask value (uint64_t)
-      // R10: Size of mask, sizeof(uint64_t)
-      // RAX: Syscall
-
-      // Backup rax
-      mov(r9, rax);
-
-      mov(rdi, ~0ULL);
-      sub(rsp, 16);
-      mov(qword [rsp], rdi);
-      mov(qword [rsp + 8], rdi);
-
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, rsp);
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
-
-      mov(rax, r9);
-    }
-
-    // {rdi, rsi}
-    mov(rdi, STATE);
-    mov(rsi, rax); // rax is set at the block end
-
-    call(qword STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
-
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-      // Backup rax
-      mov(r9, rax);
-
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, 0); // Don't care about result
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
-
-      // Bring stack back
-      add(rsp, 16);
-
-      jmp(r9);
-    }
-    else {
-      jmp(rax);
-    }
-  }
-
-  {
-    // Pause handler
-    ThreadPauseHandlerAddress = getCurr<uint64_t>();
-    L(ThreadPauseHandler);
-
-    mov(rdi, reinterpret_cast<uintptr_t>(CTX));
-    mov(rsi, STATE);
-    mov(rax, reinterpret_cast<uint64_t>(SleepThread));
-
-    call(rax);
-
-    // XXX: Unsupported atm
-    PauseReturnInstruction = getCurr<uint64_t>();
-    ud2();
-  }
-
-  {
-    CallbackPtr = getCurr<JITCallback>();
-
-    push(rbx);
-    push(rbp);
-    push(r12);
-    push(r13);
-    push(r14);
-    push(r15);
-    sub(rsp, 8);
-
-    // First thing we need to move the thread state pointer back in to our register
-    mov(STATE, rdi);
-    // XXX: XMM?
-
-    // Make sure to adjust the refcounter so we don't clear the cache now
-    add(qword STATE_PTR(CpuStateFrame, SignalHandlerRefCounter), 1);
-
-    // Now push the callback return trampoline to the guest stack
-    // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
-    mov(rax, CTX->X86CodeGen.CallbackReturn);
-
-    // Store the trampoline to the guest stack
-    // Guest stack is now correctly misaligned after a regular call instruction
-    sub(qword STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]), 16);
-    mov(rbx, qword STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
-    mov(qword [rbx], rax);
-
-    // Store RIP to the context state
-    mov(qword STATE_PTR(CpuStateFrame, State.rip), rsi);
-
-    // Back to the loop top now
-    jmp(LoopTop);
-  }
-
-  {
-    // Signal return handler
-    SignalHandlerReturnAddress = getCurr<uint64_t>();
-    ud2();
-  }
-
-  {
-    // Guest SIGILL handler
-    // Needs to be distinct from the SignalHandlerReturnAddress
-    UnimplementedInstructionAddress = getCurr<uint64_t>();
-    ud2();
-  }
-
-  {
-    // Guest Overflow handler
-    // Needs to be distinct from the SignalHandlerReturnAddress
-    OverflowExceptionInstructionAddress = getCurr<uint64_t>();
-
-    // ud2 = SIGILL
-    // int3 = SIGTRAP
-    // hlt = SIGSEGV
-  
-    add(byte STATE_PTR(CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException), 1);
-    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.TrapNo), X86State::X86_TRAPNO_OF);
-    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.err_code), 0);
-    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.si_code), 0x80);
-
-    hlt();
-  }
-
-  {
-    IntCallbackReturnAddress = getCurr<uint64_t>();
-//  using CallbackReturn =  FEX_NAKED void(*)(FEXCore::Core::InternalThreadState *Thread, volatile void *Host_RSP);
-
-    // rdi = thread
-    // rsi = rsp
-
-    mov(rsp, rsi);
-
-    // Now jump back to the thunk
-    // XXX: XMM?
-    add(rsp, 8);
-
-    pop(r15);
-    pop(r14);
-    pop(r13);
-    pop(r12);
-    pop(rbp);
-    pop(rbx);
-
-    ret();
-  }
-  ready();
-
-  Start = reinterpret_cast<uint64_t>(getCode());
-  End = Start + getSize();
-
-  if (CTX->Config.BlockJITNaming()) {
-    std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
-    CTX->Symbols.Register(reinterpret_cast<void*>(Start), End-Start, Name);
-  }
-  if (CTX->Config.GlobalJITNaming()) {
-    CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(Start), End-Start);
-  }
-
+  DispatchPtr                         = reinterpret_cast<AsmDispatch>(X86DispatchCode);
+  AbsoluteLoopTopAddressFillSRA       = reinterpret_cast<uint64_t>(X86CoreDispatchCodeAsm);
+  AbsoluteLoopTopAddress              = reinterpret_cast<uint64_t>(X86CoreDispatchCodeAsm);
+  ExitFunctionLinkerAddress           = reinterpret_cast<uint64_t>(X86ExitFunctionLinkerCodeAsm);
+  ThreadStopHandlerAddress            = reinterpret_cast<uint64_t>(X86ThreadStopHandlerCodeAsm);
+  SignalHandlerReturnAddress          = reinterpret_cast<uint64_t>(X86SignalHandlerReturnAddressCodeAsm);
+  PauseReturnInstruction              = reinterpret_cast<uint64_t>(X86PauseReturnInstructionCodeAsm);
+  UnimplementedInstructionAddress     = reinterpret_cast<uint64_t>(X86UnimplementedInstructionAddressCodeAsm);
+
+  ThreadPauseHandlerAddress           = reinterpret_cast<uint64_t>(X86ThreadPauseHandlerAddressCode);
+  OverflowExceptionInstructionAddress = reinterpret_cast<uint64_t>(X86OverflowExceptionInstructionAddressCode);
+  CallbackPtr                         = reinterpret_cast<JITCallback>(X86CallbackPtrCode);
+  IntCallbackReturnAddress            = reinterpret_cast<uint64_t>(X86IntCallbackReturnCodeAsm);
 }
 
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
