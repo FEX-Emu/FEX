@@ -17,6 +17,9 @@ extern "C" void BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK();
   }
 #endif
 
+#define MAKE_CALLBACK(lib, name, ...) \
+  static uint8_t fexcallback_##lib##_##name[32] = { __VA_ARGS__ };
+
 // Generated fexfn_pack_ symbols should be hidden by default, but clang does
 // not support aliasing to static functions. Make them regular non-static
 // functions on that compiler instead, hence.
@@ -33,20 +36,19 @@ struct LoadlibArgs {
 
 MAKE_THUNK(fex, loadlib, "0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80")
 MAKE_THUNK(fex, link_address_to_function, "0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77")
+MAKE_THUNK(fex, host_trampoline_for_guestcall, "0xa2, 0xa1, 0x95, 0x64, 0xad, 0x6e, 0xa5, 0x32, 0xc5, 0xb2, 0xcb, 0x5b, 0x5d, 0x85, 0xec, 0x99, 0x46, 0x9d, 0x5a, 0xf4, 0xa5, 0x2f, 0xbe, 0xa3, 0x7b, 0x7d, 0xd1, 0x8e, 0x44, 0xa7, 0x81, 0xe8")
 MAKE_THUNK(fex, is_lib_loaded, "0xee, 0x57, 0xba, 0x0c, 0x5f, 0x6e, 0xef, 0x2a, 0x8c, 0xb5, 0x19, 0x81, 0xc9, 0x23, 0xe6, 0x51, 0xae, 0x65, 0x02, 0x8f, 0x2b, 0x5d, 0x59, 0x90, 0x6a, 0x7e, 0xe2, 0xe7, 0x1c, 0x33, 0x8a, 0xff")
 
-#define LOAD_LIB_BASE(name, callback_unpacks, init_fn) \
+#define LOAD_LIB_BASE(name, init_fn) \
   __attribute__((constructor)) static void loadlib() \
   { \
-    LoadlibArgs args =  { #name, (uintptr_t)(callback_unpacks) }; \
+    LoadlibArgs args =  { #name }; \
     fexthunks_fex_loadlib(&args); \
     if ((init_fn)) ((void(*)())init_fn)(); \
   }
 
-#define LOAD_LIB(name) LOAD_LIB_BASE(name, nullptr, nullptr)
-#define LOAD_LIB_INIT(name, init_fn) LOAD_LIB_BASE(name, nullptr, init_fn)
-#define LOAD_LIB_WITH_CALLBACKS(name) LOAD_LIB_BASE(name, &callback_unpacks, nullptr)
-#define LOAD_LIB_WITH_CALLBACKS_INIT(name, init_fn) LOAD_LIB_BASE(name, (uintptr_t)&callback_unpacks, init_fn)
+#define LOAD_LIB(name) LOAD_LIB_BASE(name, nullptr)
+#define LOAD_LIB_INIT(name, init_fn) LOAD_LIB_BASE(name, init_fn)
 
 inline void LinkAddressToFunction(uintptr_t addr, uintptr_t target) {
     struct args_t {
@@ -183,4 +185,18 @@ template<auto Thunk, typename Result, typename...Args>
 static auto GetCallerForHostThunkFromRuntimePointer(Result (*host_func)(Args...))
     -> Result(*)(Args...) {
   return CallHostThunkFromRuntimePointer<Thunk, Result, Args...>;
+}
+
+template<typename Packer, typename Target>
+inline Target *HostTrampolineForGuestcall(uint8_t HostPacker[32], Packer *GuestUnpacker, Target *GuestTarget) {
+  struct {
+    void *HostPacker;
+    uintptr_t GuestUnpacker;
+    uintptr_t GuestTarget;
+    uintptr_t rv;
+  } argsrv = { HostPacker, (uintptr_t)GuestUnpacker, (uintptr_t)GuestTarget };
+
+  fexthunks_fex_host_trampoline_for_guestcall((void*)&argsrv);
+
+  return (Target *)argsrv.rv;
 }

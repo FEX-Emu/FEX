@@ -415,6 +415,10 @@ struct SHA256Sum final {
   [[nodiscard]] bool operator<(SHA256Sum const &rhs) const {
     return memcmp(data, rhs.data, sizeof(data)) < 0;
   }
+
+  [[nodiscard]] bool operator==(SHA256Sum const &rhs) const {
+    return memcmp(data, rhs.data, sizeof(data)) == 0;
+  }
 };
 
 class NodeIterator;

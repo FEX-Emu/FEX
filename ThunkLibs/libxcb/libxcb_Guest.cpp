@@ -1414,10 +1414,4 @@ extern "C" {
   }
 }
 
-struct {
-    #include "callback_unpacks_header.inl"
-} callback_unpacks = {
-    #include "callback_unpacks_header_init.inl"
-};
-
-LOAD_LIB_WITH_CALLBACKS_INIT(libxcb, init_lib)
+LOAD_LIB_INIT(libxcb, init_lib)

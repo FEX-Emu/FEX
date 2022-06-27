@@ -66,8 +66,7 @@ For each thunked library, the generator outputs the following files:
 - `ldr_ptrs.inl`: Host loader pointer declarations, used by ldr and function_unpacks
 - `tab_function_unpacks.inl`: Host function unpackers list, passed to FEX after Host library init so it can resolve the Guest Thunks to Host functions
 - `callback_structs.inl`: Guest/Host callback un/packer struct declarations
-- `callback_unpacks_header.inl`: Guest callback unpacker handler declarations (Used both in Guest and Host). This is how the Guest passes the callback unpackers to host
-- `callback_unpacks_header_init.inl`: Guest callback unpacker handler initializer (Used in Guest).
+- `callback_packs.inl`: Host callback packers
 - `callback_unpacks.inl`: Guest callback unpackers
 - `callback_typedefs.inl`: Guest callback unpacker typedefs
 

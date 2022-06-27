@@ -11,27 +11,80 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
+#include "FEXCore/Utils/CompilerDefs.h"
 #include "Thunks.h"
 
+#include <cstdint>
 #include <dlfcn.h>
 
 #include <Interface/Context/Context.h>
 #include "FEXCore/Core/X86Enums.h"
 #include <malloc.h>
-#include <map>
+#include <mutex>
+#include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <shared_mutex>
 #include <stdint.h>
 #include <string>
 #include <utility>
 
+
+#define HOST_TRAMPOLINE_ALLOC_STEP (16 * 1024)
+
 struct LoadlibArgs {
     const char *Name;
-    uintptr_t CallbackThunks;
 };
 
 static thread_local FEXCore::Core::InternalThreadState *Thread;
 
+struct TrampolineInstanceInfo {
+  uintptr_t HostPacker;
+  uintptr_t CallCallback;
+  uintptr_t GuestUnpacker;
+  uintptr_t GuestTarget;
+};
+
+struct GuestcallInfo {
+  uintptr_t GuestUnpacker;
+  uintptr_t GuestTarget;
+
+  [[nodiscard]] friend constexpr bool operator==(const GuestcallInfo&, const GuestcallInfo&) = default;
+};
+
+template <>
+struct std::hash<GuestcallInfo> {
+  size_t operator()(const GuestcallInfo& x) const noexcept {
+    return x.GuestTarget;
+  }
+};
+
+
+static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate"))) void HostToGuestTrampolineTemplate() {
+#if defined(_M_X86_64)
+  asm(
+    "lea 0f(%rip), %r11 \n"
+    "jmpq *0f(%rip) \n"
+    ".align 16 \n"
+    "0: \n"
+    ".quad 0, 0, 0, 0 \n"
+  );
+#elif defined(_M_ARM_64)
+  asm(
+    "adr x11, 0f \n"
+    "ldr x16, [x11] \n"
+    "br x16 \n"
+    ".align 16 \n"
+    "0: \n" // CallCallback
+    ".quad 0, 0, 0, 0 \n"
+  );
+#else
+#error Unsupported host architecture
+#endif
+}
+
+extern char __start_HostToGuestTrampolineTemplate[];
+extern char __stop_HostToGuestTrampolineTemplate[];
 
 namespace FEXCore {
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
@@ -54,12 +107,23 @@ namespace FEXCore {
                 // sha256(fex:link_address_to_function)
                 { 0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77 },
                 &LinkAddressToGuestFunction
+            },
+            {
+                // sha256(fex:host_trampoline_for_guestcall)
+                { 0xa2, 0xa1, 0x95, 0x64, 0xad, 0x6e, 0xa5, 0x32, 0xc5, 0xb2, 0xcb, 0x5b, 0x5d, 0x85, 0xec, 0x99, 0x46, 0x9d, 0x5a, 0xf4, 0xa5, 0x2f, 0xbe, 0xa3, 0x7b, 0x7d, 0xd1, 0x8e, 0x44, 0xa7, 0x81, 0xe8 },
+                &HostTrampolineForGuestcall
             }
         };
 
         // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
         // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
         std::set<std::string> Libs;
+
+        std::unordered_map<GuestcallInfo, uintptr_t> GuestcallToHostTrampoline;
+
+        uint8_t *HostTrampolineInstanceDataPtr;
+        size_t HostTrampolineInstanceDataAvailable;
+          
 
         /*
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
@@ -125,7 +189,6 @@ namespace FEXCore {
             auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
             auto Name = Args->Name;
-            auto CallbackThunks = Args->CallbackThunks;
 
             auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
 
@@ -138,13 +201,13 @@ namespace FEXCore {
 
             const auto InitSym = std::string("fexthunks_exports_") + Name;
 
-            ExportEntry* (*InitFN)(void *, uintptr_t);
+            ExportEntry* (*InitFN)();
             (void*&)InitFN = dlsym(Handle, InitSym.c_str());
             if (!InitFN) {
                 ERROR_AND_DIE_FMT("LoadLib: Failed to find export {}", InitSym);
             }
 
-            auto Exports = InitFN((void*)&CallCallback, CallbackThunks);
+            auto Exports = InitFN();
             if (!Exports) {
                 ERROR_AND_DIE_FMT("LoadLib: Failed to initialize thunk library {}. "
                                   "Check if the corresponding host library is installed "
@@ -154,7 +217,7 @@ namespace FEXCore {
             auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
 
             {
-                std::unique_lock lk(That->ThunksMutex);
+                std::lock_guard lk(That->ThunksMutex);
 
                 That->Libs.insert(Name);
 
@@ -165,6 +228,84 @@ namespace FEXCore {
 
                 LogMan::Msg::DFmt("Loaded {} syms", i);
             }
+        }
+
+        static void HostTrampolineForGuestcall(void* ArgsRV) {
+          struct ArgsRV_t {
+              IR::SHA256Sum *HostPacker;
+              uintptr_t GuestUnpacker;
+              uintptr_t GuestTarget;
+              uintptr_t rv;
+          };
+
+          auto &[HostPacker, GuestTarget, GuestUnpacker, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+          auto const CTX = Thread->CTX;
+          auto const That = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
+
+          const GuestcallInfo gci = { GuestUnpacker, GuestTarget };
+
+          // Try first with shared_lock
+          {
+            std::shared_lock lk(That->ThunksMutex);
+
+            auto found = That->GuestcallToHostTrampoline.find(gci);
+            if (found != That->GuestcallToHostTrampoline.end()) {
+              rv = found->second;
+              return;
+            }
+          }
+
+          std::lock_guard lk(That->ThunksMutex);
+
+          // retry lookup with full lock before making a new trampoline to avoid double trampolines
+          {
+            auto found = That->GuestcallToHostTrampoline.find(gci);
+            if (found != That->GuestcallToHostTrampoline.end()) {
+              rv = found->second;
+              return;
+            }
+          }
+
+          auto HostPackerEntry = That->Thunks.find(*HostPacker);
+          if (HostPackerEntry == That->Thunks.end()) {
+            rv = 0;
+            return;
+          }
+
+          const auto Length = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
+          const auto InstanceInfoOffset = Length - sizeof(TrampolineInstanceInfo);
+
+          uint8_t *HostTrampoline;
+
+          // Still protected by `lk`
+          if (That->HostTrampolineInstanceDataAvailable < Length) {
+            That->HostTrampolineInstanceDataAvailable = HOST_TRAMPOLINE_ALLOC_STEP;
+            That->HostTrampolineInstanceDataPtr = (uint8_t *)mmap(
+                0, That->HostTrampolineInstanceDataAvailable, PROT_READ | PROT_WRITE | PROT_EXEC,
+                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+            LOGMAN_THROW_A_FMT(That->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
+          }
+
+          // Still protected by `lk`
+          HostTrampoline = That->HostTrampolineInstanceDataPtr;
+          That->HostTrampolineInstanceDataAvailable -= Length;
+          That->HostTrampolineInstanceDataPtr += Length;
+
+          memcpy(HostTrampoline, (void*)&HostToGuestTrampolineTemplate, Length);
+
+          auto const InstanceInfo = (TrampolineInstanceInfo*)(HostTrampoline + InstanceInfoOffset);
+
+          InstanceInfo->HostPacker = (uintptr_t)HostPackerEntry->second;
+          InstanceInfo->CallCallback = (uintptr_t)&CallCallback;
+          InstanceInfo->GuestUnpacker = GuestUnpacker;
+          InstanceInfo->GuestTarget = GuestTarget;
+
+          rv = (uintptr_t)HostTrampoline;
+
+          // Still protected by `lk`
+          That->GuestcallToHostTrampoline[gci] = rv;
         }
 
         static void IsLibLoaded(void* ArgsRV) {
