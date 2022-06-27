@@ -17,9 +17,6 @@ $end_info$
 #include "callback_structs.inl"
 #include "callback_typedefs.inl"
 
-struct {
-    #include "callback_unpacks_header.inl"
-} *callback_unpacks;
 
 #include "ldr_ptrs.inl"
 
@@ -117,5 +114,5 @@ static ExportEntry exports[] = {
 
 #include "ldr.inl"
 
-EXPORTS_WITH_CALLBACKS(libX11) 
+EXPORTS(libX11) 
 

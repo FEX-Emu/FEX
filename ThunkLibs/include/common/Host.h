@@ -47,32 +47,8 @@ public:
 
 #define EXPORTS(name) \
   extern "C" { \
-    ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
+    ExportEntry* fexthunks_exports_##name() { \
       call_guest = (fex_call_callback_t*)a0; \
-      if (!fexldr_init_##name()) { \
-        return nullptr; \
-      } \
-      return exports; \
-    } \
-  }
-
-#define EXPORTS_INIT(name, init_fn) \
-  extern "C" { \
-    ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
-      call_guest = (fex_call_callback_t*)a0; \
-      if (!fexldr_init_##name()) { \
-        return nullptr; \
-      } \
-      init_fn (); \
-      return exports; \
-    } \
-  }
-
-#define EXPORTS_WITH_CALLBACKS(name) \
-  extern "C" { \
-    ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
-      call_guest = (fex_call_callback_t*)a0; \
-      (uintptr_t&)callback_unpacks = a1; \
       if (!fexldr_init_##name()) { \
         return nullptr; \
       } \

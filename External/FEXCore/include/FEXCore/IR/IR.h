@@ -415,6 +415,10 @@ struct SHA256Sum final {
   [[nodiscard]] bool operator<(SHA256Sum const &rhs) const {
     return memcmp(data, rhs.data, sizeof(data)) < 0;
   }
+
+  [[nodiscard]] bool operator==(SHA256Sum const &rhs) const {
+    return memcmp(data, rhs.data, sizeof(data)) == 0;
+  }
 };
 
 class NodeIterator;
@@ -578,6 +582,14 @@ template <>
 struct std::hash<FEXCore::IR::NodeID> {
   size_t operator()(const FEXCore::IR::NodeID& ID) const noexcept {
     return std::hash<FEXCore::IR::NodeID::value_type>{}(ID.Value);
+  }
+};
+
+// Return the least significant bits as the hash
+template <>
+struct std::hash<FEXCore::IR::SHA256Sum> {
+  size_t operator()(const FEXCore::IR::SHA256Sum& SHA256Sum) const noexcept {
+    return (const size_t&)SHA256Sum;
   }
 };
 
