@@ -12,6 +12,7 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
@@ -83,7 +84,7 @@ struct ExecveAtArgs {
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args);
 
-class SyscallHandler : public FEXCore::HLE::SyscallHandler {
+class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver {
 public:
   virtual ~SyscallHandler();
 
@@ -192,6 +193,8 @@ public:
   ///// FORK tracking /////
   void LockBeforeFork();
   void UnlockAfterFork();
+
+  SourcecodeResolver *GetSourcecodeResolver() override { return this; }
   
 protected:
   SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
@@ -224,6 +227,8 @@ private:
   #endif
 
   std::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler{};
+
+  std::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
   
   ///// VMA (Virtual Memory Area) tracking /////
 

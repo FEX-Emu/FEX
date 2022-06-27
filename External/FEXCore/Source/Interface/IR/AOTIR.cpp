@@ -6,6 +6,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <Interface/Core/LookupCache.h>
+#include <Interface/GDBJIT/GDBJIT.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <xxhash.h>
+
 
 namespace FEXCore::IR {
   AOTIRInlineEntry *AOTIRInlineIndex::GetInlineEntry(uint64_t DataOffset) {
@@ -242,9 +244,9 @@ namespace FEXCore::IR {
 
   AOTIRCaptureCache::PreGenerateIRFetchResult AOTIRCaptureCache::PreGenerateIRFetch(uint64_t GuestRIP, FEXCore::IR::IRListView *IRList) {
     auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
-    
+
     PreGenerateIRFetchResult Result{};
-    
+
     if (AOTIRCacheEntry.Entry) {
       AOTIRCacheEntry.Entry->ContainsCode = true;
 
@@ -253,7 +255,7 @@ namespace FEXCore::IR {
 
         if (Mod != nullptr)
         {
-          auto AOTEntry = Mod->Find(GuestRIP - AOTIRCacheEntry.Offset);
+          auto AOTEntry = Mod->Find(GuestRIP - AOTIRCacheEntry.VAFileStart);
 
           if (AOTEntry) {
             // verify hash
@@ -291,8 +293,9 @@ namespace FEXCore::IR {
     FEXCore::IR::IRListView *IRList,
     FEXCore::Core::DebugData *DebugData,
     bool GeneratedIR) {
+
     // Both generated ir and LibraryJITName need a named region lookup
-    if (GeneratedIR || CTX->Config.LibraryJITNaming()) {
+    if (GeneratedIR || CTX->Config.LibraryJITNaming() || CTX->Config.GDBSymbols()) {
 
       auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
 
@@ -301,14 +304,18 @@ namespace FEXCore::IR {
           CTX->Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize, AOTIRCacheEntry.Entry->Filename);
         }
 
+        if (CTX->Config.GDBSymbols()) {
+          GDBJITRegister(AOTIRCacheEntry.Entry, AOTIRCacheEntry.VAFileStart, GuestRIP, (uintptr_t)CodePtr, DebugData);
+        }
+
         // Add to AOT cache if aot generation is enabled
         if (GeneratedIR && RAData &&
             (CTX->Config.AOTIRCapture() || CTX->Config.AOTIRGenerate())) {
 
           auto hash = XXH3_64bits((void*)StartAddr, Length);
 
-          auto LocalRIP = GuestRIP - AOTIRCacheEntry.Offset;
-          auto LocalStartAddr = StartAddr - AOTIRCacheEntry.Offset;
+          auto LocalRIP = GuestRIP - AOTIRCacheEntry.VAFileStart;
+          auto LocalStartAddr = StartAddr - AOTIRCacheEntry.VAFileStart;
           auto FileId = AOTIRCacheEntry.Entry->FileId;
           // The underlying pointer and the unique_ptr deleter for RAData must
           // be marshalled separately to the lambda below. Otherwise, the
@@ -377,7 +384,7 @@ namespace FEXCore::IR {
 
       std::unique_lock lk(AOTIRCacheLock);
 
-      auto Inserted = AOTIRCache.insert({fileid, AOTIRCacheEntry{0, 0, 0, fileid, filename, false}});
+      auto Inserted = AOTIRCache.insert({fileid, AOTIRCacheEntry { .FileId = fileid, .Filename = filename }});
       auto Entry = &(Inserted.first->second);
 
       LOGMAN_THROW_A_FMT(Entry->Array == nullptr, "Duplicate LoadAOTIRCacheEntry");

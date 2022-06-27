@@ -50,9 +50,11 @@ namespace FEXCore::HLE {
   };
 
   class SyscallHandler;
+  class SourcecodeResolver;
+
   struct AOTIRCacheEntryLookupResult {
-    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t Offset, FHU::ScopedSignalMaskWithSharedLock &&lk)
-      : Entry(Entry), Offset(Offset), lk(std::move(lk))
+    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart, FHU::ScopedSignalMaskWithSharedLock &&lk)
+      : Entry(Entry), VAFileStart(VAFileStart), lk(std::move(lk))
     {
 
     }
@@ -60,7 +62,7 @@ namespace FEXCore::HLE {
     AOTIRCacheEntryLookupResult(AOTIRCacheEntryLookupResult&&) = default;
 
     FEXCore::IR::AOTIRCacheEntry *Entry;
-    uintptr_t Offset;
+    uintptr_t VAFileStart;
 
     friend class SyscallHandler;
     protected:
@@ -80,6 +82,7 @@ namespace FEXCore::HLE {
     virtual void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) { }
     virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) = 0;
 
+    virtual SourcecodeResolver *GetSourcecodeResolver() { return nullptr; }
   protected:
     SyscallOSABI OSABI;
   };

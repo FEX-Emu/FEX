@@ -156,6 +156,7 @@ namespace FEXCore::Context {
 
   void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler) {
     CTX->SyscallHandler = Handler;
+    CTX->SourcecodeResolver = Handler->GetSourcecodeResolver();
   }
 
   FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf) {

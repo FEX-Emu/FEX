@@ -181,6 +181,11 @@
         "RAOverride": "0"
       },
 
+      "GuestOpcode u32:$GuestEntryOffset": {
+        "Desc": ["Marks the beginning of a guest opcode"],
+        "HasSideEffects": true
+      },
+
       "GPR = ValidateCode u64:$CodeOriginalLow, u64:$CodeOriginalhigh, i64:$Offset, u8:$CodeLength": {
         "HasSideEffects": true,
         "HasDest": true,

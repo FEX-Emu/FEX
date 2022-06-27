@@ -672,6 +672,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
 
   this->Entry = Entry;
   this->RAData = RAData;
+  this->DebugData = DebugData;
 
   #ifndef NDEBUG
   LoadConstant(x0, Entry);

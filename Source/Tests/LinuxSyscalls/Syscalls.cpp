@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "Linux/Utils/ELFContainer.h"
+#include "Linux/Utils/ELFParser.h"
 
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -37,6 +38,7 @@ $end_info$
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <regex>
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -698,6 +700,315 @@ void SyscallHandler::UnlockAfterFork() {
   // VMATracking.Mutex.unlock();
   
   FM.GetFDLock()->unlock(); 
+}
+
+static bool isHEX(char c) {
+  return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+}
+
+std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
+
+  ELFParser GuestELF;
+
+  if (!GuestELF.ReadElf(std::string(GuestBinaryFile))) {
+    LogMan::Msg::DFmt("GenerateMap: '{}' is not an elf file?", GuestBinaryFile);
+    return {};
+  }
+  
+  struct stat GuestBinaryFileStat;
+
+  if (stat(GuestBinaryFile.data(), &GuestBinaryFileStat)) {
+    LogMan::Msg::DFmt("GenerateMap: failed to stat '{}'", GuestBinaryFile);
+    return {};
+  }
+
+  std::error_code ec;
+  auto FexSrcPath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "fexsrc";
+  std::filesystem::create_directories(FexSrcPath, ec);
+
+  if (ec) {
+    LogMan::Msg::DFmt("GenerateMap: failed to create_directories '{}'", FexSrcPath.string());
+    return {};
+  }
+
+  auto GuestSourceFile = (FexSrcPath / GuestBinaryFileId).string() + ".src";
+
+  struct stat GuestSourceFileStat;
+
+  if (stat(GuestSourceFile.data(), &GuestSourceFileStat) != 0 || GuestBinaryFileStat.st_mtime > GuestSourceFileStat.st_mtime) {
+    LogMan::Msg::DFmt("GenerateMap: Generating source for '{}'", GuestBinaryFile);
+    auto command = fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);  
+    if (system(command.c_str()) != 0) {
+      LogMan::Msg::DFmt("GenerateMap: '{}' failed", command);
+      return {};
+    }
+  }
+
+  auto GuestIndexFile = (FexSrcPath / GuestBinaryFileId).string() + ".idx";
+  struct stat GuestIndexFileStat;
+
+  bool GenerateIndex = stat(GuestIndexFile.data(), &GuestIndexFileStat) != 0 || GuestSourceFileStat.st_mtime > GuestIndexFileStat.st_mtime;
+
+  if (!GenerateIndex) {
+    // Index file de-serialization
+    LogMan::Msg::DFmt("GenerateMap: Reading index '{}'", GuestIndexFile);
+    
+    std::ifstream Stream(GuestIndexFile);
+
+    if (!Stream) {
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestIndexFile);
+      goto DoGenerate;
+    }
+
+    //"fexsrcindex0"
+    char filemagic[12];
+    Stream.read(filemagic, sizeof(filemagic));
+    if (memcmp(filemagic, "fexsrcindex0", sizeof(filemagic)) != 0) {
+      LogMan::Msg::DFmt("GenerateMap: '{}' has invalid magic '{}'", GuestIndexFile, filemagic);
+      goto DoGenerate;
+    }
+
+    auto rv = std::make_unique<FEXCore::HLE::SourcecodeMap>();
+
+    {
+      auto len = rv->SourceFile.size();
+      Stream.read((char*)&len, sizeof(len));
+      rv->SourceFile.resize(len);
+      Stream.read(rv->SourceFile.data(), len);
+    }
+
+    {
+      auto len = rv->SortedLineMappings.size();
+      
+      Stream.read((char*)&len, sizeof(len));
+
+      rv->SortedLineMappings.resize(len);
+
+      for (auto &Mapping: rv->SortedLineMappings) {
+        Stream.read((char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        Stream.read((char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+        Stream.read((char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
+      }
+    }
+
+    {
+      auto len = rv->SortedSymbolMappings.size();
+      
+      Stream.read((char*)&len, sizeof(len));
+
+      rv->SortedSymbolMappings.resize(len);
+
+      for (auto &Mapping: rv->SortedSymbolMappings) {
+        Stream.read((char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        Stream.read((char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+
+        {
+          auto len = Mapping.Name.size();
+          Stream.read((char*)&len, sizeof(len));
+          Mapping.Name.resize(len);
+          Stream.read(Mapping.Name.data(), len);
+        }
+      }
+    }
+
+    LogMan::Msg::DFmt("GenerateMap: Finished reading index");
+    return rv;
+  } else {
+    // objdump output parsing,  index generation, index file serialization
+    DoGenerate:
+    LogMan::Msg::DFmt("GenerateMap: Generating index for '{}'", GuestSourceFile);
+    std::ifstream Stream(GuestSourceFile);
+
+    if (!Stream) {
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestSourceFile);
+    }
+
+    std::ofstream IndexStream(GuestIndexFile);
+
+    if (!IndexStream) {
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}' for writing", GuestIndexFile);
+    }
+
+    IndexStream.write("fexsrcindex0", strlen("fexsrcindex0"));
+
+    // objdump parsing
+    std::string Line;
+    int LineNum = 0;
+    
+    bool PreviousLineWasEmpty = false;
+
+    uintptr_t LastSymbolOffset{};
+    uintptr_t CurrentSymbolOffset{};
+    std::string LastSymbolName;
+
+    uintptr_t LastOffset{};
+    uintptr_t CurrentOffset{};
+    int LastOffsetLine;
+
+    auto rv = std::make_unique<FEXCore::HLE::SourcecodeMap>();
+
+    rv->SourceFile = GuestSourceFile;
+
+    auto EndSymbol = [&] {
+      if (LastSymbolOffset) {
+        rv->SortedSymbolMappings.push_back({LastSymbolOffset, CurrentSymbolOffset, LastSymbolName});
+
+        // LogMan::Msg::DFmt("Ended Symbol {} - {:x}...{:x}", LastSymbolName, LastSymbolOffset, CurrentSymbolOffset);
+      }
+      LastSymbolOffset = {};
+    };
+
+    auto EndLine = [&] {
+      if (LastOffset) {
+        rv->SortedLineMappings.push_back({LastOffset, CurrentOffset, LastOffsetLine});
+
+        // LogMan::Msg::DFmt("Ended Line {} - {:x}...{:x}", LastOffsetLine, LastOffset, CurrentOffset);
+      }
+      LastOffset = {};
+    };
+
+    while (std::getline(Stream, Line)) {
+      LineNum++;
+
+      auto LineIsEmpty = Line.empty();
+
+      if (LineIsEmpty) {
+        PreviousLineWasEmpty = true;
+      } else {
+
+        // LogMan::Msg::DFmt("Line: '{}'", Line);
+
+        if (isHEX(Line[0])) {
+          std::string addr;
+          int offs = 1;
+          for (; !isspace(Line[offs]) && offs < Line.size(); offs++)
+            ;
+
+          if (offs == Line.size())
+            continue;
+          if (offs != 8 && offs != 16)
+            continue;
+
+          auto VAOffset = std::strtoul(Line.substr(0, offs).c_str(), nullptr, 16);
+
+          auto FileOffset = GuestELF.VAToFile(VAOffset);
+
+          if (FileOffset == 0) {
+            LogMan::Msg::EFmt("File Offset {:x} did not map to file?! {}", VAOffset, Line);
+          }
+
+          CurrentSymbolOffset = FileOffset;
+
+          if (PreviousLineWasEmpty) {
+            EndSymbol();
+          }
+          LastSymbolOffset = CurrentSymbolOffset;
+
+          for (; Line[offs] != '<' && offs < Line.size(); offs++)
+            ;
+
+          if (offs == Line.size())
+            continue;
+
+          offs++;
+
+          LastSymbolName = Line.substr(offs, Line.size() - 2 - offs);
+
+          // LogMan::Msg::DFmt("Symbol {} @ {:x} -> Line {}", LastSymbolName, LastSymbolOffset, LineNum);
+        } else if (isspace(Line[0])) {
+          int offs = 1;
+          for (; isspace(Line[offs]) && offs < Line.size(); offs++)
+            ;
+
+          if (offs == Line.size())
+            continue;
+
+          int start = offs;
+
+          for (; Line[offs] != ':' && offs < Line.size(); offs++)
+            ;
+
+          if (offs == Line.size())
+            continue;
+
+          if (Line[offs + 1] == '\t') {
+            auto VAOffsetStr = Line.substr(start, offs - start);
+            auto VAOffset = std::strtoul(VAOffsetStr.c_str(), nullptr, 16);
+            auto FileOffset = GuestELF.VAToFile(VAOffset);
+            if (FileOffset == 0) {
+              LogMan::Msg::EFmt("File Offset {:x} did not map to file?! {}", VAOffset, Line);
+            } else {
+              if (LastOffset > FileOffset) {
+                LogMan::Msg::EFmt("File Offset {:x} less than previous {:} ?!  {}", FileOffset, LastOffset, Line);
+              }
+              CurrentOffset = FileOffset;
+
+              EndLine();
+
+              LastOffset = CurrentOffset;
+              LastOffsetLine = LineNum;
+            }
+          }
+        }
+        // something else -- keep going
+      }
+    }
+
+    CurrentOffset = LastOffset + 4;
+    CurrentSymbolOffset = CurrentOffset;
+
+    EndSymbol();
+    EndLine();
+
+    // Index post processing - entires are sorted for faster lookups
+
+    std::sort(rv->SortedLineMappings.begin(), rv->SortedLineMappings.end(),
+              [](const auto &lhs, const auto &rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
+
+    std::sort(rv->SortedSymbolMappings.begin(), rv->SortedSymbolMappings.end(),
+              [](const auto &lhs, const auto &rhs) { return lhs.FileGuestEnd <= rhs.FileGuestBegin; });
+
+    // Index serialization
+    {
+      auto len = rv->SourceFile.size();
+      IndexStream.write((const char*)&len, sizeof(len));
+      IndexStream.write(rv->SourceFile.c_str(), len);
+    }
+
+    {
+      auto len = rv->SortedLineMappings.size();
+      
+      IndexStream.write((const char*)&len, sizeof(len));
+
+      for (const auto &Mapping: rv->SortedLineMappings) {
+        IndexStream.write((const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        IndexStream.write((const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+        IndexStream.write((const char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
+      }
+    }
+
+    {
+      auto len = rv->SortedSymbolMappings.size();
+      
+      IndexStream.write((char*)&len, sizeof(len));
+
+      for (const auto &Mapping: rv->SortedSymbolMappings) {
+        IndexStream.write((const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        IndexStream.write((const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+
+        {
+          auto len = Mapping.Name.size();
+          IndexStream.write((const char*)&len, sizeof(len));
+          IndexStream.write(Mapping.Name.c_str(), len);
+        }
+      }
+    }
+
+    LogMan::Msg::DFmt("GenerateMap: Finished generating index", GuestIndexFile);
+    return rv;
+  }
+
+  
 }
 
 }

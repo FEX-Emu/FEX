@@ -575,6 +575,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
 
   this->Entry = Entry;
   this->RAData = RAData;
+  this->DebugData = DebugData;
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
@@ -582,7 +583,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     CTX->ClearCodeCache(ThreadState);
   }
 
-	auto GuestEntry = getCurr<uint8_t*>();
+	GuestEntry = getCurr<uint8_t*>();
   CursorEntry = getSize();
   this->IR = IR;
 
@@ -646,12 +647,13 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
-    {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-      auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-      LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
+    LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
+    auto BlockStartHostCode = getCurr<uint8_t *>();
+    {
       const auto Node = IR->GetID(BlockNode);
       const auto IsTarget = JumpTargets.try_emplace(Node).first;
 
@@ -705,6 +707,13 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
       // Execute handler
       OpHandler Handler = OpHandlers[IROp->Op];
       (this->*Handler)(IROp, ID);
+    }
+
+    if (DebugData) {
+      DebugData->Subblocks.push_back({
+        static_cast<uint32_t>(BlockStartHostCode - GuestEntry),
+        static_cast<uint32_t>(getCurr<uint8_t *>() - BlockStartHostCode)
+      });
     }
   }
 

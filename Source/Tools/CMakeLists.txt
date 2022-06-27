@@ -11,6 +11,9 @@ if (NOT TERMUX_BUILD)
   add_subdirectory(FEXRootFSFetcher/)
 endif()
 
+if (ENABLE_GDB_SYMBOLS)
+  add_subdirectory(FEXGDBReader/)
+endif()
 add_subdirectory(FEXGetConfig/)
 add_subdirectory(FEXServer/)
 

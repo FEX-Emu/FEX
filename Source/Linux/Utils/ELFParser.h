@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <FEXCore/Utils/LogManager.h>
+
 #include "Linux/Utils/ELFContainer.h"
 
 /*
@@ -191,6 +193,36 @@ struct ELFParser {
     return true;
   }
 
+  ptrdiff_t FileToVA(off_t FileOffset) {
+    for (auto phdr : phdrs) {
+      if (phdr.p_offset <= FileOffset && (phdr.p_offset + phdr.p_filesz) > FileOffset) {
+
+        auto SectionFileOffset = FileOffset - phdr.p_offset;
+
+        if (SectionFileOffset < phdr.p_memsz) {
+          return SectionFileOffset + phdr.p_vaddr;
+        }
+      }
+    }
+
+    return {};
+  }
+
+  off_t VAToFile(ptrdiff_t VAOffset) {
+    for (auto phdr : phdrs) {
+      if (phdr.p_vaddr <= VAOffset && (phdr.p_vaddr + phdr.p_memsz) > VAOffset) {
+
+        auto SectionVAOffset = VAOffset - phdr.p_vaddr;
+        
+        if (SectionVAOffset < phdr.p_filesz) {
+          return SectionVAOffset + phdr.p_offset;
+        }
+      }
+    }
+
+    return {};
+  }
+  
   bool ReadElf(const std::string &file) {
     int NewFD = ::open(file.c_str(), O_RDONLY);
 

@@ -189,6 +189,7 @@ private:
 
   IR::RegisterAllocationPass *RAPass;
   FEXCore::IR::RegisterAllocationData *RAData;
+  FEXCore::Core::DebugData *DebugData;
 
 #ifdef BLOCKSTATS
   bool GetSamplingData {true};
@@ -200,6 +201,11 @@ private:
   void EmitDetectionString();
 
   uint32_t SpillSlots{};
+  /**
+  * @brief Current guest RIP entrypoint
+  */
+  uint8_t *GuestEntry{};
+  
   using SetCC = void (X86JITCore::*)(const Operand& op);
   using CMovCC = void (X86JITCore::*)(const Reg& reg, const Operand& op);
   using JCC = void (X86JITCore::*)(const Label& label, LabelType type);
@@ -341,7 +347,7 @@ private:
   DEF_OP(CacheLineZero);
 
   ///< Misc ops
-  DEF_OP(EndBlock);
+  DEF_OP(GuestOpcode);
   DEF_OP(Fence);
   DEF_OP(Break);
   DEF_OP(Phi);

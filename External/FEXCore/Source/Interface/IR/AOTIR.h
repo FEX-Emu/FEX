@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <shared_mutex>
 #include <queue>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 
 namespace FEXCore::Core {
 struct DebugData;
@@ -75,6 +76,7 @@ namespace FEXCore::IR {
     AOTIRInlineIndex *Array;
     void *FilePtr;
     size_t Size;
+    std::unique_ptr<FEXCore::HLE::SourcecodeMap> SourcecodeMap;
     std::string FileId;
     std::string Filename;
     bool ContainsCode;

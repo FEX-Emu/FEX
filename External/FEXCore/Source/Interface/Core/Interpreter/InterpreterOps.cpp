@@ -164,6 +164,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(CODEBLOCK,              NoOp);
   REGISTER_OP(BEGINBLOCK,             NoOp);
   REGISTER_OP(ENDBLOCK,               NoOp);
+  REGISTER_OP(GUESTOPCODE,            NoOp);
   REGISTER_OP(FENCE,                  Fence);
   REGISTER_OP(BREAK,                  Break);
   REGISTER_OP(PHI,                    NoOp);
