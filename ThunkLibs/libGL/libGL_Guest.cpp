@@ -35,7 +35,7 @@ typedef void voidFunc();
 // linked to the corresponding host function pointer
 const std::unordered_map<std::string_view, uintptr_t /* guest function address */> HostPtrInvokers =
     std::invoke([]() {
-#define PAIR(name, unused) Ret[#name] = reinterpret_cast<uintptr_t>(GetCallerForHostThunkFromRuntimePointer<fexthunks_libGL_hostcall_##name>(name));
+#define PAIR(name, unused) Ret[#name] = reinterpret_cast<uintptr_t>(fexfn_pack_hostcall_##name);
         std::unordered_map<std::string_view, uintptr_t> Ret;
         FOREACH_internal_SYMBOL(PAIR)
         return Ret;

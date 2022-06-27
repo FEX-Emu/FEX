@@ -540,6 +540,9 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             }
             // Using trailing return type as it makes handling function pointer returns much easier
             file << ") -> " << data.return_type.getAsString() << " {\n";
+            if (data.is_hostcall) {
+                file << "  CUSTOM_ABI_HOST_ADDR;\n";
+            }
             file << "  struct {\n";
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
@@ -552,8 +555,12 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "    char force_nonempty;\n";
             }
             file << "  } args;\n";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
+            for (std::size_t idx = 0; idx < data.param_types.size() - data.is_hostcall; ++idx) {
                 file << "  args.a_" << idx << " = a_" << idx << ";\n";
+            }
+            if (data.is_hostcall) {
+                auto idx = data.param_types.size() - 1;
+                file << "  args.a_" << idx << " = host_addr;\n";
             }
             file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
             if (!is_void) {
