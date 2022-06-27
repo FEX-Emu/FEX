@@ -18,7 +18,8 @@ $end_info$
 #include <Interface/Context/Context.h>
 #include "FEXCore/Core/X86Enums.h"
 #include <malloc.h>
-#include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <shared_mutex>
 #include <stdint.h>
@@ -39,11 +40,16 @@ namespace FEXCore {
     class ThunkHandler_impl final: public ThunkHandler {
         std::shared_mutex ThunksMutex;
 
-        std::map<IR::SHA256Sum, ThunkedFunction*> Thunks = {
+        std::unordered_map<IR::SHA256Sum, ThunkedFunction*> Thunks = {
             {
                 // sha256(fex:loadlib)
                 { 0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80 },
                 &LoadLib
+            },
+            {
+                // sha256(fex:is_lib_loaded)
+                { 0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77 },
+                &IsLibLoaded
             },
             {
                 // sha256(fex:link_address_to_function)
@@ -51,6 +57,8 @@ namespace FEXCore {
                 &LinkAddressToGuestFunction
             }
         };
+
+        std::unordered_set<std::string_view> Libs;
 
         /*
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
@@ -145,7 +153,9 @@ namespace FEXCore {
             auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
 
             {
-                std::unique_lock lk(That->ThunksMutex);
+                std::lock_guard lk(That->ThunksMutex);
+
+                That->Libs.insert(Name);
 
                 int i;
                 for (i = 0; Exports[i].sha256; i++) {
@@ -153,6 +163,23 @@ namespace FEXCore {
                 }
 
                 LogMan::Msg::DFmt("Loaded {} syms", i);
+            }
+        }
+
+        static void IsLibLoaded(void* ArgsRV) {
+            struct ArgsRV_t {
+                const char *Name;
+                bool rv;     // Guest function to call when branching to original_callee
+            };
+
+            auto &[Name, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+            auto CTX = Thread->CTX;
+            auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
+
+            {
+                std::shared_lock lk(That->ThunksMutex);
+                rv = That->Libs.contains(Name);
             }
         }
 
