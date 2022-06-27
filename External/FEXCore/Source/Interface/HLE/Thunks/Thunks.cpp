@@ -46,11 +46,18 @@ namespace FEXCore {
                 &LoadLib
             },
             {
+                // sha256(fex:is_lib_loaded)
+                { 0xee, 0x57, 0xba, 0x0c, 0x5f, 0x6e, 0xef, 0x2a, 0x8c, 0xb5, 0x19, 0x81, 0xc9, 0x23, 0xe6, 0x51, 0xae, 0x65, 0x02, 0x8f, 0x2b, 0x5d, 0x59, 0x90, 0x6a, 0x7e, 0xe2, 0xe7, 0x1c, 0x33, 0x8a, 0xff },
+                &IsLibLoaded
+            },
+            {
                 // sha256(fex:link_address_to_function)
                 { 0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77 },
                 &LinkAddressToGuestFunction
             }
         };
+
+        std::set<std::string_view> Libs;
 
         /*
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
@@ -147,12 +154,31 @@ namespace FEXCore {
             {
                 std::unique_lock lk(That->ThunksMutex);
 
+                That->Libs.insert(Name);
+
                 int i;
                 for (i = 0; Exports[i].sha256; i++) {
                     That->Thunks[*reinterpret_cast<IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
                 }
 
                 LogMan::Msg::DFmt("Loaded {} syms", i);
+            }
+        }
+
+        static void IsLibLoaded(void* ArgsRV) {
+            struct ArgsRV_t {
+                const char *Name;
+                bool rv;
+            };
+
+            auto &[Name, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+            auto CTX = Thread->CTX;
+            auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
+
+            {
+                std::shared_lock lk(That->ThunksMutex);
+                rv = That->Libs.contains(Name);
             }
         }
 
