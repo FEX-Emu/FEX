@@ -11,6 +11,7 @@ namespace FEXServerClient {
     TYPE_KILL,
     TYPE_GET_LOG_FD,
     TYPE_GET_ROOTFS_PATH,
+    TYPE_GET_PID_FD,
 
     // Result only
     TYPE_SUCCESS,
@@ -88,6 +89,16 @@ namespace FEXServerClient {
   int RequestLogFD(int ServerSocket);
 
   std::string RequestRootFSPath(int ServerSocket);
+
+  /**
+   * @brief Request a FEXServer to give us a pidfd of the process
+   *
+   * @param ServerSocket - Socket to the server
+   *
+   * @return FD for pidfd
+   */
+  int RequestPIDFD(int ServerSocket);
+
   /**  @} */
 
   /**

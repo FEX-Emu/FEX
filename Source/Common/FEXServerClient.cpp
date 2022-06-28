@@ -21,6 +21,71 @@
 #include <thread>
 
 namespace FEXServerClient {
+  int RequestPIDFDPacket(int ServerSocket, PacketType Type) {
+    FEXServerRequestPacket Req {
+      .Header {
+        .Type = Type,
+      },
+    };
+
+    int Result = write(ServerSocket, &Req, sizeof(Req.BasicRequest));
+    if (Result != -1) {
+      // Wait for success response with SCM_RIGHTS
+
+      FEXServerResultPacket Res{};
+      struct iovec iov {
+        .iov_base = &Res,
+        .iov_len = sizeof(Res),
+      };
+
+      struct msghdr msg {
+        .msg_name = nullptr,
+        .msg_namelen = 0,
+        .msg_iov = &iov,
+        .msg_iovlen = 1,
+      };
+
+      // Setup the ancillary buffer. This is where we will be getting pipe FDs
+      // We only need 4 bytes for the FD
+      constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
+      union AncillaryBuffer {
+        struct cmsghdr Header;
+        uint8_t Buffer[CMSG_SIZE];
+      };
+      AncillaryBuffer AncBuf{};
+
+      // Now link to our ancilllary buffer
+      msg.msg_control = AncBuf.Buffer;
+      msg.msg_controllen = CMSG_SIZE;
+
+      ssize_t DataResult = recvmsg(ServerSocket, &msg, 0);
+      if (DataResult > 0) {
+        // Now that we have the data, we can extract the FD from the ancillary buffer
+        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+
+        // Do some error checking
+        if (cmsg == nullptr ||
+            cmsg->cmsg_len != CMSG_LEN(sizeof(int)) ||
+            cmsg->cmsg_level != SOL_SOCKET ||
+            cmsg->cmsg_type != SCM_RIGHTS) {
+          // Couldn't get a socket
+        }
+        else {
+          // Check for Success.
+          // If type error was returned then the FEXServer doesn't have a log to pipe in to
+          if (Res.Header.Type == PacketType::TYPE_SUCCESS) {
+            // Now that we know the cmsg is sane, read the FD
+            int NewFD{};
+            memcpy(&NewFD, CMSG_DATA(cmsg), sizeof(NewFD));
+            return NewFD;
+          }
+        }
+      }
+    }
+
+    return -1;
+  }
+
   static int ServerFD {-1};
 
   std::string GetServerLockFolder() {
@@ -163,68 +228,7 @@ namespace FEXServerClient {
   }
 
   int RequestLogFD(int ServerSocket) {
-    FEXServerRequestPacket Req {
-      .Header {
-        .Type = PacketType::TYPE_GET_LOG_FD,
-      },
-    };
-
-    int Result = write(ServerSocket, &Req, sizeof(Req.BasicRequest));
-    if (Result != -1) {
-      // Wait for success response with SCM_RIGHTS
-
-      FEXServerResultPacket Res{};
-      struct iovec iov {
-        .iov_base = &Res,
-        .iov_len = sizeof(Res),
-      };
-
-      struct msghdr msg {
-        .msg_name = nullptr,
-        .msg_namelen = 0,
-        .msg_iov = &iov,
-        .msg_iovlen = 1,
-      };
-
-      // Setup the ancillary buffer. This is where we will be getting pipe FDs
-      // We only need 4 bytes for the FD
-      constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-      union AncillaryBuffer {
-        struct cmsghdr Header;
-        uint8_t Buffer[CMSG_SIZE];
-      };
-      AncillaryBuffer AncBuf{};
-
-      // Now link to our ancilllary buffer
-      msg.msg_control = AncBuf.Buffer;
-      msg.msg_controllen = CMSG_SIZE;
-
-      ssize_t DataResult = recvmsg(ServerSocket, &msg, 0);
-      if (DataResult > 0) {
-        // Now that we have the data, we can extract the FD from the ancillary buffer
-        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-
-        // Do some error checking
-        if (cmsg == nullptr ||
-            cmsg->cmsg_len != CMSG_LEN(sizeof(int)) ||
-            cmsg->cmsg_level != SOL_SOCKET ||
-            cmsg->cmsg_type != SCM_RIGHTS) {
-          // Couldn't get a socket
-        }
-        else {
-          // Check for Success.
-          // If type error was returned then the FEXServer doesn't have a log to pipe in to
-          if (Res.Header.Type == PacketType::TYPE_SUCCESS) {
-            // Now that we know the cmsg is sane, read the FD
-            int NewFD{};
-            memcpy(&NewFD, CMSG_DATA(cmsg), sizeof(NewFD));
-            return NewFD;
-          }
-        }
-      }
-    }
-
-    return -1;
+    return RequestPIDFDPacket(ServerSocket, PacketType::TYPE_GET_LOG_FD);
   }
 
   std::string RequestRootFSPath(int ServerSocket) {
@@ -250,6 +254,10 @@ namespace FEXServerClient {
     }
 
     return {};
+  }
+
+  int RequestPIDFD(int ServerSocket) {
+    return RequestPIDFDPacket(ServerSocket, PacketType::TYPE_GET_PID_FD);
   }
 
   /**  @} */
