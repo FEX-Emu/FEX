@@ -1,5 +1,6 @@
 namespace fexgen {
 struct returns_guest_pointer {};
+struct returns_from_host_trampoline {};
 struct custom_host_impl {};
 struct custom_guest_entrypoint {};
 

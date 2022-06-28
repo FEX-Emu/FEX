@@ -9,6 +9,7 @@ $end_info$
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
+#include <cstdint>
 #include <stdio.h>
 #include <cstring>
 #include <map>
@@ -20,10 +21,11 @@ $end_info$
 #include "callback_typedefs.inl"
 
 #include "thunks.inl"
+#include "callback_unpacks.inl"
+
 #include "function_packs.inl"
 #include "function_packs_public.inl"
 
-#include "callback_unpacks.inl"
 
 // Custom implementations //
 
@@ -68,17 +70,12 @@ extern "C" {
         return rv;
     }
 
-    int XIfEvent(Display* a0, XEvent* a1, XIfEventCBFN* a2, XPointer a3) {
-        return fexfn_pack_XIfEvent_internal(a0, a1, a2, a3);
-    }
-
+    // Implemented manually
     XSetErrorHandlerCBFN* XSetErrorHandler(XErrorHandler a_0) {
-        return fexfn_pack_XSetErrorHandler_internal(a_0);
-    }
+        a_0 = HostTrampolineForGuestcall(fexcallback_libX11_XIfEventCBFN, &fexfn_unpack_libX11_XSetErrorHandlerCBFN, a_0);
+        auto rv = fexfn_pack_XSetErrorHandler(a_0);
 
-    int (*XESetCloseDisplay(Display *display, int extension, int (*proc)()))() {
-        fprintf(stderr, "libX11: XESetCloseDisplay\n");
-        return nullptr;
+        return GuestcallTargetForHostTrampoline(rv);
     }
 
     static void LockMutexFunction() {
@@ -95,10 +92,4 @@ extern "C" {
   LockInfoPtr _Xglobal_lock = (LockInfoPtr)0x4142434445464748ULL;
 }
 
-struct {
-    #include "callback_unpacks_header.inl"
-} callback_unpacks = {
-    #include "callback_unpacks_header_init.inl"
-};
-
-LOAD_LIB_WITH_CALLBACKS(libX11)
+LOAD_LIB(libX11)

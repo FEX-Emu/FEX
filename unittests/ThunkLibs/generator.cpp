@@ -57,10 +57,8 @@ struct Fixture {
             tmpdir + "/thunks",
             tmpdir + "/function_packs",
             tmpdir + "/function_packs_public",
-            tmpdir + "/callback_unpacks_header_init",
             tmpdir + "/callback_structs",
             tmpdir + "/callback_typedefs",
-            tmpdir + "/callback_unpacks_header",
             tmpdir + "/callback_unpacks",
         };
     }

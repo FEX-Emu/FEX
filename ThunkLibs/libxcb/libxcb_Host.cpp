@@ -25,10 +25,6 @@ $end_info$
 #include "WorkEventData.h"
 #include "callback_typedefs.inl"
 
-struct {
-    #include "callback_unpacks_header.inl"
-} *callback_unpacks;
-
 #include "ldr_ptrs.inl"
 
 static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);

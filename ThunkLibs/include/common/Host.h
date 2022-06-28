@@ -26,8 +26,6 @@ struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
 
-static fex_call_callback_t* call_guest;
-
 /**
  * Opaque wrapper around a guest function pointer.
  *
@@ -48,7 +46,6 @@ public:
 #define EXPORTS(name) \
   extern "C" { \
     ExportEntry* fexthunks_exports_##name() { \
-      call_guest = (fex_call_callback_t*)a0; \
       if (!fexldr_init_##name()) { \
         return nullptr; \
       } \
@@ -62,3 +59,13 @@ public:
     init_fn (); \
   }
 
+struct GuestcallInfo {
+  uintptr_t HostPacker;
+  void (*CallCallback)(uintptr_t GuestUnpacker, uintptr_t GuestTarget, void* argsrv);
+  uintptr_t GuestUnpacker;
+  uintptr_t GuestTarget;
+};
+
+#define CUSTOM_ABI_GUESTCALL \
+  GuestcallInfo *guestcall; \
+  asm("mov %%r11, %0" : "=r" (guestcall))

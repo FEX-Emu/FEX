@@ -46,7 +46,7 @@ PFN_vkVoidFunction vkGetDeviceProcAddr(VkDevice a_0,const char* a_1){
       fprintf(stderr, "\tvkGetDeviceProcAddr: Couldn't find Guest symbol: '%s'\n", a_1);
       __builtin_trap();
     }
-    LinkAddressToFunction((uintptr_t)Ret, It->second);
+    LinkHostAddressToGuestFunction((uintptr_t)Ret, It->second);
     return Ret;
 }
 
@@ -63,7 +63,7 @@ PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance a_0,const char* a_1){
           fprintf(stderr, "\tvkGetInstanceProcAddr: Couldn't find Guest symbol: '%s'\n", a_1);
           __builtin_trap();
         }
-        LinkAddressToFunction((uintptr_t)Ret, It->second);
+        LinkHostAddressToGuestFunction((uintptr_t)Ret, It->second);
         return Ret;
     }
 }

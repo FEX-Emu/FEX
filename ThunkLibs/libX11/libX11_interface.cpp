@@ -41,7 +41,7 @@ template<> struct fex_gen_config<XQueryTextExtents16> {};
 template<> struct fex_gen_config<XQueryTextExtents> {};
 template<> struct fex_gen_config<XReadBitmapFile> {};
 template<> struct fex_gen_config<XReconfigureWMWindow> {};
-template<> struct fex_gen_config<XRegisterIMInstantiateCallback> : fexgen::callback_stub {};
+template<> struct fex_gen_config<XRegisterIMInstantiateCallback> {};
 template<> struct fex_gen_config<XRestackWindows> {};
 template<> struct fex_gen_config<XRotateWindowProperties> {};
 template<> struct fex_gen_config<XSetClassHint> {};
@@ -248,7 +248,7 @@ template<> struct fex_gen_config<XDisplayOfIM> {};
 template<> struct fex_gen_config<XDisplayOfScreen> {};
 template<> struct fex_gen_config<XLoadFont> {};
 template<> struct fex_gen_config<XGContextFromGC> {};
-template<> struct fex_gen_config<XAddConnectionWatch> : fexgen::callback_stub {};
+template<> struct fex_gen_config<XAddConnectionWatch> {};
 template<> struct fex_gen_config<XAddHost> {};
 template<> struct fex_gen_config<XAllocColorCells> {};
 template<> struct fex_gen_config<XAllocColor> {};
@@ -442,7 +442,8 @@ template<> struct fex_gen_config<XCreateIC> {
 };
 
 template<> struct fex_gen_config<XIfEvent> {};
-template<> struct fex_gen_config<XSetErrorHandler> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetCloseDisplay> : fexgen::returns_from_host_trampoline {};
+template<> struct fex_gen_config<XSetErrorHandler> : fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 
 template<> struct fex_gen_config<XInternAtom> {};
 template<> struct fex_gen_config<XListExtensions> {};

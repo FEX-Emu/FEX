@@ -15,12 +15,10 @@ struct OutputFilenames {
     std::string thunks;
     std::string function_packs;
     std::string function_packs_public;
-    std::string callback_unpacks_header_init;
 
     // Guest + Host
     std::string callback_structs;
     std::string callback_typedefs;
-    std::string callback_unpacks_header;
     std::string callback_unpacks;
 
     std::string symbol_list;

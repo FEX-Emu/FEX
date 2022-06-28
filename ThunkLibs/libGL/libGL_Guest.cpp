@@ -56,7 +56,7 @@ extern "C" {
       __builtin_trap();
     }
 
-    LinkAddressToFunction((uintptr_t)Ret, TargetFuncIt->second);
+    LinkHostAddressToGuestFunction((uintptr_t)Ret, TargetFuncIt->second);
     return Ret;
 	}
 

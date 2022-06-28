@@ -57,10 +57,6 @@ int main(int argc, char* argv[]) {
             output_filenames.callback_typedefs = out_filename;
         } else if (target == "-callback_unpacks") {
             output_filenames.callback_unpacks = out_filename;
-        } else if (target == "-callback_unpacks_header") {
-            output_filenames.callback_unpacks_header = out_filename;
-        } else if (target == "-callback_unpacks_header_init") {
-            output_filenames.callback_unpacks_header_init = out_filename;
         } else if (target == "-symbol_list") {
             output_filenames.symbol_list = out_filename;
         } else {

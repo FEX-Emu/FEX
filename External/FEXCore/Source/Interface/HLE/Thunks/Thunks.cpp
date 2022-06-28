@@ -34,50 +34,57 @@ $end_info$
 
 struct LoadlibArgs {
     const char *Name;
-    uintptr_t CallbackThunks;
 };
 
 static thread_local FEXCore::Core::InternalThreadState *Thread;
 
 struct TrampolineInstanceInfo {
+  uintptr_t HostPacker;
   uintptr_t CallCallback;
   uintptr_t GuestUnpacker;
   uintptr_t GuestTarget;
 };
 
+struct GuestcallInfo {
+  uintptr_t GuestUnpacker;
+  uintptr_t GuestTarget;
+
+  [[nodiscard]] friend constexpr bool operator==(const GuestcallInfo&, const GuestcallInfo&) = default;
+};
+
+template <>
+struct std::hash<GuestcallInfo> {
+  size_t operator()(const GuestcallInfo& x) const noexcept {
+    return x.GuestTarget;
+  }
+};
+
+
 static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate"))) void HostToGuestTrampolineTemplate() {
 #if defined(_M_X86_64)
   asm(
-    "mov r11, 0f(%RIP) \n"
-    "mov rdi, 1f(%RIP) \n"
-    "mov rdx, 2f(%RIP) \n"
-    "jmp r11 \n"
-    ".align 8 \n"
-    "0: \n" // CallCallback
-    ".q 0 \n"
-    "1: \n" // GuestTarget
-    ".q 0 \n"
-    "2:"
-    ".q 0" // GuestUnpacker
+    "lea 0f(%rip), %r11 \n"
+    "jmpq *0f(%rip) \n"
+    ".align 16 \n"
+    "0: \n"
+    ".quad 0, 0, 0, 0 \n"
   );
-#elif defined(_M_ARM64)
+#elif defined(_M_ARM_64)
   asm(
-    "adr r12, 0f \n"
-    "ldr r1, 8(r12) \n"
-    "mov rdx, 16(%RIP) \n"
-    "jmp r11 \n"
-    ".align 8 \n"
+    "adr x11, 0f \n"
+    "ldr x16, [x11] \n"
+    "br x16 \n"
+    ".align 16 \n"
     "0: \n" // CallCallback
-    ".q 0 \n"
-    "1: \n" // GuestTarget
-    ".q 0 \n"
-    "2:"
-    ".q 0" // GuestUnpacker
+    ".quad 0, 0, 0, 0 \n"
   );
 #else
 #error Unsupported host architecture
 #endif
 }
+
+extern char __start_HostToGuestTrampolineTemplate[];
+extern char __stop_HostToGuestTrampolineTemplate[];
 
 namespace FEXCore {
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
@@ -115,8 +122,8 @@ namespace FEXCore {
 
         std::unordered_set<std::string_view> Libs;
 
-        std::unordered_map<std::pair<uintptr_t, uintptr_t>, uintptr_t> GuestcallToHostTrampoline;
-        std::unordered_map<uintptr_t, std::pair<uintptr_t, uintptr_t>> HostTrampolineToGuestcall;
+        std::unordered_map<GuestcallInfo, uintptr_t> GuestcallToHostTrampoline;
+        std::unordered_map<uintptr_t, GuestcallInfo> HostTrampolineToGuestcall;
 
         uint8_t *HostTrampolineInstanceDataPtr;
         size_t HostTrampolineInstanceDataAvailable;
@@ -186,7 +193,6 @@ namespace FEXCore {
             auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
             auto Name = Args->Name;
-            auto CallbackThunks = Args->CallbackThunks;
 
             auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
 
@@ -247,41 +253,48 @@ namespace FEXCore {
 
         static void HostTrampolineForGuestcall(void* ArgsRV) {
           struct ArgsRV_t {
+              IR::SHA256Sum *HostPacker;
               uintptr_t GuestUnpacker;
               uintptr_t GuestTarget;
               uintptr_t rv;
           };
 
-          auto &[GuestTarget, GuestUnpacker, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
+          auto &[HostPacker, GuestTarget, GuestUnpacker, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-          auto CTX = Thread->CTX;
-          auto That = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
+          auto const CTX = Thread->CTX;
+          auto const That = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
+
+          const GuestcallInfo gci = { GuestUnpacker, GuestTarget };
 
           // Try first with shared_lock
           {
             std::shared_lock lk(That->ThunksMutex);
 
-            auto found = That->GuestcallToHostTrampoline.find(
-                {GuestUnpacker, GuestTarget});
+            auto found = That->GuestcallToHostTrampoline.find(gci);
             if (found != That->GuestcallToHostTrampoline.end()) {
               rv = found->second;
               return;
             }
           }
 
-          // retry lookup with full lock before making a new trampoline to avoid double allocations
           std::lock_guard lk(That->ThunksMutex);
-          
-          auto found = That->GuestcallToHostTrampoline.find({GuestUnpacker, GuestTarget}); \
-          if (found != That->GuestcallToHostTrampoline.end()) {
-            rv = found->second;
+
+          // retry lookup with full lock before making a new trampoline to avoid double trampolines
+          {
+            auto found = That->GuestcallToHostTrampoline.find(gci);
+            if (found != That->GuestcallToHostTrampoline.end()) {
+              rv = found->second;
+              return;
+            }
+          }
+
+          auto HostPackerEntry = That->Thunks.find(*HostPacker);
+          if (HostPackerEntry == That->Thunks.end()) {
+            rv = 0;
             return;
           }
 
-          extern char __start_HostToGuestTrampolineTemplate_copy_section[];
-          extern char __stop_HostToGuestTrampolineTemplate_copy_section[];
-
-          const auto Length = __stop_HostToGuestTrampolineTemplate_copy_section - __start_HostToGuestTrampolineTemplate_copy_section;
+          const auto Length = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
           const auto InstanceInfoOffset = Length - sizeof(TrampolineInstanceInfo);
 
           uint8_t *HostTrampoline;
@@ -305,16 +318,16 @@ namespace FEXCore {
 
           auto const InstanceInfo = (TrampolineInstanceInfo*)(HostTrampoline + InstanceInfoOffset);
 
+          InstanceInfo->HostPacker = (uintptr_t)HostPackerEntry->second;
           InstanceInfo->CallCallback = (uintptr_t)&CallCallback;
           InstanceInfo->GuestUnpacker = GuestUnpacker;
           InstanceInfo->GuestTarget = GuestTarget;
 
           rv = (uintptr_t)HostTrampoline;
 
-          
           // Still protected by `lk`
-          That->HostTrampolineToGuestcall.emplace(rv, GuestUnpacker, GuestTarget);
-          That->GuestcallToHostTrampoline.emplace(GuestUnpacker, GuestTarget, rv);
+          That->HostTrampolineToGuestcall[rv] = gci;
+          That->GuestcallToHostTrampoline[gci] = rv;
         }
 
         static void GuestcallTargetForHostTrampoline(void* ArgsRV) {
@@ -333,7 +346,7 @@ namespace FEXCore {
 
             auto found = That->HostTrampolineToGuestcall.find(HostTrampoline); \
             if (found != That->HostTrampolineToGuestcall.end()) {
-              rv = found->second.second;
+              rv = found->second.GuestTarget;
             } else {
               rv = 0;
             }
