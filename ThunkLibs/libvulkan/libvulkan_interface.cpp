@@ -11,7 +11,6 @@ struct fex_gen_config;
 
 template<> struct fex_gen_config<vkGetDeviceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
-template<> struct fex_gen_config<vkEnumerateInstanceExtensionProperties> : fexgen::custom_host_impl {};
 
 namespace internal {
 
@@ -174,7 +173,7 @@ template<> struct fex_gen_config<vkCreateBuffer> {};
 template<> struct fex_gen_config<vkCreateBufferView> {};
 template<> struct fex_gen_config<vkCreateCommandPool> {};
 template<> struct fex_gen_config<vkCreateComputePipelines> {};
-template<> struct fex_gen_config<vkCreateDebugReportCallbackEXT> {};
+template<> struct fex_gen_config<vkCreateDebugReportCallbackEXT> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkCreateDebugUtilsMessengerEXT> {};
 template<> struct fex_gen_config<vkCreateDeferredOperationKHR> {};
 template<> struct fex_gen_config<vkCreateDescriptorPool> {};
@@ -222,7 +221,7 @@ template<> struct fex_gen_config<vkDestroyAccelerationStructureNV> {};
 template<> struct fex_gen_config<vkDestroyBuffer> {};
 template<> struct fex_gen_config<vkDestroyBufferView> {};
 template<> struct fex_gen_config<vkDestroyCommandPool> {};
-template<> struct fex_gen_config<vkDestroyDebugReportCallbackEXT> {};
+template<> struct fex_gen_config<vkDestroyDebugReportCallbackEXT> : fexgen::custom_host_impl {};
 template<> struct fex_gen_config<vkDestroyDebugUtilsMessengerEXT> {};
 template<> struct fex_gen_config<vkDestroyDeferredOperationKHR> {};
 template<> struct fex_gen_config<vkDestroyDescriptorPool> {};
@@ -256,6 +255,7 @@ template<> struct fex_gen_config<vkDisplayPowerControlEXT> {};
 template<> struct fex_gen_config<vkEndCommandBuffer> {};
 template<> struct fex_gen_config<vkEnumerateDeviceExtensionProperties> {};
 template<> struct fex_gen_config<vkEnumerateDeviceLayerProperties> {};
+template<> struct fex_gen_config<vkEnumerateInstanceExtensionProperties> {};
 template<> struct fex_gen_config<vkEnumerateInstanceLayerProperties> {};
 template<> struct fex_gen_config<vkEnumerateInstanceVersion> {};
 template<> struct fex_gen_config<vkEnumeratePhysicalDeviceGroups> {};
