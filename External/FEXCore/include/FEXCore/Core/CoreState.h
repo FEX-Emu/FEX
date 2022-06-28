@@ -158,6 +158,8 @@ namespace FEXCore::Core {
         uint64_t LDIVHandler{};
         uint64_t LUREMHandler{};
         uint64_t LREMHandler{};
+        uint64_t StaticRegsSpiller{};
+        uint64_t StaticRegsFiller{};
         /**  @} */
       } AArch64;
 

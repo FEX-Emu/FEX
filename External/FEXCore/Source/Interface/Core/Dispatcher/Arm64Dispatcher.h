@@ -29,6 +29,8 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     uint64_t LDIVHandlerAddress{};
     uint64_t LUREMHandlerAddress{};
     uint64_t LREMHandlerAddress{};
+    uint64_t StaticRegsSpillerAddress{};
+    uint64_t StaticRegsFillerAddress{};
     DispatcherConfig config;
 };
 

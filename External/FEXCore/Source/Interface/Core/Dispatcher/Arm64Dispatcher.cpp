@@ -55,6 +55,13 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
 static constexpr bool SignalSafeCompile = true;
 
+__attribute__((naked))
+static
+void NopFunction( FEXCore::Core::CpuStateFrame *Frame )
+{
+    asm("ret");
+}
+
 /* ---------------------------------------------------------------------------------- */
 
 /*
@@ -176,6 +183,22 @@ void Arm64PopAllDynamicRegs( FEXCore::Core::CpuStateFrame *Frame )
 
 /* ---------------------------------------------------------------------------------- */
 
+#define CALL_HANDLER(x) \
+    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.x))); \
+    asm("blr x3" )
+
+#define CALL_HANDLER_SPILLED(x) \
+    asm("str lr, [sp, #-16]!");         \
+    asm("bl Arm64SpillAllStaticRegs" ); \
+    asm("bl Arm64PushAllDynamicRegs" ); \
+    CALL_HANDLER(x);                    \
+    asm("bl Arm64PopAllDynamicRegs" );  \
+    asm("bl Arm64FillAllStaticRegs" );  \
+    asm("ldr lr, [sp], #16");           \
+    asm("ret")
+
+/* ---------------------------------------------------------------------------------- */
+
 __attribute__((naked))
 __attribute__((noreturn))
 static
@@ -193,7 +216,7 @@ void Arm64UnimplementedInstructionAddressCodeAsm( FEXCore::Core::CpuStateFrame *
 {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    asm("bl Arm64SpillAllStaticRegs" );
+    CALL_HANDLER(StaticRegsSpiller);
     asm("hlt 0");
 }
 
@@ -215,7 +238,7 @@ __attribute__((noreturn))
 static
 void Arm64ThreadPauseHandlerAddressSpillSRACodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
 {
-    asm("bl Arm64SpillAllStaticRegs" );
+    CALL_HANDLER(StaticRegsSpiller);
     
     asm("adrp	x3,           Arm64ThreadPauseHandlerAddressCode");
     asm("add	x3, x3, :lo12:Arm64ThreadPauseHandlerAddressCode");
@@ -230,7 +253,7 @@ __attribute__((noreturn))
 static
 void Arm64ThreadStopHandlerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
 {
-    asm("bl Arm64SpillAllStaticRegs" );
+    CALL_HANDLER(StaticRegsSpiller);
     
     asm("adrp	x3,           Arm64ThreadStopHandlerCode");
     asm("add	x3, x3, :lo12:Arm64ThreadStopHandlerCode");
@@ -258,7 +281,7 @@ void Arm64CoreDispatchCodeAsmFillSRA( FEXCore::Core::CpuStateFrame *FillMe )
     asm("mov x0," STATE_STR);
     asm("bl Arm64CoreDispatchCode");
     
-    asm("bl Arm64FillAllStaticRegs");
+    CALL_HANDLER(StaticRegsFiller);
     
     asm("br x0");
 }
@@ -268,12 +291,12 @@ __attribute__((noreturn))
 static inline
 void Arm64CoreDispatchCodeAsm( FEXCore::Core::CpuStateFrame *FillMe )
 {
-    asm("bl Arm64SpillAllStaticRegs");
+    CALL_HANDLER(StaticRegsSpiller);
     
     asm("mov x0," STATE_STR);
     asm("bl Arm64CoreDispatchCode");
     
-    asm("bl Arm64FillAllStaticRegs");
+    CALL_HANDLER(StaticRegsFiller);
     
     asm("br x0");
 }
@@ -287,7 +310,7 @@ void Arm64FirstCoreDispatchCodeAsm( FEXCore::Core::CpuStateFrame *Frame )
     asm("mov " STATE_STR ",x0");
     asm("bl Arm64CoreDispatchCode");
     
-    asm("bl Arm64FillAllStaticRegs");
+    CALL_HANDLER(StaticRegsFiller);
     
     asm("br x0");
 }
@@ -313,9 +336,9 @@ void Arm64ExitFunctionLinkerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe1, uint
 {
     asm("mov x0," STATE_STR);
     asm("mov x1, lr");
-    asm("bl Arm64SpillAllStaticRegs" );
+    CALL_HANDLER(StaticRegsSpiller);
     asm("bl	Arm64ExitFunctionLinkerCode");
-    asm("bl Arm64FillAllStaticRegs" );
+    CALL_HANDLER(StaticRegsFiller);
     asm("br x0");
 }
 
@@ -323,64 +346,27 @@ void Arm64ExitFunctionLinkerCodeAsm( FEXCore::Core::CpuStateFrame *FillMe1, uint
 
 __attribute__((naked)) uint64_t LUDIVAsm(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor)
 {
-    asm("str lr, [sp, #-16]!");
-    asm("bl Arm64SpillAllStaticRegs" );
-    asm("bl Arm64PushAllDynamicRegs" );
-    
-    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIV)));
-    asm("blr x3" );
-    
-    asm("bl Arm64PopAllDynamicRegs" );
-    asm("bl Arm64FillAllStaticRegs" );
-    asm("ldr lr, [sp], #16");
+    CALL_HANDLER_SPILLED(LUDIV);
     asm("ret");
 }
 
 __attribute__((naked)) uint64_t LUREMAsm(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor)
 {
-    asm("str lr, [sp, #-16]!");
-    asm("bl Arm64SpillAllStaticRegs" );
-    asm("bl Arm64PushAllDynamicRegs" );
-    
-    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREM)));
-    asm("blr x3" );
-    
-    asm("bl Arm64PopAllDynamicRegs" );
-    asm("bl Arm64FillAllStaticRegs" );
-    asm("ldr lr, [sp], #16");
+    CALL_HANDLER_SPILLED(LUREM);
     asm("ret");
 }
 
 __attribute__((naked))  int64_t  LDIVAsm( int64_t SrcHigh,  int64_t SrcLow,  int64_t Divisor)
 {
-    asm("str lr, [sp, #-16]!");
-    asm("bl Arm64SpillAllStaticRegs" );
-    asm("bl Arm64PushAllDynamicRegs" );
-    
-    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIV)));
-    asm("blr x3" );
-    
-    asm("bl Arm64PopAllDynamicRegs" );
-    asm("bl Arm64FillAllStaticRegs" );
-    asm("ldr lr, [sp], #16");
+    CALL_HANDLER_SPILLED(LDIV);
     asm("ret");
 }
 
 __attribute__((naked))  int64_t  LREMAsm( int64_t SrcHigh,  int64_t SrcLow,  int64_t Divisor)
 {
-    asm("str lr, [sp, #-16]!");
-    asm("bl Arm64SpillAllStaticRegs" );
-    asm("bl Arm64PushAllDynamicRegs" );
-    
-    __asm__ __volatile__( "ldr x3, [" STATE_STR ", %[a]]" : : [a]"i"(offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREM)));
-    asm("blr x3" );
-    
-    asm("bl Arm64PopAllDynamicRegs" );
-    asm("bl Arm64FillAllStaticRegs" );
-    asm("ldr lr, [sp], #16");
+    CALL_HANDLER_SPILLED(LREM);
     asm("ret");
 }
-
 
 /* ---------------------------------------------------------------------------------- */
 
@@ -584,7 +570,15 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   LDIVHandlerAddress	   	      = reinterpret_cast<uint64_t>(LDIVAsm);	     
   LREMHandlerAddress	   	      = reinterpret_cast<uint64_t>(LREMAsm);	     
   LUDIVHandlerAddress	   	      = reinterpret_cast<uint64_t>(LUDIVAsm);	     
-  LUREMHandlerAddress	   	      = reinterpret_cast<uint64_t>(LUREMAsm);	     
+  LUREMHandlerAddress	   	      = reinterpret_cast<uint64_t>(LUREMAsm);	  
+  
+  if (config.StaticRegisterAllocation) {
+      StaticRegsSpillerAddress    = reinterpret_cast<uint64_t>(Arm64SpillAllStaticRegs);
+      StaticRegsFillerAddress     = reinterpret_cast<uint64_t>(Arm64FillAllStaticRegs);
+  } else {
+      StaticRegsSpillerAddress    = reinterpret_cast<uint64_t>(NopFunction);
+      StaticRegsFillerAddress     = reinterpret_cast<uint64_t>(NopFunction);
+  }
 }
 
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
@@ -688,6 +682,8 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
     AArch64.LDIVHandler = LDIVHandlerAddress;
     AArch64.LUREMHandler = LUREMHandlerAddress;
     AArch64.LREMHandler = LREMHandlerAddress;
+    AArch64.StaticRegsSpiller = StaticRegsSpillerAddress;
+    AArch64.StaticRegsFiller  = StaticRegsFillerAddress;
   }
 }
 

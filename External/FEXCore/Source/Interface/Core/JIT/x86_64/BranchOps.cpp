@@ -80,7 +80,10 @@ DEF_OP(ExitFunction) {
     Label l_BranchHost;
     Label l_BranchGuest;
 
+    // Store this in second function parameter
+    // register, where ExitFunctionLinker expects it:
     lea(rsi, ptr[rip + l_BranchHost]);
+    
     jmp(qword[rsi]);
 
     L(l_BranchHost);
