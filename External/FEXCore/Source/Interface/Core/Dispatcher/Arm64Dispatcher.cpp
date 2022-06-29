@@ -502,8 +502,8 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   }
 }
 
-// Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
-static thread_local vixl::aarch64::Assembler emit(nullptr, 1);
+// Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline, destination buffer is set before use
+static thread_local vixl::aarch64::Assembler emit((uint8_t*)&emit, 1);
 
 size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
 
