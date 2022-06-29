@@ -3,12 +3,6 @@ project(FEXLinuxTests)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set (X86_C_COMPILER "x86_64-linux-gnu-gcc" CACHE STRING "c compiler for compiling x86 guest libs")
-set (X86_CXX_COMPILER "x86_64-linux-gnu-g++" CACHE STRING "c++ compiler for compiling x86 guest libs")
-
-set(CMAKE_C_COMPILER "${X86_C_COMPILER}")
-set(CMAKE_CXX_COMPILER "${X86_CXX_COMPILER}")
-
 unset (CMAKE_C_FLAGS)
 unset (CMAKE_CXX_FLAGS)
 
