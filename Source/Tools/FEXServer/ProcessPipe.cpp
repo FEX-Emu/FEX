@@ -15,7 +15,7 @@
 
 namespace ProcessPipe {
   constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-  int ServerFIFOPipeFD {-1};
+  int ServerLockFD {-1};
   int ServerSocketFD{-1};
   std::atomic<bool> ShouldShutdown {false};
   time_t RequestTimeout {10};
@@ -87,11 +87,11 @@ namespace ProcessPipe {
       }
     }
 
-    auto ServerFIFO = FEXServerClient::GetServerLockFile();
+    auto ServerLockPath = FEXServerClient::GetServerLockFile();
 
     // Now this is some tricky locking logic to ensure that we only ever have one server running
     // The logic is as follows:
-    // - Try to make the fifo file
+    // - Try to make the lock file
     // - If Exists then check to see if it is a stale handle
     //   - Stale checking means opening the file that we know exists
     //   - Then we try getting a write lock
@@ -101,14 +101,14 @@ namespace ProcessPipe {
     //
     // - Once a write lock is acquired, downgrade it to a read lock
     //   - This ensures that future FEXServers won't race to create multiple read locks
-    int Ret = mkfifo(ServerFIFO.c_str(), USER_PERMS);
-    ServerFIFOPipeFD = Ret;
+    int Ret = open(ServerLockPath.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_EXCL, USER_PERMS);
+    ServerLockFD = Ret;
 
     if (Ret == -1 && errno == EEXIST) {
-      // If the fifo exists then it might be a stale connection.
+      // If the lock exists then it might be a stale connection.
       // Check the lock status to see if another process is still alive.
-      ServerFIFOPipeFD = open(ServerFIFO.c_str(), O_RDWR, USER_PERMS);
-      if (ServerFIFOPipeFD != -1) {
+      ServerLockFD = open(ServerLockPath.c_str(), O_RDWR, USER_PERMS);
+      if (ServerLockFD != -1) {
         // Now that we have opened the file, try to get a write lock.
         flock lk {
           .l_type = F_WRLCK,
@@ -116,15 +116,15 @@ namespace ProcessPipe {
           .l_start = 0,
           .l_len = 0,
         };
-        Ret = fcntl(ServerFIFOPipeFD, F_SETLK, &lk);
+        Ret = fcntl(ServerLockFD, F_SETLK, &lk);
 
         if (Ret != -1) {
           // Write lock was gained, we can now continue onward.
         }
         else {
-          // We couldn't get a write lock, this means that another process already owns a lock on the fifo
-          close(ServerFIFOPipeFD);
-          ServerFIFOPipeFD = -1;
+          // We couldn't get a write lock, this means that another process already owns a lock on the lock
+          close(ServerLockFD);
+          ServerLockFD = -1;
           return false;
         }
       }
@@ -136,7 +136,7 @@ namespace ProcessPipe {
     }
     else if (Ret == -1) {
       // Unhandled error.
-      LogMan::Msg::AFmt("Unable to create FEXServer named fifo at: {} {} {}", ServerFIFO, errno, strerror(errno));
+      LogMan::Msg::AFmt("Unable to create FEXServer named lock file at: {} {} {}", ServerLockPath, errno, strerror(errno));
       return false;
     }
     else {
@@ -147,12 +147,12 @@ namespace ProcessPipe {
         .l_start = 0,
         .l_len = 0,
       };
-      Ret = fcntl(ServerFIFOPipeFD, F_SETLK, &lk);
+      Ret = fcntl(ServerLockFD, F_SETLK, &lk);
 
       if (Ret == -1) {
         // Couldn't get a write lock, something else must have got it
-        close(ServerFIFOPipeFD);
-        ServerFIFOPipeFD = -1;
+        close(ServerLockFD);
+        ServerLockFD = -1;
         return false;
       }
     }
@@ -164,13 +164,13 @@ namespace ProcessPipe {
       .l_start = 0,
       .l_len = 0,
     };
-    Ret = fcntl(ServerFIFOPipeFD, F_SETLK, &lk);
+    Ret = fcntl(ServerLockFD, F_SETLK, &lk);
 
     if (Ret == -1) {
       // This shouldn't occur
-      LogMan::Msg::AFmt("Unable to downgrade a write lock to a read lock {} {} {}", ServerFIFO, errno, strerror(errno));
-      close(ServerFIFOPipeFD);
-      ServerFIFOPipeFD = -1;
+      LogMan::Msg::AFmt("Unable to downgrade a write lock to a read lock {} {} {}", ServerLockPath, errno, strerror(errno));
+      close(ServerLockFD);
+      ServerLockFD = -1;
       return false;
     }
 
@@ -419,7 +419,7 @@ namespace ProcessPipe {
   void CloseConnections() {
     // Close the server pipe so new processes will know to spin up a new FEXServer.
     // This one is closing
-    close (ServerFIFOPipeFD);
+    close (ServerLockFD);
 
     // Close the server socket so no more connections can be started
     close(ServerSocketFD);
