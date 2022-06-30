@@ -61,20 +61,20 @@ static VkBool32 DummyVkDebugReportCallback(VkDebugReportFlagsEXT, VkDebugReportO
 }
 
 static VkResult FEXFN_IMPL(vkCreateInstance)(const VkInstanceCreateInfo* a_0, const VkAllocationCallbacks* a_1, VkInstance* a_2) {
-  VkDebugReportCallbackCreateInfoEXT stub_debug_report;
-  const VkBaseInStructure* vk_struct = reinterpret_cast<const VkBaseInStructure*>(a_0);
-  for (; vk_struct->pNext; vk_struct = vk_struct->pNext) {
+  const VkInstanceCreateInfo* vk_struct_base = a_0;
+  for (const VkBaseInStructure* vk_struct = reinterpret_cast<const VkBaseInStructure*>(vk_struct_base); vk_struct->pNext; vk_struct = vk_struct->pNext) {
     // Override guest callbacks used for VK_EXT_debug_report
-    if (*reinterpret_cast<const VkStructureType*>(vk_struct->pNext) == VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT) {
-      memcpy(&stub_debug_report, a_0->pNext, sizeof(stub_debug_report));
-      stub_debug_report.pfnCallback = DummyVkDebugReportCallback;
+    if (reinterpret_cast<const VkBaseInStructure*>(vk_struct->pNext)->sType == VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT) {
       // Overwrite the pNext pointer, ignoring its const-qualifier
-      memcpy(const_cast<void*>(a_0->pNext), &stub_debug_report, sizeof(a_0->pNext));
-      break;
+      const_cast<VkBaseInStructure*>(vk_struct)->pNext = vk_struct->pNext->pNext;
+
+      // If we copied over a nullptr for pNext then early exit
+      if (!vk_struct->pNext)
+        break;
     }
   }
 
-  return LDR_PTR(vkCreateInstance)(a_0, nullptr, a_2);
+  return LDR_PTR(vkCreateInstance)(vk_struct_base, nullptr, a_2);
 }
 
 static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceCreateInfo* a_1, const VkAllocationCallbacks* a_2, VkDevice* a_3){
