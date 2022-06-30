@@ -85,6 +85,9 @@ add_host_lib(GL)
 find_package(OpenGL REQUIRED)
 target_link_libraries(GL-host PRIVATE OpenGL::GL)
 
+find_package(X11 REQUIRED)
+target_link_libraries(GL-host PRIVATE ${X11_LIBRARIES})
+
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
 # generate(libSDL2 function_unpacks tab_function_unpacks ldr ldr_ptrs)

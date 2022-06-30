@@ -1,9 +1,38 @@
 {
   "DB": {
-    "GL": {
+    "FGLX": {
+      "Library" : "libGL-guest.so",
+      "Overlay": [
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0.0.0"
+      ]
+    },
+    "FGL": {
+      "Library" : "libGL-guest.so",
+      "Depends": [
+        "FGLX"
+      ],
+      "Overlay": [
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1.2.0",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1.7.0"
+      ]
+    },
+    "GLX": {
       "Library" : "libGL-guest.so",
       "Depends": [
         "X11"
+      ],
+      "Overlay": [
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0.0.0"
+      ]
+    },
+    "GL": {
+      "Library" : "libGL-guest.so",
+      "Depends": [
+        "GLX"
       ],
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so",

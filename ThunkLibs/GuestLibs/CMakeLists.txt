@@ -90,6 +90,8 @@ add_guest_lib(EGL)
 
 generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public symbol_list)
 add_guest_lib(GL)
+target_link_libraries(GL-guest PRIVATE X11)
+target_link_libraries(GL-guest PRIVATE Xmu)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
