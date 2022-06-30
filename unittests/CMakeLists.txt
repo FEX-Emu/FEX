@@ -10,7 +10,6 @@ if (BUILD_THUNKS)
   add_subdirectory(ThunkLibs)
 endif()
 
-
 if (BUILD_FEX_LINUX_TESTS)
   add_subdirectory(FEXLinuxTests/)
 endif()
