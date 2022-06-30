@@ -86,6 +86,8 @@ struct ThunkedAPIFunction : FunctionParams {
 
     bool is_variadic;
 
+    bool is_hostcall;
+
     // Index of the symbol table to store this export in (see guest_symtables).
     // If empty, a library export is created, otherwise the function is entered into a function pointer array
     std::optional<std::size_t> symtable_namespace;
@@ -338,6 +340,7 @@ public:
                                                     namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
                                                     has_nonstub_callbacks || data.is_variadic || annotations.custom_guest_entrypoint,
                                                     data.is_variadic,
+                                                    false,
                                                     std::nullopt });
         if (namespace_info.generate_guest_symtable) {
             thunked_api.back().symtable_namespace = namespace_idx;
@@ -369,6 +372,14 @@ public:
             hostcall_data.function_name = "hostcall_" + data.function_name;
             hostcall_data.param_types.push_back(context.getUIntPtrType());
             hostcall_data.is_hostcall = true;
+
+            thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)hostcall_data, hostcall_data.function_name, hostcall_data.return_type,
+                                            namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
+                                            has_nonstub_callbacks || hostcall_data.is_variadic || annotations.custom_guest_entrypoint,
+                                            hostcall_data.is_variadic,
+                                            true,
+                                            std::nullopt });
+
             thunks.push_back(std::move(hostcall_data));
         }
 
@@ -499,7 +510,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             const auto& function_name = data.function_name;
 
             file << "__attribute__((alias(\"fexfn_pack_" << function_name << "\"))) auto " << function_name << "(";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
+            for (std::size_t idx = 0; idx < data.param_types.size() - data.is_hostcall; ++idx) {
                 auto& type = data.param_types[idx];
                 file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
             }
@@ -533,40 +544,52 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         for (auto& data : thunks) {
             const auto& function_name = data.function_name;
             bool is_void = data.return_type->isVoidType();
-            file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
-                auto& type = data.param_types[idx];
-                file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
+            for (int is_hostaddr_packer = 0; is_hostaddr_packer <= data.is_hostcall; is_hostaddr_packer++) {
+                if (!is_hostaddr_packer) {
+                    file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(";
+                } else {
+                    file << "FEX_PACKFN_LINKAGE auto fexfn_hostaddr_pack_" << function_name << "(";
+                }
+
+                for (std::size_t idx = 0; idx < data.param_types.size() - data.is_hostcall; ++idx) {
+                    auto& type = data.param_types[idx];
+                    file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
+                }
+
+                if (is_hostaddr_packer) {
+                    file << (data.param_types.size() == 1 /* 1 because of data.is_hostcall */? "" : ", ") << "uintptr_t host_addr";
+                }
+
+                // Using trailing return type as it makes handling function pointer returns much easier
+                file << ") -> " << data.return_type.getAsString() << " {\n";
+                if (!is_hostaddr_packer && data.is_hostcall) {
+                    file << "  CUSTOM_ABI_HOST_ADDR;\n";
+                }
+                file << "  struct {\n";
+                for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
+                    auto& type = data.param_types[idx];
+                    file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                }
+                if (!is_void) {
+                    file << "    " << format_decl(data.return_type, "rv") << ";\n";
+                } else if (data.param_types.size() == 0) {
+                    // Avoid "empty struct has size 0 in C, size 1 in C++" warning
+                    file << "    char force_nonempty;\n";
+                }
+                file << "  } args;\n";
+                for (std::size_t idx = 0; idx < data.param_types.size() - data.is_hostcall; ++idx) {
+                    file << "  args.a_" << idx << " = a_" << idx << ";\n";
+                }
+                if (data.is_hostcall) {
+                    auto idx = data.param_types.size() - 1;
+                    file << "  args.a_" << idx << " = host_addr;\n";
+                }
+                file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
+                if (!is_void) {
+                    file << "  return args.rv;\n";
+                }
+                file << "}\n";
             }
-            // Using trailing return type as it makes handling function pointer returns much easier
-            file << ") -> " << data.return_type.getAsString() << " {\n";
-            if (data.is_hostcall) {
-                file << "  CUSTOM_ABI_HOST_ADDR;\n";
-            }
-            file << "  struct {\n";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
-                auto& type = data.param_types[idx];
-                file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
-            }
-            if (!is_void) {
-                file << "    " << format_decl(data.return_type, "rv") << ";\n";
-            } else if (data.param_types.size() == 0) {
-                // Avoid "empty struct has size 0 in C, size 1 in C++" warning
-                file << "    char force_nonempty;\n";
-            }
-            file << "  } args;\n";
-            for (std::size_t idx = 0; idx < data.param_types.size() - data.is_hostcall; ++idx) {
-                file << "  args.a_" << idx << " = a_" << idx << ";\n";
-            }
-            if (data.is_hostcall) {
-                auto idx = data.param_types.size() - 1;
-                file << "  args.a_" << idx << " = host_addr;\n";
-            }
-            file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
-            if (!is_void) {
-                file << "  return args.rv;\n";
-            }
-            file << "}\n";
         }
         file << "}\n";
     }
