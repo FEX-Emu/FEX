@@ -135,10 +135,14 @@ namespace FEXServerClient {
       return false;
     }
 
-    std::string RootFSPath = FEXServerClient::RequestRootFSPath(ServerFD);
+    // If we were started in a container then we want to use the rootfs that they provided.
+    // In the pressure-vessel case this is a combination of our rootfs and the steam soldier runtime.
+    if (FEXCore::Config::FindContainer() != "pressure-vessel") {
+      std::string RootFSPath = FEXServerClient::RequestRootFSPath(ServerFD);
 
-    // If everything has passed then we can now update the rootfs path
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, RootFSPath);
+      //// If everything has passed then we can now update the rootfs path
+      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, RootFSPath);
+    }
 
     return true;
   }
