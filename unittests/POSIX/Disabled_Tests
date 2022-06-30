@@ -375,3 +375,6 @@ conformance-interfaces-sigaction-25-23.test
 conformance-interfaces-sigaction-25-24.test
 conformance-interfaces-sigaction-25-25.test
 conformance-interfaces-sigaction-25-26.test
+
+# This test is flakey on the interpreter
+conformance-behavior-WIFEXITED-1-3.test
