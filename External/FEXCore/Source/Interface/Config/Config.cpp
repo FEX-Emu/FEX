@@ -371,6 +371,22 @@ namespace JSON {
     return {};
   }
 
+
+  std::string FindContainer() {
+    // We only support pressure-vessel at the moment
+    const static std::string ContainerManager = "/run/host/container-manager";
+    if (std::filesystem::exists(ContainerManager)) {
+      std::vector<char> Manager{};
+      if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
+        // Trim the whitespace, may contain a newline
+        std::string ManagerStr = Manager.data();
+        ManagerStr = FEXCore::StringUtils::Trim(ManagerStr);
+        return ManagerStr;
+      }
+    }
+    return {};
+  }
+
   std::string FindContainerPrefix() {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
