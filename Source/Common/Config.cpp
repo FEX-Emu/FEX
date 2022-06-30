@@ -24,20 +24,20 @@ namespace FEX::Config {
     Dest = json_objOpen(Buffer, nullptr);
     Dest = json_objOpen(Dest, "Config");
     for (auto &it : Layer->GetOptionMap()) {
-			auto &Name = ConfigToNameLookup.find(it.first)->second;
-			for (auto &var : it.second) {
-				Dest = json_str(Dest, Name.c_str(), var.c_str());
-			}
+      auto &Name = ConfigToNameLookup.find(it.first)->second;
+      for (auto &var : it.second) {
+        Dest = json_str(Dest, Name.c_str(), var.c_str());
+      }
     }
     Dest = json_objClose(Dest);
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-		std::ofstream Output (Filename, std::ios::out | std::ios::binary);
-		if (Output.is_open()) {
-			Output.write(Buffer, strlen(Buffer));
-			Output.close();
-		}
+    std::ofstream Output (Filename, std::ios::out | std::ios::binary);
+    if (Output.is_open()) {
+      Output.write(Buffer, strlen(Buffer));
+      Output.close();
+    }
   }
 
   std::string LoadConfig(
@@ -69,23 +69,42 @@ namespace FEX::Config {
 
       std::string Program = Args[0];
 
-      // These layers load on initialization
-      auto ProgramName = std::filesystem::path(Program).filename();
-      if (ProgramName == "wine" ||
-          ProgramName == "wine64") {
+      bool Wine = false;
+      std::filesystem::path ProgramName;
+      for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {
+        auto CurrentProgramName = std::filesystem::path(Args[CurrentProgramNameIndex]).filename();
 
-        // If we are running wine or wine64 then we should check the second argument for the application name instead.
-        // wine will change the active program name with `setprogname` or `prctl(PR_SET_NAME`.
-        // Since FEX needs this data far earlier than libraries we need a different check.
-        if (Args.size() > 1) {
-          ProgramName = std::filesystem::path(Args[1]).filename();
-
-          // If this was path separated with '\' then we need to check that.
-          auto WinSeparator = ProgramName.string().find_last_of('\\');
-          if (WinSeparator != ProgramName.string().npos) {
-            // Used windows separators
-            ProgramName = ProgramName.string().substr(WinSeparator + 1);
+        if (CurrentProgramName == "wine-preloader" ||
+            CurrentProgramName == "wine64-preloader") {
+          // Wine preloader is required to be in the format of `wine-preloader <wine executable>`
+          // The preloader doesn't execve the executable, instead maps it directly itself
+          // Skip the next argument since we know it is wine (potentially with custom wine executable name)
+          ++CurrentProgramNameIndex;
+          Wine = true;
+        }
+        else if(CurrentProgramName == "wine" ||
+                CurrentProgramName == "wine64") {
+          // Next argument, this isn't the program we want
+          //
+          // If we are running wine or wine64 then we should check the next argument for the application name instead.
+          // wine will change the active program name with `setprogname` or `prctl(PR_SET_NAME`.
+          // Since FEX needs this data far earlier than libraries we need a different check.
+          Wine = true;
+        }
+        else {
+          if (Wine == true) {
+            // If this was path separated with '\' then we need to check that.
+            auto WinSeparator = CurrentProgramName.string().find_last_of('\\');
+            if (WinSeparator != CurrentProgramName.string().npos) {
+              // Used windows separators
+              CurrentProgramName = CurrentProgramName.string().substr(WinSeparator + 1);
+            }
           }
+
+          ProgramName = CurrentProgramName;
+
+          // Past any wine program names
+          break;
         }
       }
 
