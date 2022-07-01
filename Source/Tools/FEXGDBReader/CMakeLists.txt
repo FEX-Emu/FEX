@@ -5,7 +5,7 @@ add_library(${NAME} SHARED ${SRCS})
 
 install(TARGETS ${NAME}
   RUNTIME
-  LIBRARY DESTINATION /usr/lib/gdb
+  LIBRARY DESTINATION lib/gdb
   COMPONENT LIBRARY)
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
