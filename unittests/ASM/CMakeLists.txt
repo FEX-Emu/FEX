@@ -8,6 +8,11 @@ endif()
 file(GLOB_RECURSE ASM_SOURCES CONFIGURE_DEPENDS *.asm)
 
 set(ASM_DEPENDS "")
+
+execute_process(COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/ClassifyCPU.py"
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  OUTPUT_VARIABLE CPU_CLASS)
+
 foreach(ASM_SRC ${ASM_SOURCES})
   file(RELATIVE_PATH REL_ASM ${CMAKE_SOURCE_DIR} ${ASM_SRC})
   file(RELATIVE_PATH REL_TEST_ASM ${CMAKE_CURRENT_SOURCE_DIR} ${ASM_SRC})
@@ -63,11 +68,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
     )
   endif()
 
-  set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests")
-  if (DEFINED ENV{runner_label})
-    set (RUNNER_DISABLED "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_$ENV{runner_label}")
-  endif()
-
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
   foreach(Index RANGE 0 ${ARG_COUNT} 3)
@@ -90,7 +90,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Known_Failures"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${TEST_TYPE}"
-      "${RUNNER_DISABLED}"
+      "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${CPU_CLASS}"
       "Test_${REL_TEST_ASM}"
       "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
       ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
