@@ -3,8 +3,8 @@
     "FGLX": {
       "Library" : "libGL-guest.so",
       "Overlay": [
-        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0",
-        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0.0.0"
+        "@PREFIX_LIB@/i386-linux-gnu/libGLX.so.0",
+        "@PREFIX_LIB@/i386-linux-gnu/libGLX.so.0.0.0"
       ]
     },
     "FGL": {
@@ -13,10 +13,10 @@
         "FGLX"
       ],
       "Overlay": [
-        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so",
-        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1",
-        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1.2.0",
-        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1.7.0"
+        "@PREFIX_LIB@/i386-linux-gnu/libGL.so",
+        "@PREFIX_LIB@/i386-linux-gnu/libGL.so.1",
+        "@PREFIX_LIB@/i386-linux-gnu/libGL.so.1.2.0",
+        "@PREFIX_LIB@/i386-linux-gnu/libGL.so.1.7.0"
       ]
     },
     "GLX": {

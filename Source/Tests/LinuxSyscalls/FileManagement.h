@@ -64,7 +64,7 @@ public:
 
   void UpdatePID(uint32_t PID) { CurrentPID = PID; }
 
-  std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
+  std::string GetEmulatedPath(const char *pathname, bool FollowSymlink);
 
   std::mutex *GetFDLock() { return &FDLock; }
 

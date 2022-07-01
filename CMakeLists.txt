@@ -514,7 +514,7 @@ if (BUILD_THUNKS)
   add_subdirectory(ThunkLibs/HostLibs)
 
   # Thunk targets for IDE integration of guest code, only
-  add_subdirectory(ThunkLibs/GuestLibs)
+  #add_subdirectory(ThunkLibs/GuestLibs)
 
   # Thunk targets for guest libraries
   include(ExternalProject)

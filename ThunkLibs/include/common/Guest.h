@@ -70,4 +70,4 @@ inline bool IsLibLoaded(const char *libname) {
 
 #define CUSTOM_ABI_HOST_ADDR \
   uintptr_t host_addr; \
-  asm("mov %%r11, %0" : "=r" (host_addr))
+  asm("mov %%ecx, %0" : "=r" (host_addr))

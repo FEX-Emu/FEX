@@ -121,16 +121,30 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
-  uint8_t *sha256 = (uint8_t *)(Op->PC + 2);
+  auto Constant = _Constant(GPRSize);
 
+  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
+  uint8_t *sha256 = (uint8_t *)(Op->PC + 2);
+  
+  OrderedNode *ThunkArgsRV;
+
+  if (CTX->Config.Is64BitMode) {
+    ThunkArgsRV = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+  } else {
+    auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+    ThunkArgsRV = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
+    auto NewSP = _Add(OldSP, Constant);
+
+    // Store the new stack pointer
+    _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);  
+  }
+  
   _Thunk(
-    _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI)),
+    ThunkArgsRV,
     *reinterpret_cast<SHA256Sum*>(sha256)
   );
 
-  auto Constant = _Constant(GPRSize);
   auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
   auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
   OrderedNode *NewSP = _Add(OldSP, Constant);

@@ -462,7 +462,7 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, false);
   if (!Path.empty()) {
     uint64_t Result = ::syscall(SYS_faccessat, dirfd, Path.c_str(), mode);
     if (Result != -1)
@@ -500,7 +500,7 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
     return std::min(bufsiz, App.size());
   }
 
-  auto Path = GetEmulatedPath(pathname);
+  auto Path = GetEmulatedPath(pathname, false);
   if (!Path.empty()) {
     uint64_t Result = ::readlink(Path.c_str(), buf, bufsiz);
     if (Result != -1)
@@ -521,7 +521,7 @@ uint64_t FileManager::Chmod(const char *pathname, mode_t mode) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
     uint64_t Result = ::chmod(Path.c_str(), mode);
     if (Result != -1)
@@ -573,7 +573,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
     return std::min(bufsiz, App.size());
   }
 
-  Path = GetEmulatedPath(pathname);
+  Path = GetEmulatedPath(pathname, false);
   if (!Path.empty()) {
     uint64_t Result = ::readlinkat(dirfd, Path.c_str(), buf, bufsiz);
     if (Result != -1)
@@ -658,7 +658,7 @@ uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
+  auto Path = GetEmulatedPath(SelfPath, true);
   if (!Path.empty()) {
     uint64_t Result = ::mknod(Path.c_str(), mode, dev);
     if (Result != -1)
@@ -668,7 +668,7 @@ uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
 }
 
 uint64_t FileManager::Statfs(const char *path, void *buf) {
-  auto Path = GetEmulatedPath(path);
+  auto Path = GetEmulatedPath(path, true);
   if (!Path.empty()) {
     uint64_t Result = ::statfs(Path.c_str(), reinterpret_cast<struct statfs*>(buf));
     if (Result != -1)

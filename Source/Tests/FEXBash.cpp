@@ -40,8 +40,8 @@ int main(int argc, char **argv, char **const envp) {
 
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   std::vector<const char*> Argv;
-  std::string BinShPath = RootFSPath() + "/bin/sh";
-  std::string BinBashPath = RootFSPath() + "/bin/bash";
+  std::string BinShPath = "/bin/sh";
+  std::string BinBashPath = "/bin/bash";
 
   std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "FEXInterpreter";
   // Check if a local FEXInterpreter to FEXBash exists
@@ -93,7 +93,7 @@ int main(int argc, char **argv, char **const envp) {
       PS1Env = envp[i];
     }
     else {
-	Envp.emplace_back(envp[i]);
+	    Envp.emplace_back(envp[i]);
     }
   }
 

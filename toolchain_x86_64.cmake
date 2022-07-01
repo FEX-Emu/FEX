@@ -1,16 +1,14 @@
-set(CMAKE_SYSTEM_PROCESSOR i386)
+set(CMAKE_SYSTEM_PROCESSOR x86_64)
 
-set(triple i386-linux-gnu)
+set(triple x86_64-linux-gnu)
 
-set(CMAKE_C_COMPILER i686-linux-gnu-gcc)
-set(CMAKE_C_FLAGS -m32)
-set(CMAKE_CXX_COMPILER i686-linux-gnu-g++)
-set(CMAKE_CXX_FLAGS -m32)
+set(CMAKE_C_COMPILER x86_64-linux-gnu-gcc)
+set(CMAKE_CXX_COMPILER x86_64-linux-gnu-g++)
 
 set(CMAKE_C_COMPILER_TARGET ${triple})
 set(CMAKE_CXX_COMPILER_TARGET ${triple})
 
-set(CMAKE_FIND_ROOT_PATH /usr/i386-linux-gnu)
+set(CMAKE_FIND_ROOT_PATH /usr/x86_64-linux-gnu)
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
