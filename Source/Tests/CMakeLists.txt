@@ -67,10 +67,19 @@ endif()
 install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  # Check for conflicting binfmt before installing
+  set (CONFLICTING_BINFMTS_32
+    ${CMAKE_INSTALL_PREFIX}/share/binfmts/qemu-i386
+    ${CMAKE_INSTALL_PREFIX}/share/binfmts/box86)
+  set (CONFLICTING_BINFMTS_64
+    ${CMAKE_INSTALL_PREFIX}/share/binfmts/qemu-x86_64
+    ${CMAKE_INSTALL_PREFIX}/share/binfmts/box64)
+
   find_program(UPDATE_BINFMTS_PROGRAM update-binfmts)
   if (UPDATE_BINFMTS_PROGRAM)
     add_custom_target(binfmt_misc_32
       echo "Attempting to install FEX-x86 misc now."
+      COMMAND "${CMAKE_SOURCE_DIR}/Scripts/CheckBinfmtNotInstall.sh" ${CONFLICTING_BINFMTS_32}
       COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86"
       COMMAND ${CMAKE_COMMAND} -E
       echo "binfmt_misc FEX-x86 installed"
@@ -79,6 +88,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
     add_custom_target(binfmt_misc_64
       COMMAND ${CMAKE_COMMAND} -E
       echo "Attempting to install FEX-x86_64 misc now."
+      COMMAND "${CMAKE_SOURCE_DIR}/Scripts/CheckBinfmtNotInstall.sh" ${CONFLICTING_BINFMTS_64}
       COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86_64"
       COMMAND ${CMAKE_COMMAND} -E
       echo "binfmt_misc FEX-x86_64 installed"
