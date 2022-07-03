@@ -1,4 +1,5 @@
 
+#include <cstdint>
 XVisualInfo *IMPL(glXChooseVisual)(Display *dpy, int screen, int *attribList) {
   printf("%p, %d, %p\n", dpy, screen, attribList);
     OPTIONAL_HOSTCALL_ABI
@@ -505,3 +506,45 @@ int IMPL(glXGetFBConfigAttribSGIX)(Display *dpy, GLXFBConfigSGIX config, int att
 	glx also exports __glXGLLoadGLXFunction and 
 	__GLXGL_CORE_FUNCTIONS (data symbol)
 */
+
+#if BITS==32
+//FEX_TODO(This is not really glx, but uhh)
+
+void IMPL(glShaderSourceARB)(GLuint shader, GLsizei count, const GLchar **string, const GLint *length) {
+  OPTIONAL_HOSTCALL_ABI
+
+  uint64_t *string64 = nullptr;
+
+  if (count>0) {
+    string64 = new uint64_t[count];
+    for (GLsizei i = 0; i < count; i++) {
+      string64[i] = (uintptr_t)string[i];
+    }
+
+    string = (decltype(string))string64;
+  }
+
+  PACKER_OPTIONAL_HOSTCALL(glShaderSourceARB)(shader, count, string, length OPTIONAL_HOSTCALL_LASTARG);
+
+  delete[] string64;
+}
+
+void IMPL(glShaderSource)(GLuint shader, GLsizei count, const GLchar **string, const GLint *length) {
+  OPTIONAL_HOSTCALL_ABI
+
+  uint64_t *string64 = nullptr;
+
+  if (count>0) {
+    string64 = new uint64_t[count];
+    for (GLsizei i = 0; i < count; i++) {
+      string64[i] = (uintptr_t)string[i];
+    }
+
+    string = (decltype(string))string64;
+  }
+
+  PACKER_OPTIONAL_HOSTCALL(glShaderSource)(shader, count, string, length OPTIONAL_HOSTCALL_LASTARG);
+
+  delete[] string64;
+}
+#endif

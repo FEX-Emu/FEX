@@ -44,6 +44,7 @@ function(generate NAME SOURCE_FILE)
       COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
             # Expand include directories to space-separated list of -isystem parameters
            "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
+           "-DBITS=${BITS}"
       VERBATIM
       COMMAND_EXPAND_LISTS
       )
@@ -66,7 +67,7 @@ function(add_guest_lib NAME)
 
   add_library(${NAME}-guest-${BITS} ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_lib${NAME}})
   target_include_directories(${NAME}-guest-${BITS} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}")
-  target_compile_definitions(${NAME}-guest-${BITS} PRIVATE GUEST_THUNK_LIBRARY)
+  target_compile_definitions(${NAME}-guest-${BITS} PRIVATE GUEST_THUNK_LIBRARY BITS=${BITS})
   target_link_libraries(${NAME}-guest-${BITS} PRIVATE lib${NAME}-guest-deps)
 
   ## Make signed overflow well defined 2's complement overflow

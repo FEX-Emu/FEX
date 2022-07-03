@@ -85,7 +85,7 @@ inline bool IsLibLoaded(const char *libname) {
   return argsrv.rv;
 }
 
-#if __x86_64__
+#if BITS==64
   #define CUSTOM_ABI_HOST_ADDR \
     uintptr_t host_addr; \
     asm volatile("mov %%r11, %0" : "=r" (host_addr));

@@ -2269,8 +2269,13 @@ template<> struct fex_gen_config<glShaderBinary> {};
 template<> struct fex_gen_config<glShaderOp1EXT> {};
 template<> struct fex_gen_config<glShaderOp2EXT> {};
 template<> struct fex_gen_config<glShaderOp3EXT> {};
+#if BITS == 32
+template<> struct fex_gen_config<glShaderSourceARB>: fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<glShaderSource>: fexgen::custom_guest_entrypoint {};
+#else
 template<> struct fex_gen_config<glShaderSourceARB> {};
 template<> struct fex_gen_config<glShaderSource> {};
+#endif
 template<> struct fex_gen_config<glShaderStorageBlockBinding> {};
 template<> struct fex_gen_config<glShadingRateImageBarrierNV> {};
 template<> struct fex_gen_config<glShadingRateImagePaletteNV> {};
