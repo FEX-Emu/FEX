@@ -34,7 +34,7 @@ $end_info$
 
 typedef void voidFunc();
 
-#define dbgf(...) //printf
+#define dbgf(...) //fprintf(stderr, __VA_ARGS__)
 #define errf(...) fprintf(stderr, __VA_ARGS__)
 
 #define IMPL(Name) Name
@@ -57,9 +57,13 @@ FEX_PACKFN_LINKAGE XVisualInfo *IMPL(MapVisualInfoHostToGuest)(Display *dpy, XVi
 
 	XVisualInfo v;
 
+	dbgf("MapVisualInfoHostToGuest: %p\n", HostVis);
+
 	// FEX_TODO("HostVis might not be same as guest XVisualInfo here")
-	v.screen = HostVis->screen;
-	v.visualid = HostVis->visualid;
+	v.screen = *(int*)((uintptr_t)(HostVis) + 16);
+	v.visualid = *(unsigned int*)((uintptr_t)(HostVis) + 8);//HostVis->visualid;
+
+	//dbgf("%d, %u\n", v.screen, v.visualid);
 
 	PACKER(px11_XFree)(HostVis);
 
@@ -76,7 +80,8 @@ FEX_PACKFN_LINKAGE XVisualInfo *IMPL(MapVisualInfoHostToGuest)(Display *dpy, XVi
 
 FEX_PACKFN_LINKAGE XVisualInfo *IMPL(MapVisualInfoGuestToHost)(Display *dpy, XVisualInfo *GuestVis) {
 	// FEX_TODO("Implement this")
-	return GuestVis;
+	dbgf("MapVisualInfoGuestToHost %p, %p\n", dpy, GuestVis);
+	return PACKER(px11_XVisual)(dpy, GuestVis->screen, GuestVis->visualid);
 }
 
 FEX_PACKFN_LINKAGE GLXFBConfig *IMPL(MapGLXFBConfigHostToGuest)(GLXFBConfig *Host, int count) {
@@ -97,7 +102,12 @@ FEX_PACKFN_LINKAGE GLXFBConfig *IMPL(MapGLXFBConfigHostToGuest)(GLXFBConfig *Hos
 	}
 
 	for (int i = 0; i < count; i++) {
-		rv[i] = Host[i];
+		if constexpr (sizeof(GLXFBConfig) == 4) {
+			rv[i] = Host[i * 2];
+			dbgf("%p, %p\n", Host[i*2], Host[i*2+1]);
+		}
+		else
+			rv[i] = Host[i];
 	}
 
 	PACKER(px11_XFree)(Host);
@@ -123,7 +133,10 @@ FEX_PACKFN_LINKAGE GLXFBConfigSGIX *IMPL(MapGLXFBConfigSGIXHostToGuest)(GLXFBCon
 	}
 
 	for (int i = 0; i < count; i++) {
-		rv[i] = Host[i];
+		if constexpr (sizeof(GLXFBConfigSGIX) == 4)
+			rv[i] = Host[i * 2];
+		else
+			rv[i] = Host[i];
 	}
 
 	PACKER(px11_XFree)(Host);

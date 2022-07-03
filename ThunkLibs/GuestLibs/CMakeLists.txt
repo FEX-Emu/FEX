@@ -5,6 +5,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
   set(CMAKE_CXX_STANDARD 17)
 
+
   # This gets passed in from the main cmake project
   set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
@@ -63,16 +64,16 @@ function(add_guest_lib NAME)
     endif()
   endif()
 
-  add_library(${NAME}-guest ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_lib${NAME}})
-  target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}")
-  target_compile_definitions(${NAME}-guest PRIVATE GUEST_THUNK_LIBRARY)
-  target_link_libraries(${NAME}-guest PRIVATE lib${NAME}-guest-deps)
+  add_library(${NAME}-guest-${BITS} ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_lib${NAME}})
+  target_include_directories(${NAME}-guest-${BITS} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}")
+  target_compile_definitions(${NAME}-guest-${BITS} PRIVATE GUEST_THUNK_LIBRARY)
+  target_link_libraries(${NAME}-guest-${BITS} PRIVATE lib${NAME}-guest-deps)
 
   ## Make signed overflow well defined 2's complement overflow
-  target_compile_options(${NAME}-guest PRIVATE -fwrapv)
+  target_compile_options(${NAME}-guest-${BITS} PRIVATE -fwrapv)
 
   if (GENERATE_GUEST_INSTALL_TARGETS)
-    install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
+    install(TARGETS ${NAME}-guest-${BITS} DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
   endif()
 endfunction()
 
@@ -90,8 +91,8 @@ endfunction()
 
 generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public symbol_list)
 add_guest_lib(GL)
-target_link_libraries(GL-guest PRIVATE X11)
-target_link_libraries(GL-guest PRIVATE Xmu)
+target_link_libraries(GL-guest-${BITS} PRIVATE X11)
+target_link_libraries(GL-guest-${BITS} PRIVATE Xmu)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)

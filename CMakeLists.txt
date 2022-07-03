@@ -30,6 +30,7 @@ option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
 option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
 
 set (X86_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86.cmake" CACHE FILEPATH "Toolchain file for the x86 (cross-)compiler")
+set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the x86_64 (cross-)compiler")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 # These options are meant for package management
@@ -85,7 +86,6 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   set(_M_X86_64 1)
   add_definitions(-D_M_X86_64=1)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-  set (X86_TOOLCHAIN_FILE "")
 endif()
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
@@ -518,12 +518,13 @@ if (BUILD_THUNKS)
 
   # Thunk targets for guest libraries
   include(ExternalProject)
-  ExternalProject_Add(guest-libs
+  ExternalProject_Add(guest-libs32
     PREFIX guest-libs
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
-    BINARY_DIR "Guest"
+    BINARY_DIR "Guest32"
     CMAKE_ARGS
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DBITS=32"
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
@@ -533,13 +534,39 @@ if (BUILD_THUNKS)
     DEPENDS thunkgen
   )
 
+  include(ExternalProject)
+  ExternalProject_Add(guest-libs64
+    PREFIX guest-libs
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
+    BINARY_DIR "Guest64"
+    CMAKE_ARGS
+      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DBITS=64"
+      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+      "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
+      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS ON
+    DEPENDS thunkgen
+  )
+
   install(
-    CODE "MESSAGE(\"-- Installing: guest-libs\")"
+    CODE "MESSAGE(\"-- Installing: guest-libs32\")"
     CODE "
     EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest32
     )"
-    DEPENDS guest-libs
+    DEPENDS guest-libs32
+  )
+
+  install(
+    CODE "MESSAGE(\"-- Installing: guest-libs64\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest64
+    )"
+    DEPENDS guest-libs64
   )
 endif()
 

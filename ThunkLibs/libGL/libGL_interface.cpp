@@ -36,6 +36,7 @@ template<> struct fex_gen_config<px11_HostToGuestX11>: fexgen::custom_host_impl 
 template<> struct fex_gen_config<px11_GuestToHostX11>: fexgen::custom_host_impl {};
 template<> struct fex_gen_config<px11_XFree>: fexgen::custom_host_impl {};
 template<> struct fex_gen_config<px11_FlushFromGuestX11>: fexgen::custom_host_impl {};
+template<> struct fex_gen_config<px11_XVisual>: fexgen::custom_host_impl {};
 }
 
 // Symbols queryable through glXGetProcAddr

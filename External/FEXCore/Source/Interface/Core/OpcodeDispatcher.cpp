@@ -132,12 +132,9 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   if (CTX->Config.Is64BitMode) {
     ThunkArgsRV = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
   } else {
-    auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
-    ThunkArgsRV = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
-    auto NewSP = _Add(OldSP, Constant);
-
-    // Store the new stack pointer
-    _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);  
+    auto SP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+    auto SPOffs = _Add(SP, Constant);
+    ThunkArgsRV = _LoadMem(GPRClass, GPRSize, SPOffs, GPRSize);
   }
   
   _Thunk(

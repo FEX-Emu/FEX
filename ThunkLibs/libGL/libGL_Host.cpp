@@ -28,7 +28,7 @@ $end_info$
 
 #define IMPL(Name) fexfn_impl_libGL_##Name
 
-#define dbgf(...) //printf
+#define dbgf(...) //fprintf(stderr, __VA_ARGS__)
 #define errf(...) fprintf(stderr, __VA_ARGS__)
 
 namespace glx {
@@ -70,7 +70,7 @@ static Display *IMPL(px11_HostToGuestX11)(Display *Host) {
     if (rv != HostToGuest.end()) {
         return rv->second;
     } else {
-        dbgf("fgl: Failed to map Host Display %p ('%s') to Guest\n", Host, Host->display_name);
+        dbgf("fgl: Failed to map Host Display %p ('') to Guest\n", Host);
         return nullptr;
     }
 }
@@ -89,6 +89,30 @@ static Display *IMPL(px11_GuestToHostX11)(Display *Guest) {
 static void IMPL(px11_XFree)(void *p) {
     XFree(p);
 }
+
+static XVisualInfo *IMPL(px11_XVisual)(Display *Guest, int screen, unsigned int XVisual) {
+    XVisualInfo v;
+
+	dbgf("px11_XVisual: %d, %u\n", screen, XVisual);
+
+	// FEX_TODO("HostVis might not be same as guest XVisualInfo here")
+	v.screen = screen;
+	v.visualid = XVisual;//HostVis->visualid;
+
+	//dbgf("%d, %lu\n", v.screen, v.visualid);
+
+    
+	int c;
+	auto vguest = XGetVisualInfo(IMPL(px11_GuestToHostX11)(Guest), VisualScreenMask | VisualIDMask, &v, &c);
+
+	if (c >= 1 && vguest != nullptr) {
+		return vguest;
+	} else {
+		errf("MapVisualInfoHostToGuest: Guest XGetVisualInfo returned null\n");
+		return nullptr;
+	}
+}
+
 
 static void IMPL(px11_FlushFromGuestX11)(Display *Guest) {
     auto Host = IMPL(px11_GuestToHostX11)(Guest);

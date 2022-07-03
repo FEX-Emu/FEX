@@ -7,6 +7,21 @@ $end_info$
 #pragma once
 #include <stdint.h>
 
+
+#include <cstring>
+
+template<typename T>
+struct HostWraper {
+  HostWraper() { memset(this, 0, sizeof(*this)); }
+  HostWraper(T value) {  memset(this, 0, sizeof(*this)); this->value = value; }
+  union{
+  T value;
+  uint8_t pad[16];
+  };
+  operator T&() {  return value; }
+};
+
+
 template<typename Fn>
 struct function_traits;
 template<typename Result, typename Arg>

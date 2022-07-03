@@ -25,9 +25,20 @@ $end_info$
 #include <string>
 #include <utility>
 
+template<typename T>
+struct HostWraper {
+  HostWraper() { memset(this, 0, sizeof(*this)); }
+  HostWraper(T value) {  memset(this, 0, sizeof(*this)); this->value = value; }
+  union{
+  T value;
+  uint8_t pad[16];
+  };
+  operator T&() {  return value; }
+};
+
 struct LoadlibArgs {
-    const char *Name;
-    uintptr_t CallbackThunks;
+    HostWraper<const char *> Name;
+    HostWraper<uintptr_t> CallbackThunks;
 };
 
 static thread_local FEXCore::Core::InternalThreadState *Thread;
@@ -79,8 +90,8 @@ namespace FEXCore {
          */
         static void LinkAddressToGuestFunction(void* argsv) {
             struct args_t {
-                uintptr_t original_callee;
-                uintptr_t target_addr;     // Guest function to call when branching to original_callee
+                HostWraper<uintptr_t> original_callee;
+                HostWraper<uintptr_t> target_addr;     // Guest function to call when branching to original_callee
             };
 
             auto args = reinterpret_cast<args_t*>(argsv);
@@ -94,11 +105,11 @@ namespace FEXCore {
             }
 
             LogMan::Msg::DFmt("Thunks: Adding trampoline from address {:#x} to guest function {:#x}",
-                              args->original_callee, args->target_addr);
+                              args->original_callee.value, args->target_addr.value);
 
             auto Result = Thread->CTX->AddCustomIREntrypoint(
                     args->original_callee,
-                    [CTX, GuestThunkEntrypoint = args->target_addr](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
+                    [CTX, GuestThunkEntrypoint = args->target_addr.value](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
                         auto IRHeader = emit->_IRHeader(emit->Invalid(), 0);
                         auto Block = emit->CreateCodeNode();
                         IRHeader.first->Blocks = emit->WrapNode(Block);
@@ -113,10 +124,10 @@ namespace FEXCore {
                         }
                         
                         emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
-                    }, CTX->ThunkHandler.get(), (void*)args->target_addr);
+                    }, CTX->ThunkHandler.get(), (void*)args->target_addr.value);
 
             if (!Result) {
-                if (Result.Creator != CTX->ThunkHandler.get() || Result.Data != (void*)args->target_addr) {
+                if (Result.Creator != CTX->ThunkHandler.get() || Result.Data != (void*)args->target_addr.value) {
                     ERROR_AND_DIE_FMT("Input address for LinkAddressToGuestFunction is already linked elsewhere");
                 }
             }
@@ -127,8 +138,8 @@ namespace FEXCore {
 
             auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
-            auto Name = Args->Name;
-            auto CallbackThunks = Args->CallbackThunks;
+            auto Name = Args->Name.value;
+            auto CallbackThunks = Args->CallbackThunks.value;
 
             auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
 
@@ -172,8 +183,8 @@ namespace FEXCore {
 
         static void IsLibLoaded(void* ArgsRV) {
             struct ArgsRV_t {
-                const char *Name;
-                bool rv;
+                HostWraper<const char *> Name;
+                HostWraper<bool> rv;
             };
 
             auto &[Name, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
@@ -183,7 +194,7 @@ namespace FEXCore {
 
             {
                 std::shared_lock lk(That->ThunksMutex);
-                rv = That->Libs.contains(Name);
+                rv = That->Libs.contains(Name.value);
             }
         }
 

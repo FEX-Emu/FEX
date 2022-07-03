@@ -448,9 +448,9 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
     };
 
     auto format_struct_members = [](const FunctionParams& params, const char* indent) {
-        std::string ret;
+        std::string ret = indent;
         for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
-            ret += indent + format_decl(params.param_types[idx].getUnqualifiedType(), "a_" + std::to_string(idx)) + ";\n";
+            ret += "HostWraper<" + params.param_types[idx].getUnqualifiedType().getAsString() + "> a_" + std::to_string(idx) + ";\n";
         }
         return ret;
     };
@@ -568,10 +568,10 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "  struct {\n";
                 for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                     auto& type = data.param_types[idx];
-                    file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                    file << "    HostWraper<" << type.getUnqualifiedType().getAsString() << "> a_" << std::to_string(idx) << ";\n";
                 }
                 if (!is_void) {
-                    file << "    " << format_decl(data.return_type, "rv") << ";\n";
+                    file << "    HostWraper<" << data.return_type.getAsString() << "> rv" << ";\n";
                 } else if (data.param_types.size() == 0) {
                     // Avoid "empty struct has size 0 in C, size 1 in C++" warning
                     file << "    char force_nonempty;\n";
@@ -605,7 +605,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             file << "struct fexfn_packed_args_" << libname << "_" << function_name << " {\n";
             file << format_struct_members(thunk, "  ");
             if (!is_void) {
-                file << "  " << format_decl(thunk.return_type, "rv") << ";\n";
+                file << "  HostWraper<" << thunk.return_type.getAsString() << "> rv" << ";\n";
             } else if (thunk.param_types.size() == 0) {
                 // Avoid "empty struct has size 0 in C, size 1 in C++" warning
                 file << "    char force_nonempty;\n";
@@ -632,7 +632,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             if (thunk.is_hostcall) {
                 // Get the host function pointer by casting the last parameter to the correct signature
                 args.param_types.pop_back();
-                function_to_call = "reinterpret_cast<" + thunk.return_type.getAsString() + "(*)(" + format_function_params(args) + ")>(args->a_" + std::to_string(args.param_types.size()) + ")";
+                function_to_call = "reinterpret_cast<" + thunk.return_type.getAsString() + "(*)(" + format_function_params(args) + ")>(args->a_" + std::to_string(args.param_types.size()) + ".value)";
             } else if (thunk.custom_host_impl) {
                 function_to_call = "fexfn_impl_" + libname + "_" + function_name;
             }

@@ -1,14 +1,14 @@
 {
   "DB": {
-    "FGLX": {
-      "Library" : "libGL-guest.so",
+    "FGLX-32": {
+      "Library" : "libGL-guest-32.so",
       "Overlay": [
         "@PREFIX_LIB@/i386-linux-gnu/libGLX.so.0",
         "@PREFIX_LIB@/i386-linux-gnu/libGLX.so.0.0.0"
       ]
     },
-    "FGL": {
-      "Library" : "libGL-guest.so",
+    "FGL-32": {
+      "Library" : "libGL-guest-32.so",
       "Depends": [
         "FGLX"
       ],
@@ -18,6 +18,28 @@
         "@PREFIX_LIB@/i386-linux-gnu/libGL.so.1.2.0",
         "@PREFIX_LIB@/i386-linux-gnu/libGL.so.1.7.0"
       ]
+    },
+    "FGLX-64": {
+      "Library" : "libGL-guest-64.so",
+      "Overlay": [
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGLX.so.0.0.0"
+      ]
+    },
+    "FGL-64": {
+      "Library" : "libGL-guest-64.so",
+      "Depends": [
+        "FGLX"
+      ],
+      "Overlay": [
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1.2.0",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libGL.so.1.7.0"
+      ]
+    },
+    "FGL": {
+      "Depends": ["FGL-32", "FGL-64"]
     },
     "GLX": {
       "Library" : "libGL-guest.so",

@@ -53,6 +53,8 @@ $end_info$
 #include <sys/sysinfo.h>
 #include <sys/signal.h>
 
+#include <jemalloc/jemalloc.h>
+
 namespace {
 static bool SilentLog;
 static int OutputFD {STDERR_FILENO};
@@ -337,6 +339,7 @@ int main(int argc, char **argv, char **const envp) {
     // Destroy the 48th bit if it exists
     Base48Bit = FEXCore::Allocator::Steal48BitVA();
   } else {
+    FEXCore::Allocator::Steal32BitVA();
     FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
     if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
       Use32BitAllocator = true;
@@ -345,7 +348,7 @@ int main(int argc, char **argv, char **const envp) {
     // Setup our userspace allocator
     if (!Use32BitAllocator &&
         KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      FEXCore::Allocator::SetupHooks();
+      //FEXCore::Allocator::SetupHooks();
     }
 
     if (Use32BitAllocator) {
@@ -453,7 +456,22 @@ int main(int argc, char **argv, char **const envp) {
       FEX::AOT::AOTGenSection(CTX, Section);
     }
   } else {
+    unsigned arena_ind, old_arena_ind;
+    if (!Loader.Is64BitMode()) {
+      // set a new arena and flush tcache so that pointers > 32 bits aren't returned from malloc & friends
+	    size_t sz = sizeof(unsigned);
+	    je_mallctl("arenas.create", (void *)&arena_ind, &sz, NULL, 0);
+
+      size_t size = sizeof(arena_ind);
+      je_mallctl("thread.arena", (void *)&old_arena_ind, &size, (void *)&arena_ind, sizeof(arena_ind));
+
+      je_mallctl("thread.tcache.flush", 0, 0, 0, 0);
+    }
     FEXCore::Context::RunUntilExit(CTX);
+    if (!Loader.Is64BitMode()) {
+      size_t size = sizeof(arena_ind);
+      je_mallctl("thread.arena", (void *)&arena_ind, &size, (void *)&old_arena_ind, sizeof(arena_ind));
+    }
   }
 
   std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);

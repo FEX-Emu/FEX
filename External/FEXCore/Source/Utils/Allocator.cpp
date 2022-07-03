@@ -6,8 +6,10 @@
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include <array>
+#include <cstdint>
 #include <sys/mman.h>
 #include <sys/user.h>
+#include <vector>
 #ifdef ENABLE_JEMALLOC
 #include <jemalloc/jemalloc.h>
 #endif
@@ -222,6 +224,49 @@ namespace FEXCore::Allocator {
     uintptr_t End48BitVA   = 0x1'0000'0000'0000ULL;
     return StealMemoryRegion(Begin48BitVA, End48BitVA);
   }
+
+  PtrCache* Steal32BitVA() {
+    size_t Bits = FEXCore::Allocator::DetermineVASize();
+    
+    struct allocc{ uintptr_t base; size_t len; };
+    std::vector<allocc> alloccs;
+
+    size_t alloc_len = 1ULL << 51;
+    while (alloc_len >= PAGE_SIZE) {
+      for(;;) {
+        // ~0 mmap hint to reserve the entire 52-bit address space. Needed because hugetlb & mali_kbase don't respect DEFAULT_MAP_WINDOW_64.
+        // Also note the lack of MAP_FIXED: let the kernel find the VM gaps on its own.
+        auto result = mmap((void*)~0ULL, alloc_len, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NORESERVE, -1, 0);
+
+        // No more free VM gaps of this size.
+        if (result == MAP_FAILED) {
+          if (errno != ENOMEM && errno != EPERM /* when len is too big ?*/) {
+            printf("Error, errno: %d\n", errno);
+            return nullptr;
+          } else {
+            break;
+          }
+        }
+
+        if ((uintptr_t)result <= UINT32_MAX) {
+          alloccs.push_back({(uintptr_t)result, alloc_len});
+        }
+      }
+
+      // Halve the size and continue filling in gaps.
+      alloc_len >>= 1;
+    }
+
+    for(auto &alc: alloccs) {
+      auto top = alc.base + alc.len;
+      if (top > UINT32_MAX)
+        top = UINT32_MAX;
+
+      munmap((void*)alc.base, top - alc.base);
+    }
+    return nullptr;
+  }
+
 
   void ReclaimMemoryRegion(PtrCache* Regions) {
     if (Regions == nullptr) {

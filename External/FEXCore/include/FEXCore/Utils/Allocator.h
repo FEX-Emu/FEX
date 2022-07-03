@@ -39,4 +39,6 @@ namespace FEXCore::Allocator {
   // Use this to reserve the top 128TB of VA so the guest never see it
   // Returns nullptr on host VA < 48bits
   FEX_DEFAULT_VISIBILITY PtrCache* Steal48BitVA();
+
+  FEX_DEFAULT_VISIBILITY PtrCache* Steal32BitVA();
 }
