@@ -520,7 +520,7 @@ namespace FEX::HLE::x32 {
           fex_drm_wait_vblank *guest = reinterpret_cast<fex_drm_wait_vblank*>(args);
           drm_wait_vblank Host{};
           Host.request = guest->request;
-          uint64_t Result = ::ioctl(fd, DRM_IOCTL_VERSION, &Host);
+          uint64_t Result = ::ioctl(fd, FEX_DRM_IOCTL_WAIT_VBLANK, &Host);
           if (Result != -1) {
             guest->reply = Host.reply;
           }
