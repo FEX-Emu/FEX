@@ -19,12 +19,12 @@ namespace SquashFS {
   bool InitializeSquashFSPipe() {
     std::string RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
 
-    int Ret = open(RootFSLockFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_EXCL, USER_PERMS);
+    int Ret = open(RootFSLockFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_EXCL | O_CLOEXEC, USER_PERMS);
     ServerRootFSLockFD = Ret;
     if (Ret == -1 && errno == EEXIST) {
       // If the fifo exists then it might be a stale connection.
       // Check the lock status to see if another process is still alive.
-      ServerRootFSLockFD = open(RootFSLockFile.c_str(), O_RDWR, USER_PERMS);
+      ServerRootFSLockFD = open(RootFSLockFile.c_str(), O_RDWR | O_CLOEXEC, USER_PERMS);
       if (ServerRootFSLockFD != -1) {
         // Now that we have opened the file, try to get a write lock.
         flock lk {

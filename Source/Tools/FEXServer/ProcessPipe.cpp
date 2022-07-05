@@ -107,7 +107,7 @@ namespace ProcessPipe {
     if (Ret == -1 && errno == EEXIST) {
       // If the lock exists then it might be a stale connection.
       // Check the lock status to see if another process is still alive.
-      ServerLockFD = open(ServerLockPath.c_str(), O_RDWR, USER_PERMS);
+      ServerLockFD = open(ServerLockPath.c_str(), O_RDWR | O_CLOEXEC, USER_PERMS);
       if (ServerLockFD != -1) {
         // Now that we have opened the file, try to get a write lock.
         flock lk {
@@ -186,7 +186,7 @@ namespace ProcessPipe {
     unlink(ServerSocketFile.c_str());
 
     // Create the initial unix socket
-    ServerSocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
+    ServerSocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (ServerSocketFD == -1) {
       LogMan::Msg::AFmt("Couldn't create AF_UNIX socket: %d %s\n", errno, strerror(errno));
       return false;
