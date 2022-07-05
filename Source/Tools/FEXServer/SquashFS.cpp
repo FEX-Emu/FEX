@@ -97,7 +97,7 @@ namespace SquashFS {
     return true;
   }
 
-  bool MountSquashFSPath(std::string SquashFS) {
+  bool MountRootFSImagePath(std::string SquashFS, bool EroFS) {
     pid_t ParentTID = ::getpid();
     MountFolder = fmt::format("{}/.FEXMount{}-XXXXXX", std::filesystem::temp_directory_path().string(), ParentTID);
     char *MountFolderStr = MountFolder.data();
@@ -124,16 +124,16 @@ namespace SquashFS {
       // Child
       close(fds[0]); // Close read side
       const char *argv[4];
-      argv[0] = "squashfuse";
+      argv[0] = EroFS ? "erofsfuse" : "squashfuse";
       argv[1] = SquashFS.c_str();
       argv[2] = MountFolder.c_str();
       argv[3] = nullptr;
 
-      // Try and execute squashfuse to mount our rootfs
+      // Try and execute {erofsfuse, squashfuse} to mount our rootfs
       if (execvpe(argv[0], (char * const*)argv, environ) == -1) {
         // Give a hopefully helpful error message for users
         LogMan::Msg::EFmt("[FEXServer] '{}' Couldn't execute for some reason: {} {}\n", argv[0], errno, strerror(errno));
-        LogMan::Msg::EFmt("[FEXServer] To mount squashfs rootfs files you need squashfuse installed\n");
+        LogMan::Msg::EFmt("[FEXServer] To mount squashfs rootfs files you need {} installed\n", argv[0]);
         LogMan::Msg::EFmt("[FEXServer] Check your FUSE setup.\n");
 
         // Let the parent know that we couldn't execute for some reason
@@ -182,12 +182,12 @@ namespace SquashFS {
 
   void UnmountRootFS() {
     FEX_CONFIG_OPT(LDPath, ROOTFS);
-    if (!FEX::FormatCheck::IsSquashFS(LDPath())) {
+    if (!FEX::FormatCheck::IsSquashFS(LDPath()) && !FEX::FormatCheck::IsEroFS(LDPath())) {
       return;
     }
 
     // Handle final mount removal
-    // fusermount for unmounting the mountpoint, then the squashfuse will exit automatically
+    // fusermount for unmounting the mountpoint, then the {erfsfuse, squashfuse} will exit automatically
     int pid = fork();
 
     if (pid == 0) {
@@ -221,8 +221,20 @@ namespace SquashFS {
     FEX_CONFIG_OPT(LDPath, ROOTFS);
 
     MountFolder = LDPath();
-    if (!FEX::FormatCheck::IsSquashFS(MountFolder)) {
-      // If this isn't a squashfs mount then we have nothing to do here
+
+    bool IsSquashFS {false};
+    bool IsEroFS {false};
+
+    // Check if the image is an EroFS
+    IsEroFS = FEX::FormatCheck::IsEroFS(MountFolder);
+
+    if (!IsEroFS) {
+      // Check if the image is an SquashFS
+      IsSquashFS = FEX::FormatCheck::IsSquashFS(MountFolder);
+    }
+
+    if (!IsSquashFS && !IsEroFS) {
+      // If this isn't a rootfs image then we have nothing to do here
       return true;
     }
 
@@ -232,7 +244,7 @@ namespace SquashFS {
     }
 
     // Setup rootfs here
-    if (!MountSquashFSPath(LDPath())) {
+    if (!MountRootFSImagePath(LDPath(), IsEroFS)) {
       LogMan::Msg::EFmt("[FEXServer] Couldn't mount squashfs path");
       return false;
     }
