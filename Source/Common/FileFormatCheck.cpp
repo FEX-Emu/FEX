@@ -75,7 +75,6 @@ namespace FEX::FormatCheck {
       // Additional data after this if necessary in the future.
     };
 
-    constexpr size_t SUPERBLOCK_SIZE = 4096;
     constexpr size_t HEADER_OFFSET = 1024;
     constexpr uint32_t COOKIE_MAGIC_V1 = 0xE0F5E1E2;
 
@@ -83,23 +82,6 @@ namespace FEX::FormatCheck {
     std::fstream File(Filename, std::ios::in);
 
     if (!File.is_open()) {
-      return false;
-    }
-
-    if (!File.seekg(0, std::fstream::end)) {
-      return false;
-    }
-
-    auto FileSize = File.tellg();
-    if (File.fail()) {
-      return false;
-    }
-
-    if (FileSize <= 0) {
-      return false;
-    }
-
-    if (FileSize < SUPERBLOCK_SIZE) {
       return false;
     }
 
