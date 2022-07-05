@@ -13,6 +13,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <tiny-json.h>
+
 namespace Exec {
   int32_t ExecAndWaitForResponse(const char *path, char* const* args) {
     pid_t pid = fork();
@@ -98,16 +100,19 @@ namespace Exec {
 
       // Nothing larger than this
       char Buffer[1024]{};
+      std::string Output{};
 
       // Read the pipe until it closes
-      while (read(fd[0], Buffer, sizeof(Buffer)));
+      while (size_t Size = read(fd[0], Buffer, sizeof(Buffer))) {
+        Output += std::string_view(Buffer, Size);
+      }
 
       int32_t Status{};
       waitpid(pid, &Status, 0);
       if (WIFEXITED(Status)) {
         // Return what we've read
         close(fd[0]);
-        return Buffer;
+        return Output;
       }
     }
 
@@ -119,6 +124,9 @@ namespace WorkingAppsTester {
   static bool Has_Curl {false};
   static bool Has_Squashfuse {false};
   static bool Has_Unsquashfs {false};
+
+  // EroFS specific
+  static bool Has_EroFSFuse {false};
 
   void CheckCurl() {
     // Check if curl exists on the host
@@ -190,10 +198,23 @@ namespace WorkingAppsTester {
     close(fd);
   }
 
+  // EroFS specific tests
+  void CheckEroFSFuse() {
+    std::vector<const char*> ExecveArgs = {
+      "erofsfuse",
+      "--help",
+      nullptr,
+    };
+
+    int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+    Has_EroFSFuse = Result != -1;
+  }
+
   void Init() {
     CheckCurl();
     CheckSquashfuse();
     CheckUnsquashfs();
+    CheckEroFSFuse();
   }
 }
 
@@ -344,9 +365,17 @@ namespace WebFileFetcher {
 
     // This is the hash of the file
     std::string Hash;
+
+    // FileType
+    enum class FileType {
+      TYPE_UNKNOWN,
+      TYPE_SQUASHFS,
+      TYPE_EROFS,
+    };
+    FileType Type;
   };
 
-  const static std::string DownloadURL = "https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links_XXH3.txt";
+  const static std::string DownloadURL = "https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links.json";
 
   std::string DownloadToString(const std::string &URL) {
     std::string BigArgs =
@@ -402,27 +431,96 @@ namespace WebFileFetcher {
     return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
   }
 
+  struct JsonAllocator {
+    jsonPool_t PoolObject;
+    std::unique_ptr<std::list<json_t>> json_objects;
+  };
+  static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
+
+  json_t* PoolInit(jsonPool_t* Pool) {
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
+  json_t* PoolAlloc(jsonPool_t* Pool) {
+    JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+    return &*alloc->json_objects->emplace(alloc->json_objects->end());
+  }
+
   std::vector<FileTargets> GetRootFSLinks() {
     // Decode the filetargets
     std::string Data = DownloadToString(DownloadURL);
-    std::stringstream ss(Data);
+
+    JsonAllocator Pool {
+      .PoolObject = {
+        .init = PoolInit,
+        .alloc = PoolAlloc,
+      },
+    };
+
+    json_t const *json = json_createWithPool(&Data.at(0), &Pool.PoolObject);
+    if (!json) {
+      fprintf(stderr, "Couldn't create json");
+      return {};
+    }
+
+    json_t const* RootList = json_getProperty(json, "v1");
+
+    if (!RootList) {
+      fprintf(stderr, "Couldn't get root list");
+      return {};
+    }
+
     std::vector<FileTargets> Targets;
 
-    while (!ss.eof()) {
-      FileTargets Target;
-      if (!std::getline(ss, Target.DistroMatch))
-        break;
-      if (!std::getline(ss, Target.VersionMatch))
-        break;
-      if (!std::getline(ss, Target.DistroName))
-        break;
-      if (!std::getline(ss, Target.URL))
-        break;
-      if (!std::getline(ss, Target.Hash))
-        break;
+    for (json_t const* RootItem = json_getChild(RootList);
+      RootItem != nullptr;
+      RootItem = json_getSibling(RootItem)) {
 
-      Targets.emplace_back(Target);
+      FileTargets Target;
+      Target.DistroName = json_getName(RootItem);
+
+      for (json_t const* DataItem = json_getChild(RootItem);
+        DataItem != nullptr;
+        DataItem = json_getSibling(DataItem)) {
+        auto DataName = std::string_view {json_getName(DataItem)};
+
+        if (DataName == "DistroMatch") {
+          Target.DistroMatch = json_getValue(DataItem);
+        }
+        else if (DataName == "DistroVersion") {
+          Target.VersionMatch = json_getValue(DataItem);
+        }
+        else if (DataName == "URL") {
+          Target.URL = json_getValue(DataItem);
+        }
+        else if (DataName == "Hash") {
+          Target.Hash = json_getValue(DataItem);
+        }
+        else if (DataName == "Type") {
+          auto DataValue = std::string_view {json_getValue(DataItem)};
+          if (DataValue == "squashfs") {
+            Target.Type = FileTargets::FileType::TYPE_SQUASHFS;
+          }
+          else if (DataValue == "erofs") {
+            Target.Type = FileTargets::FileType::TYPE_EROFS;
+          }
+          else {
+            Target.Type = FileTargets::FileType::TYPE_UNKNOWN;
+          }
+        }
+      }
+      bool SupportsSquashFS = WorkingAppsTester::Has_Squashfuse || WorkingAppsTester::Has_Unsquashfs;
+      bool SupportsEroFS = WorkingAppsTester::Has_EroFSFuse;
+      if ((Target.Type == FileTargets::FileType::TYPE_SQUASHFS && SupportsSquashFS) ||
+          (Target.Type == FileTargets::FileType::TYPE_EROFS && SupportsEroFS)) {
+        // If we don't understand the type, then we can't use this.
+        // Additionally if the type is erofs but the user doesn't have erofsfuse, then we can't use this
+        Targets.emplace_back(Target);
+      }
     }
+
     return Targets;
   }
 }
@@ -940,6 +1038,11 @@ int main(int argc, char **argv, char **const envp) {
 
   if (AskForConfirmation(Question)) {
     auto Targets = WebFileFetcher::GetRootFSLinks();
+    if (Targets.empty()) {
+      ExecWithInfo("Couldn't parse rootfs definition URL.");
+      return -1;
+    }
+
     int32_t DistroIndex = AskForDistroSelection(Targets);
     if (DistroIndex != -1) {
       const auto &Target = Targets[DistroIndex];
@@ -1004,42 +1107,50 @@ int main(int argc, char **argv, char **const envp) {
         "As-Is",
       };
 
-      int32_t Result{};
-      if (WorkingAppsTester::Has_Unsquashfs) {
-        if (WorkingAppsTester::Has_Squashfuse) {
-          Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
-        }
-        else {
-          Args.pop_back();
-          Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
-        }
-      }
-      else {
-        if (WorkingAppsTester::Has_Squashfuse) {
-          Args.erase(Args.begin());
-          Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
-          if (Result == 0) {
-            // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
-            Result = 1;
+      if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_SQUASHFS) {
+        int32_t Result{};
+        if (WorkingAppsTester::Has_Unsquashfs) {
+          if (WorkingAppsTester::Has_Squashfuse) {
+            Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
+          }
+          else {
+            Args.pop_back();
+            Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
           }
         }
         else {
-          Args.erase(Args.begin());
-          ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
-          Result = -1;
+          if (WorkingAppsTester::Has_Squashfuse) {
+            Args.erase(Args.begin());
+            Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
+            if (Result == 0) {
+              // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
+              Result = 1;
+            }
+          }
+          else {
+            Args.erase(Args.begin());
+            ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
+            Result = -1;
+          }
         }
-      }
-      if (Result == -1 ||
-          Result == 1) {
-        // Nothing
-        // As-Is
-      }
-      else if (Result == 0) {
-        auto FolderName = filename.substr(0, filename.find_last_of('.'));
-        if (UnSquash::UnsquashRootFS(RootFS, PathName, FolderName)) {
-          // Remove the .sqsh suffix since we extracted to that
-          filename = FolderName;
+
+        if (Result == -1 ||
+            Result == 1) {
+          // Nothing
+          // As-Is
         }
+        else if (Result == 0) {
+          auto FolderName = filename.substr(0, filename.find_last_of('.'));
+          if (UnSquash::UnsquashRootFS(RootFS, PathName, FolderName)) {
+            // Remove the .sqsh suffix since we extracted to that
+            filename = FolderName;
+          }
+        }
+
+      }
+      else if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_EROFS) {
+        // Once erofs tooling is available for easy extraction, offer the same settings to extract as squashfs.
+        // Currently this is unavailable, would need a mount + copy + unmount dance.
       }
 
       if (AskForConfirmation("Do you wish to set this RootFS as default?")) {

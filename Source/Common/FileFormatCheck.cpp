@@ -63,4 +63,36 @@ namespace FEX::FormatCheck {
     }
     return false;
   }
+
+  bool IsEroFS(std::string const &Filename) {
+    // v1 of EroFS has a 128byte header
+    // This lives within a fixed offset inside of the first superblock of the file
+    // Each superblock is 4096bytes
+    //
+    // We only care about the uint32_t at the start of this offset which is the cookie
+    struct EroFSHeader {
+      uint32_t Magic;
+      // Additional data after this if necessary in the future.
+    };
+
+    constexpr size_t HEADER_OFFSET = 1024;
+    constexpr uint32_t COOKIE_MAGIC_V1 = 0xE0F5E1E2;
+
+    EroFSHeader Header{};
+    std::fstream File(Filename, std::ios::in);
+
+    if (!File.is_open()) {
+      return false;
+    }
+
+    if (!File.seekg(HEADER_OFFSET, std::fstream::beg)) {
+      return false;
+    }
+
+    if (!File.read(reinterpret_cast<char*>(&Header), sizeof(EroFSHeader))) {
+      return false;
+    }
+
+    return Header.Magic == COOKIE_MAGIC_V1;
+  }
 }

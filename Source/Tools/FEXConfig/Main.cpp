@@ -117,6 +117,10 @@ namespace {
             FEX::FormatCheck::IsSquashFS(it.path().string())) {
           NamedRootFS.emplace_back(it.path().filename());
         }
+        else if (it.path().extension() == ".ero" &&
+            FEX::FormatCheck::IsEroFS(it.path().string())) {
+          NamedRootFS.emplace_back(it.path().filename());
+        }
       }
     }
   }
