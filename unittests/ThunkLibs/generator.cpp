@@ -280,10 +280,15 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
     run_tool(std::make_unique<GenerateThunkLibsActionFactory>(libname, output_filenames), full_code, silent);
 
     std::string result =
+        "#include <cstdint>\n"
         "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n"
-        "#define FEX_PACKFN_LINKAGE\n";
+        "#define MAKE_CALLBACK(lib, name, ...) static uint8_t fexcallback_##lib##_##name[32] = {};\n"
+        "#define FEX_PACKFN_LINKAGE\n"
+        "template<typename Packer, typename Target>\n"
+        "Target *HostTrampolineForGuestcall(uint8_t HostPacker[32], Packer*, Target*);\n";
     for (auto& filename : {
             output_filenames.thunks,
+            output_filenames.callback_unpacks,
             output_filenames.function_packs_public,
             output_filenames.function_packs,
             }) {
@@ -406,13 +411,14 @@ TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
 
 // Parameter is a function pointer
 TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
-    const auto output = run_thunkgen_guest("void func(int (*funcptr)(char, char));\n",
+    const auto output = run_thunkgen_guest("",
+        "void func(int (*funcptr)(char, char));\n"
         "template<auto> struct fex_gen_config {};\n"
         "template<> struct fex_gen_config<func> {};\n");
 
     CHECK_THAT(output,
         matches(functionDecl(
-            hasName("fexfn_pack_func_internal"),
+            hasName("fexfn_pack_func"),
             returns(asString("void")),
             parameterCountIs(1),
             hasParameter(0, hasType(asString("int (*)(char, char)")))
