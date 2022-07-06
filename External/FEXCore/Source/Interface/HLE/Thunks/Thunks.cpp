@@ -183,53 +183,6 @@ namespace FEXCore {
             }
         }
 
-        static void LoadLib(void *ArgsV) {
-            auto CTX = Thread->CTX;
-
-            auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
-
-            auto Name = Args->Name;
-
-            auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
-
-            LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
-
-            auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
-            if (!Handle) {
-                ERROR_AND_DIE_FMT("LoadLib: Failed to dlopen thunk library {}: {}", SOName, dlerror());
-            }
-
-            const auto InitSym = std::string("fexthunks_exports_") + Name;
-
-            ExportEntry* (*InitFN)();
-            (void*&)InitFN = dlsym(Handle, InitSym.c_str());
-            if (!InitFN) {
-                ERROR_AND_DIE_FMT("LoadLib: Failed to find export {}", InitSym);
-            }
-
-            auto Exports = InitFN();
-            if (!Exports) {
-                ERROR_AND_DIE_FMT("LoadLib: Failed to initialize thunk library {}. "
-                                  "Check if the corresponding host library is installed "
-                                  "or disable thunking of this library.", Name);
-            }
-
-            auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
-
-            {
-                std::lock_guard lk(That->ThunksMutex);
-
-                That->Libs.insert(Name);
-
-                int i;
-                for (i = 0; Exports[i].sha256; i++) {
-                    That->Thunks[*reinterpret_cast<IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
-                }
-
-                LogMan::Msg::DFmt("Loaded {} syms", i);
-            }
-        }
-
         static void HostTrampolineForGuestcall(void* ArgsRV) {
           struct ArgsRV_t {
               IR::SHA256Sum *HostPacker;
@@ -306,6 +259,53 @@ namespace FEXCore {
 
           // Still protected by `lk`
           That->GuestcallToHostTrampoline[gci] = rv;
+        }
+
+        static void LoadLib(void *ArgsV) {
+            auto CTX = Thread->CTX;
+
+            auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
+
+            auto Name = Args->Name;
+
+            auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
+
+            LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
+
+            auto Handle = dlopen(SOName.c_str(), RTLD_LOCAL | RTLD_NOW);
+            if (!Handle) {
+                ERROR_AND_DIE_FMT("LoadLib: Failed to dlopen thunk library {}: {}", SOName, dlerror());
+            }
+
+            const auto InitSym = std::string("fexthunks_exports_") + Name;
+
+            ExportEntry* (*InitFN)();
+            (void*&)InitFN = dlsym(Handle, InitSym.c_str());
+            if (!InitFN) {
+                ERROR_AND_DIE_FMT("LoadLib: Failed to find export {}", InitSym);
+            }
+
+            auto Exports = InitFN();
+            if (!Exports) {
+                ERROR_AND_DIE_FMT("LoadLib: Failed to initialize thunk library {}. "
+                                  "Check if the corresponding host library is installed "
+                                  "or disable thunking of this library.", Name);
+            }
+
+            auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
+
+            {
+                std::lock_guard lk(That->ThunksMutex);
+
+                That->Libs.insert(Name);
+
+                int i;
+                for (i = 0; Exports[i].sha256; i++) {
+                    That->Thunks[*reinterpret_cast<IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
+                }
+
+                LogMan::Msg::DFmt("Loaded {} syms", i);
+            }
         }
 
         static void IsLibLoaded(void* ArgsRV) {
