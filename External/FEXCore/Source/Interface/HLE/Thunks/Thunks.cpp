@@ -65,7 +65,7 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
   asm(
     "lea 0f(%rip), %r11 \n"
     "jmpq *0f(%rip) \n"
-    ".align 16 \n"
+    ".align 8 \n"
     "0: \n"
     ".quad 0, 0, 0, 0 \n"
   );
@@ -74,9 +74,11 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
     "adr x11, 0f \n"
     "ldr x16, [x11] \n"
     "br x16 \n"
-    ".align 16 \n"
-    "0: \n" // CallCallback
-    ".quad 0, 0, 0, 0 \n"
+    // Manually align to the next 8-byte boundary
+    // NOTE: GCC over-aligns to a full page when using .align directives on ARM (last tested on GCC 11.2)
+    "nop \n"
+    "0: \n"
+    ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
   );
 #else
 #error Unsupported host architecture
