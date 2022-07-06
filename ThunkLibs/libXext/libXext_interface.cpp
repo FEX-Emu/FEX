@@ -162,7 +162,7 @@ template<> struct fex_gen_config<_XPollfdCacheDel> {};
 template<> struct fex_gen_config<_XAllocID> {};
 template<> struct fex_gen_config<_XAllocIDs> {};
 template<> struct fex_gen_config<_XFreeExtData> {};
-template<> struct fex_gen_config<_XRegisterInternalConnection> : fexgen::callback_stub {};
+template<> struct fex_gen_config<_XRegisterInternalConnection> {};
 template<> struct fex_gen_config<_XUnregisterInternalConnection> {};
 template<> struct fex_gen_config<_XProcessInternalConnection> {};
 template<> struct fex_gen_config<_XTextHeight> {};
