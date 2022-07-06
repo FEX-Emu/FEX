@@ -26,10 +26,6 @@ $end_info$
 
 #include <stdarg.h>
 
-#include "callback_typedefs.inl"
-
-using CBType = void (*)(void *closure);
-
 #include "thunks.inl"
 #include "function_packs.inl"
 #include "function_packs_public.inl"

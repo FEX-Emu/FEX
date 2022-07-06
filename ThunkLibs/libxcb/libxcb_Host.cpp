@@ -21,9 +21,7 @@ $end_info$
 #include <dlfcn.h>
 #include <unordered_map>
 
-#include "callback_structs.inl"
 #include "WorkEventData.h"
-#include "callback_typedefs.inl"
 
 #include "ldr_ptrs.inl"
 

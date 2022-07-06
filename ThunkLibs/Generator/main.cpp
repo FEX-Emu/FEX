@@ -51,10 +51,6 @@ int main(int argc, char* argv[]) {
             output_filenames.function_packs = out_filename;
         } else if (target == "-function_packs_public") {
             output_filenames.function_packs_public = out_filename;
-        } else if (target == "-callback_structs") {
-            output_filenames.callback_structs = out_filename;
-        } else if (target == "-callback_typedefs") {
-            output_filenames.callback_typedefs = out_filename;
         } else if (target == "-callback_unpacks") {
             output_filenames.callback_unpacks = out_filename;
         } else if (target == "-symbol_list") {

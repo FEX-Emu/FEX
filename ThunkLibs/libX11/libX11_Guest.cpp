@@ -18,8 +18,6 @@ $end_info$
 #include "common/Guest.h"
 #include <stdarg.h>
 
-#include "callback_typedefs.inl"
-
 #include "thunks.inl"
 #include "callback_unpacks.inl"
 

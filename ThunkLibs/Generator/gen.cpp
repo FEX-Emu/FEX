@@ -744,43 +744,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         }
     }
 
-    if (!output_filenames.callback_structs.empty()) {
-        std::ofstream file(output_filenames.callback_structs);
-
-        for (auto& thunk : thunks) {
-            for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub || cb.is_guest) {
-                    continue;
-                }
-
-                file << "struct " << thunk.function_name << "CB_Args {\n";
-                file << format_struct_members(cb, "  ");
-                if (!cb.return_type->isVoidType()) {
-                    file << "  " << format_decl(cb.return_type, "rv") << ";\n";
-                }
-                file << "};\n";
-            }
-        }
-    }
-
-    if (!output_filenames.callback_typedefs.empty()) {
-        std::ofstream file(output_filenames.callback_typedefs);
-
-        for (auto& thunk : thunks) {
-            for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub || cb.is_guest) {
-                    continue;
-                }
-
-                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
-                auto cb_function_name = get_callback_name(thunk.function_name, cb_idx, is_first_cb);
-                file << "typedef " << cb.return_type.getAsString() << " "
-                     << cb_function_name << "("
-                     << format_function_params(cb) << ");\n";
-            }
-        }
-    }
-
     if (!output_filenames.callback_unpacks.empty()) {
         std::ofstream file(output_filenames.callback_unpacks);
 

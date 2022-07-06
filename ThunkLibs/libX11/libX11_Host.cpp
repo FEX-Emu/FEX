@@ -14,10 +14,6 @@ $end_info$
 #include "common/Host.h"
 #include <dlfcn.h>
 
-#include "callback_structs.inl"
-#include "callback_typedefs.inl"
-
-
 #include "ldr_ptrs.inl"
 
 _XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long *list) {
