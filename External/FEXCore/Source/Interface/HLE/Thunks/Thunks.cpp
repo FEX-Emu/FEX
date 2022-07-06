@@ -57,7 +57,9 @@ namespace FEXCore {
             }
         };
 
-        std::set<std::string_view> Libs;
+        // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
+        // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
+        std::set<std::string> Libs;
 
         /*
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
