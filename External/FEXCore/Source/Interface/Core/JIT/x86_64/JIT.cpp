@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/CodeCache/ObjCache.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -569,13 +570,21 @@ std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::G
   return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
 }
 
-void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
+void *X86JITCore::CompileCode(uint64_t Entry,
+                              const FEXCore::IR::IRListView *const IR,
+                              FEXCore::Core::DebugData *const DebugData,
+                              const FEXCore::IR::RegisterAllocationData *const RAData,
+                              bool GDBEnabled) {
+
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
   this->Entry = Entry;
   this->RAData = RAData;
   this->DebugData = DebugData;
+
+  // Initialize
+  Relocations.resize(sizeof(ObjCacheRelocations));
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
@@ -731,8 +740,12 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
 
   if (DebugData) {
     DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(GuestExit) - reinterpret_cast<uintptr_t>(GuestEntry);
-    DebugData->Relocations = &Relocations;
+    ((ObjCacheRelocations*)Relocations.data())->Bytes = Relocations.size() - sizeof(ObjCacheRelocations);
+    DebugData->RelocationsStorage = std::move(Relocations);
+    DebugData->Relocations = (FEXCore::ObjCacheRelocations*)DebugData->RelocationsStorage.data();
   }
+
+  Relocations.clear();
 
   return GuestEntry;
 }

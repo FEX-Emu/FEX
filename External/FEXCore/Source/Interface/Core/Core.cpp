@@ -8,13 +8,13 @@ $end_info$
 */
 
 #include <cstdint>
+#include "FEXHeaderUtils/TypeDefines.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/GdbServer.h"
-#include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
@@ -23,6 +23,11 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
+
+#include <FEXCore/HLE/SourcecodeResolver.h>
+#include "Interface/Core/CodeCache/ObjCache.h"
+#include "Interface/Core/CodeCache/IRCache.h"
+#include "FEXCore/Core/NamedRegion.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -34,7 +39,6 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
-#include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -46,6 +50,7 @@ $end_info$
 #include <FEXCore/Utils/Threads.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TodoDefines.h>
+#include <Interface/GDBJIT/GDBJIT.h>
 
 #include <algorithm>
 #include <array>
@@ -58,6 +63,7 @@ $end_info$
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <set>
 #include <shared_mutex>
@@ -146,14 +152,10 @@ std::string_view const& GetGRegName(unsigned Reg) {
 } // namespace FEXCore::Core
 
 namespace FEXCore::Context {
-  Context::Context()
-  : IRCaptureCache {this} {
+  Context::Context() {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
-    if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
-      CodeObjectCacheService = std::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
-    }
     if (!Config.EnableAVX) {
       HostFeatures.SupportsAVX = false;
     }
@@ -164,14 +166,17 @@ namespace FEXCore::Context {
       // Only initialize symbols file if enabled. Ensures we don't pollute /tmp with empty files.
       Symbols.InitFile();
     }
+
+    if (Config.TSOAutoMigration) {
+      // Will be toggled on as needed
+      Config.TSOEnabled = false;      
+    }
+
+    IRCacheOpener = ObjCacheOpener = [](const std::string &, const std::string &) { return std::nullopt; };
   }
 
   Context::~Context() {
     {
-      if (CodeObjectCacheService) {
-        CodeObjectCacheService->Shutdown();
-      }
-
       for (auto &Thread : Threads) {
         if (Thread->ExecutionThread->joinable()) {
           Thread->ExecutionThread->join(nullptr);
@@ -674,11 +679,6 @@ namespace FEXCore::Context {
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) {
-    {
-      // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
-      // Use the thread's object cache ref counter for this
-      CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
-    }
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     Thread->LookupCache->ClearCache();
@@ -740,12 +740,14 @@ namespace FEXCore::Context {
     }
   }
 
-  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {    
+  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, uint64_t MinAddr, uint64_t MaxAddr, bool ExtendedDebugInfo) {    
     Thread->OpDispatcher->ReownOrClaimBuffer();
     Thread->OpDispatcher->ResetWorkingList();
 
     uint64_t TotalInstructions {0};
     uint64_t TotalInstructionsLength {0};
+
+    std::vector<std::pair<uint64_t, uint64_t>> Ranges;
 
 
     std::shared_lock lk(CustomIRMutex);
@@ -763,6 +765,7 @@ namespace FEXCore::Context {
 
       bool HadDispatchError {false};
 
+      Thread->FrontendDecoder->SetSectionMaxAddress(MaxAddr);
       Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
           Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
@@ -871,6 +874,7 @@ namespace FEXCore::Context {
             break;
           }
         }
+        Ranges.push_back({Block.Entry - GuestRIP, BlockInstructionsLength});
       }
       
       Thread->OpDispatcher->Finalize();
@@ -902,86 +906,162 @@ namespace FEXCore::Context {
       }
     }
 
-    auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
+    IR::RegisterAllocationData *RAData = nullptr;
+    
+    if (Thread->PassManager->HasPass("RA")) {
+      RAData = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData().release();
+    }
+
     auto IRList = IREmitter->CreateIRCopy();
 
     IREmitter->DelayedDisownBuffer();
 
     return {
       .IRList = IRList,
-      .RAData = std::move(RAData),
+      .RAData = RAData,
       .TotalInstructions = TotalInstructions,
       .TotalInstructionsLength = TotalInstructionsLength,
       .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
       .Length = Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress,
+      .Ranges = std::move(Ranges)
     };
   }
 
   Context::CompileCodeResult Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    FEXCore::IR::IRListView *IRList {};
+    const FEXCore::IR::IRListView *IRList {};
+    const FEXCore::IR::RegisterAllocationData *RAData {};
     FEXCore::Core::DebugData *DebugData {};
-    FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
-    bool GeneratedIR {};
+    unsigned GeneratedCode {};
     uint64_t StartAddr {};
     uint64_t Length {};
 
-    // JIT Code object cache lookup
-    if (CodeObjectCacheService) {
-      auto CodeCacheEntry = CodeObjectCacheService->FetchCodeObjectFromCache(GuestRIP);
-      if (CodeCacheEntry) {
-        auto CompiledCode = Thread->CPUBackend->RelocateJITObjectCode(GuestRIP, CodeCacheEntry);
-        if (CompiledCode) {
-          return {
-              .CompiledCode = CompiledCode,
-              .IRData = nullptr,    // No IR data generated
-              .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
-              .RAData = nullptr,    // No RA data generated
-              .GeneratedIR = false, // nullptr here ensures IR cache mechanisms won't run
-              .StartAddr = 0,       // Unused
-              .Length = 0,          // Unused
-          };
-        }
-      }
-    }
+    std::vector<std::pair<uint64_t, uint64_t>> Ranges;
 
-    if (SourcecodeResolver && Config.GDBSymbols()) {
-      auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
-      if (AOTIRCacheEntry.Entry && !AOTIRCacheEntry.Entry->ContainsCode) {
-        AOTIRCacheEntry.Entry->SourcecodeMap =
-            SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
-      }
-    }
+    uint64_t MinAddr = GuestRIP;
+    uint64_t MaxAddr = UINT64_MAX;
 
-    // AOT IR bookkeeping and cache
+    // NamedRegion contains a lock, be mindful of its scope
     {
-      auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(GuestRIP, IRList);
-      if (_GeneratedIR) {
-        // Setup pointers to internal structures
-        IRList = IRCopy;
-        RAData = std::move(RACopy);
-        DebugData = DebugDataCopy;
-        StartAddr = _StartAddr;
-        Length = _Length;
-        GeneratedIR = _GeneratedIR;
+      auto NamedRegion = SyscallHandler->LookupNamedRegion(GuestRIP);
+
+      if (NamedRegion.Entry) {
+        MinAddr = NamedRegion.VAMin;
+        MaxAddr = NamedRegion.VAMax - 1;
+
+        // First time compiling code for this NamedRegion?
+        if (!NamedRegion.Entry->ContainsCode) {
+          NamedRegion.Entry->ContainsCode = true;
+
+          // Load / Generate SourcecodeMap
+          if (Config.GDBSymbols() && SourcecodeResolver && !NamedRegion.Entry->SourcecodeMap) {
+            NamedRegion.Entry->SourcecodeMap = SourcecodeResolver->GenerateMap(NamedRegion.Entry->Filename, NamedRegion.Entry->FileId);
+          }
+
+          // Load ObjCache
+          if (Config.ObjCache() && !NamedRegion.Entry->ObjCache) {
+            auto ObjCacheFDs = ObjCacheOpener(NamedRegion.Entry->FileId, NamedRegion.Entry->Filename);
+            if (ObjCacheFDs) {
+              NamedRegion.Entry->ObjCache = LoadObjCache(ObjCacheFDs);
+            }
+          }
+
+          // Load IRCache
+
+          if (Config.IRCache() && !NamedRegion.Entry->IRCache) {
+            auto IRCacheFDs = IRCacheOpener(NamedRegion.Entry->FileId, NamedRegion.Entry->Filename);
+            if (IRCacheFDs) {
+              NamedRegion.Entry->IRCache = LoadIRCache(IRCacheFDs);
+            }
+          }
+        }
+
+        // Obj Cache
+        if (Config.ObjCache() & Config::CONFIG_CACHE_READ && NamedRegion.Entry->ObjCache) {
+          auto CachedObj = NamedRegion.Entry->ObjCache->Find<ObjCacheResult>(GuestRIP - NamedRegion.VAFileStart, GuestRIP);
+
+          if (CachedObj) {
+            std::set<uint64_t> CodePages;
+
+            // FEX_TODO("MarkGuestExecutable /before/ hash for smc invalidation correctness")
+            for (size_t i = 0; i < CachedObj->RangeCount; i++) {
+              for (size_t p = 0; p < CachedObj->RangeData[i].second; p += 4096) {
+                auto Page = (GuestRIP + CachedObj->RangeData[i].first + p) &
+                            FHU::FEX_PAGE_MASK;
+                if (CodePages.insert(Page).second) {
+                  if (Thread->LookupCache->AddBlockExecutableRange(
+                          GuestRIP, Page, FHU::FEX_PAGE_SIZE)) {
+                    Thread->CTX->SyscallHandler->MarkGuestExecutableRange(
+                        Page, FHU::FEX_PAGE_SIZE);
+                  }
+                }
+              }
+            }
+
+            // fill in from CachedObj
+            return {
+              .CompiledCode = Thread->CPUBackend->RelocateJITObjectCode(GuestRIP, CachedObj->HostCode, CachedObj->RelocationData),
+              .IRData = nullptr,
+              .DebugData = new Core::DebugData { .HostCodeSize = CachedObj->HostCode->Bytes, .Relocations = CachedObj->RelocationData },
+              .RAData = nullptr,
+              .GeneratedCode = CODE_NONE,
+              .StartAddr = StartAddr,
+              .Length = Length,
+              .Ranges = std::move(Ranges)
+            };
+          }
+        }
+
+        // IR cache
+        if (Config.IRCache() & Config::CONFIG_CACHE_READ && NamedRegion.Entry->IRCache) {
+          auto CachedIR = NamedRegion.Entry->IRCache->Find<IRCacheResult>(GuestRIP - NamedRegion.VAFileStart, GuestRIP);
+
+          if (CachedIR) {
+            std::set<uint64_t> CodePages;
+
+            // FEX_TODO("MarkGuestExecutable /before/ hash for smc invalidation correctness")
+            for (size_t i = 0; i < CachedIR->RangeCount; i++) {
+              for (size_t p = 0; p < CachedIR->RangeData[i].second; p += 4096) {
+                auto Page = (GuestRIP + CachedIR->RangeData[i].first + p) &
+                            FHU::FEX_PAGE_MASK;
+                if (CodePages.insert(Page).second) {
+                  if (Thread->LookupCache->AddBlockExecutableRange(
+                          GuestRIP, Page, FHU::FEX_PAGE_SIZE)) {
+                    Thread->CTX->SyscallHandler->MarkGuestExecutableRange(
+                        Page, FHU::FEX_PAGE_SIZE);
+                  }
+                }
+              }
+            }
+
+            // Setup pointers to internal structures
+            IRList = CachedIR->IRList;
+            RAData = CachedIR->RAData;
+            DebugData = new Core::DebugData();
+            StartAddr = 0;
+            Length = 0;
+            GeneratedCode = CODE_NONE;
+          }
+        }
       }
     }
 
     if (IRList == nullptr) {
       // Generate IR + Meta Info
-      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols());
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length, _Ranges] = GenerateIR(Thread, GuestRIP, MinAddr, MaxAddr, Config.GDBSymbols());
 
       // Setup pointers to internal structures
       IRList = IRCopy;
-      RAData = std::move(RACopy);
+      RAData = RACopy;
       DebugData = new FEXCore::Core::DebugData();
       StartAddr = _StartAddr;
       Length = _Length;
+      Ranges = std::move(_Ranges);
 
       // Increment stats
       Thread->Stats.BlocksCompiled.fetch_add(1);
 
       // These blocks aren't already in the cache
-      GeneratedIR = true;
+      GeneratedCode = CODE_IR;
     }
 
     if (IRList == nullptr) {
@@ -989,13 +1069,14 @@ namespace FEXCore::Context {
     }
     // Attempt to get the CPU backend to compile this code
     return {
-      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData.get(), GetGdbServerStatus()),
+      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData, GetGdbServerStatus()),
       .IRData = IRList,
       .DebugData = DebugData,
-      .RAData = std::move(RAData),
-      .GeneratedIR = GeneratedIR,
+      .RAData = RAData,
+      .GeneratedCode = GeneratedCode | CODE_OBJ,
       .StartAddr = StartAddr,
       .Length = Length,
+      .Ranges = std::move(Ranges)
     };
   }
 
@@ -1023,17 +1104,17 @@ namespace FEXCore::Context {
     }
 
     void *CodePtr {};
-    FEXCore::IR::IRListView *IRList {};
+    const FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
 
-    bool GeneratedIR {};
+    unsigned GeneratedCode {};
     uint64_t StartAddr {}, Length {};
 
-    auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
+    auto [Code, IR, Data, RAData, _GeneratedCode, _StartAddr, _Length, Ranges] = CompileCode(Thread, GuestRIP);
     CodePtr = Code;
     IRList = IR;
     DebugData = Data;
-    GeneratedIR = Generated;
+    GeneratedCode = _GeneratedCode;
     StartAddr = _StartAddr;
     Length = _Length;
 
@@ -1042,64 +1123,70 @@ namespace FEXCore::Context {
     }
 
     // The core managed to compile the code.
-    if (Config.BlockJITNaming()) {
-      auto FragmentBasePtr = reinterpret_cast<uint8_t *>(CodePtr);
+
+    // NamedRegion contains a lock, be mindful of its scope here
+    {
+      auto NamedRegion = SyscallHandler->LookupNamedRegion(GuestRIP);
+
+      // If debug data exists, register the block as requested
 
       if (DebugData) {
-        auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+        if (Config.BlockJITNaming()) {
+          auto FragmentBasePtr = reinterpret_cast<uint8_t *>(CodePtr);
 
-        if (DebugData->Subblocks.size()) {
-          for (auto& Subblock: DebugData->Subblocks) {
-            auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
-            if (GuestRIPLookup.Entry) {
-              Symbols.Register(BlockBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.VAFileStart);
+          if (DebugData->Subblocks.size()) {
+            for (auto &Subblock : DebugData->Subblocks) {
+              auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
+              if (NamedRegion.Entry) {
+                Symbols.Register(BlockBasePtr, DebugData->HostCodeSize,
+                                 NamedRegion.Entry->Filename,
+                                 GuestRIP - NamedRegion.VAFileStart);
+              } else {
+                Symbols.Register(BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
+              }
+            }
+          } else {
+            if (NamedRegion.Entry) {
+              Symbols.Register(FragmentBasePtr, DebugData->HostCodeSize,
+                               NamedRegion.Entry->Filename,
+                               GuestRIP - NamedRegion.VAFileStart);
             } else {
-              Symbols.Register(BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
+              Symbols.Register(FragmentBasePtr, GuestRIP,
+                               DebugData->HostCodeSize);
             }
           }
-        } else {
-          if (GuestRIPLookup.Entry) {
-            Symbols.Register(FragmentBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename, GuestRIP - GuestRIPLookup.VAFileStart);
-        } else {
-          Symbols.Register(FragmentBasePtr, GuestRIP, DebugData->HostCodeSize);
-          }
+        } else if (Config.LibraryJITNaming()) {
+          Symbols.RegisterNamedRegion(CodePtr, DebugData->HostCodeSize,
+                                      NamedRegion.Entry->Filename);
+        } else if (Config.GDBSymbols()) {
+          GDBJITRegister(NamedRegion.Entry, NamedRegion.VAFileStart, GuestRIP,
+                         (uintptr_t)CodePtr, DebugData);
+        }
+      }
+
+      if (Config.ObjCache() & Config::CONFIG_CACHE_WRITE && GeneratedCode & CODE_OBJ) {
+        if (NamedRegion.Entry && NamedRegion.Entry->ObjCache) {
+          NamedRegion.Entry->ObjCache->Insert<ObjCacheEntry>(GuestRIP - NamedRegion.VAFileStart, GuestRIP, Ranges, CodePtr, DebugData->HostCodeSize, DebugData->Relocations);
+        }
+      }
+
+      if (Config.IRCache() & Config::CONFIG_CACHE_WRITE && GeneratedCode & CODE_IR && RAData) {
+        if (NamedRegion.Entry && NamedRegion.Entry->IRCache) {
+          NamedRegion.Entry->IRCache->Insert<IRCacheEntry>(GuestRIP - NamedRegion.VAFileStart, GuestRIP, Ranges, RAData, IRList);
         }
       }
     }
 
-    // Tell the object cache service to serialize the code if enabled
-    if (CodeObjectCacheService &&
-        Config.CacheObjectCodeCompilation == FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE &&
-        DebugData) {
-      CodeObjectCacheService->AsyncAddSerializationJob(std::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(
-        CodeSerialize::AsyncJobHandler::SerializationJobData {
-          .GuestRIP = GuestRIP,
-          .GuestCodeLength = Length,
-          .GuestCodeHash = 0,
-          .HostCodeBegin = CodePtr,
-          .HostCodeLength = DebugData->HostCodeSize,
-          .HostCodeHash = 0,
-          .ThreadJobRefCount = &Thread->ObjectCacheRefCounter,
-          .Relocations = std::move(*DebugData->Relocations),
-        }
-      ));
-    }
-
-    // Clear any relocations that might have been generated
-    Thread->CPUBackend->ClearRelocations();
-
-    if (IRCaptureCache.PostCompileCode(
-        Thread,
-        CodePtr,
-        GuestRIP,
-        StartAddr,
-        Length,
-        std::move(RAData),
-        IRList,
-        DebugData,
-        GeneratedIR)) {
-      // Early exit
-      return (uintptr_t)CodePtr;
+    if (GetGdbServerStatus()) {
+      // Add to thread local ir cache
+      Core::DebugIREntry Entry = {GuestRIP, StartAddr, Length, decltype(Entry.IR)(IRList), decltype(Entry.RAData)(RAData), decltype(Entry.DebugData)(DebugData)};
+      
+      std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+      Thread->DebugStore.insert({(uintptr_t)CodePtr, std::move(Entry)});
+    } else {
+      delete IRList;
+      delete RAData;
+      delete DebugData;
     }
 
     // Insert to lookup cache
@@ -1135,12 +1222,6 @@ namespace FEXCore::Context {
       Thread->CTX->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
       Thread->RunningEvents.Running = false;
-    }
-
-    {
-      // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
-      // Use the thread's object cache ref counter for this
-      CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
     }
 
     // If it is the parent thread that died then just leave
@@ -1201,12 +1282,13 @@ namespace FEXCore::Context {
     CallAfter(Start, Length);
   }
 
-  void Context::MarkMemoryShared() {
+  bool Context::MarkMemoryShared() {
     if (!IsMemoryShared) {
       IsMemoryShared = true;
 
       if (Config.TSOAutoMigration) {
         LogMan::Msg::IFmt("Migrating to shared memory mode");
+        Config.TSOEnabled = true;
 
         std::lock_guard<std::mutex> lkThreads(ThreadCreationMutex);
         LogMan::Throw::AFmt(Threads.size() == 1, "First MarkMemoryShared called must be before creating any threads");
@@ -1219,12 +1301,16 @@ namespace FEXCore::Context {
 
         // DebugStore also needs to be cleared
         Thread->DebugStore.clear();
+
+        return true;
       }
     }
+
+    return false;
   }
 
-  void MarkMemoryShared(FEXCore::Context::Context *CTX) {
-    CTX->MarkMemoryShared();
+  bool MarkMemoryShared(FEXCore::Context::Context *CTX) {
+    return CTX->MarkMemoryShared();
   }
 
   void Context::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
@@ -1238,7 +1324,6 @@ namespace FEXCore::Context {
     
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
-    Thread->DebugStore.erase(GuestRIP);
     Thread->LookupCache->Erase(GuestRIP);
   }
 
@@ -1269,6 +1354,7 @@ namespace FEXCore::Context {
   }
 
   // Debug interface
+#if FIXME
   void Context::CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
     uint64_t RIPBackup = Thread->CurrentFrame->State.rip;
     Thread->CurrentFrame->State.rip = RIP;
@@ -1310,6 +1396,7 @@ namespace FEXCore::Context {
     *Code = reinterpret_cast<uint8_t*>(HostCode);
     return true;
   }
+#endif
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
     uint64_t Result{};
@@ -1317,16 +1404,36 @@ namespace FEXCore::Context {
     return Result;
   }
 
-  IR::AOTIRCacheEntry *Context::LoadAOTIRCacheEntry(const std::string &filename) {
-    auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
+  Core::NamedRegion *Context::LoadNamedRegion(const std::string &filename, const std::string& Fingerprint) {
+
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
     }
-    return rv;
+    
+    auto base_filename = std::filesystem::path(filename).filename().string();
+
+    auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
+
+    auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-" + Fingerprint + "-";
+
+    // append optimization flags to the fileid
+    fileid += (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? "S" : "s";
+    fileid += Config.TSOEnabled ? "T" : "t";
+    fileid += Config.ABILocalFlags ? "L" : "l";
+    fileid += Config.ABINoPF ? "p" : "P";
+
+    return new Core::NamedRegion { .FileId = fileid, .Filename = filename, .Fingerprint = Fingerprint };
   }
 
-  void Context::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry) {
-    IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
+  Core::NamedRegion *Context::ReloadNamedRegion(Core::NamedRegion *NamedRegion) {
+    auto Filename = NamedRegion->Filename;
+    auto Fingerprint = NamedRegion->Fingerprint;
+    delete NamedRegion;
+    return LoadNamedRegion(Filename, Fingerprint);
+  }
+
+  void Context::UnloadNamedRegion(Core::NamedRegion *Entry) {
+    delete Entry;
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
     }

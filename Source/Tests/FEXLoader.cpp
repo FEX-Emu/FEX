@@ -36,6 +36,7 @@ $end_info$
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <set>
 #include <sstream>
@@ -185,6 +186,10 @@ bool RanAsInterpreter(const char *Program) {
   return ExecutedWithFD || strstr(Program, "FEXInterpreter") != nullptr;
 }
 
+bool RanAsAOTGen(const char *Program) {
+  return strstr(Program, "AOTGen") != nullptr;
+}
+
 bool IsInterpreterInstalled() {
   // The interpreter is installed if both the binfmt_misc handlers are available
   // Or if we were originally executed with FD. Which means the interpreter is installed
@@ -197,6 +202,7 @@ bool IsInterpreterInstalled() {
 
 int main(int argc, char **argv, char **const envp) {
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
+  const bool IsAOTGen = RanAsAOTGen(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
 
@@ -210,6 +216,9 @@ int main(int argc, char **argv, char **const envp) {
   );
 
   if (Program.first.empty()) {
+    if (IsAOTGen) {
+      printf("Usage: %s [options] path/to/executable\n", argv[0]);
+    }
     // Early exit if we weren't passed an argument
     return 0;
   }
@@ -239,9 +248,8 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
-  FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
-  FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
-  FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
+  FEX_CONFIG_OPT(IRCache, IRCACHE);
+  FEX_CONFIG_OPT(ObjCache, OBJCACHE);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
@@ -391,7 +399,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.MapMemory(Mapper, Unmapper)) {
     // failed to map
-    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+    LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
     return -ENOEXEC;
   }
 
@@ -417,61 +425,77 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-  if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
-    LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
-                      "Capture doesn't work with programs that fork.");
+  if (IRCache() || ObjCache()) {
+    LogMan::Msg::IFmt("Warning: OBJ/IR Caches are experimental, and might lead to crashes.");
   }
 
-  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+  if (IsAOTGen) {
+    LogMan::Msg::IFmt("Warning: AOT Generation is experimental and might not work.");
+  }
 
-    return open(filepath.c_str(), O_RDONLY);
-  });
+  auto GetCacheReader = [](bool IsIR) {
 
-  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
-    if (*AOTWrite) {
-      std::filesystem::resize_file(filepath, 0);
-      AOTWrite->seekp(0);
-      LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
-    } else {
-      LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
-    }
-    return AOTWrite;
-  });
+    auto JitCacheFolder = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "JitCache";
 
-  FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
-    auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+    return [JitCacheFolder=std::move(JitCacheFolder), IsIR](const std::string &fileid, const std::string &filename) -> std::optional<FEXCore::Context::CacheFDSet> {
+      auto EntryFolder = JitCacheFolder / fileid;
 
-    // Rename the temporary file to atomically update the file
-    std::filesystem::rename(TmpFilepath, NewFilepath);
-  });
+      std::error_code ec;
+      std::filesystem::create_directories(EntryFolder, ec);
 
-  if (AOTIRGenerate()) {
+      if (ec) {
+        return std::nullopt;
+      }
+
+      auto EntryPath = EntryFolder / "Path";
+      auto EntryIRIndex = EntryFolder / (IsIR? "IRIndex" : "OBJIndex");
+      auto EntryIRData = EntryFolder / (IsIR? "IRData" : "OBJData");
+      
+      // Generate Path entry
+      int PathFD = open(EntryPath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
+      if (PathFD != -1) {
+        write(PathFD, filename.c_str(), filename.size());
+        close(PathFD);
+      }
+
+      // Create or open cache files
+      int IndexFD = open(EntryIRIndex.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
+      int DataFD = open(EntryIRData.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
+
+      if (IndexFD == -1 || DataFD == -1) {
+
+        if (IndexFD != -1) {
+          close(IndexFD);
+        }
+
+        if (DataFD != -1) {
+          close(DataFD);
+        }
+
+        return std::nullopt;
+      } else {
+        return FEXCore::Context::CacheFDSet {
+          .IndexFD = IndexFD, .DataFD = DataFD
+        };
+      }
+    };
+  };
+
+  if (ObjCache()) {
+    FEXCore::Context::SetObjCacheOpener(CTX, GetCacheReader(false));
+  }
+
+  if (IRCache()) {
+    FEXCore::Context::SetIRCacheOpener(CTX, GetCacheReader(true));
+  }
+
+
+  if (IsAOTGen) {
     for(auto &Section: Loader.Sections) {
       FEX::AOT::AOTGenSection(CTX, Section);
     }
   } else {
     FEXCore::Context::RunUntilExit(CTX);
-  }
-
-  std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
-  if (!ec) {
-    FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
-      int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
-      if (fd != -1) {
-        write(fd, filename.c_str(), filename.size());
-        close(fd);
-      }
-    });
-  }
-
-  if (AOTIRCapture() || AOTIRGenerate()) {
-    FEXCore::Context::FinalizeAOTIRCache(CTX);
-    LogMan::Msg::IFmt("AOTIR Cache Stored");
   }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);

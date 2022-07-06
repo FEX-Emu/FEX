@@ -65,29 +65,31 @@ DEF_OP(ExitFunction) {
 
   aarch64::Register RipReg;
   uint64_t NewRIP;
+  bool IsInlineConst = IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP);
 
-  if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    Literal l_BranchHost{ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker};
-    Literal l_BranchGuest{NewRIP};
-
-    ldr(x0, &l_BranchHost);
+  // XXX: Don't allow block linking with code caching right now
+  if (IsInlineConst) {
+    auto l_BranchHost = InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol::SYMBOL_LITERAL_EXITFUNCTION_LINKER);
+    auto l_BranchGuest = InsertGuestRIPLiteral(NewRIP);
+    
+    ldr(x0, &l_BranchHost.Lit);
     blr(x0);
 
-    place(&l_BranchHost);
-    place(&l_BranchGuest);
+    PlaceRelocatedLiteral(l_BranchHost);
+    PlaceRelocatedLiteral(l_BranchGuest);
   } else {
-    RipReg = GetReg<RA_64>(Op->NewRIP.ID());
+    RipReg = GetReg<RA_64>(Op->Header.Args[0].ID());
 
     // L1 Cache
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
 
-    and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
-    add(x0, x0, Operand(x3, Shift::LSL, 4));
+    and_(TMP4, RipReg, LookupCache::L1_ENTRIES_MASK);
+    add(TMP1, TMP1, Operand(TMP4, Shift::LSL, 4));
 
-    ldp(x1, x0, MemOperand(x0));
-    cmp(x0, RipReg);
+    ldp(TMP2, TMP1, MemOperand(TMP1));
+    cmp(TMP1, RipReg);
     b(&FullLookup, Condition::ne);
-    br(x1);
+    br(TMP2);
 
     bind(&FullLookup);
     ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop)));
@@ -379,8 +381,7 @@ DEF_OP(Thunk) {
 
   mov(x0, GetReg<RA_64>(Op->ArgPtr.ID()));
 
-  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
-  LoadConstant(x2, (uintptr_t)thunkFn);
+  InsertNamedThunkRelocation(x2, Op->ThunkNameHash);
   blr(x2);
 
   PopDynamicRegsAndLR();

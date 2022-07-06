@@ -11,6 +11,7 @@ $end_info$
 */
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/CodeCache/ObjCache.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/ArchHelpers/Arm64.h"
@@ -383,37 +384,51 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     return Frame->Pointers.Common.DispatcherLoopTop;
   }
 
-  uintptr_t branch = (uintptr_t)(record) - 8;
+  uintptr_t LoadOp = (uintptr_t)(record) - 8;
+  uintptr_t BranchOp = LoadOp + 4;
+
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
 
-  auto offset = HostCode/4 - branch/4;
+  auto offset = HostCode/4 - LoadOp/4;
   if (IsInt26(offset)) {
     // optimal case - can branch directly
     // patch the code
-    vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+    vixl::aarch64::Assembler emit((uint8_t*)(LoadOp), 24);
     vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
     emit.b(offset);
     emit.FinalizeCode();
-    vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
+    vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)LoadOp, 24);
 
     // Add de-linking handler
-    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
-      vixl::aarch64::Assembler emit((uint8_t*)(branch), 24);
+    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [LoadOp, LinkerAddress] {
+      vixl::aarch64::Assembler emit((uint8_t*)(LoadOp), 24);
       vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
       Literal l_BranchHost{LinkerAddress};
       emit.ldr(x0, &l_BranchHost);
       emit.blr(x0);
       emit.place(&l_BranchHost);
       emit.FinalizeCode();
-      vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)branch, 24);
+      vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)LoadOp, 24);
     });
   } else {
-    // fallback case - do a soft-er link by patching the pointer
+    // fallback case - do a soft-er link by patching the pointer + blr to br
     record[0] = HostCode;
 
+    vixl::aarch64::Assembler emit((uint8_t*)(BranchOp), 24);
+    vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
+    emit.br(x0);
+    emit.FinalizeCode();
+    vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)BranchOp, 4);
+
     // Add de-linking handler
-    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [BranchOp, record, LinkerAddress]{
       record[0] = LinkerAddress;
+
+      vixl::aarch64::Assembler emit((uint8_t*)(BranchOp), 24);
+      vixl::CodeBufferCheckScope scope(&emit, 24, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
+      emit.blr(x0);
+      emit.FinalizeCode();
+      vixl::aarch64::CPU::EnsureIAndDCacheCoherency((void*)BranchOp, 4);
     });
   }
 
@@ -680,6 +695,9 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   this->RAData = RAData;
   this->DebugData = DebugData;
 
+  // Initialize
+  Relocations.resize(sizeof(ObjCacheRelocations));
+
   #ifndef NDEBUG
   LoadConstant(x0, Entry);
   #endif
@@ -713,6 +731,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   // X4-r18 = RA
 
   GuestEntry = GetCursorAddress<uint8_t *>();
+  CursorEntry = GetCursorOffset();
 
   if (GDBEnabled) {
     auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);
@@ -786,8 +805,12 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 
   if (DebugData) {
     DebugData->HostCodeSize = CodeEnd - GuestEntry;
-    DebugData->Relocations = &Relocations;
+    ((ObjCacheRelocations*)Relocations.data())->Bytes = Relocations.size() - sizeof(ObjCacheRelocations);
+    DebugData->RelocationsStorage = std::move(Relocations);
+    DebugData->Relocations = (FEXCore::ObjCacheRelocations*)DebugData->RelocationsStorage.data();
   }
+
+  Relocations.clear();
 
   this->IR = nullptr;
 

@@ -2,11 +2,11 @@
 
 #include "Common/JitSymbols.h"
 #include "FEXHeaderUtils/ScopedSignalMask.h"
+#include "FEXCore/Core/NamedRegion.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/Core/ObjectCache/ObjectCacheService.h"
+//#include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
-#include "Interface/IR/AOTIR.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -15,6 +15,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <optional>
 #include <stdint.h>
 
 
@@ -36,6 +37,9 @@ namespace FEXCore {
 class CodeLoader;
 class ThunkHandler;
 class GdbServer;
+namespace Core {
+  struct NamedRegion;
+}
 
 namespace CodeSerialize {
   class CodeObjectSerializeService;
@@ -96,9 +100,8 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(TSOAutoMigration, TSOAUTOMIGRATION);
       FEX_CONFIG_OPT(ABILocalFlags, ABILOCALFLAGS);
       FEX_CONFIG_OPT(ABINoPF, ABINOPF);
-      FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
-      FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
-      FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
+      FEX_CONFIG_OPT(IRCache, IRCACHE);
+      FEX_CONFIG_OPT(ObjCache, OBJCACHE);
       FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
       FEX_CONFIG_OPT(Core, CORE);
       FEX_CONFIG_OPT(MaxInstPerBlock, MAXINST);
@@ -112,7 +115,6 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
       FEX_CONFIG_OPT(GDBSymbols, GDBSYMBOLS);
       FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-      FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
       FEX_CONFIG_OPT(x86dec_SynchronizeRIPOnAllBlocks, X86DEC_SYNCHRONIZERIPONALLBLOCKS);
       FEX_CONFIG_OPT(EnableAVX, ENABLEAVX);
@@ -202,30 +204,38 @@ namespace FEXCore::Context {
     void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
     // Debugger interface
+#if FIXME
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
     uint64_t GetThreadCount() const;
     FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(uint64_t Thread);
     bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
     bool FindHostCodeForRIP(uint64_t RIP, uint8_t **Code);
+#endif
 
     struct GenerateIRResult {
-      FEXCore::IR::IRListView* IRList;
-      FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
+      FEXCore::IR::IRListView *IRList;
+      FEXCore::IR::RegisterAllocationData *RAData;
       uint64_t TotalInstructions;
       uint64_t TotalInstructionsLength;
       uint64_t StartAddr;
       uint64_t Length;
+      std::vector<std::pair<uint64_t, uint64_t>> Ranges;
     };
-    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo);
+    [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP,uint64_t MinAddr, uint64_t MaxAddr, bool ExtendedDebugInfo);
+
+    static constexpr unsigned CODE_NONE = 0;
+    static constexpr unsigned CODE_IR = 1;
+    static constexpr unsigned CODE_OBJ = 2;
 
     struct CompileCodeResult {
       void* CompiledCode;
-      FEXCore::IR::IRListView* IRData;
-      FEXCore::Core::DebugData* DebugData;
-      FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
-      bool GeneratedIR;
+      const FEXCore::IR::IRListView *IRData;
+      FEXCore::Core::DebugData *DebugData;
+      const FEXCore::IR::RegisterAllocationData *RAData;
+      unsigned GeneratedCode;
       uint64_t StartAddr;
       uint64_t Length;
+      std::vector<std::pair<uint64_t, uint64_t>> Ranges;
     };
     [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
@@ -294,40 +304,29 @@ namespace FEXCore::Context {
 
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
-    IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const std::string &filename);
-    void UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry);
+    FEXCore::Core::NamedRegion *LoadNamedRegion(const std::string &filename, const std::string& Fingerprint);
+    FEXCore::Core::NamedRegion *ReloadNamedRegion(FEXCore::Core::NamedRegion *NamedRegion);
+    void UnloadNamedRegion(FEXCore::Core::NamedRegion *Entry);
 
     FEXCore::JITSymbols Symbols;
 
     // Public for threading
     void ExecutionThread(FEXCore::Core::InternalThreadState *Thread);
 
-    void FinalizeAOTIRCache() {
-      IRCaptureCache.FinalizeAOTIRCache();
+    void SetIRCacheOpener(CacheOpenerHandler CacheOpener) {
+      IRCacheOpener = CacheOpener;
     }
 
-    void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
-      IRCaptureCache.WriteFilesWithCode(Writer);
-    }
-
-    void SetAOTIRLoader(std::function<int(const std::string&)> CacheReader) {
-      IRCaptureCache.SetAOTIRLoader(CacheReader);
-    }
-
-    void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) {
-      IRCaptureCache.SetAOTIRWriter(CacheWriter);
-    }
-
-    void SetAOTIRRenamer(std::function<void(const std::string&)> CacheRenamer) {
-      IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
+    void SetObjCacheOpener(CacheOpenerHandler CacheOpener) {
+      ObjCacheOpener = CacheOpener;
     }
 
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
 
-    void MarkMemoryShared();
+    bool MarkMemoryShared();
 
-    bool IsTSOEnabled() { return (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled; }
+    bool IsTSOEnabled() { return Config.TSOEnabled; }
 
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
@@ -361,8 +360,10 @@ namespace FEXCore::Context {
     std::mutex ExitMutex;
     std::unique_ptr<GdbServer> DebugServer;
 
-    IR::AOTIRCaptureCache IRCaptureCache;
-    std::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
+    CacheOpenerHandler IRCacheOpener;
+    CacheOpenerHandler ObjCacheOpener;
+    
+    //std::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
 
     bool StartPaused = false;
     bool IsMemoryShared = false;

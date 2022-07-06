@@ -89,7 +89,7 @@ namespace {
   };
 
   struct RegisterGraph {
-    IR::RegisterAllocationData::UniquePtr AllocData;
+    std::unique_ptr<RegisterAllocationData> AllocData;
     RegisterSet Set;
     std::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
@@ -107,8 +107,8 @@ namespace {
     Graph->Set.ClassCount = ClassCount;
     Graph->Set.Classes.resize(ClassCount);
 
-    // Allocate default nodes
-    ResetRegisterGraph(Graph, DEFAULT_NODE_COUNT);
+    // Don't allocate default nodes, let them be allocated on first use
+    // ResetRegisterGraph(Graph, DEFAULT_NODE_COUNT);
     return Graph;
   }
 
@@ -280,7 +280,7 @@ namespace {
        * Top 32bits is the class, lower 32bits is the register
        */
       RegisterAllocationData* GetAllocationData() override;
-      RegisterAllocationData::UniquePtr PullAllocationData() override;
+      std::unique_ptr<RegisterAllocationData> PullAllocationData() override;
 
     private:
       using BlockInterferences = std::vector<IR::NodeID>;
@@ -377,7 +377,7 @@ namespace {
     return Graph->AllocData.get();
   }
 
-  RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
+  std::unique_ptr<RegisterAllocationData> ConstrainedRAPass::PullAllocationData() {
     return std::move(Graph->AllocData);
   }
 

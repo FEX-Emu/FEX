@@ -136,7 +136,7 @@ public:
     ListSize = Data->ListSize();
 
     if (_IsCopy) {
-      IRDataInternal = malloc(DataSize + ListSize);
+      IRDataInternal = FEXCore::Allocator::malloc(DataSize + ListSize);
       ListDataInternal = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRDataInternal) + DataSize);
       memcpy(IRDataInternal, reinterpret_cast<void*>(Data->DataBegin()), DataSize);
       memcpy(ListDataInternal, reinterpret_cast<void*>(Data->ListBegin()), ListSize);
@@ -153,7 +153,7 @@ public:
     DataSize = Old->DataSize;
     ListSize = Old->ListSize;
     if (_IsCopy) {
-      IRDataInternal = malloc(DataSize + ListSize);
+      IRDataInternal = FEXCore::Allocator::malloc(DataSize + ListSize);
       ListDataInternal = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(IRDataInternal) + DataSize);
       memcpy(IRDataInternal, Old->IRDataInternal, DataSize);
       memcpy(ListDataInternal, Old->ListDataInternal, ListSize);
@@ -165,8 +165,15 @@ public:
 
   ~IRListView() {
     if (IsCopy()) {
-      free (IRDataInternal);
+      FEXCore::Allocator::free (IRDataInternal);
       // ListData is just offset from IRData
+    }
+  }
+
+  void operator delete(void *p) {
+    auto r = (IRListView*)p;
+    if (!r->IsShared()) {
+      FEXCore::Allocator::free(r);
     }
   }
 
@@ -397,14 +404,6 @@ private:
   size_t ListSize;
   uint64_t Flags {0};
   uint8_t InlineData[0];
-};
-
-struct IRListViewDeleter {
-  void operator()(IRListView* r) {
-    if (!r->IsShared()) {
-      delete r;
-    }
-  }
 };
 }
 

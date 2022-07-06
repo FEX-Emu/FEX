@@ -1,4 +1,7 @@
 #include "Common/Paths.h"
+#include <FEXCore/HLE/SourcecodeResolver.h>
+#include "Interface/Core/CodeCache/IRCache.h"
+#include "FEXCore/Core/NamedRegion.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -171,31 +174,24 @@ namespace FEXCore::Context {
     return CTX->CPUID.RunFunctionName(Function, Leaf, CPU);
   }
 
-  void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader) {
-    CTX->SetAOTIRLoader(CacheReader);
+  void SetIRCacheOpener(FEXCore::Context::Context *CTX, CacheOpenerHandler CacheOpener) {
+    CTX->SetIRCacheOpener(CacheOpener);
   }
 
-  void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) {
-    CTX->SetAOTIRWriter(CacheWriter);
+  void SetObjCacheOpener(FEXCore::Context::Context *CTX, CacheOpenerHandler CacheOpener) {
+    CTX->SetObjCacheOpener(CacheOpener);
   }
 
-  void SetAOTIRRenamer(FEXCore::Context::Context *CTX, std::function<void(const std::string&)> CacheRenamer) {
-    CTX->SetAOTIRRenamer(CacheRenamer);
+  Core::NamedRegion *LoadNamedRegion(FEXCore::Context::Context *CTX, const std::string &Name, const std::string& Fingerprint) {
+    return CTX->LoadNamedRegion(Name, Fingerprint);
   }
 
-  void FinalizeAOTIRCache(FEXCore::Context::Context *CTX) {
-    CTX->FinalizeAOTIRCache();
+  Core::NamedRegion *ReloadNamedRegion(FEXCore::Context::Context *CTX, FEXCore::Core::NamedRegion *NamedRegion) {
+    return CTX->ReloadNamedRegion(NamedRegion);
   }
 
-  void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
-    CTX->WriteFilesWithCode(Writer);
-  }
-
-  IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(FEXCore::Context::Context *CTX, const std::string &Name) {
-    return CTX->LoadAOTIRCacheEntry(Name);
-  }
-  void UnloadAOTIRCacheEntry(FEXCore::Context::Context *CTX, IR::AOTIRCacheEntry *Entry) {
-    return CTX->UnloadAOTIRCacheEntry(Entry);
+  void UnloadNamedRegion(FEXCore::Context::Context *CTX, Core::NamedRegion *Entry) {
+    return CTX->UnloadNamedRegion(Entry);
   }
 
   CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
@@ -203,6 +199,7 @@ namespace FEXCore::Context {
   }
 
 namespace Debug {
+  #if FIXME
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
     CTX->CompileRIP(CTX->ParentThread, RIP);
   }
@@ -221,7 +218,7 @@ namespace Debug {
   bool FindHostCodeForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, uint8_t **Code) {
     return CTX->FindHostCodeForRIP(RIP, Code);
   }
-
+#endif
   // XXX:
   // bool FindIRForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir) {
   //   return CTX->FindIRForRIP(RIP, ir);

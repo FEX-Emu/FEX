@@ -1,7 +1,7 @@
 #!/bin/bash
-FEX=${1:-FEXLoader}
-echo Using $FEX
-for fileid in ~/.fex-emu/aotir/*.path; do
+FEXAOTGen=${1:-FEXAOTGen}
+echo Using $FEXAOTGen
+for fileid in ~/.fex-emu/JitCache/*/Path; do
 	filename=`cat "$fileid"`
 	args=""
 	if [ "${fileid: -6 : 1}" == "P" ]; then
@@ -25,13 +25,9 @@ for fileid in ~/.fex-emu/aotir/*.path; do
 	if [ "${fileid: -9 : 1}" == "S" ]; then
 		args="$args --smc=full"
 	else
-		args="$args --smc=mman"
+		args="$args --smc=mtrack"
 	fi
-		
-	if [ -f "${fileid%.path}.aotir" ]; then
-		echo "`basename $fileid` has already been generated"
-	else
-		echo "Processing `basename $fileid` ($filename) with $args"
-		$FEX --aotirgenerate $args "$filename"
-	fi
+
+	echo "Processing `basename $fileid` ($filename) with $args"
+	$FEXAOTGen $args "$filename"
 done

@@ -56,6 +56,19 @@ if(TERMUX_BUILD)
       WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
     )"
   )
+
+  add_custom_target(FEXAOTGen ALL
+    COMMAND "cp" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXAOTGen"
+    DEPENDS FEXLoader
+  )
+
+  install(
+    CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXAOTGen\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND cp FEXLoader FEXAOTGen
+      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+    )"
+  )
 else()
   add_custom_target(FEXInterpreter ALL
     COMMAND "ln" "-f" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
@@ -69,9 +82,22 @@ else()
       WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
     )"
   )
+
+  add_custom_target(FEXAOTGen ALL
+    COMMAND "ln" "-f" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXAOTGen"
+    DEPENDS FEXLoader
+  )
+
+  install(
+    CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXAOTGen\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND ln -f FEXLoader FEXAOTGen
+      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+    )"
+  )
 endif()
 
-install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
+install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXOptimiseCaches.sh" DESTINATION bin RENAME FEXOptimiseCaches)
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   # Check for conflicting binfmt before installing

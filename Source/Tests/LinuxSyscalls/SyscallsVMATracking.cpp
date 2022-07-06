@@ -6,6 +6,7 @@ desc: VMA Tracking
 $end_info$
 */
 
+#include "FEXCore/Core/Context.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 
 namespace FEX::HLE {
@@ -197,8 +198,8 @@ void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context *CTX, ui
         // If linked to a Mapped Resource, remove from linked list and possibly delete the Mapped Resource
         if (Current->Resource) {
           if (ListRemove(Current) && Current->Resource != PreservedMappedResource) {
-            if (Current->Resource->AOTIRCacheEntry) {
-              FEXCore::Context::UnloadAOTIRCacheEntry(CTX, Current->Resource->AOTIRCacheEntry);
+            if (Current->Resource->NamedRegion) {
+              FEXCore::Context::UnloadNamedRegion(CTX, Current->Resource->NamedRegion);
             }
             MappedResources.erase(Current->Resource->Iterator);
           }
@@ -350,8 +351,8 @@ uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context 
   do {
     if (Entry->second.Resource == Resource) {
       if (ListRemove(&Entry->second)) {
-        if (Entry->second.Resource->AOTIRCacheEntry) {
-          FEXCore::Context::UnloadAOTIRCacheEntry(CTX, Entry->second.Resource->AOTIRCacheEntry);
+        if (Entry->second.Resource->NamedRegion) {
+          FEXCore::Context::UnloadNamedRegion(CTX, Entry->second.Resource->NamedRegion);
         }
         MappedResources.erase(Entry->second.Resource->Iterator);
       }
@@ -363,4 +364,14 @@ uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context 
 
   return ShmLength;
 }
+
+
+void SyscallHandler::VMATracking::ReloadNamedRegionsUnsafe(FEXCore::Context::Context *CTX) {
+  for(auto &Res: MappedResources) {
+    if (Res.second.NamedRegion) {
+      Res.second.NamedRegion = FEXCore::Context::ReloadNamedRegion(CTX, Res.second.NamedRegion);
+    }
+  }
+}
+
 }

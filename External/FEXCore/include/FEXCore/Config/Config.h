@@ -35,13 +35,15 @@ namespace Handler {
       return "3";
     return "0";
   }
-  static inline std::string_view CacheObjectCodeHandler(std::string_view Value) {
+  static inline std::string_view ConfigCodeCacheModeHandler(std::string_view Value) {
     if (Value == "none")
       return "0";
     else if (Value == "read")
       return "1";
     else if (Value == "write")
       return "2";
+    else if (Value == "readwrite")
+      return "3";
     return "0";
   }
 }
@@ -64,10 +66,17 @@ namespace Handler {
     CONFIG_SMC_MMAN,
   };
 
-  enum ConfigObjectCodeHandler {
-    CONFIG_NONE,
-    CONFIG_READ,
-    CONFIG_READWRITE,
+  enum ConfigCodeCacheMode {
+    CONFIG_CACHE_DISABLED = 0,
+    
+    CONFIG_CACHE_READ = 1 << 0,
+    CONFIG_CACHE_WRITE = 1 << 1,
+
+    CONFIG_CACHE_READWRITE = CONFIG_CACHE_READ | CONFIG_CACHE_WRITE,
+
+    CONFIG_CACHE_MAX,
+    
+    CONFIG_CACHE_AUTO = -1
   };
 
   enum class LayerType {

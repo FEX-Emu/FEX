@@ -28,9 +28,9 @@ namespace Core {
   struct InternalThreadState;
 }
 
-namespace CodeSerialize {
-  struct CodeObjectFileSection;
-}
+struct ObjCacheFragment;
+struct ObjCacheRelocations;
+
 
 namespace CPU {
   struct CPUBackendFeatures {
@@ -73,9 +73,10 @@ namespace CPU {
      * Is actually a function pointer of type `void (FEXCore::Core::ThreadState *Thread)
      */
     [[nodiscard]] virtual void *CompileCode(uint64_t Entry,
-                                            FEXCore::IR::IRListView const *IR,
-                                            FEXCore::Core::DebugData *DebugData,
-                                            FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) = 0;
+                                            const FEXCore::IR::IRListView *const IR,
+                                            FEXCore::Core::DebugData *const DebugData,
+                                            const FEXCore::IR::RegisterAllocationData *const RAData,
+                                            bool GDBEnabled) = 0;
 
     /**
      * @brief Relocates a block of code from the JIT code object cache
@@ -85,7 +86,7 @@ namespace CPU {
      *
      * @return An executable function pointer relocated from the cache object
      */
-    [[nodiscard]] virtual void *RelocateJITObjectCode(uint64_t Entry, CodeSerialize::CodeObjectFileSection const *SerializationData) { return nullptr; }
+    [[nodiscard]] virtual void *RelocateJITObjectCode(uint64_t Entry, const ObjCacheFragment *const HostCode, const ObjCacheRelocations *const Relocations) = 0;
 
     /**
      * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required
@@ -113,11 +114,6 @@ namespace CPU {
     [[nodiscard]] virtual bool NeedsOpDispatch() = 0;
 
     virtual void ClearCache() {}
-
-    /**
-     * @brief Clear any relocations after JIT compiling
-     */
-    virtual void ClearRelocations() {}
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 

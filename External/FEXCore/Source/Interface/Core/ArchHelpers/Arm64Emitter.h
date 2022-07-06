@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
-#include "Interface/Core/ObjectCache/Relocations.h"
+#include "FEXCore/Core/CPURelocations.h"
 
 #include <aarch64/assembler-aarch64.h>
 #include <aarch64/constants-aarch64.h>

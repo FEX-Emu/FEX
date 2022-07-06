@@ -445,13 +445,13 @@ namespace JSON {
       }
     }
 
-    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CACHEOBJECTCODECOMPILATION)) {
-      FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OBJCACHE)) {
+      FEX_CONFIG_OPT(ObjCache, OBJCACHE);
       FEX_CONFIG_OPT(Core, CORE);
 
-      if (CacheObjectCodeCompilation() && Core() == FEXCore::Config::CONFIG_INTERPRETER) {
+      if (ObjCache() && Core() == FEXCore::Config::CONFIG_INTERPRETER) {
         // If running the interpreter then disable cache code compilation
-        FEXCore::Config::Erase(FEXCore::Config::CONFIG_CACHEOBJECTCODECOMPILATION);
+        FEXCore::Config::Erase(FEXCore::Config::CONFIG_OBJCACHE);
       }
     }
 

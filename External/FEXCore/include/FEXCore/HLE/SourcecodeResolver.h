@@ -7,10 +7,6 @@
 
 #include <fmt/format.h>
 
-namespace FEXCore::IR {
-  struct AOTIRCacheEntry;
-}
-
 namespace FEXCore::HLE {
 
 struct SourcecodeLineMapping {

@@ -58,7 +58,11 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 #endif
 }
 
-void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
+void *InterpreterCore::CompileCode(uint64_t Entry,
+                                  const FEXCore::IR::IRListView *const IR,
+                                  [[maybe_unused]] FEXCore::Core::DebugData *const DebugData,
+                                  [[maybe_unused]] const FEXCore::IR::RegisterAllocationData *const RAData,
+                                  bool GDBEnabled) {
 
   const auto IRSize = AlignUp(IR->GetInlineSize(), 16);
   const auto MaxSize = IRSize + Dispatcher::MaxInterpreterTrampolineSize + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;

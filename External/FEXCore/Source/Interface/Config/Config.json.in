@@ -39,15 +39,24 @@
           "0 will auto detect."
         ]
       },
-      "CacheObjectCodeCompilation": {
+      "IRCache": {
         "Type": "uint32",
-        "Default": "FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE",
-        "TextDefault": "none",
-        "Choices": [ "none", "read", "readwrite" ],
-        "ArgumentHandler": "CacheObjectCodeHandler",
+        "Default": "FEXCore::Config::ConfigCodeCacheMode::CONFIG_CACHE_DISABLED",
+        "TextDefault": "disabled",
+        "Choices": [ "disabled", "read", "write", "readwrite" ],
+        "ArgumentHandler": "ConfigCodeCacheModeHandler",
         "Desc": [
-          "Cache JIT object code to drive.",
-          "Allows JIT code to be shared between applications"
+          "Cache JIT IR Code to drive."
+        ]
+      },
+      "ObjCache": {
+        "Type": "uint32",
+        "Default": "FEXCore::Config::ConfigCodeCacheMode::CONFIG_CACHE_DISABLED",
+        "TextDefault": "disabled",
+        "Choices": [ "disabled", "read", "write", "readwrite" ],
+        "ArgumentHandler": "ConfigCodeCacheModeHandler",
+        "Desc": [
+          "Cache JIT Object Code to drive."
         ]
       },
       "EnableAVX": {
@@ -329,29 +338,6 @@
       }
     },
     "Misc": {
-      "AOTIRCapture": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Captures IR and generates an AOT IR cache.",
-          "Captures both the loaded executable and libraries it loads."
-        ]
-      },
-      "AOTIRGenerate": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Scans file for executable code and generates an AOT IR cache.",
-          "Does not run the executable."
-        ]
-      },
-      "AOTIRLoad": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Loads an AOT IR cache for the loaded executable."
-        ]
-      },
       "ServerSocketPath": {
         "Type": "str",
         "Default": "",

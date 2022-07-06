@@ -48,7 +48,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
     /**
      * @brief Returns and transfers ownership of the register and class map array
      */
-    virtual std::unique_ptr<RegisterAllocationData, RegisterAllocationDataDeleter> PullAllocationData() = 0;
+    virtual std::unique_ptr<RegisterAllocationData> PullAllocationData() = 0;
     /**  @} */
 
   protected:

@@ -50,9 +50,10 @@ public:
   [[nodiscard]] std::string GetName() override { return "JIT"; }
 
   [[nodiscard]] void *CompileCode(uint64_t Entry,
-                                  FEXCore::IR::IRListView const *IR,
-                                  FEXCore::Core::DebugData *DebugData,
-                                  FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
+                                  const FEXCore::IR::IRListView *const IR,
+                                  FEXCore::Core::DebugData *const DebugData,
+                                  const FEXCore::IR::RegisterAllocationData *const RAData,
+                                  bool GDBEnabled) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -61,8 +62,6 @@ public:
   void ClearCache() override;
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
-
-  void ClearRelocations() override { Relocations.clear(); }
 
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
@@ -146,7 +145,7 @@ private:
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
   IR::RegisterAllocationPass *RAPass;
-  IR::RegisterAllocationData *RAData;
+  const IR::RegisterAllocationData *RAData;
   FEXCore::Core::DebugData *DebugData;
 
   void ResetStack();
@@ -159,7 +158,7 @@ private:
     /**
      * @brief A literal pair relocation object for named symbol literals
      */
-    struct NamedSymbolLiteralPair {
+    struct RelocatedLiteralPair {
       Literal<uint64_t> Lit;
       Relocation MoveABI{};
     };
@@ -178,31 +177,36 @@ private:
      * @param Reg - The GPR to move the guest RIP in to
      * @param Constant - The guest RIP that will be relocated
      */
-    void InsertGuestRIPMove(vixl::aarch64::Register Reg, uint64_t Constant);
+    void InsertGuestRIPMove(vixl::aarch64::Register Reg, const uint64_t GuestRIP);
+
+    RelocatedLiteralPair InsertGuestRIPLiteral(const uint64_t GuestRIP);
 
     /**
      * @brief Inserts a named symbol as a literal in memory
      *
-     * Need to use `PlaceNamedSymbolLiteral` with the return value to place the literal in the desired location
+     * Need to use `PlaceRelocatedLiteral` with the return value to place the literal in the desired location
      *
      * @param Op The named symbol to place
      *
-     * @return A temporary `NamedSymbolLiteralPair`
+     * @return A temporary `RelocatedLiteralPair`
      */
-    NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+    RelocatedLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
 
     /**
      * @brief Place the named symbol literal relocation in memory
      *
      * @param Lit - Which literal to place
      */
-    void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
+    void PlaceRelocatedLiteral(RelocatedLiteralPair &Lit);
 
-    std::vector<FEXCore::CPU::Relocation> Relocations;
+    std::vector<uint8_t> Relocations;
+
+    void *RelocateJITObjectCode(uint64_t Entry, const ObjCacheFragment *const HostCode, const ObjCacheRelocations *const Relocations) override;
 
     ///< Relocation code loading
-    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, const ObjCacheRelocations *const Relocations);
 
+    uint64_t CursorEntry{};
   /**  @} */
 
   uint32_t SpillSlots{};

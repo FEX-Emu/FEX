@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include "Linux/Utils/ELFContainer.h"
 
@@ -22,9 +23,17 @@ struct ELFParser {
   ::ELFLoader::ELFContainer::ELFType type {::ELFLoader::ELFContainer::TYPE_NONE};
 
   std::string InterpreterElf;
-  int fd {-1};
+  std::string BuildID;
 
-  bool ReadElf(int NewFD) {
+  int fd {-1};
+  bool OwnFd { false };
+
+  static bool pread_all(int fd, void *buf, size_t nbytes, __off_t offset) { 
+    return pread(fd, buf, nbytes, offset) == nbytes;
+  }
+
+  // This must not modify the file pointer or otherwise the state of the file
+  bool ReadElf(int NewFD, bool Silent = true) {
     Closefd();
     static_assert(EI_CLASS == 4);
 
@@ -36,25 +45,18 @@ struct ELFParser {
       return false;
     }
 
-    // Get file size
-    off_t Size = lseek(fd, 0, SEEK_END);
-
-    if (Size < 4) {
-      // Likely invalid can't fit header
-      return false;
-    }
-
-    // Reset to beginning
-    lseek(fd, 0, SEEK_SET);
-
     uint8_t header[5];
-    if (pread(fd, header, sizeof(header), 0) == -1) {
-      LogMan::Msg::EFmt("Failed to read elf header from '{}'", fd);
+    if (!pread_all(fd, header, sizeof(header), 0)) {
+      if (!Silent) {
+        LogMan::Msg::EFmt("Failed to read elf header from '{}'", fd);
+      }
       return false;
     }
 
     if (header[0] != ELFMAG0 || header[1] != ELFMAG1 || header[2] != ELFMAG2 || header[3] != ELFMAG3) {
-      LogMan::Msg::EFmt("Elf header from '{}' doesn't match ELF MAGIC", fd);
+      if (!Silent) {
+        LogMan::Msg::EFmt("Elf header from '{}' doesn't match ELF MAGIC", fd);
+      }
       return false;
     }
 
@@ -62,8 +64,10 @@ struct ELFParser {
 
     if (header[EI_CLASS] == ELFCLASS32) {
       Elf32_Ehdr hdr32;
-      if (pread(fd, &hdr32, sizeof(hdr32), 0) == -1) {
-        LogMan::Msg::EFmt("Failed to read Ehdr32 from '{}'", fd);
+      if (!pread_all(fd, &hdr32, sizeof(hdr32), 0)) {
+        if (!Silent) {
+          LogMan::Msg::EFmt("Failed to read Ehdr32 from '{}'", fd);
+        }
         return false;
       }
 
@@ -71,13 +75,17 @@ struct ELFParser {
 
       // check elf header
       if (hdr32.e_ehsize != sizeof(hdr32)) {
-        LogMan::Msg::EFmt("Invalid e_ehsize32 from '{}'", fd);
+        if (!Silent) {
+          LogMan::Msg::EFmt("Invalid e_ehsize32 from '{}'", fd);
+        }
         return false;
       }
 
       // check program header
       if (hdr32.e_phentsize != sizeof(Elf32_Phdr)) {
-        LogMan::Msg::EFmt("Invalid e_phentsize32 from '{}'", fd);
+        if (!Silent) {
+          LogMan::Msg::EFmt("Invalid e_phentsize32 from '{}'", fd);
+        }
         return false;
       }
 
@@ -102,14 +110,18 @@ struct ELFParser {
       #undef COPY
 
       if (ehdr.e_machine != EM_386) {
-        LogMan::Msg::EFmt("Invalid e_machine from '{}'", fd);
+        if (!Silent) {
+          LogMan::Msg::EFmt("Invalid e_machine from '{}'", fd);
+        }
         return false;
       }
 
       type = ::ELFLoader::ELFContainer::TYPE_X86_32;
     } else if (header[EI_CLASS] == ELFCLASS64) {
-      if (pread(fd, &ehdr, sizeof(ehdr), 0) == -1) {
-        LogMan::Msg::EFmt("Failed to read Ehdr64 from '{}'", fd);
+      if (!pread_all(fd, &ehdr, sizeof(ehdr), 0)) {
+        if (!Silent) {
+          LogMan::Msg::EFmt("Failed to read Ehdr64 from '{}'", fd);
+        }
         return false;
       }
 
@@ -117,39 +129,51 @@ struct ELFParser {
 
       // check elf header
       if (ehdr.e_ehsize != sizeof(ehdr)) {
-        LogMan::Msg::EFmt("Invalid e_ehsize64 from '{}'", fd);
+        if (!Silent) {
+          LogMan::Msg::EFmt("Invalid e_ehsize64 from '{}'", fd);
+        }
         return false;
       }
 
       // check program header
       if (ehdr.e_phentsize != sizeof(Elf64_Phdr)) {
-        LogMan::Msg::EFmt("Invalid e_phentsize64 from '{}'", fd);
+        if (!Silent) {
+          LogMan::Msg::EFmt("Invalid e_phentsize64 from '{}'", fd);
+        }
         return false;
       }
 
       if (ehdr.e_machine != EM_X86_64) {
-        LogMan::Msg::EFmt("Invalid e_machine64 from '{}'", fd);
+        if (!Silent) {
+          LogMan::Msg::EFmt("Invalid e_machine64 from '{}'", fd);
+        }
         return false;
       }
 
       type = ::ELFLoader::ELFContainer::TYPE_X86_64;
     } else {
       // Unexpected elf type
-      LogMan::Msg::EFmt("Unexpected elf type from '{}'", fd);
+      if (!Silent) {
+        LogMan::Msg::EFmt("Unexpected elf type from '{}'", fd);
+      }
       return false;
     }
 
     // sanity check program header count
     if (ehdr.e_phnum < 1 || ehdr.e_phnum > 65536 / ehdr.e_phentsize) {
-      LogMan::Msg::EFmt("Too many program headers '{}'", fd);
+      if (!Silent) {
+        LogMan::Msg::EFmt("Too many program headers '{}'", fd);
+      }
       return false;
     }
 
     if (type == ::ELFLoader::ELFContainer::TYPE_X86_32) {
       Elf32_Phdr phdrs32[ehdr.e_phnum];
 
-      if (pread(fd, phdrs32, sizeof(Elf32_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
-        LogMan::Msg::EFmt("Failed to read phdr32 from '{}'", fd);
+      if (!pread_all(fd, phdrs32, sizeof(Elf32_Phdr) * ehdr.e_phnum, ehdr.e_phoff)) {
+        if (!Silent) {
+          LogMan::Msg::EFmt("Failed to read phdr32 from '{}'", fd);
+        }
         return false;
       }
 
@@ -173,8 +197,10 @@ struct ELFParser {
     } else {
       phdrs.resize(ehdr.e_phnum);
 
-      if (pread(fd, &phdrs[0], sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
-        LogMan::Msg::EFmt("Failed to read phdr64 from '{}'", fd);
+      if (!pread_all(fd, &phdrs[0], sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff)) {
+        if (!Silent) {
+          LogMan::Msg::EFmt("Failed to read phdr64 from '{}'", fd);
+        }
         return false;
       }
     }
@@ -183,9 +209,53 @@ struct ELFParser {
       if (phdr.p_type == PT_INTERP) {
         InterpreterElf.resize(phdr.p_filesz);
 
-        if (pread(fd, &InterpreterElf[0], phdr.p_filesz, phdr.p_offset) == -1) {
-          LogMan::Msg::EFmt("Failed to read interpreter from '{}'", fd);
+        if (!pread_all(fd, &InterpreterElf[0], phdr.p_filesz, phdr.p_offset)) {
+          if (!Silent) {
+            LogMan::Msg::EFmt("Failed to read interpreter from '{}'", fd);
+          }
           return false;
+        }
+      } else if (phdr.p_type == PT_NOTE && phdr.p_filesz < 1024) {
+        uint8_t temp[phdr.p_filesz];
+        if (!pread_all(fd, temp, phdr.p_filesz, phdr.p_offset)) {
+          if (!Silent) {
+            LogMan::Msg::EFmt("Failed to read PT_NOTE from '{}'", fd);
+          }
+          return false;
+        }
+
+        auto Available = phdr.p_filesz;
+        auto Current = temp;
+        while (Available > (12 + 4)) {
+          auto note_hdr = (uint32_t *)Current;
+          Available -= 12;
+          Current += 12;
+          if (note_hdr[2] == NT_GNU_BUILD_ID && note_hdr[0] == 4 && memcmp(&note_hdr[3], "GNU", 4) == 0) {
+            Available -= 4;
+            Current += 4;
+
+            if (note_hdr[1] <= Available) {
+              BuildID.resize(note_hdr[1] * 2);
+              for (uint32_t i = 0; i < note_hdr[1]; i++) {
+                auto val = *Current++;
+                static constexpr auto toHEX = "0123456789abcdef";
+                BuildID[i * 2 + 0] = toHEX[val >> 4];
+                BuildID[i * 2 + 1] = toHEX[val & 15];
+              }
+              break;
+            } else {
+              break;
+            }
+          } else {
+            auto SkipCount = FEXCore::AlignUp(note_hdr[0], 4) + FEXCore::AlignUp(note_hdr[1], 4);
+
+            if (SkipCount <= Available) {
+              Available -= SkipCount;
+              Current += SkipCount;
+            } else {
+              break;
+            }
+          }
         }
       }
     }
@@ -224,13 +294,13 @@ struct ELFParser {
   }
   
   bool ReadElf(const std::string &file) {
-    int NewFD = ::open(file.c_str(), O_RDONLY);
-
+    int NewFD = ::open(file.c_str(), O_RDONLY | O_NONBLOCK);
+    OwnFd = true;
     return ReadElf(NewFD);
   }
 
   void Closefd() {
-    if (fd != -1) {
+    if (OwnFd && fd != -1) {
       close(fd);
       fd = -1;
     }

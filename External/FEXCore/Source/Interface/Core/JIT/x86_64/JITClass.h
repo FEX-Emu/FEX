@@ -9,7 +9,7 @@ $end_info$
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
-#include "Interface/Core/ObjectCache/Relocations.h"
+#include "FEXCore/Core/CPURelocations.h"
 
 #define XBYAK64
 #include <xbyak/xbyak.h>
@@ -58,9 +58,10 @@ public:
   [[nodiscard]] std::string GetName() override { return "JIT"; }
 
   [[nodiscard]] void *CompileCode(uint64_t Entry,
-                                  FEXCore::IR::IRListView const *IR,
-                                  FEXCore::Core::DebugData *DebugData,
-                                  FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
+                                  const FEXCore::IR::IRListView *const IR,
+                                  FEXCore::Core::DebugData *const DebugData,
+                                  const FEXCore::IR::RegisterAllocationData *const RAData,
+                                  bool GDBEnabled) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -70,20 +71,18 @@ public:
 
   static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
 
-  void ClearRelocations() override { Relocations.clear(); }
-
 private:
 
   /**
    * @name Relocations
    * @{ */
-    uint64_t GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+    uint64_t  GetNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
     void LoadConstantWithPadding(Xbyak::Reg Reg, uint64_t Constant);
 
     /**
      * @brief A literal pair relocation object for named symbol literals
      */
-    struct NamedSymbolLiteralPair {
+    struct RelocatedLiteralPair {
       Label Offset;
       Relocation MoveABI{};
     };
@@ -102,18 +101,21 @@ private:
      * @param Reg - The GPR to move the guest RIP in to
      * @param Constant - The guest RIP that will be relocated
      */
-    void InsertGuestRIPMove(Xbyak::Reg Reg, uint64_t Constant);
+    void InsertGuestRIPMove(Xbyak::Reg Reg, const uint64_t GuestRIP);
+
+    /*  */
+    RelocatedLiteralPair InsertGuestRIPLiteral(const uint64_t GuestRIP);
 
     /**
      * @brief Inserts a named symbol as a literal in memory
      *
-     * Need to use `PlaceNamedSymbolLiteral` with the return value to place the literal in the desired location
+     * Need to use `PlaceRelocatedLiteral` with the return value to place the literal in the desired location
      *
      * @param Op The named symbol to place
      *
-     * @return A temporary `NamedSymbolLiteralPair`
+     * @return A temporary `RelocatedLiteralPair`
      */
-    NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
+    RelocatedLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
 
     /**
      * @brief Place the named symbol literal relocation in memory
@@ -121,16 +123,15 @@ private:
      * @param Lit - Which literal to place
      */
 
-    void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
+    void PlaceRelocatedLiteral(RelocatedLiteralPair &Lit);
 
-    std::vector<FEXCore::CPU::Relocation> Relocations;
+    std::vector<uint8_t> Relocations;
+
+    void *RelocateJITObjectCode(uint64_t Entry, const ObjCacheFragment *const HostCode, const ObjCacheRelocations *const Relocations) override;
 
     ///< Relocation code loading
-    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+    bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, const ObjCacheRelocations *const Relocations);
 
-    /**
-    * @brief Current guest RIP entrypoint
-    */
     uint64_t CursorEntry{};
   /**  @} */
 
@@ -188,7 +189,7 @@ private:
   [[nodiscard]] bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
 
   IR::RegisterAllocationPass *RAPass;
-  FEXCore::IR::RegisterAllocationData *RAData;
+  const FEXCore::IR::RegisterAllocationData *RAData;
   FEXCore::Core::DebugData *DebugData;
 
 #ifdef BLOCKSTATS

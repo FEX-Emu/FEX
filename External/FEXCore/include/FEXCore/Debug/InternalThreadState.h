@@ -8,6 +8,7 @@
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <cstdint>
 #include <map>
 #include <unordered_map>
 #include <shared_mutex>
@@ -60,7 +61,8 @@ namespace FEXCore::Core {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     std::vector<DebugDataSubblock> Subblocks;
     std::vector<DebugDataGuestOpcode> GuestOpcodes;
-    std::vector<FEXCore::CPU::Relocation> *Relocations;
+    const ObjCacheRelocations *Relocations;
+    std::vector<uint8_t> RelocationsStorage; //only used to free the Relocations, if not mmap'd
   };
 
   enum class SignalEvent {
@@ -70,12 +72,13 @@ namespace FEXCore::Core {
     Return,
   };
 
-  struct LocalIREntry {
+  struct DebugIREntry {
+    uint64_t GuestRIP;
     uint64_t StartAddr;
     uint64_t Length;
-    std::unique_ptr<FEXCore::IR::IRListView, FEXCore::IR::IRListViewDeleter> IR;
-    FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
-    std::unique_ptr<FEXCore::Core::DebugData> DebugData;
+    std::unique_ptr<const FEXCore::IR::IRListView> IR;
+    std::unique_ptr<const FEXCore::IR::RegisterAllocationData> RAData;
+    std::unique_ptr<const FEXCore::Core::DebugData> DebugData;
   };
 
   struct InternalThreadState {
@@ -101,7 +104,7 @@ namespace FEXCore::Core {
     std::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
     std::unique_ptr<FEXCore::LookupCache> LookupCache;
 
-    std::unordered_map<uint64_t, LocalIREntry> DebugStore;
+    std::unordered_map<uintptr_t, DebugIREntry> DebugStore;
 
     std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     std::unique_ptr<FEXCore::IR::PassManager> PassManager;

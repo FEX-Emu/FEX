@@ -3,15 +3,11 @@
 #include <string>
 #include <shared_mutex>
 
-#include <FEXCore/IR/IR.h>
+#include "FEXCore/IR/IR.h"
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 
 namespace FEXCore {
   class CodeLoader;
-}
-
-namespace FEXCore::IR {
-  struct AOTIRCacheEntry;
 }
 
 namespace FEXCore::Context {
@@ -21,6 +17,7 @@ namespace FEXCore::Context {
 namespace FEXCore::Core {
   struct InternalThreadState;
   struct CpuStateFrame;
+  struct NamedRegion;
 }
 
 namespace FEXCore::HLE {
@@ -52,17 +49,19 @@ namespace FEXCore::HLE {
   class SyscallHandler;
   class SourcecodeResolver;
 
-  struct AOTIRCacheEntryLookupResult {
-    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart, FHU::ScopedSignalMaskWithSharedLock &&lk)
+  struct NamedRegionLookupResult {
+    NamedRegionLookupResult(FEXCore::Core::NamedRegion *Entry, uintptr_t VAFileStart, FHU::ScopedSignalMaskWithSharedLock &&lk)
       : Entry(Entry), VAFileStart(VAFileStart), lk(std::move(lk))
     {
 
     }
 
-    AOTIRCacheEntryLookupResult(AOTIRCacheEntryLookupResult&&) = default;
+    NamedRegionLookupResult(NamedRegionLookupResult&&) = default;
 
-    FEXCore::IR::AOTIRCacheEntry *Entry;
+    FEXCore::Core::NamedRegion *Entry;
     uintptr_t VAFileStart;
+    uintptr_t VAMin;
+    uintptr_t VAMax;
 
     friend class SyscallHandler;
     protected:
@@ -80,7 +79,7 @@ namespace FEXCore::HLE {
     SyscallOSABI GetOSABI() const { return OSABI; }
     virtual FEXCore::CodeLoader *GetCodeLoader() const { return nullptr; }
     virtual void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) { }
-    virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) = 0;
+    virtual NamedRegionLookupResult LookupNamedRegion(uint64_t GuestAddr) = 0;
 
     virtual SourcecodeResolver *GetSourcecodeResolver() { return nullptr; }
   protected:

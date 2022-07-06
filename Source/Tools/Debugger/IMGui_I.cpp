@@ -393,6 +393,7 @@ namespace Disasm {
   }
 
   void DisasmGuest(uint64_t PC, int Size) {
+    #if FIXME
     CurrentDisasmRIP = PC;
     uint8_t *GuestCode = GetPointerFromRegions(PC);
     uint32_t InstCount{};
@@ -412,9 +413,11 @@ namespace Disasm {
     else {
       HostDisasmString = HostDisassembler->Disassemble(static_cast<uint8_t*>(HostCodePtr), DebugData.HostCodeSize, -1U, reinterpret_cast<uint64_t>(HostCodePtr), &InstCount);
     }
+    #endif
   }
 
   void Disasm(uint64_t PC) {
+#if FIXME
     CurrentDisasmRIP = PC;
     uint8_t *GuestCode = GetPointerFromRegions(PC);
     uint32_t InstCount{};
@@ -435,6 +438,7 @@ namespace Disasm {
     else {
       HostDisasmString = HostDisassembler->Disassemble(static_cast<uint8_t*>(HostCodePtr), DebugData.HostCodeSize, -1U, reinterpret_cast<uint64_t>(HostCodePtr), &InstCount);
     }
+#endif
   }
 
   void Init() {
@@ -657,15 +661,15 @@ namespace IR {
     FEXCore::Core::ThreadState *State = FEXCore::Context::Debug::GetThreadState(FEX::DebuggerState::GetContext());
     FEXCore::Core::InternalThreadState *TS = reinterpret_cast<FEXCore::Core::InternalThreadState*>(State);
 
-    for (auto &LocalEntry : TS->DebugStore) {
+    for (auto &DebugEntry : TS->DebugStore) {
        std::ostringstream out;
-       out << "0x" << std::hex << LocalEntry.first;
+       out << "0x" << std::hex << DebugEntry.second.GuestRIP;
        IRDebugData DebugData;
-       DebugData.Debug = LocalEntry.second.DebugData.get();
-       DebugData.RIP = IR.first;
+       DebugData.Debug = DebugEntry.second.DebugData.get();
+       DebugData.RIP = DebugEntry.second.GuestRIP;
        DebugData.RIPString = out.str();
-       DebugData.GuestCodeSize = std::to_string(DebugData.Debug->GuestCodeSize);
-       DebugData.GuestInstructionCount = std::to_string(DebugData.Debug->GuestInstructionCount);
+       //DebugData.GuestCodeSize = std::to_string(DebugData.Debug->GuestCodeSize);
+       //DebugData.GuestInstructionCount = std::to_string(DebugData.Debug->GuestInstructionCount);
        IRListTexts.emplace_back(DebugData);
     }
   }

@@ -78,6 +78,7 @@ set (SRCS
   Common/SoftFloat-3e/s_normSubnormalF32Sig.c
   Common/SoftFloat-3e/s_f32UIToCommonNaN.c
   Interface/Context/Context.cpp
+  Interface/Core/CodeCache/CodeCache.cpp
   Interface/Core/LookupCache.cpp
   Interface/Core/BlockSamplingData.cpp
   Interface/Core/Core.cpp
@@ -86,9 +87,6 @@ set (SRCS
   Interface/Core/Frontend.cpp
   Interface/Core/GdbServer.cpp
   Interface/Core/HostFeatures.cpp
-  Interface/Core/ObjectCache/JobHandling.cpp
-  Interface/Core/ObjectCache/NamedRegionObjectHandler.cpp
-  Interface/Core/ObjectCache/ObjectCacheService.cpp
   Interface/Core/OpcodeDispatcher/Crypto.cpp
   Interface/Core/OpcodeDispatcher/Flags.cpp
   Interface/Core/OpcodeDispatcher/Vector.cpp
@@ -119,7 +117,6 @@ set (SRCS
   Interface/Core/X86Tables/XOPTables.cpp
   Interface/HLE/Thunks/Thunks.cpp
   Interface/GDBJIT/GDBJIT.cpp
-  Interface/IR/AOTIR.cpp
   Interface/IR/IRDumper.cpp
   Interface/IR/IRParser.cpp
   Interface/IR/IREmitter.cpp

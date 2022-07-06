@@ -42,14 +42,14 @@ DEF_OP(EntrypointOffset) {
   auto Op = IROp->C<IR::IROp_EntrypointOffset>();
 
   auto Constant = Entry + Op->Offset;
-  auto Dst = GetReg<RA_64>(Node);
+  
   uint64_t Mask = ~0ULL;
   uint8_t OpSize = IROp->Size;
   if (OpSize == 4) {
     Mask = 0xFFFF'FFFFULL;
   }
 
-  LoadConstant(Dst, Constant & Mask);
+  InsertGuestRIPMove(GetReg<RA_64>(Node), Constant & Mask);
 }
 
 DEF_OP(InlineConstant) {

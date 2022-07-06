@@ -1,5 +1,7 @@
 #include "GDBJIT.h"
 
+#include "Interface/Core/CodeCache/IRCache.h"
+#include <FEXCore/Core/NamedRegion.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -40,7 +42,7 @@ void __attribute__((noinline)) __jit_debug_register_code() {
 
 namespace FEXCore {
 
-void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart,
+void GDBJITRegister(FEXCore::Core::NamedRegion *Entry, uintptr_t VAFileStart,
                     uint64_t GuestRIP, uintptr_t HostEntry,
                     FEXCore::Core::DebugData *DebugData) {
   auto map = Entry->SourcecodeMap.get();
@@ -116,7 +118,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart,
 } // namespace FEXCore
 #else
 namespace FEXCore {
-void GDBJITRegister([[maybe_unused]] FEXCore::IR::AOTIRCacheEntry *Entry,
+void GDBJITRegister([[maybe_unused]] FEXCore::Core::NamedRegion *Entry,
                     [[maybe_unused]] uintptr_t VAFileStart,
                     [[maybe_unused]] uint64_t GuestRIP,
                     [[maybe_unused]] uintptr_t HostEntry,

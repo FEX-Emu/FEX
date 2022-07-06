@@ -96,7 +96,7 @@ add_custom_target(
   fex_linux_tests
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.jit\.flt$$" "--output-on-failure"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "30" "-j${CORES}" "-R" "\.*\.jit\.flt$$" "--output-on-failure"
   DEPENDS FEXLinuxTests FEXLoader
   )
 
@@ -105,7 +105,7 @@ add_custom_target(
   fex_linux_tests_host
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.host\.flt$$" "--output-on-failure"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "30" "-j${CORES}" "-R" "\.*\.host\.flt$$" "--output-on-failure"
   DEPENDS FEXLinuxTests
   )
 
@@ -114,6 +114,6 @@ add_custom_target(
   fex_linux_tests_all
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.flt$$" "--output-on-failure"
+  COMMAND "ctest" "--output-on-failure" "--timeout" "30" "-j${CORES}" "-R" "\.*\.flt$$" "--output-on-failure"
   DEPENDS FEXLinuxTests FEXLoader
   )
