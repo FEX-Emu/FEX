@@ -70,14 +70,6 @@ extern "C" {
         return rv;
     }
 
-    // Implemented manually
-    XSetErrorHandlerCBFN* XSetErrorHandler(XErrorHandler a_0) {
-        a_0 = HostTrampolineForGuestcall(fexcallback_libX11_XIfEventCBFN, &fexfn_unpack_libX11_XSetErrorHandlerCBFN, a_0);
-        auto rv = fexfn_pack_XSetErrorHandler(a_0);
-
-        return GuestcallTargetForHostTrampoline(rv);
-    }
-
     static void LockMutexFunction() {
       fprintf(stderr, "libX11: LockMutex\n");
     }

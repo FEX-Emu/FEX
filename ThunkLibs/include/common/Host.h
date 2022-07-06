@@ -66,6 +66,13 @@ struct GuestcallInfo {
   uintptr_t GuestTarget;
 };
 
-#define CUSTOM_ABI_GUESTCALL \
-  GuestcallInfo *guestcall; \
-  asm("mov %%r11, %0" : "=r" (guestcall))
+// Helper macro for reading an internal argument passed through the `r11`
+// host register. This macro must be placed at the very beginning of
+// the function it is used in.
+#if defined(_M_X86_64)
+#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
+  asm volatile("mov %%r11, %0" : "=r" (target_variable))
+#elif defined(_M_ARM_64)
+#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
+  asm volatile("mov %0, x11" : "=r" (target_variable))
+#endif

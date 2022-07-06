@@ -442,8 +442,8 @@ template<> struct fex_gen_config<XCreateIC> {
 };
 
 template<> struct fex_gen_config<XIfEvent> {};
-template<> struct fex_gen_config<XSetErrorHandler> : fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
-
+// TODO: Make returned function pointer guest-callable. For now, just pretend it already is.
+template<> struct fex_gen_config<XSetErrorHandler> : fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<XInternAtom> {};
 template<> struct fex_gen_config<XListExtensions> {};
 template<> struct fex_gen_config<XSetLocaleModifiers> {};

@@ -63,5 +63,4 @@ static ExportEntry exports[] = {
 
 #include "ldr.inl"
 
-EXPORTS(libX11) 
-
+EXPORTS(libX11)

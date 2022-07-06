@@ -22,43 +22,17 @@ $end_info$
 #include <malloc.h>
 #include <mutex>
 #include <unordered_map>
-#include <unordered_set>
 #include <memory>
 #include <shared_mutex>
 #include <stdint.h>
 #include <string>
 #include <utility>
 
-
-#define HOST_TRAMPOLINE_ALLOC_STEP (16 * 1024)
-
 struct LoadlibArgs {
     const char *Name;
 };
 
 static thread_local FEXCore::Core::InternalThreadState *Thread;
-
-struct TrampolineInstanceInfo {
-  uintptr_t HostPacker;
-  uintptr_t CallCallback;
-  uintptr_t GuestUnpacker;
-  uintptr_t GuestTarget;
-};
-
-struct GuestcallInfo {
-  uintptr_t GuestUnpacker;
-  uintptr_t GuestTarget;
-
-  [[nodiscard]] friend constexpr bool operator==(const GuestcallInfo&, const GuestcallInfo&) = default;
-};
-
-template <>
-struct std::hash<GuestcallInfo> {
-  size_t operator()(const GuestcallInfo& x) const noexcept {
-    return x.GuestTarget;
-  }
-};
-
 
 static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate"))) void HostToGuestTrampolineTemplate() {
 #if defined(_M_X86_64)
@@ -67,7 +41,7 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
     "jmpq *0f(%rip) \n"
     ".align 8 \n"
     "0: \n"
-    ".quad 0, 0, 0, 0 \n"
+    ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
   );
 #elif defined(_M_ARM_64)
   asm(
@@ -91,10 +65,39 @@ extern char __stop_HostToGuestTrampolineTemplate[];
 namespace FEXCore {
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
+    struct TrampolineInstanceInfo {
+      uintptr_t HostPacker;
+      uintptr_t CallCallback;
+      uintptr_t GuestUnpacker;
+      uintptr_t GuestTarget;
+    };
+
+    struct GuestcallInfo {
+      uintptr_t GuestUnpacker;
+      uintptr_t GuestTarget;
+
+      bool operator==(const GuestcallInfo&) const noexcept = default;
+    };
+
+    struct GuestcallInfoHash {
+      size_t operator()(const GuestcallInfo& x) const noexcept {
+        // Hash only the target address, which is generally unique.
+        // For the unlikely case of a hash collision, std::unordered_map still picks the correct bucket entry.
+        return std::hash<uintptr_t>{}(x.GuestTarget);
+      }
+    };
+
+    // Bits in a SHA256 sum are already randomly distributed, so truncation yields a suitable hash function
+    struct TruncatingSHA256Hash {
+      size_t operator()(const FEXCore::IR::SHA256Sum& SHA256Sum) const noexcept {
+        return (const size_t&)SHA256Sum;
+      }
+    };
+
     class ThunkHandler_impl final: public ThunkHandler {
         std::shared_mutex ThunksMutex;
 
-        std::map<IR::SHA256Sum, ThunkedFunction*> Thunks = {
+        std::unordered_map<IR::SHA256Sum, ThunkedFunction*, TruncatingSHA256Hash> Thunks = {
             {
                 // sha256(fex:loadlib)
                 { 0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80 },
@@ -111,9 +114,9 @@ namespace FEXCore {
                 &LinkAddressToGuestFunction
             },
             {
-                // sha256(fex:host_trampoline_for_guestcall)
-                { 0xa2, 0xa1, 0x95, 0x64, 0xad, 0x6e, 0xa5, 0x32, 0xc5, 0xb2, 0xcb, 0x5b, 0x5d, 0x85, 0xec, 0x99, 0x46, 0x9d, 0x5a, 0xf4, 0xa5, 0x2f, 0xbe, 0xa3, 0x7b, 0x7d, 0xd1, 0x8e, 0x44, 0xa7, 0x81, 0xe8 },
-                &HostTrampolineForGuestcall
+                // sha256(fex:make_host_trampoline_for_guest_function)
+                { 0x1e, 0x51, 0x6b, 0x07, 0x39, 0xeb, 0x50, 0x59, 0xb3, 0xf3, 0x4f, 0xca, 0xdd, 0x58, 0x37, 0xe9, 0xf0, 0x30, 0xe5, 0x89, 0x81, 0xc7, 0x14, 0xfb, 0x24, 0xf9, 0xba, 0xe7, 0x0e, 0x00, 0x1e, 0x86 },
+                &MakeHostTrampolineForGuestFunction
             }
         };
 
@@ -121,11 +124,11 @@ namespace FEXCore {
         // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
         std::set<std::string> Libs;
 
-        std::unordered_map<GuestcallInfo, uintptr_t> GuestcallToHostTrampoline;
+        std::unordered_map<GuestcallInfo, uintptr_t, GuestcallInfoHash> GuestcallToHostTrampoline;
 
         uint8_t *HostTrampolineInstanceDataPtr;
-        size_t HostTrampolineInstanceDataAvailable;
-          
+        size_t HostTrampolineInstanceDataAvailable = 0;
+
 
         /*
             Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
@@ -161,7 +164,7 @@ namespace FEXCore {
                 LOGMAN_THROW_A_FMT((args->target_addr >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
             }
 
-            LogMan::Msg::DFmt("Thunks: Adding trampoline from address {:#x} to guest function {:#x}",
+            LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}",
                               args->original_callee, args->target_addr);
 
             auto Result = Thread->CTX->AddCustomIREntrypoint(
@@ -185,82 +188,99 @@ namespace FEXCore {
             }
         }
 
-        static void HostTrampolineForGuestcall(void* ArgsRV) {
+        /**
+         * Generates a host-callable trampoline to call guest functions via the host ABI.
+         *
+         * This trampoline uses the same calling convention as the given HostPacker. Trampolines
+         * are cached, so it's safe to call this function repeatedly on the same arguments without
+         * leaking memory.
+         *
+         * Invoking the returned trampoline has the effect of:
+         * - packing the arguments (using the HostPacker identified by its SHA256)
+         * - performing a host->guest transition
+         * - unpacking the arguments via GuestUnpacker
+         * - calling the function at GuestTarget
+         *
+         * The primary use case of this is ensuring that guest function pointers ("callbacks")
+         * passed to thunked APIs can safely be called by the native host library.
+         */
+        static void MakeHostTrampolineForGuestFunction(void* ArgsRV) {
           struct ArgsRV_t {
-              IR::SHA256Sum *HostPacker;
+              IR::SHA256Sum *HostPackerSha256;
               uintptr_t GuestUnpacker;
               uintptr_t GuestTarget;
-              uintptr_t rv;
-          };
+              uintptr_t rv; // Pointer to host trampoline + TrampolineInstanceInfo
+          } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-          auto &[HostPacker, GuestTarget, GuestUnpacker, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
+          LOGMAN_THROW_A_FMT(args->GuestTarget, "Tried to create host-trampoline to null pointer guest function");
 
-          auto const CTX = Thread->CTX;
-          auto const That = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
+          const auto CTX = Thread->CTX;
+          const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
 
-          const GuestcallInfo gci = { GuestUnpacker, GuestTarget };
+          const GuestcallInfo gci = { args->GuestUnpacker, args->GuestTarget };
 
           // Try first with shared_lock
           {
-            std::shared_lock lk(That->ThunksMutex);
+            std::shared_lock lk(ThunkHandler->ThunksMutex);
 
-            auto found = That->GuestcallToHostTrampoline.find(gci);
-            if (found != That->GuestcallToHostTrampoline.end()) {
-              rv = found->second;
+            auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
+            if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
+              args->rv = found->second;
               return;
             }
           }
 
-          std::lock_guard lk(That->ThunksMutex);
+          std::lock_guard lk(ThunkHandler->ThunksMutex);
 
-          // retry lookup with full lock before making a new trampoline to avoid double trampolines
+          // Retry lookup with full lock before making a new trampoline to avoid double trampolines
           {
-            auto found = That->GuestcallToHostTrampoline.find(gci);
-            if (found != That->GuestcallToHostTrampoline.end()) {
-              rv = found->second;
+            auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
+            if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
+              args->rv = found->second;
               return;
             }
           }
 
-          auto HostPackerEntry = That->Thunks.find(*HostPacker);
-          if (HostPackerEntry == That->Thunks.end()) {
-            rv = 0;
-            return;
+          // No entry found => create new trampoline
+          auto HostPackerEntry = ThunkHandler->Thunks.find(*args->HostPackerSha256);
+          if (HostPackerEntry == ThunkHandler->Thunks.end()) {
+            ERROR_AND_DIE_FMT("Unknown host packing function for callback");
           }
+
+          LogMan::Msg::DFmt("Thunks: Adding host trampoline for guest function {:#x}",
+                            args->GuestTarget);
 
           const auto Length = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
           const auto InstanceInfoOffset = Length - sizeof(TrampolineInstanceInfo);
 
-          uint8_t *HostTrampoline;
-
-          // Still protected by `lk`
-          if (That->HostTrampolineInstanceDataAvailable < Length) {
-            That->HostTrampolineInstanceDataAvailable = HOST_TRAMPOLINE_ALLOC_STEP;
-            That->HostTrampolineInstanceDataPtr = (uint8_t *)mmap(
-                0, That->HostTrampolineInstanceDataAvailable, PROT_READ | PROT_WRITE | PROT_EXEC,
+          if (ThunkHandler->HostTrampolineInstanceDataAvailable < Length) {
+            const auto allocation_step = 16 * 1024;
+            ThunkHandler->HostTrampolineInstanceDataAvailable = allocation_step;
+            ThunkHandler->HostTrampolineInstanceDataPtr = (uint8_t *)mmap(
+                0, ThunkHandler->HostTrampolineInstanceDataAvailable,
+                PROT_READ | PROT_WRITE | PROT_EXEC,
                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-            LOGMAN_THROW_A_FMT(That->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
+            LOGMAN_THROW_A_FMT(ThunkHandler->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
           }
 
-          // Still protected by `lk`
-          HostTrampoline = That->HostTrampolineInstanceDataPtr;
-          That->HostTrampolineInstanceDataAvailable -= Length;
-          That->HostTrampolineInstanceDataPtr += Length;
+          const TrampolineInstanceInfo NewTrampolineInfo {
+            .HostPacker = reinterpret_cast<uintptr_t>(HostPackerEntry->second),
+            .CallCallback = (uintptr_t)&CallCallback,
+            .GuestUnpacker = args->GuestUnpacker,
+            .GuestTarget = args->GuestTarget
+          };
+
+          uint8_t* const HostTrampoline = ThunkHandler->HostTrampolineInstanceDataPtr;
+          ThunkHandler->HostTrampolineInstanceDataAvailable -= Length;
+          ThunkHandler->HostTrampolineInstanceDataPtr += Length;
 
           memcpy(HostTrampoline, (void*)&HostToGuestTrampolineTemplate, Length);
+          memcpy(HostTrampoline + InstanceInfoOffset, &NewTrampolineInfo, sizeof(NewTrampolineInfo));
 
-          auto const InstanceInfo = (TrampolineInstanceInfo*)(HostTrampoline + InstanceInfoOffset);
+          args->rv = reinterpret_cast<uintptr_t>(HostTrampoline);
 
-          InstanceInfo->HostPacker = (uintptr_t)HostPackerEntry->second;
-          InstanceInfo->CallCallback = (uintptr_t)&CallCallback;
-          InstanceInfo->GuestUnpacker = GuestUnpacker;
-          InstanceInfo->GuestTarget = GuestTarget;
-
-          rv = (uintptr_t)HostTrampoline;
-
-          // Still protected by `lk`
-          That->GuestcallToHostTrampoline[gci] = rv;
+          ThunkHandler->GuestcallToHostTrampoline[gci] = args->rv;
         }
 
         static void LoadLib(void *ArgsV) {
@@ -344,12 +364,6 @@ namespace FEXCore {
 
         void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
             ::Thread = Thread;
-        }
-
-        ThunkHandler_impl() {
-        }
-
-        ~ThunkHandler_impl() {
         }
     };
 
