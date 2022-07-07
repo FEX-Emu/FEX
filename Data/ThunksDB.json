@@ -39,6 +39,7 @@
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libvulkan.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libvulkan.so.1",
+        "@HOME@/.local/share/Steam/ubuntu12_32/steam-runtime/pinned_libs_64/libvulkan.so.1"
       ],
       "Comment": [
         "Vulkan library relies on xcb, otherwise it crashes with jemalloc"
