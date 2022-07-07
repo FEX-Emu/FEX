@@ -12,6 +12,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
+#include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -115,6 +116,9 @@ void FileManager::LoadThunkDatabase(bool Global) {
     if ( !DB || JSON_OBJ != json_getType( DB ) ) {
       return;
     }
+
+    std::string_view HomeDirectory = FEXCore::Paths::GetHomeDirectory();
+
     for( json_t const* Library = json_getChild( DB ); Library != nullptr; Library = json_getSibling( Library )) {
       // Get the user defined name for the library
       const char* LibraryName = json_getName(Library);
@@ -141,34 +145,62 @@ void FileManager::LoadThunkDatabase(bool Global) {
         }
         else if (strcmp(ItemName, "Overlay") == 0) {
 
-          auto AddWithReplacement = [DBObject](json_t const* Value) {
-            constexpr static std::array<const char*, 4> Prefixes = {
+          auto AddWithReplacement = [DBObject, HomeDirectory](json_t const* Value) {
+            constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
               "/lib",
               "/usr/lib/pressure-vessel/overrides/lib",
             };
 
-            auto ReplacePrefix = [](std::string_view String, const char *Prefix, const char *NewPrefix) -> std::pair<bool, std::string> {
+            auto FindAndReplacePrefixes = [DBObject](std::string_view String, std::string_view Prefix, auto NewPrefixes) -> bool {
               auto it = String.find(Prefix);
               if (it != String.npos) {
-                size_t SizeOfOldPrefix = strlen(Prefix);
-                std::string Replacement {String};
-                Replacement.replace(it, SizeOfOldPrefix, NewPrefix);
-                return std::make_pair(true, std::move(Replacement));
+                size_t SizeOfOldPrefix = Prefix.size();
+
+                for (auto& prefix : NewPrefixes) {
+                  std::string Replacement {String};
+                  Replacement.replace(it, SizeOfOldPrefix, prefix);
+                  DBObject->second.Overlays.emplace_back(std::move(Replacement));
+                }
+                return true;
               }
               else {
-                return std::make_pair(false, std::string(String));
+                return false;
+              }
+            };
+
+            auto FindAndReplaceSingleNewPrefix = [DBObject](std::string_view String, std::string_view Prefix, auto NewPrefix) -> bool {
+              auto it = String.find(Prefix);
+              if (it != String.npos) {
+                size_t SizeOfOldPrefix = Prefix.size();
+
+                std::string Replacement {String};
+                Replacement.replace(it, SizeOfOldPrefix, NewPrefix);
+                DBObject->second.Overlays.emplace_back(std::move(Replacement));
+                return true;
+              }
+              else {
+                return false;
               }
             };
 
             std::string NonModifiedLibraryItem {static_cast<const char*>(json_getValue(Value))};
-            for (auto& prefix : Prefixes) {
-               auto [has_prefix, modified_library_item] = ReplacePrefix(NonModifiedLibraryItem, "@PREFIX_LIB@", prefix);
-               DBObject->second.Overlays.emplace_back(std::move(modified_library_item));
-               if (!has_prefix) {
-                 break;
-               }
+
+            // Prefixes are mutually exclusive currently.
+            // Walk through each individual library item and attempt to change prefixes before inserting this in to our overlay system.
+
+            // Attempt to replace @PREFIX_LIB@ first
+            bool Inserted = FindAndReplacePrefixes(NonModifiedLibraryItem, "@PREFIX_LIB@", LibPrefixes);
+
+            // Attempt to replace @HOME@ second
+            if (!Inserted) {
+              Inserted = FindAndReplaceSingleNewPrefix(NonModifiedLibraryItem, "@HOME@", HomeDirectory);
+            }
+
+            // Failing to replace prefixes, insert the item unmodifed
+            if (!Inserted) {
+              DBObject->second.Overlays.emplace_back(NonModifiedLibraryItem);
             }
           };
 
