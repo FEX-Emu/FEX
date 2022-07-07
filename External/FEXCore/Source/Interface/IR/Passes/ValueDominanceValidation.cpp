@@ -145,28 +145,23 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // ...
 
           // We need to walk the predecessors to see if the value comes from there
-          std::set<IR::OrderedNode *> Predecessors;
+          std::set<IR::OrderedNode *> Predecessors { BlockNode };
+          // Recursively gather all predecessors of BlockNode
+          for (auto NodeIt = Predecessors.begin(); NodeIt != Predecessors.end();) {
+            auto PredBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(*NodeIt)).first->second;
+            ++NodeIt;
 
-          std::function<void(IR::OrderedNode*)> AddPredecessors = [&] (IR::OrderedNode *Node) {
-            auto PredBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(Node)).first->second;
-
-            // Current Block will always be in set
-            // Walk each predecessor, adding their predecessors
-            // Leave if all the predecessors are already in the set
-            for (auto &Pred : PredBlock->Predecessors) {
+            for (auto *Pred : PredBlock->Predecessors) {
               if (Predecessors.insert(Pred).second) {
-                // If this block didn't exist then walk its predecessors as well
-                AddPredecessors(Pred);
+                // New blocks added, so repeat from the beginning to pull in their predecessors
+                NodeIt = Predecessors.begin();
               }
             }
-          };
-
-          AddPredecessors(BlockNode);
+          }
 
           bool FoundPredDefine = false;
 
-          for (auto it = Predecessors.begin(); it != Predecessors.end(); ++it) {
-            IR::OrderedNode *Pred = *it;
+          for (auto* Pred : Predecessors) {
             auto PredIROp = CurrentIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Pred);
 
             if (Arg.ID() >= PredIROp->Begin.ID() &&
