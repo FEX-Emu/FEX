@@ -32,21 +32,20 @@ struct LoadlibArgs {
 };
 
 MAKE_THUNK(fex, loadlib, "0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80")
-MAKE_THUNK(fex, link_address_to_function, "0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77")
 MAKE_THUNK(fex, is_lib_loaded, "0xee, 0x57, 0xba, 0x0c, 0x5f, 0x6e, 0xef, 0x2a, 0x8c, 0xb5, 0x19, 0x81, 0xc9, 0x23, 0xe6, 0x51, 0xae, 0x65, 0x02, 0x8f, 0x2b, 0x5d, 0x59, 0x90, 0x6a, 0x7e, 0xe2, 0xe7, 0x1c, 0x33, 0x8a, 0xff")
+MAKE_THUNK(fex, link_address_to_function, "0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27, 0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77")
+MAKE_THUNK(fex, make_host_trampoline_for_guest_function, "0x1e, 0x51, 0x6b, 0x07, 0x39, 0xeb, 0x50, 0x59, 0xb3, 0xf3, 0x4f, 0xca, 0xdd, 0x58, 0x37, 0xe9, 0xf0, 0x30, 0xe5, 0x89, 0x81, 0xc7, 0x14, 0xfb, 0x24, 0xf9, 0xba, 0xe7, 0x0e, 0x00, 0x1e, 0x86")
 
-#define LOAD_LIB_BASE(name, callback_unpacks, init_fn) \
+#define LOAD_LIB_BASE(name, init_fn) \
   __attribute__((constructor)) static void loadlib() \
   { \
-    LoadlibArgs args =  { #name, (uintptr_t)(callback_unpacks) }; \
+    LoadlibArgs args =  { #name }; \
     fexthunks_fex_loadlib(&args); \
     if ((init_fn)) ((void(*)())init_fn)(); \
   }
 
-#define LOAD_LIB(name) LOAD_LIB_BASE(name, nullptr, nullptr)
-#define LOAD_LIB_INIT(name, init_fn) LOAD_LIB_BASE(name, nullptr, init_fn)
-#define LOAD_LIB_WITH_CALLBACKS(name) LOAD_LIB_BASE(name, &callback_unpacks, nullptr)
-#define LOAD_LIB_WITH_CALLBACKS_INIT(name, init_fn) LOAD_LIB_BASE(name, (uintptr_t)&callback_unpacks, init_fn)
+#define LOAD_LIB(name) LOAD_LIB_BASE(name, nullptr)
+#define LOAD_LIB_INIT(name, init_fn) LOAD_LIB_BASE(name, init_fn)
 
 inline void LinkAddressToFunction(uintptr_t addr, uintptr_t target) {
     struct args_t {
@@ -158,7 +157,7 @@ template<auto Thunk, typename Result, typename... Args>
 inline Result CallHostThunkFromRuntimePointer(Args... args) {
 #ifndef _M_ARM_64
     uintptr_t host_addr;
-    asm("mov %%r11, %0" : "=r" (host_addr));
+    asm volatile("mov %%r11, %0" : "=r" (host_addr));
 #else
     uintptr_t host_addr = 0;
 #endif
@@ -183,4 +182,22 @@ template<auto Thunk, typename Result, typename...Args>
 static auto GetCallerForHostThunkFromRuntimePointer(Result (*host_func)(Args...))
     -> Result(*)(Args...) {
   return CallHostThunkFromRuntimePointer<Thunk, Result, Args...>;
+}
+
+template<typename Target>
+inline Target *MakeHostTrampolineForGuestFunction(uint8_t HostPacker[32], void (*GuestUnpacker)(uintptr_t, void*), Target *GuestTarget) {
+  if (!GuestTarget) {
+    return nullptr;
+  }
+
+  struct {
+    void *HostPacker;
+    uintptr_t GuestUnpacker;
+    uintptr_t GuestTarget;
+    uintptr_t rv;
+  } argsrv = { HostPacker, (uintptr_t)GuestUnpacker, (uintptr_t)GuestTarget };
+
+  fexthunks_fex_make_host_trampoline_for_guest_function((void*)&argsrv);
+
+  return (Target *)argsrv.rv;
 }

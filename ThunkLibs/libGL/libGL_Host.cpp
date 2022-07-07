@@ -22,18 +22,6 @@ $end_info$
 
 #include "common/Host.h"
 
-void fexfn_impl_libGL_glDebugMessageCallbackAMD_internal(GLDEBUGPROCAMD, const void*) {
-    fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
-}
-
-void fexfn_impl_libGL_glDebugMessageCallbackARB_internal(GLDEBUGPROCARB, const void*) {
-    fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
-}
-
-void fexfn_impl_libGL_glDebugMessageCallback_internal(GLDEBUGPROC, const void*) {
-    fprintf(stderr, "%s: Stubbed\n", __FUNCTION__);
-}
-
 void* symbolFromGlXGetProcAddr(void*, const char* name) {
     return (void*)glXGetProcAddress((const GLubyte*)name);
 }

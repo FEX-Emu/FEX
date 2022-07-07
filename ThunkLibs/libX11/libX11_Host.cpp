@@ -14,13 +14,6 @@ $end_info$
 #include "common/Host.h"
 #include <dlfcn.h>
 
-#include "callback_structs.inl"
-#include "callback_typedefs.inl"
-
-struct {
-    #include "callback_unpacks_header.inl"
-} *callback_unpacks;
-
 #include "ldr_ptrs.inl"
 
 _XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long *list) {
@@ -57,57 +50,6 @@ char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned lo
     }
 }
 
-struct XIfEventCB_args {
-    XIfEventCBFN *fn;
-    XPointer arg;
-};
-
-static int XIfEventCB(Display* a0, XEvent* a1, XPointer a2) {
-
-    XIfEventCB_args *arg = (XIfEventCB_args*)a2;
-
-    XIfEventCB_Args argsrv { a0, a1, arg->arg};
-
-    call_guest(callback_unpacks->libX11_XIfEventCB, (void*) arg->fn, &argsrv);
-    
-    return argsrv.rv;
-}
-
-int fexfn_impl_libX11_XIfEvent_internal(Display* a0, XEvent* a1, XIfEventCBFN* a2, XPointer a3) {
-    static XIfEventCB_args args = { a2, a3 };
-
-    return fexldr_ptr_libX11_XIfEvent(a0, a1, &XIfEventCB, (XPointer)&args);
-}
-
-Bool fexfn_impl_libX11_XUnregisterIMInstantiateCallback_internal(
-    Display*, struct _XrmHashBucketRec*,
-    char*, char*, XUnregisterIMInstantiateCallbackCBFN*, XPointer) {
-    fprintf(stderr, "XUnregisterIMInstantiateCallback: Stubbed");
-    return true;
-}
-
-void fexfn_impl_libX11_XRemoveConnectionWatch_internal(Display*, XRemoveConnectionWatchCBFN*, XPointer) {
-    fprintf(stderr, "XRemoveConnectionWatch: Stubbed");
-}
-
-XErrorHandler guest_handler;
-
-int XSetErrorHandlerCB(Display* a_0, XErrorEvent* a_1) {
-    static XSetErrorHandlerCB_Args argsrv { a_0, a_1};
-    
-    call_guest(callback_unpacks->libX11_XSetErrorHandlerCB, (void*) guest_handler, &argsrv);
-    
-    return argsrv.rv;
-}
-
-XSetErrorHandlerCBFN* fexfn_impl_libX11_XSetErrorHandler_internal(XErrorHandler a_0) {
-    auto old = guest_handler;
-    guest_handler = a_0;
-
-    fexldr_ptr_libX11_XSetErrorHandler(&XSetErrorHandlerCB);
-    return old;
-}
-
 #include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
@@ -117,5 +59,4 @@ static ExportEntry exports[] = {
 
 #include "ldr.inl"
 
-EXPORTS_WITH_CALLBACKS(libX11) 
-
+EXPORTS(libX11)

@@ -26,8 +26,6 @@ struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };
 
 typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
 
-static fex_call_callback_t* call_guest;
-
 /**
  * Opaque wrapper around a guest function pointer.
  *
@@ -47,32 +45,7 @@ public:
 
 #define EXPORTS(name) \
   extern "C" { \
-    ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
-      call_guest = (fex_call_callback_t*)a0; \
-      if (!fexldr_init_##name()) { \
-        return nullptr; \
-      } \
-      return exports; \
-    } \
-  }
-
-#define EXPORTS_INIT(name, init_fn) \
-  extern "C" { \
-    ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
-      call_guest = (fex_call_callback_t*)a0; \
-      if (!fexldr_init_##name()) { \
-        return nullptr; \
-      } \
-      init_fn (); \
-      return exports; \
-    } \
-  }
-
-#define EXPORTS_WITH_CALLBACKS(name) \
-  extern "C" { \
-    ExportEntry* fexthunks_exports_##name(void *a0, uintptr_t a1) { \
-      call_guest = (fex_call_callback_t*)a0; \
-      (uintptr_t&)callback_unpacks = a1; \
+    ExportEntry* fexthunks_exports_##name() { \
       if (!fexldr_init_##name()) { \
         return nullptr; \
       } \
@@ -86,3 +59,20 @@ public:
     init_fn (); \
   }
 
+struct GuestcallInfo {
+  uintptr_t HostPacker;
+  void (*CallCallback)(uintptr_t GuestUnpacker, uintptr_t GuestTarget, void* argsrv);
+  uintptr_t GuestUnpacker;
+  uintptr_t GuestTarget;
+};
+
+// Helper macro for reading an internal argument passed through the `r11`
+// host register. This macro must be placed at the very beginning of
+// the function it is used in.
+#if defined(_M_X86_64)
+#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
+  asm volatile("mov %%r11, %0" : "=r" (target_variable))
+#elif defined(_M_ARM_64)
+#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
+  asm volatile("mov %0, x11" : "=r" (target_variable))
+#endif
