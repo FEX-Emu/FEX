@@ -181,7 +181,7 @@ public:
     //size_t ListSize;
     stream.write((const char*)&ListSize, sizeof(ListSize));
     //uint64_t Flags;
-    uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
+    uint64_t WrittenFlags = FLAG_Shared; //on disk format always has the Shared flag
     stream.write((const char*)&WrittenFlags, sizeof(WrittenFlags));
     
     // inline data
@@ -200,7 +200,7 @@ public:
     //size_t ListSize;
     memcpy(ptr, &ListSize, sizeof(ListSize)); ptr += sizeof(ListSize);
     //uint64_t Flags;
-    uint64_t WrittenFlags = Flags | FLAG_Shared; //on disk format always has the Shared flag
+    uint64_t WrittenFlags = FLAG_Shared; //on disk format always has the Shared flag
     memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags)); ptr += sizeof(WrittenFlags);
     
     // inline data
