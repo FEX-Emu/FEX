@@ -1,4 +1,4 @@
-# FEX-2206
+# FEX-2207
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -17,6 +17,7 @@ IR to host code generation
 
 #### arm64
 - [ALUOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/ALUOps.cpp)
+- [Arm64Relocations.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/Arm64Relocations.cpp): relocation logic of the arm64 splatter backend
 - [AtomicOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/AtomicOps.cpp)
 - [BranchOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/BranchOps.cpp)
 - [ConversionOps.cpp](../External/FEXCore/Source/Interface/Core/JIT/Arm64/ConversionOps.cpp)
@@ -189,8 +190,8 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 - [libSDL2_Host.cpp](../ThunkLibs/libSDL2/libSDL2_Host.cpp)
 
 #### Vulkan
-- [Guest.cpp](../ThunkLibs/libvulkan_device/Guest.cpp)
-- [Host.cpp](../ThunkLibs/libvulkan_device/Host.cpp)
+- [Guest.cpp](../ThunkLibs/libvulkan/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libvulkan/Host.cpp)
 
 #### X11
 - [libX11_Guest.cpp](../ThunkLibs/libX11/libX11_Guest.cpp): Handles callbacks and varargs
@@ -283,6 +284,9 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 
 ### LinuxSyscalls
 Linux syscall emulation, marshaling and passthrough
+
+#### android-syscalls-shared
+- [Memory.cpp](../Source/Tests/LinuxSyscalls/AndroidHandlers/Memory.cpp)
 
 #### common
 - [EmulatedFiles.cpp](../Source/Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp): Emulated /proc/cpuinfo, version, osrelease, etc
