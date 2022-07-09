@@ -115,23 +115,23 @@ DEF_OP(LoadRegister) {
 
     switch(Op->Header.Size) {
       case 1:
-        LOGMAN_THROW_A_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, regOffs * 8, 8);
         break;
 
       case 2:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, 0, 16);
         break;
 
       case 4:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
           mov(GetReg<RA_32>(Node), reg.W());
         break;
 
       case 8:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
           mov(GetReg<RA_64>(Node), reg);
         break;
@@ -147,17 +147,17 @@ DEF_OP(LoadRegister) {
 
     switch(Op->Header.Size) {
       case 1:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         mov(host.B(), guest.B());
         break;
 
       case 2:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         fmov(host.H(), guest.H());
         break;
 
       case 4:
-        LOGMAN_THROW_A_FMT((regOffs & 3) == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs");
         if (regOffs == 0) {
           if (host.GetCode() != guest.GetCode())
             fmov(host.S(), guest.S());
@@ -167,7 +167,7 @@ DEF_OP(LoadRegister) {
         break;
 
       case 8:
-        LOGMAN_THROW_A_FMT((regOffs & 7) == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs");
         if (regOffs == 0) {
           if (host.GetCode() != guest.GetCode())
             mov(host.D(), guest.D());
@@ -177,13 +177,13 @@ DEF_OP(LoadRegister) {
         break;
 
       case 16:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         if (host.GetCode() != guest.GetCode())
           mov(host.Q(), guest.Q());
         break;
     }
   } else {
-    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
+    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
   }
 }
 
@@ -200,22 +200,22 @@ DEF_OP(StoreRegister) {
 
     switch(Op->Header.Size) {
       case 1:
-        LOGMAN_THROW_A_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), regOffs * 8, 8);
         break;
 
       case 2:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 16);
         break;
 
       case 4:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), 0, 32);
         break;
 
       case 8:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         if (GetReg<RA_64>(Op->Value.ID()).GetCode() != reg.GetCode())
           mov(reg, GetReg<RA_64>(Op->Value.ID()));
         break;
@@ -235,28 +235,28 @@ DEF_OP(StoreRegister) {
         break;
 
       case 2:
-        LOGMAN_THROW_A_FMT((regOffs & 1) == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs");
         ins(guest.V8H(), regOffs/2, host.V8H(), 0);
         break;
 
       case 4:
-        LOGMAN_THROW_A_FMT((regOffs & 3) == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs");
         ins(guest.V4S(), regOffs/4, host.V4S(), 0);
         break;
 
       case 8:
-        LOGMAN_THROW_A_FMT((regOffs & 7) == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs");
         ins(guest.V2D(), regOffs / 8, host.V2D(), 0);
         break;
 
       case 16:
-        LOGMAN_THROW_A_FMT(regOffs == 0, "unexpected regOffs");
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
         if (guest.GetCode() != host.GetCode())
           mov(guest.Q(), host.Q());
         break;
     }
   } else {
-    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
+    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
   }
 }
 

@@ -4503,7 +4503,7 @@ void OpDispatchBuilder::Finalize() {
 
   [[maybe_unused]] const FEXCore::IR::IROp_Header *IROp =
   RealNode->Op(DualListData.DataBegin());
-  LOGMAN_THROW_A_FMT(IROp->Op == OP_IRHEADER, "First op in function must be our header");
+  LOGMAN_THROW_AA_FMT(IROp->Op == OP_IRHEADER, "First op in function must be our header");
 
   // Let's walk the jump blocks and see if we have handled every block target
   for (auto &Handler : JumpTargets) {
@@ -4529,7 +4529,7 @@ uint8_t OpDispatchBuilder::GetDstSize(X86Tables::DecodedOp Op) const {
 
   const uint32_t DstSizeFlag = X86Tables::DecodeFlags::GetSizeDstFlags(Op->Flags);
   const uint8_t Size = Sizes[DstSizeFlag];
-  LOGMAN_THROW_A_FMT(Size != 0, "Invalid destination size for op");
+  LOGMAN_THROW_AA_FMT(Size != 0, "Invalid destination size for op");
   return Size;
 }
 
@@ -4547,7 +4547,7 @@ uint8_t OpDispatchBuilder::GetSrcSize(X86Tables::DecodedOp Op) const {
 
   const uint32_t SrcSizeFlag = X86Tables::DecodeFlags::GetSizeSrcFlags(Op->Flags);
   const uint8_t Size = Sizes[SrcSizeFlag];
-  LOGMAN_THROW_A_FMT(Size != 0, "Invalid destination size for op");
+  LOGMAN_THROW_AA_FMT(Size != 0, "Invalid destination size for op");
   return Size;
 }
 
@@ -4791,11 +4791,11 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         // For all other sizes, the upper bits are guaranteed to already be zero
          OrderedNode *Value = GetOpSize(Src) == 8 ? _Bfe(4, 32, 0, Src) : Src;
 
-        LOGMAN_THROW_A_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
+        LOGMAN_THROW_AA_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
         _StoreContext(GPRSize, Class, Value, offsetof(FEXCore::Core::CPUState, gregs[gpr]));
       }
       else {
-        LOGMAN_THROW_A_FMT(!(GPRSize == 4 && OpSize > 4), "Oops had a {} GPR load", OpSize);
+        LOGMAN_THROW_AA_FMT(!(GPRSize == 4 && OpSize > 4), "Oops had a {} GPR load", OpSize);
         _StoreContext(std::min(GPRSize, OpSize), Class, Src, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (Operand.Data.GPR.HighBits ? 1 : 0));
       }
     }

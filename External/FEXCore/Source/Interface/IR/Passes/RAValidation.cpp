@@ -197,11 +197,11 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
   // Get the control flow graph from the validation pass
   auto ValidationPass = Manager->GetPass<IRValidation>("IRValidation");
-  LOGMAN_THROW_A_FMT(ValidationPass != nullptr, "Couldn't find IRValidation pass");
+  LOGMAN_THROW_AA_FMT(ValidationPass != nullptr, "Couldn't find IRValidation pass");
 
   auto& OffsetToBlockMap = ValidationPass->OffsetToBlockMap;
 
-  LOGMAN_THROW_A_FMT(ValidationPass->EntryBlock != nullptr, "No entry point");
+  LOGMAN_THROW_AA_FMT(ValidationPass->EntryBlock != nullptr, "No entry point");
   BlocksToVisit.push_front(ValidationPass->EntryBlock); // Currently only a single entry point
 
   bool HadError = false;

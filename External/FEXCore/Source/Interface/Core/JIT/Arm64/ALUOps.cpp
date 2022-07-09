@@ -1084,8 +1084,8 @@ DEF_OP(Bfi) {
 
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
-  LOGMAN_THROW_A_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
-  LOGMAN_THROW_A_FMT(Op->Width != 0, "Invalid BFE width of 0");
+  LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
+  LOGMAN_THROW_AA_FMT(Op->Width != 0, "Invalid BFE width of 0");
 
   auto Dst = GetReg<RA_64>(Node);
   ubfx(Dst, GetReg<RA_64>(Op->Src.ID()), Op->lsb, Op->Width);
@@ -1249,7 +1249,7 @@ DEF_OP(FCmp) {
   bool set = false;
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_EQ)) {
-    LOGMAN_THROW_A_FMT(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
+    LOGMAN_THROW_AA_FMT(IR::FCMP_FLAG_EQ == 0, "IR::FCMP_FLAG_EQ must equal 0");
     // EQ or unordered
     cset(Dst, Condition::eq); // Z = 1
     csinc(Dst, Dst, xzr, Condition::vc); // IF !V ? Z : 1

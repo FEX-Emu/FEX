@@ -1034,7 +1034,7 @@ DEF_OP(Bfi) {
 
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
-  LOGMAN_THROW_A_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
+  LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
 
   auto Dst = GetDst<RA_64>(Node);
 

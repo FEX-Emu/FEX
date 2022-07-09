@@ -71,7 +71,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
       auto Offset = FaultBase - Entry->first + Entry->second.Offset;
 
       auto VMA = Entry->second.Resource->FirstVMA;
-      LOGMAN_THROW_A_FMT(VMA, "VMA tracking error");
+      LOGMAN_THROW_AA_FMT(VMA, "VMA tracking error");
 
       // Flush all mirrors, remap the page writable as needed
       do {
@@ -81,7 +81,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
           if (VMA->Prot.Writable) {
             FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
               auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
-              LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
+              LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
             });
           } else {
             FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
@@ -91,7 +91,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
     } else {
       FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
         auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
-        LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
+        LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
       });
     }
 
@@ -134,7 +134,7 @@ void SyscallHandler::MarkGuestExecutableRange(uint64_t Start, uint64_t Length) {
           const auto OffsetTop = OffsetBase + ProtectSize;
 
           auto VMA = Mapping->second.Resource->FirstVMA;
-          LOGMAN_THROW_A_FMT(VMA, "VMA tracking error");
+          LOGMAN_THROW_AA_FMT(VMA, "VMA tracking error");
 
           do {
             auto VMAOffsetBase = VMA->Offset;
@@ -147,14 +147,14 @@ void SyscallHandler::MarkGuestExecutableRange(uint64_t Start, uint64_t Length) {
               const auto MirroredSize = std::min(OffsetTop, VMAOffsetTop) - MirroredBase;
 
               auto rv = mprotect((void *)(MirroredBase - VMAOffsetBase + VMABase), MirroredSize, PROT_READ);
-              LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", MirroredBase, MirroredSize);
+              LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", MirroredBase, MirroredSize);
             }
           } while ((VMA = VMA->ResourceNextVMA));
 
         } else if (Mapping->second.Prot.Writable) {
           int rv = mprotect((void *)ProtectBase, ProtectSize, PROT_READ);
 
-          LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", ProtectBase, ProtectSize);
+          LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", ProtectBase, ProtectSize);
         }
       }
     }
@@ -213,7 +213,7 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
       MRID mrid{SpecialDev::Anon, AnonSharedId++};
 
       auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, MappedResource{nullptr, nullptr, 0});
-      LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
+      LOGMAN_THROW_AA_FMT(Inserted == true, "VMA tracking error");
       Resource = &Iter->second;
       Resource->Iterator = Iter;
     } else {
@@ -276,8 +276,8 @@ void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t Ne
     if (OldSize == 0) {
       // Mirror existing mapping
       // must be a shared mapping
-      LOGMAN_THROW_A_FMT(OldResource != nullptr, "VMA Tracking error");
-      LOGMAN_THROW_A_FMT(OldFlags.Shared, "VMA Tracking error");
+      LOGMAN_THROW_AA_FMT(OldResource != nullptr, "VMA Tracking error");
+      LOGMAN_THROW_AA_FMT(OldFlags.Shared, "VMA Tracking error");
       VMATracking.SetUnsafe(CTX, OldResource, NewAddress, OldOffset, NewSize, OldFlags, OldProt);
     } else {
 
@@ -315,7 +315,7 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
   shmid_ds stat;
 
   auto res = shmctl(shmid, IPC_STAT, &stat);
-  LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
+  LOGMAN_THROW_AA_FMT(res != -1, "shmctl IPC_STAT failed");
 
   uint64_t Length = stat.shm_segsz;
 

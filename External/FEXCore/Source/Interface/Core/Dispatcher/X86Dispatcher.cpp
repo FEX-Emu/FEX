@@ -33,7 +33,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
       FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
       nullptr) {
 
-  LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "X86 dispatcher does not support SRA");
+  LOGMAN_THROW_AA_FMT(!config.StaticRegisterAllocation, "X86 dispatcher does not support SRA");
 
   using namespace Xbyak;
   using namespace Xbyak::util;

@@ -157,11 +157,11 @@ namespace FEXCore {
             auto args = reinterpret_cast<args_t*>(argsv);
             auto CTX = Thread->CTX;
 
-            LOGMAN_THROW_A_FMT(args->original_callee, "Tried to link null pointer address to guest function");
-            LOGMAN_THROW_A_FMT(args->target_addr, "Tried to link address to null pointer guest function");
+            LOGMAN_THROW_AA_FMT(args->original_callee, "Tried to link null pointer address to guest function");
+            LOGMAN_THROW_AA_FMT(args->target_addr, "Tried to link address to null pointer guest function");
             if (!CTX->Config.Is64BitMode) {
-                LOGMAN_THROW_A_FMT((args->original_callee >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
-                LOGMAN_THROW_A_FMT((args->target_addr >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+                LOGMAN_THROW_AA_FMT((args->original_callee >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+                LOGMAN_THROW_AA_FMT((args->target_addr >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
             }
 
             LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}",
@@ -217,7 +217,7 @@ namespace FEXCore {
               uintptr_t rv; // Pointer to host trampoline + TrampolineInstanceInfo
           } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-          LOGMAN_THROW_A_FMT(args->GuestTarget, "Tried to create host-trampoline to null pointer guest function");
+          LOGMAN_THROW_AA_FMT(args->GuestTarget, "Tried to create host-trampoline to null pointer guest function");
 
           const auto CTX = Thread->CTX;
           const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
@@ -266,7 +266,7 @@ namespace FEXCore {
                 PROT_READ | PROT_WRITE | PROT_EXEC,
                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-            LOGMAN_THROW_A_FMT(ThunkHandler->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
+            LOGMAN_THROW_AA_FMT(ThunkHandler->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
           }
 
           const TrampolineInstanceInfo NewTrampolineInfo {

@@ -21,7 +21,7 @@ namespace FEXCore {
 
     void Clear() {
       Items[0] = T{};
-      #ifndef NDEBUG
+      #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       for (size_t i = 1; i < Size; i++) {
         Items[i] = T{0xDEADBEEF};
       }

@@ -549,12 +549,12 @@ template<>
 aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_32>(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
+  LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
   if (Reg.Class == IR::GPRFixedClass.Val) {
     return SRA64[Reg.Reg].W();
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.Reg].W();
-  } else {
-    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -564,12 +564,12 @@ template<>
 aarch64::Register Arm64JITCore::GetReg<Arm64JITCore::RA_64>(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
+  LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
   if (Reg.Class == IR::GPRFixedClass.Val) {
     return SRA64[Reg.Reg];
   } else if (Reg.Class == IR::GPRClass.Val) {
     return RA64[Reg.Reg];
-  } else {
-    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -590,12 +590,12 @@ std::pair<aarch64::Register, aarch64::Register> Arm64JITCore::GetSrcPair<Arm64JI
 aarch64::VRegister Arm64JITCore::GetSrc(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
+  LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
   if (Reg.Class == IR::FPRFixedClass.Val) {
     return SRAFPR[Reg.Reg];
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.Reg];
-  } else {
-    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -604,12 +604,12 @@ aarch64::VRegister Arm64JITCore::GetSrc(IR::NodeID Node) const {
 aarch64::VRegister Arm64JITCore::GetDst(IR::NodeID Node) const {
   auto Reg = GetPhys(Node);
 
+  LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
   if (Reg.Class == IR::FPRFixedClass.Val) {
     return SRAFPR[Reg.Reg];
   } else if (Reg.Class == IR::FPRClass.Val) {
     return RAFPR[Reg.Reg];
-  } else {
-    LOGMAN_THROW_A_FMT(false, "Unexpected Class: {}", Reg.Class);
   }
 
   FEX_UNREACHABLE;
@@ -732,7 +732,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IR
     using namespace FEXCore::IR;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
     auto BlockStartHostCode = GetCursorAddress<uint8_t *>();

@@ -665,7 +665,7 @@ private:
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, OrderedNode *const Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
 
   [[nodiscard]] static uint32_t GPROffset(X86State::X86Reg reg) {
-    LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
+    LOGMAN_THROW_AA_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
     return static_cast<uint32_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
   }
 

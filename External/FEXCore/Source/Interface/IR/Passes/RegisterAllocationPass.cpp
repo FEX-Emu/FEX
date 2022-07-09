@@ -349,8 +349,8 @@ namespace {
   }
 
   void ConstrainedRAPass::AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) {
-    LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
-    LOGMAN_THROW_A_FMT(ClassCount <= INVALID_CLASS, "Up to {} classes supported", INVALID_CLASS);
+    LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+    LOGMAN_THROW_AA_FMT(ClassCount <= INVALID_CLASS, "Up to {} classes supported", INVALID_CLASS);
 
     Graph = AllocateRegisterGraph(ClassCount);
 
@@ -363,7 +363,7 @@ namespace {
   }
 
   void ConstrainedRAPass::AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) {
-    LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+    LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
 
     AllocatePhysicalRegisters(Graph, Class, RegisterCount);
   }
@@ -396,7 +396,7 @@ namespace {
         const auto BeginID = Op->Begin.ID();
         const auto LastID = Op->Last.ID();
 
-        LOGMAN_THROW_A_FMT(Op->Header.Op == OP_CODEBLOCK, "Block not defined by codeblock?");
+        LOGMAN_THROW_AA_FMT(Op->Header.Op == OP_CODEBLOCK, "Block not defined by codeblock?");
 
         LiveRange->Begin = std::min(LiveRange->Begin, BeginID);
         LiveRange->End = std::max(LiveRange->End, BeginID);
@@ -453,7 +453,7 @@ namespace {
 
         // If the destination hasn't yet been set then set it now
         if (IROp->HasDest) {
-          LOGMAN_THROW_A_FMT(NodeLiveRange.Begin.Value == UINT32_MAX,
+          LOGMAN_THROW_AA_FMT(NodeLiveRange.Begin.Value == UINT32_MAX,
                              "Node begin already defined?");
           NodeLiveRange.Begin = Node;
           // Default to ending right where after it starts
@@ -491,7 +491,7 @@ namespace {
 
           const auto ArgNode = Arg.ID();
           auto& ArgNodeLiveRange = LiveRanges[ArgNode.Value];
-          LOGMAN_THROW_A_FMT(ArgNodeLiveRange.Begin.Value != UINT32_MAX,
+          LOGMAN_THROW_AA_FMT(ArgNodeLiveRange.Begin.Value != UINT32_MAX,
                              "%ssa{} used by %ssa{} before defined?", ArgNode, Node);
 
           const auto ArgNodeBlockID = Graph->Nodes[ArgNode.Value].Head.BlockID;
@@ -544,26 +544,24 @@ namespace {
 
     // Is an OP_STOREREGISTER eligible to write directly to the SRA reg?
     auto IsPreWritable = [](uint8_t Size, RegisterClassType StaticClass) {
+      LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
       if (StaticClass == GPRFixedClass) {
         return Size == 8;
       } else if (StaticClass == FPRFixedClass) {
         return Size == 16;
-      } else {
-        LOGMAN_THROW_A_FMT(false, "Unexpected static class {}", StaticClass);
       }
       return false; // Unknown
     };
 
     // Is an OP_LOADREGISTER eligible to read directly from the SRA reg?
     auto IsAliasable = [](uint8_t Size, RegisterClassType StaticClass, uint32_t Offset) {
+      LOGMAN_THROW_A_FMT(StaticClass == GPRFixedClass || StaticClass == FPRFixedClass, "Unexpected static class {}", StaticClass);
       if (StaticClass == GPRFixedClass) {
         // We need more meta info to support not-size-of-reg
         return (Size == 8 /*|| Size == 4*/) && ((Offset & 7) == 0);
       } else if (StaticClass == FPRFixedClass) {
         // We need more meta info to support not-size-of-reg
         return (Size == 16 /*|| Size == 8 || Size == 4*/) && ((Offset & 15) == 0);
-      } else {
-        LOGMAN_THROW_A_FMT(false, "Unexpected static class {}", StaticClass);
       }
       return false; // Unknown
     };
@@ -576,16 +574,17 @@ namespace {
         auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
         auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
+        LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr), "Unexpected Offset {}", Offset);
+
         if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return PhysicalRegister(GPRFixedClass, reg);
         } else if (Offset >= beginFpr && Offset < endFpr) {
           auto reg = (Offset - beginFpr) / Core::CPUState::XMM_REG_SIZE;
           return PhysicalRegister(FPRFixedClass, reg);
-        } else {
-          LOGMAN_THROW_A_FMT(false, "Unexpected Offset {}", Offset);
-          return PhysicalRegister::Invalid();
         }
+
+        return PhysicalRegister::Invalid();
     };
 
     auto GprSize = Graph->Set.Classes[GPRFixedClass.Val].PhysicalCount;
@@ -600,28 +599,30 @@ namespace {
         auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
         auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
 
+        LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr), "Unexpected Offset {}", Offset);
+
         if (Offset >= beginGpr && Offset < endGpr) {
           auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return &StaticMaps[reg];
         } else if (Offset >= beginFpr && Offset < endFpr) {
           auto reg = (Offset - beginFpr) / Core::CPUState::XMM_REG_SIZE;
           return &StaticMaps[GprSize + reg];
-        } else {
-          LOGMAN_THROW_A_FMT(false, "Unexpected offset {}", Offset);
-          return nullptr;
         }
+
+        return nullptr;
     };
 
     // Get a StaticMap entry from reg and class
     const auto GetStaticMapFromReg = [&](IR::PhysicalRegister PhyReg) -> LiveRange** {
+      LOGMAN_THROW_A_FMT(PhyReg.Class == GPRFixedClass.Val || PhyReg.Class == FPRFixedClass.Val, "Unexpected Class {}", PhyReg.Class);
+
       if (PhyReg.Class == GPRFixedClass.Val) {
         return &StaticMaps[PhyReg.Reg];
       } else if (PhyReg.Class == FPRFixedClass.Val) {
         return &StaticMaps[GprSize + PhyReg.Reg];
-      } else {
-        LOGMAN_THROW_A_FMT(false, "Unexpected Class {}", PhyReg.Class);
-        return nullptr;
       }
+
+      return nullptr;
     };
 
     // First pass: Mark pre-writes
@@ -778,7 +779,7 @@ namespace {
 
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-      LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
       const auto BlockNodeID = IR->GetID(BlockNode);
       const auto BlockBeginID = BlockIROp->Begin.ID();
@@ -888,7 +889,7 @@ namespace {
     };
 
     // SpanStart/SpanEnd assume SSA id will fit in 24bits
-    LOGMAN_THROW_A_FMT(NodeCount <= 0xff'ffff, "Block too large for Spans");
+    LOGMAN_THROW_AA_FMT(NodeCount <= 0xff'ffff, "Block too large for Spans");
 
     SpanStart.resize(NodeCount);
     SpanEnd.resize(NodeCount);
@@ -924,7 +925,7 @@ namespace {
       });
     }
 
-    LOGMAN_THROW_A_FMT(Active.Items[0] == 0, "Interference bug");
+    LOGMAN_THROW_AA_FMT(Active.Items[0] == 0, "Interference bug");
     SpanStart.clear();
     SpanEnd.clear();
   }
@@ -1350,7 +1351,7 @@ namespace {
     auto LastCursor = IREmit->GetWriteCursor();
     auto [CodeNode, IROp] = IR.at(SpillPointId)();
 
-    LOGMAN_THROW_A_FMT(IROp->HasDest, "Can't spill with no dest");
+    LOGMAN_THROW_AA_FMT(IROp->HasDest, "Can't spill with no dest");
 
     const auto Node = IR.GetID(CodeNode);
     RegisterNode *CurrentNode = &Graph->Nodes[Node.Value];

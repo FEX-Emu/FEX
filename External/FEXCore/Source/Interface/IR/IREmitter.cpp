@@ -167,7 +167,7 @@ IREmitter::IRPair<IROp_CodeBlock> IREmitter::CreateNewCodeBlockAfter(OrderedNode
   if (insertAfter) {
     LinkCodeBlocks(insertAfter, CodeNode);
   } else {
-    LOGMAN_THROW_A_FMT(CurrentCodeBlock != nullptr, "CurrentCodeBlock must not be null here");
+    LOGMAN_THROW_AA_FMT(CurrentCodeBlock != nullptr, "CurrentCodeBlock must not be null here");
 
     // Find last block
     auto LastBlock = CurrentCodeBlock;

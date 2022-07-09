@@ -383,7 +383,7 @@ namespace FEX::HarnessHelper {
       }
       else {
         uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-        LOGMAN_THROW_A_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
+        LOGMAN_THROW_AA_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
         return Result + STACK_SIZE;
       }
     }
@@ -396,7 +396,7 @@ namespace FEX::HarnessHelper {
       bool LimitedSize = true;
       auto DoMMap = [&Mapper](uint64_t Address, size_t Size) -> void* {
         void *Result = Mapper(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+        LOGMAN_THROW_AA_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
         return Result;
       };
 

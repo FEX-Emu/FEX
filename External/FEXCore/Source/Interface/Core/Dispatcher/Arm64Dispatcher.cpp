@@ -542,7 +542,7 @@ size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t Gues
 }
 
 size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
-  LOGMAN_THROW_A_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
+  LOGMAN_THROW_AA_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
   
   *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
 

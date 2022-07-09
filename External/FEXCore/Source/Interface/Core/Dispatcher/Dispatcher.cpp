@@ -692,7 +692,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   else {
     NewGuestSP -= 4;
     *(uint32_t*)NewGuestSP = SignalReturn;
-    LOGMAN_THROW_A_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    LOGMAN_THROW_AA_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
     Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
   }
 

@@ -246,7 +246,7 @@ namespace {
       ClassifiedStructSize += it.Class.Size;
     }
 
-    LOGMAN_THROW_A_FMT(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
+    LOGMAN_THROW_AA_FMT(ClassifiedStructSize == sizeof(FEXCore::Core::CPUState),
       "Classified CPUStruct size doesn't match real CPUState struct size! {} (classified) != {} (real)",
       ClassifiedStructSize, sizeof(FEXCore::Core::CPUState));
 
@@ -331,8 +331,8 @@ ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ContextClassificationInfo,
 }
 
 ContextMemberInfo *RCLSE::RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode) {
-  LOGMAN_THROW_A_FMT((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
-  LOGMAN_THROW_A_FMT(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
+  LOGMAN_THROW_AA_FMT((Offset + Size) <= (Info->Class.Offset + Info->Class.Size), "Access to context item went over member size");
+  LOGMAN_THROW_AA_FMT(Info->Accessed != ACCESS_INVALID, "Tried to access invalid member");
 
   // If we aren't fully overwriting the member then it is a partial write that we need to track
   if (Size < Info->Class.Size) {
