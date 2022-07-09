@@ -46,6 +46,7 @@ std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Contex
                                                         FEX::HLE::SignalDelegator *_SignalDelegation,
                                                         std::unique_ptr<MemAllocator> Allocator);
 
+extern RegisterSyscallInternalType SyscallRegisterHandler;
 void RegisterSyscallInternal(int SyscallNumber,
   int32_t HostSyscallNumber,
   FEXCore::IR::SyscallFlags Flags,
@@ -68,7 +69,7 @@ void RegisterSyscall(int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::
 #ifdef DEBUG_STRACE
   auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif
-  FEX::HLE::x32::RegisterSyscallInternal(SyscallNumber,
+  FEX::HLE::x32::SyscallRegisterHandler(SyscallNumber,
     HostSyscallNumber,
     Flags,
 #ifdef DEBUG_STRACE

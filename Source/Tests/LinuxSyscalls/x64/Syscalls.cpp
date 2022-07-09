@@ -13,6 +13,8 @@ $end_info$
 #include <map>
 
 namespace FEX::HLE::x64 {
+  RegisterSyscallInternalType SyscallRegisterHandler = FEX::HLE::RegisterSyscallInternalNop;
+
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler);
   void RegisterFD();
   void RegisterInfo();
@@ -78,6 +80,7 @@ namespace FEX::HLE::x64 {
   x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
     : SyscallHandler {ctx, _SignalDelegation} {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX64;
+    FEX::HLE::x64::SyscallRegisterHandler = FEX::HLE::x64::RegisterSyscallInternal;
 
     RegisterSyscallHandlers();
   }
@@ -152,6 +155,9 @@ namespace FEX::HLE::x64 {
       Def.StraceFmt = Syscall.TraceFormatString;
 #endif
     }
+
+    // Clear the registration vector
+    syscalls_x64 = {};
 
     // x86-64 has a gap of syscalls in the range of [335, 424) where there aren't any
     // These are defined that these must return -ENOSYS
