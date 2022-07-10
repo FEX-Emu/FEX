@@ -28,7 +28,7 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE r14
 
 X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
-  : Dispatcher(ctx)
+  : Dispatcher(ctx, config)
   , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE,
       FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
       nullptr) {

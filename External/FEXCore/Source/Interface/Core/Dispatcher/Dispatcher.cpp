@@ -299,7 +299,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   // Spill the SRA regardless of signal handler type
   // We are going to be returning to the top of the dispatcher which will fill again
   // Otherwise we might load garbage
-  if (SRAEnabled) {
+  if (config.StaticRegisterAllocation) {
     if (Thread->CPUBackend->IsAddressInCodeBuffer(OldPC)) {
       uint32_t IgnoreMask{};
 #ifdef _M_ARM_64
@@ -665,11 +665,11 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
     // Store our thread state so we can come back to this
     StoreThreadState(Thread, Signal, ucontext);
 
-    if (SRAEnabled && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+    if (config.StaticRegisterAllocation && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
       // We are in jit, SRA must be spilled
       ArchHelpers::Context::SetPc(ucontext, ThreadPauseHandlerAddressSpillSRA);
     } else {
-      if (SRAEnabled) {
+      if (config.StaticRegisterAllocation) {
         // We are in non-jit, SRA is already spilled
         LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
                            "Signals in dispatcher have unsynchronized context");
@@ -698,11 +698,11 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
     Thread->CurrentFrame->SignalHandlerRefCounter = 0;
 
     // Set the new PC
-    if (SRAEnabled && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+    if (config.StaticRegisterAllocation && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
       // We are in jit, SRA must be spilled
       ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddressSpillSRA);
     } else {
-      if (SRAEnabled) {
+      if (config.StaticRegisterAllocation) {
         // We are in non-jit, SRA is already spilled
         LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
                            "Signals in dispatcher have unsynchronized context");

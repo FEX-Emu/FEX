@@ -84,18 +84,19 @@ public:
   }
 
 protected:
-  Dispatcher(FEXCore::Context::Context *ctx)
+  Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &Config)
     : CTX {ctx}
+    , config {Config}
     {}
 
   ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
   void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext);
   std::stack<uint64_t, std::vector<uint64_t>> SignalFrames;
 
-  bool SRAEnabled = false;
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
 
   FEXCore::Context::Context *CTX;
+  DispatcherConfig config;
 
   static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame);
 
