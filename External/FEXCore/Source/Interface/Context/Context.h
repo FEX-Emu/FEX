@@ -114,6 +114,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
       FEX_CONFIG_OPT(x86dec_SynchronizeRIPOnAllBlocks, X86DEC_SYNCHRONIZERIPONALLBLOCKS);
+      FEX_CONFIG_OPT(EnableAVX, ENABLEAVX);
     } Config;
 
     FEXCore::HostFeatures HostFeatures;

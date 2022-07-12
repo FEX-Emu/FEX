@@ -154,6 +154,9 @@ namespace FEXCore::Context {
     if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
       CodeObjectCacheService = std::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
     }
+    if (!Config.EnableAVX) {
+      HostFeatures.SupportsAVX = false;
+    }
   }
 
   Context::~Context() {

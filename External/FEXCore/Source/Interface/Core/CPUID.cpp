@@ -83,7 +83,10 @@ static uint32_t CalculateNumberOfCPUs() {
   return CPUs;
 }
 
+// TODO: Replace usages with CTX->HostFeatures.EnableAVX
+//       when AVX implementations are further along.
 constexpr uint32_t SUPPORTS_AVX = 0;
+
 // #define CPUID_AMD
 #ifdef CPUID_AMD
 constexpr uint32_t FAMILY_IDENTIFIER =

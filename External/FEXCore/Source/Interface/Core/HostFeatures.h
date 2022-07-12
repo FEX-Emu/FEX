@@ -21,6 +21,7 @@ class HostFeatures final {
     bool SupportsRCPC{};
     bool SupportsTSOImm9{};
     bool SupportsRAND{};
+    bool SupportsAVX{};
 
     // Float exception behaviour
     bool SupportsFlushInputsToZero{};
