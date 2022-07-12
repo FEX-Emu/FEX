@@ -44,7 +44,7 @@ DEF_OP(SplatVector) {
   uint8_t OpSize = IROp->Size;
 
   LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Scalar);
   uint8_t Tmp[16];
   uint8_t Elements = 0;
 
@@ -76,60 +76,60 @@ DEF_OP(SplatVector) {
 
 DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
+  const auto Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Source);
 
   memcpy(GDP, &Src, OpSize);
 }
 
 DEF_OP(VAnd) {
   auto Op = IROp->C<IR::IROp_VAnd>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector1);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector2);
 
-  __uint128_t Dst = Src1 & Src2;
+  const auto Dst = Src1 & Src2;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VBic) {
   auto Op = IROp->C<IR::IROp_VBic>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector1);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector2);
 
-  __uint128_t Dst = Src1 & ~Src2;
+  const auto Dst = Src1 & ~Src2;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VOr) {
   auto Op = IROp->C<IR::IROp_VOr>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector1);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector2);
 
-  __uint128_t Dst = Src1 | Src2;
+  const auto Dst = Src1 | Src2;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VXor) {
   auto Op = IROp->C<IR::IROp_VXor>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector1);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector2);
 
-  __uint128_t Dst = Src1 ^ Src2;
+  const auto Dst = Src1 ^ Src2;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VAdd) {
   auto Op = IROp->C<IR::IROp_VAdd>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return a + b; };
+  const auto Func = [](auto a, auto b) { return a + b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
     DO_VECTOR_OP(2, uint16_t, Func)
@@ -142,15 +142,15 @@ DEF_OP(VAdd) {
 
 DEF_OP(VSub) {
   auto Op = IROp->C<IR::IROp_VSub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return a - b; };
+  const auto Func = [](auto a, auto b) { return a - b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
     DO_VECTOR_OP(2, uint16_t, Func)
@@ -163,15 +163,15 @@ DEF_OP(VSub) {
 
 DEF_OP(VUQAdd) {
   auto Op = IROp->C<IR::IROp_VUQAdd>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) {
+  const auto Func = [](auto a, auto b) {
     decltype(a) res = a + b;
     return res < a ? ~0U : res;
   };
@@ -187,15 +187,15 @@ DEF_OP(VUQAdd) {
 
 DEF_OP(VUQSub) {
   auto Op = IROp->C<IR::IROp_VUQSub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) {
+  const auto Func = [](auto a, auto b) {
     decltype(a) res = a - b;
     return res > a ? 0U : res;
   };
@@ -211,15 +211,15 @@ DEF_OP(VUQSub) {
 
 DEF_OP(VSQAdd) {
   auto Op = IROp->C<IR::IROp_VSQAdd>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) {
+  const auto Func = [](auto a, auto b) {
     decltype(a) res = a + b;
 
     if (a > 0) {
@@ -245,15 +245,15 @@ DEF_OP(VSQAdd) {
 
 DEF_OP(VSQSub) {
   auto Op = IROp->C<IR::IROp_VSQSub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) {
+  const auto Func = [](auto a, auto b) {
     __int128_t res = a - b;
     if (res < std::numeric_limits<decltype(a)>::min())
       return std::numeric_limits<decltype(a)>::min();
@@ -275,15 +275,15 @@ DEF_OP(VSQSub) {
 
 DEF_OP(VAddP) {
   auto Op = IROp->C<IR::IROp_VAddP>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t Tmp[16];
 
-  uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
+  const uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
 
-  auto Func = [](auto a, auto b) { return a + b; };
+  const auto Func = [](auto a, auto b) { return a + b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_PAIR_OP(1, uint8_t,  Func)
     DO_VECTOR_PAIR_OP(2, uint16_t, Func)
@@ -296,14 +296,14 @@ DEF_OP(VAddP) {
 
 DEF_OP(VAddV) {
   auto Op = IROp->C<IR::IROp_VAddV>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto current, auto a) { return current + a; };
+  const auto Func = [](auto current, auto a) { return current + a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_REDUCE_1SRC_OP(1, int8_t, Func, 0)
     DO_VECTOR_REDUCE_1SRC_OP(2, int16_t, Func, 0)
@@ -316,14 +316,14 @@ DEF_OP(VAddV) {
 
 DEF_OP(VUMinV) {
   auto Op = IROp->C<IR::IROp_VUMinV>();
-  uint8_t OpSize = IROp->Size;
+  const int8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto current, auto a) { return std::min(current, a); };
+  const auto Func = [](auto current, auto a) { return std::min(current, a); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_REDUCE_1SRC_OP(1, uint8_t, Func, ~0)
     DO_VECTOR_REDUCE_1SRC_OP(2, uint16_t, Func, ~0)
@@ -336,15 +336,15 @@ DEF_OP(VUMinV) {
 
 DEF_OP(VURAvg) {
   auto Op = IROp->C<IR::IROp_VURAvg>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return (a + b + 1) >> 1; };
+  const auto Func = [](auto a, auto b) { return (a + b + 1) >> 1; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
     DO_VECTOR_OP(2, uint16_t, Func)
@@ -355,14 +355,14 @@ DEF_OP(VURAvg) {
 
 DEF_OP(VAbs) {
   auto Op = IROp->C<IR::IROp_VAbs>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return std::abs(a); };
+  const auto Func = [](auto a) { return std::abs(a); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(1, int8_t, Func)
     DO_VECTOR_1SRC_OP(2, int16_t, Func)
@@ -375,14 +375,14 @@ DEF_OP(VAbs) {
 
 DEF_OP(VPopcount) {
   auto Op = IROp->C<IR::IROp_VPopcount>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return std::popcount(a); };
+  const auto Func = [](auto a) { return std::popcount(a); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(1, uint8_t, Func)
     DO_VECTOR_1SRC_OP(2, uint16_t, Func)
@@ -395,15 +395,15 @@ DEF_OP(VPopcount) {
 
 DEF_OP(VFAdd) {
   auto Op = IROp->C<IR::IROp_VFAdd>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return a + b; };
+  const auto Func = [](auto a, auto b) { return a + b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(4, float, Func)
     DO_VECTOR_OP(8, double, Func)
@@ -414,15 +414,15 @@ DEF_OP(VFAdd) {
 
 DEF_OP(VFAddP) {
   auto Op = IROp->C<IR::IROp_VFAddP>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t Tmp[16];
 
-  uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
+  const uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
 
-  auto Func = [](auto a, auto b) { return a + b; };
+  const auto Func = [](auto a, auto b) { return a + b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_PAIR_OP(4, float, Func)
     DO_VECTOR_PAIR_OP(8, double, Func)
@@ -433,15 +433,15 @@ DEF_OP(VFAddP) {
 
 DEF_OP(VFSub) {
   auto Op = IROp->C<IR::IROp_VFSub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return a - b; };
+  const auto Func = [](auto a, auto b) { return a - b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(4, float, Func)
     DO_VECTOR_OP(8, double, Func)
@@ -452,15 +452,15 @@ DEF_OP(VFSub) {
 
 DEF_OP(VFMul) {
   auto Op = IROp->C<IR::IROp_VFMul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return a * b; };
+  const auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(4, float, Func)
     DO_VECTOR_OP(8, double, Func)
@@ -471,15 +471,15 @@ DEF_OP(VFMul) {
 
 DEF_OP(VFDiv) {
   auto Op = IROp->C<IR::IROp_VFDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return a / b; };
+  const auto Func = [](auto a, auto b) { return a / b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(4, float, Func)
     DO_VECTOR_OP(8, double, Func)
@@ -490,15 +490,15 @@ DEF_OP(VFDiv) {
 
 DEF_OP(VFMin) {
   auto Op = IROp->C<IR::IROp_VFMin>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return std::min(a, b); };
+  const auto Func = [](auto a, auto b) { return std::min(a, b); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(4, float, Func)
     DO_VECTOR_OP(8, double, Func)
@@ -509,15 +509,15 @@ DEF_OP(VFMin) {
 
 DEF_OP(VFMax) {
   auto Op = IROp->C<IR::IROp_VFMax>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a, auto b) { return std::max(a, b); };
+  const auto Func = [](auto a, auto b) { return std::max(a, b); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(4, float, Func)
     DO_VECTOR_OP(8, double, Func)
@@ -528,14 +528,14 @@ DEF_OP(VFMax) {
 
 DEF_OP(VFRecp) {
   auto Op = IROp->C<IR::IROp_VFRecp>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return 1.0 / a; };
+  const auto Func = [](auto a) { return 1.0 / a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(4, float, Func)
     DO_VECTOR_1SRC_OP(8, double, Func)
@@ -546,14 +546,14 @@ DEF_OP(VFRecp) {
 
 DEF_OP(VFSqrt) {
   auto Op = IROp->C<IR::IROp_VFSqrt>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return std::sqrt(a); };
+  const auto Func = [](auto a) { return std::sqrt(a); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(4, float, Func)
     DO_VECTOR_1SRC_OP(8, double, Func)
@@ -564,14 +564,14 @@ DEF_OP(VFSqrt) {
 
 DEF_OP(VFRSqrt) {
   auto Op = IROp->C<IR::IROp_VFRSqrt>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return 1.0 / std::sqrt(a); };
+  const auto Func = [](auto a) { return 1.0 / std::sqrt(a); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(4, float, Func)
     DO_VECTOR_1SRC_OP(8, double, Func)
@@ -582,14 +582,14 @@ DEF_OP(VFRSqrt) {
 
 DEF_OP(VNeg) {
   auto Op = IROp->C<IR::IROp_VNeg>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return -a; };
+  const auto Func = [](auto a) { return -a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(1, int8_t, Func)
     DO_VECTOR_1SRC_OP(2, int16_t, Func)
@@ -602,14 +602,14 @@ DEF_OP(VNeg) {
 
 DEF_OP(VFNeg) {
   auto Op = IROp->C<IR::IROp_VFNeg>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func = [](auto a) { return -a; };
+  const auto Func = [](auto a) { return -a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(4, float, Func)
     DO_VECTOR_1SRC_OP(8, double, Func)
@@ -620,22 +620,22 @@ DEF_OP(VFNeg) {
 
 DEF_OP(VNot) {
   auto Op = IROp->C<IR::IROp_VNot>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
 
-  __uint128_t Dst = ~Src1;
+  const auto Dst = ~Src1;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VUMin) {
   auto Op = IROp->C<IR::IROp_VUMin>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return std::min(a, b); };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return std::min(a, b); };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
@@ -649,14 +649,14 @@ DEF_OP(VUMin) {
 
 DEF_OP(VSMin) {
   auto Op = IROp->C<IR::IROp_VSMin>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return std::min(a, b); };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return std::min(a, b); };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,  Func)
@@ -670,14 +670,14 @@ DEF_OP(VSMin) {
 
 DEF_OP(VUMax) {
   auto Op = IROp->C<IR::IROp_VUMax>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return std::max(a, b); };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return std::max(a, b); };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
@@ -691,14 +691,14 @@ DEF_OP(VUMax) {
 
 DEF_OP(VSMax) {
   auto Op = IROp->C<IR::IROp_VSMax>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return std::max(a, b); };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return std::max(a, b); };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,  Func)
@@ -712,10 +712,10 @@ DEF_OP(VSMax) {
 
 DEF_OP(VZip) {
   auto Op = IROp->C<IR::IROp_VZip>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t Tmp[16];
   uint8_t Elements = OpSize / Op->Header.ElementSize;
   uint8_t BaseOffset = IROp->Op == IR::OP_VZIP2 ? (Elements / 2) : 0;
@@ -770,10 +770,10 @@ DEF_OP(VZip) {
 
 DEF_OP(VUnZip) {
   auto Op = IROp->C<IR::IROp_VUnZip>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t Tmp[16];
   uint8_t Elements = OpSize / Op->Header.ElementSize;
   unsigned Start = IROp->Op == IR::OP_VUNZIP ? 0 : 1;
@@ -828,9 +828,9 @@ DEF_OP(VUnZip) {
 
 DEF_OP(VBSL) {
   auto Op = IROp->C<IR::IROp_VBSL>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
-  __uint128_t Src3 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[2]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorMask);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorTrue);
+  const auto Src3 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorFalse);
 
   __uint128_t Tmp{};
   Tmp = Src2 & Src1;
@@ -841,14 +841,14 @@ DEF_OP(VBSL) {
 
 DEF_OP(VCMPEQ) {
   auto Op = IROp->C<IR::IROp_VCMPEQ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,   Func)
@@ -863,14 +863,14 @@ DEF_OP(VCMPEQ) {
 
 DEF_OP(VCMPEQZ) {
   auto Op = IROp->C<IR::IROp_VCMPEQZ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Src2[16]{};
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,   Func)
@@ -885,14 +885,14 @@ DEF_OP(VCMPEQZ) {
 
 DEF_OP(VCMPGT) {
   auto Op = IROp->C<IR::IROp_VCMPGT>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,   Func)
@@ -907,14 +907,14 @@ DEF_OP(VCMPGT) {
 
 DEF_OP(VCMPGTZ) {
   auto Op = IROp->C<IR::IROp_VCMPGTZ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Src2[16]{};
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,   Func)
@@ -929,14 +929,14 @@ DEF_OP(VCMPGTZ) {
 
 DEF_OP(VCMPLTZ) {
   auto Op = IROp->C<IR::IROp_VCMPLTZ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Src2[16]{};
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,   Func)
@@ -951,15 +951,15 @@ DEF_OP(VCMPLTZ) {
 
 DEF_OP(VFCMPEQ) {
   auto Op = IROp->C<IR::IROp_VFCMPEQ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -981,15 +981,15 @@ DEF_OP(VFCMPEQ) {
 
 DEF_OP(VFCMPNEQ) {
   auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return a != b ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return a != b ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -1011,15 +1011,15 @@ DEF_OP(VFCMPNEQ) {
 
 DEF_OP(VFCMPLT) {
   auto Op = IROp->C<IR::IROp_VFCMPLT>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return a < b ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -1041,15 +1041,15 @@ DEF_OP(VFCMPLT) {
 
 DEF_OP(VFCMPGT) {
   auto Op = IROp->C<IR::IROp_VFCMPLT>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return a > b ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -1071,15 +1071,15 @@ DEF_OP(VFCMPGT) {
 
 DEF_OP(VFCMPLE) {
   auto Op = IROp->C<IR::IROp_VFCMPLE>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return a <= b ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return a <= b ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -1101,15 +1101,15 @@ DEF_OP(VFCMPLE) {
 
 DEF_OP(VFCMPORD) {
   auto Op = IROp->C<IR::IROp_VFCMPORD>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return (!std::isnan(a) && !std::isnan(b)) ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return (!std::isnan(a) && !std::isnan(b)) ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -1131,15 +1131,15 @@ DEF_OP(VFCMPORD) {
 
 DEF_OP(VFCMPUNO) {
   auto Op = IROp->C<IR::IROp_VFCMPUNO>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
-  auto Func = [](auto a, auto b) { return (std::isnan(a) || std::isnan(b)) ? ~0ULL : 0; };
+  const auto Func = [](auto a, auto b) { return (std::isnan(a) || std::isnan(b)) ? ~0ULL : 0; };
 
   uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
@@ -1161,14 +1161,14 @@ DEF_OP(VFCMPUNO) {
 
 DEF_OP(VUShl) {
   auto Op = IROp->C<IR::IROp_VUShl>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftVector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
@@ -1182,14 +1182,14 @@ DEF_OP(VUShl) {
 
 DEF_OP(VUShr) {
   auto Op = IROp->C<IR::IROp_VUShr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftVector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
@@ -1203,14 +1203,16 @@ DEF_OP(VUShr) {
 
 DEF_OP(VSShr) {
   auto Op = IROp->C<IR::IROp_VSShr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftVector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) {
+    return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b;
+  };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,  Func)
@@ -1224,14 +1226,14 @@ DEF_OP(VSShr) {
 
 DEF_OP(VUShlS) {
   auto Op = IROp->C<IR::IROp_VUShlS>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftScalar);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a << b; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_SCALAR_OP(1, uint8_t, Func)
@@ -1246,14 +1248,14 @@ DEF_OP(VUShlS) {
 
 DEF_OP(VUShrS) {
   auto Op = IROp->C<IR::IROp_VUShrS>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftScalar);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? 0 : a >> b; };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_SCALAR_OP(1, uint8_t, Func)
@@ -1268,14 +1270,16 @@ DEF_OP(VUShrS) {
 
 DEF_OP(VSShrS) {
   auto Op = IROp->C<IR::IROp_VSShrS>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->ShiftScalar);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  auto Func = [](auto a, auto b) { return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b; };
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) {
+    return b >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> b;
+  };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_SCALAR_OP(1, int8_t, Func)
@@ -1290,10 +1294,10 @@ DEF_OP(VSShrS) {
 
 DEF_OP(VInsElement) {
   auto Op = IROp->C<IR::IROp_VInsElement>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->DestVector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->SrcVector);
   uint8_t Tmp[16];
 
   // Copy src1 in to dest
@@ -1330,10 +1334,10 @@ DEF_OP(VInsElement) {
 
 DEF_OP(VInsScalarElement) {
   auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->DestVector);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->SrcScalar);
   uint8_t Tmp[16];
 
   // Copy src1 in to dest
@@ -1371,7 +1375,7 @@ DEF_OP(VInsScalarElement) {
 DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
 
-  uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Header.Args[0]);
+  const uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Vector);
   LOGMAN_THROW_A_FMT(IROp->Size <= 16, "OpSize is too large for VExtractElement: {}", IROp->Size);
   if (SourceSize == 16) {
     __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
@@ -1379,7 +1383,7 @@ DEF_OP(VExtractElement) {
     if (Op->Header.ElementSize == 8)
       SourceMask = ~0ULL;
 
-    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
+    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
     Src >>= Shift;
     Src &= SourceMask;
     memcpy(GDP, &Src, Op->Header.ElementSize);
@@ -1390,7 +1394,7 @@ DEF_OP(VExtractElement) {
     if (Op->Header.ElementSize == 8)
       SourceMask = ~0ULL;
 
-    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]);
+    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
     Src >>= Shift;
     Src &= SourceMask;
     GD = Src;
@@ -1399,9 +1403,8 @@ DEF_OP(VExtractElement) {
 
 DEF_OP(VDupElement) {
   auto Op = IROp->C<IR::IROp_VDupElement>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t OpSize = IROp->Size;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   LOGMAN_THROW_A_FMT(OpSize <= 16, "OpSize is too large for VDupElement: {}", OpSize);
   if (OpSize == 16) {
@@ -1410,7 +1413,7 @@ DEF_OP(VDupElement) {
     if (Op->Header.ElementSize == 8)
       SourceMask = ~0ULL;
 
-    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
+    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
     Src >>= Shift;
     Src &= SourceMask;
     for (size_t i = 0; i < Elements; ++i) {
@@ -1424,7 +1427,7 @@ DEF_OP(VDupElement) {
     if (Op->Header.ElementSize == 8)
       SourceMask = ~0ULL;
 
-    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]);
+    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
     Src >>= Shift;
     Src &= SourceMask;
     for (size_t i = 0; i < Elements; ++i) {
@@ -1436,10 +1439,10 @@ DEF_OP(VDupElement) {
 
 DEF_OP(VExtr) {
   auto Op = IROp->C<IR::IROp_VExtr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorLower);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorUpper);
 
   uint64_t Offset = Op->Index * Op->Header.ElementSize * 8;
   __uint128_t Dst{};
@@ -1456,33 +1459,35 @@ DEF_OP(VExtr) {
 
 DEF_OP(VSLI) {
   auto Op = IROp->C<IR::IROp_VSLI>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = Op->ByteShift * 8;
+  const __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
+  const __uint128_t Src2 = Op->ByteShift * 8;
 
-  __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 << Src2;
+  const __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 << Src2;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VSRI) {
   auto Op = IROp->C<IR::IROp_VSRI>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = Op->ByteShift * 8;
+  const __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
+  const __uint128_t Src2 = Op->ByteShift * 8;
 
-  __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 >> Src2;
+  const __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 >> Src2;
   memcpy(GDP, &Dst, 16);
 }
 
 DEF_OP(VUShrI) {
   auto Op = IROp->C<IR::IROp_VUShrI>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  uint8_t BitShift = Op->BitShift;
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
+  const uint8_t BitShift = Op->BitShift;
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [BitShift](auto a) {
+    return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift;
+  };
 
-  auto Func = [BitShift](auto a) { return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(1, uint8_t, Func)
     DO_VECTOR_1SRC_OP(2, uint16_t, Func)
@@ -1495,15 +1500,17 @@ DEF_OP(VUShrI) {
 
 DEF_OP(VSShrI) {
   auto Op = IROp->C<IR::IROp_VSShrI>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t BitShift = Op->BitShift;
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [BitShift](auto a) {
+    return BitShift >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> BitShift;
+  };
 
-  auto Func = [BitShift](auto a) { return BitShift >= (sizeof(a) * 8) ? (a >> (sizeof(a) * 8 - 1)) : a >> BitShift; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(1, int8_t, Func)
     DO_VECTOR_1SRC_OP(2, int16_t, Func)
@@ -1516,15 +1523,17 @@ DEF_OP(VSShrI) {
 
 DEF_OP(VShlI) {
   auto Op = IROp->C<IR::IROp_VShlI>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t BitShift = Op->BitShift;
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [BitShift](auto a) {
+    return BitShift >= (sizeof(a) * 8) ? 0 : (a << BitShift);
+  };
 
-  auto Func = [BitShift](auto a) { return BitShift >= (sizeof(a) * 8) ? 0 : (a << BitShift); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_OP(1, uint8_t, Func)
     DO_VECTOR_1SRC_OP(2, uint16_t, Func)
@@ -1537,15 +1546,17 @@ DEF_OP(VShlI) {
 
 DEF_OP(VUShrNI) {
   auto Op = IROp->C<IR::IROp_VUShrNI>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t BitShift = Op->BitShift;
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const auto Func = [BitShift](auto a, auto min, auto max) {
+    return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift;
+  };
 
-  auto Func = [BitShift](auto a, auto min, auto max) { return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, uint16_t, Func, 0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, uint32_t, Func, 0, 0)
@@ -1557,16 +1568,18 @@ DEF_OP(VUShrNI) {
 
 DEF_OP(VUShrNI2) {
   auto Op = IROp->C<IR::IROp_VUShrNI2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t BitShift = Op->BitShift;
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const auto Func = [BitShift](auto a, auto min, auto max) {
+    return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift;
+  };
 
-  auto Func = [BitShift](auto a, auto min, auto max) { return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP_TOP(1, uint8_t, uint16_t, Func, 0, 0)
     DO_VECTOR_1SRC_2TYPE_OP_TOP(2, uint16_t, uint32_t, Func, 0, 0)
@@ -1578,19 +1591,19 @@ DEF_OP(VUShrNI2) {
 
 DEF_OP(VBitcast) {
   auto Op = IROp->C<IR::IROp_VBitcast>();
-  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Header.Args[0]), 16);
+  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Source), 16);
 }
 
 DEF_OP(VSXTL) {
   auto Op = IROp->C<IR::IROp_VSXTL>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto min, auto max) { return a; };
 
-  auto Func = [](auto a, auto min, auto max) { return a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, int8_t, Func,  0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, int16_t, Func, 0, 0)
@@ -1602,14 +1615,14 @@ DEF_OP(VSXTL) {
 
 DEF_OP(VSXTL2) {
   auto Op = IROp->C<IR::IROp_VSXTL2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto min, auto max) { return a; };
 
-  auto Func = [](auto a, auto min, auto max) { return a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(2, int16_t, int8_t, Func,  0, 0)
     DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(4, int32_t, int16_t, Func, 0, 0)
@@ -1621,14 +1634,14 @@ DEF_OP(VSXTL2) {
 
 DEF_OP(VUXTL) {
   auto Op = IROp->C<IR::IROp_VUXTL>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto min, auto max) { return a; };
 
-  auto Func = [](auto a, auto min, auto max) { return a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, uint8_t, Func,  0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, uint16_t, Func, 0, 0)
@@ -1640,15 +1653,15 @@ DEF_OP(VUXTL) {
 
 DEF_OP(VUXTL2) {
   auto Op = IROp->C<IR::IROp_VUXTL2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto min, auto max) { return a; };
 
-  auto Func = [](auto a, auto min, auto max) { return a; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(2, uint16_t, uint8_t, Func,  0, 0)
     DO_VECTOR_1SRC_2TYPE_OP_TOP_SRC(4, uint32_t, uint16_t, Func, 0, 0)
@@ -1660,14 +1673,16 @@ DEF_OP(VUXTL2) {
 
 DEF_OP(VSQXTN) {
   auto Op = IROp->C<IR::IROp_VSQXTN>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const auto Func = [](auto a, auto min, auto max) {
+    return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
+  };
 
-  auto Func = [](auto a, auto min, auto max) { return std::max(std::min(a, (decltype(a))max), (decltype(a))min); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
     DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
@@ -1678,15 +1693,17 @@ DEF_OP(VSQXTN) {
 
 DEF_OP(VSQXTN2) {
   auto Op = IROp->C<IR::IROp_VSQXTN2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const auto Func = [](auto a, auto min, auto max) {
+    return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
+  };
 
-  auto Func = [](auto a, auto min, auto max) { return std::max(std::min(a, (decltype(a))max), (decltype(a))min); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP_TOP(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
     DO_VECTOR_1SRC_2TYPE_OP_TOP(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
@@ -1697,14 +1714,16 @@ DEF_OP(VSQXTN2) {
 
 DEF_OP(VSQXTUN) {
   auto Op = IROp->C<IR::IROp_VSQXTUN>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const auto Func = [](auto a, auto min, auto max) {
+    return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
+  };
 
-  auto Func = [](auto a, auto min, auto max) { return std::max(std::min(a, (decltype(a))max), (decltype(a))min); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
     DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
@@ -1715,15 +1734,17 @@ DEF_OP(VSQXTUN) {
 
 DEF_OP(VSQXTUN2) {
   auto Op = IROp->C<IR::IROp_VSQXTUN2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
   uint8_t Tmp[16]{};
 
-  uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const auto Func = [](auto a, auto min, auto max) {
+    return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
+  };
 
-  auto Func = [](auto a, auto min, auto max) { return std::max(std::min(a, (decltype(a))max), (decltype(a))min); };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP_TOP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
     DO_VECTOR_1SRC_2TYPE_OP_TOP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
@@ -1734,15 +1755,15 @@ DEF_OP(VSQXTUN2) {
 
 DEF_OP(VUMul) {
   auto Op = IROp->C<IR::IROp_VUMul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a * b; };
 
-  auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
     DO_VECTOR_OP(2, uint16_t, Func)
@@ -1755,16 +1776,16 @@ DEF_OP(VUMul) {
 
 DEF_OP(VUMull) {
   auto Op = IROp->C<IR::IROp_VUMull>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a * b; };
 
-  auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_2SRC_2TYPE_OP(2, uint16_t, uint8_t, Func)
     DO_VECTOR_2SRC_2TYPE_OP(4, uint32_t, uint16_t, Func)
@@ -1776,15 +1797,15 @@ DEF_OP(VUMull) {
 
 DEF_OP(VSMul) {
   auto Op = IROp->C<IR::IROp_VSMul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a * b; };
 
-  auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_OP(1, int8_t,  Func)
     DO_VECTOR_OP(2, int16_t, Func)
@@ -1797,16 +1818,16 @@ DEF_OP(VSMul) {
 
 DEF_OP(VSMull) {
   auto Op = IROp->C<IR::IROp_VSMull>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a * b; };
 
-  auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_2SRC_2TYPE_OP(2, int16_t, int8_t, Func)
     DO_VECTOR_2SRC_2TYPE_OP(4, int32_t, int16_t, Func)
@@ -1818,16 +1839,16 @@ DEF_OP(VSMull) {
 
 DEF_OP(VUMull2) {
   auto Op = IROp->C<IR::IROp_VUMull2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a * b; };
 
-  auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(2, uint16_t, uint8_t, Func)
     DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(4, uint32_t, uint16_t, Func)
@@ -1839,16 +1860,16 @@ DEF_OP(VUMull2) {
 
 DEF_OP(VSMull2) {
   auto Op = IROp->C<IR::IROp_VSMull2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const auto Func = [](auto a, auto b) { return a * b; };
 
-  auto Func = [](auto a, auto b) { return a * b; };
   switch (Op->Header.ElementSize) {
     DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(2, int16_t, int8_t, Func)
     DO_VECTOR_2SRC_2TYPE_OP_TOP_SRC(4, int32_t, int16_t, Func)
@@ -1860,18 +1881,18 @@ DEF_OP(VSMull2) {
 
 DEF_OP(VUABDL) {
   auto Op = IROp->C<IR::IROp_VUABDL>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Header.Args[1]);
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  auto Func8 = [](auto a, auto b) { return std::abs((int16_t)a - (int16_t)b); };
-  auto Func16 = [](auto a, auto b) { return std::abs((int32_t)a - (int32_t)b); };
-  auto Func32 = [](auto a, auto b) { return std::abs((int64_t)a - (int64_t)b); };
+  const auto Func8 = [](auto a, auto b) { return std::abs((int16_t)a - (int16_t)b); };
+  const auto Func16 = [](auto a, auto b) { return std::abs((int32_t)a - (int32_t)b); };
+  const auto Func32 = [](auto a, auto b) { return std::abs((int64_t)a - (int64_t)b); };
 
   switch (Op->Header.ElementSize) {
     DO_VECTOR_2SRC_2TYPE_OP(2, uint16_t, uint8_t, Func8)
@@ -1884,15 +1905,15 @@ DEF_OP(VUABDL) {
 
 DEF_OP(VTBL1) {
   auto Op = IROp->C<IR::IROp_VTBL1>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  uint8_t *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[0]);
-  uint8_t *Src2 = GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[1]);
+  const auto *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorTable);
+  const auto *Src2 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorIndices);
 
   uint8_t Tmp[16];
 
   for (size_t i = 0; i < OpSize; ++i) {
-    uint8_t Index = Src2[i];
+    const uint8_t Index = Src2[i];
     Tmp[i] = Index >= OpSize ? 0 : Src1[Index];
   }
   memcpy(GDP, Tmp, OpSize);
@@ -1900,24 +1921,24 @@ DEF_OP(VTBL1) {
 
 DEF_OP(VRev64) {
   auto Op = IROp->C<IR::IROp_VRev64>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
 
   uint8_t Tmp[16];
 
-  uint8_t Elements = OpSize / 8;
+  const uint8_t Elements = OpSize / 8;
 
   // The element working size is always 64-bit
   // The defined element size in the op is the operating size of the element swapping
-  auto Func8 = [](auto a) { return BSwap64(a); };
-  auto Func16 = [](auto a) {
+  const auto Func8 = [](auto a) { return BSwap64(a); };
+  const auto Func16 = [](auto a) {
     return (a >> 48) |                    // Element[3] -> Element[0]
       ((a >> 16) & 0xFFFF'0000U) |        // Element[2] -> Element[1]
       ((a << 16) & 0xFFFF'0000'0000ULL) | // Element[1] -> Element[2]
       (a << 48);                          // Element[0] -> Element[3]
   };
-  auto Func32 = [](auto a) {
+  const auto Func32 = [](auto a) {
     return (a >> 32) | (a << 32);
   };
 

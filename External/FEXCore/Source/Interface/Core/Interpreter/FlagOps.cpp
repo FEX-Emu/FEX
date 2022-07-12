@@ -14,7 +14,7 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(GetHostFlag) {
   auto Op = IROp->C<IR::IROp_GetHostFlag>();
-  GD = (*GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]) >> Op->Flag) & 1;
+  GD = (*GetSrc<uint64_t*>(Data->SSAData, Op->Value) >> Op->Flag) & 1;
 }
 #undef DEF_OP
 

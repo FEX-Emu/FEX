@@ -360,7 +360,7 @@ namespace FEXCore::CPU {
 
 DEF_OP(AESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
+  auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
 
   // Pseudo-code
   // Dst = InvMixColumns(STATE)
@@ -371,8 +371,8 @@ DEF_OP(AESImc) {
 
 DEF_OP(AESEnc) {
   auto Op = IROp->C<IR::IROp_VAESEnc>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->State);
+  auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Key);
 
   // Pseudo-code
   // STATE = Src1
@@ -391,8 +391,8 @@ DEF_OP(AESEnc) {
 
 DEF_OP(AESEncLast) {
   auto Op = IROp->C<IR::IROp_VAESEncLast>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->State);
+  auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Key);
 
   // Pseudo-code
   // STATE = Src1
@@ -409,8 +409,8 @@ DEF_OP(AESEncLast) {
 
 DEF_OP(AESDec) {
   auto Op = IROp->C<IR::IROp_VAESDec>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->State);
+  auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Key);
 
   // Pseudo-code
   // STATE = Src1
@@ -429,8 +429,8 @@ DEF_OP(AESDec) {
 
 DEF_OP(AESDecLast) {
   auto Op = IROp->C<IR::IROp_VAESDecLast>();
-  __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[0]);
-  __uint128_t Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Header.Args[1]);
+  auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->State);
+  auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Key);
 
   // Pseudo-code
   // STATE = Src1
@@ -447,7 +447,7 @@ DEF_OP(AESDecLast) {
 
 DEF_OP(AESKeyGenAssist) {
   auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
-  uint8_t *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[0]);
+  const uint8_t *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->Src);
 
   // Pseudo-code
   // X3 = Src1[127:96]

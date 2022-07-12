@@ -59,7 +59,7 @@ DEF_OP(StoreContext) {
   ContextPtr += Op->Offset;
 
   void *MemData = reinterpret_cast<void*>(ContextPtr);
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Value);
   memcpy(MemData, Src, OpSize);
 }
 
@@ -73,7 +73,7 @@ DEF_OP(StoreRegister) {
 
 DEF_OP(LoadContextIndexed) {
   auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-  uint64_t Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[0]);
+  uint64_t Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Index);
 
   uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
 
@@ -103,14 +103,14 @@ DEF_OP(LoadContextIndexed) {
 
 DEF_OP(StoreContextIndexed) {
   auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  uint64_t Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[1]);
+  uint64_t Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Index);
 
   uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
   ContextPtr += Op->BaseOffset;
   ContextPtr += Index * Op->Stride;
 
   void *MemData = reinterpret_cast<void*>(ContextPtr);
-  void *Src = GetSrc<void*>(Data->SSAData, Op->Header.Args[0]);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Value);
   memcpy(MemData, Src, IROp->Size);
 }
 
@@ -134,7 +134,7 @@ DEF_OP(LoadFlag) {
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
-  uint8_t Arg = *GetSrc<uint8_t*>(Data->SSAData, Op->Header.Args[0]);
+  uint8_t Arg = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
 
   uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
   ContextPtr += offsetof(FEXCore::Core::CPUState, flags[0]);
@@ -228,9 +228,9 @@ DEF_OP(StoreMem) {
 
 DEF_OP(VLoadMemElement) {
   auto Op = IROp->C<IR::IROp_VLoadMemElement>();
-  void const *MemData = *GetSrc<void const**>(Data->SSAData, Op->Header.Args[0]);
+  void const *MemData = *GetSrc<void const**>(Data->SSAData, Op->Value);
 
-  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Header.Args[1]), 16);
+  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Addr), 16);
   memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * Op->Index)),
     MemData, Op->Header.ElementSize);
 }
@@ -238,8 +238,8 @@ DEF_OP(VLoadMemElement) {
 DEF_OP(VStoreMemElement) {
   #define STORE_DATA(x, y) \
     case x: { \
-      y *MemData = *GetSrc<y**>(Data->SSAData, Op->Header.Args[0]); \
-      memcpy(MemData, &GetSrc<y*>(Data->SSAData, Op->Header.Args[1])[Op->Index], sizeof(y)); \
+      y *MemData = *GetSrc<y**>(Data->SSAData, Op->Value); \
+      memcpy(MemData, &GetSrc<y*>(Data->SSAData, Op->Addr)[Op->Index], sizeof(y)); \
       break; \
     }
 
