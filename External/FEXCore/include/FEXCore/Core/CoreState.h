@@ -13,15 +13,11 @@ namespace FEXCore::Core {
   struct FEX_PACKED CPUState {
     uint64_t rip; ///< Current core's RIP. May not be entirely accurate while JIT is active
     uint64_t gregs[16];
-    uint64_t : 64;
-    uint64_t : 64;
-    uint64_t : 64;
-    uint64_t xmm[16][4];
     uint16_t es, cs, ss, ds;
     uint64_t gs;
     uint64_t fs;
+    uint64_t xmm[16][4];
     uint8_t flags[48];
-    uint64_t : 64; // Ensures mm is aligned
     uint64_t mm[8][2];
 
     // 32bit x86 state
@@ -46,6 +42,7 @@ namespace FEXCore::Core {
     static constexpr size_t NUM_MMS = sizeof(mm) / MM_REG_SIZE;
   };
   static_assert(offsetof(CPUState, xmm) % 32 == 0, "xmm needs to be 256-bit aligned!");
+  static_assert(offsetof(CPUState, mm) % 16 == 0, "mm needs to be 128-bit aligned!");
 
   struct InternalThreadState;
 
