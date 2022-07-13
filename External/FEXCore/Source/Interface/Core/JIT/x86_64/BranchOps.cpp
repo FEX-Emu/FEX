@@ -209,7 +209,7 @@ DEF_OP(Thunk) {
   if (NumPush & 1)
     sub(rsp, 8); // Align
 
-  mov(rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rdi, GetSrc<RA_64>(Op->ArgPtr.ID()));
 
   auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
 
@@ -288,8 +288,8 @@ DEF_OP(CPUID) {
   // Result: RAX, RDX. 4xi32
 
   // rsi can be in the source registers, so copy argument to edx first
-  mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-  mov (esi, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+  mov (edx, GetSrc<RA_32>(Op->Leaf.ID()));
+  mov (esi, GetSrc<RA_32>(Op->Function.ID()));
   mov (rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj)]);
 
   auto NumPush = RA64.size();
