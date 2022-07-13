@@ -20,13 +20,13 @@ DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
   switch (Op->Header.Size) {
     case 4: {
-      auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+      auto Src = GetSrcPair<RA_32>(Op->Pair.ID());
       std::array<Xbyak::Reg, 2> Regs = {Src.first, Src.second};
       mov (GetDst<RA_32>(Node), Regs[Op->Element]);
       break;
     }
     case 8: {
-      auto Src = GetSrcPair<RA_64>(Op->Header.Args[0].ID());
+      auto Src = GetSrcPair<RA_64>(Op->Pair.ID());
       std::array<Xbyak::Reg, 2> Regs = {Src.first, Src.second};
       mov (GetDst<RA_64>(Node), Regs[Op->Element]);
       break;
@@ -45,15 +45,15 @@ DEF_OP(CreateElementPair) {
   switch (IROp->ElementSize) {
     case 4: {
       Dst = GetSrcPair<RA_32>(Node);
-      RegFirst = GetSrc<RA_32>(Op->Header.Args[0].ID());
-      RegSecond = GetSrc<RA_32>(Op->Header.Args[1].ID());
+      RegFirst = GetSrc<RA_32>(Op->Lower.ID());
+      RegSecond = GetSrc<RA_32>(Op->Upper.ID());
       RegTmp = eax;
       break;
     }
     case 8: {
       Dst = GetSrcPair<RA_64>(Node);
-      RegFirst = GetSrc<RA_64>(Op->Header.Args[0].ID());
-      RegSecond = GetSrc<RA_64>(Op->Header.Args[1].ID());
+      RegFirst = GetSrc<RA_64>(Op->Lower.ID());
+      RegSecond = GetSrc<RA_64>(Op->Upper.ID());
       RegTmp = rax;
       break;
     }
@@ -75,7 +75,7 @@ DEF_OP(CreateElementPair) {
 
 DEF_OP(Mov) {
   auto Op = IROp->C<IR::IROp_Mov>();
-  mov (GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov (GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Value.ID()));
 }
 
 #undef DEF_OP

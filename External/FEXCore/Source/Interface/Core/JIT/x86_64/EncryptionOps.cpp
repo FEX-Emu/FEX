@@ -17,44 +17,44 @@ namespace FEXCore::CPU {
 
 DEF_OP(AESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
-  vaesimc(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  vaesimc(GetDst(Node), GetSrc(Op->Vector.ID()));
 }
 
 DEF_OP(AESEnc) {
   auto Op = IROp->C<IR::IROp_VAESEnc>();
-  vaesenc(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vaesenc(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
 }
 
 DEF_OP(AESEncLast) {
   auto Op = IROp->C<IR::IROp_VAESEncLast>();
-  vaesenclast(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vaesenclast(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
 }
 
 DEF_OP(AESDec) {
   auto Op = IROp->C<IR::IROp_VAESDec>();
-  vaesdec(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vaesdec(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
 }
 
 DEF_OP(AESDecLast) {
   auto Op = IROp->C<IR::IROp_VAESDecLast>();
-  vaesdeclast(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vaesdeclast(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
 }
 
 DEF_OP(AESKeyGenAssist) {
   auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
-  vaeskeygenassist(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), Op->RCON);
+  vaeskeygenassist(GetDst(Node), GetSrc(Op->Src.ID()), Op->RCON);
 }
 
 DEF_OP(CRC32) {
   auto Op = IROp->C<IR::IROp_CRC32>();
   switch (IROp->Size) {
   case 4:
-    mov(TMP1, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-    mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+    mov(TMP1, GetSrc<RA_32>(Op->Src2.ID()));
+    mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
   break;
   case 8:
-    mov(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-    mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    mov(TMP1, GetSrc<RA_64>(Op->Src2.ID()));
+    mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
   break;
   default: LOGMAN_MSG_A_FMT("Unknown CRC32 size: {}", IROp->Size);
   }

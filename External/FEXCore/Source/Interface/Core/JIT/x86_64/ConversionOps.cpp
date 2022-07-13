@@ -45,18 +45,18 @@ DEF_OP(VCastFromGPR) {
   auto Op = IROp->C<IR::IROp_VCastFromGPR>();
   switch (Op->Header.ElementSize) {
     case 1:
-      movzx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      movzx(rax, GetSrc<RA_8>(Op->Src.ID()));
       vmovq(GetDst(Node), rax);
       break;
     case 2:
-      movzx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      movzx(rax, GetSrc<RA_16>(Op->Src.ID()));
       vmovq(GetDst(Node), rax);
       break;
     case 4:
-      vmovd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()).cvt32());
+      vmovd(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()).cvt32());
       break;
     case 8:
-      vmovq(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()).cvt64());
+      vmovq(GetDst(Node), GetSrc<RA_64>(Op->Src.ID()).cvt64());
       break;
     default: LOGMAN_MSG_A_FMT("Unknown VCastFromGPR element size: {}", Op->Header.ElementSize);
   }
@@ -64,22 +64,23 @@ DEF_OP(VCastFromGPR) {
 
 DEF_OP(Float_FromGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
-  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+
   switch (Conv) {
     case 0x0404: { // Float <- int32_t
-      cvtsi2ss(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      cvtsi2ss(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()));
       break;
     }
     case 0x0408: { // Float <- int64_t
-      cvtsi2ss(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      cvtsi2ss(GetDst(Node), GetSrc<RA_64>(Op->Src.ID()));
       break;
     }
     case 0x0804: { // Double <- int32_t
-      cvtsi2sd(GetDst(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      cvtsi2sd(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()));
       break;
     }
     case 0x0808: { // Double <- int64_t
-      cvtsi2sd(GetDst(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      cvtsi2sd(GetDst(Node), GetSrc<RA_64>(Op->Src.ID()));
       break;
     }
   }
@@ -87,14 +88,15 @@ DEF_OP(Float_FromGPR_S) {
 
 DEF_OP(Float_FToF) {
   auto Op = IROp->C<IR::IROp_Float_FToF>();
-  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      cvtss2sd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtss2sd(GetDst(Node), GetSrc(Op->Scalar.ID()));
       break;
     }
     case 0x0408: { // Float <- Double
-      cvtsd2ss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtsd2ss(GetDst(Node), GetSrc(Op->Scalar.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Float_FToF sizes: 0x{:x}", Conv);
@@ -105,7 +107,7 @@ DEF_OP(Vector_SToF) {
   auto Op = IROp->C<IR::IROp_Vector_SToF>();
   switch (Op->Header.ElementSize) {
     case 4:
-      cvtdq2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtdq2ps(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 8:
       // This operation is a bit disgusting in x86
@@ -113,8 +115,8 @@ DEF_OP(Vector_SToF) {
       // 1) First extract the top 64bits
       // 2) Do a scalar conversion on each
       // 3) Make sure to merge them together at the end
-      pextrq(rax, GetSrc(Op->Header.Args[0].ID()), 1);
-      pextrq(rcx, GetSrc(Op->Header.Args[0].ID()), 0);
+      pextrq(rax, GetSrc(Op->Vector.ID()), 1);
+      pextrq(rcx, GetSrc(Op->Vector.ID()), 0);
       cvtsi2sd(GetDst(Node), rcx);
       cvtsi2sd(xmm15, rax);
       movlhps(GetDst(Node), xmm15);
@@ -127,10 +129,10 @@ DEF_OP(Vector_FToZS) {
   auto Op = IROp->C<IR::IROp_Vector_FToZS>();
   switch (Op->Header.ElementSize) {
     case 4:
-      cvttps2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvttps2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 8:
-      cvttpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvttpd2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToZS element size: {}", Op->Header.ElementSize);
   }
@@ -140,10 +142,10 @@ DEF_OP(Vector_FToS) {
   auto Op = IROp->C<IR::IROp_Vector_FToS>();
   switch (Op->Header.ElementSize) {
     case 4:
-      cvtps2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtps2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 8:
-      cvtpd2dq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtpd2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", Op->Header.ElementSize);
   }
@@ -151,15 +153,15 @@ DEF_OP(Vector_FToS) {
 
 DEF_OP(Vector_FToF) {
   auto Op = IROp->C<IR::IROp_Vector_FToF>();
-  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
 
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      cvtps2pd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtps2pd(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
     }
     case 0x0408: { // Float <- Double
-      cvtpd2ps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtpd2ps(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF conversion type : 0x{:04x}", Conv); break;
@@ -190,10 +192,10 @@ DEF_OP(Vector_FToI) {
 
   switch (Op->Header.ElementSize) {
     case 4:
-      roundps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), RoundMode);
+      roundps(GetDst(Node), GetSrc(Op->Vector.ID()), RoundMode);
     break;
     case 8:
-      roundpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), RoundMode);
+      roundpd(GetDst(Node), GetSrc(Op->Vector.ID()), RoundMode);
     break;
   }
 }

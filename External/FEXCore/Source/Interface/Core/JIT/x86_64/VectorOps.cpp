@@ -69,7 +69,7 @@ DEF_OP(VectorImm) {
 
 DEF_OP(SplatVector) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
   uint8_t Elements = 0;
@@ -80,15 +80,15 @@ DEF_OP(SplatVector) {
     default: LOGMAN_MSG_A_FMT("Unknown Splat size"); break;
   }
 
-  uint8_t ElementSize = OpSize / Elements;
+  const uint8_t ElementSize = OpSize / Elements;
 
   switch (ElementSize) {
     case 4:
-      movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      movapd(GetDst(Node), GetSrc(Op->Scalar.ID()));
       shufps(GetDst(Node), GetDst(Node), 0);
     break;
     case 8:
-      movddup(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      movddup(GetDst(Node), GetSrc(Op->Scalar.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.Size); break;
   }
@@ -96,36 +96,36 @@ DEF_OP(SplatVector) {
 
 DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 1: {
       vpxor(xmm15, xmm15, xmm15);
-      pextrb(eax, GetSrc(Op->Header.Args[0].ID()), 0);
+      pextrb(eax, GetSrc(Op->Source.ID()), 0);
       pinsrb(xmm15, eax, 0);
       movapd(GetDst(Node), xmm15);
       break;
     }
     case 2: {
       vpxor(xmm15, xmm15, xmm15);
-      pextrw(eax, GetSrc(Op->Header.Args[0].ID()), 0);
+      pextrw(eax, GetSrc(Op->Source.ID()), 0);
       pinsrw(xmm15, eax, 0);
       movapd(GetDst(Node), xmm15);
       break;
     }
     case 4: {
       vpxor(xmm15, xmm15, xmm15);
-      pextrd(eax, GetSrc(Op->Header.Args[0].ID()), 0);
+      pextrd(eax, GetSrc(Op->Source.ID()), 0);
       pinsrd(xmm15, eax, 0);
       movapd(GetDst(Node), xmm15);
       break;
     }
     case 8: {
-      movq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      movq(GetDst(Node), GetSrc(Op->Source.ID()));
       break;
     }
     case 16: {
-      movaps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      movaps(GetDst(Node), GetSrc(Op->Source.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", OpSize); break;
@@ -134,44 +134,44 @@ DEF_OP(VMov) {
 
 DEF_OP(VAnd) {
   auto Op = IROp->C<IR::IROp_VAnd>();
-  vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vpand(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
 }
 
 DEF_OP(VBic) {
   auto Op = IROp->C<IR::IROp_VBic>();
   // This doesn't map directly to ARM
   vpcmpeqd(xmm15, xmm15, xmm15);
-  vpxor(xmm15, GetSrc(Op->Header.Args[1].ID()), xmm15);
-  vpand(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+  vpxor(xmm15, GetSrc(Op->Vector2.ID()), xmm15);
+  vpand(GetDst(Node), GetSrc(Op->Vector1.ID()), xmm15);
 }
 
 DEF_OP(VOr) {
   auto Op = IROp->C<IR::IROp_VOr>();
-  vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vpor(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
 }
 
 DEF_OP(VXor) {
   auto Op = IROp->C<IR::IROp_VXor>();
-  vpxor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+  vpxor(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
 }
 
 DEF_OP(VAdd) {
   auto Op = IROp->C<IR::IROp_VAdd>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpaddb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpaddw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 4: {
-      vpaddd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 8: {
-      vpaddq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddq(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -182,19 +182,19 @@ DEF_OP(VSub) {
   auto Op = IROp->C<IR::IROp_VSub>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpsubb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpsubw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 4: {
-      vpsubd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 8: {
-      vpsubq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubq(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -205,11 +205,11 @@ DEF_OP(VUQAdd) {
   auto Op = IROp->C<IR::IROp_VUQAdd>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpaddusb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddusb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpaddusw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddusw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -220,11 +220,11 @@ DEF_OP(VUQSub) {
   auto Op = IROp->C<IR::IROp_VUQSub>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpsubusb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubusb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpsubusw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubusw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -235,11 +235,11 @@ DEF_OP(VSQAdd) {
   auto Op = IROp->C<IR::IROp_VSQAdd>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpaddsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpaddsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpaddsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -250,11 +250,11 @@ DEF_OP(VSQSub) {
   auto Op = IROp->C<IR::IROp_VSQSub>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpsubsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpsubsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsubsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -263,14 +263,14 @@ DEF_OP(VSQSub) {
 
 DEF_OP(VAddP) {
   auto Op = IROp->C<IR::IROp_VAddP>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (OpSize == 8) {
     // Can't handle this natively without dropping to MMX
     // Emulate
     vpxor(xmm14, xmm14, xmm14);
-    movq(xmm15, GetSrc(Op->Header.Args[0].ID()));
-    vshufpd(xmm15, xmm15, GetSrc(Op->Header.Args[1].ID()), 0b00);
+    movq(xmm15, GetSrc(Op->VectorLower.ID()));
+    vshufpd(xmm15, xmm15, GetSrc(Op->VectorUpper.ID()), 0b00);
     vpaddw(GetDst(Node), xmm15, xmm14);
     switch (Op->Header.ElementSize) {
       case 1:
@@ -300,8 +300,8 @@ DEF_OP(VAddP) {
   else {
     switch (Op->Header.ElementSize) {
       case 1:
-        movdqu(xmm15, GetSrc(Op->Header.Args[0].ID()));
-        movdqu(xmm14, GetSrc(Op->Header.Args[1].ID()));
+        movdqu(xmm15, GetSrc(Op->VectorLower.ID()));
+        movdqu(xmm14, GetSrc(Op->VectorUpper.ID()));
 
         vpunpcklbw(xmm0, xmm15, xmm14);
         vpunpckhbw(xmm12, xmm15, xmm14);
@@ -318,10 +318,10 @@ DEF_OP(VAddP) {
         vpaddb(GetDst(Node), xmm15, xmm14);
         break;
       case 2:
-        vphaddw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vphaddw(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()));
         break;
       case 4:
-        vphaddd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vphaddd(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()));
         break;
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
@@ -330,12 +330,13 @@ DEF_OP(VAddP) {
 
 DEF_OP(VAddV) {
   auto Op = IROp->C<IR::IROp_VAddV>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  auto Src = GetSrc(Op->Header.Args[0].ID());
+  auto Src = GetSrc(Op->Vector.ID());
   auto Dest = GetDst(Node);
   vpxor(xmm15, xmm15, xmm15);
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
   switch (Op->Header.ElementSize) {
     case 2: {
       for (int i = Elements; i > 1; i >>= 1) {
@@ -364,7 +365,7 @@ DEF_OP(VAddV) {
 DEF_OP(VUMinV) {
   auto Op = IROp->C<IR::IROp_VUMinV>();
 
-  auto Src = GetSrc(Op->Header.Args[0].ID());
+  auto Src = GetSrc(Op->Vector.ID());
   auto Dest = GetDst(Node);
   switch (Op->Header.ElementSize) {
     case 2: {
@@ -382,11 +383,11 @@ DEF_OP(VURAvg) {
   auto Op = IROp->C<IR::IROp_VURAvg>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpavgb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpavgb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpavgw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpavgw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -397,19 +398,19 @@ DEF_OP(VAbs) {
   auto Op = IROp->C<IR::IROp_VAbs>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpabsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      vpabsb(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
     }
     case 2: {
-      vpabsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      vpabsw(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
     }
     case 4: {
-      vpabsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      vpabsd(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
     }
     case 8: {
-      vpabsq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      vpabsq(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -418,13 +419,13 @@ DEF_OP(VAbs) {
 
 DEF_OP(VPopcount) {
   auto Op = IROp->C<IR::IROp_VPopcount>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
   // This only supports 8bit popcount on 8byte to 16byte registers
 
-  auto Src = GetSrc(Op->Header.Args[0].ID());
+  auto Src = GetSrc(Op->Vector.ID());
   auto Dest = GetDst(Node);
   vpxor(xmm15, xmm15, xmm15);
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   // This is disgustingly bad on x86-64 but we only need it for compatibility
   switch (Op->Header.ElementSize) {
@@ -444,17 +445,17 @@ DEF_OP(VPopcount) {
 
 DEF_OP(VFAdd) {
   auto Op = IROp->C<IR::IROp_VFAdd>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vaddss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vaddss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vaddsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vaddsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -464,11 +465,11 @@ DEF_OP(VFAdd) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vaddps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vaddps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vaddpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vaddpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -480,10 +481,10 @@ DEF_OP(VFAddP) {
   auto Op = IROp->C<IR::IROp_VFAddP>();
   switch (Op->Header.ElementSize) {
     case 4:
-      vhaddps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vhaddps(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()));
       break;
     case 8:
-      vhaddpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vhaddpd(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
@@ -491,17 +492,17 @@ DEF_OP(VFAddP) {
 
 DEF_OP(VFSub) {
   auto Op = IROp->C<IR::IROp_VFSub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vsubss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vsubss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vsubsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vsubsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -511,11 +512,11 @@ DEF_OP(VFSub) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vsubps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vsubps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vsubpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vsubpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -525,17 +526,17 @@ DEF_OP(VFSub) {
 
 DEF_OP(VFMul) {
   auto Op = IROp->C<IR::IROp_VFMul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vmulss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmulss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vmulsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmulsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -545,11 +546,11 @@ DEF_OP(VFMul) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vmulps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmulps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vmulpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmulpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -559,17 +560,17 @@ DEF_OP(VFMul) {
 
 DEF_OP(VFDiv) {
   auto Op = IROp->C<IR::IROp_VFDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vdivss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vdivss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vdivsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vdivsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -579,11 +580,11 @@ DEF_OP(VFDiv) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vdivps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vdivps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vdivpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vdivpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -593,17 +594,17 @@ DEF_OP(VFDiv) {
 
 DEF_OP(VFMin) {
   auto Op = IROp->C<IR::IROp_VFMin>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vminss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vminss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vminsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vminsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -613,11 +614,11 @@ DEF_OP(VFMin) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vminps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vminps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vminpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vminpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -627,17 +628,17 @@ DEF_OP(VFMin) {
 
 DEF_OP(VFMax) {
   auto Op = IROp->C<IR::IROp_VFMax>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vmaxss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmaxss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vmaxsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmaxsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -647,11 +648,11 @@ DEF_OP(VFMax) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vmaxps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmaxps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       case 8: {
-        vmaxpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vmaxpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -661,7 +662,7 @@ DEF_OP(VFMax) {
 
 DEF_OP(VFRecp) {
   auto Op = IROp->C<IR::IROp_VFRecp>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
@@ -669,7 +670,7 @@ DEF_OP(VFRecp) {
       case 4: {
         mov(eax, 0x3f800000); // 1.0f
         vmovd(xmm15, eax);
-        vdivss(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+        vdivss(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -682,7 +683,7 @@ DEF_OP(VFRecp) {
         mov(eax, 0x3f800000); // 1.0f
         vmovd(xmm15, eax);
         pshufd(xmm15, xmm15, 0);
-        vdivps(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+        vdivps(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -692,17 +693,17 @@ DEF_OP(VFRecp) {
 
 DEF_OP(VFSqrt) {
   auto Op = IROp->C<IR::IROp_VFSqrt>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
-        vsqrtss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+        vsqrtss(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->Vector.ID()));
       break;
       }
       case 8: {
-        vsqrtsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[0].ID()));
+        vsqrtsd(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->Vector.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -712,11 +713,11 @@ DEF_OP(VFSqrt) {
     // Vector
     switch (Op->Header.ElementSize) {
       case 4: {
-        vsqrtps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+        vsqrtps(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
       }
       case 8: {
-        vsqrtpd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+        vsqrtpd(GetDst(Node), GetSrc(Op->Vector.ID()));
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -726,21 +727,21 @@ DEF_OP(VFSqrt) {
 
 DEF_OP(VFRSqrt) {
   auto Op = IROp->C<IR::IROp_VFRSqrt>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     // Scalar
     switch (Op->Header.ElementSize) {
       case 4: {
         mov(eax, 0x3f800000); // 1.0f
-        sqrtss(xmm15, GetSrc(Op->Header.Args[0].ID()));
+        sqrtss(xmm15, GetSrc(Op->Vector.ID()));
         vmovd(GetDst(Node), eax);
         divss(GetDst(Node), xmm15);
       break;
       }
       case 8: {
         mov(eax, 0x3f800000); // 1.0f
-        sqrtsd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+        sqrtsd(xmm15, GetSrc(Op->Vector.ID()));
         vmovd(GetDst(Node), eax);
         divsd(GetDst(Node), xmm15);
       break;
@@ -753,7 +754,7 @@ DEF_OP(VFRSqrt) {
     switch (Op->Header.ElementSize) {
       case 4: {
         mov(rax, 0x3f800000); // 1.0f
-        sqrtps(xmm15, GetSrc(Op->Header.Args[0].ID()));
+        sqrtps(xmm15, GetSrc(Op->Vector.ID()));
         vmovd(GetDst(Node), eax);
         pshufd(GetDst(Node), GetDst(Node), 0);
         divps(GetDst(Node), xmm15);
@@ -769,19 +770,19 @@ DEF_OP(VNeg) {
   vpxor(xmm15, xmm15, xmm15);
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpsubb(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpsubb(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
     break;
     }
     case 2: {
-      vpsubw(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpsubw(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
     break;
     }
     case 4: {
-      vpsubd(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpsubd(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
     break;
     }
     case 8: {
-      vpsubq(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpsubq(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -795,14 +796,14 @@ DEF_OP(VFNeg) {
       mov(rax, 0x80000000);
       vmovd(xmm15, eax);
       pshufd(xmm15, xmm15, 0);
-      vxorps(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vxorps(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
     break;
     }
     case 8: {
       mov(rax, 0x8000000000000000ULL);
       vmovq(xmm15, rax);
       pshufd(xmm15, xmm15, 0b01'00'01'00);
-      vxorpd(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vxorpd(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -812,7 +813,7 @@ DEF_OP(VFNeg) {
 DEF_OP(VNot) {
   auto Op = IROp->C<IR::IROp_VNot>();
   pcmpeqd(xmm15, xmm15);
-  vpxor(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+  vpxor(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
 }
 
 DEF_OP(VUMin) {
@@ -821,8 +822,8 @@ DEF_OP(VUMin) {
     switch (Op->Header.ElementSize) {
       case 8: {
         // This isn't very nice on x86 until AVX-512
-        pextrq(TMP1, GetSrc(Op->Header.Args[0].ID()), 0);
-        pextrq(TMP2, GetSrc(Op->Header.Args[1].ID()), 0);
+        pextrq(TMP1, GetSrc(Op->Vector1.ID()), 0);
+        pextrq(TMP2, GetSrc(Op->Vector2.ID()), 0);
         cmp(TMP1, TMP2);
         cmovb(TMP2, TMP1);
         pinsrq(GetDst(Node), TMP2, 0);
@@ -834,15 +835,15 @@ DEF_OP(VUMin) {
   else {
     switch (Op->Header.ElementSize) {
       case 1: {
-        vpminub(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vpminub(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
         break;
       }
       case 2: {
-        vpminuw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vpminuw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
         break;
       }
       case 4: {
-        vpminud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+        vpminud(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
         break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -854,15 +855,15 @@ DEF_OP(VSMin) {
   auto Op = IROp->C<IR::IROp_VSMin>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpminsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpminsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpminsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpminsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 4: {
-      vpminsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpminsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -873,15 +874,15 @@ DEF_OP(VUMax) {
   auto Op = IROp->C<IR::IROp_VUMax>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpmaxub(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmaxub(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpmaxuw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmaxuw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 4: {
-      vpmaxud(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmaxud(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -892,15 +893,15 @@ DEF_OP(VSMax) {
   auto Op = IROp->C<IR::IROp_VSMax>();
   switch (Op->Header.ElementSize) {
     case 1: {
-      vpmaxsb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmaxsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 2: {
-      vpmaxsw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmaxsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 4: {
-      vpmaxsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmaxsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -909,23 +910,23 @@ DEF_OP(VSMax) {
 
 DEF_OP(VZip) {
   auto Op = IROp->C<IR::IROp_VZip>();
-  movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+  movapd(xmm15, GetSrc(Op->VectorLower.ID()));
 
   switch (Op->Header.ElementSize) {
     case 1: {
-      punpcklbw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpcklbw(xmm15, GetSrc(Op->VectorUpper.ID()));
       break;
     }
     case 2: {
-      punpcklwd(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpcklwd(xmm15, GetSrc(Op->VectorUpper.ID()));
       break;
     }
     case 4: {
-      punpckldq(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpckldq(xmm15, GetSrc(Op->VectorUpper.ID()));
       break;
     }
     case 8: {
-      punpcklqdq(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpcklqdq(xmm15, GetSrc(Op->VectorUpper.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -935,13 +936,13 @@ DEF_OP(VZip) {
 
 DEF_OP(VZip2) {
   auto Op = IROp->C<IR::IROp_VZip2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+  movapd(xmm15, GetSrc(Op->VectorLower.ID()));
 
   if (OpSize == 8) {
-    vpslldq(xmm15, GetSrc(Op->Header.Args[0].ID()), 4);
-    vpslldq(xmm14, GetSrc(Op->Header.Args[1].ID()), 4);
+    vpslldq(xmm15, GetSrc(Op->VectorLower.ID()), 4);
+    vpslldq(xmm14, GetSrc(Op->VectorUpper.ID()), 4);
     switch (Op->Header.ElementSize) {
     case 1: {
       vpunpckhbw(GetDst(Node), xmm15, xmm14);
@@ -961,19 +962,19 @@ DEF_OP(VZip2) {
   else {
     switch (Op->Header.ElementSize) {
     case 1: {
-      punpckhbw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpckhbw(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     }
     case 2: {
-      punpckhwd(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpckhwd(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     }
     case 4: {
-      punpckhdq(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpckhdq(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     }
     case 8: {
-      punpckhqdq(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      punpckhqdq(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -984,7 +985,7 @@ DEF_OP(VZip2) {
 
 DEF_OP(VUnZip) {
   auto Op = IROp->C<IR::IROp_VUnZip>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (OpSize == 8) {
     LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip");
@@ -997,8 +998,8 @@ DEF_OP(VUnZip) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         vmovq(xmm15, rax);
         pinsrq(xmm15, rcx, 1);
-        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
-        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        vpshufb(xmm14, GetSrc(Op->VectorLower.ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->VectorUpper.ID()), xmm15);
         // movlhps back to combine
         vmovlhps(GetDst(Node), xmm14, xmm13);
         break;
@@ -1009,23 +1010,23 @@ DEF_OP(VUnZip) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         vmovq(xmm15, rax);
         pinsrq(xmm15, rcx, 1);
-        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
-        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        vpshufb(xmm14, GetSrc(Op->VectorLower.ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->VectorUpper.ID()), xmm15);
         // movlhps back to combine
         vmovlhps(GetDst(Node), xmm14, xmm13);
         break;
       }
       case 4: {
         vshufps(GetDst(Node),
-          GetSrc(Op->Header.Args[0].ID()),
-          GetSrc(Op->Header.Args[1].ID()),
+          GetSrc(Op->VectorLower.ID()),
+          GetSrc(Op->VectorUpper.ID()),
           0b10'00'10'00);
         break;
       }
       case 8: {
         vshufpd(GetDst(Node),
-          GetSrc(Op->Header.Args[0].ID()),
-          GetSrc(Op->Header.Args[1].ID()),
+          GetSrc(Op->VectorLower.ID()),
+          GetSrc(Op->VectorUpper.ID()),
           0b0'0);
         break;
       }
@@ -1036,8 +1037,7 @@ DEF_OP(VUnZip) {
 
 DEF_OP(VUnZip2) {
   auto Op = IROp->C<IR::IROp_VUnZip2>();
-  uint8_t OpSize = IROp->Size;
-
+  const uint8_t OpSize = IROp->Size;
 
   if (OpSize == 8) {
     LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip2");
@@ -1050,8 +1050,8 @@ DEF_OP(VUnZip2) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         vmovq(xmm15, rax);
         pinsrq(xmm15, rcx, 1);
-        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
-        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        vpshufb(xmm14, GetSrc(Op->VectorLower.ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->VectorUpper.ID()), xmm15);
         // movlhps back to combine
         vmovlhps(GetDst(Node), xmm14, xmm13);
         break;
@@ -1062,23 +1062,23 @@ DEF_OP(VUnZip2) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         vmovq(xmm15, rax);
         pinsrq(xmm15, rcx, 1);
-        vpshufb(xmm14, GetSrc(Op->Header.Args[0].ID()), xmm15);
-        vpshufb(xmm13, GetSrc(Op->Header.Args[1].ID()), xmm15);
+        vpshufb(xmm14, GetSrc(Op->VectorLower.ID()), xmm15);
+        vpshufb(xmm13, GetSrc(Op->VectorUpper.ID()), xmm15);
         // movlhps back to combine
         vmovlhps(GetDst(Node), xmm14, xmm13);
         break;
       }
       case 4: {
         vshufps(GetDst(Node),
-          GetSrc(Op->Header.Args[0].ID()),
-          GetSrc(Op->Header.Args[1].ID()),
+          GetSrc(Op->VectorLower.ID()),
+          GetSrc(Op->VectorUpper.ID()),
           0b11'01'11'01);
         break;
       }
       case 8: {
         vshufpd(GetDst(Node),
-          GetSrc(Op->Header.Args[0].ID()),
-          GetSrc(Op->Header.Args[1].ID()),
+          GetSrc(Op->VectorLower.ID()),
+          GetSrc(Op->VectorUpper.ID()),
           0b1'1);
         break;
       }
@@ -1090,8 +1090,8 @@ DEF_OP(VUnZip2) {
 
 DEF_OP(VBSL) {
   auto Op = IROp->C<IR::IROp_VBSL>();
-  vpand(xmm0, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
-  vpandn(xmm12, GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[2].ID()));
+  vpand(xmm0, GetSrc(Op->VectorMask.ID()), GetSrc(Op->VectorTrue.ID()));
+  vpandn(xmm12, GetSrc(Op->VectorMask.ID()), GetSrc(Op->VectorFalse.ID()));
   vpor(GetDst(Node), xmm0, xmm12);
 }
 
@@ -1100,16 +1100,16 @@ DEF_OP(VCMPEQ) {
 
   switch (Op->Header.ElementSize) {
     case 1:
-      vpcmpeqb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpeqb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     case 2:
-      vpcmpeqw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpeqw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     case 4:
-      vpcmpeqd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpeqd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     case 8:
-      vpcmpeqq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpeqq(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
@@ -1121,16 +1121,16 @@ DEF_OP(VCMPEQZ) {
 
   switch (Op->Header.ElementSize) {
     case 1:
-      vpcmpeqb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpeqb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     case 2:
-      vpcmpeqw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpeqw(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     case 4:
-      vpcmpeqd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpeqd(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     case 8:
-      vpcmpeqq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpeqq(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
@@ -1141,16 +1141,16 @@ DEF_OP(VCMPGT) {
 
   switch (Op->Header.ElementSize) {
     case 1:
-      vpcmpgtb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpgtb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     case 2:
-      vpcmpgtw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpgtw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     case 4:
-      vpcmpgtd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpgtd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     case 8:
-      vpcmpgtq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpcmpgtq(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
@@ -1162,16 +1162,16 @@ DEF_OP(VCMPGTZ) {
 
   switch (Op->Header.ElementSize) {
     case 1:
-      vpcmpgtb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpgtb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     case 2:
-      vpcmpgtw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpgtw(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     case 4:
-      vpcmpgtd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpgtd(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     case 8:
-      vpcmpgtq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpcmpgtq(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
@@ -1183,16 +1183,16 @@ DEF_OP(VCMPLTZ) {
 
   switch (Op->Header.ElementSize) {
     case 1:
-      vpcmpgtb(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpcmpgtb(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
       break;
     case 2:
-      vpcmpgtw(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpcmpgtw(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
       break;
     case 4:
-      vpcmpgtd(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpcmpgtd(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
       break;
     case 8:
-      vpcmpgtq(GetDst(Node), xmm15, GetSrc(Op->Header.Args[0].ID()));
+      vpcmpgtq(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
   }
@@ -1200,15 +1200,15 @@ DEF_OP(VCMPLTZ) {
 
 DEF_OP(VFCMPEQ) {
   auto Op = IROp->C<IR::IROp_VFCMPEQ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1216,10 +1216,10 @@ DEF_OP(VFCMPEQ) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 0);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1228,15 +1228,15 @@ DEF_OP(VFCMPEQ) {
 
 DEF_OP(VFCMPNEQ) {
   auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 4);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 4);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1245,10 +1245,10 @@ DEF_OP(VFCMPNEQ) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 4);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 4);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 4);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1257,15 +1257,15 @@ DEF_OP(VFCMPNEQ) {
 
 DEF_OP(VFCMPLT) {
   auto Op = IROp->C<IR::IROp_VFCMPLT>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 1);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 1);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1273,10 +1273,10 @@ DEF_OP(VFCMPLT) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 1);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 1);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 1);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1285,15 +1285,15 @@ DEF_OP(VFCMPLT) {
 
 DEF_OP(VFCMPGT) {
   auto Op = IROp->C<IR::IROp_VFCMPGT>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector2.ID()), GetSrc(Op->Vector1.ID()), 1);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector2.ID()), GetSrc(Op->Vector1.ID()), 1);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1301,10 +1301,10 @@ DEF_OP(VFCMPGT) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector2.ID()), GetSrc(Op->Vector1.ID()), 1);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[1].ID()), GetSrc(Op->Header.Args[0].ID()), 1);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector2.ID()), GetSrc(Op->Vector1.ID()), 1);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1313,15 +1313,15 @@ DEF_OP(VFCMPGT) {
 
 DEF_OP(VFCMPLE) {
   auto Op = IROp->C<IR::IROp_VFCMPLE>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 2);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 2);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1329,10 +1329,10 @@ DEF_OP(VFCMPLE) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 2);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 2);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 2);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1341,15 +1341,15 @@ DEF_OP(VFCMPLE) {
 
 DEF_OP(VFCMPORD) {
   auto Op = IROp->C<IR::IROp_VFCMPORD>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 7);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 7);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 7);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 7);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1357,10 +1357,10 @@ DEF_OP(VFCMPORD) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 7);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 7);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 7);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 7);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1369,15 +1369,15 @@ DEF_OP(VFCMPORD) {
 
 DEF_OP(VFCMPUNO) {
   auto Op = IROp->C<IR::IROp_VFCMPUNO>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Op->Header.ElementSize == OpSize) {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 3);
+      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 3);
     break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 3);
+      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 3);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1385,10 +1385,10 @@ DEF_OP(VFCMPUNO) {
   else {
     switch (Op->Header.ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 3);
+      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 3);
     break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), 3);
+      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 3);
     break;
     default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
     }
@@ -1412,15 +1412,15 @@ DEF_OP(VUShlS) {
 
   switch (Op->Header.ElementSize) {
     case 2: {
-      vpsllw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsllw(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     case 4: {
-      vpslld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpslld(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     case 8: {
-      vpsllq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsllq(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -1432,15 +1432,15 @@ DEF_OP(VUShrS) {
 
   switch (Op->Header.ElementSize) {
     case 2: {
-      vpsrlw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsrlw(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     case 4: {
-      vpsrld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsrld(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     case 8: {
-      vpsrlq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsrlq(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -1452,11 +1452,11 @@ DEF_OP(VSShrS) {
 
   switch (Op->Header.ElementSize) {
     case 2: {
-      vpsraw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsraw(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     case 4: {
-      vpsrad(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpsrad(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
       break;
     }
     case 8: // Doesn't exist on x86
@@ -1466,7 +1466,7 @@ DEF_OP(VSShrS) {
 
 DEF_OP(VInsElement) {
   auto Op = IROp->C<IR::IROp_VInsElement>();
-  movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+  movapd(xmm15, GetSrc(Op->DestVector.ID()));
 
   // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
 
@@ -1474,22 +1474,22 @@ DEF_OP(VInsElement) {
   // pinsrq xmm, reg64/mem64, imm8
   switch (Op->Header.ElementSize) {
   case 1: {
-    pextrb(eax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
+    pextrb(eax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
     pinsrb(xmm15, eax, Op->DestIdx);
   break;
   }
   case 2: {
-    pextrw(eax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
+    pextrw(eax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
     pinsrw(xmm15, eax, Op->DestIdx);
   break;
   }
   case 4: {
-    pextrd(eax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
+    pextrd(eax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
     pinsrd(xmm15, eax, Op->DestIdx);
   break;
   }
   case 8: {
-    pextrq(rax, GetSrc(Op->Header.Args[1].ID()), Op->SrcIdx);
+    pextrq(rax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
     pinsrq(xmm15, rax, Op->DestIdx);
   break;
   }
@@ -1501,7 +1501,7 @@ DEF_OP(VInsElement) {
 
 DEF_OP(VInsScalarElement) {
   auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-  movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+  movapd(xmm15, GetSrc(Op->DestVector.ID()));
 
   // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
 
@@ -1509,22 +1509,22 @@ DEF_OP(VInsScalarElement) {
   // pinsrq xmm, reg64/mem64, imm8
   switch (Op->Header.ElementSize) {
   case 1: {
-    pextrb(eax, GetSrc(Op->Header.Args[1].ID()), 0);
+    pextrb(eax, GetSrc(Op->SrcScalar.ID()), 0);
     pinsrb(xmm15, eax, Op->DestIdx);
   break;
   }
   case 2: {
-    pextrw(eax, GetSrc(Op->Header.Args[1].ID()), 0);
+    pextrw(eax, GetSrc(Op->SrcScalar.ID()), 0);
     pinsrw(xmm15, eax, Op->DestIdx);
   break;
   }
   case 4: {
-    pextrd(eax, GetSrc(Op->Header.Args[1].ID()), 0);
+    pextrd(eax, GetSrc(Op->SrcScalar.ID()), 0);
     pinsrd(xmm15, eax, Op->DestIdx);
   break;
   }
   case 8: {
-    pextrq(rax, GetSrc(Op->Header.Args[1].ID()), 0);
+    pextrq(rax, GetSrc(Op->SrcScalar.ID()), 0);
     pinsrq(xmm15, rax, Op->DestIdx);
   break;
   }
@@ -1539,22 +1539,22 @@ DEF_OP(VExtractElement) {
 
   switch (Op->Header.Size) {
     case 1: {
-      pextrb(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrb(eax, GetSrc(Op->Vector.ID()), Op->Index);
       pinsrb(GetDst(Node), eax, 0);
       break;
     }
     case 2: {
-      pextrw(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrw(eax, GetSrc(Op->Vector.ID()), Op->Index);
       pinsrw(GetDst(Node), eax, 0);
       break;
     }
     case 4: {
-      pextrd(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrd(eax, GetSrc(Op->Vector.ID()), Op->Index);
       pinsrd(GetDst(Node), eax, 0);
       break;
     }
     case 8: {
-      pextrq(rax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrq(rax, GetSrc(Op->Vector.ID()), Op->Index);
       pinsrq(GetDst(Node), rax, 0);
       break;
     }
@@ -1568,35 +1568,35 @@ DEF_OP(VDupElement) {
   switch (Op->Header.ElementSize) {
     case 1: {
       // First extract the index
-      pextrb(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrb(eax, GetSrc(Op->Vector.ID()), Op->Index);
       // Insert it in to the first element of the destination
       pinsrb(GetDst(Node), eax, 0);
       pinsrb(GetDst(Node), eax, 1);
       // Shuffle low elements
-      vpshuflw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      vpshuflw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
       // Insert element in to the first upper 64bit element
       pinsrb(GetDst(Node), eax, 8);
       pinsrb(GetDst(Node), eax, 9);
       // Shuffle high elements
-      vpshufhw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      vpshufhw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
       break;
     }
     case 2: {
       // First extract the index
-      pextrw(eax, GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrw(eax, GetSrc(Op->Vector.ID()), Op->Index);
       // Insert it in to the first element of the destination
       pinsrw(GetDst(Node), eax, 0);
       // Shuffle low elements
-      vpshuflw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      vpshuflw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
       // Insert element in to the first upper 64bit element
       pinsrw(GetDst(Node), eax, 4);
       // Shuffle high elements
-      vpshufhw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), 0);
+      vpshufhw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
       break;
     }
     case 4: {
       vpshufd(GetDst(Node),
-        GetSrc(Op->Header.Args[0].ID()),
+        GetSrc(Op->Vector.ID()),
         (Op->Index << 0) |
         (Op->Index << 2) |
         (Op->Index << 4) |
@@ -1605,8 +1605,8 @@ DEF_OP(VDupElement) {
     }
     case 8: {
       vshufpd(GetDst(Node),
-        GetSrc(Op->Header.Args[0].ID()),
-        GetSrc(Op->Header.Args[0].ID()),
+        GetSrc(Op->Vector.ID()),
+        GetSrc(Op->Vector.ID()),
         (Op->Index << 0) |
         (Op->Index << 1));
       break;
@@ -1619,38 +1619,38 @@ DEF_OP(VDupElement) {
 
 DEF_OP(VExtr) {
   auto Op = IROp->C<IR::IROp_VExtr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (OpSize == 8) {
     // No way to do this with 64bit source without dropping to MMX
     // So emulate it
     vpxor(xmm14, xmm14, xmm14);
-    movq(xmm15, GetSrc(Op->Header.Args[1].ID()));
-    vshufpd(xmm15, xmm15, GetSrc(Op->Header.Args[0].ID()), 0b00);
+    movq(xmm15, GetSrc(Op->VectorUpper.ID()));
+    vshufpd(xmm15, xmm15, GetSrc(Op->VectorLower.ID()), 0b00);
     vpalignr(GetDst(Node), xmm14, xmm15, Op->Index);
   }
   else {
-    vpalignr(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()), Op->Index);
+    vpalignr(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()), Op->Index);
   }
 }
 
 DEF_OP(VSLI) {
   auto Op = IROp->C<IR::IROp_VSLI>();
-  movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+  movapd(xmm15, GetSrc(Op->Vector.ID()));
   pslldq(xmm15, Op->ByteShift);
   movapd(GetDst(Node), xmm15);
 }
 
 DEF_OP(VSRI) {
   auto Op = IROp->C<IR::IROp_VSRI>();
-  movapd(xmm15, GetSrc(Op->Header.Args[0].ID()));
+  movapd(xmm15, GetSrc(Op->Vector.ID()));
   psrldq(xmm15, Op->ByteShift);
   movapd(GetDst(Node), xmm15);
 }
 
 DEF_OP(VUShrI) {
   auto Op = IROp->C<IR::IROp_VUShrI>();
-  movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  movapd(GetDst(Node), GetSrc(Op->Vector.ID()));
   switch (Op->Header.ElementSize) {
     case 2: {
       psrlw(GetDst(Node), Op->BitShift);
@@ -1671,12 +1671,12 @@ DEF_OP(VUShrI) {
 DEF_OP(VSShrI) {
   auto Op = IROp->C<IR::IROp_VSShrI>();
   auto Dest = GetDst(Node);
-  movapd(Dest, GetSrc(Op->Header.Args[0].ID()));
+  movapd(Dest, GetSrc(Op->Vector.ID()));
   switch (Op->Header.ElementSize) {
     case 1: {
       // This isn't a native instruction on x86
-      uint8_t OpSize = IROp->Size;
-      uint8_t Elements = OpSize / Op->Header.ElementSize;
+      const uint8_t OpSize = IROp->Size;
+      const uint8_t Elements = OpSize / Op->Header.ElementSize;
       for (int i = 0; i < Elements; ++i) {
         pextrb(eax, Dest, i);
         movsx(eax, al);
@@ -1708,7 +1708,7 @@ DEF_OP(VSShrI) {
 
 DEF_OP(VShlI) {
   auto Op = IROp->C<IR::IROp_VShlI>();
-  movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  movapd(GetDst(Node), GetSrc(Op->Vector.ID()));
   switch (Op->Header.ElementSize) {
     case 2: {
       psllw(GetDst(Node), Op->BitShift);
@@ -1728,7 +1728,7 @@ DEF_OP(VShlI) {
 
 DEF_OP(VUShrNI) {
   auto Op = IROp->C<IR::IROp_VUShrNI>();
-  movapd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  movapd(GetDst(Node), GetSrc(Op->Vector.ID()));
   vpxor(xmm15, xmm15, xmm15);
   switch (Op->Header.ElementSize) {
     case 1: {
@@ -1765,7 +1765,7 @@ DEF_OP(VUShrNI2) {
   // Src1 = Lower results
   // Src2 = Upper Results
   auto Op = IROp->C<IR::IROp_VUShrNI2>();
-  movapd(xmm13, GetSrc(Op->Header.Args[1].ID()));
+  movapd(xmm13, GetSrc(Op->VectorUpper.ID()));
   switch (Op->Header.ElementSize) {
     case 1: {
       psrlw(xmm13, Op->BitShift);
@@ -1795,25 +1795,25 @@ DEF_OP(VUShrNI2) {
   vmovq(xmm14, rcx);
   punpcklqdq(xmm15, xmm14);
   vpshufb(xmm14, xmm13, xmm15);
-  vpor(GetDst(Node), xmm14, GetSrc(Op->Header.Args[0].ID()));
+  vpor(GetDst(Node), xmm14, GetSrc(Op->VectorLower.ID()));
 }
 
 DEF_OP(VBitcast) {
   auto Op = IROp->C<IR::IROp_VBitcast>();
-  movaps(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+  movaps(GetDst(Node), GetSrc(Op->Source.ID()));
 }
 
 DEF_OP(VSXTL) {
   auto Op = IROp->C<IR::IROp_VSXTL>();
   switch (Op->Header.ElementSize) {
     case 2:
-      pmovsxbw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      pmovsxbw(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 4:
-      pmovsxwd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      pmovsxwd(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 8:
-      pmovsxdq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      pmovsxdq(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
@@ -1823,7 +1823,7 @@ DEF_OP(VSXTL2) {
   auto Op = IROp->C<IR::IROp_VSXTL2>();
   uint8_t OpSize = IROp->Size;
 
-  vpsrldq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), OpSize / 2);
+  vpsrldq(GetDst(Node), GetSrc(Op->Vector.ID()), OpSize / 2);
   switch (Op->Header.ElementSize) {
     case 2:
       pmovsxbw(GetDst(Node), GetDst(Node));
@@ -1842,13 +1842,13 @@ DEF_OP(VUXTL) {
   auto Op = IROp->C<IR::IROp_VUXTL>();
   switch (Op->Header.ElementSize) {
     case 2:
-      pmovzxbw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      pmovzxbw(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 4:
-      pmovzxwd(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      pmovzxwd(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     case 8:
-      pmovzxdq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()));
+      pmovzxdq(GetDst(Node), GetSrc(Op->Vector.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
@@ -1858,7 +1858,7 @@ DEF_OP(VUXTL2) {
   auto Op = IROp->C<IR::IROp_VUXTL2>();
   uint8_t OpSize = IROp->Size;
 
-  vpsrldq(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), OpSize / 2);
+  vpsrldq(GetDst(Node), GetSrc(Op->Vector.ID()), OpSize / 2);
   switch (Op->Header.ElementSize) {
     case 2:
       pmovzxbw(GetDst(Node), GetDst(Node));
@@ -1877,10 +1877,10 @@ DEF_OP(VSQXTN) {
   auto Op = IROp->C<IR::IROp_VSQXTN>();
   switch (Op->Header.ElementSize) {
     case 1:
-      packsswb(xmm15, GetSrc(Op->Header.Args[0].ID()));
+      packsswb(xmm15, GetSrc(Op->Vector.ID()));
     break;
     case 2:
-      packssdw(xmm15, GetSrc(Op->Header.Args[0].ID()));
+      packssdw(xmm15, GetSrc(Op->Vector.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
@@ -1890,16 +1890,16 @@ DEF_OP(VSQXTN) {
 
 DEF_OP(VSQXTN2) {
   auto Op = IROp->C<IR::IROp_VSQXTN2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Zero the lower bits
   vpxor(xmm15, xmm15, xmm15);
   switch (Op->Header.ElementSize) {
     case 1:
-      packsswb(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      packsswb(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     case 2:
-      packssdw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      packssdw(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
@@ -1907,17 +1907,17 @@ DEF_OP(VSQXTN2) {
   if (OpSize == 8) {
     psrldq(xmm15, OpSize / 2);
   }
-  vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+  vpor(GetDst(Node), GetSrc(Op->VectorLower.ID()), xmm15);
 }
 
 DEF_OP(VSQXTUN) {
   auto Op = IROp->C<IR::IROp_VSQXTUN>();
   switch (Op->Header.ElementSize) {
     case 1:
-      packuswb(xmm15, GetSrc(Op->Header.Args[0].ID()));
+      packuswb(xmm15, GetSrc(Op->Vector.ID()));
     break;
     case 2:
-      packusdw(xmm15, GetSrc(Op->Header.Args[0].ID()));
+      packusdw(xmm15, GetSrc(Op->Vector.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
@@ -1927,16 +1927,16 @@ DEF_OP(VSQXTUN) {
 
 DEF_OP(VSQXTUN2) {
   auto Op = IROp->C<IR::IROp_VSQXTUN2>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Zero the lower bits
   vpxor(xmm15, xmm15, xmm15);
   switch (Op->Header.ElementSize) {
     case 1:
-      packuswb(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      packuswb(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     case 2:
-      packusdw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      packusdw(xmm15, GetSrc(Op->VectorUpper.ID()));
     break;
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
   }
@@ -1944,18 +1944,18 @@ DEF_OP(VSQXTUN2) {
     psrldq(xmm15, OpSize / 2);
   }
 
-  vpor(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+  vpor(GetDst(Node), GetSrc(Op->VectorLower.ID()), xmm15);
 }
 
 DEF_OP(VMul) {
   auto Op = IROp->C<IR::IROp_VUMul>();
   switch (Op->Header.ElementSize) {
     case 2: {
-      vpmullw(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmullw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     case 4: {
-      vpmulld(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpmulld(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -1974,8 +1974,8 @@ DEF_OP(VUMull) {
       //
       vpxor(xmm15, xmm15, xmm15);
       vpxor(xmm14, xmm14, xmm14);
-      vpunpcklwd(xmm15, GetSrc(Op->Header.Args[0].ID()), xmm15);
-      vpunpcklwd(xmm14, GetSrc(Op->Header.Args[1].ID()), xmm14);
+      vpunpcklwd(xmm15, GetSrc(Op->Vector1.ID()), xmm15);
+      vpunpcklwd(xmm14, GetSrc(Op->Vector2.ID()), xmm14);
       vpmulld(GetDst(Node), xmm14, xmm15);
       break;
     }
@@ -1983,8 +1983,8 @@ DEF_OP(VUMull) {
       // We need to shuffle the data for this one
       // x86 PMULUDQ wants the 32bit values in [31:0] and [95:64]
       // Which then extends out to [63:0] and [127:64]
-      vpshufd(xmm14, GetSrc(Op->Header.Args[0].ID()), 0b10'10'00'00);
-      vpshufd(xmm15, GetSrc(Op->Header.Args[1].ID()), 0b10'10'00'00);
+      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b10'10'00'00);
+      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b10'10'00'00);
 
       vpmuludq(GetDst(Node), xmm14, xmm15);
     break;
@@ -2005,8 +2005,8 @@ DEF_OP(VSMull) {
       //
       vpxor(xmm15, xmm15, xmm15);
       vpxor(xmm14, xmm14, xmm14);
-      vpunpcklwd(xmm15, GetSrc(Op->Header.Args[0].ID()), xmm15);
-      vpunpcklwd(xmm14, GetSrc(Op->Header.Args[1].ID()), xmm14);
+      vpunpcklwd(xmm15, GetSrc(Op->Vector1.ID()), xmm15);
+      vpunpcklwd(xmm14, GetSrc(Op->Vector2.ID()), xmm14);
       pslld(xmm15, 16);
       pslld(xmm14, 16);
       psrad(xmm15, 16);
@@ -2018,8 +2018,8 @@ DEF_OP(VSMull) {
       // We need to shuffle the data for this one
       // x86 PMULDQ wants the 32bit values in [31:0] and [95:64]
       // Which then extends out to [63:0] and [127:64]
-      vpshufd(xmm14, GetSrc(Op->Header.Args[0].ID()), 0b10'10'00'00);
-      vpshufd(xmm15, GetSrc(Op->Header.Args[1].ID()), 0b10'10'00'00);
+      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b10'10'00'00);
+      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b10'10'00'00);
 
       vpmuldq(GetDst(Node), xmm14, xmm15);
     break;
@@ -2040,8 +2040,8 @@ DEF_OP(VUMull2) {
       //
       vpxor(xmm15, xmm15, xmm15);
       vpxor(xmm14, xmm14, xmm14);
-      vpunpckhwd(xmm15, GetSrc(Op->Header.Args[0].ID()), xmm15);
-      vpunpckhwd(xmm14, GetSrc(Op->Header.Args[1].ID()), xmm14);
+      vpunpckhwd(xmm15, GetSrc(Op->Vector1.ID()), xmm15);
+      vpunpckhwd(xmm14, GetSrc(Op->Vector2.ID()), xmm14);
       vpmulld(GetDst(Node), xmm14, xmm15);
       break;
     }
@@ -2054,8 +2054,8 @@ DEF_OP(VUMull2) {
       // [63:00 ] = src1[31:0 ] * src2[31:0 ]
       // [127:64] = src1[95:64] * src2[95:64]
 
-      vpshufd(xmm14, GetSrc(Op->Header.Args[0].ID()), 0b11'11'10'10);
-      vpshufd(xmm15, GetSrc(Op->Header.Args[1].ID()), 0b11'11'10'10);
+      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b11'11'10'10);
+      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b11'11'10'10);
 
       vpmuludq(GetDst(Node), xmm14, xmm15);
     break;
@@ -2076,8 +2076,8 @@ DEF_OP(VSMull2) {
       //
       vpxor(xmm15, xmm15, xmm15);
       vpxor(xmm14, xmm14, xmm14);
-      vpunpckhwd(xmm15, GetSrc(Op->Header.Args[0].ID()), xmm15);
-      vpunpckhwd(xmm14, GetSrc(Op->Header.Args[1].ID()), xmm14);
+      vpunpckhwd(xmm15, GetSrc(Op->Vector1.ID()), xmm15);
+      vpunpckhwd(xmm14, GetSrc(Op->Vector2.ID()), xmm14);
       pslld(xmm15, 16);
       pslld(xmm14, 16);
       psrad(xmm15, 16);
@@ -2094,8 +2094,8 @@ DEF_OP(VSMull2) {
       // [63:00 ] = src1[31:0 ] * src2[31:0 ]
       // [127:64] = src1[95:64] * src2[95:64]
 
-      vpshufd(xmm14, GetSrc(Op->Header.Args[0].ID()), 0b11'11'10'10);
-      vpshufd(xmm15, GetSrc(Op->Header.Args[1].ID()), 0b11'11'10'10);
+      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b11'11'10'10);
+      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b11'11'10'10);
 
       vpmuldq(GetDst(Node), xmm14, xmm15);
     break;
@@ -2108,15 +2108,15 @@ DEF_OP(VUABDL) {
   auto Op = IROp->C<IR::IROp_VUABDL>();
   switch (Op->Header.ElementSize) {
     case 2: {
-      pmovzxbw(xmm14, GetSrc(Op->Header.Args[0].ID()));
-      pmovzxbw(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      pmovzxbw(xmm14, GetSrc(Op->Vector1.ID()));
+      pmovzxbw(xmm15, GetSrc(Op->Vector2.ID()));
       vpsubw(GetDst(Node), xmm14, xmm15);
       vpabsw(GetDst(Node), GetDst(Node));
       break;
     }
     case 4: {
-      pmovzxwd(xmm14, GetSrc(Op->Header.Args[0].ID()));
-      pmovzxwd(xmm15, GetSrc(Op->Header.Args[1].ID()));
+      pmovzxwd(xmm14, GetSrc(Op->Vector1.ID()));
+      pmovzxwd(xmm15, GetSrc(Op->Vector2.ID()));
       vpsubd(GetDst(Node), xmm14, xmm15);
       vpabsd(GetDst(Node), GetDst(Node));
       break;
@@ -2127,16 +2127,16 @@ DEF_OP(VUABDL) {
 
 DEF_OP(VTBL1) {
   auto Op = IROp->C<IR::IROp_VTBL1>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 8: {
-      vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpshufb(GetDst(Node), GetSrc(Op->VectorTable.ID()), GetSrc(Op->VectorIndices.ID()));
       movq(GetDst(Node), GetDst(Node));
       break;
     }
     case 16: {
-      vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      vpshufb(GetDst(Node), GetSrc(Op->VectorTable.ID()), GetSrc(Op->VectorIndices.ID()));
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
@@ -2144,7 +2144,7 @@ DEF_OP(VTBL1) {
 }
 
 DEF_OP(VRev64) {
-  auto Op = IROp->C<IR::IROp_VDupElement>();
+  auto Op = IROp->C<IR::IROp_VRev64>();
 
   switch (Op->Header.ElementSize) {
     case 1: {
@@ -2162,7 +2162,7 @@ DEF_OP(VRev64) {
         pinsrq(xmm15, rcx, 1);
       }
 
-      vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpshufb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     }
     case 2: {
@@ -2179,13 +2179,13 @@ DEF_OP(VRev64) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         pinsrq(xmm15, rcx, 1);
       }
-      vpshufb(GetDst(Node), GetSrc(Op->Header.Args[0].ID()), xmm15);
+      vpshufb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
       break;
     }
     case 4: {
       if (IROp->Size == 16) {
       vpshufd(GetDst(Node),
-        GetSrc(Op->Header.Args[0].ID()),
+        GetSrc(Op->Vector.ID()),
         (0b11 << 0) |
         (0b10 << 2) |
         (0b01 << 4) |
@@ -2194,7 +2194,7 @@ DEF_OP(VRev64) {
       else {
 
       vpshufd(GetDst(Node),
-        GetSrc(Op->Header.Args[0].ID()),
+        GetSrc(Op->Vector.ID()),
         (0b01 << 0) |
         (0b00 << 2) |
         (0b11 << 4) | // Last two don't matter, will be overwritten with zero
