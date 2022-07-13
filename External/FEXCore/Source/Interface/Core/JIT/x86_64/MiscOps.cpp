@@ -110,7 +110,7 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
+  auto Src = GetSrc<RA_32>(Op->RoundMode.ID());
 
   // Load old mxcsr
   // Only stores to memory
@@ -135,13 +135,13 @@ DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
   PushRegs();
-  if (IsGPR(Op->Header.Args[0].ID())) {
-    mov (rdi, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  if (IsGPR(Op->Value.ID())) {
+    mov (rdi, GetSrc<RA_64>(Op->Value.ID()));
     call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue)]);
   }
   else {
-    pextrq(rdi, GetSrc(Op->Header.Args[0].ID()), 0);
-    pextrq(rsi, GetSrc(Op->Header.Args[0].ID()), 1);
+    pextrq(rdi, GetSrc(Op->Value.ID()), 0);
+    pextrq(rsi, GetSrc(Op->Value.ID()), 1);
 
     call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue)]);
   }
