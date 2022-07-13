@@ -1,0 +1,5 @@
+{
+  "Config": {
+    "x86dec_SynchronizeRIPOnAllBlocks": "1"
+  }
+}
