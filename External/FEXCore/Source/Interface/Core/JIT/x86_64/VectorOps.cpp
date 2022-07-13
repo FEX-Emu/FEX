@@ -2144,7 +2144,7 @@ DEF_OP(VTBL1) {
 }
 
 DEF_OP(VRev64) {
-  auto Op = IROp->C<IR::IROp_VDupElement>();
+  auto Op = IROp->C<IR::IROp_VRev64>();
 
   switch (Op->Header.ElementSize) {
     case 1: {
