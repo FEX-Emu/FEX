@@ -154,6 +154,9 @@ namespace FEXCore::Context {
     if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
       CodeObjectCacheService = std::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
     }
+    if (!Config.EnableAVX) {
+      HostFeatures.SupportsAVX = false;
+    }
   }
 
   Context::~Context() {
@@ -187,6 +190,8 @@ namespace FEXCore::Context {
     for (auto& xmm : NewThreadState.xmm) {
       xmm[0] = 0xDEADBEEFULL;
       xmm[1] = 0xBAD0DAD1ULL;
+      xmm[2] = 0xDEADCAFEULL;
+      xmm[3] = 0xBAD2CAD3ULL;
     }
     memset(NewThreadState.flags, 0, Core::CPUState::NUM_EFLAG_BITS);
     NewThreadState.flags[1] = 1;

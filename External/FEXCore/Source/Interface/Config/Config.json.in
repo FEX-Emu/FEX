@@ -49,6 +49,13 @@
           "Cache JIT object code to drive.",
           "Allows JIT code to be shared between applications"
         ]
+      },
+      "EnableAVX": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Determines whether or not we use the expanded register file for AVX or not"
+        ]
       }
     },
     "Emulation": {

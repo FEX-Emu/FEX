@@ -259,7 +259,7 @@ struct FEX_PACKED GDBContextDefinition {
   uint32_t fctrl;
   uint32_t fstat;
   uint32_t dummies[6];
-  uint64_t xmm[Core::CPUState::NUM_XMMS][2];
+  uint64_t xmm[Core::CPUState::NUM_XMMS][4];
   uint32_t mxcsr;
 };
 
@@ -490,6 +490,30 @@ std::string buildTargetXML() {
       reg("mxcsr", "int", 32);
 
     xml << "</feature>\n";
+
+    xml << "<feature name='org.gnu.gdb.i386.avx'>";
+    xml <<
+        R"(<vector id="v4f" type="ieee_single" count="4"/>
+        <vector id="v2d" type="ieee_double" count="2"/>
+        <vector id="v16i8" type="int8" count="16"/>
+        <vector id="v8i16" type="int16" count="8"/>
+        <vector id="v4i32" type="int32" count="4"/>
+        <vector id="v2i64" type="int64" count="2"/>
+        <union id="vec128">
+          <field name="v4_float" type="v4f"/>
+          <field name="v2_double" type="v2d"/>
+          <field name="v16_int8" type="v16i8"/>
+          <field name="v8_int16" type="v8i16"/>
+          <field name="v4_int32" type="v4i32"/>
+          <field name="v2_int64" type="v2i64"/>
+          <field name="uint128" type="uint128"/>
+        </union>
+        )";
+    for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+        reg(fmt::format("ymm{}h", i), "vec128", 128);
+    }
+    xml << "</feature>\n";
+
   xml << "</target>";
   xml << std::flush;
 

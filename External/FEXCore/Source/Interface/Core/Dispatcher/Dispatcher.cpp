@@ -99,6 +99,7 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
     SignalFrames.pop();
   }
 
+  const bool IsAVXEnabled = CTX->Config.EnableAVX;
   uintptr_t NewSP = OldSP;
   auto Context = reinterpret_cast<ArchHelpers::Context::ContextBackup*>(NewSP);
 
@@ -159,10 +160,21 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
             COPY_REG(RCX);
             COPY_REG(RSP);
 #undef COPY_REG
-        FEXCore::x86_64::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(guest_uctx->uc_mcontext.fpregs);
+        auto *xstate = reinterpret_cast<x86_64::xstate*>(guest_uctx->uc_mcontext.fpregs);
+        auto *fpstate = &xstate->fpstate;
+
         // Copy float registers
         memcpy(Frame->State.mm, fpstate->_st, sizeof(Frame->State.mm));
-        memcpy(Frame->State.xmm, fpstate->_xmm, sizeof(Frame->State.xmm));
+
+        // Copy low lanes and high lanes for XMM registers
+        for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+          memcpy(&Frame->State.xmm[i][0], &fpstate->_xmm[i], sizeof(__uint128_t));
+        }
+        if (IsAVXEnabled) {
+          for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+            memcpy(&Frame->State.xmm[i][2], &xstate->ymmh.ymmh_space[i], sizeof(__uint128_t));
+          }
+        }
 
         // FCW store default
         Frame->State.FCW = fpstate->fcw;
@@ -216,7 +228,8 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
         COPY_REG(RCX);
         COPY_REG(RSP);
 #undef COPY_REG
-        FEXCore::x86::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86::_libc_fpstate*>(guest_uctx->uc_mcontext.fpregs);
+        auto *xstate = reinterpret_cast<x86::xstate*>(guest_uctx->uc_mcontext.fpregs);
+        auto *fpstate = &xstate->fpstate;
 
         // Copy float registers
         for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
@@ -225,7 +238,14 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
         }
 
         // Extended XMM state
-        memcpy(fpstate->_xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+        for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+          memcpy(&fpstate->_xmm[i], &Frame->State.xmm[i][0], sizeof(__uint128_t));
+        }
+        if (IsAVXEnabled) {
+          for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+            memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm[i][2], sizeof(__uint128_t));
+          }
+        }
 
         // FCW store default
         Frame->State.FCW = fpstate->fcw;
@@ -274,6 +294,26 @@ static uint32_t ConvertSignalToError(int Signal, siginfo_t *HostSigInfo) {
   return 0;
 }
 
+template <typename T>
+static void SetXStateInfo(T* xstate, bool is_avx_enabled) {
+  auto* fpstate = &xstate->fpstate;
+
+  fpstate->sw_reserved.magic1 = x86_64::fpx_sw_bytes::FP_XSTATE_MAGIC;
+  fpstate->sw_reserved.extended_size = is_avx_enabled ? sizeof(T) : 0;
+
+  fpstate->sw_reserved.xfeatures |= x86_64::fpx_sw_bytes::FEATURE_FP |
+                                    x86_64::fpx_sw_bytes::FEATURE_SSE;
+  if (is_avx_enabled) {
+    fpstate->sw_reserved.xfeatures |= x86_64::fpx_sw_bytes::FEATURE_YMM;
+  }
+
+  fpstate->sw_reserved.xstate_size = fpstate->sw_reserved.extended_size;
+
+  if (is_avx_enabled) {
+    xstate->xstate_hdr.xfeatures = 0;
+  }
+}
+
 bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) {
   auto ContextBackup = StoreThreadState(Thread, Signal, ucontext);
 
@@ -293,8 +333,9 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   uint64_t NewGuestSP = OldGuestSP;
 
   // Pulling from context here
-  bool Is64BitMode = CTX->Config.Is64BitMode;
-  uint64_t SignalReturn = CTX->X86CodeGen.SignalReturn;
+  const bool Is64BitMode = CTX->Config.Is64BitMode;
+  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const uint64_t SignalReturn = CTX->X86CodeGen.SignalReturn;
 
   // Spill the SRA regardless of signal handler type
   // We are going to be returning to the top of the dispatcher which will fill again
@@ -374,8 +415,13 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   if (GuestAction->sa_flags & SA_SIGINFO) {
     // Setup ucontext a bit
     if (Is64BitMode) {
-      NewGuestSP -= sizeof(FEXCore::x86_64::_libc_fpstate);
-      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86_64::_libc_fpstate));
+      if (IsAVXEnabled) {
+        NewGuestSP -= sizeof(x86_64::xstate);
+        NewGuestSP = AlignDown(NewGuestSP, alignof(x86_64::xstate));
+      } else {
+        NewGuestSP -= sizeof(x86_64::_libc_fpstate);
+        NewGuestSP = AlignDown(NewGuestSP, alignof(x86_64::_libc_fpstate));
+      }
       uint64_t FPStateLocation = NewGuestSP;
 
       NewGuestSP -= sizeof(FEXCore::x86_64::ucontext_t);
@@ -397,8 +443,9 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       guest_uctx->uc_flags = FEXCore::x86_64::UC_FP_XSTATE;
 
       // Pointer to where the fpreg memory is
-      guest_uctx->uc_mcontext.fpregs = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(FPStateLocation);
-      FEXCore::x86_64::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(FPStateLocation);
+      guest_uctx->uc_mcontext.fpregs = reinterpret_cast<x86_64::_libc_fpstate*>(FPStateLocation);
+      auto *xstate = reinterpret_cast<x86_64::xstate*>(FPStateLocation);
+      SetXStateInfo(xstate, IsAVXEnabled);
 
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = 0;
@@ -443,9 +490,20 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       COPY_REG(RSP);
 #undef COPY_REG
 
+      auto* fpstate = &xstate->fpstate;
+
       // Copy float registers
       memcpy(fpstate->_st, Frame->State.mm, sizeof(Frame->State.mm));
-      memcpy(fpstate->_xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+
+      // Copy low lanes and high lanes of XMM registers.
+      for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+        memcpy(&fpstate->_xmm[i], &Frame->State.xmm[i][0], sizeof(__uint128_t));
+      }
+      if (IsAVXEnabled) {
+        for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
+          memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm[i][2], sizeof(__uint128_t));
+        }
+      }
 
       // FCW store default
       fpstate->fcw = Frame->State.FCW;
@@ -470,8 +528,13 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
     else {
       ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT;
 
-      NewGuestSP -= sizeof(FEXCore::x86::_libc_fpstate);
-      NewGuestSP = AlignDown(NewGuestSP, alignof(FEXCore::x86::_libc_fpstate));
+      if (IsAVXEnabled) {
+        NewGuestSP -= sizeof(x86::xstate);
+        NewGuestSP = AlignDown(NewGuestSP, alignof(x86::xstate));
+      } else {
+        NewGuestSP -= sizeof(x86::_libc_fpstate);
+        NewGuestSP = AlignDown(NewGuestSP, alignof(x86::_libc_fpstate));
+      }
       uint64_t FPStateLocation = NewGuestSP;
 
       NewGuestSP -= sizeof(FEXCore::x86::ucontext_t);
@@ -494,7 +557,8 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
 
       // Pointer to where the fpreg memory is
       guest_uctx->uc_mcontext.fpregs = static_cast<uint32_t>(FPStateLocation);
-      FEXCore::x86::_libc_fpstate *fpstate = reinterpret_cast<FEXCore::x86::_libc_fpstate*>(FPStateLocation);
+      auto *xstate = reinterpret_cast<x86::xstate*>(FPStateLocation);
+      SetXStateInfo(xstate, IsAVXEnabled);
 
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_GS] = Frame->State.gs;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_FS] = Frame->State.fs;
@@ -528,6 +592,8 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       COPY_REG(RSP);
 #undef COPY_REG
 
+      auto *fpstate = &xstate->fpstate;
+
       // Copy float registers
       for (size_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
         // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
@@ -536,7 +602,14 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
 
       // Extended XMM state
       fpstate->status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
-      memcpy(fpstate->_xmm, Frame->State.xmm, sizeof(Frame->State.xmm));
+      for (size_t i = 0; i < std::size(Frame->State.xmm); i++) {
+        memcpy(&fpstate->_xmm[i], &Frame->State.xmm[i][0], sizeof(__uint128_t));
+      }
+      if (IsAVXEnabled) {
+        for (size_t i = 0; i < std::size(Frame->State.xmm); i++) {
+          memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm[i][2], sizeof(__uint128_t));
+        }
+      }
 
       // FCW store default
       fpstate->fcw = Frame->State.FCW;
