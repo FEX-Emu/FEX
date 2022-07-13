@@ -27,7 +27,7 @@ DEF_OP(TruncElementPair) {
   switch (IROp->Size) {
     case 4: {
       auto Dst = GetSrcPair<RA_32>(Node);
-      auto Src = GetSrcPair<RA_32>(Op->Header.Args[0].ID());
+      auto Src = GetSrcPair<RA_32>(Op->Pair.ID());
       mov(Dst.first, Src.first);
       mov(Dst.second, Src.second);
       break;
@@ -75,12 +75,12 @@ DEF_OP(CycleCounter) {
 
 DEF_OP(Add) {
   auto Op = IROp->C<IR::IROp_Add>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     switch (OpSize) {
     case 4:
       add(eax, Const);
@@ -94,10 +94,10 @@ DEF_OP(Add) {
   } else {
     switch (OpSize) {
     case 4:
-      add(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      add(eax, GetSrc<RA_32>(Op->Src2.ID()));
       break;
     case 8:
-      add(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      add(rax, GetSrc<RA_64>(Op->Src2.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Add size: {}", OpSize);
       break;
@@ -108,12 +108,12 @@ DEF_OP(Add) {
 
 DEF_OP(Sub) {
   auto Op = IROp->C<IR::IROp_Sub>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     switch (OpSize) {
     case 4:
       sub(eax, Const);
@@ -127,10 +127,10 @@ DEF_OP(Sub) {
   } else {
     switch (OpSize) {
     case 4:
-      sub(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      sub(eax, GetSrc<RA_32>(Op->Src2.ID()));
       break;
     case 8:
-      sub(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      sub(rax, GetSrc<RA_64>(Op->Src2.ID()));
       break;
     default:  LOGMAN_MSG_A_FMT("Unhandled Sub size: {}", OpSize);
       break;
@@ -141,17 +141,17 @@ DEF_OP(Sub) {
 
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   Xbyak::Reg Src;
   Xbyak::Reg Dst;
   switch (OpSize) {
   case 4:
-    Src = GetSrc<RA_32>(Op->Header.Args[0].ID());
+    Src = GetSrc<RA_32>(Op->Src.ID());
     Dst = GetDst<RA_32>(Node);
     break;
   case 8:
-    Src = GetSrc<RA_64>(Op->Header.Args[0].ID());
+    Src = GetSrc<RA_64>(Op->Src.ID());
     Dst = GetDst<RA_64>(Node);
     break;
   default:  LOGMAN_MSG_A_FMT("Unhandled Neg size: {}", OpSize);
@@ -163,19 +163,19 @@ DEF_OP(Neg) {
 
 DEF_OP(Mul) {
   auto Op = IROp->C<IR::IROp_Mul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   auto Dst = GetDst<RA_64>(Node);
 
   switch (OpSize) {
   case 4:
-    movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    imul(eax, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    movsxd(rax, GetSrc<RA_32>(Op->Src1.ID()));
+    imul(eax, GetSrc<RA_32>(Op->Src2.ID()));
     mov(Dst.cvt32(), eax);
   break;
   case 8:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    imul(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
+    imul(rax, GetSrc<RA_64>(Op->Src2.ID()));
     mov(Dst, rax);
   break;
   default: LOGMAN_MSG_A_FMT("Unknown Mul size: {}", OpSize);
@@ -184,17 +184,17 @@ DEF_OP(Mul) {
 
 DEF_OP(UMul) {
   auto Op = IROp->C<IR::IROp_UMul>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
   case 4:
-    mov(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    mul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    mov(rax, GetSrc<RA_32>(Op->Src1.ID()));
+    mul(GetSrc<RA_32>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rax);
   break;
   case 8:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    mul(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
+    mul(GetSrc<RA_64>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rax);
   break;
   default: LOGMAN_MSG_A_FMT("Unknown UMul size: {}", OpSize);
@@ -203,36 +203,36 @@ DEF_OP(UMul) {
 
 DEF_OP(Div) {
   auto Op = IROp->C<IR::IROp_Div>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   auto Size = OpSize;
   switch (Size) {
   case 1: {
-    movsx(ax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    idiv(GetSrc<RA_8>(Op->Header.Args[1].ID()));
+    movsx(ax, GetSrc<RA_8>(Op->Src1.ID()));
+    idiv(GetSrc<RA_8>(Op->Src2.ID()));
     movsx(GetDst<RA_32>(Node), al);
   break;
   }
   case 2: {
-    mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+    mov (ax, GetSrc<RA_16>(Op->Src1.ID()));
     cwd();
-    idiv(GetSrc<RA_16>(Op->Header.Args[1].ID()));
+    idiv(GetSrc<RA_16>(Op->Src2.ID()));
     movsx(GetDst<RA_32>(Node), ax);
   break;
   }
   case 4: {
-    mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+    mov (eax, GetSrc<RA_32>(Op->Src1.ID()));
     cdq();
-    idiv(GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    idiv(GetSrc<RA_32>(Op->Src2.ID()));
     movsxd(GetDst<RA_64>(Node).cvt64(), eax);
   break;
   }
   case 8: {
-    mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    mov (rax, GetSrc<RA_64>(Op->Src1.ID()));
     cqo();
-    idiv(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    idiv(GetSrc<RA_64>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rax);
   break;
   }
@@ -242,39 +242,39 @@ DEF_OP(Div) {
 
 DEF_OP(UDiv) {
   auto Op = IROp->C<IR::IROp_UDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
   case 1: {
-    mov (al, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+    mov (al, GetSrc<RA_8>(Op->Src1.ID()));
     mov (edx, 0);
-    mov (cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
+    mov (cl, GetSrc<RA_8>(Op->Src2.ID()));
     div(cl);
     movzx(GetDst<RA_32>(Node), al);
   break;
   }
   case 2: {
-    mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+    mov (ax, GetSrc<RA_16>(Op->Src1.ID()));
     mov (edx, 0);
-    mov (cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+    mov (cx, GetSrc<RA_16>(Op->Src2.ID()));
     div(cx);
     movzx(GetDst<RA_32>(Node), ax);
   break;
   }
   case 4: {
-    mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+    mov (eax, GetSrc<RA_32>(Op->Src1.ID()));
     mov (edx, 0);
-    mov (ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    mov (ecx, GetSrc<RA_32>(Op->Src2.ID()));
     div(ecx);
     mov(GetDst<RA_32>(Node), eax);
   break;
   }
   case 8: {
-    mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    mov (rax, GetSrc<RA_64>(Op->Src1.ID()));
     mov (rdx, 0);
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov (rcx, GetSrc<RA_64>(Op->Src2.ID()));
     div(rcx);
     mov(GetDst<RA_64>(Node), rax);
   break;
@@ -285,34 +285,34 @@ DEF_OP(UDiv) {
 
 DEF_OP(Rem) {
   auto Op = IROp->C<IR::IROp_Rem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
   case 1: {
-    movsx(ax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
-    idiv(GetSrc<RA_8>(Op->Header.Args[1].ID()));
+    movsx(ax, GetSrc<RA_8>(Op->Src1.ID()));
+    idiv(GetSrc<RA_8>(Op->Src2.ID()));
     mov(al, ah);
     movsx(GetDst<RA_32>(Node), al);
   break;
   }
   case 2: {
-    mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+    mov (ax, GetSrc<RA_16>(Op->Src1.ID()));
     cwd();
-    idiv(GetSrc<RA_16>(Op->Header.Args[1].ID()));
+    idiv(GetSrc<RA_16>(Op->Src2.ID()));
     movsx(GetDst<RA_32>(Node), dx);
   break;
   }
   case 4: {
-    mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+    mov (eax, GetSrc<RA_32>(Op->Src1.ID()));
     cdq();
-    idiv(GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    idiv(GetSrc<RA_32>(Op->Src2.ID()));
     movsxd(GetDst<RA_64>(Node).cvt64(), edx);
   break;
   }
   case 8: {
-    mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    mov (rax, GetSrc<RA_64>(Op->Src1.ID()));
     cqo();
-    idiv(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    idiv(GetSrc<RA_64>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rdx);
   break;
   }
@@ -322,39 +322,39 @@ DEF_OP(Rem) {
 
 DEF_OP(URem) {
   auto Op = IROp->C<IR::IROp_URem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
   case 1: {
-    mov (al, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+    mov (al, GetSrc<RA_8>(Op->Src1.ID()));
     mov (edx, 0);
-    mov (cl, GetSrc<RA_8>(Op->Header.Args[1].ID()));
+    mov (cl, GetSrc<RA_8>(Op->Src2.ID()));
     div(cl);
     movzx(GetDst<RA_32>(Node), ah);
   break;
   }
   case 2: {
-    mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+    mov (ax, GetSrc<RA_16>(Op->Src1.ID()));
     mov (edx, 0);
-    mov (cx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
+    mov (cx, GetSrc<RA_16>(Op->Src2.ID()));
     div(cx);
     movzx(GetDst<RA_32>(Node), dx);
   break;
   }
   case 4: {
-    mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+    mov (eax, GetSrc<RA_32>(Op->Src1.ID()));
     mov (edx, 0);
-    mov (ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    mov (ecx, GetSrc<RA_32>(Op->Src2.ID()));
     div(ecx);
     mov(GetDst<RA_32>(Node), edx);
   break;
   }
   case 8: {
-    mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    mov (rax, GetSrc<RA_64>(Op->Src1.ID()));
     mov (rdx, 0);
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov (rcx, GetSrc<RA_64>(Op->Src2.ID()));
     div(rcx);
     mov(GetDst<RA_64>(Node), rdx);
   break;
@@ -365,17 +365,17 @@ DEF_OP(URem) {
 
 DEF_OP(MulH) {
   auto Op = IROp->C<IR::IROp_MulH>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
   case 4:
-    movsxd(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    imul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    movsxd(rax, GetSrc<RA_32>(Op->Src1.ID()));
+    imul(GetSrc<RA_32>(Op->Src2.ID()));
     movsxd(GetDst<RA_64>(Node).cvt64(), edx);
   break;
   case 8:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    imul(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
+    imul(GetSrc<RA_64>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rdx);
   break;
   default: LOGMAN_MSG_A_FMT("Unknown MulH size: {}", OpSize);
@@ -384,17 +384,17 @@ DEF_OP(MulH) {
 
 DEF_OP(UMulH) {
   auto Op = IROp->C<IR::IROp_UMulH>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
   case 4:
-    mov(rax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-    mul(GetSrc<RA_32>(Op->Header.Args[1].ID()));
+    mov(rax, GetSrc<RA_32>(Op->Src1.ID()));
+    mul(GetSrc<RA_32>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rdx);
   break;
   case 8:
-    mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-    mul(GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
+    mul(GetSrc<RA_64>(Op->Src2.ID()));
     mov(GetDst<RA_64>(Node), rdx);
   break;
   default: LOGMAN_MSG_A_FMT("Unknown UMulH size: {}", OpSize);
@@ -404,13 +404,13 @@ DEF_OP(UMulH) {
 DEF_OP(Or) {
   auto Op = IROp->C<IR::IROp_Or>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     or_(rax, Const);
   } else {
-    or_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    or_(rax, GetSrc<RA_64>(Op->Src2.ID()));
   }
   mov(Dst, rax);
 }
@@ -418,20 +418,20 @@ DEF_OP(Or) {
 DEF_OP(And) {
   auto Op = IROp->C<IR::IROp_And>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     and_(rax, Const);
   } else {
-    and_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    and_(rax, GetSrc<RA_64>(Op->Src2.ID()));
   }
   mov(Dst, rax);
 }
 
 DEF_OP(Andn) {
   auto Op = IROp->C<IR::IROp_Andn>();
-  const auto& Lhs = Op->Header.Args[0];
-  const auto& Rhs = Op->Header.Args[1];
+  const auto& Lhs = Op->Src1;
+  const auto& Rhs = Op->Src2;
   auto Dst = GRD(Node);
 
   uint64_t Const{};
@@ -450,47 +450,46 @@ DEF_OP(Andn) {
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     xor_(rax, Const);
   } else {
-    xor_(rax, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    xor_(rax, GetSrc<RA_64>(Op->Src2.ID()));
   }
   mov(Dst, rax);
 }
 
 DEF_OP(Lshl) {
   auto Op = IROp->C<IR::IROp_Lshl>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Mask = OpSize * 8 - 1;
+  const uint8_t OpSize = IROp->Size;
+  const uint8_t Mask = OpSize * 8 - 1;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     Const &= Mask;
     switch (OpSize) {
       case 4:
-        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
         shl(GetDst<RA_32>(Node), Const);
         break;
       case 8:
-        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
         shl(GetDst<RA_64>(Node), Const);
         break;
       default: LOGMAN_MSG_A_FMT("Unknown LSHL Size: {}\n", OpSize); break;
     };
   } else {
-    mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov(rcx, GetSrc<RA_64>(Op->Src2.ID()));
     and_(rcx, Mask);
 
     switch (OpSize) {
       case 4:
-        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
         shl(GetDst<RA_32>(Node), cl);
         break;
       case 8:
-        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
         shl(GetDst<RA_64>(Node), cl);
         break;
       default: LOGMAN_MSG_A_FMT("Unknown LSHL Size: {}\n", OpSize); break;
@@ -500,53 +499,52 @@ DEF_OP(Lshl) {
 
 DEF_OP(Lshr) {
   auto Op = IROp->C<IR::IROp_Lshr>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Mask = OpSize * 8 - 1;
+  const uint8_t OpSize = IROp->Size;
+  const uint8_t Mask = OpSize * 8 - 1;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     Const &= Mask;
 
     switch (OpSize) {
       case 1:
-        movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Src1.ID()));
         shr(GetDst<RA_32>(Node).cvt8(), Const);
         break;
       case 2:
-        movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Src1.ID()));
         shr(GetDst<RA_32>(Node).cvt16(), Const);
         break;
       case 4:
-        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
         shr(GetDst<RA_32>(Node), Const);
         break;
       case 8:
-        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
         shr(GetDst<RA_64>(Node), Const);
         break;
       default: LOGMAN_MSG_A_FMT("Unknown Size: {}\n", OpSize); break;
     };
 
   } else {
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov (rcx, GetSrc<RA_64>(Op->Src2.ID()));
     and_(rcx, Mask);
 
     switch (OpSize) {
       case 1:
-        movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Src1.ID()));
         shr(GetDst<RA_32>(Node).cvt8(), cl);
         break;
       case 2:
-        movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Src1.ID()));
         shr(GetDst<RA_32>(Node).cvt16(), cl);
         break;
       case 4:
-        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
         shr(GetDst<RA_32>(Node), cl);
         break;
       case 8:
-        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
         shr(GetDst<RA_64>(Node), cl);
         break;
       default: LOGMAN_MSG_A_FMT("Unknown Size: {}\n", OpSize); break;
@@ -556,56 +554,55 @@ DEF_OP(Lshr) {
 
 DEF_OP(Ashr) {
   auto Op = IROp->C<IR::IROp_Ashr>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Mask = OpSize * 8 - 1;
+  const uint8_t OpSize = IROp->Size;
+  const uint8_t Mask = OpSize * 8 - 1;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     Const &= Mask;
 
     switch (OpSize) {
     case 1:
-      movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      movsx(rax, GetSrc<RA_8>(Op->Src1.ID()));
       sar(al, Const);
       movzx(GetDst<RA_64>(Node), al);
     break;
     case 2:
-      movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      movsx(rax, GetSrc<RA_16>(Op->Src1.ID()));
       sar(ax, Const);
       movzx(GetDst<RA_64>(Node), ax);
     break;
     case 4:
-      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
       sar(GetDst<RA_32>(Node), Const);
     break;
     case 8:
-      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
       sar(GetDst<RA_64>(Node), Const);
     break;
     default: LOGMAN_MSG_A_FMT("Unknown ASHR Size: {}\n", OpSize); break;
     };
 
   } else {
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov (rcx, GetSrc<RA_64>(Op->Src2.ID()));
     and_(rcx, Mask);
     switch (OpSize) {
     case 1:
-      movsx(rax, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      movsx(rax, GetSrc<RA_8>(Op->Src1.ID()));
       sar(al, cl);
       movzx(GetDst<RA_64>(Node), al);
     break;
     case 2:
-      movsx(rax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      movsx(rax, GetSrc<RA_16>(Op->Src1.ID()));
       sar(ax, cl);
       movzx(GetDst<RA_64>(Node), ax);
     break;
     case 4:
-      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      mov(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src1.ID()));
       sar(GetDst<RA_32>(Node), cl);
     break;
     case 8:
-      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      mov(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src1.ID()));
       sar(GetDst<RA_64>(Node), cl);
     break;
     default: LOGMAN_MSG_A_FMT("Unknown ASHR Size: {}\n", OpSize); break;
@@ -615,37 +612,36 @@ DEF_OP(Ashr) {
 
 DEF_OP(Ror) {
   auto Op = IROp->C<IR::IROp_Ror>();
-  uint8_t OpSize = IROp->Size;
-
-  uint8_t Mask = OpSize * 8 - 1;
+  const uint8_t OpSize = IROp->Size;
+  const uint8_t Mask = OpSize * 8 - 1;
 
   uint64_t Const;
-  if (IsInlineConstant(Op->Header.Args[1], &Const)) {
+  if (IsInlineConstant(Op->Src2, &Const)) {
     Const &= Mask;
     switch (OpSize) {
       case 4: {
-        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(eax, GetSrc<RA_32>(Op->Src1.ID()));
         ror(eax, Const);
       break;
       }
       case 8: {
-        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
         ror(rax, Const);
       break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown ROR Size: {}\n", OpSize); break;
     }
   } else {
-    mov (rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+    mov (rcx, GetSrc<RA_64>(Op->Src2.ID()));
     and_(rcx, Mask);
     switch (OpSize) {
       case 4: {
-        mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        mov(eax, GetSrc<RA_32>(Op->Src1.ID()));
         ror(eax, cl);
       break;
       }
       case 8: {
-        mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        mov(rax, GetSrc<RA_64>(Op->Src1.ID()));
         ror(rax, cl);
       break;
       }
@@ -657,19 +653,19 @@ DEF_OP(Ror) {
 
 DEF_OP(Extr) {
   auto Op = IROp->C<IR::IROp_Extr>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 4: {
-      mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      mov(ecx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
+      mov(eax, GetSrc<RA_32>(Op->Upper.ID()));
+      mov(ecx, GetSrc<RA_32>(Op->Lower.ID()));
       shrd(ecx, eax, Op->LSB);
       mov(GetDst<RA_32>(Node), ecx);
       break;
     }
     case 8: {
-      mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      mov(rcx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
+      mov(rax, GetSrc<RA_64>(Op->Upper.ID()));
+      mov(rcx, GetSrc<RA_64>(Op->Lower.ID()));
       shrd(rcx, rax, Op->LSB);
       mov(GetDst<RA_64>(Node), rcx);
       break;
@@ -681,8 +677,8 @@ DEF_OP(PDep) {
   const auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
 
-  const auto Input = GRS(Op->Args(0).ID());
-  const auto Mask  = GRS(Op->Args(1).ID());
+  const auto Input = GRS(Op->Input.ID());
+  const auto Mask  = GRS(Op->Mask.ID());
   const auto Dest  = GRD(Node);
 
   if (OpSize == 4) {
@@ -696,8 +692,8 @@ DEF_OP(PExt) {
   const auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
 
-  const auto Input = GRS(Op->Args(0).ID());
-  const auto Mask  = GRS(Op->Args(1).ID());
+  const auto Input = GRS(Op->Input.ID());
+  const auto Mask  = GRS(Op->Mask.ID());
   const auto Dest  = GRD(Node);
 
   if (OpSize == 4) {
@@ -709,29 +705,29 @@ DEF_OP(PExt) {
 
 DEF_OP(LDiv) {
   auto Op = IROp->C<IR::IROp_LDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 2: {
-      mov(eax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      mov(edx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-      idiv(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+      mov(eax, GetSrc<RA_16>(Op->Lower.ID()));
+      mov(edx, GetSrc<RA_16>(Op->Upper.ID()));
+      idiv(GetSrc<RA_16>(Op->Divisor.ID()));
       movsx(GetDst<RA_64>(Node), ax);
       break;
     }
     case 4: {
-      mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      mov(edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      idiv(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+      mov(eax, GetSrc<RA_32>(Op->Lower.ID()));
+      mov(edx, GetSrc<RA_32>(Op->Upper.ID()));
+      idiv(GetSrc<RA_32>(Op->Divisor.ID()));
       movsxd(GetDst<RA_64>(Node).cvt64(), eax);
       break;
     }
     case 8: {
-      mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      idiv(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+      mov(rax, GetSrc<RA_64>(Op->Lower.ID()));
+      mov(rdx, GetSrc<RA_64>(Op->Upper.ID()));
+      idiv(GetSrc<RA_64>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rax);
       break;
     }
@@ -741,29 +737,29 @@ DEF_OP(LDiv) {
 
 DEF_OP(LUDiv) {
   auto Op = IROp->C<IR::IROp_LUDiv>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 2: {
-      mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      mov (dx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-      div(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+      mov (ax, GetSrc<RA_16>(Op->Lower.ID()));
+      mov (dx, GetSrc<RA_16>(Op->Upper.ID()));
+      div(GetSrc<RA_16>(Op->Divisor.ID()));
       movzx(GetDst<RA_32>(Node), ax);
       break;
     }
     case 4: {
-      mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      div(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+      mov (eax, GetSrc<RA_32>(Op->Lower.ID()));
+      mov (edx, GetSrc<RA_32>(Op->Upper.ID()));
+      div(GetSrc<RA_32>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rax);
       break;
     }
     case 8: {
-      mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      div(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+      mov (rax, GetSrc<RA_64>(Op->Lower.ID()));
+      mov (rdx, GetSrc<RA_64>(Op->Upper.ID()));
+      div(GetSrc<RA_64>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rax);
       break;
     }
@@ -773,29 +769,29 @@ DEF_OP(LUDiv) {
 
 DEF_OP(LRem) {
   auto Op = IROp->C<IR::IROp_LRem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 2: {
-      mov(ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      mov(dx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-      idiv(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+      mov(ax, GetSrc<RA_16>(Op->Lower.ID()));
+      mov(dx, GetSrc<RA_16>(Op->Upper.ID()));
+      idiv(GetSrc<RA_16>(Op->Divisor.ID()));
       movsx(GetDst<RA_64>(Node), dx);
       break;
     }
     case 4: {
-      mov(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      mov(edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      idiv(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+      mov(eax, GetSrc<RA_32>(Op->Lower.ID()));
+      mov(edx, GetSrc<RA_32>(Op->Upper.ID()));
+      idiv(GetSrc<RA_32>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rdx);
       break;
     }
     case 8: {
-      mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      mov(rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      idiv(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+      mov(rax, GetSrc<RA_64>(Op->Lower.ID()));
+      mov(rdx, GetSrc<RA_64>(Op->Upper.ID()));
+      idiv(GetSrc<RA_64>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rdx);
       break;
     }
@@ -805,29 +801,29 @@ DEF_OP(LRem) {
 
 DEF_OP(LURem) {
   auto Op = IROp->C<IR::IROp_LURem>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
     case 2: {
-      mov (ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
-      mov (dx, GetSrc<RA_16>(Op->Header.Args[1].ID()));
-      div(GetSrc<RA_16>(Op->Header.Args[2].ID()));
+      mov (ax, GetSrc<RA_16>(Op->Lower.ID()));
+      mov (dx, GetSrc<RA_16>(Op->Upper.ID()));
+      div(GetSrc<RA_16>(Op->Divisor.ID()));
       movzx(GetDst<RA_64>(Node), dx);
       break;
     }
     case 4: {
-      mov (eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
-      mov (edx, GetSrc<RA_32>(Op->Header.Args[1].ID()));
-      div(GetSrc<RA_32>(Op->Header.Args[2].ID()));
+      mov (eax, GetSrc<RA_32>(Op->Lower.ID()));
+      mov (edx, GetSrc<RA_32>(Op->Upper.ID()));
+      div(GetSrc<RA_32>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rdx);
       break;
     }
     case 8: {
-      mov (rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
-      mov (rdx, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-      div(GetSrc<RA_64>(Op->Header.Args[2].ID()));
+      mov (rax, GetSrc<RA_64>(Op->Lower.ID()));
+      mov (rdx, GetSrc<RA_64>(Op->Upper.ID()));
+      div(GetSrc<RA_64>(Op->Divisor.ID()));
       mov(GetDst<RA_64>(Node), rdx);
       break;
     }
@@ -839,31 +835,31 @@ DEF_OP(LURem) {
 DEF_OP(Not) {
   auto Op = IROp->C<IR::IROp_Not>();
   auto Dst = GetDst<RA_64>(Node);
-  mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(Dst, GetSrc<RA_64>(Op->Src.ID()));
   not_(Dst);
 }
 
 DEF_OP(Popcount) {
   auto Op = IROp->C<IR::IROp_Popcount>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   auto Dst64 = GetDst<RA_64>(Node);
 
   switch (OpSize) {
     case 1:
-      movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      movzx(GetDst<RA_32>(Node), GetSrc<RA_8>(Op->Src.ID()));
       popcnt(Dst64, Dst64);
       break;
     case 2: {
-      movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      movzx(GetDst<RA_32>(Node), GetSrc<RA_16>(Op->Src.ID()));
       popcnt(Dst64, Dst64);
       break;
     }
     case 4:
-      popcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      popcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src.ID()));
       break;
     case 8:
-      popcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      popcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src.ID()));
       break;
   }
 }
@@ -871,11 +867,11 @@ DEF_OP(Popcount) {
 DEF_OP(FindLSB) {
   auto Op = IROp->C<IR::IROp_FindLSB>();
 
-  bsf(rcx, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  bsf(rcx, GetSrc<RA_64>(Op->Src.ID()));
   mov(rax, 0x40);
   cmovz(rcx, rax);
   xor_(rax, rax);
-  cmp(GetSrc<RA_64>(Op->Header.Args[0].ID()), 1);
+  cmp(GetSrc<RA_64>(Op->Src.ID()), 1);
   sbb(rax, rax);
   or_(rax, rcx);
   mov (GetDst<RA_64>(Node), rax);
@@ -883,18 +879,18 @@ DEF_OP(FindLSB) {
 
 DEF_OP(FindMSB) {
   auto Op = IROp->C<IR::IROp_FindMSB>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 2:
-      bsr(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      bsr(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Src.ID()));
       movzx(GetDst<RA_32>(Node), GetDst<RA_16>(Node));
       break;
     case 4:
-      bsr(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      bsr(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src.ID()));
       break;
     case 8:
-      bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      bsr(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src.ID()));
       break;
     default: LOGMAN_MSG_A_FMT("Unknown FindMSB OpSize: {}", OpSize);
   }
@@ -902,21 +898,21 @@ DEF_OP(FindMSB) {
 
 DEF_OP(FindTrailingZeros) {
   auto Op = IROp->C<IR::IROp_FindTrailingZeros>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 2:
-      bsf(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      bsf(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Src.ID()));
       mov(ax, 0x10);
       cmovz(GetDst<RA_16>(Node), ax);
     break;
     case 4:
-      bsf(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      bsf(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src.ID()));
       mov(eax, 0x20);
       cmovz(GetDst<RA_32>(Node), eax);
       break;
     case 8:
-      bsf(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      bsf(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src.ID()));
       mov(rax, 0x40);
       cmovz(GetDst<RA_64>(Node), rax);
       break;
@@ -926,21 +922,21 @@ DEF_OP(FindTrailingZeros) {
 
 DEF_OP(CountLeadingZeroes) {
   auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   if (Features.has(Xbyak::util::Cpu::tLZCNT)) {
     switch (OpSize) {
       case 2: {
-        lzcnt(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        lzcnt(GetDst<RA_16>(Node), GetSrc<RA_16>(Op->Src.ID()));
         movzx(GetDst<RA_32>(Node), GetDst<RA_16>(Node));
         break;
       }
       case 4: {
-        lzcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        lzcnt(GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src.ID()));
         break;
       }
       case 8: {
-        lzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        lzcnt(GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src.ID()));
         break;
       }
       default: LOGMAN_MSG_A_FMT("Unknown CountLeadingZeros size: {}", OpSize); break;
@@ -949,11 +945,11 @@ DEF_OP(CountLeadingZeroes) {
   else {
     switch (OpSize) {
       case 2: {
-        test(GetSrc<RA_16>(Op->Header.Args[0].ID()), GetSrc<RA_16>(Op->Header.Args[0].ID()));
+        test(GetSrc<RA_16>(Op->Src.ID()), GetSrc<RA_16>(Op->Src.ID()));
         mov(eax, 0x10);
         Label Skip;
         je(Skip);
-          bsr(ax, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+          bsr(ax, GetSrc<RA_16>(Op->Src.ID()));
           xor_(ax, 0xF);
           movzx(eax, ax);
         L(Skip);
@@ -961,22 +957,22 @@ DEF_OP(CountLeadingZeroes) {
         break;
       }
       case 4: {
-        test(GetSrc<RA_32>(Op->Header.Args[0].ID()), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+        test(GetSrc<RA_32>(Op->Src.ID()), GetSrc<RA_32>(Op->Src.ID()));
         mov(eax, 0x20);
         Label Skip;
         je(Skip);
-          bsr(eax, GetSrc<RA_32>(Op->Header.Args[0].ID()));
+          bsr(eax, GetSrc<RA_32>(Op->Src.ID()));
           xor_(eax, 0x1F);
         L(Skip);
         mov(GetDst<RA_32>(Node), eax);
         break;
       }
       case 8: {
-        test(GetSrc<RA_64>(Op->Header.Args[0].ID()), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+        test(GetSrc<RA_64>(Op->Src.ID()), GetSrc<RA_64>(Op->Src.ID()));
         mov(rax, 0x40);
         Label Skip;
         je(Skip);
-          bsr(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+          bsr(rax, GetSrc<RA_64>(Op->Src.ID()));
           xor_(rax, 0x3F);
         L(Skip);
         mov(GetDst<RA_64>(Node), rax);
@@ -989,19 +985,19 @@ DEF_OP(CountLeadingZeroes) {
 
 DEF_OP(Rev) {
   auto Op = IROp->C<IR::IROp_Rev>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   switch (OpSize) {
     case 2:
-      mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src.ID()));
       rol(GetDst<RA_16>(Node), 8);
     break;
     case 4:
-      mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      mov (GetDst<RA_32>(Node), GetSrc<RA_32>(Op->Src.ID()));
       bswap(GetDst<RA_32>(Node).cvt32());
       break;
     case 8:
-      mov (GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      mov (GetDst<RA_64>(Node), GetSrc<RA_64>(Op->Src.ID()));
       bswap(GetDst<RA_64>(Node).cvt64());
       break;
     default: LOGMAN_MSG_A_FMT("Unknown REV size: {}", OpSize); break;
@@ -1010,17 +1006,18 @@ DEF_OP(Rev) {
 
 DEF_OP(Bfi) {
   auto Op = IROp->C<IR::IROp_Bfi>();
-  uint8_t OpSize = IROp->Size;
+  const uint8_t OpSize = IROp->Size;
 
   auto Dst = GetDst<RA_64>(Node);
 
   uint64_t SourceMask = (1ULL << Op->Width) - 1;
-  if (Op->Width == 64)
+  if (Op->Width == 64) {
     SourceMask = ~0ULL;
-  uint64_t DestMask = ~(SourceMask << Op->lsb);
+  }
+  const uint64_t DestMask = ~(SourceMask << Op->lsb);
 
-  mov(TMP1, GetSrc<RA_64>(Op->Header.Args[1].ID()));
-  mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(TMP1, GetSrc<RA_64>(Op->Src.ID()));
+  mov(Dst, GetSrc<RA_64>(Op->Dest.ID()));
 
   mov(TMP2, DestMask);
   and_(Dst, TMP2);
@@ -1045,16 +1042,16 @@ DEF_OP(Bfe) {
   if (Op->lsb == 0) {
     switch (Op->Width / 8) {
     case 1:
-      movzx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      movzx(Dst, GetSrc<RA_8>(Op->Src.ID()));
       return;
     case 2:
-      movzx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      movzx(Dst, GetSrc<RA_16>(Op->Src.ID()));
       return;
     case 4:
-      mov(Dst.cvt32(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      mov(Dst.cvt32(), GetSrc<RA_32>(Op->Src.ID()));
       return;
     case 8:
-      mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      mov(Dst, GetSrc<RA_64>(Op->Src.ID()));
       return;
     default:
       // Need to use slower general case
@@ -1062,7 +1059,7 @@ DEF_OP(Bfe) {
     }
   }
 
-  mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(Dst, GetSrc<RA_64>(Op->Src.ID()));
 
   if (Op->lsb != 0)
     shr(Dst, Op->lsb);
@@ -1081,16 +1078,16 @@ DEF_OP(Sbfe) {
   if (Op->lsb == 0) {
     switch (Op->Width / 8) {
     case 1:
-      movsx(Dst, GetSrc<RA_8>(Op->Header.Args[0].ID()));
+      movsx(Dst, GetSrc<RA_8>(Op->Src.ID()));
       return;
     case 2:
-      movsx(Dst, GetSrc<RA_16>(Op->Header.Args[0].ID()));
+      movsx(Dst, GetSrc<RA_16>(Op->Src.ID()));
       return;
     case 4:
-      movsxd(Dst.cvt64(), GetSrc<RA_32>(Op->Header.Args[0].ID()));
+      movsxd(Dst.cvt64(), GetSrc<RA_32>(Op->Src.ID()));
       return;
     case 8:
-      mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+      mov(Dst, GetSrc<RA_64>(Op->Src.ID()));
       return;
     default:
       // Need to use slower general case
@@ -1102,7 +1099,7 @@ DEF_OP(Sbfe) {
   {
     uint64_t ShiftLeftAmount = (64 - (Op->Width + Op->lsb));
     uint64_t ShiftRightAmount = ShiftLeftAmount + Op->lsb;
-    mov(Dst, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+    mov(Dst, GetSrc<RA_64>(Op->Src.ID()));
     shl(Dst, ShiftLeftAmount);
     sar(Dst, ShiftRightAmount);
   }
@@ -1150,19 +1147,19 @@ DEF_OP(VExtractToGPR) {
 
   switch (Op->Header.ElementSize) {
     case 1: {
-      pextrb(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrb(GetDst<RA_32>(Node), GetSrc(Op->Vector.ID()), Op->Index);
     break;
     }
     case 2: {
-      pextrw(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrw(GetDst<RA_32>(Node), GetSrc(Op->Vector.ID()), Op->Index);
     break;
     }
     case 4: {
-      pextrd(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrd(GetDst<RA_32>(Node), GetSrc(Op->Vector.ID()), Op->Index);
     break;
     }
     case 8: {
-      pextrq(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()), Op->Index);
+      pextrq(GetDst<RA_64>(Node), GetSrc(Op->Vector.ID()), Op->Index);
     break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
@@ -1171,39 +1168,40 @@ DEF_OP(VExtractToGPR) {
 
 DEF_OP(Float_ToGPR_ZS) {
   auto Op = IROp->C<IR::IROp_Float_ToGPR_ZS>();
+  const uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
 
-  uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
   switch (Conv) {
     case 0x0804: // int64_t <- float
-      cvttss2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvttss2si(GetDst<RA_64>(Node), GetSrc(Op->Scalar.ID()));
     break;
     case 0x0808: // int64_t <- double
-      cvttsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvttsd2si(GetDst<RA_64>(Node), GetSrc(Op->Scalar.ID()));
     break;
     case 0x0404: // int32_t <- float
-      cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvttss2si(GetDst<RA_32>(Node), GetSrc(Op->Scalar.ID()));
     break;
     case 0x0408: // int32_t <- double
-      cvttsd2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvttsd2si(GetDst<RA_32>(Node), GetSrc(Op->Scalar.ID()));
     break;
   }
 }
 
 DEF_OP(Float_ToGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_ToGPR_S>();
-  uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (IROp->Size << 8) | Op->SrcElementSize;
+
   switch (Conv) {
     case 0x0804: // int64_t <- float
-      cvtss2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtss2si(GetDst<RA_64>(Node), GetSrc(Op->Scalar.ID()));
     break;
     case 0x0808: // int64_t <- double
-      cvtsd2si(GetDst<RA_64>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtsd2si(GetDst<RA_64>(Node), GetSrc(Op->Scalar.ID()));
     break;
     case 0x0404: // int32_t <- float
-      cvtss2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtss2si(GetDst<RA_32>(Node), GetSrc(Op->Scalar.ID()));
     break;
     case 0x0408: // int32_t <- double
-      cvtsd2si(GetDst<RA_32>(Node), GetSrc(Op->Header.Args[0].ID()));
+      cvtsd2si(GetDst<RA_32>(Node), GetSrc(Op->Scalar.ID()));
     break;
   }
 }
@@ -1213,18 +1211,18 @@ DEF_OP(FCmp) {
 
   if (Op->Flags & (1 << IR::FCMP_FLAG_UNORDERED)) {
     if (Op->ElementSize == 4) {
-      ucomiss(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      ucomiss(GetSrc(Op->Scalar1.ID()), GetSrc(Op->Scalar2.ID()));
     }
     else {
-      ucomisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      ucomisd(GetSrc(Op->Scalar1.ID()), GetSrc(Op->Scalar2.ID()));
     }
   }
   else {
     if (Op->ElementSize == 4) {
-      comiss(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      comiss(GetSrc(Op->Scalar1.ID()), GetSrc(Op->Scalar2.ID()));
     }
     else {
-      comisd(GetSrc(Op->Header.Args[0].ID()), GetSrc(Op->Header.Args[1].ID()));
+      comisd(GetSrc(Op->Scalar1.ID()), GetSrc(Op->Scalar2.ID()));
     }
   }
   mov (rdx, 0);
