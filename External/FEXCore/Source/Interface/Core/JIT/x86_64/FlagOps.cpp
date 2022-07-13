@@ -18,7 +18,7 @@ namespace FEXCore::CPU {
 DEF_OP(GetHostFlag) {
   auto Op = IROp->C<IR::IROp_GetHostFlag>();
 
-  mov(rax, GetSrc<RA_64>(Op->Header.Args[0].ID()));
+  mov(rax, GetSrc<RA_64>(Op->Value.ID()));
   shr(rax, Op->Flag);
   and_(rax, 1);
   mov(GetDst<RA_64>(Node), rax);
