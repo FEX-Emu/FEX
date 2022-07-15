@@ -1,3 +1,4 @@
+#include "FEXHeaderUtils/Syscalls.h"
 #include "Logger.h"
 #include "SquashFS.h"
 
@@ -398,7 +399,7 @@ namespace ProcessPipe {
           break;
         }
         case FEXServerClient::PacketType::TYPE_GET_PID_FD: {
-          int FD = ::syscall(SYS_pidfd_open, ::getpid(), 0);
+          int FD = FHU::Syscalls::pidfd_open(::getpid(), 0);
 
           SendFDSuccessPacket(Socket, FD);
 
