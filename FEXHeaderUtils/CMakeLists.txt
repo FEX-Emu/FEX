@@ -59,3 +59,16 @@ if (compiles)
   add_definitions(-DHAS_SYSCALL_RENAMEAT2=1)
 endif ()
 
+check_cxx_source_compiles(
+	"
+	#include <stdio.h>
+	#include <syscall.h>
+	int main() {
+	return ::syscall(SYS_pidfd_open, ::getpid(), 0);
+	}"
+  compiles)
+if (compiles)
+  message(STATUS "Has pidfd_open helper")
+  add_definitions(-DHAS_SYSCALL_PIDFD_OPEN=1)
+endif ()
+

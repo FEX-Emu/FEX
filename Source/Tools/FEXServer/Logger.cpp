@@ -61,7 +61,7 @@ namespace Logger {
   }
 
   void LogThreadFunc() {
-    LoggerThreadTID = ::gettid();
+    LoggerThreadTID = FHU::Syscalls::gettid();
 
     while (!ShouldShutdown) {
       struct timespec ts{};
@@ -128,7 +128,7 @@ namespace Logger {
     }
 
     // Wake up the thread immediately
-    tgkill(::getpid(), LoggerThreadTID, SIGUSR1);
+    FHU::Syscalls::tgkill(::getpid(), LoggerThreadTID, SIGUSR1);
   }
 
   bool LogThreadRunning() {
@@ -139,7 +139,7 @@ namespace Logger {
     ShouldShutdown = true;
 
     // Wake up the thread immediately
-    tgkill(::getpid(), LoggerThreadTID, SIGUSR1);
+    FHU::Syscalls::tgkill(::getpid(), LoggerThreadTID, SIGUSR1);
 
     if (LogThread.joinable()) {
       LogThread.join();

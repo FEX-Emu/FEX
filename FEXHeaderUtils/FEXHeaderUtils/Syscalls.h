@@ -79,5 +79,12 @@ inline int32_t renameat2(int olddirfd, const char *oldpath, int newdirfd, const 
 #endif
 }
 
+inline int32_t pidfd_open(pid_t pid, unsigned int flags) {
+#if defined(DHAS_SYSCALL_PIDFD_OPEN) && DHAS_SYSCALL_PIDFD_OPEN
+  return ::syscall(SYS_pidfd_open, pid_t pid, unsigned int flags);
+#else
+  return -1;
+#endif
+}
 
 }

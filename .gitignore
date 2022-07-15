@@ -10,3 +10,4 @@ out/
 .vscode/
 .vs/
 *.pyc
+.cache
