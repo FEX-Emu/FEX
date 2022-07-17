@@ -10,6 +10,7 @@
 
 int main(int argc, char **argv, char **envp) {
   FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
   // No FEX arguments passed through command line
   FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));

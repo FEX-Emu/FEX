@@ -154,15 +154,20 @@ namespace JSON {
     return ConfigDir;
   }
 
-  std::string GetConfigFileLocation() {
+  std::string GetConfigFileLocation(bool Global) {
     std::string ConfigFile{};
-    const char *AppConfig = getenv("FEX_APP_CONFIG");
-    if (AppConfig) {
-      // App config environment variable overwrites only the config file
-      ConfigFile = AppConfig;
+    if (Global) {
+      ConfigFile = GetConfigDirectory(true) + "Config.json";
     }
     else {
-      ConfigFile = GetConfigDirectory(false) + "Config.json";
+      const char *AppConfig = getenv("FEX_APP_CONFIG");
+      if (AppConfig) {
+        // App config environment variable overwrites only the config file
+        ConfigFile = AppConfig;
+      }
+      else {
+        ConfigFile = GetConfigDirectory(false) + "Config.json";
+      }
     }
     return ConfigFile;
   }
@@ -206,7 +211,8 @@ namespace JSON {
   static std::map<FEXCore::Config::LayerType, std::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
   static FEXCore::Config::Layer *Meta{};
 
-  constexpr std::array<FEXCore::Config::LayerType, 6> LoadOrder = {
+  constexpr std::array<FEXCore::Config::LayerType, 7> LoadOrder = {
+    FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN,
     FEXCore::Config::LayerType::LAYER_MAIN,
     FEXCore::Config::LayerType::LAYER_GLOBAL_APP,
     FEXCore::Config::LayerType::LAYER_LOCAL_APP,
@@ -613,7 +619,7 @@ namespace JSON {
   // Application loaders
   class MainLoader final : public FEXCore::Config::OptionMapper {
   public:
-    explicit MainLoader();
+    explicit MainLoader(FEXCore::Config::LayerType Type);
     explicit MainLoader(std::string ConfigFile);
     void Load() override;
 
@@ -659,9 +665,9 @@ namespace JSON {
     }
   }
 
-  MainLoader::MainLoader()
-    : FEXCore::Config::OptionMapper(FEXCore::Config::LayerType::LAYER_MAIN)
-    , Config{FEXCore::Config::GetConfigFileLocation()} {
+  MainLoader::MainLoader(FEXCore::Config::LayerType Type)
+    : FEXCore::Config::OptionMapper(Type)
+    , Config{FEXCore::Config::GetConfigFileLocation(Type == FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN)} {
   }
 
   MainLoader::MainLoader(std::string ConfigFile)
@@ -735,12 +741,16 @@ namespace JSON {
     }
   }
 
+  std::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer() {
+    return std::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN);
+  }
+
   std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(std::string const *File) {
     if (File) {
       return std::make_unique<FEXCore::Config::MainLoader>(*File);
     }
     else {
-      return std::make_unique<FEXCore::Config::MainLoader>();
+      return std::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_MAIN);
     }
   }
 
