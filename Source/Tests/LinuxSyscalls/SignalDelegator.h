@@ -87,9 +87,7 @@ namespace FEX::HLE {
 
       uint64_t sa_flags;
 
-#ifdef _M_X86_64
       void (*restorer)();
-#endif
       uint64_t sa_mask;
     };
 
