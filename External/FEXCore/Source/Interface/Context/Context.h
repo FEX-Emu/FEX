@@ -123,6 +123,7 @@ namespace FEXCore::Context {
     FEXCore::Core::InternalThreadState* ParentThread;
     std::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
+    bool NeedToCheckXID{true};
 
     std::mutex IdleWaitMutex;
     std::condition_variable IdleWaitCV;
@@ -131,8 +132,8 @@ namespace FEXCore::Context {
     Event PauseWait;
     bool Running{};
 
-    std::shared_mutex CodeInvalidationMutex; 
-    
+    std::shared_mutex CodeInvalidationMutex;
+
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
     FEXCore::HLE::SourcecodeResolver *SourcecodeResolver{};
@@ -352,7 +353,7 @@ namespace FEXCore::Context {
     bool StartPaused = false;
     bool IsMemoryShared = false;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
-    
+
     std::shared_mutex CustomIRMutex;
     std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;

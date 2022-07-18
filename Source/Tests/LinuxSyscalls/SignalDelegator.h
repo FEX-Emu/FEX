@@ -54,6 +54,8 @@ namespace FEX::HLE {
       uint64_t GuestSignalFD(int fd, const uint64_t *set, size_t sigsetsize , int flags);
     /**  @} */
 
+      void CheckXIDHandler() override;
+
       void UninstallHostHandler(int Signal);
   protected:
     // Called from the thunk handler to handle the signal

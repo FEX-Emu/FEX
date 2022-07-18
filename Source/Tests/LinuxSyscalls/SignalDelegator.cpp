@@ -387,6 +387,31 @@ namespace FEX::HLE {
     return 0;
   }
 
+  void SignalDelegator::CheckXIDHandler() {
+    std::lock_guard lk(GuestDelegatorMutex);
+    std::lock_guard lk2(HostDelegatorMutex);
+
+    constexpr size_t SIGNAL_SETXID = 33;
+
+    kernel_sigaction CurrentAction{};
+
+    // Only update the old action if we haven't ever been installed
+    const int Result = ::syscall(SYS_rt_sigaction, SIGNAL_SETXID, nullptr, &CurrentAction, 8);
+    if (Result < 0) {
+      LogMan::Msg::AFmt("Failed to get status of XID signal");
+      return;
+    }
+
+    SignalHandler &HostHandler = HostHandlers[SIGNAL_SETXID];
+    if (CurrentAction.handler != HostHandler.HostAction.handler) {
+      // GLIBC overwrote our XID handler, reinstate our handler
+      const int Result = ::syscall(SYS_rt_sigaction, SIGNAL_SETXID, &HostHandler.HostAction, nullptr, 8);
+      if (Result < 0) {
+        LogMan::Msg::AFmt("Failed to reinstate our XID signal handler {}", strerror(errno));
+      }
+    }
+  }
+
   uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t *ss, stack_t *old_ss) {
     auto Thread = GetTLSThread();
     bool UsingAltStack{};
