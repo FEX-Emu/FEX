@@ -18,9 +18,11 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include <csetjmp>
 #include <cstdint>
 #include <errno.h>
 #include <memory>
@@ -29,10 +31,6 @@ $end_info$
 #include <sys/types.h>
 #include <vector>
 #include <utility>
-
-namespace FEXCore::Core {
-  struct InternalThreadState;
-}
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
   const char *CharLevel{nullptr};
@@ -157,16 +155,23 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-    
   bool DidFault = false;
-
-  SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-    DidFault = true;
-    return false;
-  }, true);
-
   FEXCore::Core::CPUState State;
   if (Core != FEXCore::Config::CONFIG_CUSTOM) {
+    jmp_buf LongJump{};
+    int LongJumpVal{};
+
+    SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault, &LongJump](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+      constexpr uint8_t HLT = 0xF4;
+      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+        DidFault = false;
+        return false;
+      }
+
+      longjmp(LongJump, 1);
+      return false;
+    }, true);
+
     // Run through FEX
     FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
@@ -193,7 +198,10 @@ int main(int argc, char **argv, char **const envp) {
     if (!Result1)
       return 1;
 
-    FEXCore::Context::RunUntilExit(CTX);
+    LongJumpVal = setjmp(LongJump);
+    if (!LongJumpVal) {
+      FEXCore::Context::RunUntilExit(CTX);
+    }
 
     // Just re-use compare state. It also checks against the expected values in config.
     FEXCore::Context::GetCPUState(CTX, &State);

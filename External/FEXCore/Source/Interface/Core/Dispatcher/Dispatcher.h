@@ -44,8 +44,9 @@ public:
   uint64_t ThreadPauseHandlerAddressSpillSRA{};
   uint64_t ExitFunctionLinkerAddress{};
   uint64_t SignalHandlerReturnAddress{};
-  uint64_t UnimplementedInstructionAddress{};
-  uint64_t OverflowExceptionInstructionAddress{};
+  uint64_t GuestSignal_SIGILL{};
+  uint64_t GuestSignal_SIGTRAP{};
+  uint64_t GuestSignal_SIGSEGV{};
   uint64_t IntCallbackReturnAddress{};
 
   uint64_t PauseReturnInstruction{};

@@ -182,7 +182,12 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   }
 }
 
-
+static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::BreakDefinition Arg) {
+  *out << "{" << Arg.ErrorRegister << ".";
+  *out << static_cast<uint32_t>(Arg.Signal) << ".";
+  *out << static_cast<uint32_t>(Arg.TrapNumber) << ".";
+  *out << static_cast<uint32_t>(Arg.si_code) << "}";
+}
 
 void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();

@@ -402,14 +402,6 @@ struct RoundType final {
   [[nodiscard]] friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
 };
 
-struct BreakReason final {
-  uint8_t Val;
-  [[nodiscard]] constexpr operator uint8_t() const {
-    return Val;
-  }
-  [[nodiscard]] friend constexpr bool operator==(const BreakReason&, const BreakReason&) = default;
-};
-
 struct SHA256Sum final {
   uint8_t data[32];
   [[nodiscard]] bool operator<(SHA256Sum const &rhs) const {

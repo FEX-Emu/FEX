@@ -347,24 +347,29 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
   {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    UnimplementedInstructionAddress = getCurr<uint64_t>();
+    GuestSignal_SIGILL = getCurr<uint64_t>();
     ud2();
   }
 
   {
-    // Guest Overflow handler
+    // Guest SIGTRAP handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    OverflowExceptionInstructionAddress = getCurr<uint64_t>();
+    GuestSignal_SIGTRAP = getCurr<uint64_t>();
 
     // ud2 = SIGILL
     // int3 = SIGTRAP
     // hlt = SIGSEGV
-  
-    add(byte STATE_PTR(CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException), 1);
-    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.TrapNo), X86State::X86_TRAPNO_OF);
-    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.err_code), 0);
-    mov(dword STATE_PTR(CpuStateFrame, SynchronousFaultData.si_code), 0x80);
+    int3();
+  }
 
+  {
+    // Guest SIGSEGV handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    GuestSignal_SIGSEGV = getCurr<uint64_t>();
+
+    // ud2 = SIGILL
+    // int3 = SIGTRAP
+    // hlt = SIGSEGV
     hlt();
   }
 
@@ -477,8 +482,9 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
     Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
     Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddress;
     Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddress;
-    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.GuestSignal_SIGILL = GuestSignal_SIGILL;
+    Common.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
+    Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
 
     auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;

@@ -132,7 +132,9 @@ namespace FEXCore::Core {
       uint64_t ThreadStopHandlerSpillSRA{};
       uint64_t ThreadPauseHandlerSpillSRA{};
       uint64_t UnimplementedInstructionHandler{};
-      uint64_t OverflowExceptionHandler{};
+      uint64_t GuestSignal_SIGILL{};
+      uint64_t GuestSignal_SIGTRAP{};
+      uint64_t GuestSignal_SIGSEGV{};
       uint64_t SignalReturnHandler{};
       uint64_t L1Pointer{};
       uint64_t L2Pointer{};
@@ -195,6 +197,7 @@ namespace FEXCore::Core {
 
     struct SynchronousFaultDataStruct {
       bool FaultToTopAndGeneratedException{};
+      uint8_t Signal;
       uint32_t TrapNo;
       uint32_t err_code;
       uint32_t si_code;

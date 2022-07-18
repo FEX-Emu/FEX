@@ -46,14 +46,26 @@ DEF_OP(Fence) {
 
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
-  switch (Op->Reason) {
-    case FEXCore::IR::Break_Halt: // HLT
-      StopThread(Data->State);
+
+  Data->State->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException = 1;
+  Data->State->CurrentFrame->SynchronousFaultData.Signal = Op->Reason.Signal;
+  Data->State->CurrentFrame->SynchronousFaultData.TrapNo = Op->Reason.TrapNumber;
+  Data->State->CurrentFrame->SynchronousFaultData.err_code = Op->Reason.ErrorRegister;
+  Data->State->CurrentFrame->SynchronousFaultData.si_code = Op->Reason.si_code;
+
+  switch (Op->Reason.Signal) {
+  case SIGILL:
+    FHU::Syscalls::tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGILL);
     break;
-    case FEXCore::IR::Break_InvalidInstruction:
-      FHU::Syscalls::tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGILL);
+  case SIGTRAP:
+    FHU::Syscalls::tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGTRAP);
     break;
-  default: LOGMAN_MSG_A_FMT("Unknown Break Reason: {}", Op->Reason); break;
+  case SIGSEGV:
+    FHU::Syscalls::tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGSEGV);
+    break;
+  default:
+    FHU::Syscalls::tgkill(Data->State->ThreadManager.PID, Data->State->ThreadManager.TID, SIGTRAP);
+    break;
   }
 }
 

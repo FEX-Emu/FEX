@@ -300,7 +300,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    UnimplementedInstructionAddress = GetCursorAddress<uint64_t>();
+    GuestSignal_SIGILL  = GetCursorAddress<uint64_t>();
 
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
@@ -309,26 +309,29 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   }
 
   {
-    // Guest Overflow handler
+    // Guest SIGTRAP handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    OverflowExceptionInstructionAddress = GetCursorAddress<uint64_t>();
+    GuestSignal_SIGTRAP  = GetCursorAddress<uint64_t>();
 
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
-    LoadConstant(w1, 1);
-    strb(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException));
-    LoadConstant(w1, X86State::X86_TRAPNO_OF);
-    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.TrapNo));
-    LoadConstant(w1, 0x80);
-    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.si_code));
-    LoadConstant(x1, 0);
-    str(w1, STATE_PTR(CpuStateFrame, SynchronousFaultData.err_code));
+    brk(0);
+  }
+
+  {
+    // Guest Overflow handler
+    // Needs to be distinct from the SignalHandlerReturnAddress
+    GuestSignal_SIGSEGV = GetCursorAddress<uint64_t>();
+
+    if (config.StaticRegisterAllocation)
+      SpillStaticRegs();
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP
     // ??? = SIGSEGV
     // Force a SIGSEGV by loading zero
+    LoadConstant(x1, 0);
     ldr(x1, MemOperand(x1));
   }
 
@@ -593,8 +596,9 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
     Common.ExitFunctionLinker = ExitFunctionLinkerAddress;
     Common.ThreadStopHandlerSpillSRA = ThreadStopHandlerAddressSpillSRA;
     Common.ThreadPauseHandlerSpillSRA = ThreadPauseHandlerAddressSpillSRA;
-    Common.UnimplementedInstructionHandler = UnimplementedInstructionAddress;
-    Common.OverflowExceptionHandler = OverflowExceptionInstructionAddress;
+    Common.GuestSignal_SIGILL = GuestSignal_SIGILL;
+    Common.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
+    Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
 
     auto &AArch64 = Thread->CurrentFrame->Pointers.AArch64;
