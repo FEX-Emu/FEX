@@ -117,9 +117,9 @@ DEF_OP(ExitFunction) {
 
 DEF_OP(Jump) {
   const auto Op = IROp->C<IR::IROp_Jump>();
-  const auto ArgID = Op->Args(0).ID();
+  const auto Target = Op->TargetBlock.ID();
 
-  PendingTargetLabel = &JumpTargets.try_emplace(ArgID).first->second;
+  PendingTargetLabel = &JumpTargets.try_emplace(Target).first->second;
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetSrc<RA_32>(Node) : GetSrc<RA_64>(Node))
