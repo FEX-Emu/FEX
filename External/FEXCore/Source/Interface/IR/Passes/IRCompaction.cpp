@@ -77,7 +77,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   auto HeaderNode = CurrentIR.GetHeaderNode();
   auto HeaderOp = CurrentIR.GetHeader();
-  LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+  LOGMAN_THROW_AA_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   // This compaction pass is something that we need to ensure correct ordering and distances between IROps
   // Later on we assume that an IROp's SSA value live range is its Node locations
@@ -101,7 +101,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   {
     // Generate our codeblocks and link them together
     for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-      LOGMAN_THROW_A_FMT(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_AA_FMT(BlockHeader->Op == OP_CODEBLOCK, "IR type failed to be a code block");
 
       auto LocalBlockIRNode = LocalBuilder._CodeBlock(LocalHeaderOp, LocalHeaderOp); // Use LocalHeaderOp as a dummy arg for now
       OldToNewRemap[CurrentIR.GetID(BlockNode).Value].NodeID = LocalIR.GetID(LocalBlockIRNode.Node);
@@ -165,7 +165,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
     for (auto &Block : GeneratedCodeBlocks) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       auto BlockIROp = LocalIR.GetOp<FEXCore::IR::IROp_CodeBlock>(Block.NewNode);
-      LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
+      LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
       for (auto [LocalNode, LocalIROp] : LocalIR.GetCode(Block.NewNode)) {

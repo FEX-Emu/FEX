@@ -358,7 +358,7 @@ void InterpreterOps::InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::I
     using namespace FEXCore::IR;
     auto [BlockNode, BlockHeader] = OpData.BlockIterator();
     auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-    LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 
     // Reset the block results per block
     memset(&OpData.BlockResults, 0, sizeof(OpData.BlockResults));

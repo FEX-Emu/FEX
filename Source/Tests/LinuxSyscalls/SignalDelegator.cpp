@@ -253,7 +253,7 @@ namespace FEX::HLE {
 
   SignalDelegator::SignalDelegator() {
     // Register this delegate
-    LOGMAN_THROW_A_FMT(!GlobalDelegator, "Can't register global delegator multiple times!");
+    LOGMAN_THROW_AA_FMT(!GlobalDelegator, "Can't register global delegator multiple times!");
     GlobalDelegator = this;
     // Signal zero isn't real
     HostHandlers[0].Installed = true;
@@ -309,7 +309,7 @@ namespace FEX::HLE {
     altstack.ss_sp = ThreadData.AltStackPtr;
     altstack.ss_size = SIGSTKSZ * 16;
     altstack.ss_flags = 0;
-    LOGMAN_THROW_A_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
+    LOGMAN_THROW_AA_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
 
     // Register the alt stack
     const int Result = sigaltstack(&altstack, nullptr);

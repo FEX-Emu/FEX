@@ -58,8 +58,8 @@ auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> CodeBuffer {
   Buffer.Size = Size;
   Buffer.Ptr = static_cast<uint8_t *>(
       FEXCore::Allocator::mmap(nullptr, Buffer.Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-  LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
-  
+  LOGMAN_THROW_AA_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
+
   if (ThreadState->CTX->Config.GlobalJITNaming()) {
     ThreadState->CTX->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
   }

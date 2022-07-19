@@ -71,7 +71,7 @@ DEF_OP(SplatVector) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
   const uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
   uint8_t Elements = 0;
 
   switch (Op->Header.Op) {

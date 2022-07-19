@@ -407,7 +407,7 @@ void X86JITCore::ClearCache() {
 IR::PhysicalRegister X86JITCore::GetPhys(IR::NodeID Node) const {
   auto PhyReg = RAData->GetNodeRegister(Node);
 
-  LOGMAN_THROW_A_FMT(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
+  LOGMAN_THROW_AA_FMT(PhyReg.Raw != 255, "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
 
   return PhyReg;
 }
@@ -592,7 +592,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     setSize(getSize() + GDBSize);
   }
 
-  LOGMAN_THROW_A_FMT(RAData != nullptr, "Needs RA");
+  LOGMAN_THROW_AA_FMT(RAData != nullptr, "Needs RA");
 
   SpillSlots = RAData->SpillSlots();
 
@@ -649,7 +649,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     using namespace FEXCore::IR;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto BlockIROp = BlockHeader->CW<IROp_CodeBlock>();
-    LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
     auto BlockStartHostCode = getCurr<uint8_t *>();

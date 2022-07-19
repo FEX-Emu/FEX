@@ -43,7 +43,7 @@ DEF_OP(SplatVector) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
   uint8_t OpSize = IROp->Size;
 
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
   void *Src = GetSrc<void*>(Data->SSAData, Op->Scalar);
   uint8_t Tmp[16];
   uint8_t Elements = 0;
@@ -1376,7 +1376,7 @@ DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
 
   const uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Vector);
-  LOGMAN_THROW_A_FMT(IROp->Size <= 16, "OpSize is too large for VExtractElement: {}", IROp->Size);
+  LOGMAN_THROW_AA_FMT(IROp->Size <= 16, "OpSize is too large for VExtractElement: {}", IROp->Size);
   if (SourceSize == 16) {
     __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
     uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
@@ -1406,7 +1406,7 @@ DEF_OP(VDupElement) {
   const uint8_t OpSize = IROp->Size;
   const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "OpSize is too large for VDupElement: {}", OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize <= 16, "OpSize is too large for VDupElement: {}", OpSize);
   if (OpSize == 16) {
     __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
     uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;

@@ -45,7 +45,7 @@ DEF_OP(VectorImm) {
 DEF_OP(SplatVector2) {
   auto Op = IROp->C<IR::IROp_SplatVector2>();
   const uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
 
   const uint8_t ElementSize = OpSize / 2;
 
@@ -63,7 +63,7 @@ DEF_OP(SplatVector2) {
 DEF_OP(SplatVector4) {
   auto Op = IROp->C<IR::IROp_SplatVector4>();
   const uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_A_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
 
   const uint8_t ElementSize = OpSize / 4;
 
