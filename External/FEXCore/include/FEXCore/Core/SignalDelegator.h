@@ -69,6 +69,14 @@ namespace Core {
     // Called from the thunk handler to handle the signal
     void HandleSignal(int Signal, void *Info, void *UContext);
 
+    /**
+     * @brief Check to ensure the XID handler is still set to the FEX handler
+     *
+     * On a new thread GLIBC will set the XID handler underneath us.
+     * After the first thread is created check this.
+     */
+    virtual void CheckXIDHandler() = 0;
+
     constexpr static size_t MAX_SIGNALS {64};
 
     // Use the last signal just so we are less likely to ever conflict with something that the guest application is using

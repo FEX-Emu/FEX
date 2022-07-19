@@ -92,6 +92,7 @@ namespace FEXCore::Core {
     std::atomic<SignalEvent> SignalReason{SignalEvent::Nothing};
 
     std::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
+    bool StartPaused {false};
     InterruptableConditionVariable StartRunning;
     Event ThreadWaiting;
 
