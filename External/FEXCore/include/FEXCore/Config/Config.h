@@ -71,6 +71,7 @@ namespace Handler {
   };
 
   enum class LayerType {
+    LAYER_GLOBAL_MAIN, ///< /usr/share/fex-emu/Config.json by default
     LAYER_MAIN,
     LAYER_ARGUMENTS,
     LAYER_GLOBAL_APP,
@@ -100,7 +101,7 @@ namespace Type {
 
   FEX_DEFAULT_VISIBILITY std::string GetDataDirectory();
   FEX_DEFAULT_VISIBILITY std::string GetConfigDirectory(bool Global);
-  FEX_DEFAULT_VISIBILITY std::string GetConfigFileLocation();
+  FEX_DEFAULT_VISIBILITY std::string GetConfigFileLocation(bool Global = false);
   FEX_DEFAULT_VISIBILITY std::string GetApplicationConfig(const std::string &Filename, bool Global);
 
   using LayerValue = std::list<std::string>;
@@ -245,6 +246,13 @@ namespace Type {
   protected:
     void MapNameToOption(const char *ConfigName, const char *ConfigString);
   };
+
+  /**
+   * @brief Loads the global FEX config
+   *
+   * @return unique_ptr for that layer
+   */
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer();
 
   /**
    * @brief Loads the main application config

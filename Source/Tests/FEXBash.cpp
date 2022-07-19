@@ -22,6 +22,7 @@ $end_info$
 
 int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Initialize();
+  FEXCore::Config::AddLayer(FEXCore::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
   FEX::ArgLoader::LoadWithoutArguments(argc, argv);
   FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));

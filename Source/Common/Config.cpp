@@ -47,6 +47,7 @@ namespace FEX::Config {
     char **argv,
     char **const envp) {
     FEXCore::Config::Initialize();
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateGlobalMainLayer());
     FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
 
     if (NoFEXArguments) {
