@@ -209,11 +209,29 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
     }
 
     if (FPRs) {
-      for (size_t i = 0; i < SRAFPR.size(); i++) {
-        const auto Reg = SRAFPR[i];
+      if (EmitterCTX->HostFeatures.SupportsAVX) {
+        for (size_t i = 0; i < SRAFPR.size(); i++) {
+          const auto Reg = SRAFPR[i];
 
-        if (((1U << Reg.GetCode()) & FPRSpillMask) != 0) {
-          str(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+          if (((1U << Reg.GetCode()) & FPRSpillMask) != 0) {
+            str(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[i][0])));
+          }
+        }
+      } else {
+        for (size_t i = 0; i < SRAFPR.size(); i += 2) {
+          const auto Reg1 = SRAFPR[i];
+          const auto Reg2 = SRAFPR[i + 1];
+
+          if (((1U << Reg1.GetCode()) & FPRSpillMask) &&
+              ((1U << Reg2.GetCode()) & FPRSpillMask)) {
+            stp(Reg1.Q(), Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
+          }
+          else if (((1U << Reg1.GetCode()) & FPRSpillMask)) {
+            str(Reg1.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
+          }
+          else if (((1U << Reg2.GetCode()) & FPRSpillMask)) {
+            str(Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i+1][0])));
+          }
         }
       }
     }
@@ -238,11 +256,29 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     }
 
     if (FPRs) {
-      for (size_t i = 0; i < SRAFPR.size(); i++) {
-        const auto Reg = SRAFPR[i];
+      if (EmitterCTX->HostFeatures.SupportsAVX) {
+        for (size_t i = 0; i < SRAFPR.size(); i++) {
+          const auto Reg = SRAFPR[i];
 
-        if (((1U << Reg.GetCode()) & FPRFillMask) != 0) {
-          ldr(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm[i][0])));
+          if (((1U << Reg.GetCode()) & FPRFillMask) != 0) {
+            ldr(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[i][0])));
+          }
+        }
+      } else {
+        for (size_t i = 0; i < SRAFPR.size(); i += 2) {
+          const auto Reg1 = SRAFPR[i];
+          const auto Reg2 = SRAFPR[i + 1];
+
+          if (((1U << Reg1.GetCode()) & FPRFillMask) &&
+              ((1U << Reg2.GetCode()) & FPRFillMask)) {
+            ldp(Reg1.Q(), Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
+          }
+          else if (((1U << Reg1.GetCode()) & FPRFillMask)) {
+            ldr(Reg1.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
+          }
+          else if (((1U << Reg2.GetCode()) & FPRFillMask)) {
+            ldr(Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i+1][0])));
+          }
         }
       }
     }

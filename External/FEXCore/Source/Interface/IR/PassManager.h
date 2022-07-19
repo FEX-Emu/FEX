@@ -52,7 +52,7 @@ public:
     return PassPtr;
   }
 
-  void InsertRegisterAllocationPass(bool OptimizeSRA);
+  void InsertRegisterAllocationPass(bool OptimizeSRA, bool SupportsAVX);
 
   bool Run(IREmitter *IREmit);
 

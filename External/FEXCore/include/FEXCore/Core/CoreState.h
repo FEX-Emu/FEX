@@ -11,12 +11,27 @@
 
 namespace FEXCore::Core {
   struct FEX_PACKED CPUState {
+    // Allows more efficient handling of the register
+    // file in the event AVX is not supported.
+    union XMMRegs {
+      struct AVX {
+        uint64_t data[16][4];
+      };
+      struct SSE {
+        uint64_t data[16][2];
+        uint64_t pad[16][2];
+      };
+
+      AVX avx;
+      SSE sse;
+    };
+
     uint64_t rip; ///< Current core's RIP. May not be entirely accurate while JIT is active
     uint64_t gregs[16];
     uint16_t es, cs, ss, ds;
     uint64_t gs;
     uint64_t fs;
-    uint64_t xmm[16][4];
+    XMMRegs xmm;
     uint8_t flags[48];
     uint64_t mm[8][2];
 
@@ -30,7 +45,8 @@ namespace FEXCore::Core {
     static constexpr size_t FLAG_SIZE = sizeof(flags[0]);
     static constexpr size_t GDT_SIZE = sizeof(gdt[0]);
     static constexpr size_t GPR_REG_SIZE = sizeof(gregs[0]);
-    static constexpr size_t XMM_REG_SIZE = sizeof(xmm[0]);
+    static constexpr size_t XMM_AVX_REG_SIZE = sizeof(xmm.avx.data[0]);
+    static constexpr size_t XMM_SSE_REG_SIZE = XMM_AVX_REG_SIZE / 2;
     static constexpr size_t MM_REG_SIZE = sizeof(mm[0]);
 
     // Only the first 32 bits are defined.
@@ -38,7 +54,7 @@ namespace FEXCore::Core {
     static constexpr size_t NUM_FLAGS = sizeof(flags) / FLAG_SIZE;
     static constexpr size_t NUM_GDTS = sizeof(gdt) / GDT_SIZE;
     static constexpr size_t NUM_GPRS = sizeof(gregs) / GPR_REG_SIZE;
-    static constexpr size_t NUM_XMMS = sizeof(xmm) / XMM_REG_SIZE;
+    static constexpr size_t NUM_XMMS = sizeof(xmm) / XMM_AVX_REG_SIZE;
     static constexpr size_t NUM_MMS = sizeof(mm) / MM_REG_SIZE;
   };
   static_assert(offsetof(CPUState, xmm) % 32 == 0, "xmm needs to be 256-bit aligned!");

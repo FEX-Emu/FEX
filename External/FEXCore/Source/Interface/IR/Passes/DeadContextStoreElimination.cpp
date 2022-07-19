@@ -25,7 +25,7 @@ $end_info$
 namespace {
   struct ContextMemberClassification {
     size_t Offset;
-    uint8_t Size;
+    uint16_t Size;
   };
 
   enum LastAccessType {
@@ -76,7 +76,7 @@ namespace {
     std::vector<ContextMemberInfo> ClassificationInfo;
   };
 
-  constexpr static std::array<LastAccessType, 14> DefaultAccess = {
+  constexpr static std::array<LastAccessType, 15> DefaultAccess = {
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_NONE,
@@ -86,6 +86,7 @@ namespace {
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_NONE,
+    ACCESS_INVALID, // SSE padding in non-AVX case
     ACCESS_NONE,
     ACCESS_NONE,
     ACCESS_NONE,
@@ -93,7 +94,7 @@ namespace {
     ACCESS_NONE,
   };
 
-  static void ClassifyContextStruct(ContextInfo *ContextClassificationInfo) {
+  static void ClassifyContextStruct(ContextInfo *ContextClassificationInfo, bool SupportsAVX) {
     auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
 
     ContextClassification->emplace_back(ContextMemberInfo{
@@ -170,15 +171,37 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+    if (SupportsAVX) {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+        ContextClassification->emplace_back(ContextMemberInfo{
+          ContextMemberClassification {
+            offsetof(FEXCore::Core::CPUState, xmm.avx.data[0][0]) + FEXCore::Core::CPUState::XMM_AVX_REG_SIZE * i,
+            FEXCore::Core::CPUState::XMM_AVX_REG_SIZE,
+          },
+          DefaultAccess[8],
+          FEXCore::IR::InvalidClass,
+        });
+      }
+    } else {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+        ContextClassification->emplace_back(ContextMemberInfo{
+          ContextMemberClassification {
+            offsetof(FEXCore::Core::CPUState, xmm.sse.data[0][0]) + FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * i,
+            FEXCore::Core::CPUState::XMM_SSE_REG_SIZE,
+          },
+          DefaultAccess[8],
+          FEXCore::IR::InvalidClass,
+        });
+      }
+
       ContextClassification->emplace_back(ContextMemberInfo{
-        ContextMemberClassification {
-          offsetof(FEXCore::Core::CPUState, xmm[0][0]) + sizeof(FEXCore::Core::CPUState::xmm[0]) * i,
-          FEXCore::Core::CPUState::XMM_REG_SIZE,
-        },
-        DefaultAccess[8],
-        FEXCore::IR::InvalidClass,
-      });
+          ContextMemberClassification {
+            offsetof(FEXCore::Core::CPUState, xmm.sse.pad[0][0]),
+            static_cast<uint16_t>(FEXCore::Core::CPUState::XMM_SSE_REG_SIZE * FEXCore::Core::CPUState::NUM_XMMS),
+          },
+          DefaultAccess[9],
+          FEXCore::IR::InvalidClass,
+        });
     }
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
@@ -187,7 +210,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, flags[0]) + sizeof(FEXCore::Core::CPUState::flags[0]) * i,
           FEXCore::Core::CPUState::FLAG_SIZE,
         },
-        DefaultAccess[9],
+        DefaultAccess[10],
         FEXCore::IR::InvalidClass,
       });
     }
@@ -198,7 +221,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, mm[0][0]) + sizeof(FEXCore::Core::CPUState::mm[0]) * i,
           FEXCore::Core::CPUState::MM_REG_SIZE
         },
-        DefaultAccess[10],
+        DefaultAccess[11],
         FEXCore::IR::InvalidClass,
       });
     }
@@ -210,7 +233,7 @@ namespace {
           offsetof(FEXCore::Core::CPUState, gdt[0]) + sizeof(FEXCore::Core::CPUState::gdt[0]) * i,
           sizeof(FEXCore::Core::CPUState::gdt[0]),
         },
-        DefaultAccess[11],
+        DefaultAccess[12],
         FEXCore::IR::InvalidClass,
       });
     }
@@ -221,7 +244,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, FCW),
         sizeof(FEXCore::Core::CPUState::FCW),
       },
-      DefaultAccess[12],
+      DefaultAccess[13],
       FEXCore::IR::InvalidClass,
     });
 
@@ -231,7 +254,7 @@ namespace {
         offsetof(FEXCore::Core::CPUState, FTW),
         sizeof(FEXCore::Core::CPUState::FTW),
       },
-      DefaultAccess[13],
+      DefaultAccess[14],
       FEXCore::IR::InvalidClass,
     });
 
@@ -255,7 +278,7 @@ namespace {
       ContextClassificationInfo->Lookup.size(), sizeof(FEXCore::Core::CPUState));
   }
 
-  static void ResetClassificationAccesses(ContextInfo *ContextClassificationInfo) {
+  static void ResetClassificationAccesses(ContextInfo *ContextClassificationInfo, bool SupportsAVX) {
     auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
 
     auto SetAccess = [&](size_t Offset, auto Access) {
@@ -281,20 +304,24 @@ namespace {
       SetAccess(Offset++, DefaultAccess[8]);
     }
 
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
+    if (!SupportsAVX) {
       SetAccess(Offset++, DefaultAccess[9]);
     }
 
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_FLAGS; ++i) {
       SetAccess(Offset++, DefaultAccess[10]);
     }
 
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GDTS; ++i) {
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       SetAccess(Offset++, DefaultAccess[11]);
     }
 
-    SetAccess(Offset++, DefaultAccess[12]);
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GDTS; ++i) {
+      SetAccess(Offset++, DefaultAccess[12]);
+    }
+
     SetAccess(Offset++, DefaultAccess[13]);
+    SetAccess(Offset++, DefaultAccess[14]);
   }
 
   struct BlockInfo {
@@ -306,8 +333,8 @@ namespace {
 
 class RCLSE final : public FEXCore::IR::Pass {
 public:
-  RCLSE() {
-    ClassifyContextStruct(&ClassifiedStruct);
+  explicit RCLSE(bool SupportsAVX_) : SupportsAVX{SupportsAVX_} {
+    ClassifyContextStruct(&ClassifiedStruct, SupportsAVX);
     DCE = FEXCore::IR::CreatePassDeadCodeElimination();
   }
   bool Run(FEXCore::IR::IREmitter *IREmit) override;
@@ -316,6 +343,8 @@ private:
 
   ContextInfo ClassifiedStruct;
   std::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
+
+  bool SupportsAVX;
 
   ContextMemberInfo *FindMemberInfo(ContextInfo *ClassifiedInfo, uint32_t Offset, uint8_t Size);
   ContextMemberInfo *RecordAccess(ContextMemberInfo *Info, FEXCore::IR::RegisterClassType RegClass, uint32_t Offset, uint8_t Size, LastAccessType AccessType, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode = nullptr);
@@ -459,7 +488,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
     auto BlockOp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     auto BlockEnd = IREmit->GetIterator(BlockOp->Last);
 
-    ResetClassificationAccesses(&LocalInfo);
+    ResetClassificationAccesses(&LocalInfo, SupportsAVX);
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STORECONTEXT) {
@@ -651,14 +680,14 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 
         if ((Flags & FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH) != FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH) {
           // We can't track through these
-          ResetClassificationAccesses(&LocalInfo);
+          ResetClassificationAccesses(&LocalInfo, SupportsAVX);
         }
       }
       else if (IROp->Op == OP_STORECONTEXTINDEXED ||
                IROp->Op == OP_LOADCONTEXTINDEXED ||
                IROp->Op == OP_BREAK) {
         // We can't track through these
-        ResetClassificationAccesses(&LocalInfo);
+        ResetClassificationAccesses(&LocalInfo, SupportsAVX);
       }
     }
   }
@@ -686,8 +715,8 @@ bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
 
 namespace FEXCore::IR {
 
-std::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination() {
-  return std::make_unique<RCLSE>();
+std::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX) {
+  return std::make_unique<RCLSE>(SupportsAVX);
 }
 
 }

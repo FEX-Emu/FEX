@@ -20,38 +20,57 @@ namespace FEXCore::IR {
 
 class StaticRegisterAllocationPass final : public FEXCore::IR::Pass {
 public:
+  explicit StaticRegisterAllocationPass(bool SupportsAVX_) : SupportsAVX{SupportsAVX_} {}
+
   bool Run(IREmitter *IREmit) override;
+
+private:
+  bool SupportsAVX;
+
+  bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) const {
+    const auto begin = offsetof(Core::CPUState, gregs[0]);
+    const auto end = offsetof(Core::CPUState, gregs[16]);
+
+    if (Offset >= begin && Offset < end) {
+      const auto reg = (Offset - begin) / Core::CPUState::GPR_REG_SIZE;
+      LOGMAN_THROW_AA_FMT(Class.Val == IR::GPRClass.Val, "unexpected Class {}", Class);
+
+      // 0..15 -> 16 in total
+      return reg < Core::CPUState::NUM_GPRS;
+    }
+
+    return false;
+  }
+
+  bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) const {
+    const auto [begin, end] = [this]() -> std::pair<ptrdiff_t, ptrdiff_t> {
+      if (SupportsAVX) {
+        return {
+          offsetof(Core::CPUState, xmm.avx.data[0][0]),
+          offsetof(Core::CPUState, xmm.avx.data[16][0]),
+        };
+      } else {
+        return {
+          offsetof(Core::CPUState, xmm.sse.data[0][0]),
+          offsetof(Core::CPUState, xmm.sse.data[16][0]),
+        };
+      }
+    }();
+
+    if (Offset >= begin && Offset < end) {
+      const auto size = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
+                                    : Core::CPUState::XMM_SSE_REG_SIZE;
+      const auto reg = (Offset - begin) / size;
+      LOGMAN_THROW_AA_FMT(Class.Val == IR::FPRClass.Val || (AllowGpr && Class.Val == IR::GPRClass.Val), "unexpected Class {}, AllowGpr {}", Class, AllowGpr);
+
+      // 0..15 -> 16 in total
+      return reg < Core::CPUState::NUM_XMMS;
+    }
+
+    return false;
+  }
 };
 
-bool IsStaticAllocGpr(uint32_t Offset, RegisterClassType Class) {
-  const auto begin = offsetof(Core::CPUState, gregs[0]);
-  const auto end = offsetof(Core::CPUState, gregs[16]);
-
-  if (Offset >= begin && Offset < end) {
-    const auto reg = (Offset - begin) / Core::CPUState::GPR_REG_SIZE;
-    LOGMAN_THROW_AA_FMT(Class.Val == IR::GPRClass.Val, "unexpected Class {}", Class);
-
-    // 0..15 -> 16 in total
-    return reg < Core::CPUState::NUM_GPRS;
-  }
-
-  return false;
-}
-
-bool IsStaticAllocFpr(uint32_t Offset, RegisterClassType Class, bool AllowGpr) {
-  const auto begin = offsetof(FEXCore::Core::CPUState, xmm[0][0]);
-  const auto end = offsetof(FEXCore::Core::CPUState, xmm[16][0]);
-
-  if (Offset >= begin && Offset < end) {
-    const auto reg = (Offset - begin) / Core::CPUState::XMM_REG_SIZE;
-    LOGMAN_THROW_AA_FMT(Class.Val == IR::FPRClass.Val || (AllowGpr && Class.Val == IR::GPRClass.Val), "unexpected Class {}, AllowGpr {}", Class, AllowGpr);
-
-    // 0..15 -> 16 in total
-    return reg < Core::CPUState::NUM_XMMS;
-  }
-
-  return false;
-}
 /**
  * @brief This pass replaces Load/Store Context with Load/Store Register for Statically Mapped registers. It also does some validation.
  *
@@ -102,8 +121,8 @@ bool StaticRegisterAllocationPass::Run(IREmitter *IREmit) {
   return true;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateStaticRegisterAllocationPass() {
-  return std::make_unique<StaticRegisterAllocationPass>();
+std::unique_ptr<FEXCore::IR::Pass> CreateStaticRegisterAllocationPass(bool SupportsAVX) {
+  return std::make_unique<StaticRegisterAllocationPass>(SupportsAVX);
 }
 
 }

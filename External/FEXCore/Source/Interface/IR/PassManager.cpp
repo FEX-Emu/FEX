@@ -20,7 +20,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineCo
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {
-    InsertPass(CreateContextLoadStoreElimination());
+    InsertPass(CreateContextLoadStoreElimination(ctx->HostFeatures.SupportsAVX));
 
     if (Is64BitMode()) {
       // This needs to run after RCLSE
@@ -28,7 +28,7 @@ void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineCo
       InsertPass(CreateLongDivideEliminationPass());
     }
 
-    InsertPass(CreateDeadStoreElimination());
+    InsertPass(CreateDeadStoreElimination(ctx->HostFeatures.SupportsAVX));
     InsertPass(CreatePassDeadCodeElimination());
     InsertPass(CreateConstProp(InlineConstants, ctx->HostFeatures.SupportsTSOImm9));
 
@@ -39,12 +39,12 @@ void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineCo
 
     // only do SRA if enabled and JIT
     if (InlineConstants && StaticRegisterAllocation)
-      InsertPass(CreateStaticRegisterAllocationPass());
+      InsertPass(CreateStaticRegisterAllocationPass(ctx->HostFeatures.SupportsAVX));
   }
   else {
     // only do SRA if enabled and JIT
     if (InlineConstants && StaticRegisterAllocation)
-      InsertPass(CreateStaticRegisterAllocationPass());
+      InsertPass(CreateStaticRegisterAllocationPass(ctx->HostFeatures.SupportsAVX));
   }
 
   // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node
@@ -61,8 +61,8 @@ void PassManager::AddDefaultValidationPasses() {
 #endif
 }
 
-void PassManager::InsertRegisterAllocationPass(bool OptimizeSRA) {
-  InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction"), OptimizeSRA), "RA");
+void PassManager::InsertRegisterAllocationPass(bool OptimizeSRA, bool SupportsAVX) {
+  InsertPass(IR::CreateRegisterAllocationPass(GetPass("Compaction"), OptimizeSRA, SupportsAVX), "RA");
 }
 
 bool PassManager::Run(IREmitter *IREmit) {

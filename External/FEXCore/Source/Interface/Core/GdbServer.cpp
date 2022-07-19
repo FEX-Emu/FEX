@@ -306,7 +306,7 @@ std::string GdbServer::readRegs() {
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
 
-  memcpy(&GDB.xmm[0], &state.xmm[0], sizeof(GDB.xmm));
+  memcpy(&GDB.xmm[0], &state.xmm.avx.data[0], sizeof(GDB.xmm));
 
   return encodeHex((unsigned char *)&GDB, sizeof(GDBContextDefinition));
 }
@@ -382,9 +382,9 @@ GdbServer::HandledPacketType GdbServer::readReg(const std::string& packet) {
   }
   else if (addr >= offsetof(GDBContextDefinition, xmm[0][0]) &&
            addr < offsetof(GDBContextDefinition, xmm[16][0])) {
-    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / Core::CPUState::XMM_REG_SIZE;
-    const auto *Data = (unsigned char *)&state.xmm[XmmIndex][0];
-    return {encodeHex(Data, Core::CPUState::XMM_REG_SIZE), HandledPacketType::TYPE_ACK};
+    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / Core::CPUState::XMM_AVX_REG_SIZE;
+    const auto *Data = (unsigned char *)&state.xmm.avx.data[XmmIndex][0];
+    return {encodeHex(Data, Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
   }
   else if (addr == offsetof(GDBContextDefinition, mxcsr)) {
     uint32_t Empty{};

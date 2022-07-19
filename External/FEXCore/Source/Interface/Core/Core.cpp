@@ -187,7 +187,7 @@ namespace FEXCore::Context {
       greg = 0;
     }
 
-    for (auto& xmm : NewThreadState.xmm) {
+    for (auto& xmm : NewThreadState.xmm.avx.data) {
       xmm[0] = 0xDEADBEEFULL;
       xmm[1] = 0xBAD0DAD1ULL;
       xmm[2] = 0xDEADCAFEULL;
@@ -562,7 +562,7 @@ namespace FEXCore::Context {
       break;
 #endif
     case FEXCore::Config::CONFIG_IRJIT:
-      Thread->PassManager->InsertRegisterAllocationPass(DoSRA);
+      Thread->PassManager->InsertRegisterAllocationPass(DoSRA, HostFeatures.SupportsAVX);
 
 #if (_M_X86_64 && JIT_X86_64)
       Thread->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, Thread);

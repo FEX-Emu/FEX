@@ -440,10 +440,16 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs) {
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
   if (Op->Dest.IsGPR()) {
     const auto gpr = Op->Dest.Data.GPR.GPR;
+    const auto gprIndex = gpr - X86State::REG_XMM_0;
 
-    _StoreContext(8, FPRClass, Src, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][0]));
+    const auto fprLowOffset = CTX->HostFeatures.SupportsAVX ? offsetof(Core::CPUState, xmm.avx.data[gprIndex][0])
+                                                            : offsetof(Core::CPUState, xmm.sse.data[gprIndex][0]);
+    const auto fprHighOffset = CTX->HostFeatures.SupportsAVX ? offsetof(Core::CPUState, xmm.avx.data[gprIndex][1])
+                                                             : offsetof(Core::CPUState, xmm.sse.data[gprIndex][1]);
+
+    _StoreContext(8, FPRClass, Src, fprLowOffset);
     auto Const = _Constant(0);
-    _StoreContext(8, GPRClass, Const, offsetof(FEXCore::Core::CPUState, xmm[gpr - FEXCore::X86State::REG_XMM_0][1]));
+    _StoreContext(8, GPRClass, Const, fprHighOffset);
   }
   else {
     // This is simple, just store the result
@@ -1390,10 +1396,18 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 
     _StoreMem(FPRClass, 16, MemLocation, MMReg, 16);
   }
-  unsigned NumRegs = CTX->Config.Is64BitMode ? 16 : 8;
+
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto GetXMMOffset = [this](size_t i) {
+    if (CTX->HostFeatures.SupportsAVX) {
+      return offsetof(Core::CPUState, xmm.avx.data[i]);
+    } else {
+      return offsetof(Core::CPUState, xmm.sse.data[i]);
+    }
+  };
 
   for (unsigned i = 0; i < NumRegs; ++i) {
-    OrderedNode *XMMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm[i]));
+    OrderedNode *XMMReg = _LoadContext(16, FPRClass, GetXMMOffset(i));
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
 
     _StoreMem(FPRClass, 16, MemLocation, XMMReg, 16);
@@ -1439,12 +1453,20 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
     auto MMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     _StoreContext(16, FPRClass, MMReg, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
-  unsigned NumRegs = CTX->Config.Is64BitMode ? 16 : 8;
+
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto GetXMMOffset = [this](size_t i) {
+    if (CTX->HostFeatures.SupportsAVX) {
+      return offsetof(Core::CPUState, xmm.avx.data[i]);
+    } else {
+      return offsetof(Core::CPUState, xmm.sse.data[i]);
+    }
+  };
 
   for (unsigned i = 0; i < NumRegs; ++i) {
     OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
     auto XMMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
-    _StoreContext(16, FPRClass, XMMReg, offsetof(FEXCore::Core::CPUState, xmm[i]));
+    _StoreContext(16, FPRClass, XMMReg, GetXMMOffset(i));
   }
 }
 
@@ -1590,8 +1612,12 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
 
   // This instruction is a bit special in that if the source is MMX then it zexts to 128bit
   if constexpr (ToXMM) {
+    const auto Index = Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0;
+    const auto Offset = CTX->HostFeatures.SupportsAVX ? offsetof(FEXCore::Core::CPUState, xmm.avx.data[Index][0])
+                                                      : offsetof(FEXCore::Core::CPUState, xmm.sse.data[Index][0]);
+
     Src = _VMov(16, Src);
-    _StoreContext(16, FPRClass, Src, offsetof(FEXCore::Core::CPUState, xmm[Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0][0]));
+    _StoreContext(16, FPRClass, Src, Offset);
   }
   else {
     // This is simple, just store the result
@@ -2356,7 +2382,7 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // The mask is hardcoded to be xmm0 in this instruction
-  OrderedNode *Mask = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm[0]));
+  OrderedNode *Mask = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm.avx.data[0]));
   // Each element is selected by the high bit of that element size
   // Dest[ElementIdx] = Xmm0[ElementIndex][HighBit] ? Src : Dest;
   //

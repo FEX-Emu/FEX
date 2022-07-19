@@ -267,7 +267,7 @@ namespace {
 
   class ConstrainedRAPass final : public RegisterAllocationPass {
     public:
-      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool OptimizeSRA);
+      ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool OptimizeSRA, bool SupportsAVX);
       ~ConstrainedRAPass();
       bool Run(IREmitter *IREmit) override;
 
@@ -293,6 +293,7 @@ namespace {
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
       bool OptimizeSRA;
+      bool SupportsAVX;
 
       std::vector<LiveRange> LiveRanges;
 
@@ -340,8 +341,8 @@ namespace {
       bool RunAllocateVirtualRegisters(IREmitter *IREmit);
   };
 
-  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _OptimizeSRA)
-    : CompactionPass {_CompactionPass}, OptimizeSRA(_OptimizeSRA) {
+  ConstrainedRAPass::ConstrainedRAPass(FEXCore::IR::Pass* _CompactionPass, bool _OptimizeSRA, bool _SupportsAVX)
+    : CompactionPass {_CompactionPass}, OptimizeSRA(_OptimizeSRA), SupportsAVX{_SupportsAVX} {
   }
 
   ConstrainedRAPass::~ConstrainedRAPass() {
@@ -566,13 +567,26 @@ namespace {
       return false; // Unknown
     };
 
-    // Get SRA Reg and Class from a Context offset
-    auto GetRegAndClassFromOffset = [](uint32_t Offset) {
-        auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
-        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
+    const auto GetFPRBeginAndEnd = [this]() -> std::pair<ptrdiff_t, ptrdiff_t> {
+      if (SupportsAVX) {
+        return {
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[0][0]),
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[16][0]),
+        };
+      } else {
+        return {
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]),
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[16][0]),
+        };
+      }
+    };
 
-        auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
-        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
+    // Get SRA Reg and Class from a Context offset
+    const auto GetRegAndClassFromOffset = [&, this](uint32_t Offset) {
+        const auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
+        const auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
+
+        const auto [beginFpr, endFpr] = GetFPRBeginAndEnd();
 
         LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr), "Unexpected Offset {}", Offset);
 
@@ -580,7 +594,9 @@ namespace {
           auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return PhysicalRegister(GPRFixedClass, reg);
         } else if (Offset >= beginFpr && Offset < endFpr) {
-          auto reg = (Offset - beginFpr) / Core::CPUState::XMM_REG_SIZE;
+          const auto size = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
+                                        : Core::CPUState::XMM_SSE_REG_SIZE;
+          const auto reg = (Offset - beginFpr) / size;
           return PhysicalRegister(FPRFixedClass, reg);
         }
 
@@ -593,11 +609,10 @@ namespace {
 
     // Get a StaticMap entry from context offset
     const auto GetStaticMapFromOffset = [&](uint32_t Offset) -> LiveRange** {
-        auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
-        auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
+        const auto beginGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[0]);
+        const auto endGpr = offsetof(FEXCore::Core::CpuStateFrame, State.gregs[16]);
 
-        auto beginFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
-        auto endFpr = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
+        const auto [beginFpr, endFpr] = GetFPRBeginAndEnd();
 
         LOGMAN_THROW_AA_FMT((Offset >= beginGpr && Offset < endGpr) || (Offset >= beginFpr && Offset < endFpr), "Unexpected Offset {}", Offset);
 
@@ -605,7 +620,9 @@ namespace {
           auto reg = (Offset - beginGpr) / Core::CPUState::GPR_REG_SIZE;
           return &StaticMaps[reg];
         } else if (Offset >= beginFpr && Offset < endFpr) {
-          auto reg = (Offset - beginFpr) / Core::CPUState::XMM_REG_SIZE;
+          const auto size = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
+                                        : Core::CPUState::XMM_SSE_REG_SIZE;
+          const auto reg = (Offset - beginFpr) / size;
           return &StaticMaps[GprSize + reg];
         }
 
@@ -1540,7 +1557,7 @@ namespace {
     return Changed;
   }
 
-  std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA) {
-    return std::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA);
+  std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA, bool SupportsAVX) {
+    return std::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA, SupportsAVX);
   }
 }

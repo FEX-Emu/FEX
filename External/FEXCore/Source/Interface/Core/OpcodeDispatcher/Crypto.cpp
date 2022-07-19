@@ -221,7 +221,7 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *XMM0 = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm[0]));
+  OrderedNode *XMM0 = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, xmm.avx.data[0]));
 
   auto A0 = _VExtractToGPR(16, 4, Src, 3);
   auto B0 = _VExtractToGPR(16, 4, Src, 2);
