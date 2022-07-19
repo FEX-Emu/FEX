@@ -123,12 +123,12 @@
     "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1}",
     "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2}",
 
-    "constexpr FEXCore::IR::BreakReason Break_Unimplemented      {0}",
-    "constexpr FEXCore::IR::BreakReason Break_Interrupt          {1}",
-    "constexpr FEXCore::IR::BreakReason Break_Interrupt3         {2}",
-    "constexpr FEXCore::IR::BreakReason Break_Halt               {3}",
-    "constexpr FEXCore::IR::BreakReason Break_Overflow           {4}",
-    "constexpr FEXCore::IR::BreakReason Break_InvalidInstruction {5}"
+    "struct BreakDefinition {",
+    "  uint16_t ErrorRegister;",
+    "  uint8_t Signal;",
+    "  uint8_t TrapNumber;",
+    "  uint8_t si_code;",
+    "};"
   ],
   "IRTypes" : {
     "i1":  "bool",
@@ -150,7 +150,7 @@
     "SyscallFlags": "FEXCore::IR::SyscallFlags",
     "SHA256Sum": "SHA256Sum",
     "MemOffsetType": "MemOffsetType",
-    "BreakReason": "BreakReason",
+    "BreakDefinition": "BreakDefinition",
     "RoundType": "RoundType"
   },
   "Ops": {
@@ -261,7 +261,7 @@
         "HasSideEffects": true,
         "DestSize": "GetOpSize(_NewRIP)"
       },
-      "Break BreakReason:$Reason, u8:$Literal": {
+      "Break BreakDefinition:$Reason": {
         "HasSideEffects": true
       },
       "SignalReturn": {

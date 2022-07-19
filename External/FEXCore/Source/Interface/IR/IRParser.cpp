@@ -252,22 +252,36 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::BreakReason> DecodeValue(const std::string &Arg) {
-    static constexpr std::array<std::string_view, 6> Names = {
-      "Unimplemented",
-      "Interrupt",
-      "Interrupt3",
-      "Halt",
-      "Overfloat",
-      "InvalidInstruction",
-    };
+  std::pair<DecodeFailure, FEXCore::IR::BreakDefinition> DecodeValue(const std::string &Arg) {
+    uint32_t tmp{};
+    std::stringstream ss{Arg};
+    BreakDefinition Reason{};
 
-    for (size_t i = 0; i < Names.size(); ++i) {
-      if (Names[i] == Arg) {
-        return {DecodeFailure::DECODE_OKAY, BreakReason{static_cast<uint8_t>(i)}};
-      }
+    // Seek past '{'
+    ss.seekg(1, std::ios::cur);
+    ss >> Reason.ErrorRegister;
+
+    // Seek past '.'
+    ss.seekg(1, std::ios::cur);
+    ss >> tmp;
+    Reason.Signal = tmp;
+
+    // Seek past '.'
+    ss.seekg(1, std::ios::cur);
+    ss >> tmp;
+    Reason.TrapNumber = tmp;
+
+    // Seek past '.'
+    ss.seekg(1, std::ios::cur);
+    ss >> tmp;
+    Reason.si_code = tmp;
+
+    if (ss.fail()) {
+      return {DecodeFailure::DECODE_INVALIDCHAR, {}};
     }
-    return {DecodeFailure::DECODE_INVALID_BREAKTYPE, {}};
+    else {
+      return {DecodeFailure::DECODE_OKAY, Reason};
+    }
   }
 
   template<>

@@ -37,43 +37,38 @@ DEF_OP(Fence) {
 
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
-  switch (Op->Reason) {
-    case FEXCore::IR::Break_Unimplemented: // Hard fault
-    case FEXCore::IR::Break_Interrupt: // Guest ud2
-      hlt(4);
-      break;
-    case FEXCore::IR::Break_Overflow: // overflow
-      ResetStack();
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.OverflowExceptionHandler)));
-      br(TMP1);
-      break;
-    case FEXCore::IR::Break_Halt: { // HLT
-      // Time to quit
-      // Set our stack to the starting stack location
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)));
-      add(sp, TMP1, 0);
 
-      // Now we need to jump to the thread stop handler
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadStopHandlerSpillSRA)));
-      br(TMP1);
-      break;
-    }
-    case FEXCore::IR::Break_Interrupt3: { // INT3
-      ResetStack();
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA)));
-      br(TMP1);
-      break;
-    }
-    case FEXCore::IR::Break_InvalidInstruction:
-    {
-      ResetStack();
+  // First we must reset the stack
+  ResetStack();
 
-      ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.UnimplementedInstructionHandler)));
-      br(TMP1);
+  LoadConstant(w1, 1);
+  strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)));
+  LoadConstant(w1, Op->Reason.Signal);
+  strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.Signal)));
+  LoadConstant(w1, Op->Reason.TrapNumber);
+  str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)));
+  LoadConstant(w1, Op->Reason.si_code);
+  str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)));
+  LoadConstant(x1, Op->Reason.ErrorRegister);
+  str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)));
 
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Break reason: {}", Op->Reason);
+  switch (Op->Reason.Signal) {
+  case SIGILL:
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGILL)));
+    br(TMP1);
+    break;
+  case SIGTRAP:
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP)));
+    br(TMP1);
+    break;
+  case SIGSEGV:
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV)));
+    br(TMP1);
+    break;
+  default:
+    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP)));
+    br(TMP1);
+    break;
   }
 }
 

@@ -17,6 +17,7 @@ $end_info$
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IREmitter.h>
 
+#include <csetjmp>
 #include <functional>
 #include <memory>
 #include <stdint.h>
@@ -202,7 +203,18 @@ int main(int argc, char **argv, char **const envp)
       });
     }
 
-    FEXCore::Context::RunUntilExit(CTX);
+    jmp_buf LongJump{};
+    int LongJumpVal{};
+
+    SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&LongJump](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+      longjmp(LongJump, 1);
+      return false;
+    }, true);
+
+    LongJumpVal = setjmp(LongJump);
+    if (!LongJumpVal) {
+      FEXCore::Context::RunUntilExit(CTX);
+    }
 
     LogMan::Msg::DFmt("Reason we left VM: {}", ShutdownReason);
 

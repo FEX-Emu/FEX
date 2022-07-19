@@ -45,56 +45,30 @@ DEF_OP(Fence) {
 
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
-  switch (Op->Reason) {
-    case FEXCore::IR::Break_Unimplemented: // Hard fault
-    case FEXCore::IR::Break_Interrupt: // Guest ud2
-      ud2();
-      break;
-    case FEXCore::IR::Break_Overflow: // overflow
-      // Need to be outside of JIT cache space to ensure cache clearing correctness
-      jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.OverflowExceptionHandler)]);
-      break;
-    case FEXCore::IR::Break_Halt: { // HLT
-      // Time to quit
-      // Set our stack to the starting stack location
-      mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
 
-      // Now we need to jump to the thread stop handler
-      jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadStopHandlerSpillSRA)]);
-      break;
-    }
-    case FEXCore::IR::Break_Interrupt3: // INT3
-    {
-      if (CTX->GetGdbServerStatus()) {
-        // Adjust the stack first for a regular return
-        if (SpillSlots) {
-          add(rsp, SpillSlots * 16);
-        }
+  if (SpillSlots) {
+    add(rsp, SpillSlots * 16);
+  }
 
-        // This jump target needs to be a constant offset here
-        jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA)]);
-      }
-      else {
-        // If we don't have a gdb server attached then....crash?
-        // Treat this case like HLT
-        mov(rsp, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, ReturningStackLocation)]);
+  mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);
+  mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.Signal)], Op->Reason.Signal);
+  mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)], Op->Reason.TrapNumber);
+  mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)], Op->Reason.ErrorRegister);
+  mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)], Op->Reason.si_code);
 
-        // Now we need to jump to the thread stop handler
-        jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadStopHandlerSpillSRA)]);
-      }
+  switch (Op->Reason.Signal) {
+  case SIGILL:
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGILL)]);
     break;
-    }
-    case FEXCore::IR::Break_InvalidInstruction:
-    {
-      if (SpillSlots) {
-        add(rsp, SpillSlots * 16);
-      }
-
-      // Need to be outside of JIT cache space to ensure cache clearing correctness
-      jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.UnimplementedInstructionHandler)]);
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Break reason: {}", Op->Reason);
+  case SIGTRAP:
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP)]);
+    break;
+  case SIGSEGV:
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV)]);
+    break;
+  default:
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP)]);
+    break;
   }
 }
 

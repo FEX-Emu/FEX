@@ -462,6 +462,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
 
         // Overwrite si_code
         guest_siginfo->si_code = Thread->CurrentFrame->SynchronousFaultData.si_code;
+        Signal = Frame->SynchronousFaultData.Signal;
       }
       else {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
@@ -568,11 +569,12 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = Frame->SynchronousFaultData.TrapNo;
         guest_siginfo->si_code = Frame->SynchronousFaultData.si_code;
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = Frame->SynchronousFaultData.err_code;
+        Signal = Frame->SynchronousFaultData.Signal;
       }
       else {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
         guest_siginfo->si_code = HostSigInfo->si_code;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
       }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs;
