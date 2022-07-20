@@ -321,22 +321,12 @@ def print_ir_structs(defines):
 
 
         if op.SSAArgNum > 0:
-            # Add helpers for accessing SSA arguments, given how frequently they're accessed
-
             output_file.write("\t// Get index of argument by name\n")
             SSAArg = 0
             for arg in op.Arguments:
                 if arg.IsSSA:
                     output_file.write("\tstatic constexpr size_t {}_Index = {};\n".format(arg.Name, SSAArg))
                     SSAArg = SSAArg + 1
-
-            output_file.write("\n")
-            output_file.write("\t[[nodiscard]] OrderedNodeWrapper& Args(size_t Index) {\n")
-            output_file.write("\t\treturn Header.Args[Index];\n")
-            output_file.write("\t}\n")
-            output_file.write("\t[[nodiscard]] const OrderedNodeWrapper& Args(size_t Index) const {\n")
-            output_file.write("\t\treturn Header.Args[Index];\n")
-            output_file.write("\t}\n")
 
 
         output_file.write("};\n")
