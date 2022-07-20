@@ -84,6 +84,24 @@ struct ExecveAtArgs {
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args);
 
+using RegisterSyscallInternalType =
+void (*)(int SyscallNumber,
+  int32_t HostSyscallNumber,
+  FEXCore::IR::SyscallFlags Flags,
+#ifdef DEBUG_STRACE
+  const std::string& TraceFormatString,
+#endif
+  void* SyscallHandler, int ArgumentCount);
+
+
+void RegisterSyscallInternalNop(int SyscallNumber,
+  int32_t HostSyscallNumber,
+  FEXCore::IR::SyscallFlags Flags,
+#ifdef DEBUG_STRACE
+  const std::string& TraceFormatString,
+#endif
+  void* SyscallHandler, int ArgumentCount);
+
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver {
 public:
   virtual ~SyscallHandler();

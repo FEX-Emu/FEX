@@ -28,6 +28,8 @@ namespace FEXCore::Context {
 }
 
 namespace FEX::HLE::x32 {
+  RegisterSyscallInternalType SyscallRegisterHandler = FEX::HLE::RegisterSyscallInternalNop;
+
   void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler);
   void RegisterFD();
   void RegisterFS();
@@ -94,6 +96,7 @@ namespace FEX::HLE::x32 {
   x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, std::unique_ptr<MemAllocator> Allocator)
     : SyscallHandler{ctx, _SignalDelegation}, AllocHandler{std::move(Allocator)} {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX32;
+    FEX::HLE::x32::SyscallRegisterHandler = FEX::HLE::x32::RegisterSyscallInternal;
     RegisterSyscallHandlers();
   }
 
@@ -171,6 +174,9 @@ namespace FEX::HLE::x32 {
       Def.StraceFmt = Syscall.TraceFormatString;
 #endif
     }
+
+    // Clear the registration vector
+    syscalls_x32 = {};
 
 #if PRINT_MISSING_SYSCALLS
     for (auto &Syscall: SyscallNames) {

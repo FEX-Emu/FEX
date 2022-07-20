@@ -58,6 +58,16 @@ namespace FEX::HLE {
 class SignalDelegator;
 SyscallHandler *_SyscallHandler{};
 
+void RegisterSyscallInternalNop(int SyscallNumber,
+  int32_t HostSyscallNumber,
+  FEXCore::IR::SyscallFlags Flags,
+#ifdef DEBUG_STRACE
+  const std::string& TraceFormatString,
+#endif
+  void* SyscallHandler, int ArgumentCount) {
+  // Do nothing
+}
+
 static bool IsSupportedByInterpreter(std::string const &Filename) {
   // If it is a supported ELF then we can
   if (ELFLoader::ELFContainer::IsSupportedELF(Filename.c_str())) {
