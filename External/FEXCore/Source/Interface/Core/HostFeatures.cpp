@@ -1,5 +1,5 @@
 #include "Interface/Core/CPUID.h"
-#include "Interface/Core/HostFeatures.h"
+#include <FEXCore/Core/HostFeatures.h>
 
 #ifdef _M_ARM_64
 #include "aarch64/assembler-aarch64.h"

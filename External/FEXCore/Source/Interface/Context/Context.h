@@ -2,7 +2,6 @@
 
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUID.h"
-#include "Interface/Core/HostFeatures.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -10,6 +9,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>

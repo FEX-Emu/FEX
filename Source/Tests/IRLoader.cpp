@@ -12,6 +12,7 @@ $end_info$
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -116,7 +117,9 @@ public:
     });
   }
 
-  bool CompareStates(FEXCore::Core::CPUState const *State) { return Config.CompareStates(State, nullptr); }  
+  bool CompareStates(FEXCore::Core::CPUState const *State, bool SupportsAVX) {
+    return Config.CompareStates(State, nullptr, SupportsAVX);
+  }
 
   uint64_t GetStackPointer()
   {
@@ -221,7 +224,9 @@ int main(int argc, char **argv, char **const envp)
     // Just re-use compare state. It also checks against the expected values in config.
     FEXCore::Core::CPUState State;
     FEXCore::Context::GetCPUState(CTX, &State);
-    const bool Passed = Loader.CompareStates(&State);
+
+    const bool SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
+    const bool Passed = Loader.CompareStates(&State, SupportsAVX);
 
     LogMan::Msg::IFmt("Passed? {}\n", Passed ? "Yes" : "No");
 

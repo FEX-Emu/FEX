@@ -16,6 +16,7 @@
 
 namespace FEXCore {
   class CodeLoader;
+  class HostFeatures;
 }
 
 namespace FEXCore::Core {
@@ -238,6 +239,14 @@ namespace FEXCore::Context {
    * @param Visitor The Visitor to install
    */
   FEX_DEFAULT_VISIBILITY void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, uint64_t Syscall, FEXCore::HLE::SyscallVisitor *Visitor);
+
+  /**
+   * @brief Retrieves a feature struct indicating certain supported aspects from
+   *        the hose.
+   * 
+   * @param CTX A valid non-null context instance.
+   */
+  FEX_DEFAULT_VISIBILITY HostFeatures GetHostFeatures(const FEXCore::Context::Context *CTX);
 
   FEX_DEFAULT_VISIBILITY void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
 

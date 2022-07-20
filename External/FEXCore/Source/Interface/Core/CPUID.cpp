@@ -8,11 +8,11 @@ $end_info$
 #include "Common/StringConv.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
-#include "Interface/Core/HostFeatures.h"
 #include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Core/HostFeatures.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include "git_version.h"

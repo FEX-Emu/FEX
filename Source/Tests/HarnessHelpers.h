@@ -181,7 +181,7 @@ namespace FEX::HarnessHelper {
       return Env;
     }
 
-    bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
+    bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2, bool SupportsAVX) {
       bool Matches = true;
       uint64_t MatchMask = BaseConfig.OptionMatch & ~BaseConfig.OptionIgnore;
       if (State1 && State2) {
@@ -291,7 +291,7 @@ namespace FEX::HarnessHelper {
           assert(RegFlags.count() == 1  && "Must set reg data explicitly per register");
 
           size_t NameIndex = FEXCore::FindFirstSetBit(RegData->RegKey) - 1;
-          auto Offset = OffsetArraySSE[NameIndex];
+          auto Offset = SupportsAVX ? OffsetArrayAVX[NameIndex] : OffsetArraySSE[NameIndex];
           uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset);
           uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset);
 
@@ -489,8 +489,8 @@ namespace FEX::HarnessHelper {
       return Config.GetEnvironmentOptions();
     }
 
-    bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2) {
-      return Config.CompareStates(State1, State2);
+    bool CompareStates(FEXCore::Core::CPUState const* State1, FEXCore::Core::CPUState const* State2, bool SupportsAVX) {
+      return Config.CompareStates(State1, State2, SupportsAVX);
     }
 
     bool Is64BitMode() const { return Config.Is64BitMode(); }
