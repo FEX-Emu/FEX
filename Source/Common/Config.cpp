@@ -40,7 +40,7 @@ namespace FEX::Config {
     }
   }
 
-  std::string LoadConfig(
+  std::pair<std::string, std::string> LoadConfig(
     bool NoFEXArguments,
     bool LoadProgramConfig,
     int argc,
@@ -111,7 +111,7 @@ namespace FEX::Config {
 
       FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
       FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
-      return Program;
+      return std::make_pair(Program, ProgramName);
     }
     return {};
   }

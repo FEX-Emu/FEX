@@ -35,9 +35,9 @@ namespace FEXCore::Telemetry {
     }
   }
 
-  void Shutdown(std::filesystem::path &ApplicationName) {
+  void Shutdown(std::string const &ApplicationName) {
     auto DataDirectory = Config::GetDataDirectory();
-    DataDirectory += "Telemetry/" + ApplicationName.string() + ".telem";
+    DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
     std::error_code ec{};
     if (std::filesystem::exists(DataDirectory, ec)) {

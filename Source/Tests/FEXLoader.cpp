@@ -209,7 +209,7 @@ int main(int argc, char **argv, char **const envp) {
     argc, argv, envp
   );
 
-  if (Program.empty()) {
+  if (Program.first.empty()) {
     // Early exit if we weren't passed an argument
     return 0;
   }
@@ -284,14 +284,14 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Telemetry::Initialize();
 
-  RootFSRedirect(&Program, LDPath());
-  InterpreterHandler(&Program, LDPath(), &Args);
+  RootFSRedirect(&Program.first, LDPath());
+  InterpreterHandler(&Program.first, LDPath(), &Args);
 
   std::error_code ec{};
-  if (!std::filesystem::exists(Program, ec)) {
+  if (!std::filesystem::exists(Program.first, ec)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    fmt::print(stderr, "{}: command not found\n", Program);
+    fmt::print(stderr, "{}: command not found\n", Program.first);
     return -ENOEXEC;
   }
 
@@ -308,8 +308,8 @@ int main(int argc, char **argv, char **const envp) {
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader2 Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
-  //FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader2 Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
+  //FEX::HarnessHelper::ELFCodeLoader Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
@@ -327,7 +327,7 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program).string());
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.first).string());
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
@@ -492,8 +492,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Allocator::ClearHooks();
   FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
   // Allocator is now original system allocator
-  auto ProgramName = std::filesystem::path(Program).filename();
-  FEXCore::Telemetry::Shutdown(ProgramName);
+  FEXCore::Telemetry::Shutdown(Program.second);
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
   }
