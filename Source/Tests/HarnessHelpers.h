@@ -364,6 +364,7 @@ namespace FEX::HarnessHelper {
     }
 
     bool Is64BitMode() const { return BaseConfig.OptionMode == 1; }
+    bool RequiresAVX() const { return BaseConfig.OptionHostFeatures == 1; }
 
   private:
     FEX_CONFIG_OPT(ConfigDumpGPRs, DUMPGPRS);
@@ -375,6 +376,7 @@ namespace FEX::HarnessHelper {
       uint64_t OptionEntryPoint;
       uint32_t OptionABI;
       uint32_t OptionMode;
+      uint32_t OptionHostFeatures;
       uint32_t OptionMemoryRegionOffset;
       uint32_t OptionMemoryRegionCount;
       uint32_t OptionRegDataOffset;
@@ -494,6 +496,7 @@ namespace FEX::HarnessHelper {
     }
 
     bool Is64BitMode() const { return Config.Is64BitMode(); }
+    bool RequiresAVX() const { return Config.RequiresAVX(); }
 
   private:
     constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;

@@ -131,6 +131,10 @@ public:
     return EntryRIP;
   }
 
+  bool RequiresAVX() const {
+    return Config.RequiresAVX();
+  }
+
 private:
   uint64_t EntryRIP{};
   std::unique_ptr<IREmitter> ParsedCode;
@@ -185,7 +189,14 @@ int main(int argc, char **argv, char **const envp)
   FEXCore::Context::SetSyscallHandler(CTX, new DummySyscallHandler());
 
   IRCodeLoader Loader(Args[0], Args[1]);
-  
+
+  // Skip tests that require AVX on hosts that don't support it.
+  const bool SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
+  if (!SupportsAVX && Loader.RequiresAVX()) {
+    FEXCore::Context::DestroyContext(CTX);
+    return 0;
+  }
+
   int Return{};
 
   if (Loader.LoadIR(CTX))
@@ -225,7 +236,6 @@ int main(int argc, char **argv, char **const envp)
     FEXCore::Core::CPUState State;
     FEXCore::Context::GetCPUState(CTX, &State);
 
-    const bool SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
     const bool Passed = Loader.CompareStates(&State, SupportsAVX);
 
     LogMan::Msg::IFmt("Passed? {}\n", Passed ? "Yes" : "No");
