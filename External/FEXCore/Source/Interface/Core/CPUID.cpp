@@ -39,6 +39,7 @@ namespace ProductNames {
   static const char ARM_A78C[] = "Cortex-A78C";
   static const char ARM_A710[] = "Cortex-A710";
   static const char ARM_X1[] = "Cortex-X1";
+  static const char ARM_X1C[] = "Cortex-X1C";
   static const char ARM_X2[] = "Cortex-X2";
   static const char ARM_N1[] = "Neoverse N1";
   static const char ARM_N2[] = "Neoverse N2";
@@ -154,7 +155,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 35> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 36> CPUMIDRs = {{
     // Typically big CPU cores
     {0x61, 0x023, 1, ProductNames::ARM_Firestorm}, // Apple M1 Firestorm
 
@@ -164,6 +165,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x41, 0xd49, 1, ProductNames::ARM_N2}, // N2
     {0x41, 0xd48, 1, ProductNames::ARM_X2}, // X2
     {0x41, 0xd47, 1, ProductNames::ARM_A710}, // A710
+    {0x41, 0xd4C, 1, ProductNames::ARM_X1C}, // X1C
     {0x41, 0xd44, 1, ProductNames::ARM_X1}, // X1
     {0x41, 0xd42, 1, ProductNames::ARM_A78AE}, // A78AE
     {0x41, 0xd41, 1, ProductNames::ARM_A78}, // A78
