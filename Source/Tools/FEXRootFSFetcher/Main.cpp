@@ -1,3 +1,4 @@
+#include "OptionParser.h"
 #include "XXFileHash.h"
 
 #include "Common/ArgumentLoader.h"
@@ -14,6 +15,71 @@
 #include <unistd.h>
 
 #include <tiny-json.h>
+
+namespace ArgOptions {
+  bool AssumeYes = false;
+  enum CompressedImageOption {
+    OPTION_ASK,
+    OPTION_EXTRACT,
+    OPTION_ASIS,
+  };
+
+  CompressedImageOption CompressedUsageOption {OPTION_ASK};
+
+  std::vector<std::string> RemainingArgs;
+
+  std::string DistroName{};
+  std::string DistroVersion{};
+
+  void ParseArguments(int argc, char **argv) {
+    optparse::OptionParser Parser = optparse::OptionParser()
+      .description("Tool for fetching RootFS from FEXServers")
+      .add_help_option(true);
+
+    Parser.add_option("-y", "--assume-yes")
+      .action("store_true")
+      .help("Assume yes to prompts");
+
+    Parser.add_option("-x", "--extract")
+      .action("store_true")
+      .help("Extract compressed image");
+
+    Parser.add_option("-a", "--as-is")
+      .action("store_true")
+      .help("Use compressed image as-is");
+
+    Parser.add_option("--distro-name")
+      .help("Which distro name to select");
+
+    Parser.add_option("--distro-version")
+      .help("Which distro version to select");
+
+
+    optparse::Values Options = Parser.parse_args(argc, argv);
+
+    if (Options.is_set_by_user("assume_yes")) {
+      AssumeYes = Options.get("assume_yes");
+    }
+
+    if (Options.is_set_by_user("extract")) {
+      CompressedUsageOption = OPTION_EXTRACT;
+    }
+
+    if (Options.is_set_by_user("as_is")) {
+      CompressedUsageOption = OPTION_ASIS;
+    }
+
+    if (Options.is_set_by_user("distro_name")) {
+      DistroName = Options["distro_name"];
+    }
+
+    if (Options.is_set_by_user("distro_version")) {
+      DistroVersion = Options["distro_version"];
+    }
+
+    RemainingArgs = Parser.args();
+  }
+}
 
 namespace Exec {
   int32_t ExecAndWaitForResponse(const char *path, char* const* args) {
@@ -553,7 +619,7 @@ namespace Zenity {
   }
 
   bool AskForConfirmation(const std::string &Question) {
-    return ExecWithQuestion(Question);
+    return ArgOptions::AssumeYes || ExecWithQuestion(Question);
   }
 
   int32_t AskForConfirmationList(const std::string &Text, const std::vector<std::string> &Arguments) {
@@ -720,6 +786,10 @@ namespace Zenity {
 
 namespace TTY {
   bool AskForConfirmation(const std::string &Question) {
+    if (ArgOptions::AssumeYes) {
+      return true;
+    }
+
     auto ToLowerInPlace = [](auto &Str) {
       std::transform(Str.begin(), Str.end(), Str.begin(),
               [](unsigned char c){ return std::tolower(c); });
@@ -938,6 +1008,14 @@ namespace {
 
   int32_t AskForDistroSelection(std::vector<WebFileFetcher::FileTargets> &Targets) {
     auto Info = DistroQuery::GetDistroInfo();
+
+    if (!ArgOptions::DistroName.empty()) {
+      Info.DistroName = ArgOptions::DistroName;
+    }
+    if (!ArgOptions::DistroVersion.empty()) {
+      Info.DistroVersion = ArgOptions::DistroVersion;
+    }
+
     return _AskForDistroSelection(Info, Targets);
   }
 
@@ -1003,16 +1081,15 @@ int main(int argc, char **argv, char **const envp) {
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
 
-  auto Args = FEX::ArgLoader::Get();
-  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
+  ArgOptions::ParseArguments(argc, argv);
 
-  if (Args.size()) {
-    auto Res = XXFileHash::HashFile(Args[0]);
+  if (ArgOptions::RemainingArgs.size()) {
+    auto Res = XXFileHash::HashFile(ArgOptions::RemainingArgs[0]);
     if (Res.first) {
-      fmt::print("{} has hash: {:x}\n", Args[0], Res.second);
+      fmt::print("{} has hash: {:x}\n", ArgOptions::RemainingArgs[0], Res.second);
     }
     else {
-      fmt::print("Couldn't generate hash for {}\n", Args[0]);
+      fmt::print("Couldn't generate hash for {}\n", ArgOptions::RemainingArgs[0]);
     }
     return 0;
   }
@@ -1107,15 +1184,25 @@ int main(int argc, char **argv, char **const envp) {
         "As-Is",
       };
 
+      ArgOptions::CompressedImageOption UseImageAs {ArgOptions::CompressedImageOption::OPTION_ASK};
       if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_SQUASHFS) {
         int32_t Result{};
         if (WorkingAppsTester::Has_Unsquashfs) {
           if (WorkingAppsTester::Has_Squashfuse) {
             Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
+            if (Result == 0) {
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
+            }
+            else if (Result == 1) {
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+            }
           }
           else {
             Args.pop_back();
             Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
+            if (Result == 0) {
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
+            }
           }
         }
         else {
@@ -1124,33 +1211,28 @@ int main(int argc, char **argv, char **const envp) {
             Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
             if (Result == 0) {
               // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
-              Result = 1;
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
             }
           }
           else {
             Args.erase(Args.begin());
             ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
-            Result = -1;
+            UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
           }
         }
 
-        if (Result == -1 ||
-            Result == 1) {
-          // Nothing
-          // As-Is
-        }
-        else if (Result == 0) {
+        if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_EXTRACT) {
           auto FolderName = filename.substr(0, filename.find_last_of('.'));
           if (UnSquash::UnsquashRootFS(RootFS, PathName, FolderName)) {
             // Remove the .sqsh suffix since we extracted to that
             filename = FolderName;
           }
         }
-
       }
       else if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_EROFS) {
         // Once erofs tooling is available for easy extraction, offer the same settings to extract as squashfs.
         // Currently this is unavailable, would need a mount + copy + unmount dance.
+        UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
       }
 
       if (AskForConfirmation("Do you wish to set this RootFS as default?")) {
