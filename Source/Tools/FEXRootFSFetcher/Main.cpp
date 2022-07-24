@@ -1184,40 +1184,42 @@ int main(int argc, char **argv, char **const envp) {
         "As-Is",
       };
 
-      ArgOptions::CompressedImageOption UseImageAs {ArgOptions::CompressedImageOption::OPTION_ASK};
+      ArgOptions::CompressedImageOption UseImageAs {ArgOptions::CompressedUsageOption};
       if (Target.Type == WebFileFetcher::FileTargets::FileType::TYPE_SQUASHFS) {
         int32_t Result{};
-        if (WorkingAppsTester::Has_Unsquashfs) {
-          if (WorkingAppsTester::Has_Squashfuse) {
-            Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
-            if (Result == 0) {
-              UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
+        if (UseImageAs == ArgOptions::CompressedImageOption::OPTION_ASK) {
+          if (WorkingAppsTester::Has_Unsquashfs) {
+            if (WorkingAppsTester::Has_Squashfuse) {
+              Result = AskForConfirmationList("Do you wish to extract the squashfs file or use it as-is?", Args);
+              if (Result == 0) {
+                UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
+              }
+              else if (Result == 1) {
+                UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+              }
             }
-            else if (Result == 1) {
-              UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
-            }
-          }
-          else {
-            Args.pop_back();
-            Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
-            if (Result == 0) {
-              UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
-            }
-          }
-        }
-        else {
-          if (WorkingAppsTester::Has_Squashfuse) {
-            Args.erase(Args.begin());
-            Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
-            if (Result == 0) {
-              // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
-              UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+            else {
+              Args.pop_back();
+              Result = AskForConfirmationList("Squashfuse doesn't work. Do you wish to extract the squashfs file?", Args);
+              if (Result == 0) {
+                UseImageAs = ArgOptions::CompressedImageOption::OPTION_EXTRACT;
+              }
             }
           }
           else {
-            Args.erase(Args.begin());
-            ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
-            UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+            if (WorkingAppsTester::Has_Squashfuse) {
+              Args.erase(Args.begin());
+              Result = AskForConfirmationList("Unsquashfs doesn't work. Do you want to use the squashfs file as-is?", Args);
+              if (Result == 0) {
+                // We removed an argument, Just change "As-Is" from 0 to 1 for later logic to work
+                UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+              }
+            }
+            else {
+              Args.erase(Args.begin());
+              ExecWithInfo("Unsquashfs and squashfuse isn't working. Leaving rootfs as-is");
+              UseImageAs = ArgOptions::CompressedImageOption::OPTION_ASIS;
+            }
           }
         }
 
