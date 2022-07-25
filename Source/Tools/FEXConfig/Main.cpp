@@ -968,6 +968,12 @@ int main(int argc, char **argv) {
       SetupINotify();
     }
   }
+  else {
+    if (OpenFile(FEXCore::Config::GetConfigFileLocation(), true)) {
+      LoadNamedRootFSFolder();
+      SetupINotify();
+    }
+  }
 
   FEX::GUI::DrawUI(window, DrawUI);
 
