@@ -438,10 +438,10 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
     // If the flag was set then it doesn't actually close the FDs
     // Just sets the flag on a range
     FHU::ScopedSignalMaskWithMutex lk(FDLock);
-    for (unsigned int i = first; i <= last; ++i) {
-      // We remove from first to last inclusive
-      FDToNameMap.erase(i);
-    }
+    auto Lower = FDToNameMap.lower_bound(first);
+    auto Upper = FDToNameMap.upper_bound(last);
+    // We remove from first to last inclusive
+    FDToNameMap.erase(Lower, Upper);
   }
   return ::syscall(SYSCALL_DEF(close_range), first, last, flags);
 }
