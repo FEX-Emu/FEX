@@ -87,10 +87,10 @@ namespace FEX::GUI {
 
   static std::chrono::time_point<std::chrono::high_resolution_clock> LastUpdate{};
   constexpr auto UpdateTimeout = std::chrono::seconds(2);
-  void DrawUI(SDL_Window *window, std::function<void()> DrawFunction) {
-    bool Done{};
+  void DrawUI(SDL_Window *window, std::function<bool()> DrawFunction) {
+    bool Running {true};
     ImGuiIO& io = ImGui::GetIO();
-    while (!Done) {
+    while (Running) {
       SDL_Event event;
       auto Now = std::chrono::high_resolution_clock::now();
       auto Dur = Now - LastUpdate;
@@ -100,16 +100,16 @@ namespace FEX::GUI {
         while (SDL_PollEvent(&event)) {
           ImGui_ImplSDL2_ProcessEvent(&event);
           if (event.type == SDL_QUIT)
-            Done = true;
+            Running = false;
           if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-            Done = true;
+            Running = false;
         }
       }
 
       // Start the Dear ImGui frame
       ImGui_ImplOpenGL3_NewFrame();
       ImGui_ImplSDL2_NewFrame(window);
-      DrawFunction();
+      Running &= DrawFunction();
 
       glClear(GL_COLOR_BUFFER_BIT);
       ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

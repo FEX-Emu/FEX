@@ -744,7 +744,7 @@ namespace {
     ImGui::EndTabBar();
   }
 
-  void DrawUI() {
+  bool DrawUI() {
     ImGuiIO& io = ImGui::GetIO();
     auto current_time = std::chrono::high_resolution_clock::now();
     auto Diff = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - GlobalTime);
@@ -777,6 +777,7 @@ namespace {
       bool SaveAs{};
       bool SaveDefault{};
       bool Close{};
+      bool Quit{};
     } Selected;
 
     char AppName[256]{};
@@ -793,6 +794,7 @@ namespace {
         ImGui::MenuItem("Save Default", "CTRL+SHIFT+P", &Selected.SaveDefault, true);
 
         ImGui::MenuItem("Close", "CTRL+W", &Selected.Close, true);
+        ImGui::MenuItem("Quit", "CTRL+Q", &Selected.Quit, true);
 
         ImGui::EndMenu();
       }
@@ -921,6 +923,11 @@ namespace {
       ShutdownINotify();
     }
 
+    if (Selected.Quit ||
+        (ImGui::IsKeyPressed(SDL_SCANCODE_Q) && io.KeyCtrl && !io.KeyShift)) {
+      Selected.Quit = true;
+    }
+
     ImGui::End(); // End dockspace
 
     char const *InitialPath;
@@ -942,6 +949,9 @@ namespace {
     SelectedSaveFileAs = false;
 
     ImGui::Render();
+
+    // Return true to keep rendering
+    return !Selected.Quit;
   }
 }
 
