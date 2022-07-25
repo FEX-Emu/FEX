@@ -72,7 +72,7 @@ private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
   std::mutex FDLock;
-  std::unordered_map<int32_t, std::string> FDToNameMap;
+  std::map<uint32_t, std::string> FDToNameMap;
   std::map<std::string, std::string, std::less<>> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
