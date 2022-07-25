@@ -11,6 +11,7 @@ public:
   JITSymbols();
   ~JITSymbols();
 
+  void InitFile();
   void Register(const void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize);
   void Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name);
   void Register(const void *HostAddr, uint32_t CodeSize, std::string_view Name, uintptr_t Offset);

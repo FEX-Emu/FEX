@@ -157,6 +157,13 @@ namespace FEXCore::Context {
     if (!Config.EnableAVX) {
       HostFeatures.SupportsAVX = false;
     }
+
+    if (Config.BlockJITNaming() ||
+        Config.GlobalJITNaming() ||
+        Config.LibraryJITNaming()) {
+      // Only initialize symbols file if enabled. Ensures we don't pollute /tmp with empty files.
+      Symbols.InitFile();
+    }
   }
 
   Context::~Context() {
