@@ -33,6 +33,7 @@ namespace {
   static const char OpenedPopupAppName[] = "#OpenedApp";
 
   static bool OpenMsgPopup{};
+  static bool SaveMsgIsOpen{};
   static std::string MsgMessage{};
   static const char MsgPopupName[] = "#Msg";
   static std::chrono::high_resolution_clock::time_point MsgTimerStart{};
@@ -92,6 +93,21 @@ namespace {
     ConfigFilename = Filename;
     LoadedConfig = FEXCore::Config::CreateMainLayer(&Filename);
     LoadedConfig->Load();
+
+    // Load default options and only overwrite only if the option didn't exist
+#define OPT_BASE(type, group, enum, json, default) \
+    if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default)); }
+#define OPT_STR(group, enum, json, default) \
+    if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, default); }
+#define OPT_STRARRAY(group, enum, json, default)  // Do nothing
+#include <FEXCore/Config/ConfigValues.inl>
+
+    // Erase unnamed options which shouldn't be set
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS_INTERPRETER);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_INTERPRETER_INSTALLED);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_FILENAME);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS64BIT_MODE);
+
     return true;
   }
 
@@ -181,6 +197,12 @@ namespace {
   }
 
   void SaveFile(std::string Filename) {
+    if (SaveMsgIsOpen) {
+      // Don't try saving a file while the message is already open.
+      // Stops us from spam saving the file to the filesystem.
+      return;
+    }
+
     if (!ConfigOpen) {
       OpenMsgMessagePopup("Can't save file when config isn't open");
       return;
@@ -190,6 +212,7 @@ namespace {
     ConfigChanged = false;
     ConfigFilename = Filename;
     OpenMsgMessagePopup("Config Saved to: '" + Filename + "'");
+    SaveMsgIsOpen = true;
 
     // Output in terminal as well
     printf("Config Saved to: '%s'\n", ConfigFilename.c_str());
@@ -721,7 +744,7 @@ namespace {
     ImGui::EndTabBar();
   }
 
-  void DrawUI() {
+  bool DrawUI() {
     ImGuiIO& io = ImGui::GetIO();
     auto current_time = std::chrono::high_resolution_clock::now();
     auto Diff = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - GlobalTime);
@@ -746,17 +769,15 @@ namespace {
     ImGui::Begin("DockSpace", nullptr, window_flags);
     ImGui::PopStyleVar(3);
 
-    ImGui::DockSpace(ImGui::GetID("DockSpace"));
-
     struct {
       bool Open{};
       bool OpenDefault{};
       bool OpenAppProfile{};
-      bool LoadDefault{};
       bool Save{};
       bool SaveAs{};
       bool SaveDefault{};
       bool Close{};
+      bool Quit{};
     } Selected;
 
     char AppName[256]{};
@@ -764,9 +785,8 @@ namespace {
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("File")) {
         ImGui::MenuItem("Open", "CTRL+O", &Selected.Open, true);
-        ImGui::MenuItem("Open Default", "CTRL+SHIFT+O", &Selected.OpenDefault, true);
+        ImGui::MenuItem("Open from default location", "CTRL+SHIFT+O", &Selected.OpenDefault, true);
         ImGui::MenuItem("Open App profile", "CTRL+I", &Selected.OpenAppProfile, true);
-        ImGui::MenuItem("Load Default Options", "CTRL+SHIFT+D", &Selected.LoadDefault, true);
 
         ImGui::MenuItem("Save", "CTRL+S", &Selected.Save, true);
         ImGui::MenuItem("Save As", "CTRL+SHIFT+S", &Selected.SaveAs, true);
@@ -774,6 +794,7 @@ namespace {
         ImGui::MenuItem("Save Default", "CTRL+SHIFT+P", &Selected.SaveDefault, true);
 
         ImGui::MenuItem("Close", "CTRL+W", &Selected.Close, true);
+        ImGui::MenuItem("Quit", "CTRL+Q", &Selected.Quit, true);
 
         ImGui::EndMenu();
       }
@@ -802,7 +823,7 @@ namespace {
     }
 
     if (ConfigOpen) {
-      if (ImGui::Begin("#Config")) {
+      if (ImGui::BeginChild("#Config")) {
         FillConfigWindow();
       }
 
@@ -826,7 +847,7 @@ namespace {
         ImGui::EndPopup();
       }
 
-      ImGui::End();
+      ImGui::EndChild();
     }
 
     // Need this frame delay loop since ImGui doesn't allow us to enable a popup near the end of the frame
@@ -849,6 +870,9 @@ namespace {
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndPopup();
+    }
+    else if (SaveMsgIsOpen) {
+      SaveMsgIsOpen = false;
     }
 
     ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + viewport->Size.x / 2, viewport->Pos.y + viewport->Size.y / 2), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -879,12 +903,6 @@ namespace {
         SetupINotify();
       }
     }
-    if (Selected.LoadDefault ||
-        (ImGui::IsKeyPressed(SDL_SCANCODE_D) && io.KeyCtrl && io.KeyShift)) {
-      LoadDefaultSettings();
-      LoadNamedRootFSFolder();
-      SetupINotify();
-    }
 
     if (Selected.Save ||
         (ImGui::IsKeyPressed(SDL_SCANCODE_S) && io.KeyCtrl && !io.KeyShift)) {
@@ -903,6 +921,11 @@ namespace {
         (ImGui::IsKeyPressed(SDL_SCANCODE_W) && io.KeyCtrl && !io.KeyShift)) {
       CloseConfig();
       ShutdownINotify();
+    }
+
+    if (Selected.Quit ||
+        (ImGui::IsKeyPressed(SDL_SCANCODE_Q) && io.KeyCtrl && !io.KeyShift)) {
+      Selected.Quit = true;
     }
 
     ImGui::End(); // End dockspace
@@ -926,6 +949,9 @@ namespace {
     SelectedSaveFileAs = false;
 
     ImGui::Render();
+
+    // Return true to keep rendering
+    return !Selected.Quit;
   }
 }
 
@@ -938,6 +964,12 @@ int main(int argc, char **argv) {
   // Attempt to open the config passed in
   if (argc > 1) {
     if (OpenFile(argv[1], true)) {
+      LoadNamedRootFSFolder();
+      SetupINotify();
+    }
+  }
+  else {
+    if (OpenFile(FEXCore::Config::GetConfigFileLocation(), true)) {
       LoadNamedRootFSFolder();
       SetupINotify();
     }
