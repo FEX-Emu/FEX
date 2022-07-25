@@ -785,7 +785,7 @@ namespace {
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("File")) {
         ImGui::MenuItem("Open", "CTRL+O", &Selected.Open, true);
-        ImGui::MenuItem("Open Default", "CTRL+SHIFT+O", &Selected.OpenDefault, true);
+        ImGui::MenuItem("Open from default location", "CTRL+SHIFT+O", &Selected.OpenDefault, true);
         ImGui::MenuItem("Open App profile", "CTRL+I", &Selected.OpenAppProfile, true);
 
         ImGui::MenuItem("Save", "CTRL+S", &Selected.Save, true);
