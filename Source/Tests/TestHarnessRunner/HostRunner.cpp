@@ -150,7 +150,7 @@ public:
     OutState->rip = _mcontext->gregs[REG_RIP];
 
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
-      memcpy(&OutState->xmm[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
+      memcpy(&OutState->xmm.avx.data[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
     }
 
     uint16_t CurrentOffset = (_mcontext->fpregs->swd >> 11) & 7;

@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -156,6 +157,7 @@ int main(int argc, char **argv, char **const envp) {
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
   bool DidFault = false;
+  bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
   if (Core != FEXCore::Config::CONFIG_CUSTOM) {
     jmp_buf LongJump{};
@@ -195,8 +197,11 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
     bool Result1 = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
 
-    if (!Result1)
+    if (!Result1) {
       return 1;
+    }
+
+    SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
 
     LongJumpVal = setjmp(LongJump);
     if (!LongJumpVal) {
@@ -211,6 +216,7 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::ShutdownStaticTables();
   } else {
     // Run as host
+    SupportsAVX = true;
     SignalDelegation->RegisterTLSState((FEXCore::Core::InternalThreadState*)UINTPTR_MAX);
     if (!Loader.MapMemory(mmap, munmap)) {
       // failed to map
@@ -221,7 +227,7 @@ int main(int argc, char **argv, char **const envp) {
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
 
-  bool Passed = !DidFault && Loader.CompareStates(&State, nullptr);
+  bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 
   LogMan::Msg::IFmt("Faulted? {}", DidFault ? "Yes" : "No");
   LogMan::Msg::IFmt("Passed? {}", Passed ? "Yes" : "No");

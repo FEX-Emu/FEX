@@ -137,8 +137,10 @@ DEF_OP(LoadRegister) {
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm[0][0])) / Core::CPUState::XMM_REG_SIZE;
-    auto regOffs = Op->Offset & 15;
+    const auto regSize = CTX->HostFeatures.SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
+                                                       : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
+    const auto regOffs = Op->Offset & 15;
 
     LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "out of range regId");
 
@@ -221,8 +223,10 @@ DEF_OP(StoreRegister) {
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm[0][0])) / Core::CPUState::XMM_REG_SIZE;
-    auto regOffs = Op->Offset & 15;
+    const auto regSize = CTX->HostFeatures.SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
+                                                       : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
+    const auto regOffs = Op->Offset & 15;
 
     LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "regId out of range");
 

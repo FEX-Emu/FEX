@@ -62,6 +62,10 @@ class Mode(Flag) :
     MODE_32   = 0
     MODE_64   = 1
 
+class HostFeatures(Flag) :
+    ANY      = 0
+    AVX_ONLY = 1
+
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
     "RAX":   Regs.REG_RAX,
@@ -123,6 +127,11 @@ ModeStringLookup = {
     "64BIT": Mode.MODE_64,
 }
 
+HostFeaturesLookup = {
+    "ANY" : HostFeatures.ANY,
+    "AVX" : HostFeatures.AVX_ONLY,
+}
+
 def parse_hexstring(s):
     length = 0
     byte_data = []
@@ -143,6 +152,7 @@ def parse_json(json_text, output_file):
     OptionIgnore = Regs.REG_NONE
     OptionABI = ABI.ABI_SYSTEMV
     OptionMode = Mode.MODE_64
+    OptionHostFeatures = HostFeatures.ANY
     OptionStackSize = 4096
     OptionEntryPoint = 1
     OptionRegData = {}
@@ -195,6 +205,13 @@ def parse_json(json_text, output_file):
         if not (data in ModeStringLookup):
             sys.exit("Invalid Mode")
         OptionMode = ModeStringLookup[data]
+
+    if ("HOSTFEATURES" in json_object):
+        data = json_object["HOSTFEATURES"]
+        data = data.upper()
+        if not (data in HostFeaturesLookup):
+            sys.exit("Invalid host feature")
+        OptionHostFeatures = HostFeaturesLookup[data]
 
     if ("STACKSIZE" in json_object):
         data = json_object["STACKSIZE"]
@@ -294,9 +311,10 @@ def parse_json(json_text, output_file):
     config_file.write(struct.pack('Q', OptionEntryPoint))
     config_file.write(struct.pack('I', OptionABI.value))
     config_file.write(struct.pack('I', OptionMode.value))
+    config_file.write(struct.pack('I', OptionHostFeatures.value))
 
     # Total length of header, including offsets/counts below
-    headerLength = (8 * 4) + (4 * 2) + (4 * 8)
+    headerLength = (8 * 4) + (4 * 3) + (4 * 8)
     offset = headerLength
 
     #  memory regions offset/count

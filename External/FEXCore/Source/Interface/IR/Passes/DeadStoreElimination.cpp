@@ -24,7 +24,69 @@ constexpr int PropagationRounds = 5;
 
 class DeadStoreElimination final : public FEXCore::IR::Pass {
 public:
+  explicit DeadStoreElimination(bool SupportsAVX_) : SupportsAVX{SupportsAVX_} {}
+
   bool Run(IREmitter *IREmit) override;
+
+private:
+  bool SupportsAVX;
+
+  bool IsFPR(uint32_t Offset) const {
+    const auto [begin, end] = [this]() -> std::pair<ptrdiff_t, ptrdiff_t> {
+      if (SupportsAVX) {
+        return {
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[0][0]),
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[16][0])
+        };
+      } else {
+        return {
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]),
+          offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[16][0])
+        };
+      }
+    }();
+
+    if (Offset < begin || Offset >= end)
+      return false;
+
+    return true;
+  }
+
+  bool IsTrackedWriteFPR(uint32_t Offset, uint8_t Size) const {
+    if (Size != 16 && Size != 8 && Size != 4)
+      return false;
+    if (Offset & 15)
+      return false;
+
+    return IsFPR(Offset);
+  }
+
+  uint64_t FPRBit(uint32_t Offset, uint32_t Size) const {
+    if (!IsFPR(Offset)) {
+      return 0;
+    }
+
+    const auto begin = offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0]);
+
+    const auto regSize = SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
+                                     : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regn = (Offset - begin) / regSize;
+    const auto bitn = regn * 3;
+
+    if (!IsTrackedWriteFPR(Offset, Size))
+      return 7UL << (bitn);
+
+    if (Size == 16)
+      return  7UL << (bitn);
+    else if (Size == 8)
+      return  3UL << (bitn);
+    else if (Size == 4)
+      return  1UL << (bitn);
+    else
+      LOGMAN_MSG_A_FMT("Unexpected FPR size {}", Size);
+
+    return 7UL << (bitn); // Return maximum on failure case
+  }
 };
 
 struct FlagInfo {
@@ -74,59 +136,11 @@ struct FPRInfo {
   uint64_t kill { 0 };
 };
 
-bool IsFPR(uint32_t Offset) {
-
-  auto begin = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[0][0]);
-  auto end = offsetof(FEXCore::Core::CpuStateFrame, State.xmm[16][0]);
-
-  if (Offset < begin || Offset >= end)
-    return false;
-
-  return true;
-}
-
-bool IsTrackedWriteFPR(uint32_t Offset, uint8_t Size) {
-  if (Size != 16 && Size != 8 && Size != 4)
-    return false;
-  if (Offset & 15)
-    return false;
-
-  return IsFPR(Offset);
-}
-
-
-
-uint64_t FPRBit(uint32_t Offset, uint32_t Size) {
-  if (!IsFPR(Offset)) {
-    return 0;
-  }
-
-  auto begin = offsetof(Core::CpuStateFrame, State.xmm[0][0]);
-
-  auto regn = (Offset - begin) / Core::CPUState::XMM_REG_SIZE;
-  auto bitn = regn * 3;
-
-  if (!IsTrackedWriteFPR(Offset, Size))
-    return 7UL << (bitn);
-
-  if (Size == 16)
-    return  7UL << (bitn);
-  else if (Size == 8)
-    return  3UL << (bitn);
-  else if (Size == 4)
-    return  1UL << (bitn);
-  else
-    LOGMAN_MSG_A_FMT("Unexpected FPR size {}", Size);
-
-  return 7UL << (bitn); // Return maximum on failure case
-}
-
 struct Info {
   FlagInfo flag;
   GPRInfo gpr;
   FPRInfo fpr;
 };
-
 
 /**
  * @brief This is a temporary pass to detect simple multiblock dead flag/gpr/fpr stores
@@ -341,8 +355,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination() {
-  return std::make_unique<DeadStoreElimination>();
+std::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX) {
+  return std::make_unique<DeadStoreElimination>(SupportsAVX);
 }
 
 }

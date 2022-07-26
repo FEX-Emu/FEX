@@ -110,6 +110,10 @@ namespace FEXCore::Context {
   void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t Syscall, [[maybe_unused]] FEXCore::HLE::SyscallVisitor *Visitor) {
   }
 
+  HostFeatures GetHostFeatures(const FEXCore::Context::Context *CTX) {
+    return CTX->HostFeatures;
+  }
+
   void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
     CTX->HandleCallback(Thread, RIP);
   }
