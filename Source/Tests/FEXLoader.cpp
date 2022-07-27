@@ -339,7 +339,7 @@ int main(int argc, char **argv, char **const envp) {
     // Destroy the 48th bit if it exists
     Base48Bit = FEXCore::Allocator::Steal48BitVA();
   } else {
-    FEXCore::Allocator::Steal32BitVA();
+    //FEXCore::Allocator::Steal32BitVA();
     FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
     if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
       Use32BitAllocator = true;
@@ -348,7 +348,7 @@ int main(int argc, char **argv, char **const envp) {
     // Setup our userspace allocator
     if (!Use32BitAllocator &&
         KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      //FEXCore::Allocator::SetupHooks();
+      FEXCore::Allocator::SetupHooks();
     }
 
     if (Use32BitAllocator) {

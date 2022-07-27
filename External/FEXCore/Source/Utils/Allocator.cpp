@@ -72,8 +72,8 @@ namespace FEXCore::Allocator {
   void SetupHooks() {
     Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
 #ifdef ENABLE_JEMALLOC
-    __mmap_hook   = FEX_mmap;
-    __munmap_hook = FEX_munmap;
+    //__mmap_hook   = FEX_mmap;
+    //__munmap_hook = FEX_munmap;
 #endif
     FEXCore::Allocator::mmap = FEX_mmap;
     FEXCore::Allocator::munmap = FEX_munmap;
@@ -232,7 +232,7 @@ namespace FEXCore::Allocator {
     std::vector<allocc> alloccs;
 
     size_t alloc_len = 1ULL << 51;
-    while (alloc_len >= PAGE_SIZE) {
+    while (alloc_len >= FHU::FEX_PAGE_SIZE) {
       for(;;) {
         // ~0 mmap hint to reserve the entire 52-bit address space. Needed because hugetlb & mali_kbase don't respect DEFAULT_MAP_WINDOW_64.
         // Also note the lack of MAP_FIXED: let the kernel find the VM gaps on its own.

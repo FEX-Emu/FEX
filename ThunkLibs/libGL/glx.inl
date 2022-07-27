@@ -1,7 +1,6 @@
 
 #include <cstdint>
 XVisualInfo *IMPL(glXChooseVisual)(Display *dpy, int screen, int *attribList) {
-  printf("%p, %d, %p\n", dpy, screen, attribList);
     OPTIONAL_HOSTCALL_ABI
 	SYNC_GUEST_HOST();
 	auto rv = MapVisualInfoHostToGuest(dpy, PACKER_OPTIONAL_HOSTCALL(glXChooseVisual)(GuestToHostX11(dpy), screen, attribList OPTIONAL_HOSTCALL_LASTARG));
