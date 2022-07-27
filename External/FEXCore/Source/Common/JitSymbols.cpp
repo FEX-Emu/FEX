@@ -7,6 +7,11 @@
 
 namespace FEXCore {
   JITSymbols::JITSymbols() : fp{nullptr, std::fclose} {
+  }
+
+  JITSymbols::~JITSymbols() = default;
+
+  void JITSymbols::InitFile() {
     const auto PerfMap = fmt::format("/tmp/perf-{}.map", getpid());
 
     fp.reset(fopen(PerfMap.c_str(), "wb"));
@@ -15,8 +20,6 @@ namespace FEXCore {
       setvbuf(fp.get(), nullptr, _IONBF, 0);
     }
   }
-
-  JITSymbols::~JITSymbols() = default;
 
   void JITSymbols::Register(const void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
     if (!fp) return;
