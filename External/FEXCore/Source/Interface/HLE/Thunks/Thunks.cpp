@@ -28,6 +28,8 @@ $end_info$
 #include <string>
 #include <utility>
 
+#include "jemalloc/jemalloc.h"
+
 struct LoadlibArgs {
     const char *Name;
 };
@@ -107,6 +109,11 @@ namespace FEXCore {
                 // sha256(fex:is_lib_loaded)
                 { 0xee, 0x57, 0xba, 0x0c, 0x5f, 0x6e, 0xef, 0x2a, 0x8c, 0xb5, 0x19, 0x81, 0xc9, 0x23, 0xe6, 0x51, 0xae, 0x65, 0x02, 0x8f, 0x2b, 0x5d, 0x59, 0x90, 0x6a, 0x7e, 0xe2, 0xe7, 0x1c, 0x33, 0x8a, 0xff },
                 &IsLibLoaded
+            },
+            {
+                // sha256(fex:is_host_heap_allocation)
+                { 0xf5, 0x77, 0x68, 0x43, 0xbb, 0x6b, 0x28, 0x18, 0x40, 0xb0, 0xdb, 0x8a, 0x66, 0xfb, 0x0e, 0x2d, 0x98, 0xc2, 0xad, 0xe2, 0x5a, 0x18, 0x5a, 0x37, 0x2e, 0x13, 0xc9, 0xe7, 0xb9, 0x8c, 0xa9, 0x3e },
+                &IsHostHeapAllocation
             },
             {
                 // sha256(fex:link_address_to_function)
@@ -286,6 +293,21 @@ namespace FEXCore {
           args->rv = reinterpret_cast<uintptr_t>(HostTrampoline);
 
           ThunkHandler->GuestcallToHostTrampoline[gci] = args->rv;
+        }
+
+        /**
+         * Checks if the given pointer is allocated on the host heap.
+         *
+         * This is useful for thunking APIs that need to work with both guest
+         * and host heap pointers.
+         */
+        static void IsHostHeapAllocation(void* ArgsRV) {
+            struct ArgsRV_t {
+                void* ptr;
+                bool rv;
+            } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+            args->rv = je_is_known_allocation(args->ptr);
         }
 
         static void LoadLib(void *ArgsV) {
