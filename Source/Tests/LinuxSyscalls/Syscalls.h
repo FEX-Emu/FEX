@@ -52,27 +52,27 @@ namespace FEX::HLE {
 
 class SyscallHandler;
 class SignalDelegator;
-  void RegisterEpoll();
-  void RegisterFD(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterFS(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterInfo();
-  void RegisterIO();
-  void RegisterIOUring(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterKey();
-  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterMsg();
-  void RegisterNamespace(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterNuma();
-  void RegisterSched();
-  void RegisterSemaphore();
-  void RegisterSHM();
-  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterSocket();
-  void RegisterThread(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterTime();
-  void RegisterTimer();
-  void RegisterNotImplemented();
-  void RegisterStubs();
+  void RegisterEpoll(FEX::HLE::SyscallHandler *Handler);
+  void RegisterFD(FEX::HLE::SyscallHandler *Handler);
+  void RegisterFS(FEX::HLE::SyscallHandler *Handler);
+  void RegisterInfo(FEX::HLE::SyscallHandler *Handler);
+  void RegisterIO(FEX::HLE::SyscallHandler *Handler);
+  void RegisterIOUring(FEX::HLE::SyscallHandler *Handler);
+  void RegisterKey(FEX::HLE::SyscallHandler *Handler);
+  void RegisterMemory(FEX::HLE::SyscallHandler *Handler);
+  void RegisterMsg(FEX::HLE::SyscallHandler *Handler);
+  void RegisterNamespace(FEX::HLE::SyscallHandler *Handler);
+  void RegisterNuma(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSched(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSHM(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSignals(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSocket(FEX::HLE::SyscallHandler *Handler);
+  void RegisterThread(FEX::HLE::SyscallHandler *Handler);
+  void RegisterTime(FEX::HLE::SyscallHandler *Handler);
+  void RegisterTimer(FEX::HLE::SyscallHandler *Handler);
+  void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler);
+  void RegisterStubs(FEX::HLE::SyscallHandler *Handler);
 
 uint64_t UnimplementedSyscall(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
 uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t SyscallNumber);
@@ -83,24 +83,6 @@ struct ExecveAtArgs {
 };
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args);
-
-using RegisterSyscallInternalType =
-void (*)(int SyscallNumber,
-  int32_t HostSyscallNumber,
-  FEXCore::IR::SyscallFlags Flags,
-#ifdef DEBUG_STRACE
-  const std::string& TraceFormatString,
-#endif
-  void* SyscallHandler, int ArgumentCount);
-
-
-void RegisterSyscallInternalNop(int SyscallNumber,
-  int32_t HostSyscallNumber,
-  FEXCore::IR::SyscallFlags Flags,
-#ifdef DEBUG_STRACE
-  const std::string& TraceFormatString,
-#endif
-  void* SyscallHandler, int ArgumentCount);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver {
 public:
@@ -150,6 +132,24 @@ public:
   FEXCore::IR::SyscallFlags  GetSyscallFlags(uint64_t Syscall) const override {
     auto &Def = Definitions.at(Syscall);
     return Def.Flags;
+  }
+
+  virtual void RegisterSyscall_32(int SyscallNumber,
+    int32_t HostSyscallNumber,
+    FEXCore::IR::SyscallFlags Flags,
+#ifdef DEBUG_STRACE
+    const std::string& TraceFormatString,
+#endif
+    void* SyscallHandler, int ArgumentCount) {
+  }
+
+  virtual void RegisterSyscall_64(int SyscallNumber,
+    int32_t HostSyscallNumber,
+    FEXCore::IR::SyscallFlags Flags,
+#ifdef DEBUG_STRACE
+    const std::string& TraceFormatString,
+#endif
+    void* SyscallHandler, int ArgumentCount) {
   }
 
   uint64_t HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Addr);
@@ -550,33 +550,33 @@ static bool HasSyscallError(const void* Result) {
 // Registers syscall for both 32bit and 64bit
 #define REGISTER_SYSCALL_IMPL(name, lambda) \
   struct impl_##name { \
-    impl_##name() \
+    impl_##name(FEX::HLE::SyscallHandler *Handler) \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name
+      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+    } } impl_##name(Handler)
 
 // Registers syscall for both 32bit and 64bit
 #define REGISTER_SYSCALL_IMPL_PASS(name, lambda) \
   struct impl_##name { \
-    impl_##name() \
+    impl_##name(FEX::HLE::SyscallHandler *Handler) \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name
+      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
+    } } impl_##name(Handler)
 
 #define REGISTER_SYSCALL_IMPL_FLAGS(name, flags, lambda) \
   struct impl_##name { \
-    impl_##name() \
+    impl_##name(FEX::HLE::SyscallHandler *Handler) \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, ~0, flags, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, ~0, flags, #name, lambda); \
-    } } impl_##name
+      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, ~0, flags, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, ~0, flags, #name, lambda); \
+    } } impl_##name(Handler)
 
 #define REGISTER_SYSCALL_IMPL_PASS_FLAGS(name, flags, lambda) \
   struct impl_##name { \
-    impl_##name() \
+    impl_##name(FEX::HLE::SyscallHandler *Handler) \
     { \
-      FEX::HLE::x64::RegisterSyscall(FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), flags, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), flags, #name, lambda); \
-    } } impl_##name
+      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), flags, #name, lambda); \
+      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), flags, #name, lambda); \
+    } } impl_##name(Handler)

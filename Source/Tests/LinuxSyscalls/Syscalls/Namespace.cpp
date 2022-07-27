@@ -21,7 +21,7 @@ namespace SignalDelegator {
 
 
 namespace FEX::HLE {
-  void RegisterNamespace(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterNamespace(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     if (Handler->GetHostKernelVersion() >= FEX::HLE::SyscallHandler::KernelVersion(5, 1, 0)) {

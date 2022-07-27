@@ -74,7 +74,7 @@ namespace FEX::HLE::x32 {
     }
   }
 
-  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterSignals(FEX::HLE::SyscallHandler *Handler) {
 
     // Only gets the lower 32-bits of the signal mask
     REGISTER_SYSCALL_IMPL_X32(sgetmask, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {

@@ -15,7 +15,7 @@ $end_info$
 #include <sys/socket.h>
 
 namespace FEX::HLE {
-  void RegisterSocket() {
+  void RegisterSocket(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(socket, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

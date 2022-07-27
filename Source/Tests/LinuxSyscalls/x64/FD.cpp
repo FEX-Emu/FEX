@@ -26,7 +26,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
-  void RegisterFD() {
+  void RegisterFD(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X64_PASS(poll, [](FEXCore::Core::CpuStateFrame *Frame, struct pollfd *fds, nfds_t nfds, int timeout) -> uint64_t {
       uint64_t Result = ::poll(fds, nfds, timeout);
       SYSCALL_ERRNO();

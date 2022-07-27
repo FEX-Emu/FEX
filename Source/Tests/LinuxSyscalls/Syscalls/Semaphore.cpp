@@ -14,7 +14,7 @@ $end_info$
 #include <sys/types.h>
 
 namespace FEX::HLE {
-  void RegisterSemaphore() {
+  void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(semget, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

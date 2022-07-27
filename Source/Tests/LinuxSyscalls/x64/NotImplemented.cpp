@@ -25,7 +25,7 @@ namespace FEX::HLE::x64 {
 });
 
   // these are removed/not implemented in the linux kernel we present
-  void RegisterNotImplemented() {
+  void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_NOT_IMPL_X64(tuxcall);
     REGISTER_SYSCALL_NOT_IMPL_X64(security);
     REGISTER_SYSCALL_NOT_IMPL_X64(set_thread_area);

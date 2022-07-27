@@ -24,7 +24,7 @@ namespace FEX::HLE::x32 {
 });
 
   // these are removed/not implemented in the linux kernel we present
-  void RegisterNotImplemented() {
+  void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_NOT_IMPL_X32(break);
     REGISTER_SYSCALL_NOT_IMPL_X32(stty);
     REGISTER_SYSCALL_NOT_IMPL_X32(gtty);

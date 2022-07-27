@@ -21,7 +21,7 @@ $end_info$
 #include <sys/xattr.h>
 
 namespace FEX::HLE {
-  void RegisterFS(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterFS(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(getcwd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

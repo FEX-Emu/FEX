@@ -15,7 +15,7 @@ $end_info$
 #include <sys/epoll.h>
 
 namespace FEX::HLE {
-  void RegisterEpoll() {
+  void RegisterEpoll(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(epoll_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

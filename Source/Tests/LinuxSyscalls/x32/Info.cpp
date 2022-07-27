@@ -45,7 +45,7 @@ namespace FEX::HLE::x32 {
 
   static_assert(sizeof(sysinfo32) == 64, "Needs to be 64bytes");
 
-  void RegisterInfo() {
+  void RegisterInfo(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(oldolduname, [](FEXCore::Core::CpuStateFrame *Frame, struct oldold_utsname *buf) -> uint64_t {
       struct utsname Local{};
 

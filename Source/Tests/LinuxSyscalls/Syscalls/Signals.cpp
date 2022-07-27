@@ -22,7 +22,7 @@ namespace SignalDelegator {
 }
 
 namespace FEX::HLE {
-  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterSignals(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::CpuStateFrame *Frame, int how, const uint64_t *set, uint64_t *oldset) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
     });

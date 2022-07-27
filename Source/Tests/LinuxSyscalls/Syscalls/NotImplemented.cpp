@@ -28,7 +28,7 @@ $end_info$
 namespace FEX::HLE {
   // these are removed/not implemented in the linux kernel we present
 
-  void RegisterNotImplemented() {
+  void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler) {
       REGISTER_SYSCALL_NOT_IMPL(uselib);
       REGISTER_SYSCALL_NOT_IMPL(create_module);
       REGISTER_SYSCALL_NOT_IMPL(get_kernel_syms);

@@ -32,7 +32,7 @@ namespace FEX::HLE::x64 {
     Frame->State.rip += 2;
   }
 
-  void RegisterThread() {
+  void RegisterThread(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(clone, SyscallFlags::DEFAULT,

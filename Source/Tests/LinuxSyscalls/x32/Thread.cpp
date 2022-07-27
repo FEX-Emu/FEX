@@ -75,7 +75,7 @@ namespace FEX::HLE::x32 {
     Frame->State.rip += 2;
   }
 
-  void RegisterThread() {
+  void RegisterThread(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(clone, ([](FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, pid_t *parent_tid, void *tls, pid_t *child_tid) -> uint64_t {
       FEX::HLE::clone3_args args {
         .Type = TypeOfClone::TYPE_CLONE2,

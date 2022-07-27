@@ -588,7 +588,7 @@ namespace FEX::HLE::x32 {
     SYSCALL_ERRNO();
   }
 
-  void RegisterSocket() {
+  void RegisterSocket(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(socketcall, [](FEXCore::Core::CpuStateFrame *Frame, uint32_t call, uint32_t *Arguments) -> uint64_t {
       uint64_t Result{};
 

@@ -28,80 +28,32 @@ namespace FEXCore::Context {
 }
 
 namespace FEX::HLE::x32 {
-  RegisterSyscallInternalType SyscallRegisterHandler = FEX::HLE::RegisterSyscallInternalNop;
-
-  void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterFD();
-  void RegisterFS();
-  void RegisterInfo();
-  void RegisterIO();
-  void RegisterMemory();
-  void RegisterMsg();
-  void RegisterNotImplemented();
-  void RegisterSched();
-  void RegisterSemaphore();
-  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterSocket();
-  void RegisterStubs();
-  void RegisterThread();
-  void RegisterTime();
-  void RegisterTimer();
-
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  [[nodiscard]] static const char* GetSyscallName(int SyscallNumber) {
-    static const std::map<int, const char*> SyscallNames = {
-      #include "SyscallsNames.inl"
-    };
-
-    const auto EntryIter = SyscallNames.find(SyscallNumber);
-    if (EntryIter == SyscallNames.cend()) {
-      return "[unknown syscall]";
-    }
-
-    return EntryIter->second;
-  }
-#endif
-
-  struct InternalSyscallDefinition {
-    int SyscallNumber;
-    void* SyscallHandler;
-    int ArgumentCount;
-    int32_t HostSyscallNumber;
-    FEXCore::IR::SyscallFlags Flags;
-#ifdef DEBUG_STRACE
-    std::string TraceFormatString;
-#endif
-  };
-
-  std::vector<InternalSyscallDefinition> syscalls_x32;
-
-  void RegisterSyscallInternal(int SyscallNumber,
-    int32_t HostSyscallNumber,
-    FEXCore::IR::SyscallFlags Flags,
-#ifdef DEBUG_STRACE
-    const std::string& TraceFormatString,
-#endif
-    void* SyscallHandler, int ArgumentCount) {
-    syscalls_x32.push_back({SyscallNumber,
-      SyscallHandler,
-      ArgumentCount,
-      HostSyscallNumber,
-      Flags,
-#ifdef DEBUG_STRACE
-      TraceFormatString
-#endif
-      });
-  }
+  void RegisterEpoll(FEX::HLE::SyscallHandler *Handler);
+  void RegisterFD(FEX::HLE::SyscallHandler *Handler);
+  void RegisterFS(FEX::HLE::SyscallHandler *Handler);
+  void RegisterInfo(FEX::HLE::SyscallHandler *Handler);
+  void RegisterIO(FEX::HLE::SyscallHandler *Handler);
+  void RegisterMemory(FEX::HLE::SyscallHandler *Handler);
+  void RegisterMsg(FEX::HLE::SyscallHandler *Handler);
+  void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSched(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSignals(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSocket(FEX::HLE::SyscallHandler *Handler);
+  void RegisterStubs(FEX::HLE::SyscallHandler *Handler);
+  void RegisterThread(FEX::HLE::SyscallHandler *Handler);
+  void RegisterTime(FEX::HLE::SyscallHandler *Handler);
+  void RegisterTimer(FEX::HLE::SyscallHandler *Handler);
 
   x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, std::unique_ptr<MemAllocator> Allocator)
     : SyscallHandler{ctx, _SignalDelegation}, AllocHandler{std::move(Allocator)} {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX32;
-    FEX::HLE::x32::SyscallRegisterHandler = FEX::HLE::x32::RegisterSyscallInternal;
     RegisterSyscallHandlers();
   }
 
   void x32SyscallHandler::RegisterSyscallHandlers() {
     Definitions.resize(FEX::HLE::x32::SYSCALL_x86_MAX);
+
     auto cvt = [](auto in) {
       union {
         decltype(in) val;
@@ -111,72 +63,51 @@ namespace FEX::HLE::x32 {
       return raw.raw;
     };
 
-    // Clear all definitions
     for (auto &Def : Definitions) {
       Def.NumArgs = 255;
       Def.Ptr = cvt(&UnimplementedSyscall);
     }
 
-    FEX::HLE::RegisterEpoll();
+    FEX::HLE::RegisterEpoll(this);
     FEX::HLE::RegisterFD(this);
     FEX::HLE::RegisterFS(this);
-    FEX::HLE::RegisterInfo();
-    FEX::HLE::RegisterIO();
+    FEX::HLE::RegisterInfo(this);
+    FEX::HLE::RegisterIO(this);
     FEX::HLE::RegisterIOUring(this);
-    FEX::HLE::RegisterKey();
+    FEX::HLE::RegisterKey(this);
     FEX::HLE::RegisterMemory(this);
-    FEX::HLE::RegisterMsg();
+    FEX::HLE::RegisterMsg(this);
     FEX::HLE::RegisterNamespace(this);
-    FEX::HLE::RegisterSched();
-    FEX::HLE::RegisterSemaphore();
-    FEX::HLE::RegisterSHM();
+    FEX::HLE::RegisterSched(this);
+    FEX::HLE::RegisterSemaphore(this);
+    FEX::HLE::RegisterSHM(this);
     FEX::HLE::RegisterSignals(this);
-    FEX::HLE::RegisterSocket();
+    FEX::HLE::RegisterSocket(this);
     FEX::HLE::RegisterThread(this);
-    FEX::HLE::RegisterTime();
-    FEX::HLE::RegisterTimer();
-    FEX::HLE::RegisterNotImplemented();
-    FEX::HLE::RegisterStubs();
+    FEX::HLE::RegisterTime(this);
+    FEX::HLE::RegisterTimer(this);
+    FEX::HLE::RegisterNotImplemented(this);
+    FEX::HLE::RegisterStubs(this);
 
     // 32bit specific
     FEX::HLE::x32::RegisterEpoll(this);
-    FEX::HLE::x32::RegisterFD();
-    FEX::HLE::x32::RegisterFS();
-    FEX::HLE::x32::RegisterInfo();
-    FEX::HLE::x32::RegisterIO();
-    FEX::HLE::x32::RegisterMemory();
-    FEX::HLE::x32::RegisterMsg();
-    FEX::HLE::x32::RegisterNotImplemented();
-    FEX::HLE::x32::RegisterSched();
-    FEX::HLE::x32::RegisterSemaphore();
+    FEX::HLE::x32::RegisterFD(this);
+    FEX::HLE::x32::RegisterFS(this);
+    FEX::HLE::x32::RegisterInfo(this);
+    FEX::HLE::x32::RegisterIO(this);
+    FEX::HLE::x32::RegisterMemory(this);
+    FEX::HLE::x32::RegisterMsg(this);
+    FEX::HLE::x32::RegisterNotImplemented(this);
+    FEX::HLE::x32::RegisterSched(this);
+    FEX::HLE::x32::RegisterSemaphore(this);
     FEX::HLE::x32::RegisterSignals(this);
-    FEX::HLE::x32::RegisterSocket();
-    FEX::HLE::x32::RegisterStubs();
-    FEX::HLE::x32::RegisterThread();
-    FEX::HLE::x32::RegisterTime();
-    FEX::HLE::x32::RegisterTimer();
+    FEX::HLE::x32::RegisterSocket(this);
+    FEX::HLE::x32::RegisterStubs(this);
+    FEX::HLE::x32::RegisterThread(this);
+    FEX::HLE::x32::RegisterTime(this);
+    FEX::HLE::x32::RegisterTimer(this);
 
     FEX::HLE::x32::InitializeStaticIoctlHandlers();
-
-    // Set all the new definitions
-    for (auto &Syscall : syscalls_x32) {
-      auto SyscallNumber = Syscall.SyscallNumber;
-      auto &Def = Definitions.at(SyscallNumber);
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-      auto Name = GetSyscallName(SyscallNumber);
-      LOGMAN_THROW_A_FMT(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, {}, {}", SyscallNumber, Name);
-#endif
-      Def.Ptr = Syscall.SyscallHandler;
-      Def.NumArgs = Syscall.ArgumentCount;
-      Def.Flags = Syscall.Flags;
-      Def.HostSyscallNumber = Syscall.HostSyscallNumber;
-#ifdef DEBUG_STRACE
-      Def.StraceFmt = Syscall.TraceFormatString;
-#endif
-    }
-
-    // Clear the registration vector
-    syscalls_x32 = {};
 
 #if PRINT_MISSING_SYSCALLS
     for (auto &Syscall: SyscallNames) {

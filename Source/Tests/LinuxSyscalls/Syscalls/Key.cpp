@@ -16,7 +16,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterKey() {
+  void RegisterKey(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(add_key, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
