@@ -665,7 +665,11 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
-void *Arm64JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
+void *Arm64JITCore::CompileCode(uint64_t Entry,
+                                FEXCore::IR::IRListView const *IR,
+                                FEXCore::Core::DebugData *DebugData,
+                                FEXCore::IR::RegisterAllocationData *RAData,
+                                bool GDBEnabled) {
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
