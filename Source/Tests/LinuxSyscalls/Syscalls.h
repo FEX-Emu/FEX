@@ -363,11 +363,9 @@ extern FEX::HLE::SyscallHandler *_SyscallHandler;
 //////
 
 template<typename T>
-struct ArgToFmtString {
-  // fail on unknown types
-};
+struct ArgToFmtString;
 
-#define ARG_TO_STR(tpy, str) template<> struct FEX::HLE::ArgToFmtString<tpy> { inline static const std::string Format = str; };
+#define ARG_TO_STR(tpy, str) template<> struct FEX::HLE::ArgToFmtString<tpy> { inline static const char* const Format = str; };
 
 // Base types
 ARG_TO_STR(int, "%d")
@@ -382,24 +380,14 @@ ARG_TO_STR(const char*, "%s")
 // Pointers
 template<typename T>
 struct ArgToFmtString<T*> {
-  inline static const std::string Format = "%p";
+  inline static const char* const Format = "%p";
 };
 
 // Use ArgToFmtString and variadic template to create a format string from an args list
 template<typename ...Args>
 std::string CollectArgsFmtString() {
-  std::string array[] = { ArgToFmtString<Args>::Format... };
-
-  std::string rv{};
-  bool first = true;
-
-  for (auto &str: array) {
-    if (!first) rv += ", ";
-    first = false;
-    rv += str;
-  }
-
-  return rv;
+  std::array<const char*, sizeof...(Args)> array = { ArgToFmtString<Args>::Format... };
+  return fmt::format("{}", fmt::join(array, ", "));
 }
 #else
 #define ARG_TO_STR(tpy, str)
