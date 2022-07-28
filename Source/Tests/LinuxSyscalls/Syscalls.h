@@ -537,34 +537,19 @@ static bool HasSyscallError(const void* Result) {
 
 // Registers syscall for both 32bit and 64bit
 #define REGISTER_SYSCALL_IMPL(name, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_INTERNAL(name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, lambda)
 
-// Registers syscall for both 32bit and 64bit
 #define REGISTER_SYSCALL_IMPL_PASS(name, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_INTERNAL(name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, lambda)
 
 #define REGISTER_SYSCALL_IMPL_FLAGS(name, flags, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, ~0, flags, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, ~0, flags, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_INTERNAL(name, ~0, flags, lambda)
 
 #define REGISTER_SYSCALL_IMPL_PASS_FLAGS(name, flags, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, SYSCALL_DEF(name), flags, #name, lambda); \
-      FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, SYSCALL_DEF(name), flags, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_INTERNAL(name, SYSCALL_DEF(name), flags, lambda)
+
+#define REGISTER_SYSCALL_IMPL_INTERNAL(name, number, flags, lambda) \
+  do { \
+    FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, (number), (flags), #name, (lambda)); \
+    FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, (number), (flags), #name, (lambda)); \
+  } while (false)

@@ -96,7 +96,7 @@ void RegisterSyscall(SyscallHandler *Handler, int SyscallNumber, int32_t HostSys
     reinterpret_cast<void*>(fn), sizeof...(Args));
 }
 
-//LambdaTraits extracts the function singature of a lambda from operator()
+//LambdaTraits extracts the function signature of a lambda from operator()
 template<typename FPtr>
 struct LambdaTraits;
 
@@ -119,44 +119,24 @@ void RegisterSyscall(SyscallHandler *_Handler, int num, int32_t HostSyscallNumbe
 
 // Registers syscall for 32bit only
 #define REGISTER_SYSCALL_IMPL_X32(name, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, lambda)
 
-// Registers syscall for 32bit only
 #define REGISTER_SYSCALL_IMPL_X32_PASS(name, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, lambda)
 
 #define REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(name, hostname, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, SYSCALL_DEF(hostname), FEXCore::IR::SyscallFlags::DEFAULT, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, SYSCALL_DEF(hostname), FEXCore::IR::SyscallFlags::DEFAULT, lambda)
 
 #define REGISTER_SYSCALL_IMPL_X32_FLAGS(name, flags, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, ~0, flags, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, ~0, flags, lambda)
 
 #define REGISTER_SYSCALL_IMPL_X32_PASS_FLAGS(name, flags, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, SYSCALL_DEF(name), flags, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, SYSCALL_DEF(name), flags, lambda)
 
 #define REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL_FLAGS(name, hostname, flags, lambda) \
-  struct impl_##name { \
-    impl_##name(FEX::HLE::SyscallHandler *Handler) \
-    { \
-      FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, SYSCALL_DEF(hostname), flags, #name, lambda); \
-    } } impl_##name(Handler)
+  REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, SYSCALL_DEF(hostname), flags, lambda)
+
+#define REGISTER_SYSCALL_IMPL_X32_INTERNAL(name, number, flags, lambda) \
+  do { \
+    FEX::HLE::x32::RegisterSyscall(Handler, x32::SYSCALL_x86_##name, number, flags, #name, lambda); \
+  } while (false)
