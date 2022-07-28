@@ -96,23 +96,12 @@ void RegisterSyscall(SyscallHandler *Handler, int SyscallNumber, int32_t HostSys
     reinterpret_cast<void*>(fn), sizeof...(Args));
 }
 
-//LambdaTraits extracts the function signature of a lambda from operator()
-template<typename FPtr>
-struct LambdaTraits;
-
-template<typename T, typename C, typename ...Args>
-struct LambdaTraits<T (C::*)(Args...) const>
-{
-    typedef T(*Type)(Args...);
-};
-
 // Generic RegisterSyscall for lambdas
 // Non-capturing lambdas can be cast to function pointers, but this does not happen on argument matching
 // This is some glue logic that will cast a lambda and call the base RegisterSyscall implementation
 template<class F>
 void RegisterSyscall(SyscallHandler *_Handler, int num, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags, const char *name, F f){
-  typedef typename LambdaTraits<decltype(&F::operator())>::Type Signature;
-  RegisterSyscall(_Handler, num, HostSyscallNumber, Flags, name, (Signature)f);
+  RegisterSyscall(_Handler, num, HostSyscallNumber, Flags, name, +f);
 }
 
 }
