@@ -66,7 +66,7 @@ namespace FEX::HLE::x64 {
     return Result;
   }
 
-  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterMemory(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(mmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

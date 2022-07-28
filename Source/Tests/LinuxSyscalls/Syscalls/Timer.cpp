@@ -20,7 +20,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterTimer() {
+  void RegisterTimer(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(alarm, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

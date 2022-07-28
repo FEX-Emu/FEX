@@ -19,7 +19,7 @@ ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::mq_attr32>, "%lx")
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigevent32>, "%lx")
 
 namespace FEX::HLE::x32 {
-  void RegisterMsg() {
+  void RegisterMsg(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(mq_timedsend, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio, const struct timespec32 *abs_timeout) -> uint64_t {
       struct timespec tp64{};
       struct timespec *timed_ptr{};

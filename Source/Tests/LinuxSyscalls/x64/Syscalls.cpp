@@ -13,74 +13,24 @@ $end_info$
 #include <map>
 
 namespace FEX::HLE::x64 {
-  RegisterSyscallInternalType SyscallRegisterHandler = FEX::HLE::RegisterSyscallInternalNop;
-
-  void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterFD();
-  void RegisterInfo();
-  void RegisterIO();
-  void RegisterIoctl();
-  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterMsg();
-  void RegisterSched();
-  void RegisterSocket();
-  void RegisterSemaphore();
-  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler);
-  void RegisterThread();
-  void RegisterTime();
-  void RegisterNotImplemented();
-
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  [[nodiscard]] static const char* GetSyscallName(int SyscallNumber) {
-    static const std::map<int, const char*> SyscallNames = {
-      #include "SyscallsNames.inl"
-    };
-
-    const auto EntryIter = SyscallNames.find(SyscallNumber);
-    if (EntryIter == SyscallNames.cend()) {
-      return "[unknown syscall]";
-    }
-
-    return EntryIter->second;
-  }
-#endif
-
-  struct InternalSyscallDefinition {
-    int SyscallNumber;
-    void* SyscallHandler;
-    int ArgumentCount;
-    int32_t HostSyscallNumber;
-    FEXCore::IR::SyscallFlags Flags;
-#ifdef DEBUG_STRACE
-    std::string TraceFormatString;
-#endif
-  };
-
-  std::vector<InternalSyscallDefinition> syscalls_x64;
-
-  void RegisterSyscallInternal(int SyscallNumber,
-    int32_t HostSyscallNumber,
-    FEXCore::IR::SyscallFlags Flags,
-#ifdef DEBUG_STRACE
-    const std::string& TraceFormatString,
-#endif
-    void* SyscallHandler, int ArgumentCount) {
-    syscalls_x64.push_back({SyscallNumber,
-      SyscallHandler,
-      ArgumentCount,
-      HostSyscallNumber,
-      Flags,
-#ifdef DEBUG_STRACE
-      TraceFormatString
-#endif
-      });
-  }
-
+  void RegisterEpoll(FEX::HLE::SyscallHandler *Handler);
+  void RegisterFD(FEX::HLE::SyscallHandler *Handler);
+  void RegisterInfo(FEX::HLE::SyscallHandler *Handler);
+  void RegisterIO(FEX::HLE::SyscallHandler *Handler);
+  void RegisterIoctl(FEX::HLE::SyscallHandler *Handler);
+  void RegisterMemory(FEX::HLE::SyscallHandler *Handler);
+  void RegisterMsg(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSched(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSocket(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler);
+  void RegisterSignals(FEX::HLE::SyscallHandler *Handler);
+  void RegisterThread(FEX::HLE::SyscallHandler *Handler);
+  void RegisterTime(FEX::HLE::SyscallHandler *Handler);
+  void RegisterNotImplemented(FEX::HLE::SyscallHandler *Handler);
 
   x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation)
     : SyscallHandler {ctx, _SignalDelegation} {
     OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX64;
-    FEX::HLE::x64::SyscallRegisterHandler = FEX::HLE::x64::RegisterSyscallInternal;
 
     RegisterSyscallHandlers();
   }
@@ -102,62 +52,42 @@ namespace FEX::HLE::x64 {
       Def.Ptr = cvt(&UnimplementedSyscall);
     }
 
-    FEX::HLE::RegisterEpoll();
+    FEX::HLE::RegisterEpoll(this);
     FEX::HLE::RegisterFD(this);
     FEX::HLE::RegisterFS(this);
-    FEX::HLE::RegisterInfo();
-    FEX::HLE::RegisterIO();
+    FEX::HLE::RegisterInfo(this);
+    FEX::HLE::RegisterIO(this);
     FEX::HLE::RegisterIOUring(this);
-    FEX::HLE::RegisterKey();
+    FEX::HLE::RegisterKey(this);
     FEX::HLE::RegisterMemory(this);
-    FEX::HLE::RegisterMsg();
+    FEX::HLE::RegisterMsg(this);
     FEX::HLE::RegisterNamespace(this);
-    FEX::HLE::RegisterSched();
-    FEX::HLE::RegisterSemaphore();
-    FEX::HLE::RegisterSHM();
+    FEX::HLE::RegisterSched(this);
+    FEX::HLE::RegisterSemaphore(this);
+    FEX::HLE::RegisterSHM(this);
     FEX::HLE::RegisterSignals(this);
-    FEX::HLE::RegisterSocket();
+    FEX::HLE::RegisterSocket(this);
     FEX::HLE::RegisterThread(this);
-    FEX::HLE::RegisterTime();
-    FEX::HLE::RegisterTimer();
-    FEX::HLE::RegisterNotImplemented();
-    FEX::HLE::RegisterStubs();
+    FEX::HLE::RegisterTime(this);
+    FEX::HLE::RegisterTimer(this);
+    FEX::HLE::RegisterNotImplemented(this);
+    FEX::HLE::RegisterStubs(this);
 
     // 64bit specific
     FEX::HLE::x64::RegisterEpoll(this);
-    FEX::HLE::x64::RegisterFD();
-    FEX::HLE::x64::RegisterInfo();
-    FEX::HLE::x64::RegisterIO();
-    FEX::HLE::x64::RegisterIoctl();
+    FEX::HLE::x64::RegisterFD(this);
+    FEX::HLE::x64::RegisterInfo(this);
+    FEX::HLE::x64::RegisterIO(this);
+    FEX::HLE::x64::RegisterIoctl(this);
     FEX::HLE::x64::RegisterMemory(this);
-    FEX::HLE::x64::RegisterMsg();
-    FEX::HLE::x64::RegisterSched();
-    FEX::HLE::x64::RegisterSocket();
-    FEX::HLE::x64::RegisterSemaphore();
+    FEX::HLE::x64::RegisterMsg(this);
+    FEX::HLE::x64::RegisterSched(this);
+    FEX::HLE::x64::RegisterSocket(this);
+    FEX::HLE::x64::RegisterSemaphore(this);
     FEX::HLE::x64::RegisterSignals(this);
-    FEX::HLE::x64::RegisterThread();
-    FEX::HLE::x64::RegisterTime();
-    FEX::HLE::x64::RegisterNotImplemented();
-
-    // Set all the new definitions
-    for (auto &Syscall : syscalls_x64) {
-      auto SyscallNumber = Syscall.SyscallNumber;
-      auto &Def = Definitions.at(SyscallNumber);
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-      auto Name = GetSyscallName(SyscallNumber);
-      LOGMAN_THROW_A_FMT(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, {}, {}", SyscallNumber, Name);
-#endif
-      Def.Ptr = Syscall.SyscallHandler;
-      Def.NumArgs = Syscall.ArgumentCount;
-      Def.Flags = Syscall.Flags;
-      Def.HostSyscallNumber = Syscall.HostSyscallNumber;
-#ifdef DEBUG_STRACE
-      Def.StraceFmt = Syscall.TraceFormatString;
-#endif
-    }
-
-    // Clear the registration vector
-    syscalls_x64 = {};
+    FEX::HLE::x64::RegisterThread(this);
+    FEX::HLE::x64::RegisterTime(this);
+    FEX::HLE::x64::RegisterNotImplemented(this);
 
     // x86-64 has a gap of syscalls in the range of [335, 424) where there aren't any
     // These are defined that these must return -ENOSYS

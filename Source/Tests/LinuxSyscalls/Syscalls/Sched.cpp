@@ -20,7 +20,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterSched() {
+  void RegisterSched(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(sched_yield, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

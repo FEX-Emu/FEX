@@ -19,7 +19,7 @@ $end_info$
 #include <utime.h>
 
 namespace FEX::HLE::x64 {
-  void RegisterTime() {
+  void RegisterTime(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X64_PASS(time, [](FEXCore::Core::CpuStateFrame *Frame, time_t *tloc) -> uint64_t {
       uint64_t Result = ::time(tloc);
       SYSCALL_ERRNO();

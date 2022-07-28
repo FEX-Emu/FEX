@@ -18,7 +18,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x64 {
-  void RegisterSignals(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterSignals(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X64(rt_sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const FEXCore::GuestSigAction *act, FEXCore::GuestSigAction *oldact, size_t sigsetsize) -> uint64_t {
       if (sigsetsize != 8) {
         return -EINVAL;

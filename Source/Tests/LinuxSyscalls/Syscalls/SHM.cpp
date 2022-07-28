@@ -15,7 +15,7 @@ $end_info$
 #include <sys/shm.h>
 
 namespace FEX::HLE {
-  void RegisterSHM() {
+  void RegisterSHM(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(shmget, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

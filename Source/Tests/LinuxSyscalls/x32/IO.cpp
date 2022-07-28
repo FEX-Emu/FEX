@@ -15,7 +15,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x32 {
-  void RegisterIO() {
+  void RegisterIO(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(io_getevents, [](FEXCore::Core::CpuStateFrame *Frame, aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec32 *timeout) -> uint64_t {
       struct timespec* timeout_ptr{};
       struct timespec tp64{};

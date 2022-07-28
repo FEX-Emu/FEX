@@ -380,7 +380,7 @@ namespace FEX::HLE::x32 {
     }
     SYSCALL_ERRNO();
   }
-  void RegisterSemaphore() {
+  void RegisterSemaphore(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(ipc, _ipc);
 
     REGISTER_SYSCALL_IMPL_X32_PASS_MANUAL(semtimedop_time64, semtimedop, [](FEXCore::Core::CpuStateFrame *Frame, int semid, struct sembuf *sops, size_t nsops, const struct timespec *timeout) -> uint64_t {

@@ -14,7 +14,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x32 {
-  void RegisterFS() {
+  void RegisterFS(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(umount, [](FEXCore::Core::CpuStateFrame *Frame, const char *target) -> uint64_t {
       uint64_t Result = ::umount(target);
       SYSCALL_ERRNO();

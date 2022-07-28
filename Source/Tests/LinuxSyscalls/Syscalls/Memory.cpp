@@ -17,7 +17,7 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
-  void RegisterMemory(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterMemory(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_FLAGS(brk, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

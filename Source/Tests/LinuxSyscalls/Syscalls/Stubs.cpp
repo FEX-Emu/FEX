@@ -21,7 +21,7 @@ namespace FEXCore::Core {
 }
 
 namespace FEX::HLE {
-  void RegisterStubs() {
+  void RegisterStubs(FEX::HLE::SyscallHandler *Handler) {
 
     REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       SYSCALL_STUB(rt_sigreturn);

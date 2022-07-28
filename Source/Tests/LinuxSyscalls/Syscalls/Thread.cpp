@@ -260,7 +260,7 @@ namespace FEX::HLE {
     }
   }
 
-  void RegisterThread(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterThread(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

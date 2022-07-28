@@ -27,7 +27,7 @@ namespace FEXCore::Core {
 }
 
 namespace FEX::HLE::x32 {
-  void RegisterEpoll(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterEpoll(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, compat_ptr<FEX::HLE::x32::epoll_event32> events, int maxevents, int timeout) -> uint64_t {
       std::vector<struct epoll_event> Events(std::max(0, maxevents));
       uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevents, timeout, nullptr, 8);

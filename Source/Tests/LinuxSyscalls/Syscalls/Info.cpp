@@ -31,7 +31,7 @@ namespace FEX::HLE {
   using cap_user_header_t = void*;
   using cap_user_data_t = void*;
 
-  void RegisterInfo() {
+  void RegisterInfo(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_FLAGS(uname, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

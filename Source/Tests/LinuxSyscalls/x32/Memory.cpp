@@ -51,7 +51,7 @@ namespace FEX::HLE::x32 {
     }
   }
 
-  void RegisterMemory() {
+  void RegisterMemory(FEX::HLE::SyscallHandler *Handler) {
     struct old_mmap_struct {
       uint32_t addr;
       uint32_t len;

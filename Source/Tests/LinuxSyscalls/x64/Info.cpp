@@ -14,7 +14,7 @@ $end_info$
 #include <sys/sysinfo.h>
 
 namespace FEX::HLE::x64 {
-  void RegisterInfo() {
+  void RegisterInfo(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X64_PASS(sysinfo, [](FEXCore::Core::CpuStateFrame *Frame, struct sysinfo *info) -> uint64_t {
       uint64_t Result = ::sysinfo(info);
       SYSCALL_ERRNO();

@@ -28,7 +28,7 @@ namespace FEXCore::Core {
 }
 
 namespace FEX::HLE::x32 {
-  void RegisterTime() {
+  void RegisterTime(FEX::HLE::SyscallHandler *Handler) {
 
     REGISTER_SYSCALL_IMPL_X32(time, [](FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::x32::old_time32_t *tloc) -> uint64_t {
       time_t Host{};

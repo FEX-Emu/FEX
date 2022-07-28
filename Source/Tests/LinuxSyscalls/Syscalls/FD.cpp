@@ -28,7 +28,7 @@ $end_info$
 #include <sys/syscall.h>
 
 namespace FEX::HLE {
-  void RegisterFD(FEX::HLE::SyscallHandler *const Handler) {
+  void RegisterFD(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(read, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
