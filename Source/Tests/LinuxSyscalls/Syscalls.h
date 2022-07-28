@@ -393,30 +393,6 @@ std::string CollectArgsFmtString() {
 #define ARG_TO_STR(tpy, str)
 #endif
 
-// Helper that allows us to create a variadic template lambda from a given signature
-// by creating a function that expects a fuction pointer with the given signature as a parameter
-template <typename T>
-struct FunctionToLambda;
-
-template<typename R, typename... Args>
-struct FunctionToLambda<R(*)(Args...)> {
-	using RType = R;
-
-	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)))(FEXCore::Core::CpuStateFrame *Frame, Args...) {
-		return fn;
-	}
-};
-
-// copy to match noexcept functions
-template<typename R, typename... Args>
-struct FunctionToLambda<R(*)(Args...) noexcept> {
-	using RType = R;
-
-	static R(*ReturnFunctionPointer(R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)))(FEXCore::Core::CpuStateFrame *Frame, Args...) {
-		return fn;
-	}
-};
-
 struct open_how {
   uint64_t flags;
   uint64_t mode;
