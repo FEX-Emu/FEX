@@ -48,11 +48,6 @@ struct ThunkedFunction : FunctionParams {
     // This is implied e.g. for thunks generated for variadic functions
     bool custom_host_impl = false;
 
-    // If true, the unpacking function will use an extra argument for a
-    // host function pointer that is called instead of calling the host library
-    // function directly.
-    bool is_hostcall = false;
-
     std::string GetOriginalFunctionName() const {
         const std::string suffix = "_internal";
         assert(function_name.length() > suffix.size());
@@ -380,14 +375,8 @@ public:
             data.custom_host_impl = true;
         }
 
-        // For indirect calls, register a second thunk with the callee pointer as an extra argument
+        // For indirect calls, register the function signature as a function pointer type
         if (namespace_info.indirect_guest_calls) {
-            auto hostcall_data = data;
-            hostcall_data.function_name = "hostcall_" + data.function_name;
-            hostcall_data.param_types.push_back(context.getUIntPtrType());
-            hostcall_data.is_hostcall = true;
-            thunks.push_back(std::move(hostcall_data));
-
             funcptr_types.insert(context.getCanonicalType(emitted_function->getFunctionType()));
         }
 
@@ -690,11 +679,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
 
             FunctionParams args = thunk;
             auto function_to_call = "fexldr_ptr_" + libname + "_" + function_name;
-            if (thunk.is_hostcall) {
-                // Get the host function pointer by casting the last parameter to the correct signature
-                args.param_types.pop_back();
-                function_to_call = "reinterpret_cast<" + thunk.return_type.getAsString() + "(*)(" + format_function_params(args) + ")>(args->a_" + std::to_string(args.param_types.size()) + ")";
-            } else if (thunk.custom_host_impl) {
+            if (thunk.custom_host_impl) {
                 function_to_call = "fexfn_impl_" + libname + "_" + function_name;
             }
 
