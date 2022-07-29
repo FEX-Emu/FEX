@@ -9,6 +9,8 @@ $end_info$
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
+#include <X11/XKBlib.h>
+
 // Include Xlibint.h and undefine some of its macros that clash with the standard library
 #include <X11/Xlibint.h>
 #undef min
@@ -50,6 +52,25 @@ extern "C" {
 
         va_end(ap);
         auto rv = fexfn_pack_XGetICValues_internal(ic, args.size(), &args[0]);
+        fprintf(stderr, "RV: %p\n", rv);
+        return rv;
+    }
+
+    char* XGetIMValues(XIM ic, ...) {
+        fprintf(stderr, "XGetIMValues\n");
+        va_list ap;
+        std::vector<void*> args;
+        va_start(ap, ic);
+        for (;;) {
+            auto arg = va_arg(ap, void*);
+            if (arg == 0)
+                break;
+            args.push_back(arg);
+            fprintf(stderr, "%p\n", arg);
+        }
+
+        va_end(ap);
+        auto rv = fexfn_pack_XGetIMValues_internal(ic, args.size(), &args[0]);
         fprintf(stderr, "RV: %p\n", rv);
         return rv;
     }

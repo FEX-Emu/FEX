@@ -4,6 +4,8 @@
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
+#include <X11/ImUtil.h>
+
 #include <X11/Xlibint.h>
 #include <X11/XKBlib.h>
 
@@ -442,6 +444,8 @@ template<> struct fex_gen_config<XCreateIC> {
 };
 
 template<> struct fex_gen_config<XIfEvent> {};
+template<> struct fex_gen_config<XCheckIfEvent> {};
+
 // TODO: Make returned function pointer guest-callable. For now, just pretend it already is.
 template<> struct fex_gen_config<XSetErrorHandler> : fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<XInternAtom> {};
@@ -524,3 +528,64 @@ template<> struct fex_gen_config<XMatchVisualInfo> {};
 template<> struct fex_gen_config<XPutImage> {};
 template<> struct fex_gen_config<XCreateImage> {};
 template<> struct fex_gen_config<XDisplayHeight> {};
+
+template<> struct fex_gen_config<XkbFreeKeyboard> {};
+template<> struct fex_gen_config<XkbSetDetectableAutoRepeat> {};
+template<> struct fex_gen_config<XkbGetMap> {};
+template<> struct fex_gen_config<XkbGetUpdatedMap> {};
+template<> struct fex_gen_config<XkbQueryExtension> {};
+template<> struct fex_gen_config<XkbSelectEvents> {};
+template<> struct fex_gen_config<XkbGetState> {};
+
+template<> struct fex_gen_config<XSynchronize> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XGetIMValues> {
+    using uniform_va_type = void*;
+};
+
+template<> struct fex_gen_config<XESetEventToWire> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetWireToEvent> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetCreateFont> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetFreeGC> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetFlushGC> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetCreateGC> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetCopyGC> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetFreeFont> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetCloseDisplay> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetCopyEventCookie> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetWireToEventCookie> : fexgen::returns_guest_pointer {};
+
+
+// TODO: Should probably catch these with a custom handler
+template<> struct fex_gen_config<XESetErrorString> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetError> : fexgen::returns_guest_pointer {};
+
+template<> struct fex_gen_config<XSetIOErrorHandler> : fexgen::returns_guest_pointer {};
+
+template<> struct fex_gen_config<_XRead32> {};
+template<> struct fex_gen_config<_XRead> {};
+template<> struct fex_gen_config<_XReadPad> {};
+template<> struct fex_gen_config<_XData32> {};
+template<> struct fex_gen_config<_XEatData> {};
+template<> struct fex_gen_config<_XEatDataWords> {};
+template<> struct fex_gen_config<_XGetAsyncReply> {};
+template<> struct fex_gen_config<_XSend> {};
+template<> struct fex_gen_config<_XFlush> {};
+template<> struct fex_gen_config<_XFlushGCCache> {};
+template<> struct fex_gen_config<_XAllocScratch> {};
+template<> struct fex_gen_config<_XGetRequest> {};
+template<> struct fex_gen_config<_XGetBitsPerPixel> {};
+template<> struct fex_gen_config<_XGetScanlinePad> {};
+template<> struct fex_gen_config<_XVIDtoVisual> {};
+template<> struct fex_gen_config<_XSetLastRequestRead> {};
+template<> struct fex_gen_config<_XDeqAsyncHandler> {};
+template<> struct fex_gen_config<_XAllocTemp> {};
+template<> struct fex_gen_config<_XFreeTemp> {};
+template<> struct fex_gen_config<_XUnknownNativeEvent> {};
+template<> struct fex_gen_config<_XIsEventCookie> {};
+
+template<> struct fex_gen_config<XkbFreeClientMap> {};
+
+
+
+// TODO: Vtable support...
+template<> struct fex_gen_config<_XInitImageFuncPtrs> {};
