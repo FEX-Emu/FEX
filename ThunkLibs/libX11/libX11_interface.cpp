@@ -9,10 +9,15 @@
 #include <X11/Xlibint.h>
 #include <X11/XKBlib.h>
 
+#include <type_traits>
+
 template<auto>
 struct fex_gen_config {
     unsigned version = 6;
 };
+
+template<typename>
+struct fex_gen_type {};
 
 template<> struct fex_gen_config<XFetchBytes> {};
 template<> struct fex_gen_config<XLocaleOfIM> {};
@@ -453,7 +458,17 @@ template<> struct fex_gen_config<XListExtensions> {};
 template<> struct fex_gen_config<XSetLocaleModifiers> {};
 template<> struct fex_gen_config<XCreateColormap> {};
 template<> struct fex_gen_config<XCreatePixmapCursor> {};
-template<> struct fex_gen_config<XOpenDisplay> {};
+
+template<> struct fex_gen_type<XID(Display*)> {}; // XDisplay::resource_alloc
+
+// NOTE: only indirect calls to this are allowed
+// NOTE: The char* and int arguments are only present in some configurations, but always enabling them interfers with our internal ABI...
+template<> struct fex_gen_type<void(Display*/*, char*, int*/)> {}; // XDisplay::lock_fns->lock_display
+
+template<> struct fex_gen_type<void(_XDisplay*, XID*, int)> {}; // XDisplay::idlist_alloc
+template<> struct fex_gen_type<std::remove_pointer_t<XIOErrorExitHandler>> {}; // XDisplay::exit_handler
+template<> struct fex_gen_config<XOpenDisplay> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<XChangeProperty> {};
 template<> struct fex_gen_config<XCloseDisplay> {};
 template<> struct fex_gen_config<XCloseIM> {};

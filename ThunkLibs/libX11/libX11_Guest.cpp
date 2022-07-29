@@ -130,9 +130,45 @@ extern "C" {
     }
   }
 
+  Display* XOpenDisplay(const char* name) {
+    auto ret = fexfn_pack_XOpenDisplay(name);
+
+    for (auto& funcptr : ret->event_vec) {
+      if (!funcptr) {
+        continue;
+      }
+      auto caller = (uintptr_t)GetCallerForHostFunction(funcptr);
+      LinkAddressToFunction((uintptr_t)funcptr, (uintptr_t)caller);
+    }
+
+    for (auto& funcptr : ret->wire_vec) {
+      if (!funcptr) {
+        continue;
+      }
+      auto caller = (uintptr_t)GetCallerForHostFunction(funcptr);
+      LinkAddressToFunction((uintptr_t)funcptr, (uintptr_t)caller);
+    }
+
+    {
+      auto caller = (uintptr_t)GetCallerForHostFunction(ret->resource_alloc);
+      LinkAddressToFunction((uintptr_t)ret->resource_alloc, (uintptr_t)caller);
+    }
+
+    {
+      auto caller = (uintptr_t)GetCallerForHostFunction(ret->idlist_alloc);
+      LinkAddressToFunction((uintptr_t)ret->idlist_alloc, (uintptr_t)caller);
+    }
+
+    {
+      auto caller = (uintptr_t)GetCallerForHostFunction(ret->exit_handler);
+      LinkAddressToFunction((uintptr_t)ret->exit_handler, (uintptr_t)caller);
+    }
+
+    return ret;
+  }
+
   void (*_XLockMutex_fn)(LockInfoPtr) = LockMutexFunction;
   void (*_XUnlockMutex_fn)(LockInfoPtr) = UnlockMutexFunction;
-  typedef struct _LockInfoRec *LockInfoPtr;
   LockInfoPtr _Xglobal_lock = (LockInfoPtr)0x4142434445464748ULL;
 }
 
