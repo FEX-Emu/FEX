@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <openssl/sha.h>
 
@@ -93,6 +94,7 @@ struct ThunkedAPIFunction : FunctionParams {
 
 static std::vector<ThunkedFunction> thunks;
 static std::vector<ThunkedAPIFunction> thunked_api;
+static std::unordered_set<const clang::Type*> funcptr_types;
 static std::optional<unsigned> lib_version;
 
 struct NamespaceInfo {
@@ -263,6 +265,20 @@ public:
      * Matches "template<> struct fex_gen_config<LibraryFunc> { ... }"
      */
     bool VisitClassTemplateSpecializationDecl(clang::ClassTemplateSpecializationDecl* decl) try {
+        if (decl->getName() == "fex_gen_type") {
+            const auto& template_args = decl->getTemplateArgs();
+            assert(template_args.size() == 1);
+
+            // NOTE: Function types that are equivalent but use differently
+            //       named types (e.g. GLuint/GLenum) are represented by
+            //       different Type instances. The canonical type they refer
+            //       to is unique, however.
+            auto type = context.getCanonicalType(template_args[0].getAsType()).getTypePtr();
+            funcptr_types.insert(type);
+
+            return true;
+        }
+
         if (decl->getName() != "fex_gen_config") {
             return true;
         }
@@ -323,6 +339,10 @@ public:
                 }
 
                 data.callbacks.emplace(param_idx, callback);
+                if (!callback.is_stub && !callback.is_guest) {
+                    funcptr_types.insert(context.getCanonicalType(funcptr));
+                }
+
                 // TODO: Support for more than one callback is untested
                 assert(data.callbacks.size() == 1);
                 if (funcptr->isVariadic() && !callback.is_stub) {
@@ -367,6 +387,8 @@ public:
             hostcall_data.param_types.push_back(context.getUIntPtrType());
             hostcall_data.is_hostcall = true;
             thunks.push_back(std::move(hostcall_data));
+
+            funcptr_types.insert(context.getCanonicalType(emitted_function->getFunctionType()));
         }
 
         thunks.push_back(std::move(data));
@@ -395,6 +417,7 @@ GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, co
 
     thunks.clear();
     thunked_api.clear();
+    funcptr_types.clear();
     namespaces.clear();
     lib_version = std::nullopt;
 }
@@ -496,8 +519,25 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 }
             }
         }
-
         file << "}\n";
+
+        for (auto type_it = funcptr_types.begin(); type_it != funcptr_types.end(); ++type_it) {
+            auto* type = *type_it;
+            std::string funcptr_signature = clang::QualType { type, 0 }.getAsString();
+
+            auto cb_sha256 = get_sha256("fexcallback_" + funcptr_signature);
+            std::stringstream cb_sha256_ss;
+            for (auto c : cb_sha256) {
+                cb_sha256_ss << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c << ", ";
+            }
+            auto cb_sha256_str = std::move(cb_sha256_ss).str();
+            cb_sha256_str.pop_back();
+            cb_sha256_str.pop_back();
+
+            // Thunk used for guest-side calls to host function pointers
+            auto funcptr_idx = std::distance(funcptr_types.begin(), type_it);
+            file << "  MAKE_CALLBACK_THUNK(callback_" << funcptr_idx << ", " << funcptr_signature << ", \"" << cb_sha256_str << "\");\n";
+        }
     }
 
     if (!output_filenames.function_packs_public.empty()) {
@@ -708,6 +748,20 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                     file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
                 }
                 file << "\", (void(*)(void *))&fexfn_pack_guestcall_" << cb_function_name << "}, // " << libname << ":" << cb_function_name << "\n";
+            }
+        }
+
+        for (auto& type : funcptr_types) {
+            std::string mangled_name = clang::QualType { type, 0 }.getAsString();
+            {
+                auto cb_sha256 = get_sha256("fexcallback_" + mangled_name);
+
+                std::stringstream cb_sha256_ss;
+                for (auto c : cb_sha256) {
+                    cb_sha256_ss << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+                }
+                auto cb_sha256_str = std::move(cb_sha256_ss).str();
+                file << "  {(uint8_t*)\"" << cb_sha256_str << "\", (void(*)(void *))&CallbackUnpack<" << mangled_name << ">::ForIndirectCall},\n";
             }
         }
     }

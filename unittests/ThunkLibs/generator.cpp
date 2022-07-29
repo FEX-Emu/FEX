@@ -280,6 +280,9 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
     std::string result =
         "#include <cstdint>\n"
         "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n"
+        "template<typename>\n"
+        "struct callback_thunk_defined;\n"
+        "#define MAKE_CALLBACK_THUNK(name, sig, hash) template<> struct callback_thunk_defined<sig> {};\n"
         "#define FEX_PACKFN_LINKAGE\n"
         "template<typename Target>\n"
         "Target *MakeHostTrampolineForGuestFunction(uint8_t HostPacker[32], void (*)(uintptr_t, void*), Target*);\n";
@@ -327,6 +330,10 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  void (*CallCallback)(uintptr_t, uintptr_t, void*);\n"
         "  uintptr_t GuestUnpacker;\n"
         "  uintptr_t GuestTarget;\n"
+        "};\n"
+        "template<typename>\n"
+        "struct CallbackUnpack {\n"
+        "  static void ForIndirectCall(void* argsv);\n"
         "};\n";
 
     for (auto& filename : {
@@ -414,6 +421,31 @@ TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
         }));
 }
 
+TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
+    const auto output = run_thunkgen("",
+        "template<typename> struct fex_gen_type {};\n"
+        "template<> struct fex_gen_type<int(char, char)> {};\n");
+
+    // Guest should apply MAKE_CALLBACK_THUNK to this signature
+    CHECK_THAT(output.guest,
+        matches(classTemplateSpecializationDecl(
+            // Should have signature matching input function
+            hasName("callback_thunk_defined"),
+            hasTemplateArgument(0, refersToType(asString("int (char, char)")))
+        )));
+
+    // Host should export the unpacking function for callback arguments
+    CHECK_THAT(output.host,
+        matches(varDecl(
+            hasName("exports"),
+            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack"))).bind("funcptr")))))
+            )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
+                auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
+                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
+            }));
+}
+
 // Parameter is a function pointer
 TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
     const auto output = run_thunkgen("",
@@ -433,12 +465,12 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
             hasDescendant(callExpr(callee(functionDecl(hasName("MakeHostTrampolineForGuestFunction")))))
         )));
 
-    // Host should export the packing function for callback arguments
+    // Host should export the unpacking function for function pointer arguments
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
-            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
-            hasInitializer(hasDescendant(declRefExpr(to(functionDecl(hasName("fexfn_pack_guestcall_funcCBFN"))))))
+            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(4))),
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack")))))))
             )));
 }
 

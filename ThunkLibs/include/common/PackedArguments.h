@@ -102,7 +102,7 @@ struct PackedArguments<void, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A
 template<typename Result, typename... Args>
 void Invoke(Result(*func)(Args...), PackedArguments<Result, Args...>& args) {
     constexpr auto NumArgs = sizeof...(Args);
-    static_assert(NumArgs <= 17 || NumArgs == 23);
+    static_assert(NumArgs <= 18 || NumArgs == 24);
     if constexpr (std::is_void_v<Result>) {
         if constexpr (NumArgs == 0) {
             func();
@@ -140,8 +140,10 @@ void Invoke(Result(*func)(Args...), PackedArguments<Result, Args...>& args) {
             func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15);
         } else if constexpr (NumArgs == 17) {
             func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16);
-        } else if constexpr (NumArgs == 23) {
-            func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16, args.a17, args.a18, args.a19, args.a20, args.a21, args.a22);
+        } else if constexpr (NumArgs == 18) {
+            func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16, args.a17);
+        } else if constexpr (NumArgs == 24) {
+            func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16, args.a17, args.a18, args.a19, args.a20, args.a21, args.a22, args.a23);
         }
     } else {
         if constexpr (NumArgs == 0) {
@@ -180,8 +182,10 @@ void Invoke(Result(*func)(Args...), PackedArguments<Result, Args...>& args) {
             args.rv = func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15);
         } else if constexpr (NumArgs == 17) {
             args.rv = func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16);
-        } else if constexpr (NumArgs == 23) {
-            args.rv = func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16, args.a17, args.a18, args.a19, args.a20, args.a21, args.a22);
+        } else if constexpr (NumArgs == 18) {
+            args.rv = func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16, args.a17);
+        } else if constexpr (NumArgs == 24) {
+            args.rv = func(args.a0, args.a1, args.a2, args.a3, args.a4, args.a5, args.a6, args.a7, args.a8, args.a9, args.a10, args.a11, args.a12, args.a13, args.a14, args.a15, args.a16, args.a17, args.a18, args.a19, args.a20, args.a21, args.a22, args.a23);
         }
     }
 }

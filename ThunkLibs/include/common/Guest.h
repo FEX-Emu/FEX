@@ -4,10 +4,19 @@
 
 #include "PackedArguments.h"
 
+template<typename signature>
+const int (*fexthunks_invoke_callback)(void*);
+
 #ifndef _M_ARM_64
 #define MAKE_THUNK(lib, name, hash) \
   extern "C" int fexthunks_##lib##_##name(void *args); \
   asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
+
+#define MAKE_CALLBACK_THUNK(name, signature, hash) \
+  extern "C" int fexthunks_##name(void *args); \
+  asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash ); \
+  template<> inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
+
 #else
 // We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
 // The name of that function serves as an error message if this library somehow gets loaded at runtime.
@@ -17,6 +26,9 @@ extern "C" void BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK();
     BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK(); \
     return 0; \
   }
+#define MAKE_CALLBACK_THUNK(name, signature, hash) \
+  extern "C" int fexthunks_##name(void *args); \
+  template<> inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
 #endif
 
 // Generated fexfn_pack_ symbols should be hidden by default, but clang does
@@ -76,7 +88,7 @@ inline bool IsLibLoaded(const char *libname) {
 // Other than reading the thunk address from `r11`, this is equivalent to the
 // fexfn_pack_* functions generated for global API functions.
 template<auto Thunk, typename Result, typename... Args>
-inline Result CallHostThunkFromRuntimePointer(Args... args) {
+inline Result CallHostFunction(Args... args) {
 #ifndef _M_ARM_64
     uintptr_t host_addr;
     asm volatile("mov %%r11, %0" : "=r" (host_addr));
@@ -97,13 +109,12 @@ inline Result CallHostThunkFromRuntimePointer(Args... args) {
     }
 }
 
-// Convenience wrapper that returns the function pointer to a
-// CallHostThunkFromRuntimePointer instantiation matching the function
-// signature of `host_func`
-template<auto Thunk, typename Result, typename...Args>
-static auto GetCallerForHostThunkFromRuntimePointer(Result (*host_func)(Args...))
+// Convenience wrapper that returns the function pointer to a CallHostFunction
+// instantiation matching the function signature of `host_func`
+template<typename Result, typename...Args>
+static auto GetCallerForHostFunction(Result (*host_func)(Args...))
     -> Result(*)(Args...) {
-  return CallHostThunkFromRuntimePointer<Thunk, Result, Args...>;
+  return CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
 }
 
 template<typename Target>

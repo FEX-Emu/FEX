@@ -7,6 +7,8 @@ $end_info$
 #pragma once
 #include <stdint.h>
 
+#include "PackedArguments.h"
+
 template<typename Fn>
 struct function_traits;
 template<typename Result, typename Arg>
@@ -76,3 +78,61 @@ struct GuestcallInfo {
 #define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
   asm volatile("mov %0, x11" : "=r" (target_variable))
 #endif
+
+template<typename>
+struct CallbackUnpack;
+
+template<typename Result, typename... Args>
+struct CallbackUnpack<Result(Args...)> {
+  static void ForIndirectCall(void* argsv) {
+    auto args = reinterpret_cast<PackedArguments<Result, Args..., uintptr_t>*>(argsv);
+    constexpr auto CBIndex = sizeof...(Args);
+    uintptr_t cb;
+    static_assert(CBIndex <= 17 || CBIndex == 23);
+    if constexpr(CBIndex == 0) {
+      cb = args->a0;
+    } else if constexpr(CBIndex == 1) {
+      cb = args->a1;
+    } else if constexpr(CBIndex == 2) {
+      cb = args->a2;
+    } else if constexpr(CBIndex == 3) {
+      cb = args->a3;
+    } else if constexpr(CBIndex == 4) {
+      cb = args->a4;
+    } else if constexpr(CBIndex == 5) {
+      cb = args->a5;
+    } else if constexpr(CBIndex == 6) {
+      cb = args->a6;
+    } else if constexpr(CBIndex == 7) {
+      cb = args->a7;
+    } else if constexpr(CBIndex == 8) {
+      cb = args->a8;
+    } else if constexpr(CBIndex == 9) {
+      cb = args->a9;
+    } else if constexpr(CBIndex == 10) {
+      cb = args->a10;
+    } else if constexpr(CBIndex == 11) {
+      cb = args->a11;
+    } else if constexpr(CBIndex == 12) {
+      cb = args->a12;
+    } else if constexpr(CBIndex == 13) {
+      cb = args->a13;
+    } else if constexpr(CBIndex == 14) {
+      cb = args->a14;
+    } else if constexpr(CBIndex == 15) {
+      cb = args->a15;
+    } else if constexpr(CBIndex == 16) {
+      cb = args->a16;
+    } else if constexpr(CBIndex == 17) {
+      cb = args->a17;
+    } else if constexpr(CBIndex == 23) {
+      cb = args->a23;
+    }
+    auto callback = reinterpret_cast<Result(*)(Args..., uintptr_t)>(cb);
+    Invoke(callback, *args);
+  }
+};
+
+template<typename Result, typename... Args>
+struct CallbackUnpack<Result(*)(Args...)> : CallbackUnpack<Result(Args...)> {
+};
