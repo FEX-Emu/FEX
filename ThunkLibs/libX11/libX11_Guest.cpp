@@ -9,6 +9,7 @@ $end_info$
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
+#include <X11/Xproto.h>
 #include <X11/XKBlib.h>
 
 // Include Xlibint.h and undefine some of its macros that clash with the standard library
@@ -165,6 +166,31 @@ extern "C" {
     }
 
     return ret;
+  }
+
+  Status _XReply(Display* display, xReply* reply, int extra, Bool discard) {
+    for(auto handler = display->async_handlers; handler; handler = handler->next) {
+      // Make host-callable and overwrite in-place
+      // NOTE: This data seems to be stack-allocated specifically for XReply usually, so it's *probably* safe to overwrite
+      handler->handler = AllocateHostTrampolineForGuestFunction(handler->handler);
+    }
+    return fexfn_pack__XReply(display, reply, extra, discard);
+  }
+
+  static int _XInitDisplayLock(Display* display) {
+    {
+      auto caller = (uintptr_t)GetCallerForHostFunction(display->lock_fns->lock_display);
+      LinkAddressToFunction((uintptr_t)display->lock_fns->lock_display, (uintptr_t)caller);
+    }
+    {
+      auto caller = (uintptr_t)GetCallerForHostFunction(display->lock_fns->unlock_display);
+      LinkAddressToFunction((uintptr_t)display->lock_fns->unlock_display, (uintptr_t)caller);
+    }
+    return 0;
+  }
+
+  Status XInitThreads() {
+    return fexfn_pack_XInitThreadsInternal((uintptr_t)_XInitDisplayLock, (uintptr_t)CallbackUnpack<decltype(_XInitDisplayLock)>::Unpack);
   }
 
   void (*_XLockMutex_fn)(LockInfoPtr) = LockMutexFunction;

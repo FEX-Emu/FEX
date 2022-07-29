@@ -9,8 +9,6 @@ $end_info$
 #include <stdio.h>
 
 #include <X11/Xlib.h>
-
-// Include Xlibint.h and undefine some of its macros that clash with the standard library
 #include <X11/Xlibint.h>
 #undef min
 #undef max
@@ -18,10 +16,13 @@ $end_info$
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
+#include <X11/Xproto.h>
+
 #include <X11/extensions/XKBstr.h>
 
 #include "common/Host.h"
 #include <dlfcn.h>
+#include <utility>
 
 #include "ldr_ptrs.inl"
 
@@ -75,6 +76,10 @@ char* fexfn_impl_libX11_XGetIMValues_internal(XIM a_0, size_t count, void **list
     }
 }
 
+Status fexfn_impl_libX11_XInitThreadsInternal(uintptr_t, uintptr_t);
+
+Status fexfn_impl_libX11__XReply(Display*, xReply*, int, Bool);
+
 #include "function_unpacks.inl"
 
 static ExportEntry exports[] = {
@@ -83,5 +88,29 @@ static ExportEntry exports[] = {
 };
 
 #include "ldr.inl"
+
+static int (*ACTUAL_XInitDisplayLock_fn)(Display*) = nullptr;
+static int (*INTERNAL_XInitDisplayLock_fn)(Display*) = nullptr;
+
+static int _XInitDisplayLock(Display* display) {
+    auto ret = ACTUAL_XInitDisplayLock_fn(display);
+    INTERNAL_XInitDisplayLock_fn(display);
+    return ret;
+}
+
+Status fexfn_impl_libX11_XInitThreadsInternal(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+    auto ret = fexldr_ptr_libX11_XInitThreads();
+    auto _XInitDisplayLock_fn = (int(**)(Display*))dlsym(fexldr_ptr_libX11_so, "_XInitDisplayLock_fn");
+    ACTUAL_XInitDisplayLock_fn = std::exchange(*_XInitDisplayLock_fn, _XInitDisplayLock);
+    MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &INTERNAL_XInitDisplayLock_fn);
+    return ret;
+}
+
+Status fexfn_impl_libX11__XReply(Display* display, xReply* reply, int extra, Bool discard) {
+    for(auto handler = display->async_handlers; handler; handler = handler->next) {
+        FinalizeHostTrampolineForGuestFunction(handler->handler);
+    }
+    return fexldr_ptr_libX11__XReply(display, reply, extra, discard);
+}
 
 EXPORTS(libX11)

@@ -6,6 +6,8 @@
 
 #include <X11/ImUtil.h>
 
+#include <X11/extensions/Xext.h>
+
 #include <X11/Xlibint.h>
 #include <X11/XKBlib.h>
 
@@ -492,7 +494,12 @@ template<> struct fex_gen_config<XGetWindowProperty> {};
 template<> struct fex_gen_config<XGrabPointer> {};
 template<> struct fex_gen_config<XGrabServer> {};
 template<> struct fex_gen_config<XIconifyWindow> {};
-template<> struct fex_gen_config<XInitThreads> {};
+
+// Sets up vtables for various objects
+Status XInitThreadsInternal(uintptr_t OnXInitDisplayLock, uintptr_t OnXInitDisplayLockPacker);
+template<> struct fex_gen_config<XInitThreads> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<XInitThreadsInternal> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<XLookupString> {};
 template<> struct fex_gen_config<XMapRaised> {};
 template<> struct fex_gen_config<XMoveResizeWindow> {};
@@ -582,6 +589,10 @@ template<> struct fex_gen_config<_XReadPad> {};
 template<> struct fex_gen_config<_XData32> {};
 template<> struct fex_gen_config<_XEatData> {};
 template<> struct fex_gen_config<_XEatDataWords> {};
+
+template<> struct fex_gen_type<Bool(Display*, xReply*, char*, int, XPointer)> {}; // XDisplay::async_handlers->handler
+template<> struct fex_gen_config<_XReply> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<_XGetAsyncReply> {};
 template<> struct fex_gen_config<_XSend> {};
 template<> struct fex_gen_config<_XFlush> {};
