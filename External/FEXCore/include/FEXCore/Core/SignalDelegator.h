@@ -83,8 +83,16 @@ namespace Core {
     // 64 is used internally by Valgrind
     constexpr static size_t SIGNAL_FOR_PAUSE {63};
 
+    static void DeferThreadHostSignals();
+    static void DeliverThreadHostDeferredSignals();
+
+    #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    static void AcquireHostDeferredSignals();
+    static void ReleaseHostDeferredSignals();
+    #endif
+
   protected:
-    FEXCore::Core::InternalThreadState *GetTLSThread();
+    static FEXCore::Core::InternalThreadState *GetTLSThread();
     virtual void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) = 0;
 
     /**

@@ -101,8 +101,6 @@ protected:
 
   static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame);
 
-  static uint64_t GetCompileBlockPtr();
-
   using AsmDispatch = void(*)(FEXCore::Core::CpuStateFrame *Frame);
   using JITCallback = void(*)(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP);
 

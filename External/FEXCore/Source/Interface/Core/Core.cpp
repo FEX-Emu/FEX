@@ -1000,6 +1000,8 @@ namespace FEXCore::Context {
   }
 
   void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+    FHU::ScopedSignalMask sm;
+    
     auto NewBlock = CompileBlock(Frame, GuestRIP);
 
     if (NewBlock == 0) {
@@ -1189,13 +1191,13 @@ namespace FEXCore::Context {
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    FHU::ScopedSignalCheckWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
     
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    FHU::ScopedSignalCheckWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
 
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
     CallAfter(Start, Length);
@@ -1312,6 +1314,7 @@ namespace FEXCore::Context {
   }
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
+    FHU::ScopedSignalMask sm;
     uint64_t Result{};
     Result = Handler->HandleSyscall(Frame, Args);
     return Result;

@@ -169,7 +169,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
     ret();
   }
 
-  constexpr bool SignalSafeCompile = true;
+  constexpr bool SignalSafeCompile = false;
   // Block creation
   {
     L(NoBlock);
@@ -203,10 +203,9 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
     // {rdi, rsi, rdx}
     mov(rdi, reinterpret_cast<uint64_t>(CTX));
     mov(rsi, STATE);
-    mov(rax, GetCompileBlockPtr());
-
-    call(rax);
-
+    
+    call(qword STATE_PTR(CpuStateFrame, Pointers.Common.TranslateGuestCode));
+    
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location

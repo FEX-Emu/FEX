@@ -161,7 +161,7 @@ class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
   // These are no-ops implementations of the SyscallHandler API
   std::shared_mutex StubMutex;
   FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) override {
-    return {0, 0, FHU::ScopedSignalMaskWithSharedLock {StubMutex}};
+    return {0, 0, FHU::ScopedSignalCheckWithSharedLock {StubMutex}};
   }
 };
 

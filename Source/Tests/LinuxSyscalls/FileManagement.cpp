@@ -414,7 +414,7 @@ uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[m
   }
 
   if (fd != -1) {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
+    FHU::ScopedSignalCheckWithLockGuard lk(FDLock);
     FDToNameMap.insert_or_assign(fd, SelfPath);
   }
 
@@ -423,7 +423,7 @@ uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[m
 
 uint64_t FileManager::Close(int fd) {
   {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
+    FHU::ScopedSignalCheckWithLockGuard lk(FDLock);
     FDToNameMap.erase(fd);
   }
   return ::close(fd);
@@ -437,7 +437,7 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
   if (!(flags & CLOSE_RANGE_CLOEXEC)) {
     // If the flag was set then it doesn't actually close the FDs
     // Just sets the flag on a range
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
+    FHU::ScopedSignalCheckWithLockGuard lk(FDLock);
     auto Lower = FDToNameMap.lower_bound(first);
     auto Upper = FDToNameMap.upper_bound(last);
     // We remove from first to last inclusive
@@ -640,7 +640,7 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
   }
 
   if (fd != -1) {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
+    FHU::ScopedSignalCheckWithLockGuard lk(FDLock);
     FDToNameMap.insert_or_assign(fd, SelfPath);
   }
 
@@ -665,7 +665,7 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
   }
 
   if (fd != -1) {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
+    FHU::ScopedSignalCheckWithLockGuard lk(FDLock);
     FDToNameMap.insert_or_assign(fd, SelfPath);
   }
 
@@ -738,7 +738,7 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
 }
 
 std::string *FileManager::FindFDName(int fd) {
-  FHU::ScopedSignalMaskWithMutex lk(FDLock);
+  FHU::ScopedSignalCheckWithLockGuard lk(FDLock);
   auto it = FDToNameMap.find(fd);
   if (it == FDToNameMap.end()) {
     return nullptr;

@@ -57,7 +57,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
 
   Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
   Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
-  Literal l_CompileBlock {GetCompileBlockPtr()};
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -178,7 +177,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ret();
   }
 
-  constexpr bool SignalSafeCompile = true;
+  constexpr bool SignalSafeCompile = false;
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
@@ -263,7 +262,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
 
     ldr(x0, &l_CTX);
     mov(x1, STATE);
-    ldr(x3, &l_CompileBlock);
+    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Common.TranslateGuestCode));
 
     // X2 contains our guest RIP
     blr(x3); // { CTX, Frame, RIP}
@@ -486,7 +485,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
 
   place(&l_CTX);
   place(&l_Sleep);
-  place(&l_CompileBlock);
 
 
   FinalizeCode();

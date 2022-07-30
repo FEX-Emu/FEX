@@ -13,7 +13,7 @@
 #include <queue>
 
 namespace FEX::AOT {
-void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section) {
+void AOTGenSection(FEXCore::Context::Context *CTX, const ELFCodeLoader2::LoadedSection &Section) {
   // Make sure this section is executable and big enough
   if (!Section.Executable || Section.Size < 16)
     return;

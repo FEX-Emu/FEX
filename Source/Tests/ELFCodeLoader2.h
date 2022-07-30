@@ -206,7 +206,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     bool Executable;
   };
 
-  std::vector<LoadedSection> Sections;
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
@@ -297,8 +296,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
   }
 
-  void FreeSections() {
-    Sections.clear();
+  std::vector<LoadedSection> PullSections() {
+    return std::move(Sections);
   }
 
   virtual uint64_t StackSize() const override { return STACK_SIZE; }
@@ -652,4 +651,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uint64_t BaseOffset{};
   FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
 
+  private:
+    std::vector<LoadedSection> Sections;
 };

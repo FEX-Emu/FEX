@@ -27,7 +27,6 @@ $end_info$
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/EnumUtils.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
@@ -372,6 +371,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
 
 static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+  FHU::ScopedSignalMask sm;
+
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
@@ -484,7 +485,13 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     }
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.SyscallHandlerFunc = reinterpret_cast<uintptr_t>(&FEXCore::Context::HandleSyscall);
+    
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockJit);
+      Common.TranslateGuestCode = PMF.GetConvertedPointer();
+    }
+
     Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::Context::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
 
 

@@ -509,8 +509,8 @@ namespace FEX::HLE {
       auto Thread = Frame->Thread;
       Thread->StatusCode = status;
       FEXCore::Context::Stop(Thread->CTX);
-      // This will never be reached
-      std::terminate();
+      // Host Signals are deferred here, thread will get stopped on end of syscall processing
+      return -1;
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(prlimit_64, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

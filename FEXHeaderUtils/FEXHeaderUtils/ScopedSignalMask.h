@@ -9,8 +9,22 @@
 #include <signal.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <FEXCore/Core/SignalDelegator.h>
 
 namespace FHU {
+
+  struct ScopedSignalMask {
+    ScopedSignalMask() { FEXCore::SignalDelegator::DeferThreadHostSignals(); }
+    ~ScopedSignalMask() { FEXCore::SignalDelegator::DeliverThreadHostDeferredSignals(); }
+  };
+
+  struct ScopedSignalCheck {
+    #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+      ScopedSignalCheck() { FEXCore::SignalDelegator::AcquireHostDeferredSignals(); }
+      ~ScopedSignalCheck() { FEXCore::SignalDelegator::ReleaseHostDeferredSignals(); }
+    #endif
+  };
+
   /**
    * @brief A drop-in replacement for std::lock_guard that masks POSIX signals while the mutex is locked
    *
@@ -30,44 +44,12 @@ namespace FHU {
    * 1) Unlock Mutex
    * 2) Unmask signals
    */
-  template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
-  class ScopedSignalMaskWithMutexBase final {
-    public:
+  template<typename T>
+  struct ScopedSignalCheckWith: ScopedSignalCheck, T { using T::T; };
 
-      ScopedSignalMaskWithMutexBase(MutexType &_Mutex, uint64_t Mask = ~0ULL)
-        : Mutex {&_Mutex} {
-        // Mask all signals, storing the original incoming mask
-        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &OriginalMask, sizeof(OriginalMask));
+  using ScopedSignalCheckWithLockGuard = ScopedSignalCheckWith<std::lock_guard<std::mutex>>;
 
-        // Lock the mutex
-        (Mutex->*lock_fn)();
-      }
-
-      // No copy or assignment possible
-      ScopedSignalMaskWithMutexBase(const ScopedSignalMaskWithMutexBase&) = delete;
-      ScopedSignalMaskWithMutexBase& operator=(ScopedSignalMaskWithMutexBase&) = delete;
-
-      // Only move
-      ScopedSignalMaskWithMutexBase(ScopedSignalMaskWithMutexBase &&rhs)
-       : OriginalMask {rhs.OriginalMask}, Mutex {rhs.Mutex} {
-        rhs.Mutex = nullptr;
-      }
-
-      ~ScopedSignalMaskWithMutexBase() {
-        if (Mutex != nullptr) {
-          // Unlock the mutex
-          (Mutex->*unlock_fn)();
-
-          // Unmask back to the original signal mask
-          ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &OriginalMask, nullptr, sizeof(OriginalMask));
-        }
-      }
-    private:
-      uint64_t OriginalMask{};
-      MutexType *Mutex;
-  };
-
-  using ScopedSignalMaskWithMutex = ScopedSignalMaskWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
-  using ScopedSignalMaskWithSharedLock = ScopedSignalMaskWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
-  using ScopedSignalMaskWithUniqueLock = ScopedSignalMaskWithMutexBase<std::shared_mutex, &std::shared_mutex::lock, &std::shared_mutex::unlock>;
+  using ScopedSignalCheckWithUniqueLockGuard = ScopedSignalCheckWith<std::lock_guard<std::shared_mutex>>;
+  using ScopedSignalCheckWithUniqueLock = ScopedSignalCheckWith<std::unique_lock<std::shared_mutex>>;
+  using ScopedSignalCheckWithSharedLock = ScopedSignalCheckWith<std::unique_lock<std::shared_mutex>>;
 }

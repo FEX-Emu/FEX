@@ -27,6 +27,8 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include <FEXHeaderUtils/ScopedSignalMask.h>
+
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -301,6 +303,8 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
 static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+  FHU::ScopedSignalMask sm;
+  
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];
 
@@ -370,7 +374,13 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     }
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
-    Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
+    Common.SyscallHandlerFunc = reinterpret_cast<uintptr_t>(&FEXCore::Context::HandleSyscall);
+
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockJit);
+      Common.TranslateGuestCode = PMF.GetConvertedPointer();
+    }
+
     Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::Context::ThreadExitFunctionLink<X86JITCore_ExitFunctionLink>);
 
     // Fill in the fallback handlers

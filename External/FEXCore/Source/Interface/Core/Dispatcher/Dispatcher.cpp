@@ -818,16 +818,4 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
   return false;
 }
 
-uint64_t Dispatcher::GetCompileBlockPtr() {
-  using ClassPtrType = void (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
-  union PtrCast {
-    ClassPtrType ClassPtr;
-    uintptr_t Data;
-  };
-
-  PtrCast CompileBlockPtr;
-  CompileBlockPtr.ClassPtr = &FEXCore::Context::Context::CompileBlockJit;
-  return CompileBlockPtr.Data;
-}
-
 }

@@ -65,7 +65,7 @@ namespace FEX::HLE::x32 {
     return Result;
   }
 #endif
-  auto fcntlHandler = [](FEXCore::Core::CpuStateFrame *Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
+  auto fcntlHandler = +[](FEXCore::Core::CpuStateFrame *Frame, int fd, int cmd, uint64_t arg) -> uint64_t {
     // fcntl64 struct directly matches the 64bit fcntl op
     // cmd just needs to be fixed up
     // These are redefined to be their non-64bit tagged value on x86-64
