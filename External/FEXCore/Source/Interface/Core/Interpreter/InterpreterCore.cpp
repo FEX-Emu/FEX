@@ -61,7 +61,11 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 
 #ifdef _M_ARM_64
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
+    // SIGBUS logic might trigger sigsegv
+    SignalDelegator::DeliverThreadHostDeferredSignals();
+    auto rv = FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
+    SignalDelegator::DeferThreadHostSignals();
+    return rv;
   }, true);
 #endif
 }

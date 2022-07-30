@@ -523,7 +523,10 @@ void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
       return false;
     }
 
-    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Thread->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
+    SignalDelegator::DeliverThreadHostDeferredSignals();
+    auto rv = FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
+    SignalDelegator::DeferThreadHostSignals();
+    return rv;
   }, true);
 }
 
