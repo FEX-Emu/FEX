@@ -18,6 +18,8 @@
 
 #include "InterpreterOps.h"
 
+#include "Utils/MemberFunctionToPointer.h"
+
 #if defined(_M_X86_64)
   #include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #elif defined(_M_ARM_64)
@@ -45,6 +47,12 @@ InterpreterCore::InterpreterCore(Dispatcher *Dispatcher, FEXCore::Core::Internal
   auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
 
   Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR);
+
+  auto &Common = Thread->CurrentFrame->Pointers.Common;
+  {
+    FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockJit);
+    Common.TranslateGuestCode = PMF.GetConvertedPointer();
+  }
 
   ClearCache();
 }
