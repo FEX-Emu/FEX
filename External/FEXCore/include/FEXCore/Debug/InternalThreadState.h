@@ -11,6 +11,7 @@
 #include <map>
 #include <unordered_map>
 #include <shared_mutex>
+#include <csetjmp>
 
 namespace FEXCore {
   class LookupCache;
@@ -116,6 +117,8 @@ namespace FEXCore::Core {
     std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
     
+    jmp_buf ExitJump;
+
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 
   };

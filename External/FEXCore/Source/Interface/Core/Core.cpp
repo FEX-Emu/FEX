@@ -417,19 +417,12 @@ namespace FEXCore::Context {
     {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
       for (auto &Thread : Threads) {
-        if (IgnoreCurrentThread &&
-            Thread->ThreadManager.TID == tid) {
-          // If we are callign stop from the current thread then we can ignore sending signals to this thread
-          // This means that this thread is already gone
-          continue;
-        }
-        else if (Thread->ThreadManager.TID == tid) {
+        if (Thread->ThreadManager.TID == tid) {
           // We need to save the current thread for last to ensure all threads receive their stop signals
           CurrentThread = Thread;
           continue;
-        }
-        if (Thread->RunningEvents.Running.load()) {
-          StopThread(Thread);
+        } else if (Thread->RunningEvents.Running.load()) {
+          StopOtherThread(Thread);
         }
 
         // If the thread is waiting to start but immediately killed then there can be a hang
@@ -442,12 +435,31 @@ namespace FEXCore::Context {
     }
 
     // Stop the current thread now if we aren't ignoring it
-    if (CurrentThread) {
-      StopThread(CurrentThread);
+    if (!IgnoreCurrentThread) {
+      Context::ExitCurrentThread(CurrentThread);
     }
   }
 
-  void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
+  void Context::ExitCurrentThread(FEXCore::Core::InternalThreadState *Thread) {
+    LOGMAN_THROW_A_FMT(Thread != nullptr, "StopOtherThread Thread == nullptr");
+    [[maybe_unused]] pid_t tid = FHU::Syscalls::gettid();
+    LOGMAN_THROW_A_FMT(Thread->ThreadManager.TID == tid, "ExitCurrentThread used not on self");
+
+    // Mark Current Thread as not running
+    if (Thread->RunningEvents.Running.exchange(false)) {
+      // Defer Host Signals during teardown
+      SignalDelegator::DeferThreadHostSignals();
+    }
+    
+    // Exit thread loop
+    longjmp(Thread->ExitJump, true);
+  }
+
+  void Context::StopOtherThread(FEXCore::Core::InternalThreadState *Thread) {
+    LOGMAN_THROW_A_FMT(Thread != nullptr, "StopOtherThread Thread == nullptr");
+    [[maybe_unused]] pid_t tid = FHU::Syscalls::gettid();
+    LOGMAN_THROW_A_FMT(Thread->ThreadManager.TID != tid, "StopOtherThread used on self");
+
     if (Thread->RunningEvents.Running.exchange(false)) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Stop);
       FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
@@ -1115,28 +1127,34 @@ namespace FEXCore::Context {
     Core::ThreadData.Thread = Thread;
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
-    InitializeThreadTLSData(Thread);
+    int ThreadStopped = setjmp(Thread->ExitJump);
+    if (!ThreadStopped) {
+      InitializeThreadTLSData(Thread);
 
-    ++IdleWaitRefCount;
+      ++IdleWaitRefCount;
 
-    // Now notify the thread that we are initialized
-    Thread->ThreadWaiting.NotifyAll();
+      // Now notify the thread that we are initialized
+      Thread->ThreadWaiting.NotifyAll();
 
-    if (Thread != Thread->CTX->ParentThread || StartPaused || Thread->StartPaused) {
-      // Parent thread doesn't need to wait to run
-      Thread->StartRunning.Wait();
+      if (Thread != Thread->CTX->ParentThread || StartPaused || Thread->StartPaused) {
+        // Parent thread doesn't need to wait to run
+        Thread->StartRunning.Wait();
+      }
+
+      if (!Thread->RunningEvents.EarlyExit.load()) {
+        Thread->RunningEvents.WaitingToStart = false;
+
+        Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
+
+        Thread->RunningEvents.Running = true;
+        SignalDelegator::DeliverThreadHostDeferredSignals();
+
+        Thread->CTX->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
+      }
     }
 
-    if (!Thread->RunningEvents.EarlyExit.load()) {
-      Thread->RunningEvents.WaitingToStart = false;
-
-      Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
-
-      Thread->RunningEvents.Running = true;
-
-      Thread->CTX->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
-
-      Thread->RunningEvents.Running = false;
+    if (Thread->RunningEvents.Running.exchange(false)) {
+      SignalDelegator::DeferThreadHostSignals();
     }
 
     {

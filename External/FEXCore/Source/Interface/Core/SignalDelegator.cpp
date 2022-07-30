@@ -1,7 +1,7 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
-
+#include <FEXHeaderUtils/ScopedSignalMask.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -9,8 +9,8 @@
 
 #include "FEXCore/Debug/InternalThreadState.h"
 
-#define DEBUG_TRACE do { } while (false)
-//#define DEBUG_TRACE do { char str[512]; write(1, str, sprintf(str,"%*s%d %s\n", Previous, "", Previous, __func__)); } while (false)
+#define HOST_DEFER_TRACE do { } while (false)
+//#define HOST_DEFER_TRACE do { char str[512]; write(1, str, sprintf(str,"%*s%d %s\n", Previous, "", Previous, __func__)); } while (false)
 
 namespace FEXCore {
   struct ThreadState {
@@ -102,14 +102,14 @@ namespace FEXCore {
     [[maybe_unused]] auto Previous = ThreadData.HostDeferredSignalEnabled.fetch_add(1, std::memory_order_relaxed);
     LOGMAN_THROW_A_FMT(Previous != UINT16_MAX - 1, "Signal Host Deferring Overflow");
 
-    DEBUG_TRACE;
+    HOST_DEFER_TRACE;
   }
 
   void SignalDelegator::DeliverThreadHostDeferredSignals() {
     [[maybe_unused]] auto Previous = ThreadData.HostDeferredSignalEnabled.fetch_sub(1, std::memory_order_relaxed);
     LOGMAN_THROW_A_FMT(Previous != 0, "Signal Host Deferring Underflow");
 
-    DEBUG_TRACE;
+    HOST_DEFER_TRACE;
 
     if (Previous == 1 && ThreadData.HostDeferredSignalPending) {
       // deliver Pending signal
@@ -117,6 +117,7 @@ namespace FEXCore {
     }
   }
 
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   //FEX_TODO("Enforce that Host Deferred Signals don't get delivered between Acquire/Release")
   void SignalDelegator::AcquireHostDeferredSignals() {
     LOGMAN_THROW_A_FMT(ThreadData.HostDeferredSignalEnabled, "Host Signals need to be Deferred before AcquireHostDeferredSignals");
@@ -125,14 +126,19 @@ namespace FEXCore {
   void SignalDelegator::ReleaseHostDeferredSignals() {
     LOGMAN_THROW_A_FMT(ThreadData.HostDeferredSignalEnabled, "Host Signals need to be Delivered after ReleaseHostDeferredSignals");
   }
+#endif
 
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
     auto Thread = GetTLSThread();
 
     if (!ThreadData.HostDeferredSignalEnabled) {
-      LOGMAN_THROW_A_FMT(ThreadData.HostDeferredSignalPending, "Host Deferred signal tearing, delivering {} while pending {}", Signal, ThreadData.HostDeferredSignalPending);
+      LOGMAN_THROW_A_FMT(!ThreadData.HostDeferredSignalPending, "Host Deferred signal tearing, delivering {} while pending {}", Signal, ThreadData.HostDeferredSignalPending);
       DoHandleSignal: {
+        // No signals must be delivered in this scope - should be guaranteed.
+        // FEX_TODO("Enforce no signal delivery in this scope")
+        FHU::ScopedSignalMask sm;
+
         HostSignalHandler &Handler = HostHandlers[Signal];
 
         if (!Thread) {

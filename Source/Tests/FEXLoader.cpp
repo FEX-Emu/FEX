@@ -195,332 +195,300 @@ bool IsInterpreterInstalled() {
          std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64", ec));
 }
 
-namespace {
-  static FEXCore::Context::Context *CTX = nullptr;
-  static FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
-  static std::vector<ELFCodeLoader2::LoadedSection> Sections;
-
-  static std::unique_ptr<FEX::HLE::SyscallHandler> SyscallHandler;
-  static std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation;
-  static std::string ProgramName;
-
-  static FEXCore::Allocator::PtrCache *Base48Bit;
-}
-
 int main(int argc, char **argv, char **const envp) {
-  // Initialize
-  {
-    FHU::ScopedSignalMask sm;
-    const bool IsInterpreter = RanAsInterpreter(argv[0]);
+  FHU::ScopedSignalMask sm;
 
-    ExecutedWithFD = getauxval(AT_EXECFD) != 0;
+  const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
-    LogMan::Throw::InstallHandler(AssertHandler);
-    LogMan::Msg::InstallHandler(MsgHandler);
+  ExecutedWithFD = getauxval(AT_EXECFD) != 0;
 
-    auto [Program, _ProgramName] = FEX::Config::LoadConfig(
-      IsInterpreter,
-      true,
-      argc, argv, envp
-    );
+  LogMan::Throw::InstallHandler(AssertHandler);
+  LogMan::Msg::InstallHandler(MsgHandler);
 
-    ProgramName = std::move(_ProgramName);
+  auto Program = FEX::Config::LoadConfig(
+    IsInterpreter,
+    true,
+    argc, argv, envp
+  );
 
-    if (Program.empty()) {
-      // Early exit if we weren't passed an argument
-      return 0;
-    }
-
-    auto Args = FEX::ArgLoader::Get();
-    auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
-
-    // Reload the meta layer
-    FEXCore::Config::ReloadMetaLayer();
-    FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
-    FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
-
-    // These need config to be initialized
-    FEX_CONFIG_OPT(SilentLog, SILENTLOG);
-    FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
-    FEX_CONFIG_OPT(LDPath, ROOTFS);
-    FEX_CONFIG_OPT(Environment, ENV);
-    FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
-    FEX_CONFIG_OPT(StallProcess, STALLPROCESS);
-    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
-
-    // Early check for process stall
-    // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance
-    if (StallProcess) {
-      while (1) {
-        // Stall this process out forever
-        select(0, nullptr, nullptr, nullptr, nullptr);
-      }
-    }
-
-    // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
-    if (!FEXServerClient::SetupClient(argv[0])) {
-      LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
-      return -1;
-    }
-
-    ::SilentLog = SilentLog();
-
-    if (::SilentLog) {
-      LogMan::Throw::UnInstallHandlers();
-      LogMan::Msg::UnInstallHandlers();
-    }
-    else {
-      auto LogFile = OutputLog();
-      // If stderr or stdout then we need to dup the FD
-      // In some cases some applications will close stderr and stdout
-      // then redirect the FD to either a log OR some cases just not use
-      // stderr/stdout and the FD will be reused for regular FD ops.
-      //
-      // We want to maintain the original output location otherwise we
-      // can run in to problems of writing to some file
-      if (LogFile == "stderr") {
-        OutputFD = dup(STDERR_FILENO);
-      }
-      else if (LogFile == "stdout") {
-        OutputFD = dup(STDOUT_FILENO);
-      }
-      else if (LogFile == "server") {
-        LogMan::Throw::UnInstallHandlers();
-        LogMan::Msg::UnInstallHandlers();
-
-        FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
-        if (FEXServerLogging::FEXServerFD != -1) {
-          LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
-          LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
-        }
-      }
-      else if (!LogFile.empty()) {
-        OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
-      }
-    }
-
-    FEXCore::Telemetry::Initialize();
-
-    RootFSRedirect(&Program, LDPath());
-    InterpreterHandler(&Program, LDPath(), &Args);
-
-    std::error_code ec{};
-    if (!std::filesystem::exists(Program, ec)) {
-      // Early exit if the program passed in doesn't exist
-      // Will prevent a crash later
-      fmt::print(stderr, "{}: command not found\n", Program);
-      return -ENOEXEC;
-    }
-
-    uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-      // We require 4.17 minimum for MAP_FIXED_NOREPLACE
-      LogMan::Msg::EFmt("FEXLoader requires kernel 4.17 minimum. Expect problems.");
-    }
-
-    // Before we go any further, set all of our host environment variables that the config has provided
-    for (auto &HostEnv : HostEnvironment.All()) {
-      // We are going to keep these alive in memory.
-      // No need to split the string with setenv
-      putenv(HostEnv.data());
-    }
-
-    ELFCodeLoader2 Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
-    //FEX::HarnessHelper::ELFCodeLoader Loader{Program, LDPath(), Args, ParsedArgs, envp, &Environment};
-
-    if (!Loader.ELFWasLoaded()) {
-      // Loader couldn't load this program for some reason
-      fmt::print(stderr, "Invalid or Unsupported elf file.\n");
-  #ifdef _M_ARM_64
-      fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
-      fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
-      std::error_code ec;
-      if (LDPath().empty() ||
-          std::filesystem::exists(LDPath(), ec) == false) {
-        fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
-        fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
-      }
-  #endif
-      return -ENOEXEC;
-    }
-
-    Sections = Loader.PullSections();
-
-    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program).string());
-    FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
-    
-    std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-
-    if (Loader.Is64BitMode()) {
-      // Destroy the 48th bit if it exists
-      Base48Bit = FEXCore::Allocator::Steal48BitVA();
-    } else {
-      if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-        Use32BitAllocator = true;
-      }
-
-      // Setup our userspace allocator
-      if (!Use32BitAllocator &&
-          KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-        FEXCore::Allocator::SetupHooks();
-      }
-
-      if (Use32BitAllocator) {
-        Allocator = FEX::HLE::Create32BitAllocator();
-      }
-      else {
-        Allocator = FEX::HLE::CreatePassthroughAllocator();
-      }
-    }
-
-    // System allocator is now system allocator or FEX
-    FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-
-    CTX = FEXCore::Context::CreateNewContext();
-    FEXCore::Context::InitializeContext(CTX);
-
-    SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-
-    SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      ucontext_t* _context = (ucontext_t*)ucontext;
-      auto &mcontext = _context->uc_mcontext;
-      uint64_t PC{};
-  #ifdef _M_ARM_64
-      PC = mcontext.pc;
-  #else
-      PC = mcontext.gregs[REG_RIP];
-  #endif
-      if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
-        // This is a host side assert. Don't deliver this to the guest
-        // We want to actually break here
-        SignalDelegation->UninstallHostHandler(Signal);
-        return true;
-      }
-      return false;
-    }, true);
-
-    SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
-                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
-
-    auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-    auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
-
-    if (!Loader.MapMemory(Mapper, Unmapper)) {
-      // failed to map
-      LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-      return -ENOEXEC;
-    }
-
-    SyscallHandler->SetCodeLoader(&Loader);
-
-    auto BRKInfo = Loader.GetBRKInfo();
-
-    SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
-
-    FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
-    FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
-    FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
-
-    // There might already be an exit handler, leave it installed
-    if(!FEXCore::Context::GetExitHandler(CTX)) {
-      FEXCore::Context::SetExitHandler(CTX, [&](uint64_t thread, FEXCore::Context::ExitReason reason) {
-        if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
-          ShutdownReason = reason;
-          FEXCore::Context::Stop(CTX);
-        }
-      });
-    }
-
-    FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
-      return open(filepath.c_str(), O_RDONLY);
-    });
-
-    FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
-      if (*AOTWrite) {
-        std::filesystem::resize_file(filepath, 0);
-        AOTWrite->seekp(0);
-        LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
-      } else {
-        LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
-      }
-      return AOTWrite;
-    });
-
-    FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
-      auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-      auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
-      // Rename the temporary file to atomically update the file
-      std::filesystem::rename(TmpFilepath, NewFilepath);
-    });
+  if (Program.first.empty()) {
+    // Early exit if we weren't passed an argument
+    return 0;
   }
 
+  auto Args = FEX::ArgLoader::Get();
+  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
+
+  // Reload the meta layer
+  FEXCore::Config::ReloadMetaLayer();
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
+
+  // Early check for process stall
+  // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance
+  FEX_CONFIG_OPT(StallProcess, STALLPROCESS);
+  if (StallProcess) {
+    while (1) {
+      // Stall this process out forever
+      select(0, nullptr, nullptr, nullptr, nullptr);
+    }
+  }
+
+  // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
+  if (!FEXServerClient::SetupClient(argv[0])) {
+    LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
+    return -1;
+  }
+
+  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
   FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
   FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
   FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
+  FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
+  FEX_CONFIG_OPT(Environment, ENV);
+  FEX_CONFIG_OPT(HostEnvironment, HOSTENV);
+  ::SilentLog = SilentLog();
+
+  if (::SilentLog) {
+    LogMan::Throw::UnInstallHandlers();
+    LogMan::Msg::UnInstallHandlers();
+  }
+  else {
+    auto LogFile = OutputLog();
+    // If stderr or stdout then we need to dup the FD
+    // In some cases some applications will close stderr and stdout
+    // then redirect the FD to either a log OR some cases just not use
+    // stderr/stdout and the FD will be reused for regular FD ops.
+    //
+    // We want to maintain the original output location otherwise we
+    // can run in to problems of writing to some file
+    if (LogFile == "stderr") {
+      OutputFD = dup(STDERR_FILENO);
+    }
+    else if (LogFile == "stdout") {
+      OutputFD = dup(STDOUT_FILENO);
+    }
+    else if (LogFile == "server") {
+      LogMan::Throw::UnInstallHandlers();
+      LogMan::Msg::UnInstallHandlers();
+
+      FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
+      if (FEXServerLogging::FEXServerFD != -1) {
+        LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
+        LogMan::Msg::InstallHandler(FEXServerLogging::MsgHandler);
+      }
+    }
+    else if (!LogFile.empty()) {
+      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY);
+    }
+  }
+
+  FEXCore::Telemetry::Initialize();
+
+  RootFSRedirect(&Program.first, LDPath());
+  InterpreterHandler(&Program.first, LDPath(), &Args);
+
+  std::error_code ec{};
+  if (!std::filesystem::exists(Program.first, ec)) {
+    // Early exit if the program passed in doesn't exist
+    // Will prevent a crash later
+    fmt::print(stderr, "{}: command not found\n", Program.first);
+    return -ENOEXEC;
+  }
+
+  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+    // We require 4.17 minimum for MAP_FIXED_NOREPLACE
+    LogMan::Msg::EFmt("FEXLoader requires kernel 4.17 minimum. Expect problems.");
+  }
+
+  // Before we go any further, set all of our host environment variables that the config has provided
+  for (auto &HostEnv : HostEnvironment.All()) {
+    // We are going to keep these alive in memory.
+    // No need to split the string with setenv
+    putenv(HostEnv.data());
+  }
+
+  ELFCodeLoader2 Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
+  //FEX::HarnessHelper::ELFCodeLoader Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
+
+  if (!Loader.ELFWasLoaded()) {
+    // Loader couldn't load this program for some reason
+    fmt::print(stderr, "Invalid or Unsupported elf file.\n");
+#ifdef _M_ARM_64
+    fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
+    fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
+    std::error_code ec;
+    if (LDPath().empty() ||
+        std::filesystem::exists(LDPath(), ec) == false) {
+      fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
+      fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
+    }
+#endif
+    return -ENOEXEC;
+  }
+
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.first).string());
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
+
+  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+  FEXCore::Allocator::PtrCache *Base48Bit{};
+
+  if (Loader.Is64BitMode()) {
+    // Destroy the 48th bit if it exists
+    Base48Bit = FEXCore::Allocator::Steal48BitVA();
+  } else {
+    FEX_CONFIG_OPT(Use32BitAllocator, FORCE32BITALLOCATOR);
+    if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      Use32BitAllocator = true;
+    }
+
+    // Setup our userspace allocator
+    if (!Use32BitAllocator &&
+        KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
+      FEXCore::Allocator::SetupHooks();
+    }
+
+    if (Use32BitAllocator) {
+      Allocator = FEX::HLE::Create32BitAllocator();
+    }
+    else {
+      Allocator = FEX::HLE::CreatePassthroughAllocator();
+    }
+  }
+
+  // System allocator is now system allocator or FEX
+  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
+
+  auto CTX = FEXCore::Context::CreateNewContext();
+  FEXCore::Context::InitializeContext(CTX);
+
+  auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+
+  SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [&SignalDelegation](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    ucontext_t* _context = (ucontext_t*)ucontext;
+    auto &mcontext = _context->uc_mcontext;
+    uint64_t PC{};
+#ifdef _M_ARM_64
+    PC = mcontext.pc;
+#else
+    PC = mcontext.gregs[REG_RIP];
+#endif
+    if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
+      // This is a host side assert. Don't deliver this to the guest
+      // We want to actually break here
+      SignalDelegation->UninstallHostHandler(Signal);
+      return true;
+    }
+    return false;
+  }, true);
+
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
+                                             : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+
+  auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
+  auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
+
+  if (!Loader.MapMemory(Mapper, Unmapper)) {
+    // failed to map
+    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+    return -ENOEXEC;
+  }
+
+  SyscallHandler->SetCodeLoader(&Loader);
+
+  auto BRKInfo = Loader.GetBRKInfo();
+
+  SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
+
+  FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
+  FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
+  FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+
+  auto ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
   if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
                       "Capture doesn't work with programs that fork.");
   }
 
+  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+
+    return open(filepath.c_str(), O_RDONLY);
+  });
+
+  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+    auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+    if (*AOTWrite) {
+      std::filesystem::resize_file(filepath, 0);
+      AOTWrite->seekp(0);
+      LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
+    } else {
+      LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
+    }
+    return AOTWrite;
+  });
+
+  FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
+    auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+    auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+
+    // Rename the temporary file to atomically update the file
+    std::filesystem::rename(TmpFilepath, NewFilepath);
+  });
+
+  auto Sections = Loader.PullSections();
+
   if (AOTIRGenerate()) {
     for(const auto &Section: Sections) {
       FEX::AOT::AOTGenSection(CTX, Section);
     }
   } else {
-    FEXCore::Context::RunUntilExit(CTX);
+    ShutdownReason = FEXCore::Context::RunUntilExit(CTX);
   }
 
-  // Teardown
-  {
-    FHU::ScopedSignalMask sm;
-    std::error_code ec;
+  std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
+  if (!ec) {
+    FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+      int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
+      if (fd != -1) {
+        write(fd, filename.c_str(), filename.size());
+        close(fd);
+      }
+    });
+  }
 
-    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
-    if (!ec) {
-      FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
-        auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
-        int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
-        if (fd != -1) {
-          write(fd, filename.c_str(), filename.size());
-          close(fd);
-        }
-      });
-    }
+  if (AOTIRCapture() || AOTIRGenerate()) {
+    FEXCore::Context::FinalizeAOTIRCache(CTX);
+    LogMan::Msg::IFmt("AOTIR Cache Stored");
+  }
 
-    if (AOTIRCapture() || AOTIRGenerate()) {
-      FEXCore::Context::FinalizeAOTIRCache(CTX);
-      LogMan::Msg::IFmt("AOTIR Cache Stored");
-    }
+  auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
 
-    auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
+  SyscallHandler.reset();
+  SignalDelegation.reset();
+  FEXCore::Context::DestroyContext(CTX);
 
-    SyscallHandler.reset();
-    SignalDelegation.reset();
-    FEXCore::Context::DestroyContext(CTX);
+  FEXCore::Context::ShutdownStaticTables();
+  FEXCore::Threads::Shutdown();
 
-    FEXCore::Context::ShutdownStaticTables();
-    FEXCore::Threads::Shutdown();
+  FEXCore::Config::Shutdown();
 
-    FEXCore::Config::Shutdown();
+  LogMan::Throw::UnInstallHandlers();
+  LogMan::Msg::UnInstallHandlers();
 
-    LogMan::Throw::UnInstallHandlers();
-    LogMan::Msg::UnInstallHandlers();
-
-    FEXCore::Allocator::ClearHooks();
-    FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
-    // Allocator is now original system allocator
-    FEXCore::Telemetry::Shutdown(ProgramName);
-    if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
-      return ProgramStatus;
-    }
-    else {
-      return -64 | ShutdownReason;
-    }
+  FEXCore::Allocator::ClearHooks();
+  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
+  // Allocator is now original system allocator
+  FEXCore::Telemetry::Shutdown(Program.second);
+  if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
+    return ProgramStatus;
+  }
+  else {
+    return -64 | ShutdownReason;
   }
 }

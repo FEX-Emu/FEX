@@ -23,7 +23,6 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#include <csetjmp>
 #include <cstdint>
 #include <errno.h>
 #include <memory>
@@ -113,7 +112,11 @@ private:
 };
 }
 
+static bool DidFault = true;
+
 int main(int argc, char **argv, char **const envp) {
+  FHU::ScopedSignalMask sm;
+
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
@@ -156,7 +159,6 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
-  bool DidFault = false;
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
 
@@ -186,17 +188,18 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (Core != FEXCore::Config::CONFIG_CUSTOM) {
-    jmp_buf LongJump{};
-    int LongJumpVal{};
 
-    SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault, &LongJump](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+    SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       constexpr uint8_t HLT = 0xF4;
-      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] == HLT) {
+        // Reached HLT -> Completed successfully
         DidFault = false;
-        return false;
-      }
+        FEXCore::Context::ExitCurrentThread(Thread);
 
-      longjmp(LongJump, 1);
+        // Should never reach here
+        std::terminate();
+      }
+        
       return false;
     }, true);
 
@@ -222,10 +225,9 @@ int main(int argc, char **argv, char **const envp) {
       return 1;
     }
 
-    LongJumpVal = setjmp(LongJump);
-    if (!LongJumpVal) {
-      FEXCore::Context::RunUntilExit(CTX);
-    }
+    SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
+
+    FEXCore::Context::RunUntilExit(CTX);
 
     // Just re-use compare state. It also checks against the expected values in config.
     FEXCore::Context::GetCPUState(CTX, &State);
@@ -241,7 +243,9 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
 
+    FEX::HLE::SignalDelegator::DeliverThreadHostDeferredSignals();
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
+    FEX::HLE::SignalDelegator::DeferThreadHostSignals();
   }
 
   FEXCore::Context::DestroyContext(CTX);

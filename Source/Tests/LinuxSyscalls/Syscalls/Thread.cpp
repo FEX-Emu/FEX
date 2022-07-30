@@ -300,9 +300,10 @@ namespace FEX::HLE {
       }
 
       Thread->StatusCode = status;
-      FEXCore::Context::StopThread(Thread->CTX, Thread);
+      FEXCore::Context::ExitCurrentThread(Thread);
 
-      return 0;
+      // should never reach here
+      std::terminate();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(kill, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig) -> uint64_t {
@@ -509,8 +510,8 @@ namespace FEX::HLE {
       auto Thread = Frame->Thread;
       Thread->StatusCode = status;
       FEXCore::Context::Stop(Thread->CTX);
-      // Host Signals are deferred here, thread will get stopped on end of syscall processing
-      return -1;
+      // This must never be reached
+      std::terminate();
     });
 
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(prlimit_64, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

@@ -44,10 +44,10 @@ namespace FEXCore::Context {
   enum ExitReason {
     EXIT_NONE,
     EXIT_WAITING,
-    EXIT_ASYNC_RUN,
+    //EXIT_ASYNC_RUN, // not actually used
     EXIT_SHUTDOWN,
-    EXIT_DEBUG,
-    EXIT_UNKNOWNERROR,
+    //EXIT_DEBUG, // not actually implemented
+    //EXIT_UNKNOWNERROR,  // not actually used
   };
 
   enum OperatingMode {
@@ -257,7 +257,7 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void ExecutionThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
-  FEX_DEFAULT_VISIBILITY void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
+  FEX_DEFAULT_VISIBILITY void ExitCurrentThread(FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread);
   FEX_DEFAULT_VISIBILITY void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation);

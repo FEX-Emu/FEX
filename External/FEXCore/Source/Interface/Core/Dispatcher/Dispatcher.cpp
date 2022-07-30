@@ -770,38 +770,10 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::Stop) {
-    // Our thread is stopping
-    // We don't care about anything at this point
-    // Set the stack to our starting location when we entered the core and get out safely
-    ArchHelpers::Context::SetSp(ucontext, Frame->ReturningStackLocation);
+    Context::ExitCurrentThread(Thread);
 
-    // Our ref counting doesn't matter anymore
-    Thread->CurrentFrame->SignalHandlerRefCounter = 0;
-
-    // Set the new PC
-    if (config.StaticRegisterAllocation && Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
-      // We are in jit, SRA must be spilled
-      ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddressSpillSRA);
-    } else {
-      if (config.StaticRegisterAllocation) {
-        // We are in non-jit, SRA is already spilled
-        LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)),
-                           "Signals in dispatcher have unsynchronized context");
-      }
-      ArchHelpers::Context::SetPc(ucontext, ThreadStopHandlerAddress);
-    }
-
-    // We need to be a little bit careful here
-    // If we were already paused (due to GDB) and we are immediately stopping (due to gdb kill)
-    // Then we need to ensure we don't double decrement our idle thread counter
-    if (Thread->RunningEvents.ThreadSleeping) {
-      // If the thread was sleeping then its idle counter was decremented
-      // Reincrement it here to not break logic
-      ++Thread->CTX->IdleWaitRefCount;
-    }
-
-    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
-    return true;
+    // Should never execute here
+    std::terminate();
   }
 
   if (SignalReason == FEXCore::Core::SignalEvent::Return) {

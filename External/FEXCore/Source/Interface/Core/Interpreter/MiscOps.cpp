@@ -19,13 +19,6 @@ $end_info$
 #include <sys/random.h>
 
 namespace FEXCore::CPU {
-[[noreturn]]
-static void StopThread(FEXCore::Core::InternalThreadState *Thread) {
-  Thread->CTX->StopThread(Thread);
-
-  LOGMAN_MSG_A_FMT("unreachable");
-  FEX_UNREACHABLE;
-}
 
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(Fence) {

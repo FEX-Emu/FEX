@@ -142,8 +142,8 @@ namespace FEXCore::Context {
     CTX->RunThread(Thread);
   }
 
-  void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->StopThread(Thread);
+  void ExitCurrentThread(FEXCore::Core::InternalThreadState *Thread) {
+    FEXCore::Context::Context::ExitCurrentThread(Thread);
   }
 
   void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {

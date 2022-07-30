@@ -72,11 +72,14 @@ GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
 
+  //FEX_TODO("FEXCore::Context::ExitReason::EXIT_DEBUG needs to be actually implemented and then call this->Break(SIGTRAP) directly")
+  #if 0
   Context::SetExitHandler(ctx, [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
       this->Break(SIGTRAP);
     }
   });
+  #endif
 
   // This is a total hack as there is currently no way to resume once hitting a segfault
   // But it's semi-useful for debugging.
