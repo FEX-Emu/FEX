@@ -243,9 +243,7 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
 
-    FEX::HLE::SignalDelegator::DeliverThreadHostDeferredSignals();
-    RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
-    FEX::HLE::SignalDelegator::DeferThreadHostSignals();
+    DidFault = !RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
 
   FEXCore::Context::DestroyContext(CTX);

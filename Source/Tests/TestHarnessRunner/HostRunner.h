@@ -17,4 +17,5 @@ namespace FEX::HLE {
   class SignalDelegator;
 }
 
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer, FEXCore::Core::CPUState *OutputState);
+// Returns false if abnormally terminated
+bool RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer, FEXCore::Core::CPUState *OutputState);

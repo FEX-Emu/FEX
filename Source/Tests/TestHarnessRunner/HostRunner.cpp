@@ -30,6 +30,7 @@ class x86HostRunner final : public Xbyak::CodeGenerator {
 public:
   using AsmDispatch = void (*)(uintptr_t InitialRip, uintptr_t InitialStack);
   AsmDispatch DispatchPtr;
+  bool DidFault = true;
 
   x86HostRunner() : CodeGenerator(4096) {
     Setup32BitCodeSegment();
@@ -129,6 +130,9 @@ public:
     if (Inst[0] != HLT) {
       return false;
     }
+
+    // Test Concluded
+    DidFault = false;
 
     // Store our host state in to the guest for testing against
     OutState->gregs[FEXCore::X86State::REG_RAX] = _mcontext->gregs[REG_RAX];
@@ -253,7 +257,7 @@ private:
   }
 };
 
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
+bool RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
                FEXCore::Core::CPUState *OutputState) {
   x86HostRunner runner;
   SignalDelegation->RegisterHostSignalHandler(
@@ -263,12 +267,17 @@ void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uin
     },
     true
   );
-
+  
+  FEX::HLE::SignalDelegator::DeliverThreadHostDeferredSignals();
   runner.DispatchPtr(InitialRip, StackPointer);
+  FEX::HLE::SignalDelegator::DeferThreadHostSignals();
+
+  return !runner.DidFault;
 }
 #else
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
+bool RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
                FEXCore::Core::CPUState *OutputState) {
   LOGMAN_MSG_A_FMT("RunAsHost doesn't exist for this host");
+  return false;
 }
 #endif
