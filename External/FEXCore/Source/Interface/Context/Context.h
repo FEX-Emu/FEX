@@ -180,7 +180,7 @@ namespace FEXCore::Context {
 
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
-      FHU::ScopedSignalCheckWithSharedLock lk(Frame->Thread->CTX->CodeInvalidationMutex);
+      FHU::ScopedSignalMaskWithSharedLock lk(Frame->Thread->CTX->CodeInvalidationMutex);
 
       return Fn(Frame, record);
     }
@@ -192,7 +192,7 @@ namespace FEXCore::Context {
       
       LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), gettid());
 
-      FHU::ScopedSignalCheckWithUniqueLock lk(Thread->CTX->CodeInvalidationMutex);
+      FHU::ScopedSignalMaskWithUniqueLockGuard lk(Thread->CTX->CodeInvalidationMutex);
 
       ThreadRemoveCodeEntry(Thread, GuestRIP);
     }

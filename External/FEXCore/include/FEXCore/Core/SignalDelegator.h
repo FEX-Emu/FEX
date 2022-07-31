@@ -3,6 +3,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <utility>
@@ -86,10 +87,11 @@ namespace Core {
     static void DeferThreadHostSignals();
     static void DeliverThreadHostDeferredSignals();
 
-    #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-    static void AcquireHostDeferredSignals();
+    static void EnterAutoHostDefer();
+    static void LeaveAutoHostDefer();
+
+    static bool AcquireHostDeferredSignals();
     static void ReleaseHostDeferredSignals();
-    #endif
 
   protected:
     static FEXCore::Core::InternalThreadState *GetTLSThread();
@@ -119,6 +121,7 @@ namespace Core {
     std::array<HostSignalHandler, MAX_SIGNALS + 1> HostHandlers{};
 
   protected:
+
     void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
       HostHandlers[Signal].Handlers.push_back(std::move(Func));
     }

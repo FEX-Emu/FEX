@@ -303,7 +303,7 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
 static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
-  FHU::ScopedSignalMask sm;
+  FHU::ScopedSignalHostDefer sm;
   
   auto Thread = Frame->Thread;
   auto GuestRip = record[1];

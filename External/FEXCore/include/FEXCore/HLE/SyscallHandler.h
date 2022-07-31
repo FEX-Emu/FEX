@@ -53,7 +53,7 @@ namespace FEXCore::HLE {
   class SourcecodeResolver;
 
   struct AOTIRCacheEntryLookupResult {
-    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart, FHU::ScopedSignalCheckWithSharedLock &&lk)
+    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart, FHU::ScopedSignalMaskWithSharedLock &&lk)
       : Entry(Entry), VAFileStart(VAFileStart), lk(std::move(lk))
     {
 
@@ -66,7 +66,7 @@ namespace FEXCore::HLE {
 
     friend class SyscallHandler;
     protected:
-    FHU::ScopedSignalCheckWithSharedLock lk;
+    FHU::ScopedSignalMaskWithSharedLock lk;
   };
 
   class SyscallHandler {

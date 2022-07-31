@@ -3,6 +3,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <shared_mutex>
@@ -13,16 +14,24 @@
 
 namespace FHU {
 
-  struct ScopedSignalMask {
-    ScopedSignalMask() { FEXCore::SignalDelegator::DeferThreadHostSignals(); }
-    ~ScopedSignalMask() { FEXCore::SignalDelegator::DeliverThreadHostDeferredSignals(); }
+  struct ScopedSignalHostDefer {
+    ScopedSignalHostDefer() { FEXCore::SignalDelegator::DeferThreadHostSignals(); }
+    ~ScopedSignalHostDefer() { FEXCore::SignalDelegator::DeliverThreadHostDeferredSignals(); }
   };
 
-  struct ScopedSignalCheck {
-    #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-      ScopedSignalCheck() { FEXCore::SignalDelegator::AcquireHostDeferredSignals(); }
-      ~ScopedSignalCheck() { FEXCore::SignalDelegator::ReleaseHostDeferredSignals(); }
-    #endif
+  struct ScopedSignalAutoHostDefer {
+    ScopedSignalAutoHostDefer() { FEXCore::SignalDelegator::EnterAutoHostDefer(); }
+    ~ScopedSignalAutoHostDefer() { FEXCore::SignalDelegator::LeaveAutoHostDefer(); }
+  };
+
+  struct ScopedSignalMask {
+    std::atomic<bool> HasAcquired;
+    ScopedSignalMask() { HasAcquired.store(FEXCore::SignalDelegator::AcquireHostDeferredSignals(), std::memory_order_relaxed); }
+    ~ScopedSignalMask() { if (HasAcquired.load(std::memory_order_relaxed)) { FEXCore::SignalDelegator::ReleaseHostDeferredSignals(); } }
+
+    ScopedSignalMask(const ScopedSignalMask&) = delete;
+    ScopedSignalMask& operator=(ScopedSignalMask&) = delete;
+    ScopedSignalMask(ScopedSignalMask &&rhs): HasAcquired(rhs.HasAcquired.exchange(false, std::memory_order_relaxed)) { }
   };
 
   /**
@@ -45,11 +54,11 @@ namespace FHU {
    * 2) Unmask signals
    */
   template<typename T>
-  struct ScopedSignalCheckWith: ScopedSignalCheck, T { using T::T; };
+  struct ScopedSignalMaskWith: ScopedSignalMask, T { using T::T; };
 
-  using ScopedSignalCheckWithLockGuard = ScopedSignalCheckWith<std::lock_guard<std::mutex>>;
+  using ScopedSignalMaskWithLockGuard = ScopedSignalMaskWith<std::lock_guard<std::mutex>>;
 
-  using ScopedSignalCheckWithUniqueLockGuard = ScopedSignalCheckWith<std::lock_guard<std::shared_mutex>>;
-  using ScopedSignalCheckWithUniqueLock = ScopedSignalCheckWith<std::unique_lock<std::shared_mutex>>;
-  using ScopedSignalCheckWithSharedLock = ScopedSignalCheckWith<std::unique_lock<std::shared_mutex>>;
+  using ScopedSignalMaskWithUniqueLockGuard = ScopedSignalMaskWith<std::lock_guard<std::shared_mutex>>;
+  using ScopedSignalMaskWithUniqueLock = ScopedSignalMaskWith<std::unique_lock<std::shared_mutex>>;
+  using ScopedSignalMaskWithSharedLock = ScopedSignalMaskWith<std::unique_lock<std::shared_mutex>>;
 }

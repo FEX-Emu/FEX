@@ -3,6 +3,7 @@
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 
+#include <atomic>
 #include <unistd.h>
 #include <signal.h>
 #include <csetjmp>
@@ -19,6 +20,7 @@ namespace FEXCore {
     sigset_t HostDeferredSigmask; // only 8 bytes used here, depends on kernel configuration
     
     std::atomic<uint16_t> HostDeferredSignalEnabled;
+    std::atomic<uint16_t> HostDeferredSignalAutoEnabled;
     std::atomic<int> HostDeferredSignalPending;
   };
 
@@ -117,16 +119,37 @@ namespace FEXCore {
     }
   }
 
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  void SignalDelegator::EnterAutoHostDefer() {
+    [[maybe_unused]] auto Previous = ThreadData.HostDeferredSignalAutoEnabled.fetch_add(1, std::memory_order_relaxed);
+    LOGMAN_THROW_A_FMT(Previous != UINT16_MAX - 1, "Signal Auto Host Deferring Overflow");
+
+    HOST_DEFER_TRACE;
+  }
+
+  void SignalDelegator::LeaveAutoHostDefer() {
+    [[maybe_unused]] auto Previous = ThreadData.HostDeferredSignalAutoEnabled.fetch_sub(1, std::memory_order_relaxed);
+    LOGMAN_THROW_A_FMT(Previous != 0, "Signal Auto Host Deferring Underflow");
+
+    HOST_DEFER_TRACE;
+  }
+
   //FEX_TODO("Enforce that Host Deferred Signals don't get delivered between Acquire/Release")
-  void SignalDelegator::AcquireHostDeferredSignals() {
+  bool SignalDelegator::AcquireHostDeferredSignals() {
+    if (ThreadData.HostDeferredSignalAutoEnabled.load(std::memory_order_relaxed)) {
+      DeferThreadHostSignals();
+      return true;
+    }
+
     LOGMAN_THROW_A_FMT(ThreadData.HostDeferredSignalEnabled, "Host Signals need to be Deferred before AcquireHostDeferredSignals");
+    return false;
   }
 
   void SignalDelegator::ReleaseHostDeferredSignals() {
     LOGMAN_THROW_A_FMT(ThreadData.HostDeferredSignalEnabled, "Host Signals need to be Delivered after ReleaseHostDeferredSignals");
+    if (ThreadData.HostDeferredSignalAutoEnabled.load(std::memory_order_relaxed)) {
+      DeliverThreadHostDeferredSignals();
+    }
   }
-#endif
 
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
@@ -137,7 +160,7 @@ namespace FEXCore {
       DoHandleSignal: {
         // No signals must be delivered in this scope - should be guaranteed.
         // FEX_TODO("Enforce no signal delivery in this scope")
-        FHU::ScopedSignalMask sm;
+        FHU::ScopedSignalHostDefer sm;
 
         HostSignalHandler &Handler = HostHandlers[Signal];
 

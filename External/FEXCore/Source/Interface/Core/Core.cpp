@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include <cstdint>
+#include "FEXHeaderUtils/ScopedSignalMask.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Core.h"
@@ -1012,7 +1013,7 @@ namespace FEXCore::Context {
   }
 
   void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
-    FHU::ScopedSignalMask sm;
+    FHU::ScopedSignalHostDefer sm;
     
     auto NewBlock = CompileBlock(Frame, GuestRIP);
 
@@ -1209,13 +1210,13 @@ namespace FEXCore::Context {
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    FHU::ScopedSignalCheckWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    FHU::ScopedSignalMaskWithUniqueLockGuard CodeInvalidationLock(CTX->CodeInvalidationMutex);
     
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    FHU::ScopedSignalCheckWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    FHU::ScopedSignalMaskWithUniqueLockGuard CodeInvalidationLock(CTX->CodeInvalidationMutex);
 
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
     CallAfter(Start, Length);
@@ -1332,7 +1333,8 @@ namespace FEXCore::Context {
   }
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {
-    FHU::ScopedSignalMask sm;
+    FHU::ScopedSignalAutoHostDefer sm;
+
     uint64_t Result{};
     Result = Handler->HandleSyscall(Frame, Args);
     return Result;
