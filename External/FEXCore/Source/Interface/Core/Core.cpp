@@ -509,9 +509,12 @@ namespace FEXCore::Context {
   };
 
   static void *ThreadHandler(void* Data) {
+    FHU::ScopedSignalHostDefer sm;
+
     ExecutionThreadHandler *Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
     Handler->This->ExecutionThread(Handler->Thread);
     FEXCore::Allocator::free(Handler);
+
     return nullptr;
   }
 
@@ -1125,6 +1128,8 @@ namespace FEXCore::Context {
   }
 
   void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
+    FHU::ScopedSignalMask sm;
+
     Core::ThreadData.Thread = Thread;
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
