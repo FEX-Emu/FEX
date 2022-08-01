@@ -94,11 +94,11 @@ int main(int argc, char **argv, char **const envp) {
       PS1Env = envp[i];
     }
     else {
-	Envp.emplace_back(envp[i]);
+      Envp.emplace_back(envp[i]);
     }
   }
 
-  std::string PS1 = "PS1=FEXBash> ";
+  std::string PS1 = "PS1=FEXBash-\\u@\\h:\\w> ";
   if (PS1Env) {
     PS1 += &PS1Env[strlen("PS1=")];
   }
