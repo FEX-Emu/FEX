@@ -27,7 +27,7 @@ namespace FHU {
   struct ScopedSignalMask {
     std::atomic<bool> HasAcquired;
     ScopedSignalMask() { HasAcquired.store(FEXCore::SignalDelegator::AcquireHostDeferredSignals(), std::memory_order_relaxed); }
-    ~ScopedSignalMask() { if (HasAcquired.load(std::memory_order_relaxed)) { FEXCore::SignalDelegator::ReleaseHostDeferredSignals(); } }
+    ~ScopedSignalMask() { if (HasAcquired.exchange(false, std::memory_order_relaxed)) { FEXCore::SignalDelegator::ReleaseHostDeferredSignals(); } }
 
     ScopedSignalMask(const ScopedSignalMask&) = delete;
     ScopedSignalMask& operator=(ScopedSignalMask&) = delete;
@@ -60,5 +60,5 @@ namespace FHU {
 
   using ScopedSignalMaskWithUniqueLockGuard = ScopedSignalMaskWith<std::lock_guard<std::shared_mutex>>;
   using ScopedSignalMaskWithUniqueLock = ScopedSignalMaskWith<std::unique_lock<std::shared_mutex>>;
-  using ScopedSignalMaskWithSharedLock = ScopedSignalMaskWith<std::unique_lock<std::shared_mutex>>;
+  using ScopedSignalMaskWithSharedLock = ScopedSignalMaskWith<std::shared_lock<std::shared_mutex>>;
 }
