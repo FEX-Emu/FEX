@@ -1100,6 +1100,13 @@ int main(int argc, char **argv, char **const envp) {
     ExecWithInfo("curl is required to use this tool. Please install curl before using.");
     return -1;
   }
+  if (!WorkingAppsTester::Has_Squashfuse &&
+      !WorkingAppsTester::Has_Unsquashfs &&
+      !WorkingAppsTester::Has_EroFSFuse) {
+    // We need at least one tool to mount or extract image files
+    ExecWithInfo("squashfuse, unsquashfs, or erofsfuse is required to use this tool. Please install one before using.");
+    return -1;
+  }
 
   FEX_CONFIG_OPT(LDPath, ROOTFS);
 
