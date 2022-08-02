@@ -42,8 +42,6 @@ _XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long 
     }
 }
 
-static char ErrorReply[] = "FEX: Unable to match arg count";
-
 char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
     switch(count) {
         case 0: return fexldr_ptr_libX11_XGetICValues(a_0, nullptr); break;
@@ -55,8 +53,24 @@ char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned lo
         case 6: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
         case 7: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
         default:
-        fprintf(stderr, "XCreateICValues_internal FAILURE\n");
-        return ErrorReply;
+        fprintf(stderr, "XGetICValues_internal FAILURE\n");
+        abort();
+    }
+}
+
+char* fexfn_impl_libX11_XSetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
+    switch(count) {
+        case 0: return fexldr_ptr_libX11_XSetICValues(a_0, nullptr); break;
+        case 1: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], nullptr); break;
+        case 2: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], nullptr); break;
+        case 3: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], nullptr); break;
+        case 4: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], nullptr); break;
+        case 5: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
+        case 6: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
+        case 7: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
+        default:
+        fprintf(stderr, "XSetICValues_internal FAILURE\n");
+        abort();
     }
 }
 
@@ -71,8 +85,40 @@ char* fexfn_impl_libX11_XGetIMValues_internal(XIM a_0, size_t count, void **list
         case 6: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
         case 7: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
         default:
-        fprintf(stderr, "XCreateIMValues_internal FAILURE\n");
-        return ErrorReply;
+        fprintf(stderr, "XGetIMValues_internal FAILURE\n");
+        abort();
+    }
+}
+
+char* fexfn_impl_libX11_XSetIMValues_internal(XIM a_0, size_t count, void **list) {
+    switch(count) {
+        case 0: return fexldr_ptr_libX11_XSetIMValues(a_0, nullptr); break;
+        case 1: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], nullptr); break;
+        case 2: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], nullptr); break;
+        case 3: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], nullptr); break;
+        case 4: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], nullptr); break;
+        case 5: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
+        case 6: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
+        case 7: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
+        default:
+        fprintf(stderr, "XSetIMValues_internal FAILURE\n");
+        abort();
+    }
+}
+
+XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, size_t count, void** list) {
+    switch(count) {
+        case 0: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, nullptr); break;
+        case 1: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], nullptr); break;
+        case 2: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], nullptr); break;
+        case 3: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], nullptr); break;
+        case 4: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], nullptr); break;
+        case 5: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], nullptr); break;
+        case 6: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
+        case 7: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
+        default:
+        fprintf(stderr, "XVaCreateNestedList_internal FAILURE\n");
+        abort();
     }
 }
 

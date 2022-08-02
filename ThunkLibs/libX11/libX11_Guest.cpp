@@ -56,6 +56,25 @@ extern "C" {
         return rv;
     }
 
+    char* XSetICValues(XIC ic, ...) {
+        fprintf(stderr, "XSetICValues\n");
+        va_list ap;
+        std::vector<unsigned long> args;
+        va_start(ap, ic);
+        for (;;) {
+            auto arg = va_arg(ap, unsigned long);
+            if (arg == 0)
+                break;
+            args.push_back(arg);
+            fprintf(stderr, "%016lX\n", arg);
+        }
+
+        va_end(ap);
+        auto rv = fexfn_pack_XSetICValues_internal(ic, args.size(), &args[0]);
+        fprintf(stderr, "RV: %p\n", rv);
+        return rv;
+    }
+
     char* XGetIMValues(XIM ic, ...) {
         fprintf(stderr, "XGetIMValues\n");
         va_list ap;
@@ -75,6 +94,25 @@ extern "C" {
         return rv;
     }
 
+    char* XSetIMValues(XIM ic, ...) {
+        fprintf(stderr, "XSetIMValues\n");
+        va_list ap;
+        std::vector<void*> args;
+        va_start(ap, ic);
+        for (;;) {
+            auto arg = va_arg(ap, void*);
+            if (arg == 0)
+                break;
+            args.push_back(arg);
+            fprintf(stderr, "%p\n", arg);
+        }
+
+        va_end(ap);
+        auto rv = fexfn_pack_XSetIMValues_internal(ic, args.size(), &args[0]);
+        fprintf(stderr, "RV: %p\n", rv);
+        return rv;
+    }
+
     _XIC* XCreateIC(XIM im, ...) {
         fprintf(stderr, "XCreateIC\n");
         va_list ap;
@@ -90,6 +128,25 @@ extern "C" {
 
         va_end(ap);
         auto rv = fexfn_pack_XCreateIC_internal(im, args.size(), &args[0]);
+        fprintf(stderr, "RV: %p\n", rv);
+        return rv;
+    }
+
+    XVaNestedList XVaCreateNestedList(int unused_arg, ...) {
+        fprintf(stderr, "XVaCreateNestedList\n");
+        va_list ap;
+        std::vector<void*> args;
+        va_start(ap, unused_arg);
+        for (;;) {
+            auto arg = va_arg(ap, void*);
+            if (arg == 0)
+                break;
+            args.push_back(arg);
+            fprintf(stderr, "%p\n", arg);
+        }
+
+        va_end(ap);
+        auto rv = fexfn_pack_XVaCreateNestedList_internal(unused_arg, args.size(), &args[0]);
         fprintf(stderr, "RV: %p\n", rv);
         return rv;
     }
@@ -190,6 +247,20 @@ extern "C" {
 
   Status XInitThreads() {
     return fexfn_pack_XInitThreadsInternal((uintptr_t)_XInitDisplayLock, (uintptr_t)CallbackUnpack<decltype(_XInitDisplayLock)>::Unpack);
+  }
+
+  XImage *XCreateImage(
+        Display* display, Visual* visual,
+        unsigned int depth, int format,
+        int offset, char* data,
+        unsigned int width, unsigned int height,
+        int pad, int bpp) {
+    auto ret = fexfn_pack_XCreateImage(display, visual, depth, format, offset, data, width, height, pad, bpp);
+    {
+      auto caller = (uintptr_t)GetCallerForHostFunction(ret->f.destroy_image);
+      LinkAddressToFunction((uintptr_t)ret->f.destroy_image, (uintptr_t)caller);
+    }
+    return ret;
   }
 
   void (*_XLockMutex_fn)(LockInfoPtr) = LockMutexFunction;

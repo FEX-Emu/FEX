@@ -446,6 +446,10 @@ template<> struct fex_gen_config<XGetICValues> {
     using uniform_va_type = unsigned long;
 };
 
+template<> struct fex_gen_config<XSetICValues> {
+    using uniform_va_type = unsigned long;
+};
+
 template<> struct fex_gen_config<XCreateIC> {
     using uniform_va_type = unsigned long;
 };
@@ -548,9 +552,15 @@ template<> struct fex_gen_config<XDefaultScreen> {};
 template<> struct fex_gen_config<XDisplayWidth> {};
 template<> struct fex_gen_config<XMatchVisualInfo> {};
 template<> struct fex_gen_config<XPutImage> {};
-template<> struct fex_gen_config<XCreateImage> {};
+
+template<> struct fex_gen_type<int(XImage*)> {}; // XImage::f.destroy_image
+template<> struct fex_gen_config<XCreateImage> : fexgen::custom_guest_entrypoint {};
+
 template<> struct fex_gen_config<XDisplayHeight> {};
 
+template<> struct fex_gen_config<XkbGetKeyboard> {};
+template<> struct fex_gen_config<XkbUseExtension> {};
+template<> struct fex_gen_config<XkbTranslateKeySym> {};
 template<> struct fex_gen_config<XkbFreeKeyboard> {};
 template<> struct fex_gen_config<XkbSetDetectableAutoRepeat> {};
 template<> struct fex_gen_config<XkbGetMap> {};
@@ -558,9 +568,14 @@ template<> struct fex_gen_config<XkbGetUpdatedMap> {};
 template<> struct fex_gen_config<XkbQueryExtension> {};
 template<> struct fex_gen_config<XkbSelectEvents> {};
 template<> struct fex_gen_config<XkbGetState> {};
+template<> struct fex_gen_config<XkbFreeClientMap> {};
 
 template<> struct fex_gen_config<XSynchronize> : fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<XGetIMValues> {
+    using uniform_va_type = void*;
+};
+
+template<> struct fex_gen_config<XSetIMValues> {
     using uniform_va_type = void*;
 };
 
@@ -609,9 +624,13 @@ template<> struct fex_gen_config<_XFreeTemp> {};
 template<> struct fex_gen_config<_XUnknownNativeEvent> {};
 template<> struct fex_gen_config<_XIsEventCookie> {};
 
-template<> struct fex_gen_config<XkbFreeClientMap> {};
 
 
 
 // TODO: Vtable support...
 template<> struct fex_gen_config<_XInitImageFuncPtrs> {};
+
+
+template<> struct fex_gen_config<XVaCreateNestedList> {
+    using uniform_va_type = void*;
+};
