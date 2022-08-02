@@ -509,7 +509,7 @@ namespace FEXCore::Context {
   };
 
   static void *ThreadHandler(void* Data) {
-    FHU::ScopedSignalHostDefer sm;
+    FHU::ScopedSignalHostDefer hd;
 
     ExecutionThreadHandler *Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
     Handler->This->ExecutionThread(Handler->Thread);
@@ -1016,7 +1016,7 @@ namespace FEXCore::Context {
   }
 
   void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
-    FHU::ScopedSignalHostDefer sm;
+    FHU::ScopedSignalHostDefer hd;
     
     auto NewBlock = CompileBlock(Frame, GuestRIP);
 

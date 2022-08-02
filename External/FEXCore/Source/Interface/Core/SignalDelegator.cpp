@@ -160,7 +160,7 @@ namespace FEXCore {
       DoHandleSignal: {
         // No signals must be delivered in this scope - should be guaranteed.
         // FEX_TODO("Enforce no signal delivery in this scope")
-        FHU::ScopedSignalHostDefer sm;
+        FHU::ScopedSignalHostDefer hd;
 
         HostSignalHandler &Handler = HostHandlers[Signal];
 

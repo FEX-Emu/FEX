@@ -115,7 +115,7 @@ private:
 static bool DidFault = true;
 
 int main(int argc, char **argv, char **const envp) {
-  FHU::ScopedSignalHostDefer sm;
+  FHU::ScopedSignalHostDefer hd;
 
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);

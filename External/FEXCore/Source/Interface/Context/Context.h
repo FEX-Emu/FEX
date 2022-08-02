@@ -180,6 +180,7 @@ namespace FEXCore::Context {
 
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+      FHU::ScopedSignalHostDefer hd;
       FHU::ScopedSignalMaskWithSharedLock lk(Frame->Thread->CTX->CodeInvalidationMutex);
 
       return Fn(Frame, record);

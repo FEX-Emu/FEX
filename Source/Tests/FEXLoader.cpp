@@ -196,7 +196,7 @@ bool IsInterpreterInstalled() {
 }
 
 int main(int argc, char **argv, char **const envp) {
-  FHU::ScopedSignalHostDefer sm;
+  FHU::ScopedSignalHostDefer hd;
 
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
