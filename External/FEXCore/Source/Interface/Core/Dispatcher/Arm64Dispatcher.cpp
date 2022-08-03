@@ -572,7 +572,7 @@ size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
 }
 
 void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
-  for(int i = 0; i < SRA64.size(); i++) {
+  for (size_t i = 0; i < SRA64.size(); i++) {
     if (IgnoreMask & (1U << SRA64[i].GetCode())) {
       // Skip this one, it's already spilled
       continue;
@@ -581,12 +581,12 @@ void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void 
   }
 
   if (EmitterCTX->HostFeatures.SupportsAVX) {
-    for(int i = 0; i < SRAFPR.size(); i++) {
+    for (size_t i = 0; i < SRAFPR.size(); i++) {
       auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].GetCode());
       memcpy(&Thread->CurrentFrame->State.xmm.avx.data[i][0], &FPR, sizeof(__uint128_t));
     }
   } else {
-    for(int i = 0; i < SRAFPR.size(); i++) {
+    for (size_t i = 0; i < SRAFPR.size(); i++) {
       auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].GetCode());
       memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
     }
