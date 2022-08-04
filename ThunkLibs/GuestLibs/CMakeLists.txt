@@ -91,6 +91,10 @@ add_guest_lib(EGL)
 generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public symbol_list)
 add_guest_lib(GL)
 
+# libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
+add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
+target_link_libraries(GL-guest PRIVATE X11)
+
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
 # generate(libSDL2 thunks function_packs function_packs_public)
