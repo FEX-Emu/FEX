@@ -29,9 +29,10 @@
 
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,
-       FEXCore::Core::CPUState const& State2,
-       uint64_t MatchMask,
-       bool OutputGPRs) {
+                            FEXCore::Core::CPUState const& State2,
+                            uint64_t MatchMask,
+                            bool OutputGPRs,
+                            bool SupportsAVX) {
     bool Matches = true;
 
     const auto DumpGPRs = [OutputGPRs](const std::string& Name, uint64_t A, uint64_t B) {
@@ -108,10 +109,19 @@ namespace FEX::HarnessHelper {
     }
 
     // XMM
-    for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
-      if (MatchMask & 1) {
-        CheckGPRs("XMM0_" + std::to_string(i), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
-        CheckGPRs("XMM1_" + std::to_string(i), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
+    if (SupportsAVX) {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
+        if (MatchMask & 1) {
+          CheckGPRs("XMM0_" + std::to_string(i), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
+          CheckGPRs("XMM1_" + std::to_string(i), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
+        }
+      }
+    } else {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
+        if (MatchMask & 1) {
+          CheckGPRs("XMM0_" + std::to_string(i), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
+          CheckGPRs("XMM1_" + std::to_string(i), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
+        }
       }
     }
 
@@ -185,7 +195,7 @@ namespace FEX::HarnessHelper {
       bool Matches = true;
       uint64_t MatchMask = BaseConfig.OptionMatch & ~BaseConfig.OptionIgnore;
       if (State1 && State2) {
-        Matches &= FEX::HarnessHelper::CompareStates(*State1, *State2, MatchMask, ConfigDumpGPRs());
+        Matches &= FEX::HarnessHelper::CompareStates(*State1, *State2, MatchMask, ConfigDumpGPRs(), SupportsAVX);
       }
 
       if (BaseConfig.OptionRegDataCount > 0) {
