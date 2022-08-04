@@ -65,4 +65,8 @@ extern "C" {
 	}
 }
 
+// libGL.so must pull in libX11.so as a dependency. Referencing some libX11
+// symbol here prevents the linker from optimizing away the unused dependency
+auto implicit_libx11_dependency = XSetErrorHandler;
+
 LOAD_LIB(libGL)
