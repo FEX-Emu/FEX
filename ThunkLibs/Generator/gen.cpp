@@ -19,9 +19,6 @@ struct FunctionParams {
 struct ThunkedCallback : FunctionParams {
     clang::QualType return_type;
 
-    std::size_t callback_index;
-    std::size_t user_arg_index;
-
     bool is_stub = false;  // Callback will be replaced by a stub that calls std::abort
     bool is_guest = false; // Callback will never be called on the host
     bool is_variadic = false;
@@ -338,8 +335,9 @@ public:
                     funcptr_types.insert(context.getCanonicalType(funcptr));
                 }
 
-                // TODO: Support for more than one callback is untested
-                assert(data.callbacks.size() == 1);
+                if (data.callbacks.size() != 1) {
+                    throw Error(decl->getBeginLoc(), "Support for more than one callback is untested");
+                }
                 if (funcptr->isVariadic() && !callback.is_stub) {
                     throw Error(decl->getBeginLoc(), "Variadic callbacks are not supported");
                 }
