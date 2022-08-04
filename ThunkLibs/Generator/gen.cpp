@@ -469,8 +469,8 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         return sha256;
     };
 
-    auto get_callback_name = [](std::string_view function_name, unsigned param_index, bool is_first_cb) -> std::string {
-        return std::string { function_name } + "CBFN" + (is_first_cb ? "" : std::to_string(param_index));
+    auto get_callback_name = [](std::string_view function_name, unsigned param_index) -> std::string {
+        return std::string { function_name } + "CBFN" + std::to_string(param_index);
     };
 
     if (!output_filenames.thunks.empty()) {
@@ -621,9 +621,8 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             /* Generate stub callbacks */
             for (auto& [cb_idx, cb] : thunk.callbacks) {
                 if (cb.is_stub) {
-                    bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
                     const char* variadic_ellipsis = cb.is_variadic ? ", ..." : "";
-                    auto cb_function_name = "fexfn_unpack_" + get_callback_name(function_name, cb_idx, is_first_cb) + "_stub";
+                    auto cb_function_name = "fexfn_unpack_" + get_callback_name(function_name, cb_idx) + "_stub";
                     file << "[[noreturn]] static " << cb.return_type.getAsString() << " "
                          << cb_function_name << "("
                          << format_function_params(cb) << variadic_ellipsis << ") {\n";
@@ -647,8 +646,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 auto format_param = [&](std::size_t idx) {
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
-                        bool is_first_cb = (cb->first == thunk.callbacks.begin()->first);
-                        return "fexfn_unpack_" + get_callback_name(function_name, cb->first, is_first_cb) + "_stub";
+                        return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
                     } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
                         return "fex_guest_function_ptr { args->a_" + std::to_string(idx) + " }";
                     } else if (cb != thunk.callbacks.end()) {
