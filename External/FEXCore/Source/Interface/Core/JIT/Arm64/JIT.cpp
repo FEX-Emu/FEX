@@ -27,6 +27,7 @@ $end_info$
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/EnumUtils.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
@@ -361,7 +362,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-        LOGMAN_MSG_A_FMT("Unhandled IR Fallback ABI: {} {}", FEXCore::IR::GetName(IROp->Op), Info.ABI);
+        LOGMAN_MSG_A_FMT("Unhandled IR Fallback ABI: {} {}",
+                         FEXCore::IR::GetName(IROp->Op), ToUnderlying(Info.ABI));
 #endif
       break;
     }

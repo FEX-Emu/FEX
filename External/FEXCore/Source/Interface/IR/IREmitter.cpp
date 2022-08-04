@@ -8,6 +8,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <array>
@@ -87,7 +88,8 @@ FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(OrderedNode *Node) {
       break;
     }
     default:
-      LOGMAN_MSG_A_FMT("Unhandled op type: {} {} in argument class validation", IROp->Op, GetOpName(Node));
+      LOGMAN_MSG_A_FMT("Unhandled op type: {} {} in argument class validation",
+                       ToUnderlying(IROp->Op), GetOpName(Node));
       break;
   }
   return InvalidClass;

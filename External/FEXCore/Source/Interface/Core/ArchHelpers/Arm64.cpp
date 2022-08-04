@@ -3,6 +3,7 @@
 
 #include <aarch64/cpu-aarch64.h>
 
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 
@@ -1986,7 +1987,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DesiredFunction = NEGDesired;
         break;
       default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", AtomicOp);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
+                          ToUnderlying(AtomicOp));
         return false;
     }
 
@@ -2039,7 +2041,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DesiredFunction = NEGDesired;
         break;
       default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", AtomicOp);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
+                          ToUnderlying(AtomicOp));
         return false;
     }
 
@@ -2092,7 +2095,8 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DesiredFunction = NEGDesired;
         break;
       default:
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}", AtomicOp);
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
+                          ToUnderlying(AtomicOp));
         return false;
     }
 
