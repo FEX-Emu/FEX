@@ -104,6 +104,7 @@ generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.
 add_host_lib(Xfixes)
 
 generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs symbol_list)
+target_include_directories(libvulkan-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
 add_host_lib(vulkan)
 
 generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
