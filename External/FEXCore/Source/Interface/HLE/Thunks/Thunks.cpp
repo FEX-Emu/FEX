@@ -68,11 +68,22 @@ namespace FEXCore {
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
     struct TrampolineInstanceInfo {
-      uintptr_t HostPacker;
+      void* HostPacker;
       uintptr_t CallCallback;
       uintptr_t GuestUnpacker;
       uintptr_t GuestTarget;
     };
+
+    // Opaque type pointing to an instance of HostToGuestTrampolineTemplate and its
+    // embedded TrampolineInstanceInfo
+    struct HostToGuestTrampolinePtr;
+    const auto HostToGuestTrampolineSize = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
+
+    static TrampolineInstanceInfo& GetInstanceInfo(HostToGuestTrampolinePtr* Trampoline) {
+      const auto Length = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
+      const auto InstanceInfoOffset = Length - sizeof(TrampolineInstanceInfo);
+      return *reinterpret_cast<TrampolineInstanceInfo*>(reinterpret_cast<char*>(Trampoline) + InstanceInfoOffset);
+    }
 
     struct GuestcallInfo {
       uintptr_t GuestUnpacker;
@@ -131,7 +142,7 @@ namespace FEXCore {
         // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
         std::set<std::string> Libs;
 
-        std::unordered_map<GuestcallInfo, uintptr_t, GuestcallInfoHash> GuestcallToHostTrampoline;
+        std::unordered_map<GuestcallInfo, HostToGuestTrampolinePtr*, GuestcallInfoHash> GuestcallToHostTrampoline;
 
         uint8_t *HostTrampolineInstanceDataPtr;
         size_t HostTrampolineInstanceDataAvailable = 0;
@@ -237,7 +248,7 @@ namespace FEXCore {
 
             auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
             if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
-              args->rv = found->second;
+              args->rv = reinterpret_cast<uintptr_t>(found->second);
               return;
             }
           }
@@ -248,7 +259,7 @@ namespace FEXCore {
           {
             auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
             if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
-              args->rv = found->second;
+              args->rv = reinterpret_cast<uintptr_t>(found->second);
               return;
             }
           }
@@ -262,10 +273,7 @@ namespace FEXCore {
           LogMan::Msg::DFmt("Thunks: Adding host trampoline for guest function {:#x}",
                             args->GuestTarget);
 
-          const auto Length = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
-          const auto InstanceInfoOffset = Length - sizeof(TrampolineInstanceInfo);
-
-          if (ThunkHandler->HostTrampolineInstanceDataAvailable < Length) {
+          if (ThunkHandler->HostTrampolineInstanceDataAvailable < HostToGuestTrampolineSize) {
             const auto allocation_step = 16 * 1024;
             ThunkHandler->HostTrampolineInstanceDataAvailable = allocation_step;
             ThunkHandler->HostTrampolineInstanceDataPtr = (uint8_t *)mmap(
@@ -276,23 +284,19 @@ namespace FEXCore {
             LOGMAN_THROW_AA_FMT(ThunkHandler->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
           }
 
-          const TrampolineInstanceInfo NewTrampolineInfo {
-            .HostPacker = reinterpret_cast<uintptr_t>(HostPackerEntry->second),
-            .CallCallback = (uintptr_t)&CallCallback,
-            .GuestUnpacker = args->GuestUnpacker,
-            .GuestTarget = args->GuestTarget
-          };
-
-          uint8_t* const HostTrampoline = ThunkHandler->HostTrampolineInstanceDataPtr;
-          ThunkHandler->HostTrampolineInstanceDataAvailable -= Length;
-          ThunkHandler->HostTrampolineInstanceDataPtr += Length;
-
-          memcpy(HostTrampoline, (void*)&HostToGuestTrampolineTemplate, Length);
-          memcpy(HostTrampoline + InstanceInfoOffset, &NewTrampolineInfo, sizeof(NewTrampolineInfo));
+          auto HostTrampoline = reinterpret_cast<HostToGuestTrampolinePtr* const>(ThunkHandler->HostTrampolineInstanceDataPtr);
+          ThunkHandler->HostTrampolineInstanceDataAvailable -= HostToGuestTrampolineSize;
+          ThunkHandler->HostTrampolineInstanceDataPtr += HostToGuestTrampolineSize;
+          memcpy(HostTrampoline, (void*)&HostToGuestTrampolineTemplate, HostToGuestTrampolineSize);
+          GetInstanceInfo(HostTrampoline) = TrampolineInstanceInfo {
+                .HostPacker = reinterpret_cast<void*>(HostPackerEntry->second),
+                .CallCallback = (uintptr_t)&CallCallback,
+                .GuestUnpacker = args->GuestUnpacker,
+                .GuestTarget = args->GuestTarget
+              };
 
           args->rv = reinterpret_cast<uintptr_t>(HostTrampoline);
-
-          ThunkHandler->GuestcallToHostTrampoline[gci] = args->rv;
+          ThunkHandler->GuestcallToHostTrampoline[gci] = HostTrampoline;
         }
 
         /**
