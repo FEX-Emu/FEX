@@ -15,7 +15,6 @@ target_link_libraries(FEXLoader
   PRIVATE
     ${LIBS}
     LinuxEmulation
-    ${STATIC_PIE_OPTIONS}
     ${PTHREAD_LIB}
     fmt::fmt
 )
@@ -139,7 +138,6 @@ target_link_libraries(FEXBash
   PRIVATE
     ${LIBS}
     LinuxEmulation
-    ${STATIC_PIE_OPTIONS}
     ${PTHREAD_LIB}
 )
 
@@ -168,7 +166,6 @@ target_link_libraries(TestHarnessRunner
   PRIVATE
     ${LIBS}
     LinuxEmulation
-    ${STATIC_PIE_OPTIONS}
     ${PTHREAD_LIB}
 )
 
@@ -180,7 +177,6 @@ target_include_directories(UnitTestGenerator
 target_link_libraries(UnitTestGenerator
   PRIVATE
     ${LIBS}
-    ${STATIC_PIE_OPTIONS}
     ${PTHREAD_LIB}
 )
 
@@ -196,7 +192,6 @@ target_link_libraries(IRLoader
   PRIVATE
     ${LIBS}
     LinuxEmulation
-    ${STATIC_PIE_OPTIONS}
     ${PTHREAD_LIB}
     fmt::fmt
 )

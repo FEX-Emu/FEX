@@ -21,4 +21,4 @@ install(TARGETS ${NAME}
   DESTINATION bin
   COMPONENT runtime)
 
-target_link_libraries(${NAME} PRIVATE ${LIBS} ${STATIC_PIE_OPTIONS} ${PTHREAD_LIB})
+target_link_libraries(${NAME} PRIVATE ${LIBS} ${PTHREAD_LIB})
