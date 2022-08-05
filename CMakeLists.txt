@@ -20,7 +20,6 @@ option(ENABLE_GDB_SYMBOLS "Enables GDBSymbols integration support" ${HAVE_GDB_JI
 option(ENABLE_VISUAL_DEBUGGER "Enables the visual debugger for compiling" FALSE)
 option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
-option(ENABLE_STATIC_PIE "Enables static-pie build" FALSE)
 option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
 option(ENABLE_OFFLINE_TELEMETRY "Enables FEX offline telemetry" TRUE)
 option(ENABLE_COMPILE_TIME_TRACE "Enables time trace compile option" FALSE)
@@ -138,130 +137,6 @@ if(DEFINED ENV{TERMUX_VERSION} OR ENABLE_TERMUX_BUILD)
   set(TERMUX_BUILD 1)
   # Termux doesn't support Jemalloc due to bad interactions between emutls, jemalloc, and scudo
   set(ENABLE_JEMALLOC FALSE)
-endif()
-
-if (ENABLE_STATIC_PIE)
-  if (_M_ARM_64 AND ENABLE_LLD)
-    message (FATAL_ERROR "Static linking does not currently work with AArch64+lld. Use GNU ld for now.")
-  endif()
-
-  file(WRITE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt.c
-    "int main(int argc, char* argv[])
-      {
-        return 0;
-      }")
-
-  # Compile the test application with our LD_OVERRIDE and static-pie options
-  try_compile(
-    COMPILE_RESULT
-    ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp
-    ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt.c
-    COMPILE_DEFINITIONS "-fPIE ${LD_OVERRIDE}"
-    LINK_LIBRARIES "-static-pie ${LD_OVERRIDE}"
-    COPY_FILE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt
-  )
-
-  if (${COMPILE_RESULT})
-    # Read the symbols from the elf
-    execute_process(COMMAND
-      readelf -s ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/Determine_iplt
-      OUTPUT_FILE ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/plt_out.txt
-      OUTPUT_VARIABLE PLT_SYMBOLS)
-
-    # Pull out the __rela_iplt_{start,end} symbols if they exist
-    execute_process(COMMAND
-      "grep" "__rela_iplt" ${PROJECT_BINARY_DIR}/CMakeFiles/CMakeTmp/plt_out.txt
-      OUTPUT_VARIABLE PLT_SYMBOLS)
-
-    set (SYMBOLS_FINE TRUE)
-    set (HAS_IPLT -1)
-    # Check if we have any symbols in our grep output
-    # The symbols must either not exist at all OR the symbols are zero
-    if (PLT_SYMBOLS)
-      string(FIND ${PLT_SYMBOLS} "__rela_iplt_start" HAS_IPLT)
-    endif()
-
-    if (NOT HAS_IPLT EQUAL -1)
-      # We have some symbols from readelf. Let's parse the results to check if they are zero
-      # Format: '35: 0000000000000000     0 NOTYPE  LOCAL  HIDDEN   UND __rela_iplt_start'
-      string(REPLACE "\n" ";" SYMBOL_LIST ${PLT_SYMBOLS})
-      foreach (SYMBOL ${SYMBOL_LIST})
-        # strip any leading and trailing whitespace
-        string (STRIP ${SYMBOL} SYMBOL)
-        # Convert string to a list
-        string(REPLACE " " ";" SYMBOL_VALUES ${SYMBOL}})
-        # Pull out the address argument
-        list(GET SYMBOL_VALUES 1 OFFSET)
-
-        # Check against integer zero
-        if (NOT ${OFFSET} EQUAL 0)
-          # Symbol wasn't zero, this now fails
-          set (SYMBOLS_FINE FALSE)
-        endif()
-      endforeach()
-    endif()
-
-    if (SYMBOLS_FINE)
-      # We can now exnable static-pie
-      set (STATIC_PIE_OPTIONS "-static-pie")
-      # Pthreads has an issue with exposing symbols
-      # We need to make some concessions to the pthread gods
-      if (ENABLE_LLD)
-        set (PTHREAD_LIB
-          -Wl,--undefined-glob=pthread_*
-          -Wl,--undefined=__cxa_finalize
-          -Wl,--undefined=_pthread_cleanup_push_defer
-          -Wl,--undefined=_pthread_cleanup_pop_restore
-          -Wl,--undefined=__pthread_cleanup_upto
-          pthread)
-      else()
-        set (PTHREAD_LIB
-          -Wl,--undefined=pthread_join
-          -Wl,--undefined=pthread_attr_getdetachstate
-          -Wl,--undefined=pthread_sigmask
-          -Wl,--undefined=pthread_mutex_lock
-          -Wl,--undefined=pthread_cond_init
-          -Wl,--undefined=pthread_attr_init
-          -Wl,--undefined=pthread_mutex_unlock
-          -Wl,--undefined=pthread_mutexattr_destroy
-          -Wl,--undefined=pthread_detach
-          -Wl,--undefined=pthread_mutex_init
-          -Wl,--undefined=pthread_getattr_np
-          -Wl,--undefined=pthread_cond_timedwait
-          -Wl,--undefined=pthread_attr_destroy
-          -Wl,--undefined=pthread_mutexattr_settype
-          -Wl,--undefined=pthread_rwlock_unlock
-          -Wl,--undefined=pthread_rwlock_wrlock
-          -Wl,--undefined=pthread_setspecific
-          -Wl,--undefined=pthread_create
-          -Wl,--undefined=pthread_cond_clockwait
-          -Wl,--undefined=pthread_key_create
-          -Wl,--undefined=pthread_rwlock_rdlock
-          -Wl,--undefined=pthread_setname_np
-          -Wl,--undefined=pthread_cond_signal
-          -Wl,--undefined=pthread_mutexattr_init
-          -Wl,--undefined=pthread_attr_setstack
-          -Wl,--undefined=pthread_self
-          -Wl,--undefined=pthread_getaffinity_np
-          -Wl,--undefined=pthread_cond_wait
-          -Wl,--undefined=pthread_mutex_trylock
-          -Wl,--undefined=pthread_cond_broadcast
-          -Wl,--undefined=pthread_cond_destroy
-          -Wl,--undefined=pthread_getspecific
-          -Wl,--undefined=pthread_key_delete
-          -Wl,--undefined=pthread_once
-          -Wl,--undefined=__cxa_finalize
-          -Wl,--undefined=_pthread_cleanup_push_defer
-          -Wl,--undefined=_pthread_cleanup_pop_restore
-          -Wl,--undefined=__pthread_cleanup_upto
-          pthread)
-      endif()
-    else()
-      message (FATAL_ERROR "Application has __rela_iplt_{start,end} symbols. Which means static-pie can't be enabled")
-    endif()
-  else()
-    message (FATAL_ERROR "Couldn't compile static-pie test. Static-pie can't be enabled! Is your glibc compiled without static-pie?")
-  endif()
 endif()
 
 if (ENABLE_ASAN)
@@ -593,13 +468,7 @@ endif()
 
 # Package creation
 set (CPACK_GENERATOR "DEB")
-if (ENABLE_STATIC_PIE)
-  set (CPACK_PACKAGE_NAME fex-emu-static)
-  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu")
-else()
-  set (CPACK_PACKAGE_NAME fex-emu)
-  set (CPACK_DEBIAN_PACKAGE_CONFLICTS "fex-emu-static")
-endif()
+set (CPACK_PACKAGE_NAME fex-emu)
 set (CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${GIT_DESCRIBE_STRING}_${CMAKE_SYSTEM_PROCESSOR}")
 set (CPACK_PACKAGE_CONTACT "FEX-Emu Maintainers <team@fex-emu.org>")
 set (CPACK_PACKAGE_VERSION_MAJOR "${FEX_VERSION_MAJOR}")
