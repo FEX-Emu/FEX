@@ -6,6 +6,9 @@ add_executable(FEXLoader
   FEXLoader.cpp
   AOT/AOTGenerator.cpp)
 
+# Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
+set_target_properties(FEXLoader PROPERTIES ENABLE_EXPORTS 1)
+
 target_include_directories(FEXLoader
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Source/

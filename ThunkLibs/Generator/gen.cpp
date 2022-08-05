@@ -422,12 +422,8 @@ static std::string format_function_args(const FunctionParams& params, Fn&& forma
     return ret;
 };
 
-static std::string format_function_args(const FunctionParams& params) {
-    return format_function_args(params,
-                                [](std::size_t idx) -> std::string { return "args->a_" + std::to_string(idx); });
-}
-
 void GenerateThunkLibsAction::EndSourceFileAction() {
+
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
         if (type->isFunctionPointerType()) {
             auto signature = type.getAsString();
@@ -491,22 +487,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 first = false;
             }
             file << "\")\n";
-
-            // Generate SHA256 sums for automatically handled callbacks
-            for (auto& [cb_idx, cb] : thunk.callbacks) {
-                if (!cb.is_stub && !cb.is_guest) {
-                    bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
-                    auto cb_function_name = get_callback_name(function_name, cb_idx, is_first_cb);
-
-                    auto cb_sha256 = get_sha256(cb_function_name);
-
-                    file << "static uint8_t fexcallback_" << libname << "_" << cb_function_name << "[32] = { ";
-                    for (auto c : cb_sha256) {
-                        file << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c << ", ";
-                    }
-                    file << "};\n";
-                }
-            }
         }
         file << "}\n";
 
@@ -524,6 +504,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             cb_sha256_str.pop_back();
 
             // Thunk used for guest-side calls to host function pointers
+            file << "  // " << funcptr_signature << "\n";
             auto funcptr_idx = std::distance(funcptr_types.begin(), type_it);
             file << "  MAKE_CALLBACK_THUNK(callback_" << funcptr_idx << ", " << funcptr_signature << ", \"" << cb_sha256_str << "\");\n";
         }
@@ -594,6 +575,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "    char force_nonempty;\n";
             }
             file << "  } args;\n";
+
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto cb = data.callbacks.find(idx);
 
@@ -602,9 +584,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                     file << "a_" << idx << ";\n";
                 } else {
                     // Before passing guest function pointers to the host, wrap them in a host-callable trampoline
-                    bool is_first_cb = (cb->first == data.callbacks.begin()->first);
-                    auto cb_name = get_callback_name(function_name, cb->first, is_first_cb);
-                    file << "MakeHostTrampolineForGuestFunction(fexcallback_" << libname << "_" << cb_name << ", &fexfn_unpack_" << libname << "_" << cb_name << ", a_" << std::to_string(idx) << ");\n";
+                    file << "AllocateHostTrampolineForGuestFunction(a_" << std::to_string(idx) << ");\n";
                 }
             }
             file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
@@ -650,28 +630,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                     file << "  fprintf(stderr, \"FATAL: Attempted to invoke callback stub for " << function_name << "\\n\");\n";
                     file << "  std::abort();\n";
                     file << "}\n";
-                } else if (!cb.is_guest) {
-                    bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
-                    const char* variadic_ellipsis = cb.is_variadic ? ", ..." : "";
-                    auto cb_function_name = get_callback_name(function_name, cb_idx, is_first_cb);
-
-                    file << "static " << cb.return_type.getAsString() << " fexfn_pack_guestcall_"
-                         << cb_function_name << "("
-                         << format_function_params(cb) << variadic_ellipsis << ") {\n";
-                    file << "  GuestcallInfo *guestcall;\n";
-                    file << "  LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);\n";
-
-                    auto args_struct_name = GeneratePackedArgs(cb_function_name, cb);
-                    file << "  " << args_struct_name << " argsrv;\n";
-                    for (std::size_t idx = 0; idx < cb.param_types.size(); ++idx) {
-                        file << "  argsrv.a_" << idx << " = a_" << idx << ";\n";
-                    }
-                    file << "  guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &argsrv);\n";
-
-                    if (!cb.return_type->isVoidType()) {
-                        file << "  return argsrv.rv;\n";
-                    }
-                    file << "}\n";
                 }
             }
 
@@ -693,6 +651,11 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first, is_first_cb) + "_stub";
                     } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
                         return "fex_guest_function_ptr { args->a_" + std::to_string(idx) + " }";
+                    } else if (cb != thunk.callbacks.end()) {
+                        auto arg_name = "args->a_" + std::to_string(idx);
+                        // Use comma operator to inject a function call before returning the argument
+                        return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
+
                     } else {
                         return "args->a_" + std::to_string(idx);
                     }
@@ -719,21 +682,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
             }
             file << "\", (void(*)(void *))&fexfn_unpack_" << libname << "_" << function_name << "}, // " << libname << ":" << function_name << "\n";
-
-            for (auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub || cb.is_guest)
-                    continue;
-                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
-                auto cb_function_name = get_callback_name(function_name, cb_idx, is_first_cb);
-
-                auto cb_sha256 = get_sha256(cb_function_name);
-
-                file << "{(uint8_t*)\"";
-                for (auto c : cb_sha256) {
-                    file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
-                }
-                file << "\", (void(*)(void *))&fexfn_pack_guestcall_" << cb_function_name << "}, // " << libname << ":" << cb_function_name << "\n";
-            }
         }
 
         for (auto& type : funcptr_types) {
@@ -784,31 +732,8 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
     }
 
     if (!output_filenames.callback_unpacks.empty()) {
+        // TODO: Not needed anymore
         std::ofstream file(output_filenames.callback_unpacks);
-
-        for (auto& thunk : thunks) {
-            for (const auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub || cb.is_guest) {
-                    continue;
-                }
-
-                bool is_void = cb.return_type->isVoidType();
-                bool is_first_cb = (cb_idx == thunk.callbacks.begin()->first);
-                auto cb_function_name = get_callback_name(thunk.function_name, cb_idx, is_first_cb);
-                file << "static void fexfn_unpack_" << libname << "_" << cb_function_name << "(uintptr_t cb, void* argsv) {\n";
-                file << "  typedef " << cb.return_type.getAsString() << " fn_t (" << format_function_params(cb) << ");\n";
-                file << "  auto callback = reinterpret_cast<fn_t*>(cb);\n";
-                file << "  struct arg_t {\n";
-                file << format_struct_members(cb, "    ");
-                if (!is_void) {
-                    file << "    " << format_decl(cb.return_type, "rv") << ";\n";
-                }
-                file << "  };\n";
-                file << "  auto args = (arg_t*)argsv;\n";
-                file << (is_void ? "  " : "  args->rv = ") << "callback(" << format_function_args(cb) << ");\n";
-                file << "}\n";
-            }
-        }
     }
 
     if (!output_filenames.symbol_list.empty()) {
