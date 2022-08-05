@@ -49,3 +49,7 @@
 	shallow = true
 	path = External/robin-map
 	url = https://github.com/Tessil/robin-map.git
+[submodule "External/Vulkan-Headers"]
+	shallow = true
+	path = External/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git

@@ -383,6 +383,7 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_THUNKS)
+  set (FEX_PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
   add_subdirectory(ThunkLibs/Generator)
 
   # Thunk targets for both host libraries and IDE integration
@@ -402,6 +403,7 @@ if (BUILD_THUNKS)
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
+      "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
