@@ -218,7 +218,7 @@ template<> struct fex_gen_config<XGetMotionEvents> {};
 
 template<> struct fex_gen_config<_XReadEvents> {};
 
-template<> struct fex_gen_config<XInitImage> {}; // TODO: Fixup vtable for guest use
+template<> struct fex_gen_config<XInitImage> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<XrmQuarkToString> {};
 template<> struct fex_gen_config<XrmCombineFileDatabase> {};
 template<> struct fex_gen_config<XrmGetResource> {};
@@ -552,10 +552,7 @@ template<> struct fex_gen_config<XDefaultScreen> {};
 template<> struct fex_gen_config<XDisplayWidth> {};
 template<> struct fex_gen_config<XMatchVisualInfo> {};
 template<> struct fex_gen_config<XPutImage> {};
-
-template<> struct fex_gen_type<int(XImage*)> {}; // XImage::f.destroy_image
 template<> struct fex_gen_config<XCreateImage> : fexgen::custom_guest_entrypoint {};
-
 template<> struct fex_gen_config<XDisplayHeight> {};
 
 template<> struct fex_gen_config<XkbGetKeyboard> {};
@@ -624,12 +621,11 @@ template<> struct fex_gen_config<_XFreeTemp> {};
 template<> struct fex_gen_config<_XUnknownNativeEvent> {};
 template<> struct fex_gen_config<_XIsEventCookie> {};
 
-
-
-
-// TODO: Vtable support...
-template<> struct fex_gen_config<_XInitImageFuncPtrs> {};
-
+template<> struct fex_gen_type<int(XImage*)> {};                          // XImage::f.destroy_image
+template<> struct fex_gen_type<unsigned long(XImage*, int, int)> {};      // XImage::f.get_pixel
+template<> struct fex_gen_type<int(XImage*, int, int, unsigned long)> {}; // XImage::f.put_pixel
+template<> struct fex_gen_type<int(XImage*, long)> {};                    // XImage::f.add_pixel
+template<> struct fex_gen_config<_XInitImageFuncPtrs> : fexgen::custom_guest_entrypoint {};
 
 template<> struct fex_gen_config<XVaCreateNestedList> {
     using uniform_va_type = void*;

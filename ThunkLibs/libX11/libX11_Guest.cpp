@@ -230,6 +230,22 @@ extern "C" {
     return fexfn_pack_XInitThreadsInternal((uintptr_t)_XInitDisplayLock, (uintptr_t)CallbackUnpack<decltype(_XInitDisplayLock)>::Unpack);
   }
 
+  // Register the host function pointers written by _XInitImageFuncPtrs (and
+  // its callers) to be guest-callable
+  static void FixupImageFuncPtrs(XImage* image) {
+    image->f.create_image = XCreateImage;
+    MakeHostFunctionGuestCallable(image->f.destroy_image);
+    MakeHostFunctionGuestCallable(image->f.get_pixel);
+    MakeHostFunctionGuestCallable(image->f.put_pixel);
+    // TODO: image->f.sub_image
+    MakeHostFunctionGuestCallable(image->f.add_pixel);
+  }
+
+  void _XInitImageFuncPtrs(XImage* image) {
+    fexfn_pack__XInitImageFuncPtrs(image);
+    FixupImageFuncPtrs(image);
+  }
+
   XImage *XCreateImage(
         Display* display, Visual* visual,
         unsigned int depth, int format,
@@ -237,7 +253,13 @@ extern "C" {
         unsigned int width, unsigned int height,
         int pad, int bpp) {
     auto ret = fexfn_pack_XCreateImage(display, visual, depth, format, offset, data, width, height, pad, bpp);
-    MakeHostFunctionGuestCallable(ret->f.destroy_image);
+    FixupImageFuncPtrs(ret);
+    return ret;
+  }
+
+  Status XInitImage(XImage* image) {
+    auto ret = fexfn_pack_XInitImage(image);
+    FixupImageFuncPtrs(image);
     return ret;
   }
 
