@@ -17,6 +17,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <algorithm>
@@ -350,7 +351,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
         break;
       }
       default:
-        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", IROp);
+        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", ToUnderlying(IROp));
         break;
     }
   }
@@ -5048,7 +5049,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
         break;
       }
       default:
-        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", IROp);
+        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", ToUnderlying(IROp));
         break;
     }
   }

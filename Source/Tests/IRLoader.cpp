@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -230,7 +231,7 @@ int main(int argc, char **argv, char **const envp)
       FEXCore::Context::RunUntilExit(CTX);
     }
 
-    LogMan::Msg::DFmt("Reason we left VM: {}", ShutdownReason);
+    LogMan::Msg::DFmt("Reason we left VM: {}", FEXCore::ToUnderlying(ShutdownReason));
 
     // Just re-use compare state. It also checks against the expected values in config.
     FEXCore::Core::CPUState State;
