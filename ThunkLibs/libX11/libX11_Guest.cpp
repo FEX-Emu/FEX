@@ -194,32 +194,19 @@ extern "C" {
       if (!funcptr) {
         continue;
       }
-      auto caller = (uintptr_t)GetCallerForHostFunction(funcptr);
-      LinkAddressToFunction((uintptr_t)funcptr, (uintptr_t)caller);
+      MakeHostFunctionGuestCallable(funcptr);
     }
 
     for (auto& funcptr : ret->wire_vec) {
       if (!funcptr) {
         continue;
       }
-      auto caller = (uintptr_t)GetCallerForHostFunction(funcptr);
-      LinkAddressToFunction((uintptr_t)funcptr, (uintptr_t)caller);
+      MakeHostFunctionGuestCallable(funcptr);
     }
 
-    {
-      auto caller = (uintptr_t)GetCallerForHostFunction(ret->resource_alloc);
-      LinkAddressToFunction((uintptr_t)ret->resource_alloc, (uintptr_t)caller);
-    }
-
-    {
-      auto caller = (uintptr_t)GetCallerForHostFunction(ret->idlist_alloc);
-      LinkAddressToFunction((uintptr_t)ret->idlist_alloc, (uintptr_t)caller);
-    }
-
-    {
-      auto caller = (uintptr_t)GetCallerForHostFunction(ret->exit_handler);
-      LinkAddressToFunction((uintptr_t)ret->exit_handler, (uintptr_t)caller);
-    }
+    MakeHostFunctionGuestCallable(ret->resource_alloc);
+    MakeHostFunctionGuestCallable(ret->idlist_alloc);
+    MakeHostFunctionGuestCallable(ret->exit_handler);
 
     return ret;
   }
@@ -234,14 +221,8 @@ extern "C" {
   }
 
   static int _XInitDisplayLock(Display* display) {
-    {
-      auto caller = (uintptr_t)GetCallerForHostFunction(display->lock_fns->lock_display);
-      LinkAddressToFunction((uintptr_t)display->lock_fns->lock_display, (uintptr_t)caller);
-    }
-    {
-      auto caller = (uintptr_t)GetCallerForHostFunction(display->lock_fns->unlock_display);
-      LinkAddressToFunction((uintptr_t)display->lock_fns->unlock_display, (uintptr_t)caller);
-    }
+    MakeHostFunctionGuestCallable(display->lock_fns->lock_display);
+    MakeHostFunctionGuestCallable(display->lock_fns->unlock_display);
     return 0;
   }
 
@@ -256,10 +237,7 @@ extern "C" {
         unsigned int width, unsigned int height,
         int pad, int bpp) {
     auto ret = fexfn_pack_XCreateImage(display, visual, depth, format, offset, data, width, height, pad, bpp);
-    {
-      auto caller = (uintptr_t)GetCallerForHostFunction(ret->f.destroy_image);
-      LinkAddressToFunction((uintptr_t)ret->f.destroy_image, (uintptr_t)caller);
-    }
+    MakeHostFunctionGuestCallable(ret->f.destroy_image);
     return ret;
   }
 

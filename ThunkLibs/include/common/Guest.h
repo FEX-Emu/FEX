@@ -117,6 +117,13 @@ static auto GetCallerForHostFunction(Result (*host_func)(Args...))
   return CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
 }
 
+// Ensures the given host function can safely be called from guest code.
+template<typename Result, typename...Args>
+inline void MakeHostFunctionGuestCallable(Result (*host_func)(Args...)) {
+  auto caller = (uintptr_t)GetCallerForHostFunction(host_func);
+  LinkAddressToFunction((uintptr_t)host_func, (uintptr_t)caller);
+}
+
 template<typename Target>
 inline Target *AllocateHostTrampolineForGuestFunction(void (*GuestUnpacker)(uintptr_t, void*), Target *GuestTarget) {
   if (!GuestTarget) {
