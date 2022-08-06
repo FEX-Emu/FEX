@@ -321,7 +321,7 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "    using args_t = typename function_traits<decltype(Fn)>::arg_t;\n"
         "    return Fn(reinterpret_cast<args_t>(argsv));\n"
         "}\n"
-        "#define LOAD_INTERNAL_GUESTPTR_ARG(arg)\n"
+        "#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(arg)\n"
         "struct GuestcallInfo {\n"
         "  uintptr_t HostPacker;\n"
         "  void (*CallCallback)(uintptr_t, uintptr_t, void*);\n"
