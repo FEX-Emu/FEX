@@ -57,7 +57,6 @@ struct Fixture {
             tmpdir + "/thunks",
             tmpdir + "/function_packs",
             tmpdir + "/function_packs_public",
-            tmpdir + "/callback_unpacks",
         };
     }
 
@@ -290,7 +289,6 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
         "Target *AllocateHostTrampolineForGuestFunction(Target*);\n";
     for (auto& filename : {
             output_filenames.thunks,
-            output_filenames.callback_unpacks,
             output_filenames.function_packs_public,
             output_filenames.function_packs,
             }) {

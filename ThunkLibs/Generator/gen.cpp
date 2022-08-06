@@ -731,11 +731,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         }
     }
 
-    if (!output_filenames.callback_unpacks.empty()) {
-        // TODO: Not needed anymore
-        std::ofstream file(output_filenames.callback_unpacks);
-    }
-
     if (!output_filenames.symbol_list.empty()) {
         std::ofstream file(output_filenames.symbol_list);
 
