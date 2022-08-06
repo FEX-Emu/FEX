@@ -335,97 +335,97 @@ namespace FEXCore {
         return new ThunkHandler_impl();
     }
 
-        /**
-         * Generates a host-callable trampoline to call guest functions via the host ABI.
-         *
-         * This trampoline uses the same calling convention as the given HostPacker. Trampolines
-         * are cached, so it's safe to call this function repeatedly on the same arguments without
-         * leaking memory.
-         *
-         * Invoking the returned trampoline has the effect of:
-         * - packing the arguments (using the HostPacker identified by its SHA256)
-         * - performing a host->guest transition
-         * - unpacking the arguments via GuestUnpacker
-         * - calling the function at GuestTarget
-         *
-         * The primary use case of this is ensuring that guest function pointers ("callbacks")
-         * passed to thunked APIs can safely be called by the native host library.
-         *
-         * Returns a pointer to the generated host trampoline and its TrampolineInstanceInfo.
-         *
-         * If HostPacker is zero, the trampoline will be partially initialized and needs to be
-         * finalized with a call to FinalizeHostTrampolineForGuestFunction. A typical use case
-         * is to allocate the trampoline for a given GuestTarget/GuestUnpacker on the guest-side,
-         * and provide the HostPacker host-side.
-         */
-        __attribute__((visibility("default")))
-        HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
-          LOGMAN_THROW_AA_FMT(GuestTarget, "Tried to create host-trampoline to null pointer guest function");
+    /**
+     * Generates a host-callable trampoline to call guest functions via the host ABI.
+     *
+     * This trampoline uses the same calling convention as the given HostPacker. Trampolines
+     * are cached, so it's safe to call this function repeatedly on the same arguments without
+     * leaking memory.
+     *
+     * Invoking the returned trampoline has the effect of:
+     * - packing the arguments (using the HostPacker identified by its SHA256)
+     * - performing a host->guest transition
+     * - unpacking the arguments via GuestUnpacker
+     * - calling the function at GuestTarget
+     *
+     * The primary use case of this is ensuring that guest function pointers ("callbacks")
+     * passed to thunked APIs can safely be called by the native host library.
+     *
+     * Returns a pointer to the generated host trampoline and its TrampolineInstanceInfo.
+     *
+     * If HostPacker is zero, the trampoline will be partially initialized and needs to be
+     * finalized with a call to FinalizeHostTrampolineForGuestFunction. A typical use case
+     * is to allocate the trampoline for a given GuestTarget/GuestUnpacker on the guest-side,
+     * and provide the HostPacker host-side.
+     */
+    __attribute__((visibility("default")))
+    HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+      LOGMAN_THROW_AA_FMT(GuestTarget, "Tried to create host-trampoline to null pointer guest function");
 
-          const auto CTX = Thread->CTX;
-          const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
+      const auto CTX = Thread->CTX;
+      const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
 
-          const GuestcallInfo gci = { GuestUnpacker, GuestTarget };
+      const GuestcallInfo gci = { GuestUnpacker, GuestTarget };
 
-          // Try first with shared_lock
-          {
-            std::shared_lock lk(ThunkHandler->ThunksMutex);
+      // Try first with shared_lock
+      {
+        std::shared_lock lk(ThunkHandler->ThunksMutex);
 
-            auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
-            if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
-              return found->second;
-            }
-          }
-
-          std::lock_guard lk(ThunkHandler->ThunksMutex);
-
-          // Retry lookup with full lock before making a new trampoline to avoid double trampolines
-          {
-            auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
-            if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
-              return found->second;
-            }
-          }
-
-          LogMan::Msg::DFmt("Thunks: Adding host trampoline for guest function {:#x} via unpacker {:#x}",
-                            GuestTarget, GuestUnpacker);
-
-          if (ThunkHandler->HostTrampolineInstanceDataAvailable < HostToGuestTrampolineSize) {
-            const auto allocation_step = 16 * 1024;
-            ThunkHandler->HostTrampolineInstanceDataAvailable = allocation_step;
-            ThunkHandler->HostTrampolineInstanceDataPtr = (uint8_t *)mmap(
-                0, ThunkHandler->HostTrampolineInstanceDataAvailable,
-                PROT_READ | PROT_WRITE | PROT_EXEC,
-                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-            LOGMAN_THROW_AA_FMT(ThunkHandler->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
-          }
-
-          auto HostTrampoline = reinterpret_cast<HostToGuestTrampolinePtr* const>(ThunkHandler->HostTrampolineInstanceDataPtr);
-          ThunkHandler->HostTrampolineInstanceDataAvailable -= HostToGuestTrampolineSize;
-          ThunkHandler->HostTrampolineInstanceDataPtr += HostToGuestTrampolineSize;
-          memcpy(HostTrampoline, (void*)&HostToGuestTrampolineTemplate, HostToGuestTrampolineSize);
-          GetInstanceInfo(HostTrampoline) = TrampolineInstanceInfo {
-              .HostPacker = HostPacker,
-              .CallCallback = (uintptr_t)&ThunkHandler_impl::CallCallback,
-              .GuestUnpacker = GuestUnpacker,
-              .GuestTarget = GuestTarget
-          };
-
-          ThunkHandler->GuestcallToHostTrampoline[gci] = HostTrampoline;
-          return HostTrampoline;
+        auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
+        if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
+          return found->second;
         }
+      }
 
-        __attribute__((visibility("default")))
-        void FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr* TrampolineAddress, void* HostPacker) {
-          auto& Trampoline = GetInstanceInfo(TrampolineAddress);
+      std::lock_guard lk(ThunkHandler->ThunksMutex);
 
-          LOGMAN_THROW_A_FMT(Trampoline.CallCallback == (uintptr_t)&ThunkHandler_impl::CallCallback,
-                            "Invalid trampoline at {} passed to {}", fmt::ptr(TrampolineAddress), __FUNCTION__);
-
-          if (!Trampoline.HostPacker) {
-            LogMan::Msg::DFmt("Thunks: Finalizing trampoline at {} with host packer {}", fmt::ptr(TrampolineAddress), fmt::ptr(HostPacker));
-            Trampoline.HostPacker = HostPacker;
-          }
+      // Retry lookup with full lock before making a new trampoline to avoid double trampolines
+      {
+        auto found = ThunkHandler->GuestcallToHostTrampoline.find(gci);
+        if (found != ThunkHandler->GuestcallToHostTrampoline.end()) {
+          return found->second;
         }
+      }
+
+      LogMan::Msg::DFmt("Thunks: Adding host trampoline for guest function {:#x} via unpacker {:#x}",
+                        GuestTarget, GuestUnpacker);
+
+      if (ThunkHandler->HostTrampolineInstanceDataAvailable < HostToGuestTrampolineSize) {
+        const auto allocation_step = 16 * 1024;
+        ThunkHandler->HostTrampolineInstanceDataAvailable = allocation_step;
+        ThunkHandler->HostTrampolineInstanceDataPtr = (uint8_t *)mmap(
+            0, ThunkHandler->HostTrampolineInstanceDataAvailable,
+            PROT_READ | PROT_WRITE | PROT_EXEC,
+            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+        LOGMAN_THROW_AA_FMT(ThunkHandler->HostTrampolineInstanceDataPtr != MAP_FAILED, "Failed to mmap HostTrampolineInstanceDataPtr");
+      }
+
+      auto HostTrampoline = reinterpret_cast<HostToGuestTrampolinePtr* const>(ThunkHandler->HostTrampolineInstanceDataPtr);
+      ThunkHandler->HostTrampolineInstanceDataAvailable -= HostToGuestTrampolineSize;
+      ThunkHandler->HostTrampolineInstanceDataPtr += HostToGuestTrampolineSize;
+      memcpy(HostTrampoline, (void*)&HostToGuestTrampolineTemplate, HostToGuestTrampolineSize);
+      GetInstanceInfo(HostTrampoline) = TrampolineInstanceInfo {
+          .HostPacker = HostPacker,
+          .CallCallback = (uintptr_t)&ThunkHandler_impl::CallCallback,
+          .GuestUnpacker = GuestUnpacker,
+          .GuestTarget = GuestTarget
+      };
+
+      ThunkHandler->GuestcallToHostTrampoline[gci] = HostTrampoline;
+      return HostTrampoline;
+    }
+
+    __attribute__((visibility("default")))
+    void FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr* TrampolineAddress, void* HostPacker) {
+      auto& Trampoline = GetInstanceInfo(TrampolineAddress);
+
+      LOGMAN_THROW_A_FMT(Trampoline.CallCallback == (uintptr_t)&ThunkHandler_impl::CallCallback,
+                        "Invalid trampoline at {} passed to {}", fmt::ptr(TrampolineAddress), __FUNCTION__);
+
+      if (!Trampoline.HostPacker) {
+        LogMan::Msg::DFmt("Thunks: Finalizing trampoline at {} with host packer {}", fmt::ptr(TrampolineAddress), fmt::ptr(HostPacker));
+        Trampoline.HostPacker = HostPacker;
+      }
+    }
 }
