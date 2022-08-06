@@ -434,6 +434,8 @@ namespace ProcessPipe {
       ts.tv_sec = RequestTimeout;
 
       int Result = ppoll(&PollFDs.at(0), PollFDs.size(), &ts, nullptr);
+      std::vector<struct pollfd> NewPollFDs{};
+
       if (Result > 0) {
         // Walk the FDs and see if we got any results
         for (auto it = PollFDs.begin(); it != PollFDs.end(); ) {
@@ -448,8 +450,8 @@ namespace ProcessPipe {
                 socklen_t AddrSize{};
                 int NewFD = accept(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
 
-                // Add the new client to the array
-                PollFDs.emplace_back(pollfd {
+                // Add the new client to the temporary array
+                NewPollFDs.emplace_back(pollfd {
                   .fd = NewFD,
                   .events = POLLIN | POLLPRI | POLLRDHUP | POLLREMOVE,
                   .revents = 0,
@@ -489,6 +491,9 @@ namespace ProcessPipe {
             break;
           }
         }
+
+        // Insert the new FDs to poll
+        PollFDs.insert(PollFDs.begin(), NewPollFDs.begin(), NewPollFDs.end());
 
         LastDataTime = std::chrono::system_clock::now();
       }
