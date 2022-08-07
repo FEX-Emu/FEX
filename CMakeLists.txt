@@ -374,9 +374,13 @@ add_subdirectory(Source/)
 add_subdirectory(Data/AppConfig/)
 
 # Install the ThunksDB file
-install(
-  FILES ${CMAKE_CURRENT_SOURCE_DIR}/Data/ThunksDB.json
-  DESTINATION ${DATA_DIRECTORY}/)
+file(GLOB CONFIG_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Data/*.json)
+
+# Any application configuration json file gets installed
+foreach(CONFIG_SRC ${CONFIG_SOURCES})
+  install(FILES ${CONFIG_SRC}
+    DESTINATION ${DATA_DIRECTORY}/)
+endforeach()
 
 if (BUILD_TESTS)
   add_subdirectory(unittests/)
