@@ -412,11 +412,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     record[0] = HostCode;
 
     // Add de-linking handler
-<<<<<<< Updated upstream
-    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
-=======
-    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [BranchOp, record, LinkerAddress]{
->>>>>>> Stashed changes
+    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
       record[0] = LinkerAddress;
     });
   }
