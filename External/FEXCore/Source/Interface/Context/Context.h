@@ -173,13 +173,26 @@ namespace FEXCore::Context {
     void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
     void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
-    // Must be called from owning thread
-    static void RemoveThreadCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+    static void ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker);
 
-    // Wrapper which takes CpuStateFrame instead of InternalThreadState
+    template<auto Fn>
+    static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
+      std::shared_lock lk(Frame->Thread->CTX->CodeInvalidationMutex);
+
+      return Fn(Frame, record);
+    }
+
+    // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
     // Must be called from owning thread
-    static void RemoveThreadCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
-      RemoveThreadCodeEntry(Frame->Thread, GuestRIP);
+    static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+      auto Thread = Frame->Thread;
+      
+      LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), gettid());
+
+      std::unique_lock lk(Thread->CTX->CodeInvalidationMutex);
+
+      ThreadRemoveCodeEntry(Thread, GuestRIP);
     }
 
     // returns false if a handler was already registered

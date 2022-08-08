@@ -818,7 +818,7 @@ namespace FEXCore::Context {
             Thread->OpDispatcher->SetTrueJumpTarget(InvalidateCodeCond, CodeWasChangedBlock);
 
             Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
-            Thread->OpDispatcher->_RemoveThreadCodeEntry();
+            Thread->OpDispatcher->_ThreadRemoveCodeEntry();
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
 
             auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
@@ -1174,7 +1174,7 @@ namespace FEXCore::Context {
 
     for (auto it = lower; it != upper; it++) {
       for (auto Address: it->second) {
-        Context::RemoveThreadCodeEntry(Thread, Address);
+        Context::ThreadRemoveCodeEntry(Thread, Address);
       }
       it->second.clear();
     }
@@ -1221,7 +1221,15 @@ namespace FEXCore::Context {
     CTX->MarkMemoryShared();
   }
 
-  void Context::RemoveThreadCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  void Context::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
+    std::shared_lock lk(Thread->CTX->CodeInvalidationMutex);
+
+    Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
+  }
+
+  void Context::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {   
+    LogMan::Throw::AFmt(Thread->CTX->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+    
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     Thread->DebugStore.erase(GuestRIP);
@@ -1260,7 +1268,7 @@ namespace FEXCore::Context {
     Thread->CurrentFrame->State.rip = RIP;
 
     // Erase the RIP from all the storage backings if it exists
-    RemoveThreadCodeEntry(Thread, RIP);
+    ThreadRemoveCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
     CompileBlock(Thread->CurrentFrame, RIP);

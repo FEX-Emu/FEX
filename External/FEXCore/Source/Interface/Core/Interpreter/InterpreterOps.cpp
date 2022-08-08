@@ -121,7 +121,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(INLINESYSCALL,          InlineSyscall);
   REGISTER_OP(THUNK,                  Thunk);
   REGISTER_OP(VALIDATECODE,           ValidateCode);
-  REGISTER_OP(REMOVETHREADCODEENTRY,        RemoveThreadCodeEntry);
+  REGISTER_OP(THREADREMOVECODEENTRY,        ThreadRemoveCodeEntry);
   REGISTER_OP(CPUID,                  CPUID);
 
   // Conversion ops

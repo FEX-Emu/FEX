@@ -312,7 +312,7 @@ static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame,
   }
 
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-  Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+  Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;
   });
@@ -361,7 +361,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
     
     Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Common.RemoveThreadCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::RemoveThreadCodeEntryFromJit);
+    Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::ThreadRemoveCodeEntryFromJit);
     Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {
@@ -371,7 +371,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
-    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&X86JITCore_ExitFunctionLink);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::Context::ThreadExitFunctionLink<X86JITCore_ExitFunctionLink>);
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);

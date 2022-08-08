@@ -436,7 +436,7 @@ DEF_OP(ValidateCode) {
   }
 }
 
-DEF_OP(RemoveThreadCodeEntry) {
+DEF_OP(ThreadRemoveCodeEntry) {
   // Arguments are passed as follows:
   // X0: Thread
   // X1: RIP
@@ -446,7 +446,7 @@ DEF_OP(RemoveThreadCodeEntry) {
   mov(x0, STATE);
   LoadConstant(x1, Entry);
 
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.RemoveThreadCodeEntryFromJIT)));
+  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT)));
   SpillStaticRegs();
   blr(x2);
   FillStaticRegs();
@@ -492,7 +492,7 @@ void Arm64JITCore::RegisterBranchHandlers() {
   REGISTER_OP(INLINESYSCALL,     InlineSyscall);
   REGISTER_OP(THUNK,             Thunk);
   REGISTER_OP(VALIDATECODE,      ValidateCode);
-  REGISTER_OP(REMOVETHREADCODEENTRY,   RemoveThreadCodeEntry);
+  REGISTER_OP(THREADREMOVECODEENTRY,   ThreadRemoveCodeEntry);
   REGISTER_OP(CPUID,             CPUID);
 #undef REGISTER_OP
 }
