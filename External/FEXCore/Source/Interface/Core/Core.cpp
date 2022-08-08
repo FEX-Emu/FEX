@@ -1181,7 +1181,7 @@ namespace FEXCore::Context {
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    std::lock_guard lk(CTX->ThreadCreationMutex);
+    FHU::ScopedSignalMaskWithMutex lk(CTX->ThreadCreationMutex);
     
     for (auto &Thread : CTX->Threads) {
       InvalidateGuestThreadCodeRange(Thread, Start, Length);
@@ -1189,7 +1189,7 @@ namespace FEXCore::Context {
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    std::unique_lock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
 
     InvalidateGuestCodeRange(CTX, Start, Length);
     CallAfter(Start, Length);

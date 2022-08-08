@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common/JitSymbols.h"
+#include "FEXHeaderUtils/ScopedSignalMask.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
@@ -178,7 +179,7 @@ namespace FEXCore::Context {
 
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
-      std::shared_lock lk(Frame->Thread->CTX->CodeInvalidationMutex);
+      FHU::ScopedSignalMaskWithSharedLock lk(Frame->Thread->CTX->CodeInvalidationMutex);
 
       return Fn(Frame, record);
     }
@@ -190,7 +191,7 @@ namespace FEXCore::Context {
       
       LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), gettid());
 
-      std::unique_lock lk(Thread->CTX->CodeInvalidationMutex);
+      FHU::ScopedSignalMaskWithUniqueLock lk(Thread->CTX->CodeInvalidationMutex);
 
       ThreadRemoveCodeEntry(Thread, GuestRIP);
     }
