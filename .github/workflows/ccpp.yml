@@ -26,6 +26,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Environment info
+      run: |
+        echo && type $CC && which $CC && $CC --version
+        echo && type $CXX && which $CXX && $CXX --version
+        echo && type cmake && cmake --version
+        lsb_release -a
+        echo && cat /proc/cpuinfo || echo /proc/cpuinfo is not present
+
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
 

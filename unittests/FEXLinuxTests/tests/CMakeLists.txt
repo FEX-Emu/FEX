@@ -37,26 +37,38 @@ foreach(TEST ${TESTS})
     set(APPEND_LD_FLAGS "")
   endif()
 
-  set(FLAGS_REGEX "//[ ]*libs: ([^\n]+)")
+  set(LIBS_REGEX "//[ ]*libs: ([^\n]+)")
 
-  string(REGEX MATCH ${FLAGS_REGEX} LIBS ${TEST_CODE})
+  string(REGEX MATCH ${LIBS_REGEX} LIBS ${TEST_CODE})
   # if cannot handle multiline variables, so we have to match the line first
-  if(${LIBS} MATCHES ${FLAGS_REGEX})
+  if(${LIBS} MATCHES ${LIBS_REGEX})
     set(LIBS "${CMAKE_MATCH_1}" )
     string(REGEX REPLACE " |," ";" LIBS "${LIBS}")
   else()
     set(LIBS "")
   endif()
 
-  set(BIN_NAME_32 "${TEST_NAME}.32")
-  set(BIN_NAME_64 "${TEST_NAME}.64")
+  set(ARCH_REGEX "//[ ]*arch: ([^\n]+)")
 
-  add_executable(${BIN_NAME_32} ${TEST})
-  set_target_properties(${BIN_NAME_32} PROPERTIES COMPILE_FLAGS "${APPEND_CXX_FLAGS} -m32 -g -O2 " LINK_FLAGS "${APPEND_LD_FLAGS} -m32")
-  target_link_libraries(${BIN_NAME_32} ${LIBS})
+  string(REGEX MATCH ${ARCH_REGEX} ARCHES ${TEST_CODE})
+  # if cannot handle multiline variables, so we have to match the line first
+  if(${ARCHES} MATCHES ${ARCH_REGEX})
+    set(ARCHES "${CMAKE_MATCH_1}" )
+    string(REGEX REPLACE " |," ";" ARCHES "${ARCHES}")
+  else()
+    set(ARCHES "${GUEST_ARCH}" "")
+  endif()
 
-  add_executable(${BIN_NAME_64} ${TEST})
-  set_target_properties(${BIN_NAME_64} PROPERTIES COMPILE_FLAGS "${APPEND_CXX_FLAGS} -g -O2" LINK_FLAGS "${APPEND_LD_FLAGS}")
-  target_link_libraries(${BIN_NAME_64} ${LIBS})
+  # message("test: ${TEST_NAME} |${GUEST_ARCH}| in [${ARCHES}]")
+
+  if (${GUEST_ARCH} IN_LIST ARCHES)
+    set(BIN_NAME "${TEST_NAME}.${GUEST_ARCH}")
+
+    # message("Added Target ${BIN_NAME}")
+
+    add_executable(${BIN_NAME} ${TEST})
+    set_target_properties(${BIN_NAME} PROPERTIES COMPILE_FLAGS "${APPEND_CXX_FLAGS} -g -O2" LINK_FLAGS "${APPEND_LD_FLAGS}")
+    target_link_libraries(${BIN_NAME} ${LIBS})
+  endif()
 
 endforeach()

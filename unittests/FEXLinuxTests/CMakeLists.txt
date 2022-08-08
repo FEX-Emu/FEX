@@ -1,31 +1,29 @@
 include(ExternalProject)
-ExternalProject_Add(FEXLinuxTests
-  PREFIX FEXLinuxTests
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests"
-  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests"
-  CMAKE_ARGS
-  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-  "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
-  INSTALL_COMMAND ""
-  BUILD_ALWAYS ON
-  )
 
-ExternalProject_Add(FEXLinuxTests_32
-  PREFIX FEXLinuxTests_32
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests-32"
-  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests_32"
-  CMAKE_ARGS
-  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-  "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
-  INSTALL_COMMAND ""
-  BUILD_ALWAYS ON
-  )
+set(GuestArchList "x86_32;x86_64")
+
+foreach(GUEST_ARCH ${GuestArchList})
+  set(TOOLCHAIN_FILE ${TOOLCHAIN_FILE_${GUEST_ARCH}})
+  message("FEXLinuxTests: toolchain for |${GUEST_ARCH}| is \"${TOOLCHAIN_FILE}\"")
+  ExternalProject_Add(FEXLinuxTests-${GUEST_ARCH}
+    PREFIX FEXLinuxTests-${GUEST_ARCH}
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests"
+    BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests-${GUEST_ARCH}"
+    CMAKE_ARGS
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+    "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${TOOLCHAIN_FILE}"
+    "-DGUEST_ARCH=${GUEST_ARCH}"
+    "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+    "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS ON
+    )
+endforeach()
 
 # this kind of sucks, but reglob
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS tests/*.cpp)
-file(GLOB_RECURSE TESTS_32 CONFIGURE_DEPENDS tests-32/*.cpp)
 
-function(AddTests Tests BinDirectory BitnessList)
+function(AddTests Tests ArchList)
   foreach(TEST ${Tests})
     get_filename_component(TEST_NAME ${TEST} NAME_WLE)
 
@@ -34,6 +32,7 @@ function(AddTests Tests BinDirectory BitnessList)
     # Used to insert a configuration dependency to the test file
     CONFIGURE_FILE(${TEST} ${CMAKE_BINARY_DIR}/junk.file)
 
+    # Get test variations
     set(ARGS_REGEX "auto args = \"([^\"]+)\";")
     string(REGEX MATCH ${ARGS_REGEX} TEST_ARGS ${TEST_CODE})
     # if cannot handle multiline variables, so we have to match the line first
@@ -47,14 +46,24 @@ function(AddTests Tests BinDirectory BitnessList)
       set(VARIATIONS "${TEST_NAME}:")
     endif()
 
+    # Get test arch overrides
+    set(ARCH_REGEX "//[ ]*arch: ([^\n]+)")
+
+    string(REGEX MATCH ${ARCH_REGEX} ARCHES ${TEST_CODE})
+    # if cannot handle multiline variables, so we have to match the line first
+    if(${ARCHES} MATCHES ${ARCH_REGEX})
+      set(ArchList "${CMAKE_MATCH_1}" )
+      string(REGEX REPLACE " |," ";" ArchList "${ArchList}")
+    endif()
+
     foreach(VARIATION ${VARIATIONS})
-      foreach(BITNESS ${BitnessList})
+      foreach(ARCH ${ArchList})
         string(REGEX REPLACE ":" ";" VARIATION "${VARIATION}")
         list(GET VARIATION 0 VARIATION_NAME)
         list(GET VARIATION 1 VARIATION_ARG)
-        set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${BITNESS}")
+        set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests-${ARCH}/${TEST_NAME}.${ARCH}")
 
-        set(TEST_CASE "${VARIATION_NAME}.${BITNESS}")
+        set(TEST_CASE "${VARIATION_NAME}.${ARCH}")
 
         # Add jit test case
         add_test(NAME "${TEST_CASE}.jit.flt"
@@ -85,11 +94,13 @@ function(AddTests Tests BinDirectory BitnessList)
   endforeach()
 endfunction()
 
-AddTests("${TESTS}" "FEXLinuxTests" "32;64")
-AddTests("${TESTS_32}" "FEXLinuxTests_32"  "32")
+AddTests("${TESTS}" ${GuestArchList})
 
 execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
 string(STRIP ${CORES} CORES)
+
+set(TestTargets ${GuestArchList})
+list(TRANSFORM TestTargets PREPEND "FEXLinuxTests-")
 
 # Only emulated
 add_custom_target(
@@ -97,7 +108,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.jit\.flt$$" "--output-on-failure"
-  DEPENDS FEXLinuxTests FEXLoader
+  DEPENDS ${TestTargets} FEXLoader
   )
 
 # Only host
@@ -106,7 +117,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.host\.flt$$" "--output-on-failure"
-  DEPENDS FEXLinuxTests
+  DEPENDS ${TestTargets}
   )
 
 # Both host and emulated
@@ -115,5 +126,5 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.flt$$" "--output-on-failure"
-  DEPENDS FEXLinuxTests FEXLoader
+  DEPENDS ${TestTargets} FEXLoader
   )

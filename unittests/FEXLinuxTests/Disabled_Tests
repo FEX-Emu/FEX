@@ -3,15 +3,15 @@
 ###
 
 # These sometimes crash FEX with SIGSEGV
-timer-sigev-thread.32
-timer-sigev-thread.64
+timer-sigev-thread.x86_32
+timer-sigev-thread.x86_64
 
 # These fail on arm because of sigbus handling
-synchronous-signal-block-sbus.32
-synchronous-signal-block-sbus.64
-synchronous-signal-block-abus.32
-synchronous-signal-block-abus.64
+synchronous-signal-block-sbus.x86_32
+synchronous-signal-block-sbus.x86_64
+synchronous-signal-block-abus.x86_32
+synchronous-signal-block-abus.x86_64
 
 # These fail on arm because we don't raise FPE
-synchronous-signal-block-sfpe.32
-synchronous-signal-block-sfpe.64
+synchronous-signal-block-sfpe.x86_32
+synchronous-signal-block-sfpe.x86_64

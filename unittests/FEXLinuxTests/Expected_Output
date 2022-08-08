@@ -1,8 +1,8 @@
-synchronous-signal-block-ssegv.32 -11
-synchronous-signal-block-ssegv.64 -11
-synchronous-signal-block-sill.32 -4
-synchronous-signal-block-sill.64 -4
-synchronous-signal-block-sbus.32 -7
-synchronous-signal-block-sbus.64 -7
-synchronous-signal-block-sfpe.32 -8
-synchronous-signal-block-sfpe.64 -8
+synchronous-signal-block-ssegv.x86_32 -11
+synchronous-signal-block-ssegv.x86_64 -11
+synchronous-signal-block-sill.x86_32 -4
+synchronous-signal-block-sill.x86_64 -4
+synchronous-signal-block-sbus.x86_32 -7
+synchronous-signal-block-sbus.x86_64 -7
+synchronous-signal-block-sfpe.x86_32 -8
+synchronous-signal-block-sfpe.x86_64 -8

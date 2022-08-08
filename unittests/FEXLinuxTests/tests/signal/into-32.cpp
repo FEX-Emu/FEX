@@ -1,6 +1,8 @@
 #include <atomic>
 #include <signal.h>
 
+// arch: x86_32
+
 std::atomic<bool> CorrectFaultData{false};
 static void handler(int signal, siginfo_t *siginfo, void* context) {
   ucontext_t *_context = (ucontext_t*)context;
