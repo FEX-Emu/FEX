@@ -114,7 +114,7 @@ inline Result CallHostFunction(Args... args) {
 template<typename Result, typename...Args>
 static auto GetCallerForHostFunction(Result (*host_func)(Args...))
     -> Result(*)(Args...) {
-  return CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
+  return &CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
 }
 
 // Ensures the given host function can safely be called from guest code.
