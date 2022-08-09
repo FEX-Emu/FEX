@@ -178,6 +178,17 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
 
+    - name: Thunkgen tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target thunkgen_tests
+
+    - name: Thunkgen Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
+
     - name: Truncate test results
       if: ${{ always() }}
       shell: bash
