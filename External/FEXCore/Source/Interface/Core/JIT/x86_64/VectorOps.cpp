@@ -223,24 +223,33 @@ DEF_OP(VAdd) {
 
 DEF_OP(VSub) {
   auto Op = IROp->C<IR::IROp_VSub>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpsubb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubb(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpsubw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubw(Dst, Vector1, Vector2);
       break;
     }
     case 4: {
-      vpsubd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubd(Dst, Vector1, Vector2);
       break;
     }
     case 8: {
-      vpsubq(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubq(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
