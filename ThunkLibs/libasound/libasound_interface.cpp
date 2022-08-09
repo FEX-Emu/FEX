@@ -1,6 +1,7 @@
 #include <common/GeneratorInterface.h>
 
 #include <alsa/asoundlib.h>
+#include <alsa/version.h>
 
 template<auto>
 struct fex_gen_config {
@@ -8,6 +9,10 @@ struct fex_gen_config {
 };
 
 template<> struct fex_gen_config<snd_asoundlib_version> {};
+#if SND_LIB_VERSION < ((1 << 16) | (2 << 8) | (6))
+// Exists on 1.2.6
+int snd_dlpath(char *path, size_t path_len, const char *name);
+#endif
 template<> struct fex_gen_config<snd_dlpath> {};
 template<> struct fex_gen_config<snd_dlopen> {};
 template<> struct fex_gen_config<snd_dlsym> {};
