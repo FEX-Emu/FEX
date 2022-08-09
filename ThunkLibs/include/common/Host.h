@@ -129,7 +129,7 @@ struct CallbackUnpack<Result(Args...)> {
     auto args = reinterpret_cast<PackedArguments<Result, Args..., uintptr_t>*>(argsv);
     constexpr auto CBIndex = sizeof...(Args);
     uintptr_t cb;
-    static_assert(CBIndex <= 17 || CBIndex == 23);
+    static_assert(CBIndex <= 18 || CBIndex == 23);
     if constexpr(CBIndex == 0) {
       cb = args->a0;
     } else if constexpr(CBIndex == 1) {
@@ -166,9 +166,12 @@ struct CallbackUnpack<Result(Args...)> {
       cb = args->a16;
     } else if constexpr(CBIndex == 17) {
       cb = args->a17;
+    } else if constexpr(CBIndex == 18) {
+      cb = args->a18;
     } else if constexpr(CBIndex == 23) {
       cb = args->a23;
     }
+
     auto callback = reinterpret_cast<Result(*)(Args..., uintptr_t)>(cb);
     Invoke(callback, *args);
   }
