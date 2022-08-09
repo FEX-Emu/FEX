@@ -134,7 +134,12 @@ DEF_OP(VMov) {
 
 DEF_OP(VAnd) {
   auto Op = IROp->C<IR::IROp_VAnd>();
-  vpand(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  vpand(Dst, Vector1, Vector2);
 }
 
 DEF_OP(VBic) {
