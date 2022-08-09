@@ -51,6 +51,14 @@ extern "C" {
 
     auto TargetFuncIt = HostPtrInvokers.find(reinterpret_cast<const char*>(procname));
     if (TargetFuncIt == HostPtrInvokers.end()) {
+      std::string_view procname_s { reinterpret_cast<const char*>(procname) };
+      // If glXGetProcAddress is querying itself, then we can just return itself.
+      // Some games do this for unknown reasons.
+      if (procname_s == "glXGetProcAddress" ||
+          procname_s == "glXGetProcAddressARB") {
+        return reinterpret_cast<voidFunc *>(glXGetProcAddress);
+      }
+
       // Extension found in host but not in our interface definition => Not fatal but warn about it
       // Some games query leaked GLES symbols but don't use them
       // glFrustrumf : ES 1.x function
