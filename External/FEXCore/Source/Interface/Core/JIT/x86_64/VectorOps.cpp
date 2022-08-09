@@ -24,10 +24,11 @@ DEF_OP(VectorZero) {
 
 DEF_OP(VectorImm) {
   auto Op = IROp->C<IR::IROp_VectorImm>();
-  uint8_t OpSize = IROp->Size;
 
-  auto Dst = GetDst(Node);
-  uint64_t Imm = Op->Immediate;
+  const uint8_t OpSize = IROp->Size;
+  const uint64_t Imm = Op->Immediate;
+
+  const auto Dst = GetDst(Node);
 
   uint64_t Element{};
   switch (Op->Header.ElementSize) {
@@ -61,9 +62,13 @@ DEF_OP(VectorImm) {
 
   mov(TMP1, Element);
   vmovq(Dst, TMP1);
-  if (OpSize == 16) {
-    // Duplicate to the upper 64bits if we are 128bits
-    movddup(Dst, Dst);
+
+  if (OpSize >= 16) {
+    LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
+                        "Can't handle a vector of size: {}", OpSize);
+
+    // Duplicate into upper elements
+    vbroadcastsd(ToYMM(Dst), Dst);
   }
 }
 

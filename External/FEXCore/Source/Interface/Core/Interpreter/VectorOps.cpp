@@ -23,7 +23,7 @@ DEF_OP(VectorImm) {
   auto Op = IROp->C<IR::IROp_VectorImm>();
   uint8_t OpSize = IROp->Size;
 
-  uint8_t Tmp[16];
+  uint8_t Tmp[32];
 
   uint8_t Elements = OpSize / Op->Header.ElementSize;
   uint8_t Imm = Op->Immediate;
