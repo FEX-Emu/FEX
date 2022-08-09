@@ -5,7 +5,34 @@ $end_info$
 */
 
 #pragma once
-#include <stdint.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+
+#include "PackedArguments.h"
+
+// Import FEXCore functions for use in host thunk libraries.
+//
+// Note these are statically linked into the FEX executable. The linker hence
+// doesn't know about them when linking thunk libraries. This issue is avoided
+// by declaring the functions as weak symbols. Their implementation in this
+// file serves as a panicking fallback if matching symbols are not found.
+namespace FEXCore {
+  struct HostToGuestTrampolinePtr;
+
+  __attribute__((weak))
+  HostToGuestTrampolinePtr*
+  MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
+    fprintf(stderr, "Failed to load %s from FEX executable\n", __FUNCTION__);
+    std::abort();
+  }
+  __attribute__((weak))
+  HostToGuestTrampolinePtr*
+  FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr*, void* HostPacker) {
+    fprintf(stderr, "Failed to load %s from FEX executable\n", __FUNCTION__);
+    std::abort();
+  }
+}
 
 template<typename Fn>
 struct function_traits;
@@ -45,7 +72,7 @@ public:
 
 #define EXPORTS(name) \
   extern "C" { \
-    ExportEntry* fexthunks_exports_##name() { \
+    ExportEntry* fexthunks_exports_##name(uintptr_t allocate, uintptr_t finalize) { \
       if (!fexldr_init_##name()) { \
         return nullptr; \
       } \
@@ -75,4 +102,89 @@ struct GuestcallInfo {
 #elif defined(_M_ARM_64)
 #define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
   asm volatile("mov %0, x11" : "=r" (target_variable))
+#else
+#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
+  abort()
 #endif
+
+template<typename>
+struct CallbackUnpack;
+
+template<typename Result, typename... Args>
+struct CallbackUnpack<Result(Args...)> {
+  static Result CallGuestPtr(Args... args) {
+    GuestcallInfo *guestcall;
+    LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(guestcall);
+
+    PackedArguments<Result, Args...> packed_args = {
+      args...
+    };
+    guestcall->CallCallback(guestcall->GuestUnpacker, guestcall->GuestTarget, &packed_args);
+    if constexpr (!std::is_void_v<Result>) {
+      return packed_args.rv;
+    }
+  }
+
+  static void ForIndirectCall(void* argsv) {
+    auto args = reinterpret_cast<PackedArguments<Result, Args..., uintptr_t>*>(argsv);
+    constexpr auto CBIndex = sizeof...(Args);
+    uintptr_t cb;
+    static_assert(CBIndex <= 17 || CBIndex == 23);
+    if constexpr(CBIndex == 0) {
+      cb = args->a0;
+    } else if constexpr(CBIndex == 1) {
+      cb = args->a1;
+    } else if constexpr(CBIndex == 2) {
+      cb = args->a2;
+    } else if constexpr(CBIndex == 3) {
+      cb = args->a3;
+    } else if constexpr(CBIndex == 4) {
+      cb = args->a4;
+    } else if constexpr(CBIndex == 5) {
+      cb = args->a5;
+    } else if constexpr(CBIndex == 6) {
+      cb = args->a6;
+    } else if constexpr(CBIndex == 7) {
+      cb = args->a7;
+    } else if constexpr(CBIndex == 8) {
+      cb = args->a8;
+    } else if constexpr(CBIndex == 9) {
+      cb = args->a9;
+    } else if constexpr(CBIndex == 10) {
+      cb = args->a10;
+    } else if constexpr(CBIndex == 11) {
+      cb = args->a11;
+    } else if constexpr(CBIndex == 12) {
+      cb = args->a12;
+    } else if constexpr(CBIndex == 13) {
+      cb = args->a13;
+    } else if constexpr(CBIndex == 14) {
+      cb = args->a14;
+    } else if constexpr(CBIndex == 15) {
+      cb = args->a15;
+    } else if constexpr(CBIndex == 16) {
+      cb = args->a16;
+    } else if constexpr(CBIndex == 17) {
+      cb = args->a17;
+    } else if constexpr(CBIndex == 23) {
+      cb = args->a23;
+    }
+    auto callback = reinterpret_cast<Result(*)(Args..., uintptr_t)>(cb);
+    Invoke(callback, *args);
+  }
+};
+
+template<typename FuncType>
+void MakeHostTrampolineForGuestFunctionAt(uintptr_t GuestTarget, uintptr_t GuestUnpacker, FuncType **Func) {
+    *Func = (FuncType*)FEXCore::MakeHostTrampolineForGuestFunction(
+        (void*)&CallbackUnpack<FuncType>::CallGuestPtr,
+        GuestTarget,
+        GuestUnpacker);
+}
+
+template<typename F>
+void FinalizeHostTrampolineForGuestFunction(F* PreallocatedTrampolineForGuestFunction) {
+  FEXCore::FinalizeHostTrampolineForGuestFunction(
+      (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
+      (void*)&CallbackUnpack<F>::CallGuestPtr);
+}

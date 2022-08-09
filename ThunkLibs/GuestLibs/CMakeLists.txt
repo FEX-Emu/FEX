@@ -40,7 +40,7 @@ function(generate NAME SOURCE_FILE)
       OUTPUT "${OUTFILE}"
       DEPENDS "${GENERATOR_EXE}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
+      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17 -DGUEST_THUNK_LIBRARY
             # Expand include directories to space-separated list of -isystem parameters
            "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
       VERBATIM
@@ -103,10 +103,10 @@ target_link_libraries(GL-guest PRIVATE X11)
 # target_link_libraries(SDL2-guest PRIVATE GL)
 # target_link_libraries(SDL2-guest PRIVATE dl)
 
-generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp thunks function_packs function_packs_public callback_unpacks)
+generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(X11)
 
-generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp thunks function_packs function_packs_public callback_unpacks)
+generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(Xext)
 
 generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp thunks function_packs function_packs_public)
@@ -119,7 +119,7 @@ generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.
 target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
 add_guest_lib(vulkan)
 
-generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp thunks function_packs function_packs_public callback_unpacks)
+generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(xcb)
 
 generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp thunks function_packs function_packs_public)

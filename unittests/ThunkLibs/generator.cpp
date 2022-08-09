@@ -57,7 +57,6 @@ struct Fixture {
             tmpdir + "/thunks",
             tmpdir + "/function_packs",
             tmpdir + "/function_packs_public",
-            tmpdir + "/callback_unpacks",
         };
     }
 
@@ -280,12 +279,16 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
     std::string result =
         "#include <cstdint>\n"
         "#define MAKE_THUNK(lib, name, hash) extern \"C\" int fexthunks_##lib##_##name(void*);\n"
+        "template<typename>\n"
+        "struct callback_thunk_defined;\n"
+        "#define MAKE_CALLBACK_THUNK(name, sig, hash) template<> struct callback_thunk_defined<sig> {};\n"
         "#define FEX_PACKFN_LINKAGE\n"
         "template<typename Target>\n"
-        "Target *MakeHostTrampolineForGuestFunction(uint8_t HostPacker[32], void (*)(uintptr_t, void*), Target*);\n";
+        "Target *MakeHostTrampolineForGuestFunction(uint8_t HostPacker[32], void (*)(uintptr_t, void*), Target*);\n"
+        "template<typename Target>\n"
+        "Target *AllocateHostTrampolineForGuestFunction(Target*);\n";
     for (auto& filename : {
             output_filenames.thunks,
-            output_filenames.callback_unpacks,
             output_filenames.function_packs_public,
             output_filenames.function_packs,
             }) {
@@ -321,13 +324,19 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "    using args_t = typename function_traits<decltype(Fn)>::arg_t;\n"
         "    return Fn(reinterpret_cast<args_t>(argsv));\n"
         "}\n"
-        "#define LOAD_INTERNAL_GUESTPTR_ARG(arg)\n"
+        "#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(arg)\n"
         "struct GuestcallInfo {\n"
         "  uintptr_t HostPacker;\n"
         "  void (*CallCallback)(uintptr_t, uintptr_t, void*);\n"
         "  uintptr_t GuestUnpacker;\n"
         "  uintptr_t GuestTarget;\n"
-        "};\n";
+        "};\n"
+        "template<typename>\n"
+        "struct CallbackUnpack {\n"
+        "  static void ForIndirectCall(void* argsv);\n"
+        "};\n"
+        "template<typename F>\n"
+        "void FinalizeHostTrampolineForGuestFunction(F*);\n";
 
     for (auto& filename : {
             output_filenames.ldr_ptrs,
@@ -414,6 +423,31 @@ TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
         }));
 }
 
+TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
+    const auto output = run_thunkgen("",
+        "template<typename> struct fex_gen_type {};\n"
+        "template<> struct fex_gen_type<int(char, char)> {};\n");
+
+    // Guest should apply MAKE_CALLBACK_THUNK to this signature
+    CHECK_THAT(output.guest,
+        matches(classTemplateSpecializationDecl(
+            // Should have signature matching input function
+            hasName("callback_thunk_defined"),
+            hasTemplateArgument(0, refersToType(asString("int (char, char)")))
+        )));
+
+    // Host should export the unpacking function for callback arguments
+    CHECK_THAT(output.host,
+        matches(varDecl(
+            hasName("exports"),
+            hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack"))).bind("funcptr")))))
+            )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
+                auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
+                return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
+            }));
+}
+
 // Parameter is a function pointer
 TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
     const auto output = run_thunkgen("",
@@ -427,18 +461,25 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
             hasName("fexfn_pack_func"),
             returns(asString("void")),
             parameterCountIs(1),
-            hasParameter(0, hasType(asString("int (*)(char, char)"))),
-
-            // Should call MakeHostTrampolineForGuestFunction
-            hasDescendant(callExpr(callee(functionDecl(hasName("MakeHostTrampolineForGuestFunction")))))
+            hasParameter(0, hasType(asString("int (*)(char, char)")))
         )));
 
-    // Host should export the packing function for callback arguments
+    // Host packing function should call FinalizeHostTrampolineForGuestFunction on the argument
+    CHECK_THAT(output.host,
+        matches(functionDecl(
+            hasName("fexfn_unpack_libtest_func"),
+            hasDescendant(callExpr(callee(functionDecl(hasName("FinalizeHostTrampolineForGuestFunction"))), hasArgument(0, expr().bind("funcptr"))))
+        )).check_binding("funcptr", +[](const clang::Expr* funcptr) {
+            // Check that the argument type matches the function pointer
+            return funcptr->getType().getAsString() == "int (*)(char, char)";
+        }));
+
+    // Host should export the unpacking function for function pointer arguments
     CHECK_THAT(output.host,
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
-            hasInitializer(hasDescendant(declRefExpr(to(functionDecl(hasName("fexfn_pack_guestcall_funcCBFN"))))))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack")))))))
             )));
 }
 

@@ -29,9 +29,9 @@ extern "C" {
 // linked to the corresponding host function pointer
 const std::unordered_map<std::string_view, uintptr_t /* guest function address */> HostPtrInvokers =
     std::invoke([]() {
-#define PAIR(name, unused) Ret[#name] = reinterpret_cast<uintptr_t>(GetCallerForHostThunkFromRuntimePointer<fexthunks_libvulkan_hostcall_##name>(name));
+#define PAIR(name, unused) Ret[#name] = reinterpret_cast<uintptr_t>(GetCallerForHostFunction(name));
         std::unordered_map<std::string_view, uintptr_t> Ret;
-        FOREACH_internal_SYMBOL(PAIR)
+        FOREACH_internal_SYMBOL(PAIR);
         return Ret;
 #undef PAIR
     });
@@ -53,7 +53,7 @@ static PFN_vkVoidFunction MakeGuestCallable(const char* origin, PFN_vkVoidFuncti
     if (It == HostPtrInvokers.end()) {
         fprintf(stderr, "%s: Unknown Vulkan function at address %p: %s\n", origin, func, name);
         if (stub_unknown_functions) {
-            const auto StubHostPtrInvoker = CallHostThunkFromRuntimePointer<FatalError, void>;
+            const auto StubHostPtrInvoker = CallHostFunction<FatalError, void>;
             LinkAddressToFunction((uintptr_t)func, reinterpret_cast<uintptr_t>(StubHostPtrInvoker));
             return func;
         }

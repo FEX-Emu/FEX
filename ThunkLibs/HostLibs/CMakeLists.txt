@@ -13,6 +13,7 @@ function(generate NAME SOURCE_FILE)
   # Interface target for the user to add include directories
   add_library(${NAME}-deps INTERFACE)
   target_include_directories(${NAME}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  target_link_libraries(${NAME}-deps INTERFACE FEXLoader)
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")

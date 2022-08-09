@@ -17,8 +17,6 @@ struct OutputFilenames {
     std::string function_packs_public;
 
     // Guest + Host
-    std::string callback_unpacks;
-
     std::string symbol_list;
 };
 
