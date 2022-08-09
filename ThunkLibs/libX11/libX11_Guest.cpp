@@ -206,7 +206,10 @@ extern "C" {
 
     MakeHostFunctionGuestCallable(ret->resource_alloc);
     MakeHostFunctionGuestCallable(ret->idlist_alloc);
+#if (X11_VERSION_MAJOR >= 1 && X11_VERSION_MINOR >= 7 && X11_VERSION_PATCH >= 0)
+    // Doesn't exist on older X11
     MakeHostFunctionGuestCallable(ret->exit_handler);
+#endif
 
     return ret;
   }

@@ -17,6 +17,7 @@ function(generate NAME SOURCE_FILE)
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
+  set(compile_prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_COMPILE_DEFINITIONS>")
 
   # Target for IDE integration
   add_library(${NAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
@@ -34,8 +35,10 @@ function(generate NAME SOURCE_FILE)
       DEPENDS "${SOURCE_FILE}"
       DEPENDS thunkgen
       COMMAND thunkgen "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
-            # Expand include directories to space-separated list of -isystem parameters
-           "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
+        # Expand compile definitions to space-separated list of -D parameters
+        "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
+        # Expand include directories to space-separated list of -isystem parameters
+        "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
       VERBATIM
       COMMAND_EXPAND_LISTS
       )
@@ -92,8 +95,20 @@ target_link_libraries(GL-host PRIVATE OpenGL::GL)
 # add_host_lib(SDL2)
 # target_include_directories(SDL2-host PRIVATE ${SDL2_INCLUDE_DIRS})
 
+find_package(PkgConfig)
+pkg_search_module(X11 REQUIRED x11)
+
+string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
+set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
+set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
+
 generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(X11)
+
+target_compile_definitions(libX11-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+target_compile_definitions(libX11-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+target_compile_definitions(libX11-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
 generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xext)

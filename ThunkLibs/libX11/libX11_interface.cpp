@@ -472,6 +472,12 @@ template<> struct fex_gen_type<XID(Display*)> {}; // XDisplay::resource_alloc
 template<> struct fex_gen_type<void(Display*/*, char*, int*/)> {}; // XDisplay::lock_fns->lock_display
 
 template<> struct fex_gen_type<void(_XDisplay*, XID*, int)> {}; // XDisplay::idlist_alloc
+
+#if !(X11_VERSION_MAJOR >= 1 && X11_VERSION_MINOR >= 7 && X11_VERSION_PATCH >= 0)
+// Doesn't exist on older X11
+typedef void (*XIOErrorExitHandler)(Display*, void*);
+#endif
+
 template<> struct fex_gen_type<std::remove_pointer_t<XIOErrorExitHandler>> {}; // XDisplay::exit_handler
 template<> struct fex_gen_config<XOpenDisplay> : fexgen::custom_guest_entrypoint {};
 
