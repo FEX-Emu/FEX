@@ -113,6 +113,10 @@ target_compile_definitions(libX11-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSI
 generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xext)
 
+target_compile_definitions(libXext-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+target_compile_definitions(libXext-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+target_compile_definitions(libXext-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
+
 generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
 add_host_lib(Xrender)
 
