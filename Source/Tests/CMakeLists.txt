@@ -172,16 +172,17 @@ target_link_libraries(TestHarnessRunner
     ${PTHREAD_LIB}
 )
 
-add_executable(UnitTestGenerator UnitTestGenerator.cpp)
-target_include_directories(UnitTestGenerator
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
-)
-target_link_libraries(UnitTestGenerator
-  PRIVATE
-    ${LIBS}
-    ${PTHREAD_LIB}
-)
+# add_executable(UnitTestGenerator UnitTestGenerator.cpp)
+# target_include_directories(UnitTestGenerator
+#   PRIVATE
+#     ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+# )
+# target_link_libraries(UnitTestGenerator
+#   PRIVATE
+#     ${LIBS}
+#     ${PTHREAD_LIB}
+# )
+#
 
 add_executable(IRLoader
   IRLoader.cpp
