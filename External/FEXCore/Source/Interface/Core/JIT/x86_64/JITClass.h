@@ -312,7 +312,7 @@ private:
   DEF_OP(Syscall);
   DEF_OP(Thunk);
   DEF_OP(ValidateCode);
-  DEF_OP(RemoveThreadCodeEntry);
+  DEF_OP(ThreadRemoveCodeEntry);
   DEF_OP(CPUID);
 
   ///< Conversion ops

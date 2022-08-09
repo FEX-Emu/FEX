@@ -129,7 +129,7 @@ namespace FEXCore::Core {
 
       uint64_t PrintValue{};
       uint64_t PrintVectorValue{};
-      uint64_t RemoveThreadCodeEntryFromJIT{};
+      uint64_t ThreadRemoveCodeEntryFromJIT{};
       uint64_t CPUIDObj{};
       uint64_t CPUIDFunction{};
       uint64_t SyscallHandlerObj{};
