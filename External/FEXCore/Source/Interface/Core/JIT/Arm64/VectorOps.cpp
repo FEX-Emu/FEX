@@ -168,7 +168,16 @@ DEF_OP(VOr) {
 
 DEF_OP(VXor) {
   auto Op = IROp->C<IR::IROp_VXor>();
-  eor(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (CanUseSVE) {
+    eor(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+  } else {
+    eor(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+  }
 }
 
 DEF_OP(VAdd) {
