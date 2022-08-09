@@ -1,7 +1,7 @@
 {
   "DB": {
     "GL": {
-      "Library" : "libGL-guest.so",
+      "Library" : "libGL-x86_64-guest.so",
       "Depends": [
         "X11"
       ],
@@ -13,7 +13,7 @@
       ]
     },
     "GLESv2": {
-      "Library": "libGLESv2-guest.so",
+      "Library": "libGLESv2-x86_64-guest.so",
       "Depends": [
         "X11"
       ],
@@ -24,7 +24,7 @@
       ]
     },
     "X11": {
-      "Library": "libX11-guest.so",
+      "Library": "libX11-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libX11.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libX11.so.6",
@@ -32,7 +32,7 @@
       ]
     },
     "Vulkan": {
-      "Library": "libvulkan-guest.so",
+      "Library": "libvulkan-x86_64-guest.so",
       "Depends": [
         "xcb"
       ],
@@ -46,7 +46,7 @@
       ]
     },
     "xcb": {
-      "Library": "libxcb-guest.so",
+      "Library": "libxcb-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb.so.1",
@@ -54,7 +54,7 @@
       ]
     },
     "xcb-dri2": {
-      "Library": "libxcb_dri2-guest.so",
+      "Library": "libxcb_dri2-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-dri2.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-dri2.so.0",
@@ -62,7 +62,7 @@
       ]
     },
     "xcb-dri3": {
-      "Library": "libxcb_dri3-guest.so",
+      "Library": "libxcb_dri3-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-dri3.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-dri3.so.0",
@@ -70,7 +70,7 @@
       ]
     },
     "xcb-xfixes": {
-      "Library": "libxcb_xfixes-guest.so",
+      "Library": "libxcb_xfixes-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-xfixes.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-xfixes.so.0",
@@ -78,7 +78,7 @@
       ]
     },
     "xcb-shm": {
-      "Library": "libxcb_shm-guest.so",
+      "Library": "libxcb_shm-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-shm.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-shm.so.0",
@@ -86,7 +86,7 @@
       ]
     },
     "xcb-sync": {
-      "Library": "libxcb_sync-guest.so",
+      "Library": "libxcb_sync-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-sync.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-sync.so.1",
@@ -94,7 +94,7 @@
       ]
     },
     "xcb-randr": {
-      "Library": "libxcb_randr-guest.so",
+      "Library": "libxcb_randr-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-randr.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-randr.so.0",
@@ -102,7 +102,7 @@
       ]
     },
     "xcb-present": {
-      "Library": "libxcb_present-guest.so",
+      "Library": "libxcb_present-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-present.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-present.so.0",
@@ -110,7 +110,7 @@
       ]
     },
     "xcb-glx": {
-      "Library": "libxcb_glx-guest.so",
+      "Library": "libxcb_glx-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-glx.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxcb-glx.so.0",
@@ -118,7 +118,7 @@
       ]
     },
     "xshmfence": {
-      "Library": "libshmfence-guest.so",
+      "Library": "libshmfence-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libxshmfence.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libxshmfence.so.1",
@@ -126,7 +126,7 @@
       ]
     },
     "drm": {
-      "Library": "libdrm-guest.so",
+      "Library": "libdrm-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libdrm.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libdrm.so.2",
@@ -134,7 +134,7 @@
       ]
     },
     "asound": {
-      "Library": "libasound-guest.so",
+      "Library": "libasound-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libasound.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libasound.so.2",
@@ -142,7 +142,7 @@
       ]
     },
     "Xrender": {
-      "Library": "libXrender-guest.so",
+      "Library": "libXrender-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libXrender.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libXrender.so.1",
@@ -150,7 +150,7 @@
       ]
     },
     "Xext": {
-      "Library": "libXext-guest.so",
+      "Library": "libXext-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libXext.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libXext.so.6",
@@ -158,7 +158,7 @@
       ]
     },
     "Xfixes": {
-      "Library": "libXfixes-guest.so",
+      "Library": "libXfixes-x86_64-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/x86_64-linux-gnu/libXfixes.so",
         "@PREFIX_LIB@/x86_64-linux-gnu/libXfixes.so.3",

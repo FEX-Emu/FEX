@@ -387,32 +387,61 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_THUNKS)
+  add_custom_target(thunklibs)
+
   set (FEX_PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR})
   add_subdirectory(ThunkLibs/Generator)
-
-  # Thunk targets for both host libraries and IDE integration
-  add_subdirectory(ThunkLibs/HostLibs)
 
   # Thunk targets for IDE integration of guest code, only
   add_subdirectory(ThunkLibs/GuestLibs)
 
-  # Thunk targets for guest libraries
   include(ExternalProject)
-  ExternalProject_Add(guest-libs
-    PREFIX guest-libs
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
-    BINARY_DIR "Guest"
-    CMAKE_ARGS
-      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${TOOLCHAIN_FILE_x86_64}"
-      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
-      "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
-      "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
-      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
-    INSTALL_COMMAND ""
-    BUILD_ALWAYS ON
-    DEPENDS thunkgen
-  )
+
+  set(GuestArchList "x86_32" "x86_64")
+
+  #### Host thunks ####
+  add_custom_target(host-thunks)
+  add_dependencies(thunklibs host-thunks)
+
+  # Sadly we can't loop here
+  # Thunk targets for both host libraries and IDE integration
+  add_subdirectory(ThunkLibs/HostLibs)
+
+  #### Guest thunks ####
+  add_custom_target(guest-thunks)
+  add_dependencies(thunklibs guest-thunks)
+
+  foreach(GUEST_ARCH ${GuestArchList})
+    set(TOOLCHAIN_FILE ${TOOLCHAIN_FILE_${GUEST_ARCH}})
+
+    # make sure configure is run again if the toolchain file is modified
+    set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "${TOOLCHAIN_FILE}")
+
+    message("Thunks: toolchain for |${GUEST_ARCH}| is \"${TOOLCHAIN_FILE}\"")
+
+    set(EXTERNAL_TARGET "guest-thunks-${GUEST_ARCH}")
+
+    # Thunk targets for guest libraries
+    ExternalProject_Add(${EXTERNAL_TARGET}
+      PREFIX guest-libs
+      SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
+      BINARY_DIR "Guest-${GUEST_ARCH}"
+      CMAKE_ARGS
+        "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${TOOLCHAIN_FILE}"
+        "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+        "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
+        "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
+        "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
+        "-DGUEST_ARCH=${GUEST_ARCH}"
+        "-DTHUNKS_ARCH_TARGET=${EXTERNAL_TARGET}"
+      INSTALL_COMMAND ""
+      BUILD_ALWAYS ON
+      DEPENDS thunkgen
+    )
+
+    add_dependencies(guest-thunks ${EXTERNAL_TARGET})
+  endforeach()
 
   install(
     CODE "MESSAGE(\"-- Installing: guest-libs\")"

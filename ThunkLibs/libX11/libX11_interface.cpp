@@ -601,10 +601,17 @@ template<> struct fex_gen_config<XESetError> : fexgen::returns_guest_pointer {};
 
 template<> struct fex_gen_config<XSetIOErrorHandler> : fexgen::returns_guest_pointer {};
 
+#ifdef guest_target_x86_64
+// This is a #define in x86_32
 template<> struct fex_gen_config<_XRead32> {};
+#endif
+
 template<> struct fex_gen_config<_XRead> {};
 template<> struct fex_gen_config<_XReadPad> {};
+#ifdef guest_target_x86_64
+// This is a #define in x86_32
 template<> struct fex_gen_config<_XData32> {};
+#endif
 template<> struct fex_gen_config<_XEatData> {};
 template<> struct fex_gen_config<_XEatDataWords> {};
 

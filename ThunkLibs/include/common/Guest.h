@@ -1,11 +1,12 @@
 #pragma once
+#include <cstdlib>
 #include <stdint.h>
 #include <type_traits>
 
 #include "PackedArguments.h"
 
 template<typename signature>
-const int (*fexthunks_invoke_callback)(void*);
+struct fexthunks_invoke_callback { };
 
 #ifndef _M_ARM_64
 #define MAKE_THUNK(lib, name, hash) \
@@ -15,7 +16,7 @@ const int (*fexthunks_invoke_callback)(void*);
 #define MAKE_CALLBACK_THUNK(name, signature, hash) \
   extern "C" int fexthunks_##name(void *args); \
   asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash ); \
-  template<> inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
+  template<> struct fexthunks_invoke_callback<signature> { static inline constexpr int (*value)(void*) = fexthunks_##name; }
 
 #else
 // We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
@@ -28,7 +29,7 @@ extern "C" void BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK();
   }
 #define MAKE_CALLBACK_THUNK(name, signature, hash) \
   extern "C" int fexthunks_##name(void *args); \
-  template<> inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
+  template<> struct fexthunks_invoke_callback<signature> { static inline constexpr int (*value)(void*) = fexthunks_##name; }
 #endif
 
 // Generated fexfn_pack_ symbols should be hidden by default, but clang does
@@ -89,12 +90,14 @@ inline bool IsLibLoaded(const char *libname) {
 // fexfn_pack_* functions generated for global API functions.
 template<auto Thunk, typename Result, typename... Args>
 inline Result CallHostFunction(Args... args) {
-#ifndef _M_ARM_64
-    uintptr_t host_addr;
+  uintptr_t host_addr;
+  #if defined(_M_X86_64) && defined(guest_arch_x86_64)
     asm volatile("mov %%r11, %0" : "=r" (host_addr));
-#else
-    uintptr_t host_addr = 0;
-#endif
+  #elif defined(_M_X86_64) && defined(guest_arch_x86_32)
+    asm volatile("mov %%ecx, %0" : "=r" (host_addr));
+  #else
+    std::abort();
+  #endif
 
     PackedArguments<Result, Args..., uintptr_t> packed_args = {
         args...,
@@ -114,7 +117,7 @@ inline Result CallHostFunction(Args... args) {
 template<typename Result, typename...Args>
 static auto GetCallerForHostFunction(Result (*host_func)(Args...))
     -> Result(*)(Args...) {
-  return &CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
+  return &CallHostFunction<fexthunks_invoke_callback<Result(Args...)>::value, Result, Args...>;
 }
 
 // Ensures the given host function can safely be called from guest code.

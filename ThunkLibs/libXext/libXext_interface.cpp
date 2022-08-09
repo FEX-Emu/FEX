@@ -126,8 +126,11 @@ template<> struct fex_gen_config<XextRemoveDisplay> {};
 template<> struct fex_gen_config<XextFindDisplay> {};
 template<> struct fex_gen_config<_XGetRequest> {};
 template<> struct fex_gen_config<_XFlushGCCache> {};
-template<> struct fex_gen_config<_XData32> {};
+#ifdef guest_target_x86_64
+// These are #defines in x86_32
 template<> struct fex_gen_config<_XRead32> {};
+template<> struct fex_gen_config<_XData32> {};
+#endif
 template<> struct fex_gen_config<_XDeqAsyncHandler> {};
 template<> struct fex_gen_config<_XError> {};
 template<> struct fex_gen_config<_XIOError> {};
