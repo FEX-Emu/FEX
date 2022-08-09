@@ -98,37 +98,46 @@ DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
   const uint8_t OpSize = IROp->Size;
 
+  const auto Dst = GetDst(Node);
+  const auto Source = GetSrc(Op->Source.ID());
+
   switch (OpSize) {
     case 1: {
       vpxor(xmm15, xmm15, xmm15);
-      pextrb(eax, GetSrc(Op->Source.ID()), 0);
+      pextrb(eax, Source, 0);
       pinsrb(xmm15, eax, 0);
-      movapd(GetDst(Node), xmm15);
+      vmovapd(Dst, xmm15);
       break;
     }
     case 2: {
       vpxor(xmm15, xmm15, xmm15);
-      pextrw(eax, GetSrc(Op->Source.ID()), 0);
+      pextrw(eax, Source, 0);
       pinsrw(xmm15, eax, 0);
-      movapd(GetDst(Node), xmm15);
+      vmovapd(Dst, xmm15);
       break;
     }
     case 4: {
       vpxor(xmm15, xmm15, xmm15);
-      pextrd(eax, GetSrc(Op->Source.ID()), 0);
+      pextrd(eax, Source, 0);
       pinsrd(xmm15, eax, 0);
-      movapd(GetDst(Node), xmm15);
+      vmovapd(Dst, xmm15);
       break;
     }
     case 8: {
-      movq(GetDst(Node), GetSrc(Op->Source.ID()));
+      vmovq(Dst, Source);
       break;
     }
     case 16: {
-      movaps(GetDst(Node), GetSrc(Op->Source.ID()));
+      vmovaps(Dst, Source);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", OpSize); break;
+    case 32: {
+      vmovaps(ToYMM(Dst), ToYMM(Source));
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize);
+      break;
   }
 }
 

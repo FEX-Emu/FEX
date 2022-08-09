@@ -89,39 +89,93 @@ DEF_OP(SplatVector4) {
 }
 
 DEF_OP(VMov) {
-	auto Op = IROp->C<IR::IROp_VMov>();
-	const uint8_t OpSize = IROp->Size;
+  auto Op = IROp->C<IR::IROp_VMov>();
+  const uint8_t OpSize = IROp->Size;
 
-	switch (OpSize) {
-		case 1: {
-			eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-			mov(VTMP1.V16B(), 0, GetSrc(Op->Source.ID()).V16B(), 0);
-			mov(GetDst(Node), VTMP1);
-			break;
-		}
-		case 2: {
-			eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-			mov(VTMP1.V8H(), 0, GetSrc(Op->Source.ID()).V8H(), 0);
-			mov(GetDst(Node), VTMP1);
-			break;
-		}
-		case 4: {
-			eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-			mov(VTMP1.V4S(), 0, GetSrc(Op->Source.ID()).V4S(), 0);
-			mov(GetDst(Node), VTMP1);
-			break;
-		}
-		case 8: {
-			mov(GetDst(Node).V8B(), GetSrc(Op->Source.ID()).V8B());
-			break;
-		}
-		case 16: {
-			if (GetDst(Node).GetCode() != GetSrc(Op->Source.ID()).GetCode())
-			  mov(GetDst(Node).V16B(), GetSrc(Op->Source.ID()).V16B());
-			break;
-		}
-		default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", OpSize); break;
-	}
+  const auto Dst = GetDst(Node);
+  const auto Source = GetSrc(Op->Source.ID());
+
+  switch (OpSize) {
+    case 1: {
+      if (CanUseSVE) {
+        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+      } else {
+        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+      }
+
+      mov(VTMP1.V16B(), 0, Source.V16B(), 0);
+
+      if (CanUseSVE) {
+        mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+      } else {
+        mov(Dst, VTMP1);
+      }
+      break;
+    }
+    case 2: {
+      if (CanUseSVE) {
+        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+      } else {
+        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+      }
+
+      mov(VTMP1.V8H(), 0, Source.V8H(), 0);
+
+      if (CanUseSVE) {
+        mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+      } else {
+        mov(Dst, VTMP1);
+      }
+      break;
+    }
+    case 4: {
+      if (CanUseSVE) {
+        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+      } else {
+        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
+      }
+
+      mov(VTMP1.V4S(), 0, Source.V4S(), 0);
+
+      if (CanUseSVE) {
+        mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+      } else {
+        mov(Dst, VTMP1);
+      }
+      break;
+    }
+    case 8: {
+      if (CanUseSVE) {
+        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        mov(VTMP1.V8B(), Source.V8B());
+        mov(Dst.Z().VnB(), VTMP1.Z().VnB());
+      } else {
+        mov(Dst.V8B(), Source.V8B());
+      }
+      break;
+    }
+    case 16: {
+      if (CanUseSVE) {
+        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        mov(VTMP1.V16B(), Source.V16B());
+        mov(Dst.Z().VnB(), VTMP1.Z().VnB());
+      } else {
+        if (Dst.GetCode() != Source.GetCode()) {
+          mov(Dst.V16B(), Source.V16B());
+        }
+      }
+      break;
+    }
+    case 32: {
+      if (Dst.GetCode() != Source.GetCode()) {
+        mov(Dst.Z().VnD(), Source.Z().VnD());
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize);
+      break;
+  }
 }
 
 DEF_OP(VAnd) {
