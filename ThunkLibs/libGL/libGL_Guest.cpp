@@ -43,26 +43,30 @@ const std::unordered_map<std::string_view, uintptr_t /* guest function address *
     });
 
 extern "C" {
-	voidFunc *glXGetProcAddress(const GLubyte *procname) {
+  voidFunc *glXGetProcAddress(const GLubyte *procname) {
     auto Ret = fexfn_pack_glXGetProcAddress(procname);
     if (!Ret) {
-        return nullptr;
+      return nullptr;
     }
 
     auto TargetFuncIt = HostPtrInvokers.find(reinterpret_cast<const char*>(procname));
     if (TargetFuncIt == HostPtrInvokers.end()) {
-      // Extension found in host but not in our interface definition => treat as fatal error
+      // Extension found in host but not in our interface definition => Not fatal but warn about it
+      // Some games query leaked GLES symbols but don't use them
+      // glFrustrumf : ES 1.x function
+      //  - Papers, Please
+      //  - Dicey Dungeons
       fprintf(stderr, "glXGetProcAddress: not found %s\n", procname);
-      __builtin_trap();
+      return nullptr;
     }
 
     LinkAddressToFunction((uintptr_t)Ret, TargetFuncIt->second);
     return Ret;
-	}
+  }
 
-	voidFunc *glXGetProcAddressARB(const GLubyte *procname) {
-		return glXGetProcAddress(procname);
-	}
+  voidFunc *glXGetProcAddressARB(const GLubyte *procname) {
+    return glXGetProcAddress(procname);
+  }
 }
 
 // libGL.so must pull in libX11.so as a dependency. Referencing some libX11
