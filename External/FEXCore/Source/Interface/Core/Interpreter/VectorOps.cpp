@@ -264,26 +264,35 @@ DEF_OP(VSQSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[16];
+  uint8_t Tmp[32];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
 
   const auto Func = [](auto a, auto b) {
-    __int128_t res = a - b;
-    if (res < std::numeric_limits<decltype(a)>::min())
-      return std::numeric_limits<decltype(a)>::min();
+    static_assert(std::is_same_v<decltype(a), decltype(b)>);
+    using Type = decltype(a);
+    using Limits = std::numeric_limits<Type>;
 
-    if (res > std::numeric_limits<decltype(a)>::max())
-      return std::numeric_limits<decltype(a)>::max();
-    return (decltype(a))res;
+    const __int128_t res = a - b;
+    if (res < Limits::min()) {
+      return Limits::min();
+    }
+    if (res > Limits::max()) {
+      return Limits::max();
+    }
+
+    return (Type)res;
   };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_OP(1, int8_t,  Func)
     DO_VECTOR_OP(2, int16_t, Func)
     DO_VECTOR_OP(4, int32_t, Func)
     DO_VECTOR_OP(8, int64_t, Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
