@@ -659,17 +659,65 @@ DEF_OP(VUMinV) {
 }
 
 DEF_OP(VURAvg) {
-  auto Op = IROp->C<IR::IROp_VURAvg>();
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      urhadd(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+  const auto Op = IROp->C<IR::IROp_VURAvg>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (HostSupportsSVE && OpSize == 32) {
+    // SVE URHADD is a destructive operation, so we need
+    // a temporary for performing operations.
+    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+
+    // No unpredicated version, so we need to set up a
+    // predicate register
+    ptrue(p0.VnB());
+
+    switch (ElementSize) {
+      case 1: {
+        urhadd(VTMP1.Z().VnB(), p0.Merging(), VTMP1.Z().VnB(), Vector2.Z().VnB());
+        break;
+      }
+      case 2: {
+        urhadd(VTMP1.Z().VnH(), p0.Merging(), VTMP1.Z().VnH(), Vector2.Z().VnH());
+        break;
+      }
+      case 4: {
+        urhadd(VTMP1.Z().VnS(), p0.Merging(), VTMP1.Z().VnS(), Vector2.Z().VnS());
+        break;
+      }
+      case 8: {
+        urhadd(VTMP1.Z().VnD(), p0.Merging(), VTMP1.Z().VnD(), Vector2.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-    case 2: {
-      urhadd(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        urhadd(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+        break;
+      }
+      case 2: {
+        urhadd(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+        break;
+      }
+      case 4: {
+        urhadd(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
