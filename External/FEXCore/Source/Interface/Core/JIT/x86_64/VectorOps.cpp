@@ -285,16 +285,25 @@ DEF_OP(VUQSub) {
 
 DEF_OP(VSQAdd) {
   auto Op = IROp->C<IR::IROp_VSQAdd>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpaddsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpaddsb(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpaddsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpaddsw(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
