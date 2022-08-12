@@ -583,75 +583,7 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(ioctl, ioctl32);
 
     REGISTER_SYSCALL_IMPL_X32(getdents, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
-#ifdef SYS_getdents
-      std::vector<uint8_t> TmpVector(count);
-      void *TmpPtr = reinterpret_cast<void*>(&TmpVector.at(0));
-
-      // Copy the incoming structures to our temporary array
-      for (uint64_t Offset = 0, TmpOffset = 0;
-          Offset < count;) {
-        linux_dirent_32 *Incoming = (linux_dirent_32*)(reinterpret_cast<uint64_t>(dirp) + Offset);
-        linux_dirent *Tmp = (linux_dirent*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
-
-        if (!Incoming->d_reclen ||
-            (Offset + Incoming->d_reclen) > count) {
-          break;
-        }
-
-        size_t NewRecLen = Incoming->d_reclen + (sizeof(linux_dirent) - sizeof(linux_dirent_32));
-        Tmp->d_ino    = Incoming->d_ino;
-        Tmp->d_off    = Incoming->d_off;
-        Tmp->d_reclen = NewRecLen;
-
-        // This actually copies two more bytes than the string of d_name
-        // Copies a null byte for the string
-        // Copies a d_type flag that lives after the name
-        size_t CopySize = std::clamp<uint32_t>(Incoming->d_reclen - offsetof(linux_dirent_32, d_name), 0U, count - Offset);
-        memcpy(Tmp->d_name, Incoming->d_name, CopySize);
-
-        // We take up 8 more bytes of space
-        TmpOffset += NewRecLen;
-        Offset += Incoming->d_reclen;
-      }
-
-      uint64_t Result = syscall(SYSCALL_DEF(getdents),
-        static_cast<uint64_t>(fd),
-        TmpPtr,
-        static_cast<uint64_t>(count));
-
-      // Now copy back in to the array we were given
-      if (Result != -1) {
-        uint64_t Offset = 0;
-        // With how the emulation occurs we will always return a smaller buffer than what was given to us
-        for (uint64_t TmpOffset = 0, num = 0; TmpOffset < Result; ++num) {
-          linux_dirent_32 *Outgoing = (linux_dirent_32*)(reinterpret_cast<uint64_t>(dirp) + Offset);
-          linux_dirent *Tmp = (linux_dirent*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
-
-          if (!Tmp->d_reclen) {
-            break;
-          }
-
-          size_t NewRecLen = Tmp->d_reclen - (sizeof(std::remove_reference<decltype(*Tmp)>::type) - sizeof(*Outgoing));
-          Outgoing->d_ino = Tmp->d_ino;
-          // If we pass d_off directly then we seem to encounter issues?
-          Outgoing->d_off = num; //Tmp->d_off;
-          size_t OffsetOfName = offsetof(std::remove_reference<decltype(*Tmp)>::type, d_name);
-          Outgoing->d_reclen = NewRecLen;
-
-          // Copies null character and d_type flag as well
-          memcpy(Outgoing->d_name, Tmp->d_name, Tmp->d_reclen - OffsetOfName);
-
-          TmpOffset += Tmp->d_reclen;
-          // Outgoing is 8 bytes smaller
-          Offset += NewRecLen;
-        }
-        Result = Offset;
-      }
-      SYSCALL_ERRNO();
-#else
-      // XXX: Emulate
-      return -ENOSYS;
-#endif
+      return GetDentsEmulation<true>(fd, reinterpret_cast<FEX::HLE::x32::linux_dirent_32*>(dirp), count);
     });
 
     REGISTER_SYSCALL_IMPL_X32(getdents64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
