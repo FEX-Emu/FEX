@@ -25,9 +25,11 @@ function(generate NAME SOURCE_FILE)
   # Interface target for the user to add include directories
   add_library(${NAME}-guest-deps INTERFACE)
   target_include_directories(${NAME}-guest-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+  target_compile_definitions(${NAME}-guest-deps INTERFACE GUEST_THUNK_LIBRARY)
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_INCLUDE_DIRECTORIES>")
+  set(compile_prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_COMPILE_DEFINITIONS>")
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
@@ -40,9 +42,11 @@ function(generate NAME SOURCE_FILE)
       OUTPUT "${OUTFILE}"
       DEPENDS "${GENERATOR_EXE}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17 -DGUEST_THUNK_LIBRARY
-            # Expand include directories to space-separated list of -isystem parameters
-           "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
+      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
+        # Expand compile definitions to space-separated list of -D parameters
+        "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
+        # Expand include directories to space-separated list of -isystem parameters
+        "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
       VERBATIM
       COMMAND_EXPAND_LISTS
       )
@@ -103,11 +107,27 @@ target_link_libraries(GL-guest PRIVATE X11)
 # target_link_libraries(SDL2-guest PRIVATE GL)
 # target_link_libraries(SDL2-guest PRIVATE dl)
 
+find_package(PkgConfig)
+pkg_search_module(X11 REQUIRED x11)
+
+string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
+set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
+set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
+set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
+
 generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(X11)
 
+target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
+
 generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(Xext)
+
+target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
 generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp thunks function_packs function_packs_public)
 add_guest_lib(Xrender)

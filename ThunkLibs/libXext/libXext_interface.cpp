@@ -172,7 +172,14 @@ template<> struct fex_gen_config<_XF86LoadQueryLocaleFont> {};
 template<> struct fex_gen_config<_XProcessWindowAttributes> {};
 template<> struct fex_gen_config<_XDefaultError> {};
 template<> struct fex_gen_config<_XDefaultIOError> {};
+
+#if !(X11_VERSION_MAJOR >= 1 && X11_VERSION_MINOR >= 7 && X11_VERSION_PATCH >= 0)
+// Doesn't exist on older X11
+extern void _XDefaultIOErrorExit(Display *dpy, void *user_data);
+#endif
+
 template<> struct fex_gen_config<_XDefaultIOErrorExit> {};
+
 template<> struct fex_gen_config<_XSetClipRectangles> {};
 template<> struct fex_gen_config<_XGetWindowAttributes> {};
 template<> struct fex_gen_config<_XPutBackEvent> {};
