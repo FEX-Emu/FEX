@@ -28,7 +28,9 @@ $end_info$
 #include <string>
 #include <utility>
 
+#ifdef ENABLE_JEMALLOC
 #include "jemalloc/jemalloc.h"
+#endif
 
 struct LoadlibArgs {
     const char *Name;
@@ -241,12 +243,17 @@ namespace FEXCore {
          * and host heap pointers.
          */
         static void IsHostHeapAllocation(void* ArgsRV) {
+#ifdef ENABLE_JEMALLOC
             struct ArgsRV_t {
                 void* ptr;
                 bool rv;
             } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
             args->rv = je_is_known_allocation(args->ptr);
+#else
+            // Thunks usage without jemalloc isn't supported
+            ERROR_AND_DIE_FMT("Unsupported: Thunks querying for host heap allocation information");
+#endif
         }
 
         static void LoadLib(void *ArgsV) {
