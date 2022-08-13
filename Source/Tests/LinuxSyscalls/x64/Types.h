@@ -194,4 +194,37 @@ using __time_t = time_t;
   // Original definition in `arch/x86/include/uapi/asm/stat.h` for future excavation
   static_assert(std::is_trivial<FEX::HLE::x64::guest_stat>::value, "Needs to be trivial");
   static_assert(sizeof(FEX::HLE::x64::guest_stat) == 144, "Incorrect size");
+
+  // There is no public definition of this struct
+  // Matches the definition of `struct linux_dirent` in fs/readdir.c
+  struct
+  FEX_ANNOTATE("fex-match")
+  linux_dirent {
+    uint64_t d_ino;
+    uint64_t d_off;
+    uint16_t d_reclen;
+    char d_name[1];
+    /* Has hidden null character and d_type */
+  };
+  static_assert(std::is_trivial<linux_dirent>::value, "Needs to be trivial");
+  static_assert(offsetof(linux_dirent, d_ino) == 0, "Incorrect offset");
+  static_assert(offsetof(linux_dirent, d_off) == 8, "Incorrect offset");
+  static_assert(offsetof(linux_dirent, d_reclen) == 16, "Incorrect offset");
+  static_assert(offsetof(linux_dirent, d_name) == 18, "Incorrect offset");
+  static_assert(sizeof(linux_dirent) == 24, "Incorrect size");
+
+  // There is no public definition of this struct
+  // Matches the definition of `struct linux_dirent64` in include/linux/dirent.h
+  struct
+  FEX_ANNOTATE("fex-match")
+  FEX_PACKED
+  linux_dirent_64 {
+    uint64_t d_ino;
+    uint64_t d_off;
+    uint16_t d_reclen;
+    uint8_t  d_type;
+    char d_name[];
+  };
+  static_assert(std::is_trivial<linux_dirent_64>::value, "Needs to be trivial");
+  static_assert(sizeof(linux_dirent_64) == 19, "Incorrect size");
 }

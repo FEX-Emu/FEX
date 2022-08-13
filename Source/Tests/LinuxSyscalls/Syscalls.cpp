@@ -14,6 +14,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/Syscalls/Thread.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
+#include "Tests/LinuxSyscalls/x32/Types.h"
+#include "Tests/LinuxSyscalls/x64/Types.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -57,6 +59,112 @@ namespace FEXCore::Context {
 namespace FEX::HLE {
 class SignalDelegator;
 SyscallHandler *_SyscallHandler{};
+
+
+template<bool IncrementOffset, typename T>
+uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
+  std::vector<uint8_t> TmpVector(count);
+  void *TmpPtr = reinterpret_cast<void*>(&TmpVector.at(0));
+
+  uint64_t Offset = 0;
+  uint64_t TmpOffset = 0;
+  // Copy the incoming structures to our temporary array
+  while (Offset < count) {
+    T *Incoming = (T*)(reinterpret_cast<uint64_t>(dirp) + Offset);
+    FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
+
+    if (!Incoming->d_reclen ||
+        (Offset + Incoming->d_reclen) > count) {
+      break;
+    }
+
+    size_t NewRecLen = FEXCore::AlignUp(Incoming->d_reclen + (sizeof(std::remove_reference<decltype(*Tmp)>::type) - sizeof(*Incoming)),
+                                        alignof(decltype(Tmp->d_ino)));
+    Tmp->d_ino    = Incoming->d_ino;
+    Tmp->d_off    = Incoming->d_off;
+    Tmp->d_reclen = NewRecLen;
+
+    // d_type is hidden at the very end of reclen
+    Tmp->d_type   = Incoming->d_name[Incoming->d_reclen - offsetof(T, d_name) - 1];
+
+    // This actually copies one more byte than the string of d_name
+    // Copies a null byte for the string
+    size_t CopySize = std::clamp<uint32_t>(Incoming->d_reclen - offsetof(T, d_name) - 1, 0U, count - Offset);
+    memcpy(Tmp->d_name, Incoming->d_name, CopySize);
+
+    // We take up 8 more bytes of space
+    TmpOffset += NewRecLen;
+    Offset += Incoming->d_reclen;
+  }
+
+  uint64_t Result = syscall(SYSCALL_DEF(getdents64),
+    static_cast<uint64_t>(fd),
+    TmpPtr,
+    static_cast<uint64_t>(count));
+
+  // Now copy back in to the array we were given
+  if (Result != -1) {
+    // If the outgoing d_ino is smaller than the incoming d_ino from the kernel
+    // Then we need to check for overflow before writing any of the data back
+    if (sizeof(decltype(FEX::HLE::x64::linux_dirent_64::d_ino)) > sizeof(decltype(T::d_ino))) {
+      uint64_t TmpOffset = 0;
+      while (TmpOffset < Result) {
+        FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
+        decltype(T::d_ino) Result_d_ino = Tmp->d_ino;
+
+        if (Result_d_ino != Tmp->d_ino) {
+          // The resulting d_ino truncated, return error
+          return -EOVERFLOW;
+        }
+        TmpOffset += Tmp->d_reclen;
+      }
+    }
+
+    uint64_t Offset = 0;
+    uint64_t TmpOffset = 0;
+    size_t OffsetIndex = 1;
+    // With how the emulation occurs we will always return a smaller buffer than what was given to us
+    while (TmpOffset < Result) {
+      T *Outgoing = (T*)(reinterpret_cast<uint64_t>(dirp) + Offset);
+      FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
+
+      if (!Tmp->d_reclen) {
+        break;
+      }
+
+      size_t NewRecLen = FEXCore::AlignUp(Tmp->d_reclen - (sizeof(std::remove_reference<decltype(*Tmp)>::type) - sizeof(*Outgoing)),
+                                          alignof(decltype(Tmp->d_ino)));
+      Outgoing->d_ino = Tmp->d_ino;
+
+      // 32-bit getdents can't safely handle d_off
+      // A safe way of emulating this is to just use an incrementing offset from 1
+      Outgoing->d_off = IncrementOffset ? OffsetIndex : Tmp->d_off;
+      size_t OffsetOfName = offsetof(std::remove_reference<decltype(*Tmp)>::type, d_name);
+      Outgoing->d_reclen = NewRecLen;
+
+      // Copies null character as well
+      size_t NameLength = Tmp->d_reclen - OffsetOfName - 1;
+      memcpy(Outgoing->d_name, Tmp->d_name, NameLength);
+
+      // Copy the hidden d_type flag
+      Outgoing->d_name[Outgoing->d_reclen - offsetof(T, d_name) - 1] = Tmp->d_type;
+
+      TmpOffset += Tmp->d_reclen;
+      // Outgoing is 5 bytes smaller
+      Offset += NewRecLen;
+
+      ++OffsetIndex;
+    }
+    Result = Offset;
+  }
+  SYSCALL_ERRNO();
+}
+
+template
+uint64_t GetDentsEmulation<false>(int, FEX::HLE::x64::linux_dirent*, uint32_t);
+
+template
+uint64_t GetDentsEmulation<true>(int, FEX::HLE::x32::linux_dirent_32*, uint32_t);
 
 static bool IsSupportedByInterpreter(std::string const &Filename) {
   // If it is a supported ELF then we can

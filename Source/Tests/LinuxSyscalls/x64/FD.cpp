@@ -10,6 +10,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Types.h"
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 #include <fcntl.h>
 #include <poll.h>
@@ -196,16 +197,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(getdents, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {
-  #ifdef SYS_getdents
-      uint64_t Result = syscall(SYSCALL_DEF(getdents),
-        static_cast<uint64_t>(fd),
-        reinterpret_cast<uint64_t>(dirp),
-        static_cast<uint64_t>(count));
-      SYSCALL_ERRNO();
-  #else
-      // XXX: Emulate
-      return -EFAULT;
-  #endif
+      return GetDentsEmulation<false>(fd, reinterpret_cast<FEX::HLE::x64::linux_dirent*>(dirp), count);
     });
 
     REGISTER_SYSCALL_IMPL_X64_PASS(getdents64, [](FEXCore::Core::CpuStateFrame *Frame, int fd, void *dirp, uint32_t count) -> uint64_t {

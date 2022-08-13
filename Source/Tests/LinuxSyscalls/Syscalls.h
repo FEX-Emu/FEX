@@ -509,6 +509,8 @@ static bool HasSyscallError(const void* Result) {
   return HasSyscallError(reinterpret_cast<uintptr_t>(Result));
 }
 
+template<bool IncrementOffset, typename T>
+uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count);
 }
 
 // Registers syscall for both 32bit and 64bit
