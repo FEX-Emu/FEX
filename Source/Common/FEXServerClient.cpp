@@ -101,7 +101,12 @@ namespace FEXServerClient {
   }
 
   std::string GetServerSocketFile() {
-    return fmt::format("{}/{}.FEXServer.socket", std::filesystem::temp_directory_path().string(), ::geteuid());
+    FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
+    if (ServerSocketPath().empty()) {
+      return fmt::format("{}/{}.FEXServer.socket", std::filesystem::temp_directory_path().string(), ::geteuid());
+    }
+
+    return ServerSocketPath;
   }
 
   int GetServerFD() {

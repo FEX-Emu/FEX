@@ -351,6 +351,13 @@
         "Desc": [
           "Loads an AOT IR cache for the loaded executable."
         ]
+      },
+      "ServerSocketPath": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Override for a FEXServer socket path. Only useful for chroots."
+        ]
       }
     }
   },
