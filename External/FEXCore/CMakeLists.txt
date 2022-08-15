@@ -46,14 +46,14 @@ if (OVERRIDE_VERSION STREQUAL "detect")
 
   if (GIT_FOUND)
     execute_process(
-      COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+      COMMAND ${GIT_EXECUTABLE} rev-parse --short=7 HEAD
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
       OUTPUT_VARIABLE GIT_SHORT_HASH
       ERROR_QUIET
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     execute_process(
-      COMMAND ${GIT_EXECUTABLE} describe
+      COMMAND ${GIT_EXECUTABLE} describe --abbrev=7
       WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
       OUTPUT_VARIABLE GIT_DESCRIBE_STRING
       ERROR_QUIET
