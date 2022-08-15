@@ -2,6 +2,11 @@ add_subdirectory(LinuxSyscalls)
 
 list(APPEND LIBS FEXCore Common)
 
+if (TERMUX_BUILD)
+  # Termux needs android-shmem to get the shm emulation library.
+  list(APPEND LIBS android-shmem)
+endif()
+
 add_executable(FEXLoader
   FEXLoader.cpp
   AOT/AOTGenerator.cpp)
