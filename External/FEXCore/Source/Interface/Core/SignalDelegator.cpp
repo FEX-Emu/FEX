@@ -194,6 +194,12 @@ namespace FEXCore {
 
       LOGMAN_THROW_A_FMT(!Previous, "Nested Host Deferred signal, {}", Previous);
 
+      // Store Deferred sigmask
+      memcpy(&ThreadData.HostDeferredSigmask, &_context->uc_sigmask, SIGRTMAX / 8);
+
+      // Block further signals on this thread
+      sigfillset(&_context->uc_sigmask);
+
       if (sigsetjmp(ThreadData.HostDeferredSignalJump, 1)) {
         // Host Deferred Delivery
         ThreadData.HostDeferredSignalPending = false;
@@ -202,12 +208,6 @@ namespace FEXCore {
         memcpy(&_context->uc_sigmask, &ThreadData.HostDeferredSigmask, SIGRTMAX / 8);
         goto DoHandleSignal;
       }
-
-      // Store Deferred sigmask
-      memcpy(&ThreadData.HostDeferredSigmask, &_context->uc_sigmask, SIGRTMAX / 8);
-
-      // Block further signals on this thread
-      sigfillset(&_context->uc_sigmask);
     }
   }
 }

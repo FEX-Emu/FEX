@@ -189,6 +189,8 @@ namespace FEXCore::Context {
     // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
     // Must be called from owning thread
     static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+      FHU::ScopedSignalHostDefer hd;
+
       auto Thread = Frame->Thread;
       
       LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), gettid());
