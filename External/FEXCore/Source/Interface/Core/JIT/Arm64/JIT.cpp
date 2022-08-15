@@ -27,6 +27,7 @@ $end_info$
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/EnumUtils.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
