@@ -123,7 +123,9 @@ void AOTGenSection(FEXCore::Context::Context *CTX, const ELFCodeLoader2::LoadedS
 
         // Compile entrypoint
         counter++;
-        FEXCore::Context::CompileRIP(Thread, BranchTarget);
+        if (!FEXCore::Context::TryCompileRIP(Thread, BranchTarget)) {
+          LogMan::Msg::IFmt("Failed to compile: {:x}", BranchTarget);
+        }
 
         // Are there more branches?
         if (ExternalBranchesLocal.size() > 0) {

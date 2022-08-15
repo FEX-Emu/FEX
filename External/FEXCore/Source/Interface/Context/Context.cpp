@@ -63,8 +63,8 @@ namespace FEXCore::Context {
     CTX->Step();
   }
 
-  void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    Thread->CTX->CompileBlock(Thread->CurrentFrame, GuestRIP);
+  uintptr_t TryCompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    return Thread->CTX->TryCompileBlock(Thread->CurrentFrame, GuestRIP);
   }
 
   FEXCore::Context::ExitReason RunUntilExit(FEXCore::Context::Context *CTX) {
@@ -203,9 +203,11 @@ namespace FEXCore::Context {
   }
 
 namespace Debug {
+  #if FIXME
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
     CTX->CompileRIP(CTX->ParentThread, RIP);
   }
+  #endif
   uint64_t GetThreadCount(FEXCore::Context::Context *CTX) {
     return CTX->GetThreadCount();
   }

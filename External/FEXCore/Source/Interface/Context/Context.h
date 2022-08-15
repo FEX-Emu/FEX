@@ -206,7 +206,10 @@ namespace FEXCore::Context {
     void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
     // Debugger interface
+    #if FIXME
     void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
+    #endif
+
     uint64_t GetThreadCount() const;
     FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(uint64_t Thread);
     bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
@@ -231,11 +234,12 @@ namespace FEXCore::Context {
       uint64_t StartAddr;
       uint64_t Length;
     };
-    [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
-    uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
-    // same as CompileBlock, but aborts on failure
-    void CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
+    // Aborts on failure
+    void CompileBlockOrAbort(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
+
+    // Returns false on failure
+    uintptr_t TryCompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
 
     // Used for thread creation from syscalls
     /**
@@ -337,6 +341,9 @@ namespace FEXCore::Context {
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
 
   private:
+    [[nodiscard]] uintptr_t CompileBlockInternal(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);
+    [[nodiscard]] CompileCodeResult CompileCodeHelper(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+
     /**
      * @brief Does some final thread initialization
      *

@@ -933,7 +933,7 @@ namespace FEXCore::Context {
     };
   }
 
-  Context::CompileCodeResult Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  Context::CompileCodeResult Context::CompileCodeHelper(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
@@ -1015,20 +1015,26 @@ namespace FEXCore::Context {
     };
   }
 
-  void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+  void Context::CompileBlockOrAbort(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     FHU::ScopedSignalHostDefer hd;
     
-    auto NewBlock = CompileBlock(Frame, GuestRIP);
+    auto NewBlock = CompileBlockInternal(Frame, GuestRIP);
 
     if (NewBlock == 0) {
-      LogMan::Msg::EFmt("CompileBlockJit: Failed to compile code {:X} - aborting process", GuestRIP);
+      LogMan::Msg::EFmt("CompileBlockOrAbort: Failed to compile code {:X} - aborting process", GuestRIP);
       // Return similar behaviour of SIGILL abort
       Frame->Thread->StatusCode = 128 + SIGILL;
       Stop(false /* Ignore current thread */);
     }
   }
 
-  uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+  uintptr_t Context::TryCompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+    FHU::ScopedSignalHostDefer hd;
+
+    return CompileBlockInternal(Frame, GuestRIP);
+  }
+
+  uintptr_t Context::CompileBlockInternal(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto Thread = Frame->Thread;
 
     // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
@@ -1047,7 +1053,7 @@ namespace FEXCore::Context {
     bool GeneratedIR {};
     uint64_t StartAddr {}, Length {};
 
-    auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCode(Thread, GuestRIP);
+    auto [Code, IR, Data, RAData, Generated, _StartAddr, _Length] = CompileCodeHelper(Thread, GuestRIP);
     CodePtr = Code;
     IRList = IR;
     DebugData = Data;
@@ -1294,6 +1300,7 @@ namespace FEXCore::Context {
     });
   }
 
+#if FIXME
   // Debug interface
   void Context::CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
     uint64_t RIPBackup = Thread->CurrentFrame->State.rip;
@@ -1303,10 +1310,11 @@ namespace FEXCore::Context {
     ThreadRemoveCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
-    CompileBlock(Thread->CurrentFrame, RIP);
+    CompileBlockOrAbort(Thread->CurrentFrame, RIP);
 
     Thread->CurrentFrame->State.rip = RIPBackup;
   }
+#endif
 
   uint64_t Context::GetThreadCount() const {
     return Threads.size();

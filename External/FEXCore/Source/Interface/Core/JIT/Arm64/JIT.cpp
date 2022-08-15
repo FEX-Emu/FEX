@@ -489,7 +489,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     Common.SyscallHandlerFunc = reinterpret_cast<uintptr_t>(&FEXCore::Context::HandleSyscall);
     
     {
-      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockJit);
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockOrAbort);
       Common.TranslateGuestCode = PMF.GetConvertedPointer();
     }
 

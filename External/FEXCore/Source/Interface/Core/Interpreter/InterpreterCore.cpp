@@ -50,7 +50,7 @@ InterpreterCore::InterpreterCore(Dispatcher *Dispatcher, FEXCore::Core::Internal
 
   auto &Common = Thread->CurrentFrame->Pointers.Common;
   {
-    FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockJit);
+    FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::Context::CompileBlockOrAbort);
     Common.TranslateGuestCode = PMF.GetConvertedPointer();
   }
 

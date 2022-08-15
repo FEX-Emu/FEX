@@ -145,7 +145,7 @@ namespace FEXCore::Context {
    */
   FEX_DEFAULT_VISIBILITY ExitReason RunUntilExit(FEXCore::Context::Context *CTX);
 
-  FEX_DEFAULT_VISIBILITY void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
+  FEX_DEFAULT_VISIBILITY uintptr_t TryCompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
 
   /**
    * @brief Gets the program exit status
