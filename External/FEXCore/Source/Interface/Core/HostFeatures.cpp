@@ -62,8 +62,13 @@ HostFeatures::HostFeatures() {
   SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
   SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
 
+  Supports3DNow = true;
+  SupportsSSE4A = true;
   SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) &&
                 vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
+  SupportsSHA = true;
+  SupportsBMI1 = true;
+  SupportsBMI2 = true;
 
   // We need to get the CPU's cache line size
   // We expect sane targets that have correct cacheline sizes across clusters
@@ -85,7 +90,12 @@ HostFeatures::HostFeatures() {
   SupportsRAND = Features.has(Xbyak::util::Cpu::tRDRAND) && Features.has(Xbyak::util::Cpu::tRDSEED);
   SupportsRCPC = true;
   SupportsTSOImm9 = true;
+  Supports3DNow = Features.has(Xbyak::util::Cpu::t3DN) && Features.has(Xbyak::util::Cpu::tE3DN);
+  SupportsSSE4A = Features.has(Xbyak::util::Cpu::tSSE4a);
   SupportsAVX = true;
+  SupportsSHA = Features.has(Xbyak::util::Cpu::tSHA);
+  SupportsBMI1 = Features.has(Xbyak::util::Cpu::tBMI1);
+  SupportsBMI2 = Features.has(Xbyak::util::Cpu::tBMI2);
 
   // xbyak doesn't know how to check for CLZero
   uint32_t eax, ebx, ecx, edx;

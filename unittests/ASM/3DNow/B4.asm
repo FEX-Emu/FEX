@@ -3,7 +3,8 @@
   "RegData": {
     "MM0":  ["0xc3800000c3800000", "0x0"],
     "MM1":  ["0xc7800000c7800000", "0x0"]
-  }
+  },
+  "HostFeatures": ["3DNOW"]
 }
 %endif
 

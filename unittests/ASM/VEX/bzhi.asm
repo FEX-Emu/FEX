@@ -9,7 +9,8 @@
       "RDI": "32",
       "RBP": "0x00000000000003FF",
       "RSP": "10"
-  }
+  },
+  "HostFeatures": ["BMI2"]
 }
 %endif
 

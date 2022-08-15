@@ -4,7 +4,8 @@
     "RBX": "0x0",
     "RCX": "0x000000020A121A20",
     "RDX": "0x0A121A2000000000"
-  }
+  },
+  "HostFeatures": ["CLZERO"]
 }
 %endif
 

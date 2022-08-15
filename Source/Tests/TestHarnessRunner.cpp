@@ -139,7 +139,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX_CONFIG_OPT(Core, CORE);
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-   
+
   if (!Loader.Is64BitMode()) {
     // Setup our userspace allocator
     uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
@@ -159,6 +159,32 @@ int main(int argc, char **argv, char **const envp) {
   bool DidFault = false;
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
+
+  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
+
+  auto CTX = FEXCore::Context::CreateNewContext();
+
+  FEXCore::Context::InitializeContext(CTX);
+
+  // Skip any tests that the host doesn't support features for
+  auto HostFeatures = FEXCore::Context::GetHostFeatures(CTX);
+  SupportsAVX = HostFeatures.SupportsAVX;
+
+  bool TestUnsupported =
+    (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) ||
+    (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||
+    (!SupportsAVX && Loader.RequiresAVX()) ||
+    (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
+    (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) ||
+    (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
+    (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) ||
+    (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2());
+
+  if (TestUnsupported) {
+    FEXCore::Context::DestroyContext(CTX);
+    return 0;
+  }
+
   if (Core != FEXCore::Config::CONFIG_CUSTOM) {
     jmp_buf LongJump{};
     int LongJumpVal{};
@@ -175,12 +201,6 @@ int main(int argc, char **argv, char **const envp) {
     }, true);
 
     // Run through FEX
-    FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-
-    auto CTX = FEXCore::Context::CreateNewContext();
-    
-    FEXCore::Context::InitializeContext(CTX);
-
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                                : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
@@ -195,13 +215,12 @@ int main(int argc, char **argv, char **const envp) {
 
     FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
     FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
+
     bool Result1 = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
 
     if (!Result1) {
       return 1;
     }
-
-    SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
 
     LongJumpVal = setjmp(LongJump);
     if (!LongJumpVal) {
@@ -212,8 +231,6 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::GetCPUState(CTX, &State);
 
     SyscallHandler.reset();
-    FEXCore::Context::DestroyContext(CTX);
-    FEXCore::Context::ShutdownStaticTables();
   } else {
     // Run as host
     SupportsAVX = true;
@@ -227,12 +244,15 @@ int main(int argc, char **argv, char **const envp) {
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
 
+  FEXCore::Context::DestroyContext(CTX);
+  FEXCore::Context::ShutdownStaticTables();
+
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 
   LogMan::Msg::IFmt("Faulted? {}", DidFault ? "Yes" : "No");
   LogMan::Msg::IFmt("Passed? {}", Passed ? "Yes" : "No");
 
-  
+
   SignalDelegation.reset();
 
   FEXCore::Config::Shutdown();

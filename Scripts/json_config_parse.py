@@ -63,8 +63,15 @@ class Mode(Flag) :
     MODE_64   = 1
 
 class HostFeatures(Flag) :
-    ANY      = 0
-    AVX_ONLY = 1
+    FEATURE_ANY    = 0
+    FEATURE_3DNOW  = (1 << 0)
+    FEATURE_SSE4A  = (1 << 1)
+    FEATURE_AVX    = (1 << 2)
+    FEATURE_RAND   = (1 << 3)
+    FEATURE_SHA    = (1 << 4)
+    FEATURE_CLZERO = (1 << 5)
+    FEATURE_BMI1   = (1 << 6)
+    FEATURE_BMI2   = (1 << 7)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -128,8 +135,14 @@ ModeStringLookup = {
 }
 
 HostFeaturesLookup = {
-    "ANY" : HostFeatures.ANY,
-    "AVX" : HostFeatures.AVX_ONLY,
+    "3DNOW"  : HostFeatures.FEATURE_3DNOW,
+    "SSE4A"  : HostFeatures.FEATURE_SSE4A,
+    "AVX"    : HostFeatures.FEATURE_AVX,
+    "RAND"   : HostFeatures.FEATURE_RAND,
+    "SHA"    : HostFeatures.FEATURE_SHA,
+    "CLZERO" : HostFeatures.FEATURE_CLZERO,
+    "BMI1"   : HostFeatures.FEATURE_BMI1,
+    "BMI2"   : HostFeatures.FEATURE_BMI2,
 }
 
 def parse_hexstring(s):
@@ -152,7 +165,7 @@ def parse_json(json_text, output_file):
     OptionIgnore = Regs.REG_NONE
     OptionABI = ABI.ABI_SYSTEMV
     OptionMode = Mode.MODE_64
-    OptionHostFeatures = HostFeatures.ANY
+    OptionHostFeatures = HostFeatures.FEATURE_ANY
     OptionStackSize = 4096
     OptionEntryPoint = 1
     OptionRegData = {}
@@ -208,10 +221,15 @@ def parse_json(json_text, output_file):
 
     if ("HOSTFEATURES" in json_object):
         data = json_object["HOSTFEATURES"]
-        data = data.upper()
-        if not (data in HostFeaturesLookup):
-            sys.exit("Invalid host feature")
-        OptionHostFeatures = HostFeaturesLookup[data]
+        if not (type(data) is list):
+            sys.exit("HostFeatures value must be list of features")
+
+        for data_key in data:
+            data_key = data_key.upper()
+            if not (data_key in HostFeaturesLookup):
+                sys.exit("Invalid host feature")
+
+            OptionHostFeatures |= HostFeaturesLookup[data_key]
 
     if ("STACKSIZE" in json_object):
         data = json_object["STACKSIZE"]

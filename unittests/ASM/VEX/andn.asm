@@ -5,7 +5,8 @@
       "RBX": "0",
       "RCX": "0xFFFFFFFF",
       "RDX": "0"
-  }
+  },
+  "HostFeatures": ["BMI1"]
 }
 %endif
 

@@ -11,9 +11,7 @@
     "R12": "0x20",
     "R11": "0x10"
   },
-  "MemoryRegions": {
-    "0x100000000": "4096"
-  }
+  "HostFeatures": ["BMI1"]
 }
 %endif
 

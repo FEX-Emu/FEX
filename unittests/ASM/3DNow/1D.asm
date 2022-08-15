@@ -5,7 +5,8 @@
     "MM1":  ["0x00000080FFFFFF80", "0x0"],
     "MM2":  ["0xFFFFFFFF00000001", "0x0"],
     "MM3":  ["0x0", "0x0"]
-  }
+  },
+  "HostFeatures": ["3DNOW"]
 }
 %endif
 

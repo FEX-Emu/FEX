@@ -6,7 +6,8 @@
       "RSI": "0",
       "R14": "0x7F",
       "R15": "0x838"
-  }
+  },
+  "HostFeatures": ["BMI1"]
 }
 %endif
 

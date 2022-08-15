@@ -3,7 +3,8 @@
   "RegData": {
       "XMM1": ["0x43DEA25DAB8EF585", "0x1D30D1491042EED2"],
       "XMM2": ["0x6868C3F3AAED56E0", "0xF0FCE9E294E6E6DE"]
-  }
+  },
+  "HostFeatures": ["SHA"]
 }
 %endif
 

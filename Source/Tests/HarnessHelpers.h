@@ -374,7 +374,27 @@ namespace FEX::HarnessHelper {
     }
 
     bool Is64BitMode() const { return BaseConfig.OptionMode == 1; }
-    bool RequiresAVX() const { return BaseConfig.OptionHostFeatures == 1; }
+
+    enum HostFeatures {
+      FEATURE_ANY    = 0,
+      FEATURE_3DNOW  = (1 << 0),
+      FEATURE_SSE4A  = (1 << 1),
+      FEATURE_AVX    = (1 << 2),
+      FEATURE_RAND   = (1 << 3),
+      FEATURE_SHA    = (1 << 4),
+      FEATURE_CLZERO = (1 << 5),
+      FEATURE_BMI1   = (1 << 6),
+      FEATURE_BMI2   = (1 << 7),
+    };
+
+    bool Requires3DNow()  const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_3DNOW; }
+    bool RequiresSSE4A()  const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SSE4A; }
+    bool RequiresAVX()    const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AVX; }
+    bool RequiresRAND()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_RAND; }
+    bool RequiresSHA()    const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SHA; }
+    bool RequiresCLZERO() const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_CLZERO; }
+    bool RequiresBMI1()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_BMI1; }
+    bool RequiresBMI2()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_BMI2; }
 
   private:
     FEX_CONFIG_OPT(ConfigDumpGPRs, DUMPGPRS);
@@ -506,7 +526,14 @@ namespace FEX::HarnessHelper {
     }
 
     bool Is64BitMode() const { return Config.Is64BitMode(); }
-    bool RequiresAVX() const { return Config.RequiresAVX(); }
+    bool Requires3DNow()  const { return Config.Requires3DNow(); }
+    bool RequiresSSE4A()  const { return Config.RequiresSSE4A(); }
+    bool RequiresAVX()    const { return Config.RequiresAVX(); }
+    bool RequiresRAND()   const { return Config.RequiresRAND(); }
+    bool RequiresSHA()    const { return Config.RequiresSHA(); }
+    bool RequiresCLZERO() const { return Config.RequiresCLZERO(); }
+    bool RequiresBMI1()   const { return Config.RequiresBMI1(); }
+    bool RequiresBMI2()   const { return Config.RequiresBMI2(); }
 
   private:
     constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;

@@ -2,7 +2,8 @@
 {
   "RegData": {
     "RBX": "0x0"
-  }
+  },
+  "HostFeatures": ["CLZERO"]
 }
 %endif
 
