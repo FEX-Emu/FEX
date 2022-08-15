@@ -7,7 +7,8 @@
       "RDX": "1",
       "RSI": "0xFF000000",
       "RDI": "0x01FFFFFF"
-  }
+  },
+  "HostFeatures": ["BMI1"]
 }
 %endif
 

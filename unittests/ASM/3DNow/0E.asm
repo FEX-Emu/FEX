@@ -2,7 +2,8 @@
 {
   "RegData": {
     "RAX": "0xFFFF"
-  }
+  },
+  "HostFeatures": ["3DNOW"]
 }
 %endif
 

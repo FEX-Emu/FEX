@@ -1,3 +1,1 @@
-# Intel doesn't support CLZero, which the CI uses
-Test_SecondaryModRM/Reg_7_4.asm
-Test_SecondaryModRM/Reg_7_4_2.asm
+# Nothing here yet

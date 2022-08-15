@@ -6,7 +6,8 @@
       "XMM3": ["0xA8B3BD15FA04D6D7", "0xDE761956A1F750B1"],
       "XMM4": ["0xCFBBDFA4E5E4712D", "0x76AD0D46447127D3"],
       "XMM5": ["0x9BDCA44510E70C65", "0x4474BFAA2B70A524"]
-  }
+  },
+  "HostFeatures": ["SHA"]
 }
 %endif
 

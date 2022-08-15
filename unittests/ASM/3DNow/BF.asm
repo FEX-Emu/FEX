@@ -8,9 +8,7 @@
     "MM4": "0x1ed68638699d35ca",
     "MM5": "0x165c42291f28194c"
   },
-  "MemoryRegions": {
-    "0x100000000": "4096"
-  }
+  "HostFeatures": ["3DNOW"]
 }
 %endif
 

@@ -6,7 +6,8 @@
     "RDX": "1",
     "R9": "1",
     "R10": "1"
-  }
+  },
+  "HostFeatures": ["RAND"]
 }
 %endif
 
