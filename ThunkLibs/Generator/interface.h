@@ -81,7 +81,7 @@ protected:
   }
 
   PluginASTAction::ActionType getActionType() override {
-    return AddBeforeMainAction;
+    return ReplaceAction;
   }
 private:
     std::string libfilename;

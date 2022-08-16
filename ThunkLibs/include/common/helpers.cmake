@@ -67,13 +67,15 @@ function(generate NAME SOURCE_FILE)
   foreach(WHAT IN LISTS ARGN)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-${WHAT}=${OUTFILE}")
+    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-${WHAT}=${OUTFILE}.1")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
       DEPENDS "${TARGET_GENS}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "touch" "${OUTFILE}"
+      # this is a nasty hack
+      COMMAND "touch" "$<TARGET_OBJECTS:${TARGET_GENS}>"
+      COMMAND "cp" "${OUTFILE}.1" "${OUTFILE}"
     )
 
     list(APPEND OUTPUTS "${OUTFILE}")
@@ -96,7 +98,7 @@ function(add_thunk_lib NAME)
 
   add_library(${TARGET_NAME} ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_${TARGET_NAME}})
 
-  add_dependencies(${TARGET_NAME} ${TARGET_GENS})
+  # add_dependencies(${TARGET_NAME} ${TARGET_GENS})
 
   target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/${TARGET_NAME}")
   target_compile_definitions(${TARGET_NAME} PRIVATE ${THUNK_LIBRARY_TARGET})
