@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(GENERATOR_EXE "$<TARGET_FILE:thunkgenlib>")
+set(GENERATOR_TARGET "thunkgenlib")
+set(GENERATOR_EXE "$<TARGET_FILE:${GENERATOR_TARGET}>")
+
 set(THUNKS_TARGET Host)
 set(TARGET_TYPE SHARED)
 

@@ -6,7 +6,7 @@ set(THUNK_LIBRARY_TARGET "${THUNKS_TARGET_UPPER}_THUNK_LIBRARY")
 macro(define_target_names)
   set(TARGET_NAME "${NAME}-${THUNKS_TARGET_LOWER}-${GUEST_ARCH}")
   set(TARGET_DEPS "${TARGET_NAME}-deps")
-  set(TARGET_GENS "${TARGET_NAME}-genss")
+  set(TARGET_GENS "${TARGET_NAME}-gens")
   set(TARGET_INTERFACE "${TARGET_NAME}-interface")
 
   set(TARGET_NAME "${TARGET_NAME}" PARENT_SCOPE)
@@ -52,6 +52,10 @@ function(generate NAME SOURCE_FILE)
 
   add_library(${TARGET_GENS} OBJECT ${SOURCE_FILE})
   target_link_libraries(${TARGET_GENS} PRIVATE ${TARGET_DEPS})
+  
+  if (${GENERATOR_TARGET})
+    add_dependencies(${TARGET_GENS} ${GENERATOR_TARGET})
+  endif()
 
   # don't actually compile
   # target_compile_options(${TARGET_GENS} PRIVATE "-fsyntax-only")
@@ -64,6 +68,13 @@ function(generate NAME SOURCE_FILE)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
     target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-${WHAT}=${OUTFILE}")
+
+    add_custom_command(
+      OUTPUT "${OUTFILE}"
+      DEPENDS "${TARGET_GENS}"
+      DEPENDS "${SOURCE_FILE}"
+      COMMAND "touch" "${OUTFILE}"
+    )
 
     list(APPEND OUTPUTS "${OUTFILE}")
   endforeach()
