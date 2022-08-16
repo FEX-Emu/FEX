@@ -1,7 +1,7 @@
 find_package(Clang REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
-add_library(thunkgenlib gen.cpp)
+add_library(thunkgenlib SHARED gen.cpp)
 target_include_directories(thunkgenlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS})
 target_link_libraries(thunkgenlib PUBLIC clang-cpp LLVM)
@@ -16,7 +16,3 @@ if (NOT CLANG_RESOURCE_DIR)
     OUTPUT_VARIABLE CLANG_RESOURCE_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
-
-add_executable(thunkgen main.cpp)
-target_link_libraries(thunkgen PRIVATE thunkgenlib)
-target_compile_definitions(thunkgen PRIVATE -DCLANG_RESOURCE_DIR="${CLANG_RESOURCE_DIR}")

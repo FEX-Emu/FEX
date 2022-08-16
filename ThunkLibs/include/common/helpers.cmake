@@ -6,14 +6,17 @@ set(THUNK_LIBRARY_TARGET "${THUNKS_TARGET_UPPER}_THUNK_LIBRARY")
 macro(define_target_names)
   set(TARGET_NAME "${NAME}-${THUNKS_TARGET_LOWER}-${GUEST_ARCH}")
   set(TARGET_DEPS "${TARGET_NAME}-deps")
+  set(TARGET_GENS "${TARGET_NAME}-genss")
   set(TARGET_INTERFACE "${TARGET_NAME}-interface")
 
   set(TARGET_NAME "${TARGET_NAME}" PARENT_SCOPE)
   set(TARGET_DEPS "${TARGET_DEPS}" PARENT_SCOPE)
+  set(TARGET_GENS "${TARGET_GENS}" PARENT_SCOPE)
   set(TARGET_INTERFACE "${TARGET_INTERFACE}" PARENT_SCOPE)
 
   set("${NAME}_TARGET_NAME" "${TARGET_NAME}" PARENT_SCOPE)
   set("${NAME}_TARGET_DEPS" "${TARGET_DEPS}" PARENT_SCOPE)
+  set("${NAME}_TARGET_GENS" "${TARGET_GENS}" PARENT_SCOPE)
   set("${NAME}_TARGET_INTERFACE" "${TARGET_INTERFACE}" PARENT_SCOPE)
 endmacro()
 
@@ -43,50 +46,25 @@ function(generate NAME SOURCE_FILE)
     target_link_libraries(${TARGET_INTERFACE} PRIVATE ${TARGET_DEPS})
   endif()
 
+  
+  set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${TARGET_NAME}")
+  file(MAKE_DIRECTORY "${OUTFOLDER}")
+
+  add_library(${TARGET_GENS} OBJECT ${SOURCE_FILE})
+  target_link_libraries(${TARGET_GENS} PRIVATE ${TARGET_DEPS})
+
+  # don't actually compile
+  # target_compile_options(${TARGET_GENS} PRIVATE "-fsyntax-only")
+  
+  target_compile_options(${TARGET_GENS} PRIVATE "-fplugin=${GENERATOR_EXE}")
+  target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-libname=lib${NAME}")
+
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
-    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${TARGET_NAME}")
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    file(MAKE_DIRECTORY "${OUTFOLDER}")
+    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-${WHAT}=${OUTFILE}")
 
-    # message("CMAKE_C_COMPILER_TARGET: '${CMAKE_C_COMPILER_TARGET}'")
-
-    if (CMAKE_C_COMPILER_TARGET)
-      set(TARGET_TRIPLET "--target=${CMAKE_C_COMPILER_TARGET}")
-    endif()
-    # message("TARGET_TRIPLET: '${TARGET_TRIPLET}'")
-
-    # message("CMAKE_SYSROOT_COMPILE: '${CMAKE_SYSROOT_COMPILE}'")
-    if (CMAKE_SYSROOT_COMPILE)
-      set(COMPILE_SYSROOT "-isysroot${CMAKE_SYSROOT_COMPILE}")
-    endif()
-    # message("COMPILE_SYSROOT: '${COMPILE_SYSROOT}'")
-
-    #message("CMAKE_C_STANDARD_INCLUDE_DIRECTORIES: '${CMAKE_C_STANDARD_INCLUDE_DIRECTORIES}'")
-    if (CMAKE_C_STANDARD_INCLUDE_DIRECTORIES)
-      list(JOIN CMAKE_C_STANDARD_INCLUDE_DIRECTORIES "-isystem" INCLUDE_DIRECTORIES)
-      set(INCLUDE_DIRECTORIES "-isystem${INCLUDE_DIRECTORIES}")
-    endif()
-    #message("INCLUDE_DIRECTORIES: '${INCLUDE_DIRECTORIES}'")
-
-    add_custom_command(
-      OUTPUT "${OUTFILE}"
-      DEPENDS "${GENERATOR_EXE}"
-      DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "lib${NAME}" "-${WHAT}" "${OUTFILE}" -- "${SOURCE_FILE}" --
-        -std=c++17
-        -D${THUNK_LIBRARY_TARGET}
-        ${TARGET_TRIPLET}
-        ${COMPILE_SYSROOT}
-        ${INCLUDE_DIRECTORIES}
-        # Expand include directories to space-separated list of -isystem parameters
-        "$<$<BOOL:${include_dirs_prop}>:;-isystem$<JOIN:${include_dirs_prop},;-isystem>>"
-        # Expand compile definitions to space-separated list of -D parameters
-        "$<$<BOOL:${compile_definitions_prop}>:;-D$<JOIN:${compile_definitions_prop},;-D>>"
-      VERBATIM
-      COMMAND_EXPAND_LISTS
-      )
     list(APPEND OUTPUTS "${OUTFILE}")
   endforeach()
   set(GEN_${TARGET_NAME} ${OUTPUTS} PARENT_SCOPE)
@@ -106,6 +84,8 @@ function(add_thunk_lib NAME)
   endif()
 
   add_library(${TARGET_NAME} ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_${TARGET_NAME}})
+
+  add_dependencies(${TARGET_NAME} ${TARGET_GENS})
 
   target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/${TARGET_NAME}")
   target_compile_definitions(${TARGET_NAME} PRIVATE ${THUNK_LIBRARY_TARGET})

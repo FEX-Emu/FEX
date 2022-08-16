@@ -432,14 +432,14 @@ if (BUILD_THUNKS)
         "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
         "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
         "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
-        "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
+        "-DGENERATOR_EXE=$<TARGET_FILE:thunkgenlib>"
         "-DGUEST_ARCH=${GUEST_ARCH}"
         "-DTHUNKS_ARCH_TARGET=${EXTERNAL_TARGET}"
       INSTALL_COMMAND ""
       BUILD_ALWAYS ON
-      DEPENDS thunkgen
+      DEPENDS thunkgenlib
     )
-
+    #-fplugin=./ThunkLibs/Generator/libthunkgenlib.so -fplugin-arg-FexThunkgen-libname=libxcb -fplugin-arg-FexThunkgen-thunks=/home/skmp/projects/FEX/build/Guest-x86_32/gen/xcb-guest-x86_32/thunks.inl
     add_dependencies(guest-thunks ${EXTERNAL_TARGET})
   endforeach()
 

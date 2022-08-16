@@ -11,7 +11,7 @@ set(DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data
 if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using add_subdirectory, so set up targets for IDE integration using the host toolchain
   set(GUEST_ARCH "none")
-  set(GENERATOR_EXE thunkgen)
+  set(GENERATOR_EXE "$<TARGET_FILE:thunkgenlib>")
 
   set(TARGET_TYPE OBJECT)
   set(GENERATE_INSTALL_TARGETS FALSE)

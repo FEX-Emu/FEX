@@ -746,3 +746,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
 std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
     return std::make_unique<ASTConsumer>();
 }
+
+#include "clang/Frontend/FrontendPluginRegistry.h"
+static clang::FrontendPluginRegistry::Add<GenerateThunkLibsAction> X("FexThunkgen", "Generate Thunk Files for FEX-Emu");

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(GENERATOR_EXE thunkgen)
+set(GENERATOR_EXE "$<TARGET_FILE:thunkgenlib>")
 set(THUNKS_TARGET Host)
 set(TARGET_TYPE SHARED)
 
@@ -36,7 +36,7 @@ foreach(GUEST_ARCH ${GuestArchList})
   find_package(OpenGL REQUIRED)
   generate(GL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp function_unpacks tab_function_unpacks ldr ldr_ptrs)
   add_thunk_lib(GL)
-  target_link_libraries(${TARGET_NAME} PRIVATE OpenGL::GL)
+  target_link_libraries(${TARGET_DEPS} INTERFACE OpenGL::GL)
 
   # disabled for now, headers are platform specific
   # find_package(SDL2 REQUIRED)
