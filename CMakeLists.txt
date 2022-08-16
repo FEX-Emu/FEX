@@ -439,7 +439,7 @@ if (BUILD_THUNKS)
       BUILD_ALWAYS ON
       DEPENDS thunkgenlib
     )
-    #-fplugin=./ThunkLibs/Generator/libthunkgenlib.so -fplugin-arg-FexThunkgen-libname=libxcb -fplugin-arg-FexThunkgen-thunks=/home/skmp/projects/FEX/build/Guest-x86_32/gen/xcb-guest-x86_32/thunks.inl
+
     add_dependencies(guest-thunks ${EXTERNAL_TARGET})
   endforeach()
 

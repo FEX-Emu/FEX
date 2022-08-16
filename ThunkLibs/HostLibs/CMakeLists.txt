@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
+set(GENERATE_INSTALL_TARGETS TRUE)
+
 set(GENERATOR_TARGET "thunkgenlib")
 set(GENERATOR_EXE "$<TARGET_FILE:${GENERATOR_TARGET}>")
 

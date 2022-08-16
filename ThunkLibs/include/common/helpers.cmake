@@ -53,7 +53,7 @@ function(generate NAME SOURCE_FILE)
   add_library(${TARGET_GENS} OBJECT ${SOURCE_FILE})
   target_link_libraries(${TARGET_GENS} PRIVATE ${TARGET_DEPS})
   
-  if (${GENERATOR_TARGET})
+  if (GENERATOR_TARGET)
     add_dependencies(${TARGET_GENS} ${GENERATOR_TARGET})
   endif()
 
