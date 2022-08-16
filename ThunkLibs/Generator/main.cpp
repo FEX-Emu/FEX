@@ -1,5 +1,6 @@
 #include "clang/Tooling/Tooling.h"
 #include "clang/Tooling/CompilationDatabase.h"
+#include "clang/Tooling/CommonOptionsParser.h"
 
 #include <iostream>
 #include <string>
@@ -8,35 +9,39 @@
 
 using namespace clang::tooling;
 
+static llvm::cl::OptionCategory ThunkgenCategory("thunkgen options");
+
 void print_usage(const char* program_name) {
-    std::cerr << "Usage: " << program_name << " <filename> <libname> <gen_target> <output_filename> -- <clang_flags>\n";
+    std::cerr << "Usage: " << program_name << "<libname> <gen_target> <output_filename> -- <filename> -- <clang_flags>\n";
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char* argv[]) {
     if (argc < 6) {
         print_usage(argv[0]);
         return EXIT_FAILURE;
     }
 
-    // Parse compile flags after "--" (this updates argc to the index of the "--" separator)
-    std::string error;
-    auto compile_db = FixedCompilationDatabase::loadFromCommandLine(argc, argv, error);
-    if (!compile_db) {
-        print_usage(argv[0]);
-        std::cerr << "\nError: " << error << "\n";
-        return EXIT_FAILURE;
-    }
-    char** const last_internal_arg = argv + argc;
+    auto const last_arg = argv + argc;
 
-    char** arg = argv + 1;
-    const auto filename = *arg++;
+    auto arg = argv + 1;
     const std::string libname = *arg++;
+    argc--;
 
+    // Parse Commands before "--" (this updates arg to the "--" separator, and replaces it with argv[0])
     // Iterate over generator targets (remaining arguments up to "--" separator)
     OutputFilenames output_filenames;
-    while (arg < last_internal_arg) {
+    while (arg < last_arg) {
         auto target = std::string { *arg++ };
+        argc--;
+        if (target == "--")
+        {
+            *--arg = argv[0];
+            break;
+        }
+
         auto out_filename = *arg++;
+        argc--;
+
         if (target == "-function_unpacks") {
             output_filenames.function_unpacks = out_filename;
         } else if (target == "-tab_function_unpacks") {
@@ -59,7 +64,17 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    ClangTool Tool(*compile_db, { filename });
+    // Parse clang tool arguments after the first "--"
+
+    auto OptionsParser = CommonOptionsParser::create(argc, arg, ThunkgenCategory);
+    if (!OptionsParser) {
+        print_usage(argv[0]);
+        llvm::errs() <<  OptionsParser.takeError();
+        return EXIT_FAILURE;
+    }
+
+    ClangTool Tool(OptionsParser->getCompilations(), OptionsParser->getSourcePathList());
+
     if (CLANG_RESOURCE_DIR[0] != 0) {
         auto set_resource_directory = [](const clang::tooling::CommandLineArguments &Args, clang::StringRef) {
             clang::tooling::CommandLineArguments AdjustedArgs = Args;

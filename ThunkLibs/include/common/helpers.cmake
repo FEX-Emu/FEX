@@ -59,20 +59,27 @@ function(generate NAME SOURCE_FILE)
 
     # message("CMAKE_SYSROOT_COMPILE: '${CMAKE_SYSROOT_COMPILE}'")
     if (CMAKE_SYSROOT_COMPILE)
-      set(COMPILE_SYSROOT "--sysroot=${CMAKE_SYSROOT_COMPILE}")
+      set(COMPILE_SYSROOT "-isysroot${CMAKE_SYSROOT_COMPILE}")
     endif()
     # message("COMPILE_SYSROOT: '${COMPILE_SYSROOT}'")
 
+    #message("CMAKE_C_STANDARD_INCLUDE_DIRECTORIES: '${CMAKE_C_STANDARD_INCLUDE_DIRECTORIES}'")
+    if (CMAKE_C_STANDARD_INCLUDE_DIRECTORIES)
+      list(JOIN CMAKE_C_STANDARD_INCLUDE_DIRECTORIES "-isystem" INCLUDE_DIRECTORIES)
+      set(INCLUDE_DIRECTORIES "-isystem${INCLUDE_DIRECTORIES}")
+    endif()
+    #message("INCLUDE_DIRECTORIES: '${INCLUDE_DIRECTORIES}'")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
       DEPENDS "${GENERATOR_EXE}"
       DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "lib${NAME}" "-${WHAT}" "${OUTFILE}" --
+      COMMAND "${GENERATOR_EXE}" "lib${NAME}" "-${WHAT}" "${OUTFILE}" -- "${SOURCE_FILE}" --
         -std=c++17
         -D${THUNK_LIBRARY_TARGET}
         ${TARGET_TRIPLET}
         ${COMPILE_SYSROOT}
+        ${INCLUDE_DIRECTORIES}
         # Expand include directories to space-separated list of -isystem parameters
         "$<$<BOOL:${include_dirs_prop}>:;-isystem$<JOIN:${include_dirs_prop},;-isystem>>"
         # Expand compile definitions to space-separated list of -D parameters
