@@ -750,7 +750,7 @@ std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(c
 }
 
 static void PrintHelp(llvm::raw_ostream& ros) {
-    ros << "FexThunkgen\n";
+    ros << "fexthunkgen\n";
     ros << "\n";
     ros << "Arguments\n";
     ros << " outfile: faux .o file to create\n";
@@ -807,4 +807,4 @@ bool GenerateThunkLibsAction::ParseArgs(const clang::CompilerInstance &CI, const
   }
 
 #include "clang/Frontend/FrontendPluginRegistry.h"
-static clang::FrontendPluginRegistry::Add<GenerateThunkLibsAction> X("FexThunkgen", "Generate Thunk Files for FEX-Emu");
+static clang::FrontendPluginRegistry::Add<GenerateThunkLibsAction> X("fexthunkgen", "Generate Thunk Files for FEX-Emu");

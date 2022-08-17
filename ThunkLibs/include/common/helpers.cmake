@@ -73,14 +73,14 @@ function(generate NAME SOURCE_FILE)
   # target_compile_options(${TARGET_GENS} PRIVATE "-fsyntax-only")
   
   target_compile_options(${TARGET_GENS} PRIVATE "-fplugin=${GENERATOR_EXE}")
-  target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-libname=lib${NAME}")
+  target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-fexthunkgen-libname=lib${NAME}")
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-${WHAT}=${OUTFILE}.1")
-    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
+    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-fexthunkgen-${WHAT}=${OUTFILE}.1")
+    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-fexthunkgen-outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
