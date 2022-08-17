@@ -741,11 +741,70 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             file << "\n";
         }
     }
+
+    std::ofstream file(outfile);
 }
 
 std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
     return std::make_unique<ASTConsumer>();
 }
+
+static void PrintHelp(llvm::raw_ostream& ros) {
+    ros << "FexThunkgen\n";
+    ros << "\n";
+    ros << "Arguments\n";
+    ros << " outfile: faux .o file to create\n";
+    ros << " libname: libXYZ of the thunked library\n";
+    ros << " [generator targets]\n";
+    ros << "\n";
+    ros << "Generator Targets";
+    ros << " function_unpacks";
+    ros << " tab_function_unpacks";
+    ros << " ldr";
+    ros << " ldr_ptrs";
+    ros << " thunks\n";
+    ros << " function_packs\n";
+    ros << " function_packs_public\n";
+    ros << " symbol_list\n";
+}
+
+bool GenerateThunkLibsAction::ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &args) {
+
+    if (!args.empty() && args[0] == "help") {
+      PrintHelp(llvm::errs());
+    } else {
+      for (unsigned i = 0, e = args.size(); i != e; ++i) {
+        #define DO_ARG(x) ParseArg(#x, args[i], output_filenames.x)
+        if (!(
+          ParseArg("outfile", args[i], outfile) ||
+          ParseArg("libname", args[i], libname) ||
+          DO_ARG(function_unpacks) ||
+          DO_ARG(tab_function_unpacks) ||
+          DO_ARG(ldr) ||
+          DO_ARG(ldr_ptrs) ||
+          DO_ARG(thunks) ||
+          DO_ARG(function_packs) ||
+          DO_ARG(function_packs_public) ||
+          DO_ARG(symbol_list)
+        )) {
+          llvm::errs() << "Unrecognized generator target " << args[i] << "\n";
+          PrintHelp(llvm::errs());
+          return false;
+        }
+        #undef DO_ARG
+      }  
+    }
+
+    libfilename = libname;
+
+    for (auto &c : libname) {
+      if (c == '-') {
+        c = '_';
+      }
+    }
+
+    return true;
+  }
 
 #include "clang/Frontend/FrontendPluginRegistry.h"
 static clang::FrontendPluginRegistry::Add<GenerateThunkLibsAction> X("FexThunkgen", "Generate Thunk Files for FEX-Emu");

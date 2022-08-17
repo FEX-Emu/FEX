@@ -50,12 +50,24 @@ function(generate NAME SOURCE_FILE)
   set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${TARGET_NAME}")
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
-  add_library(${TARGET_GENS} OBJECT ${SOURCE_FILE})
+  set(GENERATOR_H "${OUTFOLDER}/gen.h")
+
+  if (NOT GENERATOR_TARGET)
+    set(GENERATOR_TARGET ${GENERATOR_EXE})
+  endif()
+
+  # this is a nasty hack
+  add_custom_command(
+    OUTPUT "${GENERATOR_H}"
+    DEPENDS "${TARGET_GENS}"
+    DEPENDS "${SOURCE_FILE}"
+    DEPENDS "${GENERATOR_TARGET}"
+    COMMAND "touch" "${GENERATOR_H}"
+  )
+
+  add_library(${TARGET_GENS} OBJECT ${SOURCE_FILE} "${GENERATOR_H}")
   target_link_libraries(${TARGET_GENS} PRIVATE ${TARGET_DEPS})
   
-  if (GENERATOR_TARGET)
-    add_dependencies(${TARGET_GENS} ${GENERATOR_TARGET})
-  endif()
 
   # don't actually compile
   # target_compile_options(${TARGET_GENS} PRIVATE "-fsyntax-only")
@@ -68,13 +80,12 @@ function(generate NAME SOURCE_FILE)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
     target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-${WHAT}=${OUTFILE}.1")
+    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-FexThunkgen-outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
       DEPENDS "${TARGET_GENS}"
       DEPENDS "${SOURCE_FILE}"
-      # this is a nasty hack
-      COMMAND "touch" "$<TARGET_OBJECTS:${TARGET_GENS}>"
       COMMAND "cp" "${OUTFILE}.1" "${OUTFILE}"
     )
 

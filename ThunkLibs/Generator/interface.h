@@ -39,46 +39,7 @@ public:
     std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
 
 protected:
-    bool ParseArgs(const clang::CompilerInstance &CI,
-                 const std::vector<std::string> &args) override {
-
-    if (!args.empty() && args[0] == "help") {
-      PrintHelp(llvm::errs());
-    } else {
-      for (unsigned i = 0, e = args.size(); i != e; ++i) {
-        #define DO_ARG(x) ParseArg(#x, args[i], output_filenames.x)
-        if (!(
-          ParseArg("libname", args[i], libname) ||
-          DO_ARG(function_unpacks) ||
-          DO_ARG(tab_function_unpacks) ||
-          DO_ARG(ldr) ||
-          DO_ARG(ldr_ptrs) ||
-          DO_ARG(thunks) ||
-          DO_ARG(function_packs) ||
-          DO_ARG(function_packs_public) ||
-          DO_ARG(symbol_list)
-        )) {
-          llvm::errs() << "Unrecognized generator target " << args[i] << "\n";
-          return false;
-        }
-        #undef DO_ARG
-      }  
-    }
-
-    libfilename = libname;
-
-    for (auto &c : libname) {
-      if (c == '-') {
-        c = '_';
-      }
-    }
-
-    return true;
-  }
-
-  void PrintHelp(llvm::raw_ostream& ros) {
-    ros << "FexThunkgen\n";
-  }
+  bool ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &args) override;
 
   PluginASTAction::ActionType getActionType() override {
     return ReplaceAction;
@@ -86,6 +47,7 @@ protected:
 private:
     std::string libfilename;
     std::string libname; // sanitized filename, usable as part of emitted function names
+    std::string outfile;
     OutputFilenames output_filenames;
 };
 
