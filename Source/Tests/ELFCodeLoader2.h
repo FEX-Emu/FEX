@@ -79,7 +79,9 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       return false;
     } else {
       auto Filename = FEX::get_fdpath(file.fd);
-      Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename, (prot & PROT_EXEC) != 0});
+      if (Filename.has_value()) {
+        Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename.value(), (prot & PROT_EXEC) != 0});
+      }
 
       return true;
     }

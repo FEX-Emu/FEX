@@ -714,7 +714,7 @@ namespace FEX::EmulatedFile {
         dirfs != AT_FDCWD) {
       // Passed in a dirfd that isn't magic FDCWD
       // We need to get the path from the fd now
-      Path = FEX::get_fdpath(dirfs);
+      Path = FEX::get_fdpath(dirfs).value_or("");
 
       if (pathname) {
         if (!Path.empty()) {
