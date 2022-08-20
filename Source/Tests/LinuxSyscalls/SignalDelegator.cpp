@@ -18,6 +18,7 @@ $end_info$
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
+#include <cstdint>
 #include <string.h>
 
 #include <errno.h>
@@ -205,18 +206,16 @@ namespace FEX::HLE {
     SignalHandler.HostAction.restorer = sigrestore;
 #endif
 
-    // Walk the signals we have that are required and make sure to remove it from the mask
-    // This'll likely be SIGILL, SIGBUS, SIG63
+    // During host signal handling
+    // The guest signal is run after return from the host signal handler, and the guest.sa_mask controls which signals are blocked there
+    SignalHandler.HostAction.sa_mask = UINT64_MAX;
 
-    // If the guest has masked some signals then we need to also mask those signals
-    for (size_t i = 1; i < HostHandlers.size(); ++i) {
-      if (HostHandlers[i].Required.load(std::memory_order_relaxed)) {
-        SignalHandler.HostAction.sa_mask &= ~(1ULL << (i - 1));
-      }
-      else if (SigIsMember(&SignalHandler.GuestAction.sa_mask, i)) {
-        SignalHandler.HostAction.sa_mask |= (1ULL << (i - 1));
-      }
-    }
+    // SIGSEGV (code write tracking) and SIGBUS (atomics emulation) are disabled as well
+    // as we cannot handle nested host signals.
+    // *Watch* these must not be triggered from host signal handlers *Watch*
+    //
+    // SignalHandler.HostAction.sa_mask &= ~(1ULL << (SIGSEGV - 1));
+    // SignalHandler.HostAction.sa_mask &= ~(1ULL <<  (SIGBUS - 1));
 
     // Check for SIG_IGN
     if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN &&
