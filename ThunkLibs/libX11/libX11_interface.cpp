@@ -636,3 +636,53 @@ template<> struct fex_gen_config<_XInitImageFuncPtrs> : fexgen::custom_guest_ent
 template<> struct fex_gen_config<XVaCreateNestedList> {
     using uniform_va_type = void*;
 };
+
+// Xlibint
+template<> struct fex_gen_config<_XError> {};
+template<> struct fex_gen_config<_XIOError> {};
+template<> struct fex_gen_config<_XGetHostname> {};
+template<> struct fex_gen_config<_XScreenOfWindow> {};
+template<> struct fex_gen_config<_XAsyncErrorHandler> {};
+template<> struct fex_gen_config<_XGetAsyncData> {};
+template<> struct fex_gen_config<_XEventsQueued> {};
+template<> struct fex_gen_config<_XEnq> {};
+template<> struct fex_gen_config<_XDeq> {};
+template<> struct fex_gen_config<_XUnknownWireEvent> {};
+template<> struct fex_gen_config<_XUnknownWireEventCookie> {};
+template<> struct fex_gen_config<_XUnknownCopyEventCookie> {};
+template<> struct fex_gen_config<_XWireToEvent> {};
+template<> struct fex_gen_config<_XDefaultWireError> {};
+template<> struct fex_gen_config<_XPollfdCacheInit> {};
+template<> struct fex_gen_config<_XPollfdCacheAdd> {};
+template<> struct fex_gen_config<_XPollfdCacheDel> {};
+template<> struct fex_gen_config<_XAllocID> {};
+template<> struct fex_gen_config<_XAllocIDs> {};
+template<> struct fex_gen_config<_XFreeExtData> {};
+template<> struct fex_gen_config<XESetPrintErrorValues> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetWireToError> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<XESetBeforeFlush> : fexgen::returns_guest_pointer {};
+template<> struct fex_gen_config<_XRegisterInternalConnection> {};
+template<> struct fex_gen_config<_XUnregisterInternalConnection> {};
+template<> struct fex_gen_config<_XProcessInternalConnection> {};
+template<> struct fex_gen_config<_XTextHeight> {};
+template<> struct fex_gen_config<_XTextHeight16> {};
+template<> struct fex_gen_config<_XEventToWire> {};
+template<> struct fex_gen_config<_XF86LoadQueryLocaleFont> {};
+template<> struct fex_gen_config<_XProcessWindowAttributes> {};
+template<> struct fex_gen_config<_XDefaultError> {};
+template<> struct fex_gen_config<_XDefaultIOError> {};
+
+#if !(X11_VERSION_MAJOR >= 1 && X11_VERSION_MINOR >= 7 && X11_VERSION_PATCH >= 0)
+// Doesn't exist on older X11
+extern void _XDefaultIOErrorExit(Display *dpy, void *user_data);
+#endif
+
+template<> struct fex_gen_config<_XDefaultIOErrorExit> {};
+template<> struct fex_gen_config<_XSetClipRectangles> {};
+template<> struct fex_gen_config<_XGetWindowAttributes> {};
+template<> struct fex_gen_config<_XPutBackEvent> {};
+template<> struct fex_gen_config<_XFreeEventCookies> {};
+template<> struct fex_gen_config<_XStoreEventCookie> {};
+template<> struct fex_gen_config<_XFetchEventCookie> {};
+template<> struct fex_gen_config<_XCopyEventCookie> {};
+template<> struct fex_gen_config<xlocaledir> {};
