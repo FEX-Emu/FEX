@@ -23,11 +23,14 @@ set(CMAKE_CXX_ABI_COMPILED False)
 
 # By default we use the clang & lld that was used to compile and link FEX, in cross compiler mode
 #
-set(CMAKE_C_COMPILER clang)
-set(CMAKE_CXX_COMPILER clang++)
+
 # we need to use lld for cross compiling
 add_link_options("-fuse-ld=lld")
 
+# force a specific clang++
+#
+## set(CMAKE_C_COMPILER clang)
+## set(CMAKE_CXX_COMPILER clang++)
 
 # gcc alternative
 #

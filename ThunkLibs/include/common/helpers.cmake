@@ -72,15 +72,18 @@ function(generate NAME SOURCE_FILE)
   # don't actually compile
   # target_compile_options(${TARGET_GENS} PRIVATE "-fsyntax-only")
   
+  
   target_compile_options(${TARGET_GENS} PRIVATE "-fplugin=${GENERATOR_EXE}")
-  target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-fexthunkgen-libname=lib${NAME}")
+  
+  #clang-12 and earlier don't support -fplugin-arg.., emulate via SHELL:-Xclang -plugin-arg...
+  target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen-libname=lib${NAME}")
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-fexthunkgen-${WHAT}=${OUTFILE}.1")
-    target_compile_options(${TARGET_GENS} PRIVATE "-fplugin-arg-fexthunkgen-outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
+    target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen-${WHAT}=${OUTFILE}.1")
+    target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen-outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
