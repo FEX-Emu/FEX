@@ -141,13 +141,19 @@ namespace Alloc::OSAllocator {
       }
 
       // 32-bit old kernel workarounds
-      FEXCore::Allocator::PtrCache *Steal32BitIfOldKernel();
+      std::vector<FEXCore::Allocator::MemoryRegion> Steal32BitIfOldKernel();
   };
 
 void OSAllocator_64Bit::DetermineVASize() {
   size_t Bits = FEXCore::Allocator::DetermineVASize();
   uintptr_t Size = 1ULL << Bits;
+
   UPPER_BOUND = Size;
+
+  #if _M_X86_64 // Last page cannot be allocated on x86
+    UPPER_BOUND -= FHU::FEX_PAGE_SIZE;
+  #endif
+
   UPPER_BOUND_PAGE = UPPER_BOUND / FHU::FEX_PAGE_SIZE;
 }
 
@@ -490,11 +496,11 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   return 0;
 }
 
-FEXCore::Allocator::PtrCache *OSAllocator_64Bit::Steal32BitIfOldKernel() {
+std::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfOldKernel() {
   // First calculate kernel version
   struct utsname buf{};
   if (uname(&buf) == -1) {
-    return nullptr;
+    return {};
   }
 
   int32_t Major{};
@@ -512,7 +518,7 @@ FEXCore::Allocator::PtrCache *OSAllocator_64Bit::Steal32BitIfOldKernel() {
 
   if (Version >= ((4 << 24) | (17 << 16) | 0)) {
     // If the kernel is >= 4.17 then it supports MAP_FIXED_NOREPLACE
-    return nullptr;
+    return {};
   }
 
   constexpr size_t LOWER_BOUND_32 = 0x1'0000;
@@ -523,101 +529,39 @@ FEXCore::Allocator::PtrCache *OSAllocator_64Bit::Steal32BitIfOldKernel() {
 
 OSAllocator_64Bit::OSAllocator_64Bit() {
   DetermineVASize();
-  auto ArrayPtr = Steal32BitIfOldKernel();
+  auto LowMem = Steal32BitIfOldKernel();
 
-  // On allocation try and steal the entire upper 64bits of address space for mapping
-  constexpr std::array<size_t, 8> ReservedVMARegionSizes = {{
-    // Anything larger than 64GB fails out
-    64ULL * 1024 * 1024 * 1024,   // 64GB
-    32ULL * 1024 * 1024 * 1024,   // 32GB
-    16ULL * 1024 * 1024 * 1024,   // 16GB
-    4ULL * 1024 * 1024 * 1024,    // 4GB
-    1ULL * 1024 * 1024 * 1024,    // 1GB
-    512ULL * 1024 * 1024,         // 512MB
-    128ULL * 1024 * 1024,         // 128MB
-    4096ULL                       // One page
-  }};
+  auto Ranges = FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND, UPPER_BOUND);
 
-  constexpr size_t AllocationSizeMaxIndex = ReservedVMARegionSizes.size() - 1;
+  for (auto [Ptr, AllocationSize]: Ranges) {
+    if (!ObjectAlloc) {
+      auto MaxSize = std::min(size_t(64) * 1024 * 1024, AllocationSize);
 
-  // Have the first region only be 4GB VMA
-  // Avoids conflicts with some tests
-  uint64_t CurrentSizeIndex = 3;
-  ReservedVMARegion *PrevReserved{};
-  for (size_t MemoryOffset = LOWER_BOUND; MemoryOffset < UPPER_BOUND;) {
-    size_t AllocationSize = ReservedVMARegionSizes[CurrentSizeIndex];
-    size_t MemoryOffsetUpper = MemoryOffset + AllocationSize;
+      // Allocate up to 64 MiB the first allocation for an intrusive allocator
+      mprotect(Ptr, MaxSize, PROT_READ | PROT_WRITE);
 
-    // If we would go above the upper bound on size then try the next size
-    if (MemoryOffsetUpper > UPPER_BOUND) {
-      ++CurrentSizeIndex;
-      continue;
-    }
+      // This enables the kernel to use transparent large pages in the allocator which can reduce memory pressure
+      ::madvise(Ptr, MaxSize, MADV_HUGEPAGE);
 
-    void *Ptr = ::mmap(reinterpret_cast<void*>(MemoryOffset), AllocationSize, PROT_NONE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+      ObjectAlloc = new (Ptr) Alloc::ForwardOnlyIntrusiveArenaAllocator(Ptr, MaxSize);
+      ReservedRegions = ObjectAlloc->new_construct(ReservedRegions, ObjectAlloc);
+      LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
 
-    // If we managed to allocate and not get the address we want then unmap it
-    // This happens with kernels older than 4.17
-    if (reinterpret_cast<uintptr_t>(Ptr) != MemoryOffset &&
-        reinterpret_cast<uintptr_t>(Ptr) < LOWER_BOUND) {
-      ::munmap(Ptr, AllocationSize);
-      Ptr = reinterpret_cast<void*>(~0ULL);
-    }
-
-    // If we failed to allocate and we are on the smallest allocation size then just continue onward
-    // This page was unmappable
-    if (reinterpret_cast<uintptr_t>(Ptr) == ~0ULL && CurrentSizeIndex == AllocationSizeMaxIndex) {
-      CurrentSizeIndex = 0;
-      MemoryOffset += AllocationSize;
-      continue;
-    }
-
-    // Congratulations we were able to map this bit
-    // Reset and claim it was available
-    if (reinterpret_cast<uintptr_t>(Ptr) != ~0ULL) {
-      if (!ObjectAlloc) {
-        // Steal the first allocation for an intrusive allocator
-        // Will be mprotected correctly already
-        mprotect(Ptr, AllocationSize, PROT_READ | PROT_WRITE);
-        ObjectAlloc = new (Ptr) Alloc::ForwardOnlyIntrusiveArenaAllocator(Ptr, AllocationSize);
-        ReservedRegions = ObjectAlloc->new_construct(ReservedRegions, ObjectAlloc);
-        LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
+      if (AllocationSize > MaxSize) {
+        AllocationSize -= MaxSize;
+        (uint8_t*&)Ptr += MaxSize;
+      } else {
+        continue;
       }
-      else {
-
-        // If the allocation size is large than a page, then try allowing it to be a huge page
-        // This enables the kernel to use transparent large pages in the allocator which can reduce memory pressure
-        // Considering we are allocating the entire VA space, this is a good thing
-        // If MADV_HUGEPAGE isn't support then this will fail harmlessly
-        if (AllocationSize > 4096) {
-          ::madvise(Ptr, AllocationSize, MADV_HUGEPAGE);
-        }
-
-        bool Merged = false;
-        if (PrevReserved) {
-          Merged = MergeReservedRegionIfPossible(PrevReserved, reinterpret_cast<uint64_t>(Ptr), AllocationSize);
-        }
-
-        if (!Merged) {
-          ReservedVMARegion *Region = ObjectAlloc->new_construct<ReservedVMARegion>();
-          Region->Base = reinterpret_cast<uint64_t>(Ptr);
-          Region->RegionSize = AllocationSize;
-          ReservedRegions->emplace_back(Region);
-          PrevReserved = Region;
-        }
-      }
-
-      CurrentSizeIndex = 0;
-      MemoryOffset += AllocationSize;
-      continue;
     }
-
-    // Couldn't allocate at this size
-    // Increase and continue
-    ++CurrentSizeIndex;
+    
+    ReservedVMARegion *Region = ObjectAlloc->new_construct<ReservedVMARegion>();
+    Region->Base = reinterpret_cast<uint64_t>(Ptr);
+    Region->RegionSize = AllocationSize;
+    ReservedRegions->emplace_back(Region);
   }
 
-  FEXCore::Allocator::ReclaimMemoryRegion(ArrayPtr);
+  FEXCore::Allocator::ReclaimMemoryRegion(LowMem);
 }
 
 OSAllocator_64Bit::~OSAllocator_64Bit() {

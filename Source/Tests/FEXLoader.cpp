@@ -331,7 +331,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-  FEXCore::Allocator::PtrCache *Base48Bit{};
+  std::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
 
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists

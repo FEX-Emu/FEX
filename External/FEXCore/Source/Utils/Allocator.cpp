@@ -6,6 +6,10 @@
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include <array>
+#include <asm-generic/errno-base.h>
+#include <cctype>
+#include <cstdio>
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/user.h>
 #ifdef ENABLE_JEMALLOC
@@ -131,91 +135,119 @@ namespace FEXCore::Allocator {
     FEX_UNREACHABLE;
   }
 
-  PtrCache* StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
-    PtrCache *Cache{};
-    uint64_t CacheSize{};
-    uint64_t CurrentCacheOffset = 0;
-    constexpr std::array<size_t, 10> ReservedVMARegionSizes = {{
-      // Anything larger than 64GB fails out
-      64ULL * 1024 * 1024 * 1024,   // 64GB
-      32ULL * 1024 * 1024 * 1024,   // 32GB
-      16ULL * 1024 * 1024 * 1024,   // 16GB
-      4ULL * 1024 * 1024 * 1024,    // 4GB
-      1ULL * 1024 * 1024 * 1024, // 1GB
-      512ULL * 1024 * 1024,      // 512MB
-      128ULL * 1024 * 1024,      // 128MB
-      32ULL * 1024 * 1024,       // 32MB
-      1ULL * 1024 * 1024,        // 1MB
-      4096ULL                    // One page
-    }};
-    constexpr size_t AllocationSizeMaxIndex = ReservedVMARegionSizes.size() - 1;
-    uint64_t CurrentSizeIndex = 0;
+  #define STEAL_LOG(...) // fprintf(stderr, __VA_ARGS__)
 
-    int PROT_FLAGS = PROT_READ | PROT_WRITE;
-    for (size_t MemoryOffset = Begin; MemoryOffset < End;) {
-      size_t AllocationSize = ReservedVMARegionSizes[CurrentSizeIndex];
-      size_t MemoryOffsetUpper = MemoryOffset + AllocationSize;
+  std::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
+    std::vector<MemoryRegion> Regions;
+    
+    int MapsFD = open("/proc/self/maps", O_RDONLY);
+    LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
 
-      // If we would go above the upper bound on size then try the next size
-      if (MemoryOffsetUpper > End) {
-        ++CurrentSizeIndex;
-        continue;
+    enum {ParseBegin, ParseEnd, ScanEnd} State = ParseBegin;
+
+    uintptr_t RegionBegin = 0;
+    uintptr_t RegionEnd = 0;
+
+    char Buffer[2048];
+    const char *Cursor;
+    ssize_t Remaining = 0;
+
+    for(;;) {
+
+      if (Remaining == 0) {
+        do { 
+          Remaining = read(MapsFD, Buffer, sizeof(Buffer));
+        } while ( Remaining == -1 && errno == EAGAIN);
+
+        Cursor = Buffer;
       }
 
-      void *Ptr = ::mmap(reinterpret_cast<void*>(MemoryOffset), AllocationSize, PROT_FLAGS, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED_NOREPLACE, -1, 0);
+      if (Remaining == 0 && State == ParseBegin) {
+        STEAL_LOG("[%d] EndOfFile; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
 
-      // If we managed to allocate and not get the address we want then unmap it
-      // This happens with kernels older than 4.17
-      if (reinterpret_cast<uintptr_t>(Ptr) + AllocationSize > End) {
-        ::munmap(Ptr, AllocationSize);
-        Ptr = reinterpret_cast<void*>(~0ULL);
-      }
+        auto MapBegin = std::max(RegionEnd, Begin);
+        auto MapEnd = End;
 
-      // If we failed to allocate and we are on the smallest allocation size then just continue onward
-      // This page was unmappable
-      if (reinterpret_cast<uintptr_t>(Ptr) == ~0ULL && CurrentSizeIndex == AllocationSizeMaxIndex) {
-        CurrentSizeIndex = 0;
-        MemoryOffset += AllocationSize;
-        continue;
-      }
+        STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
 
-      // Congratulations we were able to map this bit
-      // Reset and claim it was available
-      if (reinterpret_cast<uintptr_t>(Ptr) != ~0ULL) {
-        if (!Cache) {
-          Cache = reinterpret_cast<PtrCache *>(Ptr);
-          CacheSize = AllocationSize;
-          PROT_FLAGS = PROT_NONE;
-        }
-        else {
-          Cache[CurrentCacheOffset] = {
-            .Ptr = static_cast<uint64_t>(reinterpret_cast<uint64_t>(Ptr)),
-            .Size = static_cast<uint64_t>(AllocationSize)
-          };
-          ++CurrentCacheOffset;
+        if (MapEnd > MapBegin) {
+          STEAL_LOG("     Reserving\n");
+
+          auto MapSize = MapEnd - MapBegin;
+          auto Alloc = mmap((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+
+          LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
+          LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap({},{:x}) returned {} instead of {:x}", Alloc, MapBegin);
+
+          Regions.push_back({(void*)MapBegin, MapSize});
         }
 
-        CurrentSizeIndex = 0;
-        MemoryOffset += AllocationSize;
+        close(MapsFD);
+        return Regions;
+      }
+
+      LogMan::Throw::AFmt(Remaining > 0, "Failed to parse /proc/self/maps");
+
+      auto c = *Cursor++;
+      Remaining--;
+
+      if (State == ScanEnd) {
+        if (c == '\n') {
+          State = ParseBegin;
+        }
         continue;
       }
 
-      // Couldn't allocate at this size
-      // Increase and continue
-      ++CurrentSizeIndex;
+      if (State == ParseBegin) {
+        if (c == '-') {
+          STEAL_LOG("[%d] ParseBegin; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+
+          auto MapBegin = std::max(RegionEnd, Begin);
+          auto MapEnd = std::min(RegionBegin, End);
+          
+          STEAL_LOG("     MapBegin: %016lX MapEnd: %016lX\n", MapBegin, MapEnd);
+
+          if (MapEnd > MapBegin) {
+            STEAL_LOG("     Reserving\n");
+
+            auto MapSize = MapEnd - MapBegin;
+            auto Alloc = mmap((void*)MapBegin, MapSize, PROT_NONE, MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+
+            LogMan::Throw::AFmt(Alloc != MAP_FAILED, "mmap({:x},{:x}) failed", MapBegin, MapSize);
+            LogMan::Throw::AFmt(Alloc == (void*)MapBegin, "mmap({},{:x}) returned {} instead of {:x}", Alloc, MapBegin);
+
+            Regions.push_back({(void*)MapBegin, MapSize});
+          }
+          RegionBegin = 0;
+          RegionEnd = 0;
+          State = ParseEnd;
+          continue;
+        } else {
+          LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseBegin", c);
+          RegionBegin = (RegionBegin << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
+        }
+      }
+
+      if (State == ParseEnd) {
+        if (c == ' ') {
+          STEAL_LOG("[%d] ParseEnd; RegionBegin: %016lX RegionEnd: %016lX\n", __LINE__, RegionBegin, RegionEnd);
+
+          State = ScanEnd;
+          continue;
+        } else {
+          LogMan::Throw::AFmt(std::isalpha(c) || std::isdigit(c), "Unexpected char '{}' in ParseEnd", c);
+          RegionEnd = (RegionEnd << 4) | (c <= '9' ? (c - '0') : (c - 'a' + 10));
+        }
+      }
     }
 
-    Cache[CurrentCacheOffset] = {
-      .Ptr = static_cast<uint64_t>(reinterpret_cast<uint64_t>(Cache)),
-      .Size = CacheSize,
-    };
-    return Cache;
+    ERROR_AND_DIE_FMT("unreachable");
   }
 
-  PtrCache* Steal48BitVA() {
+  std::vector<MemoryRegion> Steal48BitVA() {
     size_t Bits = FEXCore::Allocator::DetermineVASize();
     if (Bits < 48) {
-      return nullptr;
+      return {};
     }
 
     uintptr_t Begin48BitVA = 0x0'8000'0000'0000ULL;
@@ -223,18 +255,9 @@ namespace FEXCore::Allocator {
     return StealMemoryRegion(Begin48BitVA, End48BitVA);
   }
 
-  void ReclaimMemoryRegion(PtrCache* Regions) {
-    if (Regions == nullptr) {
-      return;
-    }
-
-    for (size_t i = 0;; ++i) {
-      void *Ptr = reinterpret_cast<void*>(Regions[i].Ptr);
-      size_t Size = Regions[i].Size;
-      ::munmap(Ptr, Size);
-      if (Ptr == Regions) {
-        break;
-      }
+  void ReclaimMemoryRegion(const std::vector<MemoryRegion> &Regions) {
+    for (const auto &Region: Regions) {
+      ::munmap(Region.Ptr, Region.Size);
     }
   }
 }

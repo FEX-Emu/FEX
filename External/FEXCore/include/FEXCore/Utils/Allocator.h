@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <functional>
 #include <sys/types.h>
+#include <vector>
 
 namespace FEXCore::Allocator {
   using MMAP_Hook = void*(*)(void*, size_t, int, int, int, off_t);
@@ -24,19 +25,19 @@ namespace FEXCore::Allocator {
   FEX_DEFAULT_VISIBILITY void ClearHooks();
 
   FEX_DEFAULT_VISIBILITY size_t DetermineVASize();
-  // 48-bit VA handling
-  struct PtrCache {
-    uint64_t Ptr;
-    uint64_t Size;
+
+  struct MemoryRegion {
+    void *Ptr;
+    size_t Size;
   };
 
-  FEX_DEFAULT_VISIBILITY PtrCache* StealMemoryRegion(uintptr_t Begin, uintptr_t End);
-  FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(PtrCache* Regions);
+  FEX_DEFAULT_VISIBILITY std::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End);
+  FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(const std::vector<MemoryRegion> & Regions);
   // When running a 64-bit executable on ARM then userspace guest only gets 47 bits of VA
   // This is a feature of x86-64 where the kernel gets a full 128TB of VA space
   // x86-64 canonical addresses with bit 48 set will sign extend the address (Ignoring LA57)
   // AArch64 canonical addresses are only up to bits 48/52 with the remainder being other things
   // Use this to reserve the top 128TB of VA so the guest never see it
   // Returns nullptr on host VA < 48bits
-  FEX_DEFAULT_VISIBILITY PtrCache* Steal48BitVA();
+  FEX_DEFAULT_VISIBILITY std::vector<MemoryRegion> Steal48BitVA();
 }
