@@ -5,12 +5,13 @@
 #include <fcntl.h>
 #include <filesystem>
 #include <linux/limits.h>
+#include <optional>
 #include <unistd.h>
 
 namespace FEX {
 [[maybe_unused]]
 static
-std::string get_fdpath(int fd) {
+std::optional<std::string> get_fdpath(int fd) {
   char SymlinkPath[PATH_MAX];
   std::filesystem::path Path = std::filesystem::path("/proc/self/fd") / std::to_string(fd);
   int Result = readlinkat(AT_FDCWD, Path.c_str(), SymlinkPath, sizeof(SymlinkPath));
@@ -18,8 +19,8 @@ std::string get_fdpath(int fd) {
     return std::string(SymlinkPath, Result);
   }
 
-  LOGMAN_MSG_A_FMT("Couldn't get symlink from /proc/self/fd/{}", fd);
-  return {};
+  // Not fatal if an FD doesn't point to a file
+  return std::nullopt;
 }
 
 }

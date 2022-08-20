@@ -575,7 +575,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
         dirfd != AT_FDCWD) {
     // Passed in a dirfd that isn't magic FDCWD
     // We need to get the path from the fd now
-    Path = FEX::get_fdpath(dirfd);
+    Path = FEX::get_fdpath(dirfd).value_or("");
 
     if (pathname) {
       if (!Path.empty()) {
