@@ -164,18 +164,20 @@ install(TARGETS FEXBash
     COMPONENT runtime
 )
 
-add_executable(TestHarnessRunner TestHarnessRunner/HostRunner.cpp TestHarnessRunner.cpp)
-target_include_directories(TestHarnessRunner
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
-    ${CMAKE_BINARY_DIR}/generated
-)
-target_link_libraries(TestHarnessRunner
-  PRIVATE
-    ${LIBS}
-    LinuxEmulation
-    ${PTHREAD_LIB}
-)
+
+if (BUILD_TESTS)
+  add_executable(TestHarnessRunner TestHarnessRunner/HostRunner.cpp TestHarnessRunner.cpp)
+  target_include_directories(TestHarnessRunner
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+      ${CMAKE_BINARY_DIR}/generated
+  )
+  target_link_libraries(TestHarnessRunner
+    PRIVATE
+      ${LIBS}
+      LinuxEmulation
+      ${PTHREAD_LIB}
+  )
 
 # add_executable(UnitTestGenerator UnitTestGenerator.cpp)
 # target_include_directories(UnitTestGenerator
@@ -189,19 +191,19 @@ target_link_libraries(TestHarnessRunner
 # )
 #
 
-add_executable(IRLoader
-  IRLoader.cpp
-)
-target_include_directories(IRLoader
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
-    ${CMAKE_BINARY_DIR}/generated
-)
-target_link_libraries(IRLoader
-  PRIVATE
-    ${LIBS}
-    LinuxEmulation
-    ${PTHREAD_LIB}
-    fmt::fmt
-)
-
+  add_executable(IRLoader
+    IRLoader.cpp
+  )
+  target_include_directories(IRLoader
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+      ${CMAKE_BINARY_DIR}/generated
+  )
+  target_link_libraries(IRLoader
+    PRIVATE
+      ${LIBS}
+      LinuxEmulation
+      ${PTHREAD_LIB}
+      fmt::fmt
+  )
+endif()
