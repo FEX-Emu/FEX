@@ -70,7 +70,10 @@ namespace Alloc::OSAllocator {
         ReservedVMARegion *SlabInfo;
         uint64_t FreeSpace{};
         uint32_t LastPageAllocation{};
-        FEXCore::FlexBitSet<uint64_t> UsedPages;
+
+        // Align UsedPages so it pads to the next page.
+        // Necessary to take advantage of madvise zero page pooling.
+        alignas(4096) FEXCore::FlexBitSet<uint64_t> UsedPages;
 
         // This returns the size of the LiveVMARegion in addition to the flex set that tracks the used data
         // The LiveVMARegion lives at the start of the VMA region which means on initialization we need to set that
@@ -93,16 +96,23 @@ namespace Alloc::OSAllocator {
           Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
 
           size_t NumPages = SizePlusManagedData >> FHU::FEX_PAGE_SHIFT;
-          // Memset the full tracking to zero to state nothing used
-          Region->UsedPages.MemSet(Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT);
+
+          // Use madvise to set the full tracking region to zero.
+          // This ensures unused pages are zero, while not having the backing pages consuming memory.
+          ::madvise(Region->UsedPages.Memory + (NumPages * 4096), (Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT) - (NumPages * 4096), MADV_DONTNEED);
+
+          // Use madvise to claim WILLNEED on the beginning pages for initial state tracking.
+          // Improves performance of the following MemClear by not doing a page level fault dance for data necessary to track >170TB of used pages.
+          ::madvise(Region->UsedPages.Memory, NumPages * 4096, MADV_WILLNEED);
+
           // Set our reserved pages
-          for (size_t i = 0; i < NumPages; ++i) {
-            // Set our used pages
-            Region->UsedPages.Set(i);
-          }
+          Region->UsedPages.MemSet(NumPages);
           Region->LastPageAllocation = NumPages;
         }
       };
+
+      static_assert(sizeof(LiveVMARegion) == 4096, "Needs to be the size of a page");
+
       static_assert(std::is_trivially_copyable<LiveVMARegion>::value, "Needs to be trivially copyable");
       static_assert(offsetof(LiveVMARegion, UsedPages) == sizeof(LiveVMARegion), "FlexBitSet needs to be at the end");
 
@@ -131,12 +141,12 @@ namespace Alloc::OSAllocator {
 
         // Copy over the reserved data
         LiveRange->SlabInfo = ReservedRegion;
+
         // Initialize VMA
         LiveVMARegion::InitializeVMARegionUsed(LiveRange, UsedSize);
 
         // Add to our active tracked ranges
         auto LiveIter = LiveRegions->emplace_back(LiveRange);
-
         return LiveIter;
       }
 
