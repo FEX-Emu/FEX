@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.14)
+
+set(CMAKE_TOOLCHAIN_FILE Toolchains/toolchain-host.cmake)
+
 project(FEX)
+
+message("")
+message("###")
+message("### CC = ${CMAKE_C_COMPILER}  CXX=${CMAKE_CXX_COMPILER} LINKER = ${LINKER_OVERRIDE}")
+message("###")
+message("")
+
+enable_language(C CXX)
 
 INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
@@ -11,8 +22,6 @@ option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)
 option(ENABLE_LTO "Enable LTO with compilation" TRUE)
 option(ENABLE_XRAY "Enable building with LLVM X-Ray" FALSE)
-option(ENABLE_LLD "Enable linking with lld" FALSE)
-option(ENABLE_MOLD "Enable linking with mold" FALSE)
 option(ENABLE_ASAN "Enables Clang ASAN" FALSE)
 option(ENABLE_TSAN "Enables Clang TSAN" FALSE)
 option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
@@ -36,6 +45,11 @@ set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global d
 set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
 set (TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
 set (OVERRIDE_VERSION "detect" CACHE STRING "Override the FEX version in the format of <MMYY>{.<REV>}")
+
+
+set (LD_OVERRIDE "-fuse-ld=${LINKER_OVERRIDE}")
+add_link_options(${LD_OVERRIDE})
+
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 if (CMAKE_BUILD_TYPE MATCHES "DEBUG")
@@ -111,15 +125,6 @@ if (ENABLE_COMPILE_TIME_TRACE)
 endif()
 
 set (PTHREAD_LIB pthread)
-
-if (ENABLE_LLD AND ENABLE_MOLD)
-  message (FATAL_ERROR "Cannot enable both lld and mold")
-elseif (ENABLE_LLD)
-  set (LD_OVERRIDE "-fuse-ld=lld")
-  add_link_options(${LD_OVERRIDE})
-elseif (ENABLE_MOLD)
-  add_link_options("-fuse-ld=mold")
-endif()
 
 if (ENABLE_LIBCXX)
   message(WARNING "This is an unsupported configuration and should only be used for testing")

@@ -1,4 +1,3 @@
-find_package(Clang REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 add_library(thunkgenlib SHARED gen.cpp)
