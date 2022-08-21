@@ -1,7 +1,14 @@
 # Setup cmake enough so find_package works
-SET_PROPERTY(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
 
+set(CMAKE_FIND_LIBRARY_PREFIXES "/lib")
+set(CMAKE_FIND_LIBRARY_SUFFIXES "")
+
+# find clang
 find_package(Clang REQUIRED CONFIG)
+
+unset(CMAKE_FIND_LIBRARY_PREFIXES)
+unset(CMAKE_FIND_LIBRARY_SUFFIXES)
 
 # Set default c compiler based on located clang install
 
@@ -15,7 +22,7 @@ if (NOT DEFINED ENV{"CXX"})
 endif()
 
 if (NOT DEFINED ENV{"LD"})
-  set(LINKER_OVERRIDE "${CLANG_INSTALL_PREFIX}/bin/lld")
+  set(LINKER_OVERRIDE "${CLANG_INSTALL_PREFIX}/bin/ld.lld")
 else()
   set(LINKER_OVERRIDE ENV{"LD"})
 endif()
