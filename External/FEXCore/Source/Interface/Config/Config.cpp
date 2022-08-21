@@ -82,7 +82,7 @@ namespace JSON {
     json_t const* ConfigList = json_getProperty(json, "Config");
 
     if (!ConfigList) {
-      LogMan::Msg::EFmt("Couldn't get config list");
+      // This is a non-error if the configuration file exists but no Config section
       return;
     }
 

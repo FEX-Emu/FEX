@@ -328,6 +328,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.first).string());
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.second);
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;

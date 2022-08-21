@@ -80,6 +80,7 @@ private:
   FEX_CONFIG_OPT(ThunkHostLibs, THUNKHOSTLIBS);
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
   FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIG);
+  FEX_CONFIG_OPT(AppConfigName, APP_CONFIG_NAME);
   uint32_t CurrentPID{};
 
   void LoadThunkDatabase(bool Global);

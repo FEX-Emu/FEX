@@ -375,6 +375,17 @@
         "Type": "str",
         "Default": ""
       },
+      "APP_CONFIG_NAME": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "This is the application config name that has been loaded.",
+          "This differs from APP_FILENAME in two ways",
+          "Where APP_FILENAME always points to the executable path that FEX-Emu is executing.",
+          "This matches what is used to load the AppLayer configuration name.",
+          "When running through a compatibility layer like wine, this will only be the exe name, instead of wine full path."
+        ]
+      },
       "IS64BIT_MODE": {
         "Type": "bool",
         "Default": "false"

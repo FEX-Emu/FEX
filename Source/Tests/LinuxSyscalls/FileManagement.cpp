@@ -7,6 +7,7 @@ $end_info$
 
 #include "Common/FDUtils.h"
 
+#include "FEXCore/Config/Config.h"
 #include "Tests/LinuxSyscalls/FileManagement.h"
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -222,16 +223,81 @@ void FileManager::LoadThunkDatabase(bool Global) {
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
 
+  bool LoadedThunkDatabase{};
   auto ThunkConfigFile = ThunkConfig();
+  auto ThunkGuestPath = std::filesystem::path(ThunkGuestLibs());
 
-  if (ThunkConfigFile.size()) {
+  auto LoadThunksDB = [this, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
+    // If a thunks DB property exists then we pull in data from the thunks database
+    // Load the initial thunks database
+    if (LoadedThunkDatabase) {
+      LoadThunkDatabase(true);
+      LoadThunkDatabase(false);
+      *LoadedThunkDatabase = true;
+    }
 
-    auto ThunkGuestPath = std::filesystem::path(ThunkGuestLibs());
+    // Now load this property
+    for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+      const char *LibraryName = json_getName(Item);
+      int64_t LibraryEnabled = json_getInteger(Item);
+      if (LibraryEnabled != 0) {
+        // If the library is enabled then find it in the DB
+        // Enable the overlay and all the dependencies in one go
+        auto DBObject = ThunkDB.find(LibraryName);
+        if (DBObject != ThunkDB.end() &&
+            DBObject->second.Enabled == false) {
 
+          auto ThunkPath = ThunkGuestPath / DBObject->second.LibraryName;
+          if (std::filesystem::exists(ThunkPath)) {
+            for (auto Overlay : DBObject->second.Overlays) {
+              // Direct full path in guest RootFS to our overlay file
+              ThunkOverlays.emplace(Overlay, ThunkPath);
+            }
+          }
+          DBObject->second.Enabled = true;
+          // Now walk the dependencies and set them up as well
+          // Make sure to enable each one as we go to remove circular dependencies
+          std::function<void(std::unordered_set<std::string> &Depends)> InsertDependencies
+            = [this, &ThunkGuestPath, &InsertDependencies](std::unordered_set<std::string> &Depends) -> void {
+            for (auto &Depend : Depends) {
+              auto DBDepend = ThunkDB.find(Depend);
+              if (DBDepend != ThunkDB.end() &&
+                  DBDepend->second.Enabled == false) {
+
+                auto ThunkPath = ThunkGuestPath / DBDepend->second.LibraryName;
+                if (std::filesystem::exists(ThunkPath)) {
+                  for (auto Overlay : DBDepend->second.Overlays) {
+                    // Direct full path in guest RootFS to our overlay file
+                    ThunkOverlays.emplace(Overlay, ThunkPath);
+                  }
+                }
+
+                // Enabled, now walk this dependencies
+                DBDepend->second.Enabled = true;
+                InsertDependencies(DBDepend->second.Depends);
+              }
+            }
+          };
+          InsertDependencies(DBObject->second.Depends);
+        }
+      }
+    }
+  };
+
+  // We try to load ThunksDB from {FEX global config, FEX user config, AppConfig Global, AppConfig Local, Defined ThunksConfig option}
+  // This doesn't support the classic thunks interface.
+
+  std::vector<std::string> ConfigPaths {
+    FEXCore::Config::GetConfigFileLocation(true),
+    FEXCore::Config::GetConfigFileLocation(false),
+    FEXCore::Config::GetApplicationConfig(AppConfigName(), true),
+    FEXCore::Config::GetApplicationConfig(AppConfigName(), false),
+    ThunkConfigFile,
+  };
+
+  for (const auto &Path : ConfigPaths) {
     std::vector<char> FileData;
-    if (LoadFile(FileData, ThunkConfigFile)) {
-      FileData.push_back(0);
-
+    if (LoadFile(FileData, Path)) {
       JSON::JsonAllocator Pool {
         .PoolObject = {
           .init = JSON::PoolInit,
@@ -240,101 +306,22 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
       };
 
       json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
-
-      json_t const* thunks = json_getProperty( json, "thunks" );
-      if (thunks && json_getType(thunks) == JSON_OBJ) {
-        json_t const* thunk;
-        for( thunk = json_getChild( thunks ); thunk != 0; thunk = json_getSibling( thunk )) {
-          char const* GuestThunk = json_getName( thunk );
-          jsonType_t propertyType = json_getType( thunk );
-
-          if (propertyType == JSON_TEXT) {
-            char const* RootFSLib = json_getValue( thunk );
-            auto ThunkPath = ThunkGuestPath / GuestThunk;
-            if (std::filesystem::exists(ThunkPath)) {
-              ThunkOverlays.emplace(RootFSLib, ThunkPath);
-            }
-          } else if (propertyType == JSON_ARRAY) {
-            json_t const* child;
-            for( child = json_getChild( thunk ); child != 0; child = json_getSibling( child ) ) {
-              if (json_getType( child ) == JSON_TEXT) {
-                char const* RootFSLib = json_getValue( child );
-                auto ThunkPath = ThunkGuestPath / GuestThunk;
-                if (std::filesystem::exists(ThunkPath)) {
-                  ThunkOverlays.emplace(RootFSLib, ThunkPath);
-                }
-              }
-            }
-          }
-        }
-      }
-
       json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
       if (ThunksDB) {
-        // If a thunks DB property exists then we pull in data from the thunks database
-        // Load the initial thunks database
-        LoadThunkDatabase(true);
-        LoadThunkDatabase(false);
-
-        // Now load this property
-        for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
-          const char *LibraryName = json_getName(Item);
-          int64_t LibraryEnabled = json_getInteger(Item);
-          if (LibraryEnabled != 0) {
-            // If the library is enabled then find it in the DB
-            // Enable the overlay and all the dependencies in one go
-            auto DBObject = ThunkDB.find(LibraryName);
-            if (DBObject != ThunkDB.end() &&
-                DBObject->second.Enabled == false) {
-
-              auto ThunkPath = ThunkGuestPath / DBObject->second.LibraryName;
-              if (std::filesystem::exists(ThunkPath)) {
-                for (auto Overlay : DBObject->second.Overlays) {
-                  // Direct full path in guest RootFS to our overlay file
-                  ThunkOverlays.emplace(Overlay, ThunkPath);
-                }
-              }
-              DBObject->second.Enabled = true;
-              // Now walk the dependencies and set them up as well
-              // Make sure to enable each one as we go to remove circular dependencies
-              std::function<void(std::unordered_set<std::string> &Depends)> InsertDependencies
-                = [this, &ThunkGuestPath, &InsertDependencies](std::unordered_set<std::string> &Depends) -> void {
-                for (auto &Depend : Depends) {
-                  auto DBDepend = ThunkDB.find(Depend);
-                  if (DBDepend != ThunkDB.end() &&
-                      DBDepend->second.Enabled == false) {
-
-                    auto ThunkPath = ThunkGuestPath / DBDepend->second.LibraryName;
-                    if (std::filesystem::exists(ThunkPath)) {
-                      for (auto Overlay : DBDepend->second.Overlays) {
-                        // Direct full path in guest RootFS to our overlay file
-                        ThunkOverlays.emplace(Overlay, ThunkPath);
-                      }
-                    }
-
-                    // Enabled, now walk this dependencies
-                    DBDepend->second.Enabled = true;
-                    InsertDependencies(DBDepend->second.Depends);
-                  }
-                }
-              };
-              InsertDependencies(DBObject->second.Depends);
-            }
-          }
-        }
-
-        // Now clear the thunk database since we're loaded
-        ThunkDB.clear();
+        LoadThunksDB(&LoadedThunkDatabase, ThunksDB);
       }
     }
+  }
 
-    if (false) {
-      // Useful for debugging
-      if (ThunkOverlays.size()) {
-        LogMan::Msg::IFmt("Thunk Overlays:");
-        for (const auto& [Overlay, ThunkPath] : ThunkOverlays) {
-          LogMan::Msg::IFmt("\t{} -> {}", Overlay, ThunkPath);
-        }
+  // Now clear the thunk database since we're loaded
+  ThunkDB.clear();
+
+  if (false) {
+    // Useful for debugging
+    if (ThunkOverlays.size()) {
+      LogMan::Msg::IFmt("Thunk Overlays:");
+      for (const auto& [Overlay, ThunkPath] : ThunkOverlays) {
+        LogMan::Msg::IFmt("\t{} -> {}", Overlay, ThunkPath);
       }
     }
   }
