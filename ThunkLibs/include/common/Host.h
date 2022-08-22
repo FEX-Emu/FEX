@@ -102,9 +102,6 @@ struct GuestcallInfo {
 #elif defined(_M_ARM_64)
 #define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
   asm volatile("mov %0, x11" : "=r" (target_variable))
-#else
-#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
-  abort()
 #endif
 
 template<typename>
