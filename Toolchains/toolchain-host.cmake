@@ -21,8 +21,9 @@ if (NOT DEFINED ENV{"CXX"})
   set(CMAKE_CXX_COMPILER "${CLANG_INSTALL_PREFIX}/bin/clang++")
 endif()
 
+# Default to lld as that is also what the thunks use by default
 if (NOT DEFINED ENV{"LD"})
-  set(LINKER_OVERRIDE "${CLANG_INSTALL_PREFIX}/bin/ld.lld")
+  set(LINKER_OVERRIDE "lld")
 else()
   set(LINKER_OVERRIDE ENV{"LD"})
 endif()

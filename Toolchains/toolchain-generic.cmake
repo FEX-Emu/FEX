@@ -24,8 +24,8 @@ set(CMAKE_CXX_ABI_COMPILED False)
 # By default we use the clang & lld that was used to compile and link FEX, in cross compiler mode
 #
 
-# we need to use lld for cross compiling
-add_link_options("-fuse-ld=lld")
+# Both lld and mold can be used for cross linking
+add_link_options("-fuse-ld=${LINKER_OVERRIDE}")
 
 # force a specific clang++
 #

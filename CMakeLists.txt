@@ -5,7 +5,7 @@ set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "Toolchains/toolchai
 message("")
 message("#### Looking for clang...")
 message("#### FFI & other libs might not be found here")
-message("#### This is a CMake/LLVM limitation and not an issue")
+message("#### This is a CMake/LLVM limitation and nothing to worry about")
 message("")
 
 set(CMAKE_TOOLCHAIN_FILE "Toolchains/toolchain-host.cmake")
@@ -455,6 +455,7 @@ if (BUILD_THUNKS)
         "-DGUEST_ARCH=${GUEST_ARCH}"
         "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
         "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+        "-DLINKER_OVERRIDE=${LINKER_OVERRIDE}"
       INSTALL_COMMAND ""
       BUILD_ALWAYS ON
       DEPENDS thunkgenlib
