@@ -4,8 +4,12 @@ set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
 set(CMAKE_FIND_LIBRARY_PREFIXES "/lib")
 set(CMAKE_FIND_LIBRARY_SUFFIXES "")
 
-# find clang
-find_package(Clang REQUIRED CONFIG)
+# This would be sweet, but clang doesn't cross compile correctly when called with the full path, only through the /usr/bin/clang symlink
+## find clang
+## find_package(Clang REQUIRED CONFIG)
+
+# Instead, this is used for now
+set(CLANG_INSTALL_PREFIX /usr)
 
 unset(CMAKE_FIND_LIBRARY_PREFIXES)
 unset(CMAKE_FIND_LIBRARY_SUFFIXES)

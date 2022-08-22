@@ -76,14 +76,14 @@ function(generate NAME SOURCE_FILE)
   target_compile_options(${TARGET_GENS} PRIVATE "-fplugin=${GENERATOR_EXE}")
   
   #clang-12 and earlier don't support -fplugin-arg.., emulate via SHELL:-Xclang -plugin-arg...
-  target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen-libname=lib${NAME}")
+  target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen -Xclang libname=lib${NAME}")
+  target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen -Xclang outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
 
   # Run thunk generator for each of the given output files
   foreach(WHAT IN LISTS ARGN)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
-    target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen-${WHAT}=${OUTFILE}.1")
-    target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen-outfile=$<TARGET_OBJECTS:${TARGET_GENS}>")
+    target_compile_options(${TARGET_GENS} PRIVATE "SHELL:-Xclang -plugin-arg-fexthunkgen -Xclang ${WHAT}=${OUTFILE}.1")
 
     add_custom_command(
       OUTPUT "${OUTFILE}"
@@ -132,5 +132,7 @@ function(add_thunk_lib NAME)
   if (GENERATE_INSTALL_TARGETS)
     install(TARGETS ${TARGET_NAME} DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/${THUNKS_TARGET}Thunks/)
     add_dependencies(${THUNKS_ARCH_TARGET} ${TARGET_NAME})
+  else()
+    set_target_properties(${TARGET_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
   endif()
 endfunction()

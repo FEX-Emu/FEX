@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.14)
 
 set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS "Toolchains/toolchain-host.cmake")
 
-message("")
-message("#### Looking for clang...")
-message("#### FFI & other libs might not be found here")
-message("#### This is a CMake/LLVM limitation and nothing to worry about")
-message("")
-
 set(CMAKE_TOOLCHAIN_FILE "Toolchains/toolchain-host.cmake")
 
 
@@ -15,7 +9,7 @@ project(FEX)
 
 message("")
 message("###")
-message("### CC = ${CMAKE_C_COMPILER}  CXX=${CMAKE_CXX_COMPILER} LINKER = ${LINKER_OVERRIDE}")
+message("### CC = ${CMAKE_C_COMPILER}  CXX = ${CMAKE_CXX_COMPILER} LINKER_OVERRIDE = ${LINKER_OVERRIDE}")
 message("###")
 message("")
 

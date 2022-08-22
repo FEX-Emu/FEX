@@ -21,13 +21,6 @@ struct OutputFilenames {
     std::string symbol_list;
 };
 
-static bool ParseArg(const std::string &Name, const std::string &Arg, std::string &out) {
-  if (!Arg.starts_with(Name + "="))
-    return false;
-  out = Arg.substr(Name.length() + 1);
-  return true;
-}
-
 class GenerateThunkLibsAction : public clang::PluginASTAction {
 public:
     GenerateThunkLibsAction() { }

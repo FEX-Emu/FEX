@@ -5,6 +5,7 @@ set(GuestArchList "x86_32;x86_64")
 foreach(GUEST_ARCH ${GuestArchList})
   set(TOOLCHAIN_FILE ${TOOLCHAIN_FILE_${GUEST_ARCH}})
   message("FEXLinuxTests: toolchain for |${GUEST_ARCH}| is \"${TOOLCHAIN_FILE}\"")
+
   ExternalProject_Add(FEXLinuxTests-${GUEST_ARCH}
     PREFIX FEXLinuxTests-${GUEST_ARCH}
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests"

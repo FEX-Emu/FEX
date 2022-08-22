@@ -768,6 +768,13 @@ static void PrintHelp(llvm::raw_ostream& ros) {
     ros << " symbol_list\n";
 }
 
+static bool ParseArg(const std::string &Name, const std::string &Arg, std::string &out) {
+  if (!Arg.starts_with(Name + "="))
+    return false;
+  out = Arg.substr(Name.length() + 1);
+  return true;
+}
+
 bool GenerateThunkLibsAction::ParseArgs(const clang::CompilerInstance &CI, const std::vector<std::string> &args) {
 
     if (!args.empty() && args[0] == "help") {
