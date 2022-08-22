@@ -72,7 +72,7 @@ public:
 
 #define EXPORTS(name) \
   extern "C" { \
-    ExportEntry* fexthunks_exports_##name(uintptr_t allocate, uintptr_t finalize) { \
+    ExportEntry* fexthunks_exports_##name() { \
       if (!fexldr_init_##name()) { \
         return nullptr; \
       } \
@@ -102,9 +102,6 @@ struct GuestcallInfo {
 #elif defined(_M_ARM_64)
 #define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
   asm volatile("mov %0, x11" : "=r" (target_variable))
-#else
-#define LOAD_INTERNAL_GUESTPTR_VIA_CUSTOM_ABI(target_variable) \
-  abort()
 #endif
 
 template<typename>

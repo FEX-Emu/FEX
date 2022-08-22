@@ -18,6 +18,11 @@ function(generate NAME SOURCE_FILE)
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
   set(compile_prop "$<TARGET_PROPERTY:${NAME}-deps,INTERFACE_COMPILE_DEFINITIONS>")
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    list(APPEND compile_prop _M_X86_64=1)
+  elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    list(APPEND compile_prop _M_ARM_64=1)
+  endif()
 
   # Target for IDE integration
   add_library(${NAME}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
@@ -29,7 +34,7 @@ function(generate NAME SOURCE_FILE)
     set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
 
     file(MAKE_DIRECTORY "${OUTFOLDER}")
-    
+
     add_custom_command(
       OUTPUT "${OUTFILE}"
       DEPENDS "${SOURCE_FILE}"
