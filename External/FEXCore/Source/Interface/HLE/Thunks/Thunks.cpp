@@ -365,7 +365,7 @@ namespace FEXCore {
      * is to allocate the trampoline for a given GuestTarget/GuestUnpacker on the guest-side,
      * and provide the HostPacker host-side.
      */
-    __attribute__((visibility("default")))
+    FEX_DEFAULT_VISIBILITY
     HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
       LOGMAN_THROW_AA_FMT(GuestTarget, "Tried to create host-trampoline to null pointer guest function");
 
@@ -423,7 +423,7 @@ namespace FEXCore {
       return HostTrampoline;
     }
 
-    __attribute__((visibility("default")))
+    FEX_DEFAULT_VISIBILITY
     void FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr* TrampolineAddress, void* HostPacker) {
       auto& Trampoline = GetInstanceInfo(TrampolineAddress);
 
