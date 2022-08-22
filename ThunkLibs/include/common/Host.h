@@ -72,7 +72,7 @@ public:
 
 #define EXPORTS(name) \
   extern "C" { \
-    ExportEntry* fexthunks_exports_##name(uintptr_t allocate, uintptr_t finalize) { \
+    ExportEntry* fexthunks_exports_##name() { \
       if (!fexldr_init_##name()) { \
         return nullptr; \
       } \
