@@ -152,9 +152,35 @@ namespace FEXCore {
   }
 
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
+    constexpr auto RAW_SIGSET_SIZE = 8;
+
     // Let the host take first stab at handling the signal
     auto Thread = GetTLSThread();
 
+    // Host handling of signals is never deferred
+    HostSignalHandler &Handler = HostHandlers[Signal];
+
+    if (!Thread) {
+      LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
+    } else {
+
+      // No signals must be delivered in this scope - should be guaranteed.
+      FHU::ScopedSignalHostDefer hd;
+
+      for (auto &Handler : Handler.Handlers) {
+        if (Handler(Thread, Signal, Info, UContext)) {
+          // If the host handler handled the fault then we can continue now
+          return;
+        }
+      }
+
+      if (Handler.FrontendHandler &&
+          Handler.FrontendHandler(Thread, Signal, Info, UContext)) {
+        return;
+      }
+    }
+
+    // Delivery of signal to guest while host code is running may be deferred (Host Deferred Signals)
     if (!ThreadData.HostDeferredSignalEnabled) {
       LOGMAN_THROW_A_FMT(!ThreadData.HostDeferredSignalPending, "Host Deferred signal tearing, delivering {} while pending {}", Signal, ThreadData.HostDeferredSignalPending);
       DoHandleSignal: {
@@ -162,28 +188,9 @@ namespace FEXCore {
         // FEX_TODO("Enforce no signal delivery in this scope")
         FHU::ScopedSignalHostDefer hd;
 
-        HostSignalHandler &Handler = HostHandlers[Signal];
 
-        if (!Thread) {
-          LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
-        }
-        else {
-          for (auto &Handler : Handler.Handlers) {
-            if (Handler(Thread, Signal, Info, UContext)) {
-              // If the host handler handled the fault then we can continue now
-              return;
-            }
-          }
-
-          if (Handler.FrontendHandler &&
-              Handler.FrontendHandler(Thread, Signal, Info, UContext)) {
-            return;
-          }
-
-          // Now let the frontend handle the signal
-          // It's clearly a guest signal and this ends up being an OS specific issue
-          HandleGuestSignal(Thread, Signal, Info, UContext);
-        }
+        // It's clearly a guest signal and this ends up being an OS specific issue
+        HandleGuestSignal(Thread, Signal, Info, UContext);
       }
     } else {
       ucontext_t* _context = (ucontext_t*)UContext;
@@ -195,17 +202,25 @@ namespace FEXCore {
       LOGMAN_THROW_A_FMT(!Previous, "Nested Host Deferred signal, {}", Previous);
 
       // Store Deferred sigmask
-      memcpy(&ThreadData.HostDeferredSigmask, &_context->uc_sigmask, SIGRTMAX / 8);
+      memcpy(&ThreadData.HostDeferredSigmask, &_context->uc_sigmask, RAW_SIGSET_SIZE);
 
       // Block further signals on this thread
-      sigfillset(&_context->uc_sigmask);
+
+      uint64_t sigmask_raw = UINT64_MAX;
+
+      // A special exception is made, SIGSEGV remains enabled during SIGBUS handling for arm64 to handle atomic emulation + SMC cases
+      #if defined(_M_ARM_64)
+        sigmask_raw &= ~(1ULL << (SIGSEGV - 1));
+      #endif
+
+      memcpy(&_context->uc_sigmask, &sigmask_raw, RAW_SIGSET_SIZE);
 
       if (sigsetjmp(ThreadData.HostDeferredSignalJump, 1)) {
         // Host Deferred Delivery
         ThreadData.HostDeferredSignalPending = false;
 
         // Restore Deferred sigmask
-        memcpy(&_context->uc_sigmask, &ThreadData.HostDeferredSigmask, SIGRTMAX / 8);
+        memcpy(&_context->uc_sigmask, &ThreadData.HostDeferredSigmask, RAW_SIGSET_SIZE);
         goto DoHandleSignal;
       }
     }

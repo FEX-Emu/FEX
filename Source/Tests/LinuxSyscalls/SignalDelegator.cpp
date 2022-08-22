@@ -210,12 +210,19 @@ namespace FEX::HLE {
     // The guest signal is run after return from the host signal handler, and the guest.sa_mask controls which signals are blocked there
     SignalHandler.HostAction.sa_mask = UINT64_MAX;
 
-    // SIGSEGV (code write tracking) and SIGBUS (atomics emulation) are disabled as well
-    // as we cannot handle nested host signals.
+    // SIGSEGV (code write tracking) and SIGBUS (atomics emulation) are disabled as well for most signals
+    //
     // *Watch* these must not be triggered from host signal handlers *Watch*
     //
     // SignalHandler.HostAction.sa_mask &= ~(1ULL << (SIGSEGV - 1));
     // SignalHandler.HostAction.sa_mask &= ~(1ULL <<  (SIGBUS - 1));
+
+    // A special exception is made, SIGSEGV remains enabled during SIGBUS handling for arm64 to handle atomic emulation + SMC cases
+    #if defined(_M_ARM_64)
+      if (Signal == SIGBUS) {
+        SignalHandler.HostAction.sa_mask &= ~(1ULL << (SIGSEGV - 1));
+      }
+    #endif
 
     // Check for SIG_IGN
     if (SignalHandler.GuestAction.sigaction_handler.handler == SIG_IGN &&
