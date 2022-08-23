@@ -59,6 +59,10 @@ endfunction()
 function(add_guest_lib NAME)
   set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Guest.cpp)
   get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
+
+  set (SOURCE_LDS_FILE ../lib${NAME}/lib${NAME}_Guest.lds)
+  get_filename_component(SOURCE_LDS_FILE_ABS "${SOURCE_LDS_FILE}" ABSOLUTE)
+
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
     set (SOURCE_FILE ../lib${NAME}/Guest.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
@@ -74,6 +78,10 @@ function(add_guest_lib NAME)
 
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-guest PRIVATE -fwrapv)
+
+  if (EXISTS "${SOURCE_LDS_FILE_ABS}")
+    target_link_options(VDSO-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../lib${NAME}/lib${NAME}_Guest.lds")
+  endif()
 
   if (GENERATE_GUEST_INSTALL_TARGETS)
     install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
