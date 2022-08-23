@@ -181,3 +181,14 @@ generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp thunk
 target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
 target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
 add_guest_lib(drm)
+
+generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp thunks function_packs function_packs_public)
+add_guest_lib(VDSO)
+# Can't use a stack protector because otherwise cross-compiling fails
+# Not necessary anyway because it only trampolines
+target_compile_options(VDSO-guest PRIVATE "-fno-stack-protector")
+target_link_options(VDSO-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_Guest.lds" "-nostdlib" "-Wl,-soname,linux-vdso.so.1"
+  "-Wl,--no-undefined" "-Wl,-z,max-page-size=4096" "-Wl,--hash-style=both")
+
+# Need to override SONAME in linker options
+set_target_properties(VDSO-guest PROPERTIES NO_SONAME ON)
