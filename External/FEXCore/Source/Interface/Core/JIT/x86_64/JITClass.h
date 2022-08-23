@@ -181,6 +181,10 @@ private:
   [[nodiscard]] Xbyak::Xmm GetSrc(IR::NodeID Node) const;
   [[nodiscard]] Xbyak::Xmm GetDst(IR::NodeID Node) const;
 
+  [[nodiscard]] static Xbyak::Ymm ToYMM(const Xbyak::Xmm& xmm) {
+    return Xbyak::Ymm{xmm.getIdx()};
+  }
+
   [[nodiscard]] Xbyak::RegExp GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset,
                                             IR::MemOffsetType OffsetType, uint8_t OffsetScale) const;
 
