@@ -12,17 +12,27 @@ using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(VectorZero) {
-  uint8_t OpSize = IROp->Size;
-  switch (OpSize) {
-    case 8: {
-      eor(GetDst(Node).V8B(), GetDst(Node).V8B(), GetDst(Node).V8B());
-      break;
+  if (CanUseSVE) {
+    const auto Dst = GetDst(Node).Z().VnD();
+    eor(Dst, Dst, Dst);
+  } else {
+    const uint8_t OpSize = IROp->Size;
+
+    switch (OpSize) {
+      case 8: {
+        const auto Dst = GetDst(Node).V8B();
+        eor(Dst, Dst, Dst);
+        break;
+      }
+      case 16: {
+        const auto Dst = GetDst(Node).V16B();
+        eor(Dst, Dst, Dst);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Op Size: {}", OpSize);
+        break;
     }
-    case 16: {
-       eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-       break;
-     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", OpSize); break;
   }
 }
 
