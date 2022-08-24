@@ -47,7 +47,10 @@ std::ostream& operator<<(std::ostream& os, const SourceWithAST& ast) {
 
 struct Fixture {
     Fixture() {
-        tmpdir = std::tmpnam(nullptr);
+        tmpdir = std::string { P_tmpdir } + "/thunkgentestXXXXXX";
+        if (!mkdtemp(tmpdir.data())) {
+            std::abort();
+        }
         std::filesystem::create_directory(tmpdir);
         output_filenames = {
             tmpdir + "/function_unpacks",
