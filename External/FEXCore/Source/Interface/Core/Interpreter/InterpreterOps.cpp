@@ -347,15 +347,17 @@ void InterpreterOps::InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::I
   constexpr size_t ListEntrySizeInBytes = sizeof(InterpVector256);
   const size_t SSADataSize = ListSize * ListEntrySizeInBytes;
 
-  InterpreterOps::IROpData OpData{};
-  OpData.State = Frame->Thread;
-  OpData.SSAData = alloca(SSADataSize);
-  OpData.CurrentEntry = Frame->State.rip;
-  OpData.CurrentIR = CurrentIR;
-  OpData.StackEntry = StackEntry;
-  OpData.BlockIterator = CurrentIR->GetBlocks().begin();
+  InterpreterOps::IROpData OpData{
+    .State = Frame->Thread,
+    .CurrentEntry = Frame->State.rip,
+    .CurrentIR = CurrentIR,
+    .StackEntry = StackEntry,
+    .SSAData = alloca(SSADataSize),
+    .BlockResults = {},
+    .BlockIterator = CurrentIR->GetBlocks().begin(),
+  };
 
-  // Clear them all to zero. Required for Zero-extend semantics
+  // Clear all SSAData entries to zero. Required for Zero-extend semantics
   memset(OpData.SSAData, 0, SSADataSize);
 
   while (1) {
