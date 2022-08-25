@@ -1,5 +1,6 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
+#include "InterpreterDefines.h"
 #include "InterpreterOps.h"
 #include "F80Ops.h"
 
@@ -336,23 +337,26 @@ void InterpreterOps::Op_NoOp(FEXCore::IR::IROp_Header *IROp, IROpData *Data, IR:
 void InterpreterOps::InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::IR::IRListView const *CurrentIR) {
   volatile void *StackEntry = alloca(0);
 
-  uintptr_t ListSize = CurrentIR->GetSSACount();
+  const uintptr_t ListSize = CurrentIR->GetSSACount();
 
   static_assert(sizeof(FEXCore::IR::IROp_Header) == 4);
   static_assert(sizeof(FEXCore::IR::OrderedNode) == 16);
 
   auto BlockEnd = CurrentIR->GetBlocks().end();
 
+  constexpr size_t ListEntrySizeInBytes = sizeof(InterpVector256);
+  const size_t SSADataSize = ListSize * ListEntrySizeInBytes;
+
   InterpreterOps::IROpData OpData{};
   OpData.State = Frame->Thread;
-  OpData.SSAData = alloca(ListSize * 16);
+  OpData.SSAData = alloca(SSADataSize);
   OpData.CurrentEntry = Frame->State.rip;
   OpData.CurrentIR = CurrentIR;
   OpData.StackEntry = StackEntry;
   OpData.BlockIterator = CurrentIR->GetBlocks().begin();
 
   // Clear them all to zero. Required for Zero-extend semantics
-  memset(OpData.SSAData, 0, ListSize * 16);
+  memset(OpData.SSAData, 0, SSADataSize);
 
   while (1) {
     using namespace FEXCore::IR;

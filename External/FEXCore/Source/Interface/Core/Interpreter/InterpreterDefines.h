@@ -159,21 +159,26 @@
   break;                                            \
   }
 
+struct InterpVector256 {
+  __uint128_t Lower;
+  __uint128_t Upper;
+};
+
 template<typename Res>
 Res GetDest(void* SSAData, FEXCore::IR::OrderedNodeWrapper Op) {
-  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op.ID().Value];
+  auto DstPtr = &reinterpret_cast<InterpVector256*>(SSAData)[Op.ID().Value];
   return reinterpret_cast<Res>(DstPtr);
 }
 
 template<typename Res>
 Res GetDest(void* SSAData, FEXCore::IR::NodeID Op) {
-  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Op.Value];
+  auto DstPtr = &reinterpret_cast<InterpVector256*>(SSAData)[Op.Value];
   return reinterpret_cast<Res>(DstPtr);
 }
 
 
 template<typename Res>
 Res GetSrc(void* SSAData, FEXCore::IR::OrderedNodeWrapper Src) {
-  auto DstPtr = &reinterpret_cast<__uint128_t*>(SSAData)[Src.ID().Value];
+  auto DstPtr = &reinterpret_cast<InterpVector256*>(SSAData)[Src.ID().Value];
   return reinterpret_cast<Res>(DstPtr);
 }
