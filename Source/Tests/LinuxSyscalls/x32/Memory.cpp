@@ -21,6 +21,8 @@ $end_info$
 namespace FEX::HLE::x32 {
 
   void *x32SyscallHandler::GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+    auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
     LOGMAN_THROW_AA_FMT((length >> 32) == 0, "values must fit to 32 bits");
 
     auto Result = (uint64_t)GetAllocator()->mmap((void*)addr, length, prot, flags, fd, offset);
@@ -37,6 +39,8 @@ namespace FEX::HLE::x32 {
   }
 
   int x32SyscallHandler::GuestMunmap(void *addr, uint64_t length) {
+    auto lk = FEX::HLE::_SyscallHandler->LockMman();
+    
     LOGMAN_THROW_AA_FMT((uintptr_t(addr) >> 32) == 0, "values must fit to 32 bits");
     LOGMAN_THROW_AA_FMT((length >> 32) == 0, "values must fit to 32 bits");
 
@@ -82,6 +86,8 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, uint32_t len, int prot) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = ::mprotect(addr, len, prot);
       if (Result != -1) {
         FEX::HLE::_SyscallHandler->TrackMprotect((uintptr_t)addr, len, prot);
@@ -91,6 +97,8 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(mremap, [](FEXCore::Core::CpuStateFrame *Frame, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = reinterpret_cast<uint64_t>(static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
         mremap(old_address, old_size, new_size, flags, new_address));
 
@@ -112,6 +120,8 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(shmat, [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       // also implemented in ipc:OP_SHMAT
       uint32_t ResultAddr{};
       uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
@@ -127,6 +137,8 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+      
       // also implemented in ipc:OP_SHMDT
       uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
         shmdt(shmaddr);

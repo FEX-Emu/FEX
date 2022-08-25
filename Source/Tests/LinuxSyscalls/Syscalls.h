@@ -22,6 +22,7 @@ $end_info$
 #include <errno.h>
 #include <stdint.h>
 #include <type_traits>
+#include <utility>
 #include <vector>
 #include <list>
 #include <map>
@@ -194,6 +195,7 @@ public:
   virtual int GuestMunmap(void *addr, uint64_t length) = 0;
 
   ///// Memory Manager tracking /////
+  std::pair<std::shared_lock<std::shared_mutex>, FHU::ScopedSignalMaskWithUniqueLock> LockMman();
   void TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
   void TrackMunmap(uintptr_t Base, uintptr_t Size);
   void TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot);

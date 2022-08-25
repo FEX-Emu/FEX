@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include <cstdint>
+#include "FEXCore/Utils/MathUtils.h"
 #include "FEXHeaderUtils/TypeDefines.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
@@ -772,6 +773,8 @@ namespace FEXCore::Context {
         }
       });
 
+      LogMan::Throw::AFmt(Thread->FrontendDecoder->DecodedMinAddress >= MinAddr && Thread->FrontendDecoder->DecodedMaxAddress < MaxAddr, "bad decode");
+
       auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
 
       Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
@@ -931,7 +934,7 @@ namespace FEXCore::Context {
     const FEXCore::IR::IRListView *IRList {};
     const FEXCore::IR::RegisterAllocationData *RAData {};
     FEXCore::Core::DebugData *DebugData {};
-    unsigned GeneratedCode {};
+    auto GeneratedCode = CODE_NONE;
     uint64_t StartAddr {};
     uint64_t Length {};
 
@@ -984,9 +987,12 @@ namespace FEXCore::Context {
 
             // FEX_TODO("MarkGuestExecutable /before/ hash for smc invalidation correctness")
             for (size_t i = 0; i < CachedObj->RangeCount; i++) {
-              for (size_t p = 0; p < CachedObj->RangeData[i].second; p += 4096) {
-                auto Page = (GuestRIP + CachedObj->RangeData[i].first + p) &
-                            FHU::FEX_PAGE_MASK;
+              size_t RangeStart = GuestRIP + CachedObj->RangeData[i].start;
+              
+              size_t PageStart = AlignDown(RangeStart, FHU::FEX_PAGE_SIZE);
+              size_t PageEnd = AlignUp(RangeStart + CachedObj->RangeData[i].length, FHU::FEX_PAGE_SIZE);
+
+              for (size_t Page = PageStart; Page < PageEnd; Page += FHU::FEX_PAGE_SIZE) {
                 if (CodePages.insert(Page).second) {
                   if (Thread->LookupCache->AddBlockExecutableRange(
                           GuestRIP, Page, FHU::FEX_PAGE_SIZE)) {
@@ -1006,7 +1012,6 @@ namespace FEXCore::Context {
               .GeneratedCode = CODE_NONE,
               .StartAddr = StartAddr,
               .Length = Length,
-              .Ranges = std::move(Ranges)
             };
           }
         }
@@ -1020,9 +1025,12 @@ namespace FEXCore::Context {
 
             // FEX_TODO("MarkGuestExecutable /before/ hash for smc invalidation correctness")
             for (size_t i = 0; i < CachedIR->RangeCount; i++) {
-              for (size_t p = 0; p < CachedIR->RangeData[i].second; p += 4096) {
-                auto Page = (GuestRIP + CachedIR->RangeData[i].first + p) &
-                            FHU::FEX_PAGE_MASK;
+              size_t RangeStart = GuestRIP + CachedIR->RangeData[i].start;
+              
+              size_t PageStart = AlignDown(RangeStart, FHU::FEX_PAGE_SIZE);
+              size_t PageEnd = AlignUp(RangeStart + CachedIR->RangeData[i].length, FHU::FEX_PAGE_SIZE);
+
+              for (size_t Page = PageStart; Page < PageEnd; Page += FHU::FEX_PAGE_SIZE) {
                 if (CodePages.insert(Page).second) {
                   if (Thread->LookupCache->AddBlockExecutableRange(
                           GuestRIP, Page, FHU::FEX_PAGE_SIZE)) {
@@ -1048,7 +1056,7 @@ namespace FEXCore::Context {
     if (IRList == nullptr) {
       // Generate IR + Meta Info
       auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length, _Ranges] = GenerateIR(Thread, GuestRIP, MinAddr, MaxAddr, Config.GDBSymbols());
-
+      
       // Setup pointers to internal structures
       IRList = IRCopy;
       RAData = RACopy;
@@ -1062,6 +1070,56 @@ namespace FEXCore::Context {
 
       // These blocks aren't already in the cache
       GeneratedCode = CODE_IR;
+    } else if (0) {
+      auto [IRCopy, RACopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length, _Ranges] = GenerateIR(Thread, GuestRIP, MinAddr, MaxAddr, Config.GDBSymbols());
+    
+      bool Mismatch = false;
+      
+      if (IRCopy->GetDataSize() != IRList->GetDataSize()) {
+        LogMan::Msg::EFmt("IR Cache DataSize mismatch GuestRIP: {:x}", GuestRIP);
+        Mismatch = true;
+      }
+
+      if (memcmp((void*)IRCopy->GetData(), (void*)IRList->GetData(), IRList->GetDataSize()) != 0) {
+        LogMan::Msg::EFmt("IR Cache Data mismatch GuestRIP: {:x}", GuestRIP);
+        Mismatch = true;
+      }
+
+      if (IRCopy->GetListSize() != IRList->GetListSize()) {
+        LogMan::Msg::EFmt("IR Cache ListSize mismatch GuestRIP: {:x}", GuestRIP);
+        Mismatch = true;
+      }
+
+      if (memcmp((void*)IRCopy->GetListData(), (void*)IRList->GetListData(), IRList->GetListSize()) != 0) {
+        LogMan::Msg::EFmt("IR Cache ListData mismatch GuestRIP: {:x}", GuestRIP);
+        Mismatch = true;
+      }
+
+      if (RACopy->MapCount != RAData->MapCount) {
+        LogMan::Msg::EFmt("IR Cache RAData MapCount mismatch GuestRIP: {:x}", GuestRIP);
+        Mismatch = true;
+      }
+
+      if (memcmp(RACopy->Map, RAData->Map, RAData->MapCount) != 0) {
+        LogMan::Msg::EFmt("IR Cache RAData mismatch GuestRIP: {:x}", GuestRIP);
+        Mismatch = true;
+      }
+
+      if (Mismatch) {
+        std::stringstream out;
+
+        out << "\n\nCorrect:\n";
+        FEXCore::IR::Dump(&out, IRCopy, RACopy);
+        
+        out << "\n\nCached:\n";
+        FEXCore::IR::Dump(&out, IRList, RAData);
+
+        LogMan::Msg::EFmt("{}", out.str());
+
+        ERROR_AND_DIE_FMT("Cache mismatch");
+      }
+      delete RACopy;
+      delete RAData;
     }
 
     if (IRList == nullptr) {
@@ -1166,12 +1224,14 @@ namespace FEXCore::Context {
 
       if (Config.ObjCache() & Config::CONFIG_CACHE_WRITE && GeneratedCode & CODE_OBJ) {
         if (NamedRegion.Entry && NamedRegion.Entry->ObjCache) {
+          LogMan::Throw::AFmt(Ranges.size() != 0, "Ranges must be initialized here");
           NamedRegion.Entry->ObjCache->Insert<ObjCacheEntry>(GuestRIP - NamedRegion.VAFileStart, GuestRIP, Ranges, CodePtr, DebugData->HostCodeSize, DebugData->Relocations);
         }
       }
 
       if (Config.IRCache() & Config::CONFIG_CACHE_WRITE && GeneratedCode & CODE_IR && RAData) {
         if (NamedRegion.Entry && NamedRegion.Entry->IRCache) {
+          LogMan::Throw::AFmt(Ranges.size() != 0, "Ranges must be initialized here");
           NamedRegion.Entry->IRCache->Insert<IRCacheEntry>(GuestRIP - NamedRegion.VAFileStart, GuestRIP, Ranges, RAData, IRList);
         }
       }
@@ -1270,13 +1330,13 @@ namespace FEXCore::Context {
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    LogMan::Throw::AFmt(CTX->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
     
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
   }
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+    LogMan::Throw::AFmt(CTX->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
 
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
     CallAfter(Start, Length);

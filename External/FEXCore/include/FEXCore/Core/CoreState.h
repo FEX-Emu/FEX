@@ -223,6 +223,12 @@ namespace FEXCore::Core {
 
     // Pointers that the JIT needs to load to remove relocations
     JITPointers Pointers;
+
+    // Debug
+    uintptr_t LastFragmentHostEntry;
+    uintptr_t LastFragmentGuestEntry;
+    uintptr_t LastFragmentHostExit;
+    uintptr_t LastFragmentGuestExit;
   };
   static_assert(offsetof(CpuStateFrame, State) == 0, "CPUState must be first member in CpuStateFrame");
   static_assert(offsetof(CpuStateFrame, State.rip) == 0, "rip must be zero offset in CpuStateFrame");

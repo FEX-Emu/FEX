@@ -10,6 +10,7 @@ $end_info$
 
 #include <elf.h>
 #include <filesystem>
+#include <mutex>
 #include <sys/shm.h>
 #include <sys/mman.h>
 
@@ -195,8 +196,15 @@ static std::string GetElfFingerprint(const std::string& File) {
   }
 }
 
+std::pair<std::shared_lock<std::shared_mutex>, FHU::ScopedSignalMaskWithUniqueLock> SyscallHandler::LockMman() {
+  auto CodeInvalidationLock = FEXCore::Context::LockCodeInvalidation(CTX);
+  return { std::move(CodeInvalidationLock), FHU::ScopedSignalMaskWithUniqueLock(VMATracking.Mutex)};
+}
+
 // MMan Tracking
 void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+
 	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   if (Flags & MAP_SHARED) {
@@ -204,7 +212,6 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
   }
 
   {
-    FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
 
     static uint64_t AnonSharedId = 1;
 
@@ -247,13 +254,11 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
 }
 
 void SyscallHandler::TrackMunmap(uintptr_t Base, uintptr_t Size) {
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+
 	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
-  {
-    FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
-
-    VMATracking.ClearUnsafe(CTX, Base, Size);
-  }
+  VMATracking.ClearUnsafe(CTX, Base, Size);
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Base, Size);
@@ -261,13 +266,11 @@ void SyscallHandler::TrackMunmap(uintptr_t Base, uintptr_t Size) {
 }
 
 void SyscallHandler::TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot) {
-	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+	
+  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
-  {
-    FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
-
-    VMATracking.ChangeUnsafe(Base, Size, VMAProt::fromProt(Prot));
-  }
+  VMATracking.ChangeUnsafe(Base, Size, VMAProt::fromProt(Prot));
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     FEXCore::Context::InvalidateGuestCodeRange(CTX, Base, Size);
@@ -275,13 +278,12 @@ void SyscallHandler::TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot) {
 }
 
 void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress) {
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+
   OldSize = FEXCore::AlignUp(OldSize, FHU::FEX_PAGE_SIZE);
   NewSize = FEXCore::AlignUp(NewSize, FHU::FEX_PAGE_SIZE);
 
   {
-
-    FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
-
     const auto OldVMA = VMATracking.LookupVMAUnsafe(OldAddress);
 
     const auto OldResource = OldVMA->second.Resource;
@@ -328,6 +330,8 @@ void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t Ne
 }
 
 void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+
   MarkMemoryShared();
 
   shmid_ds stat;
@@ -338,8 +342,6 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
   uint64_t Length = stat.shm_segsz;
 
   {
-    FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
-
     // TODO
     MRID mrid{SpecialDev::SHM, static_cast<uint64_t>(shmid)};
 
@@ -358,7 +360,7 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
 }
 
 void SyscallHandler::TrackShmdt(uintptr_t Base) {
-  FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
 
   auto Length = VMATracking.ClearShmUnsafe(CTX, Base);
 
@@ -369,9 +371,11 @@ void SyscallHandler::TrackShmdt(uintptr_t Base) {
 }
 
 void SyscallHandler::TrackMadvise(uintptr_t Base, uintptr_t Size, int advice) {
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+
 	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 	{
-		FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
+		
   	// TODO
 	}
 }

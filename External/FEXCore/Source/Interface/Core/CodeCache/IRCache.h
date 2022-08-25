@@ -46,7 +46,7 @@ namespace FEXCore {
     }
   };
   
-  struct IRCacheResult {
+  struct IRCacheResult: CacheResultBase {
     using CacheEntryType = IRCacheEntry;
 
     IRCacheResult(const IRCacheEntry *const Entry) {
@@ -55,8 +55,6 @@ namespace FEXCore {
       RAData = Entry->GetRAData();
       IRList = Entry->GetIRData();
     }
-    const std::pair<uint64_t, uint64_t> *RangeData;
-    uint64_t RangeCount;
     const FEXCore::IR::IRListView *IRList;
     const FEXCore::IR::RegisterAllocationData *RAData;
   };

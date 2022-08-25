@@ -596,6 +596,12 @@ void *X86JITCore::CompileCode(uint64_t Entry,
   CursorEntry = getSize();
   this->IR = IR;
 
+  lea(rax, ptr[rip]);
+  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostEntry)], rax);
+  
+  InsertGuestRIPMove(rax, Entry);
+  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestEntry)], rax);
+
   if (GDBEnabled) {
     auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);
     setSize(getSize() + GDBSize);

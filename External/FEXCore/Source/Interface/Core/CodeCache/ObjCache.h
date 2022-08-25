@@ -65,7 +65,7 @@ namespace FEXCore {
     }
   };
   
-  struct ObjCacheResult {
+  struct ObjCacheResult: CacheResultBase {
     using CacheEntryType = ObjCacheEntry;
 
     ObjCacheResult(const ObjCacheEntry *const Entry) {
@@ -74,8 +74,6 @@ namespace FEXCore {
       HostCode = Entry->GetObjCacheFragment();
       RelocationData = Entry->GetObjCacheRelocations();
     }
-    const std::pair<uint64_t, uint64_t> *RangeData;
-    uint64_t RangeCount;
     const ObjCacheFragment *HostCode;
     const ObjCacheRelocations *RelocationData;
   };

@@ -279,6 +279,8 @@ namespace FEX::HLE::x32 {
         break;
       }
       case OP_SHMAT: {
+        auto lk = FEX::HLE::_SyscallHandler->LockMman();
+        
         // also implemented in memory:shmat
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
           shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
@@ -288,6 +290,8 @@ namespace FEX::HLE::x32 {
         break;
       }
       case OP_SHMDT: {
+        auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
         // also implemented in memory:shmdt
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
           shmdt(reinterpret_cast<void*>(ptr));

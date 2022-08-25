@@ -95,7 +95,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
     *out << "Unknown Registerclass " << Arg;
 }
 
-static void PrintArg(std::stringstream *out, IRListView const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationData *RAData) {
+static void PrintArg(std::stringstream *out, const IRListView *IR, OrderedNodeWrapper Arg, const IR::RegisterAllocationData *RAData) {
   auto [CodeNode, IROp] = IR->at(Arg)();
   const auto ArgID = Arg.ID();
 
@@ -189,7 +189,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   *out << static_cast<uint32_t>(Arg.si_code) << "}";
 }
 
-void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
+void Dump(std::stringstream *out, const IRListView *IR, const IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();
 
   int8_t CurrentIndent = 0;

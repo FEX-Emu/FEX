@@ -261,8 +261,9 @@
         "HasSideEffects": true,
         "DestSize": "GetOpSize(_NewRIP)"
       },
-      "Break BreakDefinition:$Reason": {
-        "HasSideEffects": true
+      "Break GPR:$BreakRIP, BreakDefinition:$Reason": {
+        "HasSideEffects": true,
+        "DestSize": "GetOpSize(_BreakRIP)"
       },
       "SignalReturn": {
         "HasSideEffects": true

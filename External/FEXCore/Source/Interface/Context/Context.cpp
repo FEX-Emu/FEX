@@ -13,6 +13,7 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include "FEXCore/Debug/InternalThreadState.h"
 
+#include <shared_mutex>
 #include <string.h>
 #include <utility>
 
@@ -196,6 +197,10 @@ namespace FEXCore::Context {
 
   CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
     return CTX->AddCustomIREntrypoint(Entrypoint, Handler, Creator, Data);
+  }
+
+  std::shared_lock<std::shared_mutex> LockCodeInvalidation(FEXCore::Context::Context *CTX) {
+    return std::shared_lock (CTX->CodeInvalidationMutex);
   }
 
 namespace Debug {

@@ -30,18 +30,23 @@ namespace FEXCore {
 
   constexpr static uint64_t INDEX_CHUNK_SIZE = 64 * 1024;
 
+  struct CodeRange {
+    uint64_t start;
+    uint64_t length;
+  };
+
   struct CacheEntry {
     uint64_t GuestHash;
     uint64_t GuestRangeCount;
 
     uint8_t InlineData[0];
 
-    const std::pair<uint64_t, uint64_t> *GetRangeData() const {
-      return (const std::pair<uint64_t, uint64_t> *)(InlineData);
+    const CodeRange *GetRangeData() const {
+      return (const CodeRange *)(InlineData);
     }
 
-    std::pair<uint64_t, uint64_t> *GetRangeData() {
-      return (std::pair<uint64_t, uint64_t> *)(InlineData);
+    CodeRange *GetRangeData() {
+      return (CodeRange *)(InlineData);
     }
 
     template<typename RangesType>
@@ -123,8 +128,15 @@ namespace FEXCore {
       CacheData *Data;
       int DataFD;
 
-      std::atomic<uint8_t *> MappedDataChunks[MAX_CHUNKS];
+      std::vector<uint8_t *> MappedDataChunks;
 
       CodeCache() {}
+
+      void MapDataChunkUnsafe(uint64_t ChunkNum);
+  };
+
+  struct CacheResultBase {
+    const CodeRange *RangeData;
+    uint64_t RangeCount;
   };
 } // namespace FEXCore

@@ -549,6 +549,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   };
 
   if (flags & CLONE_VM) {
+    auto lk = FEX::HLE::_SyscallHandler->LockMman();
     _SyscallHandler->MarkMemoryShared();
   }
 
@@ -816,8 +817,9 @@ void SyscallHandler::UnlockAfterFork() {
 }
 
 void SyscallHandler::MarkMemoryShared() {
+  LogMan::Throw::AFmt(VMATracking.Mutex.try_lock() == false, "VMATracking.Mutex needs to be unique_locked here");
+
   if (FEXCore::Context::MarkMemoryShared(CTX)) {
-    FHU::ScopedSignalMaskWithUniqueLock lk(VMATracking.Mutex);
     VMATracking.ReloadNamedRegionsUnsafe(CTX);
   }
 }

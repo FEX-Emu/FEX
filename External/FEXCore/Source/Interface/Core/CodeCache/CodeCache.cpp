@@ -107,7 +107,9 @@ namespace FEXCore {
     UnlockFD(IndexFD);
 
     auto NChunks = rv->Data->ChunksUsed.load();
-
+    
+    rv->MappedDataChunks.resize(NChunks);
+    
     for (decltype(NChunks) i = 0; i < NChunks; i++) {
       rv->MappedDataChunks[i] = (uint8_t*) FEXCore::Allocator::mmap(nullptr, CHUNK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, rv->DataFD, rv->Data->ChunkOffsets[i]);
     }
@@ -120,7 +122,7 @@ namespace FEXCore {
     FEXCore::Allocator::munmap(Index, IndexFileSize);
     FEXCore::Allocator::munmap(Data, sizeof(*Data));
 
-    for (auto &Ptr: MappedDataChunks) {
+    for (const auto Ptr: MappedDataChunks) {
       if (Ptr) {
         FEXCore::Allocator::munmap(Ptr, CHUNK_SIZE);
       }
@@ -129,6 +131,17 @@ namespace FEXCore {
     // close files
     close(IndexFD);
     close(DataFD);
+  }
+
+  void CodeCache::MapDataChunkUnsafe(uint64_t ChunkNum) {
+    if (MappedDataChunks.size() <= ChunkNum || !MappedDataChunks[ChunkNum]) {
+      MappedDataChunks.resize(Data->ChunksUsed.load());
+
+      auto v = (uint8_t *)FEXCore::Allocator::mmap(nullptr, CHUNK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, DataFD, Data->ChunkOffsets[ChunkNum]);
+      LOGMAN_THROW_A_FMT(v != MAP_FAILED, "mmap failed {} {} {}", (void *)v, CHUNK_SIZE, Data->ChunkOffsets[ChunkNum]);
+
+      MappedDataChunks[ChunkNum] = v;
+    }
   }
 
   CacheEntry *CodeCache::Find(uint64_t OffsetRIP, uint64_t GuestRIP) {
@@ -147,7 +160,7 @@ namespace FEXCore {
       FEXCore::Allocator::munmap(Index, OldSize);
       Index = (decltype(Index))FEXCore::Allocator::mmap(nullptr, IndexFileSize, PROT_READ | PROT_WRITE, MAP_SHARED, IndexFD, 0);
       
-      LogMan::Msg::DFmt("remapped Index: {}, IndexFileSize: {}", (void*)Index, IndexFileSize.load());
+      LogMan::Msg::DFmt("remapped Index: {}, OldSize: {}, IndexFileSize: {}", (void*)Index, OldSize, IndexFileSize.load());
       LOGMAN_THROW_A_FMT(Index != MAP_FAILED, "mremap failed {} {} {}", (void*)Index, OldSize, IndexFileSize.load());
     }
 
@@ -169,17 +182,11 @@ namespace FEXCore {
           auto ChunkNum = DataOffset / CHUNK_SIZE;
           auto ChunkOffs = DataOffset % CHUNK_SIZE;
 
-          if (!MappedDataChunks[ChunkNum]) {
-            auto v = (uint8_t *)FEXCore::Allocator::mmap(0, CHUNK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, DataFD, Data->ChunkOffsets[ChunkNum]);
-            LOGMAN_THROW_A_FMT(v != MAP_FAILED, "mmap failed {} {} {}", (void*)v, CHUNK_SIZE, Data->ChunkOffsets[ChunkNum]);
-
-            uint8_t *TestVal = nullptr;
-            auto swapped = MappedDataChunks[ChunkNum].compare_exchange_strong(TestVal, v);
-
-            if (!swapped) {
-              // some other thread got to do this first
-              FEXCore::Allocator::munmap(v, CHUNK_SIZE);
-            }
+          if (MappedDataChunks.size() <= ChunkNum || !MappedDataChunks[ChunkNum]) {
+            // Upgrade to a unique lock here and re-test
+            lk.unlock();
+            std::lock_guard ulk{Mutex};
+            MapDataChunkUnsafe(ChunkNum);
           }
 
           CacheEntry = (decltype(CacheEntry))(MappedDataChunks[ChunkNum] + ChunkOffs);
@@ -202,7 +209,7 @@ namespace FEXCore {
     uint64_t hash = 0;
     auto Ranges = CacheEntry->GetRangeData();
     for (size_t i = 0; i < CacheEntry->GuestRangeCount; i++){ 
-      hash = XXH3_64bits_withSeed((void*)(GuestRIP + Ranges[i].first), Ranges[i].second, hash);
+      hash = XXH3_64bits_withSeed((void*)(GuestRIP + Ranges[i].start), Ranges[i].length, hash);
     }
 
     if (hash != CacheEntry->GuestHash) {
@@ -248,7 +255,7 @@ namespace FEXCore {
         FEXCore::Allocator::munmap(Index, OldSize);
         Index = (decltype(Index))FEXCore::Allocator::mmap(nullptr, IndexFileSize, PROT_READ | PROT_WRITE, MAP_SHARED, IndexFD, 0);
 
-        LogMan::Msg::DFmt("remapped Index: {}, IndexFileSize: {}", (void*)Index, IndexFileSize.load());
+        LogMan::Msg::DFmt("remapped Index: {}, OldSize: {}, IndexFileSize: {}", (void*)Index, OldSize, IndexFileSize.load());
         LOGMAN_THROW_A_FMT(Index != MAP_FAILED, "mremap failed {:x} {} {}", (void*)Index, OldSize, IndexFileSize.load());
       }
 
@@ -361,6 +368,9 @@ namespace FEXCore {
 
       if (NewChunk) {
         Data->WritePointer = Data->ChunkOffsets[ChunkNum];
+        if (Data->ChunksUsed == MAX_CHUNKS - 1) {
+          ERROR_AND_DIE_FMT("CodeCache: ChunksUsed Overflow, ChunksUsed: {}, MAX_CHUNKS: {}", Data->ChunksUsed, MAX_CHUNKS);
+        }
         Data->ChunksUsed++;
         Data->CurrentChunkFree = CHUNK_SIZE;
       }
@@ -372,23 +382,14 @@ namespace FEXCore {
 
       // Since we have the lock, do the map here
       if (NewChunk) {
-        MappedDataChunks[ChunkNum] = (uint8_t*)FEXCore::Allocator::mmap(nullptr, CHUNK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, DataFD, WriteOffset);
-        LOGMAN_THROW_A_FMT(MappedDataChunks[ChunkNum] != MAP_FAILED, "mmap failed {} {:x}", DataFD, WriteOffset);
+        MapDataChunkUnsafe(ChunkNum);
       }
     }
 
     // Make sure the required chunk is mapped
-    if (!MappedDataChunks[ChunkNum]) {
-      auto v = (uint8_t *)FEXCore::Allocator::mmap(0, CHUNK_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, DataFD, Data->ChunkOffsets[ChunkNum]);
-      LOGMAN_THROW_A_FMT(v != MAP_FAILED, "mmap failed {} {} {}", (void*)v, CHUNK_SIZE, Data->ChunkOffsets[ChunkNum]);
-
-      uint8_t *TestVal = nullptr;
-      auto Swapped = MappedDataChunks[ChunkNum].compare_exchange_strong(TestVal, v);
-
-      if (!Swapped) {
-        // some other thread got to do this first
-        FEXCore::Allocator::munmap(v, CHUNK_SIZE);
-      }
+    if (MappedDataChunks.size() <= ChunkNum || !MappedDataChunks[ChunkNum]) {
+      std::lock_guard ulk{Mutex};
+      MapDataChunkUnsafe(ChunkNum);
     }
     
     // Fill in the CacheEntry
@@ -403,7 +404,7 @@ namespace FEXCore {
 
     auto Ranges = Entry->GetRangeData();
     for (size_t i = 0; i < Entry->GuestRangeCount; i++){ 
-      hash = XXH3_64bits_withSeed((void*)(GuestRIP + Ranges[i].first), Ranges[i].second, hash);
+      hash = XXH3_64bits_withSeed((void*)(GuestRIP + Ranges[i].start), Ranges[i].length, hash);
     }
 
     [[maybe_unused]] bool Wasted;

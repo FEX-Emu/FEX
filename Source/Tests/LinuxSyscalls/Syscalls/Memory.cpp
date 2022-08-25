@@ -40,6 +40,8 @@ namespace FEX::HLE {
 
     REGISTER_SYSCALL_IMPL_FLAGS(madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int32_t advice) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = ::madvise(addr, length, advice);
 
       if (Result != -1) {

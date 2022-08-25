@@ -1589,13 +1589,16 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
         break;
       case 2: // CS
       case FEXCore::X86State::REG_R9: // CS
+      {
         // CPL3 can't write to this
-        _Break(FEXCore::IR::BreakDefinition {
+        auto BreakRIP = GetRelocatedPC(Op, -Op->InstSize);
+        _Break(BreakRIP, FEXCore::IR::BreakDefinition {
             .ErrorRegister = 0,
             .Signal = SIGILL,
             .TrapNumber = 0,
             .si_code = 0,
         });
+      }
         break;
       case 3: // SS
       case FEXCore::X86State::REG_R10: // SS
@@ -5147,18 +5150,16 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  OrderedNode *BreakRIP = nullptr;
 
   if (SetRIPToNext) {
     BlockSetRIP = SetRIPToNext;
 
     // We want to set RIP to the next instruction after INT3/INT1
-    auto NewRIP = GetRelocatedPC(Op);
-    _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
+    BreakRIP = GetRelocatedPC(Op);
   }
   else if (Op->OP != 0xCE) {
-    auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
-    _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
+    BreakRIP = GetRelocatedPC(Op, -Op->InstSize);
   }
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1
@@ -5170,9 +5171,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
 
-    auto NewRIP = GetRelocatedPC(Op);
-    _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
-    _Break(Reason);
+    LogMan::Throw::AFmt(BreakRIP != nullptr, "Invalid BreakRIP");
+    _Break(BreakRIP, Reason);
 
     // Make sure to start a new block after ending this one
     auto JumpTarget = CreateNewCodeBlockAfter(FalseBlock);
@@ -5181,7 +5181,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
   else {
     BlockSetRIP = true;
-    _Break(Reason);
+    LogMan::Throw::AFmt(BreakRIP != nullptr, "Invalid BreakRIP");
+    _Break(BreakRIP, Reason);
   }
 }
 
@@ -5279,12 +5280,10 @@ void OpDispatchBuilder::UnimplementedOp(OpcodeArgs) {
   // Ensure flags are calculated on invalid op.
   CalculateDeferredFlags();
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   // We don't actually support this instruction
   // Multiblock may hit it though
-  _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  _Break(FEXCore::IR::BreakDefinition {
+  auto BreakRIP = GetRelocatedPC(Op, -Op->InstSize);
+  _Break(BreakRIP, FEXCore::IR::BreakDefinition {
     .ErrorRegister = 0,
     .Signal = SIGILL,
     .TrapNumber = 0,
@@ -5303,12 +5302,10 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
   // Ensure flags are calculated on invalid op.
   CalculateDeferredFlags();
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   // We don't actually support this instruction
   // Multiblock may hit it though
-  _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
-  _Break(FEXCore::IR::BreakDefinition {
+  auto BreakRIP = GetRelocatedPC(Op, -Op->InstSize);
+  _Break(BreakRIP, FEXCore::IR::BreakDefinition {
     .ErrorRegister = 0,
     .Signal = SIGILL,
     .TrapNumber = 0,

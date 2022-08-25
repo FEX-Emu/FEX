@@ -26,6 +26,8 @@ $end_info$
 namespace FEX::HLE::x64 {
 
   void *x64SyscallHandler::GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+    auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
     uint64_t Result{};
 
     bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
@@ -47,6 +49,8 @@ namespace FEX::HLE::x64 {
   }
 
   int x64SyscallHandler::GuestMunmap(void *addr, uint64_t length) {
+    auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
     uint64_t Result{};
     if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
       Result = Get32BitAllocator()->munmap(addr, length);
@@ -87,6 +91,8 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(mremap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
 
       if (Result != -1) {
@@ -97,6 +103,8 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(mprotect, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t len, int prot) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = ::mprotect(addr, len, prot);
 
       if (Result != -1) {
@@ -119,6 +127,8 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
 
       if (Result != -1) {
@@ -129,6 +139,8 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
+      auto lk = FEX::HLE::_SyscallHandler->LockMman();
+
       uint64_t Result = ::shmdt(shmaddr);
 
       if (Result != -1) {

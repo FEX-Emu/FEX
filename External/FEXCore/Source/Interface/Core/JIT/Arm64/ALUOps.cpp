@@ -48,7 +48,6 @@ DEF_OP(EntrypointOffset) {
   if (OpSize == 4) {
     Mask = 0xFFFF'FFFFULL;
   }
-
   InsertGuestRIPMove(GetReg<RA_64>(Node), Constant & Mask);
 }
 
