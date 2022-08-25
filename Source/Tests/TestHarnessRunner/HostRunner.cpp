@@ -3,6 +3,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -152,9 +153,16 @@ public:
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
       memcpy(&OutState->xmm.avx.data[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
     }
+    const auto* xstate = reinterpret_cast<FEXCore::x86_64::xstate*>(_mcontext->fpregs);
+    const auto* reserved = &xstate->fpstate.sw_reserved;
+    if (reserved->HasExtendedContext() && reserved->HasYMMH()) {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
+        memcpy(&OutState->xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i],
+               sizeof(xstate->ymmh.ymmh_space[0]));
+      }
+    }
 
-    uint16_t CurrentOffset = (_mcontext->fpregs->swd >> 11) & 7;
-
+    const uint16_t CurrentOffset = (_mcontext->fpregs->swd >> 11) & 7;
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
       memcpy(&OutState->mm[(i + CurrentOffset) % 8], &_mcontext->fpregs->_st[i], sizeof(_mcontext->fpregs->_st[0]));
     }
