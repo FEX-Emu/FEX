@@ -683,9 +683,9 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
 }
 
 void *Arm64JITCore::CompileCode(uint64_t Entry,
-                                FEXCore::IR::IRListView const *IR,
-                                FEXCore::Core::DebugData *DebugData,
-                                FEXCore::IR::RegisterAllocationData *RAData,
+                                const FEXCore::IR::IRListView const *IR,
+                                FEXCore::Core::DebugData *const DebugData,
+                                const FEXCore::IR::RegisterAllocationData *const RAData,
                                 bool GDBEnabled) {
   using namespace aarch64;
   JumpTargets.clear();
