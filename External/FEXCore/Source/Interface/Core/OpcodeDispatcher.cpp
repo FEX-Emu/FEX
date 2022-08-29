@@ -5153,8 +5153,6 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   OrderedNode *BreakRIP = nullptr;
 
   if (SetRIPToNext) {
-    BlockSetRIP = SetRIPToNext;
-
     // We want to set RIP to the next instruction after INT3/INT1
     BreakRIP = GetRelocatedPC(Op);
   }
@@ -5171,6 +5169,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     SetFalseJumpTarget(CondJump, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);
 
+    BreakRIP = GetRelocatedPC(Op, -Op->InstSize);
     LogMan::Throw::AFmt(BreakRIP != nullptr, "Invalid BreakRIP");
     _Break(BreakRIP, Reason);
 
@@ -5178,8 +5177,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     auto JumpTarget = CreateNewCodeBlockAfter(FalseBlock);
     SetTrueJumpTarget(CondJump, JumpTarget);
     SetCurrentCodeBlock(JumpTarget);
-  }
-  else {
+  } else {
     BlockSetRIP = true;
     LogMan::Throw::AFmt(BreakRIP != nullptr, "Invalid BreakRIP");
     _Break(BreakRIP, Reason);

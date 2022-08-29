@@ -53,6 +53,8 @@ DEF_OP(Break) {
     add(rsp, SpillSlots * 16);
   }
 
+  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], GetSrc<RA_64>(Op->BreakRIP.ID()));
+
   mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], GetSrc<RA_64>(Op->BreakRIP.ID()));
 
   mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);

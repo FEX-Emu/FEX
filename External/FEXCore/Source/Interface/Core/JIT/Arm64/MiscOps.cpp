@@ -41,6 +41,8 @@ DEF_OP(Break) {
   // First we must reset the stack
   ResetStack();
 
+  str(GetSrc(Op->BreakRIP.ID()), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
+
   LoadConstant(w1, 1);
   strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)));
   LoadConstant(w1, Op->Reason.Signal);

@@ -47,6 +47,8 @@ DEF_OP(Fence) {
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
 
+  Data->State->CurrentFrame->State.rip = *GetSrc<uint64_t*>(Data->SSAData, Op->BreakRIP);
+
   Data->State->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException = 1;
   Data->State->CurrentFrame->SynchronousFaultData.Signal = Op->Reason.Signal;
   Data->State->CurrentFrame->SynchronousFaultData.TrapNo = Op->Reason.TrapNumber;
@@ -77,7 +79,7 @@ DEF_OP(GetRoundingMode) {
     mrs %[Tmp], FPCR;
   )"
   : [Tmp] "=r" (Tmp));
-  // Extract the rounding
+  // `tract the rounding
   // On ARM the ordering is different than on x86
   GuestRounding |= ((Tmp >> 24) & 1) ? IR::ROUND_MODE_FLUSH_TO_ZERO : 0;
   uint8_t RoundingMode = (Tmp >> 22) & 0b11;
