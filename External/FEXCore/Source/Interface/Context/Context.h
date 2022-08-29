@@ -34,6 +34,11 @@
 #include <vector>
 
 namespace FEXCore {
+struct GuestCodeRange {
+  uint64_t start;
+  uint64_t length;
+};
+
 class CodeLoader;
 class ThunkHandler;
 class GdbServer;
@@ -219,7 +224,7 @@ namespace FEXCore::Context {
       uint64_t TotalInstructionsLength;
       uint64_t StartAddr;
       uint64_t Length;
-      std::vector<std::pair<uint64_t, uint64_t>> Ranges;
+      std::vector<GuestCodeRange> Ranges;
     };
     [[nodiscard]] GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP,uint64_t MinAddr, uint64_t MaxAddr, bool ExtendedDebugInfo);
 
@@ -235,7 +240,7 @@ namespace FEXCore::Context {
       unsigned GeneratedCode;
       uint64_t StartAddr;
       uint64_t Length;
-      std::vector<std::pair<uint64_t, uint64_t>> Ranges;
+      std::vector<GuestCodeRange> Ranges;
     };
     [[nodiscard]] CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP);
     uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP);

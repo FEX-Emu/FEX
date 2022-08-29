@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FEXCore/Utils/LogManager.h"
 #include <cstdint>
 
 #include <atomic>
@@ -30,10 +31,7 @@ namespace FEXCore {
 
   constexpr static uint64_t INDEX_CHUNK_SIZE = 64 * 1024;
 
-  struct CodeRange {
-    uint64_t start;
-    uint64_t length;
-  };
+  struct GuestCodeRange;
 
   struct CacheEntry {
     uint64_t GuestHash;
@@ -41,12 +39,12 @@ namespace FEXCore {
 
     uint8_t InlineData[0];
 
-    const CodeRange *GetRangeData() const {
-      return (const CodeRange *)(InlineData);
+    const GuestCodeRange *GetRangeData() const {
+      return (const GuestCodeRange *)(InlineData);
     }
 
-    CodeRange *GetRangeData() {
-      return (CodeRange *)(InlineData);
+    GuestCodeRange *GetRangeData() {
+      return (GuestCodeRange *)(InlineData);
     }
 
     template<typename RangesType>
@@ -99,20 +97,23 @@ namespace FEXCore {
         auto CacheEntry = Find(OffsetRIP, GuestRIP);
 
         if (CacheEntry) {
+          LogMan::Throw::AFmt(CacheEntry->GuestRangeCount > 0, "Invalid CacheEntry->GuestRangeCount");
           return CacheResult((const typename CacheResult::CacheEntryType *)CacheEntry);
         }
 
         return std::nullopt;
       }
 
-      void Insert(uint64_t OffsetRIP, uint64_t GuestRIP, uint64_t InlineSize, const std::function<void(CacheEntry *CacheEntry)> &Fill);
+      void Insert(uint64_t OffsetRIP, uint64_t GuestRIP, const GuestCodeRange *Ranges, size_t RangeCount, uint64_t InlineSize, const std::function<void(CacheEntry *CacheEntry)> &Fill);
 
       template<typename EntryType, typename RangesType, typename... Args>
       inline void Insert(uint64_t OffsetRIP, uint64_t GuestRIP, const RangesType& Ranges, Args... args) {
         Insert(
           OffsetRIP,
           GuestRIP,
-          EntryType::GetInlineSize(args...) + Ranges.size() * sizeof(typename RangesType::value_type),
+          &Ranges[0],
+          Ranges.size(),
+          EntryType::GetInlineSize(args...),
           EntryType::GetFiller(args...)
         );
       }
@@ -136,7 +137,7 @@ namespace FEXCore {
   };
 
   struct CacheResultBase {
-    const CodeRange *RangeData;
+    const GuestCodeRange *RangeData;
     uint64_t RangeCount;
   };
 } // namespace FEXCore

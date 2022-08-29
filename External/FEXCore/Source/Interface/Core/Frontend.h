@@ -20,6 +20,7 @@ public:
   // New Frontend decoding
   struct DecodedBlocks final {
     uint64_t Entry{};
+    uint64_t Length{};
     uint64_t NumInstructions{};
     FEXCore::X86Tables::DecodedInst *DecodedInstructions;
     bool HasInvalidInstruction{};

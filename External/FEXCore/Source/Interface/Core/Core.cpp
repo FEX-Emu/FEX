@@ -748,7 +748,7 @@ namespace FEXCore::Context {
     uint64_t TotalInstructions {0};
     uint64_t TotalInstructionsLength {0};
 
-    std::vector<std::pair<uint64_t, uint64_t>> Ranges;
+    std::vector<GuestCodeRange> Ranges;
 
 
     std::shared_lock lk(CustomIRMutex);
@@ -786,6 +786,8 @@ namespace FEXCore::Context {
         // Set the block entry point
         Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
 
+        Ranges.push_back({Block.Entry - GuestRIP, Block.Length});
+        
         uint64_t BlockInstructionsLength {};
 
         // Reset any block-specific state
@@ -877,7 +879,6 @@ namespace FEXCore::Context {
             break;
           }
         }
-        Ranges.push_back({Block.Entry - GuestRIP, BlockInstructionsLength});
       }
       
       Thread->OpDispatcher->Finalize();
@@ -938,7 +939,7 @@ namespace FEXCore::Context {
     uint64_t StartAddr {};
     uint64_t Length {};
 
-    std::vector<std::pair<uint64_t, uint64_t>> Ranges;
+    std::vector<GuestCodeRange> Ranges;
 
     uint64_t MinAddr = GuestRIP;
     uint64_t MaxAddr = UINT64_MAX;

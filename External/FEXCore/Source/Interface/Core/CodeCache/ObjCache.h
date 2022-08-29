@@ -4,6 +4,7 @@
 #include <string.h>
 #include "CodeCache.h"
 
+#include "Interface/Context/Context.h"
 #include <FEXCore/Core/CPURelocations.h>
 #include <string>
 

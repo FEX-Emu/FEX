@@ -207,9 +207,9 @@ namespace FEXCore {
 
     // verify hash
     uint64_t hash = 0;
-    auto Ranges = CacheEntry->GetRangeData();
+    auto EntryRanges = CacheEntry->GetRangeData();
     for (size_t i = 0; i < CacheEntry->GuestRangeCount; i++){ 
-      hash = XXH3_64bits_withSeed((void*)(GuestRIP + Ranges[i].start), Ranges[i].length, hash);
+      hash = XXH3_64bits_withSeed((void*)(GuestRIP + EntryRanges[i].start), EntryRanges[i].length, hash);
     }
 
     if (hash != CacheEntry->GuestHash) {
@@ -221,10 +221,12 @@ namespace FEXCore {
     return CacheEntry;
   }
 
-  void CodeCache::Insert(uint64_t OffsetRIP, uint64_t GuestRIP, uint64_t InlineSize, const std::function<void(CacheEntry *CacheEntry)> &Fill) {
+  void CodeCache::Insert(uint64_t OffsetRIP, uint64_t GuestRIP, const GuestCodeRange *Ranges, size_t RangeCount, uint64_t InlineSize, const std::function<void(CacheEntry *CacheEntry)> &Fill) {
     
     uint32_t NewEntry;
     uint64_t NewEntryValue;
+
+    InlineSize += RangeCount * sizeof(*Ranges);
 
     // See if it exists in the index, and make a placeholder entry if it does
     {
@@ -395,16 +397,20 @@ namespace FEXCore {
     // Fill in the CacheEntry
     CacheEntry *Entry = (CacheEntry *)(MappedDataChunks[ChunkNum] + ChunkOffset);
     
-    // Fill the data
+    // Fill in ranges
+    Entry->GuestRangeCount = RangeCount;
+    memcpy(Entry->GetRangeData(), Ranges, RangeCount * sizeof(*Ranges));
+
+    // Fill the rest of the data
     Fill(Entry);
 
     // Calculate the hash
     uint64_t &hash = Entry->GuestHash;
     hash = 0;
 
-    auto Ranges = Entry->GetRangeData();
+    auto EntryRanges = Entry->GetRangeData();
     for (size_t i = 0; i < Entry->GuestRangeCount; i++){ 
-      hash = XXH3_64bits_withSeed((void*)(GuestRIP + Ranges[i].start), Ranges[i].length, hash);
+      hash = XXH3_64bits_withSeed((void*)(GuestRIP + EntryRanges[i].start), EntryRanges[i].length, hash);
     }
 
     [[maybe_unused]] bool Wasted;

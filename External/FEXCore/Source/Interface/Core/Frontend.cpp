@@ -1266,6 +1266,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
     // Copy over only the number of instructions we decoded
     CurrentBlockDecoding.NumInstructions = BlockNumberOfInstructions;
     CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer[BlockStartOffset];
+    CurrentBlockDecoding.Length = PCOffset;
   }
 
 

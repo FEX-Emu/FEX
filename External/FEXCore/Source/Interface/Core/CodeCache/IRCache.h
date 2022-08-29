@@ -2,6 +2,7 @@
 
 #include "CodeCache.h"
 
+#include "Interface/Context/Context.h"
 #include "FEXCore/IR/IntrusiveIRList.h"
 #include "FEXCore/IR/RegisterAllocationData.h"
 
