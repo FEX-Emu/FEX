@@ -192,7 +192,7 @@ int main(int argc, char **argv, char **const envp) {
     SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault, &LongJump](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       constexpr uint8_t HLT = 0xF4;
       if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-        DidFault = false;
+        DidFault = true;
         return false;
       }
 
