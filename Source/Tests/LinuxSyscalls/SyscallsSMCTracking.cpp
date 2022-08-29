@@ -56,7 +56,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
   const auto FaultAddress = (uintptr_t)((siginfo_t *)info)->si_addr;
 
   {
-    FHU::ScopedSignalMaskWithSharedLock lk(_SyscallHandler->VMATracking.Mutex);
+    auto lk = _SyscallHandler->LockMman();
 
     auto VMATracking = &_SyscallHandler->VMATracking;
 
