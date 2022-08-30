@@ -32,7 +32,7 @@ std::atomic<bool> ready_for_modification;
 std::atomic<bool> thread_unblocked;
 std::atomic<int> thread_counter;
 
-char *code;
+std::atomic<char> *code;
 
 void *thread(void *) {
   printf("Generating code on thread\n");
@@ -62,7 +62,7 @@ void *thread(void *) {
 
 void RunIteration() {
   printf("Starting Iteration\n");
-  code = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
+  code = (std::atomic<char> *)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
   ready_for_modification = false;
   thread_unblocked = false;
   thread_counter = 0;

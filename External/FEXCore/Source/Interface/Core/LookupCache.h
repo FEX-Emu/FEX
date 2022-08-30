@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include <mutex>
+#include <atomic>
 
 namespace FEXCore {
 namespace Context {
@@ -116,7 +117,7 @@ public:
     // Do L1
     auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
-      L1Entry.GuestCode = 0;
+      (std::atomic<decltype(L1Entry.GuestCode)>&)L1Entry.GuestCode = 0;
       // Leave L1Entry.HostCode as is, so that concurrent lookups won't read a null pointer
       // This is a soft guarantee for cross thread invalidation, as atomics are not used
       // and it hasn't been thoroughly tested
