@@ -34,5 +34,6 @@
     %ResultD i64 = Sub %ValueC, %ValueD
     (%Store i64) StoreContext #8, GPR, %ResultC i64, #0x18
     (%Store i64) StoreContext #8, GPR, %ResultD i64, #0x20
-    (%ssa7 i0) Break {0.11.0.128}
+    %BreakRip i64 = EntrypointOffset #0x32, #8
+    (%brk i0) Break %BreakRip i64, {0.11.0.128}
     (%ssa12 i0) EndBlock %ssa2

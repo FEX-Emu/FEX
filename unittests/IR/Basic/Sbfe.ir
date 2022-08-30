@@ -38,5 +38,6 @@
 ; Test with + shift
     %Res5 i64 = Sbfe #0x4, #0x2, %Val2
     (%Store5 i64) StoreContext #8, GPR, %Res5 i64, #0x28
-    (%brk i0) Break {0.11.0.128}
+    %BreakRip i64 = EntrypointOffset #0x32, #8
+    (%brk i0) Break %BreakRip i64, {0.11.0.128}
     (%end i0) EndBlock %ssa2
