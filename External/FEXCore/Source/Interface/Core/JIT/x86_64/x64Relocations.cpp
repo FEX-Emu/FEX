@@ -87,6 +87,8 @@ X86JITCore::RelocatedLiteralPair X86JITCore::InsertNamedSymbolLiteral(FEXCore::C
 }
 
 X86JITCore::RelocatedLiteralPair X86JITCore::InsertGuestRIPLiteral(const uint64_t GuestRIP) {
+  AOTLOG("InsertGuestRIPLiteral: GuestRIP: {:x}, Entry: {:x}", GuestRIP, Entry);
+
   RelocatedLiteralPair Lit {
     .MoveABI = {
       .GuestRIPMove = {
@@ -116,6 +118,8 @@ void X86JITCore::PlaceRelocatedLiteral(RelocatedLiteralPair &Lit) {
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL:
       Value = Lit.MoveABI.GuestRIPLiteral.GuestEntryOffset + Entry;
       Lit.MoveABI.GuestRIPLiteral.Offset = getSize() - CursorEntry;
+
+      AOTLOG("PlaceRelocatedLiteral: GuestEntryOffset: {:x}, Offset: {:x}", Lit.MoveABI.GuestRIPLiteral.GuestEntryOffset, Lit.MoveABI.GuestRIPLiteral.Offset);
       Relocations << std::move(Lit.MoveABI.GuestRIPLiteral);
       break;
     default:
@@ -203,6 +207,7 @@ bool X86JITCore::ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint6
 
         setSize(CursorEntry + Reloc->GuestRIPLiteral.Offset);
         dq(Data);
+        AOTLOG("RELOC_GUEST_RIP_LITERAL: Offset: {:x} GuestEntry: {:x}, GuestEntryOffset: {:x}, Data: {:x}", Reloc->GuestRIPLiteral.Offset, GuestEntry, Reloc->GuestRIPLiteral.GuestEntryOffset, Data);
 
         Reloc = Reloc->GuestRIPLiteral.Next();
         break;

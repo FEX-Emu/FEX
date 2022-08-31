@@ -51,7 +51,7 @@ namespace FEXCore {
     }
 
     static uint64_t GetInlineSize(const void *HostCode, const size_t HostCodeBytes, const ObjCacheRelocations *Relocations) {
-      return HostCodeBytes + Relocations->Bytes + sizeof(*Relocations);
+      return sizeof(ObjCacheFragment) + HostCodeBytes + sizeof(*Relocations) + Relocations->Bytes;
     }
 
     static auto GetFiller(const void *HostCode, const size_t HostCodeBytes, const ObjCacheRelocations *Relocations) {
