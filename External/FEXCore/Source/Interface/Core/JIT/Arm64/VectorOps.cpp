@@ -40,15 +40,37 @@ DEF_OP(VectorImm) {
   auto Op = IROp->C<IR::IROp_VectorImm>();
 
   const uint8_t OpSize = IROp->Size;
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
 
-  if (Op->Header.ElementSize == 8) {
-    // movi with 64bit element size doesn't do what we want here
-    LoadConstant(TMP1.X(), Op->Immediate);
-    dup(GetDst(Node).V2D(), TMP1.X());
-  }
-  else {
-    movi(GetDst(Node).VCast(OpSize * 8, Elements), Op->Immediate);
+  if (CanUseSVE) {
+    const auto Dst = [&] {
+      const auto Tmp = GetDst(Node).Z();
+      switch (ElementSize) {
+      case 1:
+        return Tmp.VnB();
+      case 2:
+        return Tmp.VnH();
+      case 4:
+        return Tmp.VnS();
+      case 8:
+        return Tmp.VnD();
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled element size: {}", ElementSize);
+        return Tmp;
+      }
+    }();
+
+    dup(Dst, Op->Immediate);
+  } else {
+    if (ElementSize == 8) {
+      // movi with 64bit element size doesn't do what we want here
+      LoadConstant(TMP1.X(), Op->Immediate);
+      dup(GetDst(Node).V2D(), TMP1.X());
+    }
+    else {
+      movi(GetDst(Node).VCast(OpSize * 8, Elements), Op->Immediate);
+    }
   }
 }
 
