@@ -574,7 +574,8 @@ void *X86JITCore::CompileCode(uint64_t Entry,
                               const FEXCore::IR::IRListView *const IR,
                               FEXCore::Core::DebugData *const DebugData,
                               const FEXCore::IR::RegisterAllocationData *const RAData,
-                              bool GDBEnabled) {
+                              bool GDBEnabled,
+                              bool DebugHelpersEnabled) {
 
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
@@ -582,6 +583,7 @@ void *X86JITCore::CompileCode(uint64_t Entry,
   this->Entry = Entry;
   this->RAData = RAData;
   this->DebugData = DebugData;
+  this->DebugHelpersEnabled = DebugHelpersEnabled;
 
   // Initialize
   Relocations.resize(sizeof(ObjCacheRelocations));
@@ -596,11 +598,13 @@ void *X86JITCore::CompileCode(uint64_t Entry,
   CursorEntry = getSize();
   this->IR = IR;
 
-  lea(rax, ptr[rip]);
-  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostEntry)], rax);
-  
-  InsertGuestRIPMove(rax, Entry);
-  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestEntry)], rax);
+  if (DebugHelpersEnabled) {
+    lea(rax, ptr[rip]);
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostEntry)], rax);
+
+    InsertGuestRIPMove(rax, Entry);
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestEntry)], rax);
+  }
 
   if (GDBEnabled) {
     auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);

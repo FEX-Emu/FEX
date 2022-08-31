@@ -30,7 +30,8 @@ public:
                                   const FEXCore::IR::IRListView *const IR,
                                   FEXCore::Core::DebugData *const DebugData,
                                   const FEXCore::IR::RegisterAllocationData *const RAData,
-                                  bool GDBEnabled) override;
+                                  bool GDBEnabled,
+                                  bool DebugHelpersEnabled) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 

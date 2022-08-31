@@ -61,7 +61,8 @@ public:
                                   const FEXCore::IR::IRListView *const IR,
                                   FEXCore::Core::DebugData *const DebugData,
                                   const FEXCore::IR::RegisterAllocationData *const RAData,
-                                  bool GDBEnabled) override;
+                                  bool GDBEnabled,
+                                  bool DebugHelpersEnabled) override;
 
   [[nodiscard]] void *MapRegion(void* HostPtr, uint64_t, uint64_t) override { return HostPtr; }
 
@@ -139,6 +140,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
+  bool DebugHelpersEnabled;
 
   std::unordered_map<IR::NodeID, Label> JumpTargets;
   Xbyak::util::Cpu Features{};

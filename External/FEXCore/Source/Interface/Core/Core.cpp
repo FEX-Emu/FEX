@@ -1128,7 +1128,7 @@ namespace FEXCore::Context {
     }
     // Attempt to get the CPU backend to compile this code
     return {
-      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData, GetGdbServerStatus()),
+      .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, IRList, DebugData, RAData, GetGdbServerStatus(), Config.DebugHelpers() ),
       .IRData = IRList,
       .DebugData = DebugData,
       .RAData = RAData,

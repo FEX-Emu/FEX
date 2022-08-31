@@ -46,8 +46,10 @@ DEF_OP(Fence) {
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
 
-  lea(rax, ptr[rip]);
-  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostExit)], rax);
+  if (DebugHelpersEnabled) {
+    lea(rax, ptr[rip]);
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostExit)], rax);
+  }
 
   if (SpillSlots) {
     add(rsp, SpillSlots * 16);
@@ -55,7 +57,9 @@ DEF_OP(Break) {
 
   mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, State.rip)], GetSrc<RA_64>(Op->BreakRIP.ID()));
 
-  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], GetSrc<RA_64>(Op->BreakRIP.ID()));
+  if (DebugHelpersEnabled) {
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], GetSrc<RA_64>(Op->BreakRIP.ID()));
+  }
 
   mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);
   mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.Signal)], Op->Reason.Signal);

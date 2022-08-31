@@ -123,6 +123,8 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
       FEX_CONFIG_OPT(x86dec_SynchronizeRIPOnAllBlocks, X86DEC_SYNCHRONIZERIPONALLBLOCKS);
       FEX_CONFIG_OPT(EnableAVX, ENABLEAVX);
+
+      FEX_CONFIG_OPT(DebugHelpers, DEBUGHELPERS);
     } Config;
 
     FEXCore::HostFeatures HostFeatures;

@@ -686,7 +686,8 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
                                 const FEXCore::IR::IRListView *const IR,
                                 FEXCore::Core::DebugData *const DebugData,
                                 const FEXCore::IR::RegisterAllocationData *const RAData,
-                                bool GDBEnabled) {
+                                bool GDBEnabled,
+                                bool DebugHelpersEnabled) {
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();

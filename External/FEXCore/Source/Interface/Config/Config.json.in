@@ -173,6 +173,14 @@
           "When the test harness ends, print the GPR state."
         ]
       },
+      "DebugHelpers": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables updates of LastFragmentHostEntry/LastFragmentGuestEntry/LastFragmentHostExit/LastFragmentGuestExit for JIT debugging",
+          "Implemented only for the x86_64 JIT for now"
+        ]
+      },
       "O0": {
         "Type": "bool",
         "Default": "false",

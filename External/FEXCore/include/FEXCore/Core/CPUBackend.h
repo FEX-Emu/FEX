@@ -76,7 +76,8 @@ namespace CPU {
                                             const FEXCore::IR::IRListView *const IR,
                                             FEXCore::Core::DebugData *const DebugData,
                                             const FEXCore::IR::RegisterAllocationData *const RAData,
-                                            bool GDBEnabled) = 0;
+                                            bool GDBEnabled,
+                                            bool DebugHelpersEnabled) = 0;
 
     /**
      * @brief Relocates a block of code from the JIT code object cache

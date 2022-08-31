@@ -69,8 +69,10 @@ DEF_OP(ExitFunction) {
   Label FullLookup;
   auto Op = IROp->C<IR::IROp_ExitFunction>();
 
-  lea(rax, ptr[rip]);
-  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostExit)], rax);
+  if (DebugHelpersEnabled) {
+    lea(rax, ptr[rip]);
+    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentHostExit)], rax);
+  }
 
   if (SpillSlots) {
     add(rsp, SpillSlots * 16);
@@ -85,8 +87,10 @@ DEF_OP(ExitFunction) {
 
     auto l_BranchGuest = InsertGuestRIPLiteral(NewRIP);
 
-    mov(rax, ptr[rip + l_BranchGuest.Offset]);
-    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], rax);
+    if (DebugHelpersEnabled) {
+      mov(rax, ptr[rip + l_BranchGuest.Offset]);
+      mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], rax);
+    }
     
     lea(rax, ptr[rip + l_BranchHost.Offset]);
     jmp(qword [rax]);
@@ -96,7 +100,9 @@ DEF_OP(ExitFunction) {
   } else {
     auto RipReg = GetSrc<RA_64>(Op->NewRIP.ID());
 
-    mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], RipReg);
+    if (DebugHelpersEnabled) {
+      mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, LastFragmentGuestExit)], RipReg);
+    }
 
     // L1 Cache
     mov(TMP2, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)]);
