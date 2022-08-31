@@ -79,7 +79,7 @@ DEF_OP(GetRoundingMode) {
     mrs %[Tmp], FPCR;
   )"
   : [Tmp] "=r" (Tmp));
-  // `tract the rounding
+  // Extract the rounding
   // On ARM the ordering is different than on x86
   GuestRounding |= ((Tmp >> 24) & 1) ? IR::ROUND_MODE_FLUSH_TO_ZERO : 0;
   uint8_t RoundingMode = (Tmp >> 22) & 0b11;

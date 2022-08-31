@@ -11,6 +11,7 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 
+#include <cstdint>
 #include <sys/mman.h>
 
 namespace FEXCore {
@@ -30,7 +31,7 @@ LookupCache::LookupCache(FEXCore::Context::Context *CTX)
   // We need one pointer per page of virtual memory
   // At 64GB of virtual memory this will allocate 128MB of virtual memory space
   PagePointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(nullptr, ctx->Config.VirtualMemSize / 4096 * 8, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-  LOGMAN_THROW_A_FMT(PagePointer != -1ULL, "Failed to allocate page pointer");
+  LOGMAN_THROW_A_FMT(PagePointer != UINTPTR_MAX, "Failed to allocate page pointer");
 
   // Allocate our memory backing our pages
   // We need 32KB per guest page (One pointer per byte)
