@@ -58,6 +58,14 @@ namespace FEXCore {
         FEATURE_XTILE_DATA = 1U << 18,
       };
 
+      bool HasExtendedContext() const {
+        return magic1 == FP_XSTATE_MAGIC;
+      }
+
+      bool HasYMMH() const {
+        return (xfeatures & FEATURE_YMM) != 0;
+      }
+
       // If magic1 is set to FP_XSTATE_MAGIC, then the encompassing
       // frame is an xstate frame. If 0, then it's a legacy frame.
       uint32_t magic1;
