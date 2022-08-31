@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <algorithm>
@@ -293,7 +294,8 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-        LOGMAN_MSG_A_FMT("Unhandled IR Fallback ABI: {} {}", FEXCore::IR::GetName(IROp->Op), Info.ABI);
+        LOGMAN_MSG_A_FMT("Unhandled IR Fallback ABI: {} {}",
+                         IR::GetName(IROp->Op), ToUnderlying(Info.ABI));
 #endif
         break;
     }
