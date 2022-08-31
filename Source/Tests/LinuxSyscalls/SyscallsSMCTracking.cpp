@@ -56,7 +56,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
   const auto FaultAddress = (uintptr_t)((siginfo_t *)info)->si_addr;
 
   {
-    auto lk = _SyscallHandler->LockMman();
+    auto lk = _SyscallHandler->LockMmanAndTranslation();
 
     auto VMATracking = &_SyscallHandler->VMATracking;
 
@@ -196,7 +196,11 @@ static std::string GetElfFingerprint(const std::string& File) {
   }
 }
 
-std::pair<std::shared_lock<std::shared_mutex>, FHU::ScopedSignalMaskWithUniqueLock> SyscallHandler::LockMman() {
+auto SyscallHandler::LockOnlyMman() -> MmanLock {
+  return FHU::ScopedSignalMaskWithUniqueLock(VMATracking.Mutex);
+}
+
+auto SyscallHandler::LockMmanAndTranslation() -> MmanAndTranslationLock {
   auto CodeInvalidationLock = FEXCore::Context::LockCodeInvalidation(CTX);
   return { std::move(CodeInvalidationLock), FHU::ScopedSignalMaskWithUniqueLock(VMATracking.Mutex)};
 }

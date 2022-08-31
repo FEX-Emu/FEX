@@ -199,8 +199,8 @@ namespace FEXCore::Context {
     return CTX->AddCustomIREntrypoint(Entrypoint, Handler, Creator, Data);
   }
 
-  std::shared_lock<std::shared_mutex> LockCodeInvalidation(FEXCore::Context::Context *CTX) {
-    return std::shared_lock (CTX->CodeInvalidationMutex);
+  std::unique_lock<std::shared_mutex> LockCodeInvalidation(FEXCore::Context::Context *CTX) {
+    return std::unique_lock (CTX->CodeInvalidationMutex);
   }
 
 namespace Debug {

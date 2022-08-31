@@ -549,7 +549,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   };
 
   if (flags & CLONE_VM) {
-    auto lk = FEX::HLE::_SyscallHandler->LockMman();
+    auto lk = FEX::HLE::_SyscallHandler->LockOnlyMman();
     _SyscallHandler->MarkMemoryShared();
   }
 

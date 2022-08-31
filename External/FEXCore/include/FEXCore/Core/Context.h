@@ -286,5 +286,5 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
   FEX_DEFAULT_VISIBILITY CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr);
 
-  FEX_DEFAULT_VISIBILITY std::shared_lock<std::shared_mutex> LockCodeInvalidation(FEXCore::Context::Context *CTX);
+  FEX_DEFAULT_VISIBILITY std::unique_lock<std::shared_mutex> LockCodeInvalidation(FEXCore::Context::Context *CTX);
 }
