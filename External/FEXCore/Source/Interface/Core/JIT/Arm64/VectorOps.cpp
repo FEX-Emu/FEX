@@ -12,7 +12,7 @@ using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(VectorZero) {
-  if (CanUseSVE) {
+  if (HostSupportsSVE) {
     const auto Dst = GetDst(Node).Z().VnD();
     eor(Dst, Dst, Dst);
   } else {
@@ -43,7 +43,7 @@ DEF_OP(VectorImm) {
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
 
-  if (CanUseSVE) {
+  if (HostSupportsSVE) {
     const auto Dst = [&] {
       const auto Tmp = GetDst(Node).Z();
       switch (ElementSize) {
@@ -119,7 +119,7 @@ DEF_OP(VMov) {
 
   switch (OpSize) {
     case 1: {
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
       } else {
         eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
@@ -127,7 +127,7 @@ DEF_OP(VMov) {
 
       mov(VTMP1.V16B(), 0, Source.V16B(), 0);
 
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         mov(Dst.Z().VnD(), VTMP1.Z().VnD());
       } else {
         mov(Dst, VTMP1);
@@ -135,7 +135,7 @@ DEF_OP(VMov) {
       break;
     }
     case 2: {
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
       } else {
         eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
@@ -143,7 +143,7 @@ DEF_OP(VMov) {
 
       mov(VTMP1.V8H(), 0, Source.V8H(), 0);
 
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         mov(Dst.Z().VnD(), VTMP1.Z().VnD());
       } else {
         mov(Dst, VTMP1);
@@ -151,7 +151,7 @@ DEF_OP(VMov) {
       break;
     }
     case 4: {
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
       } else {
         eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
@@ -159,7 +159,7 @@ DEF_OP(VMov) {
 
       mov(VTMP1.V4S(), 0, Source.V4S(), 0);
 
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         mov(Dst.Z().VnD(), VTMP1.Z().VnD());
       } else {
         mov(Dst, VTMP1);
@@ -167,7 +167,7 @@ DEF_OP(VMov) {
       break;
     }
     case 8: {
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
         mov(VTMP1.V8B(), Source.V8B());
         mov(Dst.Z().VnB(), VTMP1.Z().VnB());
@@ -177,7 +177,7 @@ DEF_OP(VMov) {
       break;
     }
     case 16: {
-      if (CanUseSVE) {
+      if (HostSupportsSVE) {
         eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
         mov(VTMP1.V16B(), Source.V16B());
         mov(Dst.Z().VnB(), VTMP1.Z().VnB());
@@ -207,7 +207,7 @@ DEF_OP(VAnd) {
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
-  if (CanUseSVE) {
+  if (HostSupportsSVE) {
     and_(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
   } else {
     and_(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
@@ -221,7 +221,7 @@ DEF_OP(VBic) {
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
-  if (CanUseSVE) {
+  if (HostSupportsSVE) {
     bic(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
   } else {
     bic(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
@@ -235,7 +235,7 @@ DEF_OP(VOr) {
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
-  if (CanUseSVE) {
+  if (HostSupportsSVE) {
     orr(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
   } else {
     orr(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
@@ -249,7 +249,7 @@ DEF_OP(VXor) {
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
-  if (CanUseSVE) {
+  if (HostSupportsSVE) {
     eor(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
   } else {
     eor(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
