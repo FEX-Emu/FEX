@@ -40,7 +40,6 @@ jobs:
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
       shell: bash
-      working-directory: ${{runner.workspace}}/build
       run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
 
     - name : submodule checkout
