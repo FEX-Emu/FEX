@@ -281,7 +281,7 @@ namespace FEX::HLE::x32 {
       case OP_SHMAT: {
         // also implemented in memory:shmat
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-          shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
+          Shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
         if (!FEX::HLE::HasSyscallError(Result)) {
           FEX::HLE::_SyscallHandler->TrackShmat(first, *reinterpret_cast<uint32_t*>(third), second);
         }
@@ -290,7 +290,7 @@ namespace FEX::HLE::x32 {
       case OP_SHMDT: {
         // also implemented in memory:shmdt
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-          shmdt(reinterpret_cast<void*>(ptr));
+          Shmdt(reinterpret_cast<void*>(ptr));
         if (!FEX::HLE::HasSyscallError(Result)) {
           FEX::HLE::_SyscallHandler->TrackShmdt(ptr);
         }

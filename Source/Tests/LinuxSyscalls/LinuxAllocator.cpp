@@ -44,11 +44,11 @@ public:
       FindPageRangePtr = &MemAllocator32Bit::FindPageRange;
     }
   }
-  void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
-  int munmap(void *addr, size_t length) override;
-  void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override;
-  uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override;
-  uint64_t shmdt(const void* shmaddr) override;
+  void *Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
+  int Munmap(void *addr, size_t length) override;
+  void *Mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override;
+  uint64_t Shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override;
+  uint64_t Shmdt(const void* shmaddr) override;
   static constexpr bool SearchDown = true;
 
   // PageAddr is a page already shifted to page index
@@ -131,7 +131,7 @@ uint64_t MemAllocator32Bit::FindPageRange_TopDown(uint64_t Start, size_t Pages) 
   return 0;
 }
 
-void *MemAllocator32Bit::mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+void *MemAllocator32Bit::Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
   size_t PagesLength = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
 
@@ -282,7 +282,7 @@ restart:
   return 0;
 }
 
-int MemAllocator32Bit::munmap(void *addr, size_t length) {
+int MemAllocator32Bit::Munmap(void *addr, size_t length) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
   size_t PagesLength = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
 
@@ -327,7 +327,7 @@ int MemAllocator32Bit::munmap(void *addr, size_t length) {
   return 0;
 }
 
-void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) {
+void *MemAllocator32Bit::Mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) {
   size_t OldPagesLength = FEXCore::AlignUp(old_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
   size_t NewPagesLength = FEXCore::AlignUp(new_size, FHU::FEX_PAGE_SIZE) >> FHU::FEX_PAGE_SHIFT;
 
@@ -404,7 +404,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
   // New Size is >= old size
 
   // First, try and allocate a region the size of the new size
-  void *MappedPtr = this->mmap(nullptr, new_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  void *MappedPtr = this->Mmap(nullptr, new_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   std::scoped_lock<std::mutex> lk{AllocMutex};
   if (FEX::HLE::HasSyscallError(MappedPtr)) {
     // Couldn't find a region that fit our space
@@ -435,7 +435,7 @@ void *MemAllocator32Bit::mremap(void *old_address, size_t old_size, size_t new_s
   return reinterpret_cast<void*>(-errno);
 }
 
-uint64_t MemAllocator32Bit::shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) {
+uint64_t MemAllocator32Bit::Shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
 
   if (shmaddr != nullptr) {
@@ -548,9 +548,9 @@ restart:
     }
   }
 }
-uint64_t MemAllocator32Bit::shmdt(const void* shmaddr) {
+uint64_t MemAllocator32Bit::Shmdt(const void* shmaddr) {
   std::scoped_lock<std::mutex> lk{AllocMutex};
-  
+
   uint32_t AddrPage = reinterpret_cast<uint64_t>(shmaddr) >> FHU::FEX_PAGE_SHIFT;
   auto it = PageToShm.find(AddrPage);
 
@@ -567,7 +567,7 @@ uint64_t MemAllocator32Bit::shmdt(const void* shmaddr) {
 
 class MemAllocatorPassThrough final : public FEX::HLE::MemAllocator {
 public:
-  void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override {
+  void *Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override {
     uint64_t Result = (uint64_t)::mmap(addr, length, prot, flags, fd, offset);
     if (Result == ~0ULL) {
       return reinterpret_cast<void*>(-errno);
@@ -575,12 +575,12 @@ public:
     return reinterpret_cast<void*>(Result);
   }
 
-  int munmap(void *addr, size_t length) override {
+  int Munmap(void *addr, size_t length) override {
     uint64_t Result = (uint64_t)::munmap(addr, length);
     SYSCALL_ERRNO();
   }
 
-  void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override {
+  void *Mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override {
     uint64_t Result = (uint64_t)::mremap(old_address, old_size, new_size, flags, new_address);
     if (Result == ~0ULL) {
       return reinterpret_cast<void*>(-errno);
@@ -588,7 +588,7 @@ public:
     return reinterpret_cast<void*>(Result);
   }
 
-  uint64_t shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override {
+  uint64_t Shmat(int shmid, const void* shmaddr, int shmflg, uint32_t *ResultAddress) override {
     uint64_t Result = (uint64_t)::shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg);
     if (Result != ~0ULL) {
       *ResultAddress = Result;
@@ -597,7 +597,7 @@ public:
     SYSCALL_ERRNO();
   }
 
-  uint64_t shmdt(const void* shmaddr) override {
+  uint64_t Shmdt(const void* shmaddr) override {
     uint64_t Result = ::shmdt(shmaddr);
     SYSCALL_ERRNO();
   }
