@@ -8,7 +8,7 @@ If a tagged version was being done on `Sun, 02 Jan 2022` then the FEX version wo
 There are multiple locations that need to be updated during a release
 * Github tagged release
 * Github releases page
-* fex-emu.org blog post
+* fex-emu.com blog post
 * https://launchpad.net/~fex-emu/+archive/ubuntu/fex Ubuntu PPA
 * @FEX_Emu twitter account
 
@@ -41,8 +41,8 @@ $ git push upstream main
   * Fairly trivial cleanups, it's more just a developer focused changelog
 * Click publish release
 
-## fex-emu.org blog post steps
-* clone https://github.com/FEX-Emu/fex-emu.org
+## fex-emu.com blog post steps
+* clone https://github.com/FEX-Emu/fex-emu.com
 * Copy the previous post from the _posts/ folder to a new markdown file
   * Ensure correct date format in filename
 * Copy github release pages markdown in to this
@@ -53,7 +53,7 @@ $ git push upstream main
 * Short blurb in the top paragraph if desired
 * push new md file to the repo. Either in direct push or PR
 * Jekyll will automatically regenerate the website with a github action
-* Verify that the post shows up on the site at fex-emu.org
+* Verify that the post shows up on the site at fex-emu.com
 
 ## Launchpad PPA steps
 Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
@@ -71,7 +71,7 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
 ## @FEX_Emu twitter account steps
 * Requires @FEX_Emu twitter account access
 * Create a tweet with some small blurb/sizzle text about some relevant changes in this tagged version
-* Link to the fex-emu.org blog post about the change
+* Link to the fex-emu.com blog post about the change
 
 ## RootFS image updating
 * This doesn't typically need to be done on a monthly basis
@@ -80,7 +80,7 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
 * Follow the Build_Data file's information for how to generate an image using `build_image.py`
   * This gives a squashfs image for the rootfs
 * Use FEXRootFSFetcher <image.sqsh> to generate the xxhash for the image
-* Update `https://rootfs.fex-emu.org/file/fex-rootfs/RootFS_links_XXH3.txt` with the new rootfs image and hash
+* Update `https://rootfs.fex-emu.com/file/fex-rootfs/RootFS_links.json` with the new rootfs image and hash
   * This currently lives in a private FEX-Emu backblaze bucket with cloudflare servicing it.
   * Never publically give the direct backblaze link to the file. Will cause BW costs to skyrocket
   * Always pass through cloudflare
@@ -88,9 +88,9 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
 * Upload new image to Backblaze using the b2 upload tool
   * b2 upload-file <bucketname> <image.sqsh> <Image folder name>/<image.sqsh>
 
-* Upload the new RootFS_links_XXH3.txt
+* Upload the new RootFS_links.json
   * Lives in the root of the bucket
-  * b2 upload-file <bucketname> RootFS_links_XXH3.txt RootFS_links_XXH3.txt
+  * b2 upload-file <bucketname> RootFS_links.json RootFS_links.json
 
 * Once uploaded it should propagate immediately
 * Might be worth thinking about the coherency problem of updating the hash versus image independently if overwriting an image

@@ -17,7 +17,7 @@ FEX处于重度开发阶段，所以会有很多改善。
 Ubuntu下的PPA 随FEX月度发布更新。
 
 ### 其他系统
-参考[这里](https://wiki.fex-emu.org/index.php/QuickStartGuide)
+参考[这里](https://wiki.fex-emu.com/index.php/QuickStartGuide)
 
 ## 开始
 FEX在ARMv8.0，ARMv8.1+和x86-64(支持AVX或更新处理器)硬件上进行过编译和运行测试。
@@ -64,10 +64,10 @@ sudo ninja binfmt_misc_64
 
 ### 更多信息
 更多关于FEX和平台相关的设置信息请参考以下维基页面：
-https://wiki.fex-emu.org/index.php/Development:Setting_up_FEX
+https://wiki.fex-emu.com/index.php/Development:Setting_up_FEX
 
 ### 创建RootFS
 AArch64 host端需要一个rootfs去运行guest程序。参考以下维基页面从头开始创建一个rootfs
-https://wiki.fex-emu.org/index.php/Development:Setting_up_RootFS
+https://wiki.fex-emu.com/index.php/Development:Setting_up_RootFS
 
 ![FEX diagram](Diagram.svg)
