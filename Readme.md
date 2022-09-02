@@ -30,11 +30,11 @@ On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#Ro
 See the [Source Outline](docs/SourceOutline.md) for more information.
 
 ### Building FEX
-Follow the guide on the official FEX-Emu Wiki [here](https://wiki.fex-emu.org/index.php/Development:Setting_up_FEX).
+Follow the guide on the official FEX-Emu Wiki [here](https://wiki.fex-emu.com/index.php/Development:Setting_up_FEX).
 
 ### RootFS generation
 AArch64 hosts require a rootfs for running applications.
 Follow the guide on the wiki page for seeing how to set up the rootfs from scratch
-https://wiki.fex-emu.org/index.php/Development:Setting_up_RootFS
+https://wiki.fex-emu.com/index.php/Development:Setting_up_RootFS
 
 ![FEX diagram](docs/Diagram.svg)
