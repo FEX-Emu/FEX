@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
+#include <optional>
 #include <sstream>
 #include <sys/mman.h>
 #include <sys/syscall.h>
@@ -514,9 +515,13 @@ namespace WebFileFetcher {
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
-  std::vector<FileTargets> GetRootFSLinks() {
+  std::optional<std::vector<FileTargets>> GetRootFSLinks() {
     // Decode the filetargets
     std::string Data = DownloadToString(DownloadURL);
+
+    if (Data.empty()) {
+      return std::nullopt;
+    }
 
     JsonAllocator Pool {
       .PoolObject = {
@@ -1121,7 +1126,14 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AskForConfirmation(Question)) {
-    auto Targets = WebFileFetcher::GetRootFSLinks();
+    auto TargetReturn = WebFileFetcher::GetRootFSLinks();
+    if (!TargetReturn.has_value()) {
+      ExecWithInfo("Couldn't download rootfs list from the server. Try again in a minute or report on the fex-emu issue tracker.");
+      return -1;
+    }
+
+    auto Targets = TargetReturn.value();
+
     if (Targets.empty()) {
       ExecWithInfo("Couldn't parse rootfs definition URL.");
       return -1;
