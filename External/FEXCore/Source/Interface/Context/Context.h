@@ -322,6 +322,8 @@ namespace FEXCore::Context {
       IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
     }
 
+    void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions);
+
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
 

@@ -413,6 +413,13 @@ struct SHA256Sum final {
   }
 };
 
+typedef void ThunkedFunction(void* ArgsRv);
+
+struct ThunkDefinition final {
+  SHA256Sum Sum;
+  ThunkedFunction *ThunkFunction;
+};
+
 class NodeIterator;
 
 /* This iterator can be used to step though nodes.

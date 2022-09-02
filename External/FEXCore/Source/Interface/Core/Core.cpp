@@ -1332,6 +1332,11 @@ namespace FEXCore::Context {
     }
   }
 
+
+  void Context::AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
+    ThunkHandler->AppendThunkDefinitions(Definitions);
+  }
+
   void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
     Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
     Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);

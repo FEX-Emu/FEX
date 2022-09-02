@@ -19,7 +19,6 @@
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -46,7 +45,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uintptr_t Entrypoint;
   uintptr_t BrkStart;
   uintptr_t StackPointer;
-  void* VDSOStart{};
 
   size_t CalculateTotalElfSize(const std::vector<Elf64_Phdr> &headers)
   {
@@ -406,28 +404,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       Entrypoint = MainElfEntrypoint;
     }
 
-    if (Is64BitMode()) {
-      // Load VDSO if we can
-      FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
-      auto ThunkGuestPath = std::filesystem::path(ThunkGuestLibs()) / "libVDSO-guest.so";
-      int VDSOFD = ::open(ThunkGuestPath.string().c_str(), O_RDONLY);
-
-      if (VDSOFD != -1) {
-        // Get file size
-        size_t VDSOSize = lseek(VDSOFD, 0, SEEK_END);
-
-        if (VDSOSize >= 4) {
-          // Reset to beginning
-          lseek(VDSOFD, 0, SEEK_SET);
-          VDSOSize = FEXCore::AlignUp(VDSOSize, 4096);
-
-          // Map the VDSO file to memory
-          VDSOStart = Mapper(nullptr, VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
-        }
-        close(VDSOFD);
-      }
-    }
-
     // All done
 
     // Setup AuxVars
@@ -453,8 +429,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
       // we don't support vsyscall so we don't set those
       //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
-      if (VDSOStart) {
-        AuxVariables.emplace_back(auxv_t{33, reinterpret_cast<uint64_t>(VDSOStart)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
+      if (VDSOBase) {
+        AuxVariables.emplace_back(auxv_t{33, reinterpret_cast<uint64_t>(VDSOBase)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
       }
     }
     else {
@@ -667,6 +643,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return ElfValid;
   }
 
+  void SetVDSOBase(void* Base) {
+    VDSOBase = Base;
+  }
+
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 
@@ -679,6 +659,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
   uint64_t BaseOffset{};
-  FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
+  void* VDSOBase{};
 
+  FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
 };

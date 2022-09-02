@@ -56,7 +56,7 @@ function(generate NAME SOURCE_FILE)
   set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
-function(add_guest_lib NAME)
+function(add_guest_lib NAME SONAME)
   set (SOURCE_FILE ../lib${NAME}/lib${NAME}_Guest.cpp)
   get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
 
@@ -79,9 +79,27 @@ function(add_guest_lib NAME)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-guest PRIVATE -fwrapv)
 
+  # Add linker script if set
   if (EXISTS "${SOURCE_LDS_FILE_ABS}")
-    target_link_options(VDSO-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../lib${NAME}/lib${NAME}_Guest.lds")
+    target_link_options(${NAME}-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../lib${NAME}/lib${NAME}_Guest.lds")
   endif()
+
+  # We need to override the soname for the linker.
+  # Our guest thunk libraries are named `lib<Thunk>-guest`.
+  # Once we override the loaded name, the guest is free to dlopen again by SONAME rather than filepath.
+  # eg:
+  # dlopen("libGL.so.1", RTLD_GLOBAL | RTLD_NOW); -> We override this `libGL.so.1` to `libGL-guest.so`
+  # Later on in the program, it can do:
+  # dlopen("libGL.so.1", RTLD_GLOBAL | RTLD_NOLOAD);
+  # This second dlopen will only check to see if the previous load has made the library resident
+  # Searching for SONAME in the process.
+  #
+  # Additionally, VDSO can only be opened by SONAME.
+  # This means it will only ever open the handle with `dlopen("linux-vdso.so.1", RTLD_GLOBAL | RTLD_NOLOAD);
+  # Note that this doesn't have a lib prefix, and also since it doesn't exist on the filesystem, it can never
+  # Actually load from a path.
+  target_link_options(${NAME}-guest PRIVATE "LINKER:-soname,${SONAME}")
+  set_target_properties(${NAME}-guest PROPERTIES NO_SONAME ON)
 
   if (GENERATE_GUEST_INSTALL_TARGETS)
     install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
@@ -95,13 +113,13 @@ endfunction()
 #add_guest_lib(fex_malloc)
 
 generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(asound)
+add_guest_lib(asound "libasound.so.2")
 
 generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(EGL)
+add_guest_lib(EGL "libEGL.so.1")
 
 generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public symbol_list)
-add_guest_lib(GL)
+add_guest_lib(GL "libGL.so.1")
 
 # libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
 add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
@@ -124,71 +142,68 @@ set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
 set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
 
 generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(X11)
+add_guest_lib(X11 "libX11.so.6")
 
 target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
 target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
 target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
 generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(Xext)
+add_guest_lib(Xext "libXext.so.6")
 
 target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
 target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
 target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
 generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(Xrender)
+add_guest_lib(Xrender "libXrender.so.1")
 
 generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(Xfixes)
+add_guest_lib(Xfixes "libXfixes.so.3")
 
 generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp thunks function_packs function_packs_public symbol_list)
 target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-add_guest_lib(vulkan)
+add_guest_lib(vulkan "libvulkan.so.1")
 
 generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb)
+add_guest_lib(xcb "libxcb.so.1")
 
 generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-dri2)
+add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
 generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-dri3)
+add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
 
 generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-xfixes)
+add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
 
 generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-shm)
+add_guest_lib(xcb-shm "libxcb-shm.so.0")
 
 generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-sync)
+add_guest_lib(xcb-sync "libxcb-sync.so.1")
 
 generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-present)
+add_guest_lib(xcb-present "libxcb-present.so.0")
 
 generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-randr)
+add_guest_lib(xcb-randr "libxcb-randr.so.0")
 
 generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xcb-glx)
+add_guest_lib(xcb-glx "libxcb-glx.so.0")
 
 generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(xshmfence)
+add_guest_lib(xshmfence "libxshmfence.so.1")
 
 generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp thunks function_packs function_packs_public)
 target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
 target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
-add_guest_lib(drm)
+add_guest_lib(drm "libdrm.so.2")
 
 generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp thunks function_packs function_packs_public)
-add_guest_lib(VDSO)
+add_guest_lib(VDSO "linux-vdso.so.1")
 # Can't use a stack protector because otherwise cross-compiling fails
 # Not necessary anyway because it only trampolines
 target_compile_options(VDSO-guest PRIVATE "-fno-stack-protector")
-target_link_options(VDSO-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_Guest.lds" "-nostdlib" "-Wl,-soname,linux-vdso.so.1"
-  "-Wl,--no-undefined" "-Wl,-z,max-page-size=4096" "-Wl,--hash-style=both")
-
-# Need to override SONAME in linker options
-set_target_properties(VDSO-guest PROPERTIES NO_SONAME ON)
+target_link_options(VDSO-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_Guest.lds" "-nostdlib"
+  "LINKER:--no-undefined" "LINKER:-z,max-page-size=4096" "LINKER:--hash-style=both")
