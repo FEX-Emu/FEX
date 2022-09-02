@@ -59,7 +59,13 @@ SyscallArm64File = "/include/uapi/asm-generic/unistd.h"
 DefinitionRenameDict = {
     "pread64": "pread_64",
     "pwrite64": "pwrite_64",
-    "prlimit64": "prlimit_64"
+    "prlimit64": "prlimit_64",
+    # Shm symbols conflict with termux defines and FEX's syscall token pasting.
+    # Underscore at the start to avoid name collision
+    "shmget": "_shmget",
+    "shmctl": "_shmctl",
+    "shmat": "_shmat",
+    "shmdt": "_shmdt",
 }
 
 Definitions_x64 = []
