@@ -527,23 +527,6 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             file << ") -> " << data.return_type.getAsString() << ";\n";
         }
 
-        for (std::size_t namespace_idx = 0; namespace_idx < namespaces.size(); ++namespace_idx) {
-            bool empty = true;
-            for (auto& symbol : thunked_api) {
-                if (symbol.symtable_namespace == namespace_idx) {
-                    if (empty) {
-                        file << "static struct { const char* name; void (*fn)(); } " << namespaces[namespace_idx].name << "_symtable[] = {\n";
-                        empty = false;
-                    }
-                    file << "  { \"" << symbol.function_name << "\", (void(*)())&" << symbol.function_name << " },\n";
-                }
-            }
-            if (!empty) {
-                file << "  { nullptr, nullptr }\n";
-                file << "};\n";
-            }
-        }
-
         file << "}\n";
     }
 
