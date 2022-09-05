@@ -18,10 +18,7 @@ $end_info$
 #include <string_view>
 #include <unordered_map>
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
-#include "symbol_list.inl"
+#include "thunkgen_guest_libvulkan.inl"
 
 extern "C" {
 

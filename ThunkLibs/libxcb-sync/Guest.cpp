@@ -15,9 +15,7 @@ $end_info$
 #include "common/Guest.h"
 #include <stdarg.h>
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libxcb-sync.inl"
 
 extern "C" {
   xcb_extension_t xcb_sync_id = {

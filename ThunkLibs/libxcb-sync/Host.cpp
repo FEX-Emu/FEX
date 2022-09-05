@@ -14,8 +14,7 @@ $end_info$
 #include <dlfcn.h>
 #include <malloc.h>
 
-#include "ldr_ptrs.inl"
-
+#include "thunkgen_host_libxcb-sync.inl"
 
 static void fexfn_impl_libxcb_sync_FEX_xcb_sync_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1);
 
@@ -26,15 +25,6 @@ static size_t fexfn_impl_libxcb_sync_FEX_usable_size(void *a_0){
 static void fexfn_impl_libxcb_sync_FEX_free_on_host(void *a_0){
   free(a_0);
 }
-
-#include "function_unpacks.inl"
-
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
 
 static void fexfn_impl_libxcb_sync_FEX_xcb_sync_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1) {
   xcb_extension_t *ext{};

@@ -26,9 +26,7 @@ $end_info$
 
 #include <stdarg.h>
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libxcb.inl"
 
 static std::thread CBThread{};
 static std::atomic<bool> CBDone{false};

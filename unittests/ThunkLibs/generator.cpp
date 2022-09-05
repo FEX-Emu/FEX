@@ -53,13 +53,8 @@ struct Fixture {
         }
         std::filesystem::create_directory(tmpdir);
         output_filenames = {
-            tmpdir + "/function_unpacks",
-            tmpdir + "/tab_function_unpacks",
-            tmpdir + "/ldr",
-            tmpdir + "/ldr_ptrs",
-            tmpdir + "/thunks",
-            tmpdir + "/function_packs",
-            tmpdir + "/function_packs_public",
+            tmpdir + "/thunkgen_guest",
+            tmpdir + "/thunkgen_host",
         };
     }
 
@@ -290,11 +285,8 @@ SourceWithAST Fixture::run_thunkgen_guest(std::string_view prelude, std::string_
         "Target *MakeHostTrampolineForGuestFunction(uint8_t HostPacker[32], void (*)(uintptr_t, void*), Target*);\n"
         "template<typename Target>\n"
         "Target *AllocateHostTrampolineForGuestFunction(Target*);\n";
-    for (auto& filename : {
-            output_filenames.thunks,
-            output_filenames.function_packs_public,
-            output_filenames.function_packs,
-            }) {
+    const auto& filename = output_filenames.guest;
+    {
         std::ifstream file(filename);
         const auto current_size = result.size();
         const auto new_data_size = std::filesystem::file_size(filename);
@@ -339,30 +331,16 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  static void ForIndirectCall(void* argsv);\n"
         "};\n"
         "template<typename F>\n"
-        "void FinalizeHostTrampolineForGuestFunction(F*);\n";
+        "void FinalizeHostTrampolineForGuestFunction(F*);\n"
+        "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n";
 
-    for (auto& filename : {
-            output_filenames.ldr_ptrs,
-            output_filenames.function_unpacks,
-            output_filenames.tab_function_unpacks,
-            output_filenames.ldr,
-            }) {
-        bool tab_function_unpacks = (filename == output_filenames.tab_function_unpacks);
-        if (tab_function_unpacks) {
-            result += "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n";
-            result += "static ExportEntry exports[] = {\n";
-        }
-
+    auto& filename = output_filenames.host;
+    {
         std::ifstream file(filename);
         const auto current_size = result.size();
         const auto new_data_size = std::filesystem::file_size(filename);
         result.resize(result.size() + new_data_size);
         file.read(result.data() + current_size, result.size());
-
-        if (tab_function_unpacks) {
-            result += "  { nullptr, nullptr }\n";
-            result += "};\n";
-        }
     }
     return SourceWithAST { std::string { prelude } + result };
 }
@@ -490,7 +468,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
 TEST_CASE_METHOD(Fixture, "GuestFunctionPointerParameter") {
     const std::string prelude =
         "struct fex_guest_function_ptr { int (*x)(char,char); };\n"
-        "void fexfn_impl_libtest_func(fex_guest_function_ptr);\n";
+        "static void fexfn_impl_libtest_func(fex_guest_function_ptr) {}\n";
     const auto output = run_thunkgen(prelude,
         "#include <thunks_common.h>\n"
         "void func(int (*funcptr)(char, char));\n"

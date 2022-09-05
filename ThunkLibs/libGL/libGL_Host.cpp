@@ -22,18 +22,10 @@ $end_info$
 
 #include "common/Host.h"
 
+#include "thunkgen_host_libGL.inl"
+
 void* symbolFromGlXGetProcAddr(void*, const char* name) {
     return (void*)glXGetProcAddress((const GLubyte*)name);
 }
-
-#include "ldr_ptrs.inl"
-#include "function_unpacks.inl"
-
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
 
 EXPORTS(libGL)

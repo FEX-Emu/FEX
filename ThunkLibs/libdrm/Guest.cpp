@@ -14,9 +14,7 @@ $end_info$
 #include "common/Guest.h"
 #include <stdarg.h>
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libdrm.inl"
 
 extern "C" {
   void FEX_malloc_free_on_host(void *Ptr) {

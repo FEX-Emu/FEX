@@ -18,7 +18,7 @@ $end_info$
 
 #include <dlfcn.h>
 
-#include "ldr_ptrs.inl"
+#include "thunkgen_host_libvulkan.inl"
 
 static bool SetupInstance{};
 static std::mutex SetupMutex{};
@@ -134,15 +134,5 @@ static PFN_vkVoidFunction FEXFN_IMPL(vkGetInstanceProcAddr)(VkInstance a_0, cons
   auto ret = LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
   return ret;
 }
-
-
-#include "function_unpacks.inl"
-
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
 
 EXPORTS(libvulkan)

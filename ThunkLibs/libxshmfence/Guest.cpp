@@ -16,8 +16,6 @@ extern "C" {
 #include "common/Guest.h"
 #include <stdarg.h>
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libxshmfence.inl"
 
 LOAD_LIB(libxshmfence)

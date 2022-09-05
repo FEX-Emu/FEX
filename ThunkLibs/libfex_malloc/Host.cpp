@@ -15,9 +15,7 @@ $end_info$
 
 #include "Types.h"
 
-#include "ldr_ptrs.inl"
-
-#include "function_unpacks.inl"
+#include "thunkgen_host_libfex_malloc.inl"
 
 void fexfn_impl_libfex_malloc_fex_get_allocation_ptrs(AllocationPtrs *Ptrs);
 
@@ -182,13 +180,6 @@ void *(*__realloc_hook)(void *ptr, size_t size) = fex_realloc;
 void *(*__memalign_hook)(size_t alignment, size_t size) =
     fex_memalign;
 }
-
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
 
 void fexfn_impl_libfex_malloc_fex_get_allocation_ptrs(AllocationPtrs *Ptrs) {
   *Ptrs = AllocationPointers;

@@ -26,37 +26,27 @@ int main(int argc, char* argv[]) {
         std::cerr << "\nError: " << error << "\n";
         return EXIT_FAILURE;
     }
-    char** const last_internal_arg = argv + argc;
+
+    // Process arguments before the "--" separator
+    if (argc != 5) {
+        print_usage(argv[0]);
+        return EXIT_FAILURE;
+    }
 
     char** arg = argv + 1;
     const auto filename = *arg++;
     const std::string libname = *arg++;
+    const std::string target_abi = *arg++;
+    const std::string output_filename = *arg++;
 
-    // Iterate over generator targets (remaining arguments up to "--" separator)
     OutputFilenames output_filenames;
-    while (arg < last_internal_arg) {
-        auto target = std::string { *arg++ };
-        auto out_filename = *arg++;
-        if (target == "-function_unpacks") {
-            output_filenames.function_unpacks = out_filename;
-        } else if (target == "-tab_function_unpacks") {
-            output_filenames.tab_function_unpacks = out_filename;
-        } else if (target == "-ldr") {
-            output_filenames.ldr = out_filename;
-        } else if (target == "-ldr_ptrs") {
-            output_filenames.ldr_ptrs = out_filename;
-        } else if (target == "-thunks") {
-            output_filenames.thunks = out_filename;
-        } else if (target == "-function_packs") {
-            output_filenames.function_packs = out_filename;
-        } else if (target == "-function_packs_public") {
-            output_filenames.function_packs_public = out_filename;
-        } else if (target == "-symbol_list") {
-            output_filenames.symbol_list = out_filename;
-        } else {
-            std::cerr << "Unrecognized generator target \"" << target << "\"\n";
-            return EXIT_FAILURE;
-        }
+    if (target_abi == "-host") {
+        output_filenames.host = output_filename;
+    } else if (target_abi == "-guest") {
+        output_filenames.guest = output_filename;
+    } else {
+        std::cerr << "Unrecognized generator target ABI \"" << target_abi << "\"\n";
+        return EXIT_FAILURE;
     }
 
     ClangTool Tool(*compile_db, { filename });
