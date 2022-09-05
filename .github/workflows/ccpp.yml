@@ -20,191 +20,219 @@ jobs:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        arch: [[self-hosted, x64], [self-hosted, ARMv8.0], [self-hosted, ARMv8.2], [self-hosted, ARMv8.4]]
+        arch: [[self-hosted, x64, Thunks], [self-hosted, ARMv8.0, self-hosted], [self-hosted, ARMv8.2, self-hosted], [self-hosted, ARMv8.4, self-hosted]]
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set runner label
-      run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
+      - name: Set runner label
+        run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
 
-    - name: Set rootfs paths
-      run: |
-        echo "FEX_ROOTFS_MOUNT=/mnt/AutoNFS/rootfs/" >> $GITHUB_ENV
-        echo "FEX_ROOTFS_PATH=$HOME/Rootfs/" >> $GITHUB_ENV
-        echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
-        echo "ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
+      - name: Set rootfs paths
+        run: |
+          echo "FEX_ROOTFS_MOUNT=/mnt/AutoNFS/rootfs/" >> $GITHUB_ENV
+          echo "FEX_ROOTFS_PATH=$HOME/Rootfs/" >> $GITHUB_ENV
+          echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
+          echo "ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
 
-    - name: Update RootFS cache
-      # Use a bash shell so we can use the same syntax for environment variable
-      # access regardless of the host operating system
-      shell: bash
-      run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
+      - name: Update RootFS cache
+        # Use a bash shell so we can use the same syntax for environment variable
+        # access regardless of the host operating system
+        shell: bash
+        run: $GITHUB_WORKSPACE/Scripts/CI_FetchRootFS.py
 
-    - name : submodule checkout
-      # Need to update submodules
-      run: |
-        git submodule sync --recursive
-        git submodule update --init --depth 1
+      - name : submodule checkout
+        # Need to update submodules
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --depth 1
 
-    - name: Clean Build Environment
-      run: rm -Rf ${{runner.workspace}}/build
+      - name: Clean Build Environment
+        run: rm -Rf ${{runner.workspace}}/build
 
-    - name: Create Build Environment
-      # Some projects don't allow in-source building, so create a separate build directory
-      # We'll use this as our working directory for all subsequent commands
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      - name: Create Build Environment
+        # Some projects don't allow in-source building, so create a separate build directory
+        # We'll use this as our working directory for all subsequent commands
+        run: cmake -E make_directory ${{runner.workspace}}/build
 
-    - name: Configure CMake
-      # Use a bash shell so we can use the same syntax for environment variable
-      # access regardless of the host operating system
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      # Note the current convention is to use the -S and -B options here to specify source
-      # and build directories, but this is only available with CMake 3.13 and higher.
-      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DENABLE_INTERPRETER=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=True
+      - name: Configure CMake
+        # Use a bash shell so we can use the same syntax for environment variable
+        # access regardless of the host operating system
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        # Note the current convention is to use the -S and -B options here to specify source
+        # and build directories, but this is only available with CMake 3.13 and higher.
+        # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DENABLE_INTERPRETER=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=True -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
 
-    - name: Build
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the build.  You can specify a specific target with "--target <NAME>"
+        run: cmake --build . --config $BUILD_TYPE
 
-    - name: ASM Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+      - name: Install
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE --target install
 
-    - name: ASM Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+      - name: Test GL No-Thunks
+        if: matrix.arch[2] == 'Thunks'
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        env:
+          DISPLAY: ":0"
+          FEX_SILENTLOG: "0"
+          FEX_OUTPUTLOG: "stderr"
+        run: |
+          echo "Running in a simulation"
+          ${{runner.workspace}}/build/Bin/FEXInterpreter /usr/bin/glxinfo
 
-    - name: IR Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the unit tests
-      run: cmake --build . --config $BUILD_TYPE --target ir_tests
+      - name: Test GL Thunks
+        if: matrix.arch[2] == 'Thunks'
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        env:
+          DISPLAY: ":0"
+          FEX_SILENTLOG: "0"
+          FEX_OUTPUTLOG: "stderr"
+        run: |
+          echo "Running in a simulation"
+          FEX_THUNKCONFIG=$GITHUB_WORKSPACE/CI/GLThunks.json ${{runner.workspace}}/build/Bin/FEXInterpreter /usr/bin/glxinfo
 
-    - name: IR Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log || true
+      - name: ASM Tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the unit tests
+        run: cmake --build . --config $BUILD_TYPE --target asm_tests
 
-    - name: Posix Tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the posixtest
-      run: cmake --build . --config $BUILD_TYPE --target posix_tests
+      - name: ASM Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
 
-    - name: Posix Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
+      - name: IR Tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the unit tests
+        run: cmake --build . --config $BUILD_TYPE --target ir_tests
 
-    - name: gvisor tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
+      - name: IR Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_IR.log || true
 
-    - name: GVisor Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
+      - name: Posix Tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the posixtest
+        run: cmake --build . --config $BUILD_TYPE --target posix_tests
 
-    - name: gcc target tests 64
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_64
+      - name: Posix Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
 
-    - name: GCC64 Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
+      - name: gvisor tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the gvisor tests
+        run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
 
-    - name: gcc target tests 32
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_32
+      - name: GVisor Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
 
-    - name: GCC32 Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC32.log || true
+      - name: gcc target tests 64
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the gvisor tests
+        run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_64
 
-    - name: Struct verifier tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target struct_verifier
+      - name: GCC64 Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC64.log || true
 
-    - name: Struct verifier Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
+      - name: gcc target tests 32
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        # Execute the gvisor tests
+        run: cmake --build . --config $BUILD_TYPE --target gcc_target_tests_32
 
-    - name: APITest tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target api_tests
+      - name: GCC32 Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GCC32.log || true
 
-    - name: APITest Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_APITests.log || true
+      - name: Struct verifier tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE --target struct_verifier
 
-    - name: FEXLinuxTests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target fex_linux_tests_all
+      - name: Struct verifier Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
 
-    - name: FEXLinuxTests Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
+      - name: APITest tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE --target api_tests
 
-    - name: Thunkgen tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target thunkgen_tests
+      - name: APITest Test Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_APITests.log || true
 
-    - name: Thunkgen Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
+      - name: FEXLinuxTests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE --target fex_linux_tests_all
 
-    - name: Truncate test results
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      # Cap out the log files at 20M in case something crash spins and dumps fault text
-      # ASM tests get quite close to 10MB
-      run: truncate --size=<20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+      - name: FEXLinuxTests Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
 
-    - name: Set runner name
-      if: ${{ always() }}
-      run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
+      - name: Thunkgen tests
+        working-directory: ${{runner.workspace}}/build
+        shell: bash
+        run: cmake --build . --config $BUILD_TYPE --target thunkgen_tests
 
-    - name: Upload results
-      if: ${{ always() }}
-      uses: 'actions/upload-artifact@v2'
-      with:
-        name: Results-${{ env.runner_name }}
-        path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
-        retention-days: 3
+      - name: Thunkgen Results move
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
 
+      - name: Truncate test results
+        if: ${{ always() }}
+        shell: bash
+        working-directory: ${{runner.workspace}}/build
+        # Cap out the log files at 20M in case something crash spins and dumps fault text
+        # ASM tests get quite close to 10MB
+        run: truncate --size=<20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
+
+      - name: Set runner name
+        if: ${{ always() }}
+        run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
+
+      - name: Upload results
+        if: ${{ always() }}
+        uses: 'actions/upload-artifact@v2'
+        with:
+          name: Results-${{ env.runner_name }}
+          path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
+          retention-days: 3
