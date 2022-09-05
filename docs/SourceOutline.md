@@ -1,4 +1,4 @@
-# FEX-2208
+# FEX-2209
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -188,6 +188,9 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### SDL2
 - [libSDL2_Guest.cpp](../ThunkLibs/libSDL2/libSDL2_Guest.cpp): Handles sdlglproc, dload, stubs a few log fns
 - [libSDL2_Host.cpp](../ThunkLibs/libSDL2/libSDL2_Host.cpp)
+
+#### VDSO
+- [libVDSO_Guest.cpp](../ThunkLibs/libVDSO/libVDSO_Guest.cpp): Linux VDSO thunking
 
 #### Vulkan
 - [Guest.cpp](../ThunkLibs/libvulkan/Guest.cpp)
