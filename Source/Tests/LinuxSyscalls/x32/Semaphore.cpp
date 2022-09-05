@@ -281,7 +281,7 @@ namespace FEX::HLE::x32 {
       case OP_SHMAT: {
         // also implemented in memory:shmat
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-          shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
+          Shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
         if (!FEX::HLE::HasSyscallError(Result)) {
           FEX::HLE::_SyscallHandler->TrackShmat(first, *reinterpret_cast<uint32_t*>(third), second);
         }
@@ -290,7 +290,7 @@ namespace FEX::HLE::x32 {
       case OP_SHMDT: {
         // also implemented in memory:shmdt
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
-          shmdt(reinterpret_cast<void*>(ptr));
+          Shmdt(reinterpret_cast<void*>(ptr));
         if (!FEX::HLE::HasSyscallError(Result)) {
           FEX::HLE::_SyscallHandler->TrackShmdt(ptr);
         }
@@ -317,7 +317,7 @@ namespace FEX::HLE::x32 {
             else {
               buf = *shmun.buf32;
             }
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, &buf);
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, &buf);
             // IPC_SET sets the internal data structure that the kernel uses
             // No need to writeback
             break;
@@ -326,7 +326,7 @@ namespace FEX::HLE::x32 {
           case SHM_STAT_ANY:
           case IPC_STAT: {
             struct shmid64_ds buf{};
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, &buf);
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, &buf);
             if (Result != -1) {
               if (IPC64) {
                 *shmun.buf64 = buf;
@@ -339,7 +339,7 @@ namespace FEX::HLE::x32 {
           }
           case IPC_INFO: {
             struct shminfo si{};
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
             if (Result != -1) {
               if (IPC64) {
                 *shmun.__buf64 = si;
@@ -352,7 +352,7 @@ namespace FEX::HLE::x32 {
           }
           case SHM_INFO: {
             struct shm_info si{};
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
             if (Result != -1) {
               // SHM_INFO doesn't follow IPC64 behaviour
               *shmun.__buf_info_32 = si;
@@ -360,13 +360,13 @@ namespace FEX::HLE::x32 {
             break;
           }
           case SHM_LOCK:
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, nullptr);
             break;
           case SHM_UNLOCK:
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, nullptr);
             break;
           case IPC_RMID:
-            Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, nullptr);
+            Result = ::syscall(SYSCALL_DEF(_shmctl), shmid, cmd, nullptr);
             break;
 
           default:

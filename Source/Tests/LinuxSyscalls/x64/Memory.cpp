@@ -30,7 +30,7 @@ namespace FEX::HLE::x64 {
 
     bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
     if (Map32Bit) {
-      Result = (uint64_t)Get32BitAllocator()->mmap(addr, length, prot,flags, fd, offset);
+      Result = (uint64_t)Get32BitAllocator()->Mmap(addr, length, prot,flags, fd, offset);
       if (FEX::HLE::HasSyscallError(Result)) {
         errno = -Result;
         Result = -1;
@@ -49,7 +49,7 @@ namespace FEX::HLE::x64 {
   int x64SyscallHandler::GuestMunmap(void *addr, uint64_t length) {
     uint64_t Result{};
     if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
-      Result = Get32BitAllocator()->munmap(addr, length);
+      Result = Get32BitAllocator()->Munmap(addr, length);
 
       if (FEX::HLE::HasSyscallError(Result)) {
         errno = -Result;
@@ -117,7 +117,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(_shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, int shmid, const void *shmaddr, int shmflg) -> uint64_t {
       uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
 
@@ -127,7 +127,7 @@ namespace FEX::HLE::x64 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL_X64_FLAGS(_shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, const void *shmaddr) -> uint64_t {
       uint64_t Result = ::shmdt(shmaddr);
 
