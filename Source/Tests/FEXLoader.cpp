@@ -9,6 +9,7 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "Common/FEXServerClient.h"
 #include "ELFCodeLoader2.h"
+#include "VDSO_Emulation.h"
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
@@ -389,6 +390,12 @@ int main(int argc, char **argv, char **const envp) {
   auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
   auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
 
+  if (Loader.Is64BitMode()) {
+    // Load VDSO in to memory prior to mapping our ELFs.
+    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Mapper);
+    Loader.SetVDSOBase(VDSOBase);
+  }
+
   if (!Loader.MapMemory(Mapper, Unmapper)) {
     // failed to map
     LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
@@ -404,6 +411,9 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
   FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
   FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+
+  // Pass in our VDSO thunks
+  FEXCore::Context::AppendThunkDefinitions(CTX, FEX::VDSO::GetVDSOThunkDefinitions());
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 

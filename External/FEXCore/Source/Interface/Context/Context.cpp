@@ -202,6 +202,10 @@ namespace FEXCore::Context {
     return CTX->AddCustomIREntrypoint(Entrypoint, Handler, Creator, Data);
   }
 
+  void AppendThunkDefinitions(FEXCore::Context::Context *CTX, std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
+    CTX->AppendThunkDefinitions(Definitions);
+  }
+
 namespace Debug {
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
     CTX->CompileRIP(CTX->ParentThread, RIP);

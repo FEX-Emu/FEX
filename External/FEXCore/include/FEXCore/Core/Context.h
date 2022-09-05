@@ -5,6 +5,7 @@
 
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <istream>
@@ -280,4 +281,12 @@ namespace FEXCore::Context {
 
   FEX_DEFAULT_VISIBILITY void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress);
   FEX_DEFAULT_VISIBILITY CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr);
+
+  /**
+   * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.
+   *
+   * @param CTX A valid non-null context instance.
+   * @param Definitions A vector of thunk definitions that the frontend controls
+   */
+  FEX_DEFAULT_VISIBILITY void AppendThunkDefinitions(FEXCore::Context::Context *CTX, std::vector<FEXCore::IR::ThunkDefinition> const& Definitions);
 }

@@ -9,6 +9,7 @@ endif()
 
 add_executable(FEXLoader
   FEXLoader.cpp
+  VDSO_Emulation.cpp
   AOT/AOTGenerator.cpp)
 
 # Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader

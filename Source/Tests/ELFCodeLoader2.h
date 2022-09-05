@@ -209,6 +209,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   };
 
   std::vector<LoadedSection> Sections;
+
   ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
@@ -426,9 +427,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       // On x86 only allows userspace to check for monitor and fs/gs base writing in CPL3
       //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
 
-      // we don't support vsyscall or vDSO so we don't set those
+      // we don't support vsyscall so we don't set those
       //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
-      //AuxVariables.emplace_back(auxv_t{33, 0}); // AT_SYSINFO_EHDR - Address of the start of VDSO
+      if (VDSOBase) {
+        AuxVariables.emplace_back(auxv_t{33, reinterpret_cast<uint64_t>(VDSOBase)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
+      }
     }
     else {
       AuxVariables.emplace_back(auxv_t{4, 0x20}); // AT_PHENT
@@ -640,6 +643,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return ElfValid;
   }
 
+  void SetVDSOBase(void* Base) {
+    VDSOBase = Base;
+  }
+
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 
@@ -652,6 +659,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
   uint64_t BaseOffset{};
-  FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
+  void* VDSOBase{};
 
+  FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
 };

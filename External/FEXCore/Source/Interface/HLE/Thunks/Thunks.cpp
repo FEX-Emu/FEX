@@ -139,7 +139,7 @@ namespace FEXCore {
                 // sha256(fex:allocate_host_trampoline_for_guest_function)
                 { 0x9b, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a },
                 &AllocateHostTrampolineForGuestFunction
-            }
+            },
         };
 
         // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
@@ -320,7 +320,7 @@ namespace FEXCore {
             }
         }
 
-        ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) {
+        ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) override {
 
             std::shared_lock lk(ThunksMutex);
 
@@ -333,13 +333,19 @@ namespace FEXCore {
             }
         }
 
-        void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
+        void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override {
             ::Thread = Thread;
+        }
+
+        void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override {
+          for (auto & Definition : Definitions) {
+            Thunks.emplace(Definition.Sum, Definition.ThunkFunction);
+          }
         }
     };
 
     ThunkHandler* ThunkHandler::Create() {
-        return new ThunkHandler_impl();
+      return new ThunkHandler_impl();
     }
 
     /**
