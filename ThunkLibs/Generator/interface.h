@@ -5,19 +5,8 @@
 #include <string>
 
 struct OutputFilenames {
-    // Host
-    std::string function_unpacks;
-    std::string tab_function_unpacks;
-    std::string ldr;
-    std::string ldr_ptrs;
-
-    // Guest
-    std::string thunks;
-    std::string function_packs;
-    std::string function_packs_public;
-
-    // Guest + Host
-    std::string symbol_list;
+    std::string host;
+    std::string guest;
 };
 
 class GenerateThunkLibsAction : public clang::ASTFrontendAction {

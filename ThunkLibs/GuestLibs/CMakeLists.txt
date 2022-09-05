@@ -17,7 +17,7 @@ else()
   set(GENERATE_GUEST_INSTALL_TARGETS FALSE)
 endif()
 
-# Syntax: generate(libxyz libxyz-interface.cpp generator-targets...)
+# Syntax: generate(libxyz libxyz-interface.cpp)
 # This defines a target and a custom command:
 # - custom command: Main build step that runs the thunk generator on the given interface definition
 # - libxyz-guest-deps: Interface target to read include directories from which are passed to libclang when parsing the interface definition
@@ -32,27 +32,25 @@ function(generate NAME SOURCE_FILE)
   set(compile_prop "$<TARGET_PROPERTY:${NAME}-guest-deps,INTERFACE_COMPILE_DEFINITIONS>")
 
   # Run thunk generator for each of the given output files
-  foreach(WHAT IN LISTS ARGN)
-    set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen/${NAME}")
-    set(OUTFILE "${OUTFOLDER}/${WHAT}.inl")
+  set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen")
+  set(OUTFILE "${OUTFOLDER}/thunkgen_guest_${NAME}.inl")
 
-    file(MAKE_DIRECTORY "${OUTFOLDER}")
+  file(MAKE_DIRECTORY "${OUTFOLDER}")
 
-    add_custom_command(
-      OUTPUT "${OUTFILE}"
-      DEPENDS "${GENERATOR_EXE}"
-      DEPENDS "${SOURCE_FILE}"
-      COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-${WHAT}" "${OUTFILE}" -- -std=c++17
-        # Expand compile definitions to space-separated list of -D parameters
-        "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
-        # Expand include directories to space-separated list of -isystem parameters
-        "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
-      VERBATIM
-      COMMAND_EXPAND_LISTS
-      )
+  add_custom_command(
+    OUTPUT "${OUTFILE}"
+    DEPENDS "${GENERATOR_EXE}"
+    DEPENDS "${SOURCE_FILE}"
+    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" -- -std=c++17
+      # Expand compile definitions to space-separated list of -D parameters
+      "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
+      # Expand include directories to space-separated list of -isystem parameters
+      "$<$<BOOL:${prop}>:;-isystem$<JOIN:${prop},;-isystem>>"
+    VERBATIM
+    COMMAND_EXPAND_LISTS
+    )
 
-    list(APPEND OUTPUTS "${OUTFILE}")
-  endforeach()
+  list(APPEND OUTPUTS "${OUTFILE}")
   set(GEN_${NAME} ${OUTPUTS} PARENT_SCOPE)
 endfunction()
 
@@ -72,7 +70,7 @@ function(add_guest_lib NAME SONAME)
   endif()
 
   add_library(${NAME}-guest ${TARGET_TYPE} ${SOURCE_FILE} ${GEN_lib${NAME}})
-  target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/lib${NAME}")
+  target_include_directories(${NAME}-guest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/")
   target_compile_definitions(${NAME}-guest PRIVATE GUEST_THUNK_LIBRARY)
   target_link_libraries(${NAME}-guest PRIVATE lib${NAME}-guest-deps)
 
@@ -109,16 +107,16 @@ endfunction()
 #add_guest_lib(fex_malloc_loader)
 #target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
 
-#generate(libfex_malloc thunks function_packs function_packs_public)
+#generate(libfex_malloc)
 #add_guest_lib(fex_malloc)
 
-generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp thunks function_packs function_packs_public)
+generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp)
 add_guest_lib(asound "libasound.so.2")
 
-generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp thunks function_packs function_packs_public)
+generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
 add_guest_lib(EGL "libEGL.so.1")
 
-generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp thunks function_packs function_packs_public symbol_list)
+generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
 add_guest_lib(GL "libGL.so.1")
 
 # libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
@@ -127,7 +125,7 @@ target_link_libraries(GL-guest PRIVATE X11)
 
 # disabled for now, headers are platform specific
 # find_package(SDL2 REQUIRED)
-# generate(libSDL2 thunks function_packs function_packs_public)
+# generate(libSDL2)
 # add_guest_lib(SDL2)
 # target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
 # target_link_libraries(SDL2-guest PRIVATE GL)
@@ -141,66 +139,66 @@ set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
 set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
 set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
 
-generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp thunks function_packs function_packs_public)
+generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
 add_guest_lib(X11 "libX11.so.6")
 
 target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
 target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
 target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
-generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp thunks function_packs function_packs_public)
+generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp)
 add_guest_lib(Xext "libXext.so.6")
 
 target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
 target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
 target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
-generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp thunks function_packs function_packs_public)
+generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp)
 add_guest_lib(Xrender "libXrender.so.1")
 
-generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp thunks function_packs function_packs_public)
+generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
 add_guest_lib(Xfixes "libXfixes.so.3")
 
-generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp thunks function_packs function_packs_public symbol_list)
+generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
 target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
 add_guest_lib(vulkan "libvulkan.so.1")
 
-generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
 add_guest_lib(xcb "libxcb.so.1")
 
-generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
 add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
-generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp)
 add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
 
-generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp)
 add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
 
-generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp)
 add_guest_lib(xcb-shm "libxcb-shm.so.0")
 
-generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp)
 add_guest_lib(xcb-sync "libxcb-sync.so.1")
 
-generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp)
 add_guest_lib(xcb-present "libxcb-present.so.0")
 
-generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp)
 add_guest_lib(xcb-randr "libxcb-randr.so.0")
 
-generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp thunks function_packs function_packs_public)
+generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp)
 add_guest_lib(xcb-glx "libxcb-glx.so.0")
 
-generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp thunks function_packs function_packs_public)
+generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
 add_guest_lib(xshmfence "libxshmfence.so.1")
 
-generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp thunks function_packs function_packs_public)
+generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
 target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
 target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
 add_guest_lib(drm "libdrm.so.2")
 
-generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp thunks function_packs function_packs_public)
+generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
 add_guest_lib(VDSO "linux-vdso.so.1")
 # Can't use a stack protector because otherwise cross-compiling fails
 # Not necessary anyway because it only trampolines

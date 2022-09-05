@@ -24,7 +24,8 @@ $end_info$
 #include <dlfcn.h>
 #include <utility>
 
-#include "ldr_ptrs.inl"
+#include "thunkgen_host_libX11.inl"
+
 #ifdef _M_ARM_64
 // This Variadic asm only works for one signature
 // ({uint32_t,uint64_t} a_0, size_t count, uint64_t *list)
@@ -323,15 +324,6 @@ XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, siz
 Status fexfn_impl_libX11_XInitThreadsInternal(uintptr_t, uintptr_t);
 
 Status fexfn_impl_libX11__XReply(Display*, xReply*, int, Bool);
-
-#include "function_unpacks.inl"
-
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
 
 static int (*ACTUAL_XInitDisplayLock_fn)(Display*) = nullptr;
 static int (*INTERNAL_XInitDisplayLock_fn)(Display*) = nullptr;

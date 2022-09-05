@@ -13,15 +13,6 @@ $end_info$
 #include "common/Host.h"
 #include <dlfcn.h>
 
-#include "ldr_ptrs.inl"
-#include "function_unpacks.inl"
+#include "thunkgen_host_libXrender.inl"
 
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
-
-EXPORTS(libXrender) 
-
+EXPORTS(libXrender)

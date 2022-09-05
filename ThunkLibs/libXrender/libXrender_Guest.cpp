@@ -12,8 +12,6 @@ $end_info$
 
 #include "common/Guest.h"
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libXrender.inl"
 
 LOAD_LIB(libXrender)

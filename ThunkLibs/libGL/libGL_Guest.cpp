@@ -24,10 +24,7 @@ $end_info$
 
 #include "common/Guest.h"
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
-#include "symbol_list.inl"
+#include "thunkgen_guest_libGL.inl"
 
 typedef void voidFunc();
 

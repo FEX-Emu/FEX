@@ -23,7 +23,7 @@ $end_info$
 
 #include "WorkEventData.h"
 
-#include "ldr_ptrs.inl"
+#include "thunkgen_host_libxcb.inl"
 
 static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);
 static size_t fexfn_impl_libxcb_FEX_usable_size(void*);
@@ -31,8 +31,6 @@ static void fexfn_impl_libxcb_FEX_free_on_host(void*);
 static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchEvent*, CrossArchEvent*, CBWork*);
 
 static int fexfn_impl_libxcb_xcb_take_socket(xcb_connection_t * a_0, fex_guest_function_ptr a_1, void * a_2, int a_3, uint64_t * a_4);
-
-#include "function_unpacks.inl"
 
 struct xcb_take_socket_CB_args {
   xcb_connection_t * conn;
@@ -88,13 +86,6 @@ static int fexfn_impl_libxcb_xcb_take_socket(xcb_connection_t * a_0, fex_guest_f
      a_3,
      a_4);
 }
-
-static ExportEntry exports[] = {
-    #include "tab_function_unpacks.inl"
-    { nullptr, nullptr }
-};
-
-#include "ldr.inl"
 
 static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t * a_0, xcb_extension_t * a_1){
   xcb_extension_t *ext{};

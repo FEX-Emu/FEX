@@ -471,9 +471,11 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         return std::string { function_name } + "CBFN" + std::to_string(param_index);
     };
 
-    if (!output_filenames.thunks.empty()) {
-        std::ofstream file(output_filenames.thunks);
+    // Files used guest-side
+    if (!output_filenames.guest.empty()) {
+        std::ofstream file(output_filenames.guest);
 
+        // Guest->Host transition points for API functions
         file << "extern \"C\" {\n";
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
@@ -481,13 +483,14 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             file << "MAKE_THUNK(" << libname << ", " << function_name << ", \"";
             bool first = true;
             for (auto c : sha256) {
-                file << (first ? "" : ", ") << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+                file << (first ? "" : ", ") << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c << std::dec;
                 first = false;
             }
             file << "\")\n";
         }
         file << "}\n";
 
+        // Guest->Host transition points for invoking runtime host-function pointers based on their signature
         for (auto type_it = funcptr_types.begin(); type_it != funcptr_types.end(); ++type_it) {
             auto* type = *type_it;
             std::string funcptr_signature = clang::QualType { type, 0 }.getAsString();
@@ -506,50 +509,8 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             auto funcptr_idx = std::distance(funcptr_types.begin(), type_it);
             file << "  MAKE_CALLBACK_THUNK(callback_" << funcptr_idx << ", " << funcptr_signature << ", \"" << cb_sha256_str << "\");\n";
         }
-    }
 
-    if (!output_filenames.function_packs_public.empty()) {
-        std::ofstream file(output_filenames.function_packs_public);
-
-        file << "extern \"C\" {\n";
-        for (auto& data : thunked_api) {
-            if (data.custom_guest_impl) {
-                continue;
-            }
-
-            const auto& function_name = data.function_name;
-
-            file << "__attribute__((alias(\"fexfn_pack_" << function_name << "\"))) auto " << function_name << "(";
-            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
-                auto& type = data.param_types[idx];
-                file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
-            }
-            file << ") -> " << data.return_type.getAsString() << ";\n";
-        }
-
-        for (std::size_t namespace_idx = 0; namespace_idx < namespaces.size(); ++namespace_idx) {
-            bool empty = true;
-            for (auto& symbol : thunked_api) {
-                if (symbol.symtable_namespace == namespace_idx) {
-                    if (empty) {
-                        file << "static struct { const char* name; void (*fn)(); } " << namespaces[namespace_idx].name << "_symtable[] = {\n";
-                        empty = false;
-                    }
-                    file << "  { \"" << symbol.function_name << "\", (void(*)())&" << symbol.function_name << " },\n";
-                }
-            }
-            if (!empty) {
-                file << "  { nullptr, nullptr }\n";
-                file << "};\n";
-            }
-        }
-
-        file << "}\n";
-    }
-
-    if (!output_filenames.function_packs.empty()) {
-        std::ofstream file(output_filenames.function_packs);
-
+        // Thunks-internal packing functions
         file << "extern \"C\" {\n";
         for (auto& data : thunks) {
             const auto& function_name = data.function_name;
@@ -592,15 +553,89 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
             file << "}\n";
         }
         file << "}\n";
+
+        // Publicly exports equivalent to symbols exported from the native guest library
+        file << "extern \"C\" {\n";
+        for (auto& data : thunked_api) {
+            if (data.custom_guest_impl) {
+                continue;
+            }
+
+            const auto& function_name = data.function_name;
+
+            file << "__attribute__((alias(\"fexfn_pack_" << function_name << "\"))) auto " << function_name << "(";
+            for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
+                auto& type = data.param_types[idx];
+                file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
+            }
+            file << ") -> " << data.return_type.getAsString() << ";\n";
+        }
+        file << "}\n";
+
+        // Symbol enumerators
+        for (std::size_t namespace_idx = 0; namespace_idx < namespaces.size(); ++namespace_idx) {
+            const auto& ns = namespaces[namespace_idx];
+            file << "#define FOREACH_" << ns.name << (ns.name.empty() ? "" : "_") << "SYMBOL(EXPAND) \\\n";
+            for (auto& symbol : thunked_api) {
+                if (symbol.symtable_namespace.value_or(0) == namespace_idx) {
+                    file << "  EXPAND(" << symbol.function_name << ", \"TODO\") \\\n";
+                }
+            }
+            file << "\n";
+        }
     }
 
-    if (!output_filenames.function_unpacks.empty()) {
-        std::ofstream file(output_filenames.function_unpacks);
+    // Files used host-side
+    if (!output_filenames.host.empty()) {
+        std::ofstream file(output_filenames.host);
+
+        // Forward declarations for symbols loaded from the native host library
+        for (auto& import : thunked_api) {
+            const auto& function_name = import.function_name;
+            const char* variadic_ellipsis = import.is_variadic ? ", ..." : "";
+            file << "using fexldr_type_" << libname << "_" << function_name << " = auto " << "(" << format_function_params(import) << variadic_ellipsis << ") -> " << import.return_type.getAsString() << ";\n";
+            file << "static fexldr_type_" << libname << "_" << function_name << " *fexldr_ptr_" << libname << "_" << function_name << ";\n";
+        }
 
         file << "extern \"C\" {\n";
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
 
+            // Generate stub callbacks
+            for (auto& [cb_idx, cb] : thunk.callbacks) {
+                if (cb.is_stub) {
+                    const char* variadic_ellipsis = cb.is_variadic ? ", ..." : "";
+                    auto cb_function_name = "fexfn_unpack_" + get_callback_name(function_name, cb_idx) + "_stub";
+                    file << "[[noreturn]] static " << cb.return_type.getAsString() << " "
+                         << cb_function_name << "("
+                         << format_function_params(cb) << variadic_ellipsis << ") {\n";
+                    file << "  fprintf(stderr, \"FATAL: Attempted to invoke callback stub for " << function_name << "\\n\");\n";
+                    file << "  std::abort();\n";
+                    file << "}\n";
+                }
+            }
+
+            // Forward declarations for user-provided implementations
+            if (thunk.custom_host_impl) {
+                file << "static auto fexfn_impl_" << libname << "_" << function_name << "(";
+                for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
+                    // TODO: fex_guest_function_ptr for guest callbacks?
+                    auto& type = thunk.param_types[idx];
+
+                    file << (idx == 0 ? "" : ", ");
+
+                    auto cb = thunk.callbacks.find(idx);
+                    if (cb != thunk.callbacks.end() && cb->second.is_guest) {
+                        file << "fex_guest_function_ptr a_" << idx;
+                    } else {
+                      file << format_decl(type, "a_" + std::to_string(idx));
+                    }
+                }
+                // Using trailing return type as it makes handling function pointer returns much easier
+                file << ") -> " << thunk.return_type.getAsString() << ";\n";
+            }
+
+            // Packed argument structs used in fexfn_unpack_*
             auto GeneratePackedArgs = [&](const auto &function_name, const auto &thunk) -> std::string {
                 std::string struct_name = "fexfn_packed_args_" + libname + "_" + function_name;
                 file << "struct " << struct_name << " {\n";
@@ -615,24 +650,9 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "};\n";
                 return struct_name;
             };
-
-            /* Generate stub callbacks */
-            for (auto& [cb_idx, cb] : thunk.callbacks) {
-                if (cb.is_stub) {
-                    const char* variadic_ellipsis = cb.is_variadic ? ", ..." : "";
-                    auto cb_function_name = "fexfn_unpack_" + get_callback_name(function_name, cb_idx) + "_stub";
-                    file << "[[noreturn]] static " << cb.return_type.getAsString() << " "
-                         << cb_function_name << "("
-                         << format_function_params(cb) << variadic_ellipsis << ") {\n";
-                    file << "  fprintf(stderr, \"FATAL: Attempted to invoke callback stub for " << function_name << "\\n\");\n";
-                    file << "  std::abort();\n";
-                    file << "}\n";
-                }
-            }
-
             auto struct_name = GeneratePackedArgs(function_name, thunk);
 
-            FunctionParams args = thunk;
+            // Unpacking functions
             auto function_to_call = "fexldr_ptr_" + libname + "_" + function_name;
             if (thunk.custom_host_impl) {
                 function_to_call = "fexfn_impl_" + libname + "_" + function_name;
@@ -657,29 +677,27 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                     }
                 };
 
-                file << format_function_args(args, format_param);
+                file << format_function_args(thunk, format_param);
             }
             file << ");\n";
             file << "}\n";
         }
-
         file << "}\n";
-    }
 
-    if (!output_filenames.tab_function_unpacks.empty()) {
-        std::ofstream file(output_filenames.tab_function_unpacks);
-
+        // Endpoints for Guest->Host invocation of API functions
+        file << "static ExportEntry exports[] = {\n";
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
             auto sha256 = get_sha256(function_name);
 
             file << "{(uint8_t*)\"";
             for (auto c : sha256) {
-                file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+                file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c << std::dec;
             }
             file << "\", (void(*)(void *))&fexfn_unpack_" << libname << "_" << function_name << "}, // " << libname << ":" << function_name << "\n";
         }
 
+        // Endpoints for Guest->Host invocation of runtime host-function pointers
         for (auto& type : funcptr_types) {
             std::string mangled_name = clang::QualType { type, 0 }.getAsString();
             {
@@ -693,11 +711,10 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
                 file << "  {(uint8_t*)\"" << cb_sha256_str << "\", (void(*)(void *))&CallbackUnpack<" << mangled_name << ">::ForIndirectCall},\n";
             }
         }
-    }
+        file << "  { nullptr, nullptr }\n";
+        file << "};\n";
 
-    if (!output_filenames.ldr.empty()) {
-        std::ofstream file(output_filenames.ldr);
-
+        // Symbol lookup from native host library
         file << "static void* fexldr_ptr_" << libname << "_so;\n";
         file << "extern \"C\" bool fexldr_init_" << libname << "() {\n";
 
@@ -714,32 +731,7 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
         }
         file << "  return true;\n";
         file << "}\n";
-    }
 
-    if (!output_filenames.ldr_ptrs.empty()) {
-        std::ofstream file(output_filenames.ldr_ptrs);
-
-        for (auto& import : thunked_api) {
-            const auto& function_name = import.function_name;
-            const char* variadic_ellipsis = import.is_variadic ? ", ..." : "";
-            file << "using fexldr_type_" << libname << "_" << function_name << " = auto " << "(" << format_function_params(import) << variadic_ellipsis << ") -> " << import.return_type.getAsString() << ";\n";
-            file << "static fexldr_type_" << libname << "_" << function_name << " *fexldr_ptr_" << libname << "_" << function_name << ";\n";
-        }
-    }
-
-    if (!output_filenames.symbol_list.empty()) {
-        std::ofstream file(output_filenames.symbol_list);
-
-        for (std::size_t namespace_idx = 0; namespace_idx < namespaces.size(); ++namespace_idx) {
-            const auto& ns = namespaces[namespace_idx];
-            file << "#define FOREACH_" << ns.name << (ns.name.empty() ? "" : "_") << "SYMBOL(EXPAND) \\\n";
-            for (auto& symbol : thunked_api) {
-                if (symbol.symtable_namespace.value_or(0) == namespace_idx) {
-                    file << "  EXPAND(" << symbol.function_name << ", \"TODO\") \\\n";
-                }
-            }
-            file << "\n";
-        }
     }
 }
 

@@ -39,9 +39,6 @@ extern "C" {
 
 #include "common/Guest.h"
 
-#include "thunks.inl"
-
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libXext.inl"
 
 LOAD_LIB(libXext)

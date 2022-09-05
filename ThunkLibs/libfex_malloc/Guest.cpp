@@ -14,9 +14,7 @@ $end_info$
 
 #include "Types.h"
 
-#include "thunks.inl"
-#include "function_packs.inl"
-#include "function_packs_public.inl"
+#include "thunkgen_guest_libfex_malloc.inl"
 
 #include <vector>
 
