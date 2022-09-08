@@ -16,20 +16,29 @@ There are multiple locations that need to be updated during a release
 
 ## Github Steps
 * Check out the commit that will be the branch
-$ git checkout upstream/main
+
+  $ git checkout upstream/main
 
 * Make local main branch be the selected commit
-$ git branch -D main
-$ git checkout -b main
+
+  $ git branch -D main
+  $ git checkout -b main
 
 * Run the release script
-$ Scripts/generate_release.sh
+
+  $ Scripts/generate_release.sh
 
 * Push the branches upstream
   * This requires administrative push rights
   * Both the tag and the main branch needs to be committed
-$ git push upstream $CURRENT
-$ git push upstream main
+
+  $ git push upstream $CURRENT
+  $ git push upstream main
+
+## Launchpad PPA steps
+Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README.md
+* Requires PPA GPG key signing access
+* Wait the 20-30 minutes for Ubuntu PPA to build and publish the binaries
 
 ## Github releases page Steps
 * Requires administrative rights
@@ -54,11 +63,6 @@ $ git push upstream main
 * push new md file to the repo. Either in direct push or PR
 * Jekyll will automatically regenerate the website with a github action
 * Verify that the post shows up on the site at fex-emu.com
-
-## Launchpad PPA steps
-Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README_ppa.md
-* Requires PPA GPG key signing access
-* Wait the 20-30 minutes for Ubuntu PPA to build and publish the binaries
 
 ## Termux package update steps
 * Clone https://github.com/termux/termux-packages
