@@ -27,6 +27,7 @@ option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
 option(ENABLE_INTERPRETER "Enables FEX's Interpreter" FALSE)
 option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
 option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
+option(ENABLE_VIXL_SIMULATOR "Forces the FEX JIT to use the VIXL simulator" FALSE)
 
 set (X86_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86.cmake" CACHE FILEPATH "Toolchain file for the x86 (cross-)compiler")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")

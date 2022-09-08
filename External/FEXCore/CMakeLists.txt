@@ -13,8 +13,15 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   set(_M_ARM_64 1)
 endif()
 
-set(ENABLE_JIT_X86_64 ${_M_X86_64} CACHE BOOL "Enable the x86_64 JIT")
-set(ENABLE_JIT_ARM64 ${_M_ARM_64} CACHE BOOL "Enable the ARM64 JIT")
+if (ENABLE_VIXL_SIMULATOR)
+  # If the vixl simulator is enabled then we are using the ARM64 JIT
+  option(ENABLE_JIT_X86_64 "Enable the x86_64 JIT" FALSE)
+  option(ENABLE_JIT_ARM64 "Enable the ARM64 JIT" TRUE)
+else()
+  option(ENABLE_JIT_X86_64 "Enable the x86_64 JIT" ${_M_X86_64})
+  option(ENABLE_JIT_ARM64 "Enable the ARM64 JIT" ${_M_ARM_64})
+endif()
+
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -26,7 +33,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
-
 
 if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
     # Useful to have for freestanding libFEXCore

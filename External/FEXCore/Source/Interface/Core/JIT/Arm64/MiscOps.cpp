@@ -119,8 +119,11 @@ DEF_OP(SetRoundingMode) {
 
   mrs(TMP1, FPCR);
 
+  // vixl simulator doesn't support anything beyond ties-to-even rounding
+#ifndef VIXL_SIMULATOR
   // Insert the rounding flags
   bfi(TMP1, TMP2, 22, 2);
+#endif
 
   // Insert the FTZ flag
   lsr(TMP2, Src, 2);

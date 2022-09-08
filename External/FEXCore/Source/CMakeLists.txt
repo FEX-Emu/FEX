@@ -177,6 +177,11 @@ if (_M_ARM_64)
   list(APPEND DEFINES -D_M_ARM_64=1)
 endif()
 
+if (ENABLE_VIXL_SIMULATOR)
+  # We can run the simulator on both x86-64 or AArch64 hosts
+  list(APPEND DEFINES -DVIXL_SIMULATOR=1 -DVIXL_INCLUDE_SIMULATOR_AARCH64=1)
+endif()
+
 if (ENABLE_JIT_X86_64)
   list(APPEND SRCS
     Interface/Core/JIT/x86_64/JIT.cpp

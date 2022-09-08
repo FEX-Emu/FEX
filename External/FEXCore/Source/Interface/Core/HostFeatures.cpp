@@ -1,7 +1,7 @@
 #include "Interface/Core/CPUID.h"
 #include <FEXCore/Core/HostFeatures.h>
 
-#ifdef _M_ARM_64
+#if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
 #include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
 #include "aarch64/disasm-aarch64.h"
@@ -50,8 +50,12 @@ static uint32_t GetDCZID() {
 
 
 HostFeatures::HostFeatures() {
-#ifdef _M_ARM_64
+#if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
+#ifdef VIXL_SIMULATOR
+  auto Features = vixl::CPUFeatures::All();
+#else
   auto Features = vixl::CPUFeatures::InferFromOS();
+#endif
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
   SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
@@ -64,12 +68,22 @@ HostFeatures::HostFeatures() {
 
   Supports3DNow = true;
   SupportsSSE4A = true;
+#ifdef VIXL_SIMULATOR
+  // Hardcode enable SVE with 256-bit wide registers.
+  SupportsAVX = true;
+#else
   SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) &&
                 vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
+#endif
   SupportsSHA = true;
   SupportsBMI1 = true;
   SupportsBMI2 = true;
 
+  if (!SupportsAtomics) {
+    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
+  }
+
+#ifdef _M_ARM_64
   // We need to get the CPU's cache line size
   // We expect sane targets that have correct cacheline sizes across clusters
   uint64_t CTR;
@@ -79,11 +93,28 @@ HostFeatures::HostFeatures() {
   DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
   ICacheLineSize = 4 << (CTR & 0xF);
 
-  if (!SupportsAtomics) {
-    WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
-  }
+  // Test if this CPU supports float exception trapping by attempting to enable
+  // On unsupported these bits are architecturally defined as RAZ/WI
+  constexpr uint32_t ExceptionEnableTraps =
+    (1U << 8) |  // Invalid Operation float exception trap enable
+    (1U << 9) |  // Divide by zero float exception trap enable
+    (1U << 10) | // Overflow float exception trap enable
+    (1U << 11) | // Underflow float exception trap enable
+    (1U << 12) | // Inexact float exception trap enable
+    (1U << 15);  // Input Denormal float exception trap enable
+
+  uint32_t OriginalFPCR = GetFPCR();
+  uint32_t FPCR = OriginalFPCR | ExceptionEnableTraps;
+  SetFPCR(FPCR);
+  FPCR = GetFPCR();
+  SupportsFloatExceptions = (FPCR & ExceptionEnableTraps) == ExceptionEnableTraps;
+
+  // Set FPCR back to original just in case anything changed
+  SetFPCR(OriginalFPCR);
 #endif
-#ifdef _M_X86_64
+
+#endif
+#if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
   Xbyak::util::Cpu Features{};
   SupportsAES = Features.has(Xbyak::util::Cpu::tAESNI);
   SupportsCRC = Features.has(Xbyak::util::Cpu::tSSE42);
@@ -109,27 +140,12 @@ HostFeatures::HostFeatures() {
 
   SupportsFlushInputsToZero = true;
   SupportsFloatExceptions = true;
-#else
-  // Test if this CPU supports float exception trapping by attempting to enable
-  // On unsupported these bits are architecturally defined as RAZ/WI
-  constexpr uint32_t ExceptionEnableTraps =
-    (1U << 8) |  // Invalid Operation float exception trap enable
-    (1U << 9) |  // Divide by zero float exception trap enable
-    (1U << 10) | // Overflow float exception trap enable
-    (1U << 11) | // Underflow float exception trap enable
-    (1U << 12) | // Inexact float exception trap enable
-    (1U << 15);  // Input Denormal float exception trap enable
-
-  uint32_t OriginalFPCR = GetFPCR();
-  uint32_t FPCR = OriginalFPCR | ExceptionEnableTraps;
-  SetFPCR(FPCR);
-  FPCR = GetFPCR();
-  SupportsFloatExceptions = (FPCR & ExceptionEnableTraps) == ExceptionEnableTraps;
-
-  // Set FPCR back to original just in case anything changed
-  SetFPCR(OriginalFPCR);
 #endif
 
+#ifdef VIXL_SIMULATOR
+  // simulator doesn't support dc(ZVA)
+  SupportsCLZERO = false;
+#else
   // Check if we can support cacheline clears
   uint32_t DCZID = GetDCZID();
   if ((DCZID & DCZID_DZP_MASK) == 0) {
@@ -139,5 +155,6 @@ HostFeatures::HostFeatures() {
     // This means we can use the instruction
     SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
   }
+#endif
 }
 }

@@ -42,7 +42,17 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE x28
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
-  : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
+  : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
+#ifdef VIXL_SIMULATOR
+  , Simulator {&Decoder}
+#endif
+{
+
+#ifdef VIXL_SIMULATOR
+  // Hardcode a 256-bit vector width if we are running in the simulator.
+  Simulator.SetVectorLengthInBits(256);
+#endif
+
   SetAllowAssembler(true);
 
   DispatchPtr = GetCursorAddress<AsmDispatch>();
@@ -178,7 +188,12 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ret();
   }
 
+#ifdef VIXL_SIMULATOR
+  // VIXL simulator can't run syscalls.
+  constexpr bool SignalSafeCompile = false;
+#else
   constexpr bool SignalSafeCompile = true;
+#endif
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
@@ -206,8 +221,12 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     mov(x0, STATE);
     mov(x1, lr);
 
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
-    blr(x3);
+    ldr(x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<uintptr_t, void *, void *>(x2);
+#else
+    blr(x2);
+#endif
 
     if (SignalSafeCompile) {
       // Now restore the signal mask
@@ -266,8 +285,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ldr(x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<void, void *, uint64_t, void *>(x3);
+#else
     blr(x3); // { CTX, Frame, RIP}
-
+#endif
 
     if (SignalSafeCompile) {
       // Now restore the signal mask
@@ -349,7 +371,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ldr(x0, &l_CTX);
     mov(x1, STATE);
     ldr(x2, &l_Sleep);
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<void, void *, void *>(x2);
+#else
     blr(x2);
+#endif
 
     PauseReturnInstruction = GetCursorAddress<uint64_t>();
     // Fault to start running again
@@ -416,7 +442,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
 
     SpillStaticRegs();
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+#else
     blr(x3);
+#endif
     FillStaticRegs();
 
     // Result is now in x0
@@ -435,7 +465,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
 
     SpillStaticRegs();
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+#else
     blr(x3);
+#endif
     FillStaticRegs();
 
     // Result is now in x0
@@ -454,7 +488,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
 
     SpillStaticRegs();
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+#else
     blr(x3);
+#endif
     FillStaticRegs();
 
     // Result is now in x0
@@ -473,7 +511,11 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
 
     SpillStaticRegs();
+#ifdef VIXL_SIMULATOR
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+#else
     blr(x3);
+#endif
     FillStaticRegs();
 
     // Result is now in x0
@@ -504,13 +546,27 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   }
 }
 
+#ifdef VIXL_SIMULATOR
+void Arm64Dispatcher::ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
+  Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
+  Simulator.RunFrom(reinterpret_cast<Instruction const*>(DispatchPtr));
+}
+
+void Arm64Dispatcher::ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
+  Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
+  Simulator.WriteXRegister(1, RIP);
+  Simulator.RunFrom(reinterpret_cast<Instruction const*>(CallbackPtr));
+}
+
+#endif
+
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline, destination buffer is set before use
 static thread_local vixl::aarch64::Assembler emit((uint8_t*)&emit, 1);
 
 size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
 
   *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxGDBPauseCheckSize);
-  
+
   vixl::CodeBufferCheckScope scope(&emit, MaxGDBPauseCheckSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
 
   aarch64::Label RunBlock;
@@ -546,7 +602,7 @@ size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t Gues
 
 size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   LOGMAN_THROW_AA_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
-  
+
   *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
 
   vixl::CodeBufferCheckScope scope(&emit, MaxInterpreterTrampolineSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
@@ -594,7 +650,7 @@ void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void 
 }
 
 void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {
-// Setup dispatcher specific pointers that need to be accessed from JIT code
+  // Setup dispatcher specific pointers that need to be accessed from JIT code
   {
     auto &Common = Thread->CurrentFrame->Pointers.Common;
 
