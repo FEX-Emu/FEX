@@ -3,6 +3,10 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
+#ifdef VIXL_SIMULATOR
+#include <aarch64/simulator-aarch64.h>
+#endif
+
 namespace FEXCore::Context {
 struct Context;
 }
@@ -20,6 +24,11 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) override;
     size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) override;
 
+#ifdef VIXL_SIMULATOR
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) override;
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) override;
+#endif
+
   protected:
     void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) override;
 
@@ -29,6 +38,11 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     uint64_t LDIVHandlerAddress{};
     uint64_t LUREMHandlerAddress{};
     uint64_t LREMHandlerAddress{};
+
+#ifdef VIXL_SIMULATOR
+    vixl::aarch64::Decoder Decoder;
+    vixl::aarch64::Simulator Simulator;
+#endif
 };
 
 }

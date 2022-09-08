@@ -94,7 +94,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         uxth(w0, GetReg<RA_32>(IROp->Args[0].ID()));
         ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<void, uint16_t>(x1);
+#else
         blr(x1);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -109,7 +114,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<__uint128_t, float>(x0);
+#else
         blr(x0);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -128,7 +137,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<__uint128_t, double>(x0);
+#else
         blr(x0);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -153,7 +166,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
           mov(w0, GetReg<RA_32>(IROp->Args[0].ID()));
         }
         ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<__uint128_t, uint32_t>(x1);
+#else
         blr(x1);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -174,7 +191,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<float, uint64_t, uint64_t>(x2);
+#else
         blr(x2);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -193,7 +214,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<double, uint64_t, uint64_t>(x2);
+#else
         blr(x2);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -210,7 +235,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<double, double>(x0);
+#else
         blr(x0);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -229,7 +258,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         mov(v1.D(), GetSrc(IROp->Args[1].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<double, double, double>(x0);
+#else
         blr(x0);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -249,7 +282,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t>(x2);
+#else
         blr(x2);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -267,7 +304,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t>(x2);
+#else
         blr(x2);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -285,7 +326,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t>(x2);
+#else
         blr(x2);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -306,8 +351,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
         ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>(x4);
+#else
         blr(x4);
-
+#endif
         PopDynamicRegsAndLR();
 
         FillStaticRegs();
@@ -324,7 +372,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<__uint128_t, uint64_t, uint64_t>(x2);
+#else
         blr(x2);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -347,7 +399,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
 
         ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<__uint128_t, uint64_t, uint64_t, uint64_t, uint64_t>(x4);
+#else
         blr(x4);
+#endif
 
         PopDynamicRegsAndLR();
 
@@ -473,7 +529,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
     // Common
     auto &Common = ThreadState->CurrentFrame->Pointers.Common;
-    
+
     Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
     Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::ThreadRemoveCodeEntryFromJit);
@@ -494,7 +550,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
     // Platform Specific
     auto &AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
-    
+
     AArch64.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
     AArch64.LDIV = reinterpret_cast<uint64_t>(LDIV);
     AArch64.LUREM = reinterpret_cast<uint64_t>(LUREM);
@@ -511,6 +567,7 @@ void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
     return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
 
+#ifdef _M_ARM_64
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     if (!Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
       // Wasn't a sigbus in JIT code
@@ -519,6 +576,7 @@ void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 
     return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Thread->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
   }, true);
+#endif
 }
 
 void Arm64JITCore::EmitDetectionString() {
@@ -530,7 +588,7 @@ void Arm64JITCore::EmitDetectionString() {
 
 void Arm64JITCore::ClearCache() {
   // Get the backing code buffer
-  
+
   auto CodeBuffer = GetEmptyCodeBuffer();
   *GetBuffer() = vixl::CodeBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();

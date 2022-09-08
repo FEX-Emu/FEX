@@ -40,7 +40,7 @@ DEF_OP(CallbackReturn) {
   ResetStack();
 
   // We can now lower the ref counter again
-  
+
   ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
   sub(w2, w2, 1);
   str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
@@ -197,7 +197,11 @@ DEF_OP(Syscall) {
   ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerFunc)));
   mov(x1, STATE);
   mov(x2, sp);
+#ifdef VIXL_SIMULATOR
+  GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(x3);
+#else
   blr(x3);
+#endif
 
   add(sp, sp, SPOffset);
 
@@ -381,7 +385,11 @@ DEF_OP(Thunk) {
 
   auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(x2, (uintptr_t)thunkFn);
+#ifdef VIXL_SIMULATOR
+  GenerateIndirectRuntimeCall<void, void*, void*>(x2);
+#else
   blr(x2);
+#endif
 
   PopDynamicRegsAndLR();
 
@@ -448,7 +456,11 @@ DEF_OP(ThreadRemoveCodeEntry) {
 
   ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT)));
   SpillStaticRegs();
+#ifdef VIXL_SIMULATOR
+  GenerateIndirectRuntimeCall<void, void*, void*>(x2);
+#else
   blr(x2);
+#endif
   FillStaticRegs();
 
   // Fix the stack and any values that were stepped on
@@ -468,7 +480,11 @@ DEF_OP(CPUID) {
   mov(x1, GetReg<RA_64>(Op->Function.ID()));
   mov(x2, GetReg<RA_64>(Op->Leaf.ID()));
   SpillStaticRegs();
+#ifdef VIXL_SIMULATOR
+  GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(x3);
+#else
   blr(x3);
+#endif
   FillStaticRegs();
 
   PopDynamicRegsAndLR();

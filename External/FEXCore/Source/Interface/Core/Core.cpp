@@ -221,7 +221,7 @@ namespace FEXCore::Context {
 #if (_M_X86_64 && JIT_X86_64)
       FEXCore::CPU::InitializeX86JITSignalHandlers(this);
       BackendFeatures = FEXCore::CPU::GetX86JITBackendFeatures();
-#elif (_M_ARM_64 && JIT_ARM64)
+#elif (_M_ARM_64 && JIT_ARM64) || defined(VIXL_SIMULATOR)
       FEXCore::CPU::InitializeArm64JITSignalHandlers(this);
       BackendFeatures = FEXCore::CPU::GetArm64JITBackendFeatures();
 #else
@@ -238,16 +238,16 @@ namespace FEXCore::Context {
 
     DispatcherConfig.StaticRegisterAllocation = Config.StaticRegisterAllocation && BackendFeatures.SupportsStaticRegisterAllocation;
 
-#if (_M_X86_64)
-    Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
-#elif (_M_ARM_64)
+#if JIT_ARM64
     Dispatcher = FEXCore::CPU::Dispatcher::CreateArm64(this, DispatcherConfig);
+#elif JIT_X86_64
+    Dispatcher = FEXCore::CPU::Dispatcher::CreateX86(this, DispatcherConfig);
 #else
     ERROR_AND_DIE_FMT("FEXCore has been compiled with an unknown target");
 #endif
 
     // Initialize common signal handlers
-    
+
     auto PauseHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       return Thread->CTX->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
     };
@@ -573,7 +573,7 @@ namespace FEXCore::Context {
 
 #if (_M_X86_64 && JIT_X86_64)
       Thread->CPUBackend = FEXCore::CPU::CreateX86JITCore(this, Thread);
-#elif (_M_ARM_64 && JIT_ARM64)
+#elif (_M_ARM_64 && JIT_ARM64) || defined(VIXL_SIMULATOR)
       Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
@@ -740,7 +740,7 @@ namespace FEXCore::Context {
     }
   }
 
-  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {    
+  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {
     Thread->OpDispatcher->ReownOrClaimBuffer();
     Thread->OpDispatcher->ResetWorkingList();
 
@@ -749,7 +749,7 @@ namespace FEXCore::Context {
 
 
     std::shared_lock lk(CustomIRMutex);
-    
+
     auto Handler = CustomIRHandlers.find(GuestRIP);
     if (Handler != CustomIRHandlers.end()) {
       TotalInstructions = 1;
@@ -872,7 +872,7 @@ namespace FEXCore::Context {
           }
         }
       }
-      
+
       Thread->OpDispatcher->Finalize();
 
       Thread->FrontendDecoder->DelayedDisownBuffer();
@@ -1182,7 +1182,7 @@ namespace FEXCore::Context {
 
   static void InvalidateGuestCodeRangeInternal(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
     std::lock_guard lk(CTX->ThreadCreationMutex);
-    
+
     for (auto &Thread : CTX->Threads) {
       InvalidateGuestThreadCodeRange(Thread, Start, Length);
     }
@@ -1190,7 +1190,7 @@ namespace FEXCore::Context {
 
   void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
     FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
-    
+
     InvalidateGuestCodeRangeInternal(CTX, Start, Length);
   }
 
@@ -1233,9 +1233,9 @@ namespace FEXCore::Context {
     Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
   }
 
-  void Context::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {   
+  void Context::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     LogMan::Throw::AFmt(Thread->CTX->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
-    
+
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
     Thread->DebugStore.erase(GuestRIP);

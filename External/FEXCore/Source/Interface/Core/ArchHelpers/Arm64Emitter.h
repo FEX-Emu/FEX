@@ -8,6 +8,10 @@
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/operands-aarch64.h>
 #include <platform-vixl.h>
+#ifdef VIXL_SIMULATOR
+#include <aarch64/simulator-aarch64.h>
+#include <aarch64/simulator-constants-aarch64.h>
+#endif
 
 #include <FEXCore/Config/Config.h>
 
@@ -83,6 +87,71 @@ protected:
   void PopCalleeSavedRegisters();
 
   void Align16B();
+#ifdef VIXL_SIMULATOR
+  // Generates a vixl simulator runtime call.
+  //
+  // This matches behaviour of vixl's macro assembler, but we need to reimplement it since we aren't using the macro assembler.
+  // This isn't too complex with how vixl emits this.
+  //
+  // Emit:
+  // 1) hlt(kRuntimeCallOpcode)
+  // 2) Simulator wrapper handler
+  // 3) Function to call
+  // 4) Style of the function call (Call versus tail-call)
+  template<typename R, typename... P>
+  void GenerateRuntimeCall(R (*Function)(P...)) {
+    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
+      &(Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
+
+    uintptr_t FunctionAddress = reinterpret_cast<uintptr_t>(Function);
+
+    hlt(kRuntimeCallOpcode);
+
+    // Simulator wrapper address pointer.
+    dc(SimulatorWrapperAddress);
+
+    // Runtime function address to call
+    dc(FunctionAddress);
+
+    // Call type
+    dc32(kCallRuntime);
+  }
+
+  template<typename R, typename... P>
+  void GenerateIndirectRuntimeCall(vixl::aarch64::Register Reg) {
+    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
+      &(Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
+
+    hlt(kIndirectRuntimeCallOpcode);
+
+    // Simulator wrapper address pointer.
+    dc(SimulatorWrapperAddress);
+
+    // Register that contains the function to call
+    dc(Reg.GetCode());
+
+    // Call type
+    dc32(kCallRuntime);
+  }
+
+  template<>
+  void GenerateIndirectRuntimeCall<float, __uint128_t>(vixl::aarch64::Register Reg) {
+    uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
+      &(Simulator::RuntimeCallStructHelper<float, __uint128_t>::Wrapper));
+
+    hlt(kIndirectRuntimeCallOpcode);
+
+    // Simulator wrapper address pointer.
+    dc(SimulatorWrapperAddress);
+
+    // Register that contains the function to call
+    dc(Reg.GetCode());
+
+    // Call type
+    dc32(kCallRuntime);
+  }
+
+#endif
 
   FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
 };

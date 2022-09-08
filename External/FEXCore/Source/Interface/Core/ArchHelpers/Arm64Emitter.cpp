@@ -25,11 +25,15 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::Context *ctx, size_t size)
   , EmitterCTX {ctx} {
   CPU.SetUp();
 
+#ifdef VIXL_SIMULATOR
+  auto Features = vixl::CPUFeatures::All();
+#else
   auto Features = vixl::CPUFeatures::InferFromOS();
   if (ctx->HostFeatures.SupportsAtomics) {
     // Hypervisor can hide this on the c630?
     Features.Combine(vixl::CPUFeatures::Feature::kLORegions);
   }
+#endif
 
   SetCPUFeatures(Features);
 }
