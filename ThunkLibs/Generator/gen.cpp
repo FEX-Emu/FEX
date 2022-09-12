@@ -394,6 +394,20 @@ public:
     }
 };
 
+class GenerateThunkLibsAction : public clang::ASTFrontendAction {
+public:
+    GenerateThunkLibsAction(const std::string& libname, const OutputFilenames&);
+
+    void EndSourceFileAction() override;
+
+    std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance&, clang::StringRef /*file*/) override;
+
+private:
+    const std::string& libfilename;
+    std::string libname; // sanitized filename, usable as part of emitted function names
+    const OutputFilenames& output_filenames;
+};
+
 GenerateThunkLibsAction::GenerateThunkLibsAction(const std::string& libname_, const OutputFilenames& output_filenames_)
     : libfilename(libname_), libname(libname_), output_filenames(output_filenames_) {
     for (auto& c : libname) {
@@ -737,4 +751,8 @@ void GenerateThunkLibsAction::EndSourceFileAction() {
 
 std::unique_ptr<clang::ASTConsumer> GenerateThunkLibsAction::CreateASTConsumer(clang::CompilerInstance&, clang::StringRef) {
     return std::make_unique<ASTConsumer>();
+}
+
+std::unique_ptr<clang::FrontendAction> GenerateThunkLibsActionFactory::create() {
+    return std::make_unique<GenerateThunkLibsAction>(libname, output_filenames);
 }
