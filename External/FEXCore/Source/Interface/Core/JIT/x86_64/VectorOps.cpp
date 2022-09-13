@@ -255,61 +255,97 @@ DEF_OP(VSub) {
 
 DEF_OP(VUQAdd) {
   auto Op = IROp->C<IR::IROp_VUQAdd>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpaddusb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpaddusb(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpaddusw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpaddusw(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(VUQSub) {
   auto Op = IROp->C<IR::IROp_VUQSub>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpsubusb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubusb(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpsubusw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubusw(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(VSQAdd) {
   auto Op = IROp->C<IR::IROp_VSQAdd>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpaddsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpaddsb(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpaddsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpaddsw(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(VSQSub) {
   auto Op = IROp->C<IR::IROp_VSQSub>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpsubsb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubsb(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpsubsw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpsubsw(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 

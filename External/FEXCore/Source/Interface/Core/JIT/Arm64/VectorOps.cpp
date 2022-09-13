@@ -354,93 +354,193 @@ DEF_OP(VSub) {
 
 DEF_OP(VUQAdd) {
   auto Op = IROp->C<IR::IROp_VUQAdd>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 1: {
-      uqadd(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+      if (HostSupportsSVE) {
+        uqadd(Dst.Z().VnB(), Vector1.Z().VnB(), Vector2.Z().VnB());
+      } else {
+        uqadd(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+      }
+      break;
     }
     case 2: {
-      uqadd(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+      if (HostSupportsSVE) {
+        uqadd(Dst.Z().VnH(), Vector1.Z().VnH(), Vector2.Z().VnH());
+      } else {
+        uqadd(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+      }
+      break;
     }
     case 4: {
-      uqadd(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-    break;
+      if (HostSupportsSVE) {
+        uqadd(Dst.Z().VnS(), Vector1.Z().VnS(), Vector2.Z().VnS());
+      } else {
+        uqadd(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+      }
+      break;
     }
     case 8: {
-      uqadd(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-    break;
+      if (HostSupportsSVE) {
+        uqadd(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+      } else {
+        uqadd(Dst.V2D(), Vector1.V2D(), Vector2.V2D());
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(VUQSub) {
   auto Op = IROp->C<IR::IROp_VUQSub>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 1: {
-      uqsub(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+      if (HostSupportsSVE) {
+        uqsub(Dst.Z().VnB(), Vector1.Z().VnB(), Vector2.Z().VnB());
+      } else {
+        uqsub(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+      }
+      break;
     }
     case 2: {
-      uqsub(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+      if (HostSupportsSVE) {
+        uqsub(Dst.Z().VnH(), Vector1.Z().VnH(), Vector2.Z().VnH());
+      } else {
+        uqsub(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+      }
+      break;
     }
     case 4: {
-      uqsub(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-    break;
+      if (HostSupportsSVE) {
+        uqsub(Dst.Z().VnS(), Vector1.Z().VnS(), Vector2.Z().VnS());
+      } else {
+        uqsub(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+      }
+      break;
     }
     case 8: {
-      uqsub(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-    break;
+      if (HostSupportsSVE) {
+        uqsub(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+      } else {
+        uqsub(Dst.V2D(), Vector1.V2D(), Vector2.V2D());
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(VSQAdd) {
   auto Op = IROp->C<IR::IROp_VSQAdd>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 1: {
-      sqadd(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+      if (HostSupportsSVE) {
+        sqadd(Dst.Z().VnB(), Vector1.Z().VnB(), Vector2.Z().VnB());
+      } else {
+        sqadd(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+      }
+      break;
     }
     case 2: {
-      sqadd(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+      if (HostSupportsSVE) {
+        sqadd(Dst.Z().VnH(), Vector1.Z().VnH(), Vector2.Z().VnH());
+      } else {
+        sqadd(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+      }
+      break;
     }
     case 4: {
-      sqadd(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-    break;
+      if (HostSupportsSVE) {
+        sqadd(Dst.Z().VnS(), Vector1.Z().VnS(), Vector2.Z().VnS());
+      } else {
+        sqadd(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+      }
+      break;
     }
     case 8: {
-      sqadd(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-    break;
+      if (HostSupportsSVE) {
+        sqadd(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+      } else {
+        sqadd(Dst.V2D(), Vector1.V2D(), Vector2.V2D());
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(VSQSub) {
   auto Op = IROp->C<IR::IROp_VSQSub>();
-  switch (Op->Header.ElementSize) {
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 1: {
-      sqsub(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+      if (HostSupportsSVE) {
+        sqsub(Dst.Z().VnB(), Vector1.Z().VnB(), Vector2.Z().VnB());
+      } else {
+        sqsub(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+      }
+      break;
     }
     case 2: {
-      sqsub(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+      if (HostSupportsSVE) {
+        sqsub(Dst.Z().VnH(), Vector1.Z().VnH(), Vector2.Z().VnH());
+      } else {
+        sqsub(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+      }
+      break;
     }
     case 4: {
-      sqsub(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-    break;
+      if (HostSupportsSVE) {
+        sqsub(Dst.Z().VnS(), Vector1.Z().VnS(), Vector2.Z().VnS());
+      } else {
+        sqsub(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+      }
+      break;
     }
     case 8: {
-      sqsub(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-    break;
+      if (HostSupportsSVE) {
+        sqsub(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+      } else {
+        sqsub(Dst.V2D(), Vector1.V2D(), Vector2.V2D());
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
