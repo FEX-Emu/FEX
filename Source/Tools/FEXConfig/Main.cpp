@@ -74,6 +74,7 @@ namespace {
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS_INTERPRETER);
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_INTERPRETER_INSTALLED);
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_FILENAME);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_CONFIG_NAME);
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS64BIT_MODE);
   }
 
@@ -106,6 +107,7 @@ namespace {
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS_INTERPRETER);
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_INTERPRETER_INSTALLED);
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_FILENAME);
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_CONFIG_NAME);
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS64BIT_MODE);
 
     return true;
