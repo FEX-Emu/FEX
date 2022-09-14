@@ -1,7 +1,9 @@
 #include <common/GeneratorInterface.h>
 
 template<auto>
-struct fex_gen_config;
+struct fex_gen_config {
+    unsigned version = 1;
+};
 
 #define VK_USE_PLATFORM_XLIB_XRANDR_EXT
 #define VK_USE_PLATFORM_XLIB_KHR
