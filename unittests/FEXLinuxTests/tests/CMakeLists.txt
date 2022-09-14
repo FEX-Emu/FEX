@@ -13,50 +13,30 @@ file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS *.cpp)
 foreach(TEST ${TESTS})
   get_filename_component(TEST_NAME ${TEST} NAME_WLE)
 
-  # Used to insert a configuration dependency to the test file
-  CONFIGURE_FILE(${TEST} ${CMAKE_BINARY_DIR}/junk.file)
+  add_executable(${TEST_NAME}.32 ${TEST})
+  target_compile_options(${TEST_NAME}.32 PRIVATE -m32)
+  target_link_options(${TEST_NAME}.32 PRIVATE -m32)
 
-  file(READ ${TEST} TEST_CODE)
-  set(FLAGS_REGEX "//[ ]*append cxxflags: ([^\n]+)")
-
-  string(REGEX MATCH ${FLAGS_REGEX} APPEND_CXX_FLAGS ${TEST_CODE})
-  # if cannot handle multiline variables, so we have to match the line first
-  if(${APPEND_CXX_FLAGS} MATCHES ${FLAGS_REGEX})
-    set(APPEND_CXX_FLAGS "${CMAKE_MATCH_1}")
-  else()
-    set(APPEND_CXX_FLAGS "")
-  endif()
-
-  set(FLAGS_REGEX "//[ ]*append ldflags: ([^\n]+)")
-
-  string(REGEX MATCH ${FLAGS_REGEX} APPEND_LD_FLAGS ${TEST_CODE})
-  # if cannot handle multiline variables, so we have to match the line first
-  if(${APPEND_LD_FLAGS} MATCHES ${FLAGS_REGEX})
-    set(APPEND_LD_FLAGS "${CMAKE_MATCH_1}" )
-  else()
-    set(APPEND_LD_FLAGS "")
-  endif()
-
-  set(FLAGS_REGEX "//[ ]*libs: ([^\n]+)")
-
-  string(REGEX MATCH ${FLAGS_REGEX} LIBS ${TEST_CODE})
-  # if cannot handle multiline variables, so we have to match the line first
-  if(${LIBS} MATCHES ${FLAGS_REGEX})
-    set(LIBS "${CMAKE_MATCH_1}" )
-    string(REGEX REPLACE " |," ";" LIBS "${LIBS}")
-  else()
-    set(LIBS "")
-  endif()
-
-  set(BIN_NAME_32 "${TEST_NAME}.32")
-  set(BIN_NAME_64 "${TEST_NAME}.64")
-
-  add_executable(${BIN_NAME_32} ${TEST})
-  set_target_properties(${BIN_NAME_32} PROPERTIES COMPILE_FLAGS "${APPEND_CXX_FLAGS} -m32 -g -O2 " LINK_FLAGS "${APPEND_LD_FLAGS} -m32")
-  target_link_libraries(${BIN_NAME_32} ${LIBS})
-
-  add_executable(${BIN_NAME_64} ${TEST})
-  set_target_properties(${BIN_NAME_64} PROPERTIES COMPILE_FLAGS "${APPEND_CXX_FLAGS} -g -O2" LINK_FLAGS "${APPEND_LD_FLAGS}")
-  target_link_libraries(${BIN_NAME_64} ${LIBS})
-
+  add_executable(${TEST_NAME}.64 ${TEST})
 endforeach()
+
+target_link_libraries(pthread_cancel.32 PRIVATE pthread)
+target_link_libraries(pthread_cancel.64 PRIVATE pthread)
+
+target_link_options(smc-1-dynamic.32 PRIVATE -z execstack)
+target_link_options(smc-1-dynamic.64 PRIVATE -z execstack)
+
+target_link_libraries(smc-mt-1.32 PRIVATE pthread)
+target_link_libraries(smc-mt-1.64 PRIVATE pthread)
+
+target_link_libraries(smc-mt-2.32 PRIVATE pthread)
+target_link_libraries(smc-mt-2.64 PRIVATE pthread)
+
+target_link_libraries(smc-shared-1.32 PRIVATE rt pthread)
+target_link_libraries(smc-shared-1.64 PRIVATE rt pthread)
+
+target_link_libraries(smc-shared-2.32 PRIVATE rt pthread)
+target_link_libraries(smc-shared-2.64 PRIVATE rt pthread)
+
+target_link_libraries(timer-sigev-thread.32 PRIVATE rt pthread)
+target_link_libraries(timer-sigev-thread.64 PRIVATE rt pthread)

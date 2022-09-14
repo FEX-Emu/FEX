@@ -1,5 +1,3 @@
-//libs: rt pthread
-
 // Simple test of timer_create + SIGEV_THREAD, glibc implements it via SIG32
 
 #include <stdio.h>

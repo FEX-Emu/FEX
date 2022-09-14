@@ -2,8 +2,6 @@
     tests shared / mirrored mappings
 */
 
-// libs: rt pthread
-
 auto args = "mmap_mremap, mmap_mremap_mid, shmat, shmat_mremap, shmat_mremap_mid, mmap_mmap, mmap_mmap_fd_fd2, shm_open_mmap_mmap, shm_open_mmap_mmap_fd_fd2";
 
 #include "smc-common.h"

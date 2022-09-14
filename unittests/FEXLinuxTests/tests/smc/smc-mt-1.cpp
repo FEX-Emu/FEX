@@ -1,5 +1,3 @@
-// libs: pthread
-
 /*
   tests concurrent invalidation of different code from different threads
 
