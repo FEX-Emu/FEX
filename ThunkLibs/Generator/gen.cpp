@@ -4,10 +4,12 @@
 #include <fstream>
 #include <numeric>
 #include <iostream>
-#include <iomanip>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include <openssl/sha.h>
 
@@ -487,7 +489,7 @@ void GenerateThunkLibsAction::EmitOutput() {
             auto it = std::search(signature.begin(), signature.end(), std::begin(needle), std::end(needle));
             if (it == signature.end()) {
                 // It's *probably* a typedef, so this should be safe after all
-                return signature + " " + std::string(name);
+                return fmt::format("{} {}", signature, name);
             } else {
                 signature.insert(it + 2, name.begin(), name.end());
                 return signature;
@@ -500,7 +502,7 @@ void GenerateThunkLibsAction::EmitOutput() {
     auto format_struct_members = [](const FunctionParams& params, const char* indent) {
         std::string ret;
         for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
-            ret += indent + format_decl(params.param_types[idx].getUnqualifiedType(), "a_" + std::to_string(idx)) + ";\n";
+            ret += indent + format_decl(params.param_types[idx].getUnqualifiedType(), fmt::format("a_{}", idx)) + ";\n";
         }
         return ret;
     };
@@ -509,7 +511,7 @@ void GenerateThunkLibsAction::EmitOutput() {
         std::string ret;
         for (std::size_t idx = 0; idx < params.param_types.size(); ++idx) {
             auto& type = params.param_types[idx];
-            ret += format_decl(type, "a_" + std::to_string(idx)) + ", ";
+            ret += format_decl(type, fmt::format("a_{}", idx)) + ", ";
         }
         // drop trailing ", "
         ret.resize(ret.size() > 2 ? ret.size() - 2 : 0);
@@ -526,7 +528,7 @@ void GenerateThunkLibsAction::EmitOutput() {
     };
 
     auto get_callback_name = [](std::string_view function_name, unsigned param_index) -> std::string {
-        return std::string { function_name } + "CBFN" + std::to_string(param_index);
+        return fmt::format("{}CBFN{}", function_name, param_index);
     };
 
     // Files used guest-side
@@ -538,13 +540,8 @@ void GenerateThunkLibsAction::EmitOutput() {
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
             auto sha256 = get_sha256(function_name);
-            file << "MAKE_THUNK(" << libname << ", " << function_name << ", \"";
-            bool first = true;
-            for (auto c : sha256) {
-                file << (first ? "" : ", ") << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c << std::dec;
-                first = false;
-            }
-            file << "\")\n";
+            fmt::print( file, "MAKE_THUNK({}, {}, \"{:#02x}\")\n",
+                        libname, function_name, fmt::join(sha256, ", "));
         }
         file << "}\n";
 
@@ -554,18 +551,12 @@ void GenerateThunkLibsAction::EmitOutput() {
             std::string funcptr_signature = clang::QualType { type, 0 }.getAsString();
 
             auto cb_sha256 = get_sha256("fexcallback_" + funcptr_signature);
-            std::stringstream cb_sha256_ss;
-            for (auto c : cb_sha256) {
-                cb_sha256_ss << "0x" << std::hex << std::setw(2) << std::setfill('0') << +c << ", ";
-            }
-            auto cb_sha256_str = std::move(cb_sha256_ss).str();
-            cb_sha256_str.pop_back();
-            cb_sha256_str.pop_back();
 
             // Thunk used for guest-side calls to host function pointers
             file << "  // " << funcptr_signature << "\n";
             auto funcptr_idx = std::distance(funcptr_types.begin(), type_it);
-            file << "  MAKE_CALLBACK_THUNK(callback_" << funcptr_idx << ", " << funcptr_signature << ", \"" << cb_sha256_str << "\");\n";
+            fmt::print( file, "  MAKE_CALLBACK_THUNK(callback_{}, {}, \"{:#02x}\");\n",
+                        funcptr_idx, funcptr_signature, fmt::join(cb_sha256, ", "));
         }
 
         // Thunks-internal packing functions
@@ -576,14 +567,14 @@ void GenerateThunkLibsAction::EmitOutput() {
             file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(";
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
-                file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));
+                file << (idx == 0 ? "" : ", ") << format_decl(type, fmt::format("a_{}", idx));
             }
             // Using trailing return type as it makes handling function pointer returns much easier
             file << ") -> " << data.return_type.getAsString() << " {\n";
             file << "  struct {\n";
             for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
                 auto& type = data.param_types[idx];
-                file << "    " << format_decl(type.getUnqualifiedType(), "a_" + std::to_string(idx)) << ";\n";
+                file << "    " << format_decl(type.getUnqualifiedType(), fmt::format("a_{}", idx)) << ";\n";
             }
             if (!is_void) {
                 file << "    " << format_decl(data.return_type, "rv") << ";\n";
@@ -601,7 +592,7 @@ void GenerateThunkLibsAction::EmitOutput() {
                     file << "a_" << idx << ";\n";
                 } else {
                     // Before passing guest function pointers to the host, wrap them in a host-callable trampoline
-                    file << "AllocateHostTrampolineForGuestFunction(a_" << std::to_string(idx) << ");\n";
+                    fmt::print(file, "AllocateHostTrampolineForGuestFunction(a_{});\n", idx);
                 }
             }
             file << "  fexthunks_" << libname << "_" << function_name << "(&args);\n";
@@ -686,7 +677,7 @@ void GenerateThunkLibsAction::EmitOutput() {
                     if (cb != thunk.callbacks.end() && cb->second.is_guest) {
                         file << "fex_guest_function_ptr a_" << idx;
                     } else {
-                      file << format_decl(type, "a_" + std::to_string(idx));
+                      file << format_decl(type, fmt::format("a_{}", idx));
                     }
                 }
                 // Using trailing return type as it makes handling function pointer returns much easier
@@ -724,14 +715,14 @@ void GenerateThunkLibsAction::EmitOutput() {
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
                         return "fexfn_unpack_" + get_callback_name(function_name, cb->first) + "_stub";
                     } else if (cb != thunk.callbacks.end() && cb->second.is_guest) {
-                        return "fex_guest_function_ptr { args->a_" + std::to_string(idx) + " }";
+                        return fmt::format("fex_guest_function_ptr {{ args->a_{} }}", idx);
                     } else if (cb != thunk.callbacks.end()) {
-                        auto arg_name = "args->a_" + std::to_string(idx);
+                        auto arg_name = fmt::format("args->a_{}", idx);
                         // Use comma operator to inject a function call before returning the argument
                         return "(FinalizeHostTrampolineForGuestFunction(" + arg_name + "), " + arg_name + ")";
 
                     } else {
-                        return "args->a_" + std::to_string(idx);
+                        return fmt::format("args->a_{}", idx);
                     }
                 };
 
@@ -747,27 +738,16 @@ void GenerateThunkLibsAction::EmitOutput() {
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
             auto sha256 = get_sha256(function_name);
-
-            file << "{(uint8_t*)\"";
-            for (auto c : sha256) {
-                file << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c << std::dec;
-            }
-            file << "\", (void(*)(void *))&fexfn_unpack_" << libname << "_" << function_name << "}, // " << libname << ":" << function_name << "\n";
+            fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&fexfn_unpack_{}_{}}}, // {}:{}\n",
+                        fmt::join(sha256, "\\x"), libname, function_name, libname, function_name);
         }
 
         // Endpoints for Guest->Host invocation of runtime host-function pointers
         for (auto& type : funcptr_types) {
             std::string mangled_name = clang::QualType { type, 0 }.getAsString();
-            {
-                auto cb_sha256 = get_sha256("fexcallback_" + mangled_name);
-
-                std::stringstream cb_sha256_ss;
-                for (auto c : cb_sha256) {
-                    cb_sha256_ss << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
-                }
-                auto cb_sha256_str = std::move(cb_sha256_ss).str();
-                file << "  {(uint8_t*)\"" << cb_sha256_str << "\", (void(*)(void *))&CallbackUnpack<" << mangled_name << ">::ForIndirectCall},\n";
-            }
+            auto cb_sha256 = get_sha256("fexcallback_" + mangled_name);
+            fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&CallbackUnpack<{}>::ForIndirectCall}},\n",
+                        fmt::join(cb_sha256, "\\x"), mangled_name);
         }
         file << "  { nullptr, nullptr }\n";
         file << "};\n";
@@ -785,7 +765,8 @@ void GenerateThunkLibsAction::EmitOutput() {
 
         file << "  if (!fexldr_ptr_" << libname << "_so) { return false; }\n\n";
         for (auto& import : thunked_api) {
-            file << "  (void*&)fexldr_ptr_" << libname << "_" << import.function_name << " = " << import.host_loader << "(fexldr_ptr_" << libname << "_so, \"" << import.function_name << "\");\n";
+            fmt::print( file, "  (void*&)fexldr_ptr_{}_{} = {}(fexldr_ptr_{}_so, \"{}\");\n",
+                        libname, import.function_name, import.host_loader, libname, import.function_name);
         }
         file << "  return true;\n";
         file << "}\n";

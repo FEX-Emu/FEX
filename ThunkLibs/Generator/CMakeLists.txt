@@ -6,6 +6,7 @@ target_include_directories(thunkgenlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS})
 target_link_libraries(thunkgenlib PUBLIC clang-cpp LLVM)
 target_link_libraries(thunkgenlib PRIVATE OpenSSL::Crypto)
+target_link_libraries(thunkgenlib PRIVATE fmt::fmt)
 
 # Query clang's global resource directory for system include directories
 if (NOT CLANG_RESOURCE_DIR)
