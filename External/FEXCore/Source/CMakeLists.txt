@@ -218,7 +218,7 @@ if (ENABLE_JIT_ARM64)
     )
 endif()
 
-set (LIBS vixl dl xxhash tiny-json)
+set (LIBS fmt::fmt vixl dl xxhash tiny-json FEXHeaderUtils)
 if (ENABLE_JEMALLOC)
   list (APPEND LIBS FEX_jemalloc)
 endif()
@@ -364,14 +364,14 @@ endfunction()
 
 # Build FEXCore_Config static library
 add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
-target_link_libraries(FEXCore_Base fmt::fmt tiny-json)
+target_link_libraries(FEXCore_Base ${LIBS})
 AddDefaultOptionsToTarget(FEXCore_Base)
 
 function(AddObject Name Type)
   add_library(${Name} ${Type} ${SRCS})
   add_dependencies(${Name} IR_INC)
 
-  target_link_libraries(${Name} FEXCore_Base ${LIBS})
+  target_link_libraries(${Name} FEXCore_Base)
   AddDefaultOptionsToTarget(${Name})
 
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
@@ -379,7 +379,7 @@ endfunction()
 
 function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
-  target_link_libraries(${Name} FEXCore_Base ${LIBS})
+  target_link_libraries(${Name} FEXCore_Base)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
 
   AddDefaultOptionsToTarget(${Name})
