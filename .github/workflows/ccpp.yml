@@ -188,6 +188,40 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
 
+    - name: Install
+      if: matrix.arch[1] == 'x64'
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+
+    - name: Test GL No-Thunks
+      if: matrix.arch[1] == 'x64'
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      env:
+        DISPLAY: ":0"
+      run: cmake --build . --config $BUILD_TYPE --target thunk_functional_tests_nothunks
+
+    - name: No thunks Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_NoThunkResults.log || true
+
+    - name: Test GL Thunks
+      if: matrix.arch[1] == 'x64'
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      env:
+        DISPLAY: ":0"
+      run: cmake --build . --config $BUILD_TYPE --target thunk_functional_tests_thunks
+
+    - name: Thunks Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkResults.log || true
+
     - name: Truncate test results
       if: ${{ always() }}
       shell: bash
@@ -207,4 +241,3 @@ jobs:
         name: Results-${{ env.runner_name }}
         path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
         retention-days: 3
-
