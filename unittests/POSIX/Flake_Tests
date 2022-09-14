@@ -1,0 +1,3 @@
+# CPU scheduling can cause these tests to take > 10ms for their error margin.
+conformance-interfaces-sigtimedwait-1-1.test
+conformance-interfaces-sigtimedwait-2-1.test

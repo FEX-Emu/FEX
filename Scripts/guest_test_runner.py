@@ -3,44 +3,55 @@ import os
 import sys
 import subprocess
 
-# Args: <Known Failures file> <ExpectedOutputsFile> <DisabledTestsFile> <TestName> <FexExecutable> <FexArgs>...
+def LoadTestsFile(File):
+    Dict = {}
+    if not os.path.exists(File):
+        return Dict
+
+    with open(File) as dtf:
+        for line in dtf:
+            test = line.split("#")[0].strip() # remove comments and empty spaces
+            if len(test) > 0:
+                Dict[test] = 1
+
+    return Dict
+
+def LoadTestsFileResults(File):
+    Dict = {}
+    if not os.path.exists(File):
+        return Dict
+
+    with open(File) as dtf:
+        for line in dtf:
+            test = line.split("#")[0].strip() # remove comments and empty spaces
+            if len(test) > 0:
+                parts = line.split(" ")
+                Dict[parts[0]] = int(parts[1])
+
+    return Dict
+
+
+# Args: <Known Failures file> <ExpectedOutputsFile> <DisabledTestsFile> <FlakeTestsFile> <TestName> <Mode> <FexExecutable> <FexArgs>...
 
 # fexargs should also include the test executable
 
-if (len(sys.argv) < 6):
+if (len(sys.argv) < 7):
     sys.exit()
 
 known_failures_file = sys.argv[1]
 expected_output_file = sys.argv[2]
 disabled_tests_file = sys.argv[3]
-test_name = sys.argv[4]
-mode = sys.argv[5]
-fexecutable = sys.argv[6]
+flake_tests_file = sys.argv[4]
+test_name = sys.argv[5]
+mode = sys.argv[6]
+fexecutable = sys.argv[7]
+StartingFEXArgsOffset = 8
 
-known_failures = { }
-expected_output = { }
-disabled_tests = { }
-
-# Open the known failures file and add it to a dictionary
-with open(known_failures_file) as kff:
-    for line in kff:
-        test = line.split("#")[0].strip() # remove comments and empty spaces
-        if len(test) > 0:
-            known_failures[test] = 1
-
-# Open expected outputs and add it to dictionary
-with open(expected_output_file) as eof:
-    for line in eof:
-        line = test = line.split("#")[0].strip() # remove comments and empty spaces
-        if len(line) > 0:
-            parts = line.split(" ")
-            expected_output[parts[0]] = int(parts[1])
-
-with open(disabled_tests_file) as dtf:
-    for line in dtf:
-        test = line.split("#")[0].strip() # remove comments and empty spaces
-        if len(test) > 0:
-            disabled_tests[test] = 1
+# Open test expected information files and load in to dictionaries.
+known_failures = LoadTestsFile(known_failures_file)
+expected_output = LoadTestsFileResults(expected_output_file)
+disabled_tests = LoadTestsFile(disabled_tests_file)
+flake_tests = LoadTestsFile(flake_tests_file)
 
 # run with timeout to avoid locking up
 RunnerArgs = []
@@ -54,24 +65,36 @@ if (mode == "guest"):
         RunnerArgs.append(ROOTFS_ENV)
 
 # Add the rest of the arguments
-for i in range(len(sys.argv) - 7):
-    RunnerArgs.append(sys.argv[7 + i])
+for i in range(len(sys.argv) - StartingFEXArgsOffset):
+    RunnerArgs.append(sys.argv[StartingFEXArgsOffset + i])
 
 #print(RunnerArgs)
 
 ResultCode = 0
 
+# Handle flakes
+TryCount = 1
+if (flake_tests.get(test_name)):
+    TryCount = 5
+
 if (disabled_tests.get(test_name)):
     ResultCode = -73
-else:
-    # Run the test and wait for it to end to get the result
-    Process = subprocess.Popen(RunnerArgs)
-    Process.wait()
-    ResultCode = Process.returncode
 
 # expect zero by default
 if (not test_name in expected_output):
     expected_output[test_name] = 0
+
+if ResultCode == 0:
+    for Try in range(TryCount):
+        # Run the test and wait for it to end to get the result
+        print(RunnerArgs)
+        Process = subprocess.Popen(RunnerArgs)
+        Process.wait()
+        ResultCode = Process.returncode
+
+        # Break if the expected output is the result code
+        if (expected_output[test_name] == ResultCode):
+            break
 
 if (expected_output[test_name] != ResultCode):
     if (test_name in expected_output):
