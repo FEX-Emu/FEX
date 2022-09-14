@@ -38,10 +38,15 @@ namespace FHU::Syscalls {
 #endif
 #endif
 
+// Common syscall numbers
+#ifndef SYS_pidfd_open
+#define SYS_pidfd_open 434
+#endif
+
 inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
   // Third argument is unused
 #if defined(HAS_SYSCALL_GETCPU) && HAS_SYSCALL_GETCPU
-  return ::getcpu(cpu, node, nullptr);
+  return ::getcpu(cpu, node);
 #else
   return ::syscall(SYS_getcpu, cpu, node, nullptr);
 #endif
@@ -57,7 +62,7 @@ inline int32_t gettid() {
 
 inline int32_t tgkill(pid_t tgid, pid_t tid, int sig) {
 #if defined(HAS_SYSCALL_GETTID) && HAS_SYSCALL_GETTID
-  return ::tgkill(tggid, tid, sig);
+  return ::tgkill(tgid, tid, sig);
 #else
   return ::syscall(SYS_tgkill, tgid, tid, sig);
 #endif
@@ -65,7 +70,7 @@ inline int32_t tgkill(pid_t tgid, pid_t tid, int sig) {
 
 inline int32_t statx(int dirfd, const char *pathname, int32_t flags, uint32_t mask, void *statxbuf) {
 #if defined(HAS_SYSCALL_STATX) && HAS_SYSCALL_STATX
-  return ::statx(dirfd, pathname, flags, mask, statxbuf);
+  return ::statx(dirfd, pathname, flags, mask, reinterpret_cast<struct statx *__restrict>(statxbuf));
 #else
   return ::syscall(SYS_statx, dirfd, pathname, flags, mask, statxbuf);
 #endif
@@ -80,11 +85,7 @@ inline int32_t renameat2(int olddirfd, const char *oldpath, int newdirfd, const 
 }
 
 inline int32_t pidfd_open(pid_t pid, unsigned int flags) {
-#if defined(DHAS_SYSCALL_PIDFD_OPEN) && DHAS_SYSCALL_PIDFD_OPEN
-  return ::syscall(SYS_pidfd_open, pid_t pid, unsigned int flags);
-#else
-  return -1;
-#endif
+  return ::syscall(SYS_pidfd_open, pid, flags);
 }
 
 }
