@@ -83,6 +83,12 @@ def HashFile(file):
 
     return int.from_bytes(x.digest(), "big")
 
+def RemoveRootFSFolder(RootFSPath):
+    print("Removing previous rootfs extraction before copying")
+    shutil.rmtree(RootFSPath, ignore_errors = True)
+    # Recreate the folder
+    os.makedirs(RootFSPath)
+
 def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
     # Check if rootfs mount path exists
     if (not os.path.exists(RootFSMountPath) or
@@ -105,6 +111,7 @@ def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
     MountRootFSImagePath = RootFSMountPath + DistroFit[3]
     RootFSImagePath = RootFSPath + "/" + os.path.basename(DistroFit[3])
     NeedsExtraction = False
+    PreviouslyExistingRootFS = False
 
     if not os.path.exists(MountRootFSImagePath):
         print("Image {} doesn't exist".format(MountRootFSImagePath))
@@ -113,29 +120,39 @@ def CheckFilesystemForFS(RootFSMountPath, RootFSPath, DistroFit):
     if not os.path.exists(RootFSImagePath):
         # Copy over
         print("RootFS image doesn't exist. Copying")
-        shutil.copyfile(MountRootFSImagePath, RootFSImagePath)
-        NeedsExtraction = True
-
-    # Now hash the image
-    RootFSHash = HashFile(RootFSImagePath)
-    if RootFSHash != DistroFit[4]:
-        print("Hash {} did not match {}, copying new image".format(hex(RootFSHash), hex(DistroFit[4])))
+        RemoveRootFSFolder(RootFSPath)
         shutil.copyfile(MountRootFSImagePath, RootFSImagePath)
         NeedsExtraction = True
 
     # Check if the image needs to be extracted
     if not os.path.exists(RootFSPath + "/usr"):
         NeedsExtraction = True
+    else:
+        PreviouslyExistingRootFS = True
+
+    # Now hash the image
+    RootFSHash = HashFile(RootFSImagePath)
+    if RootFSHash != DistroFit[4]:
+        print("Hash {} did not match {}, copying new image".format(hex(RootFSHash), hex(DistroFit[4])))
+
+        if PreviouslyExistingRootFS:
+            RemoveRootFSFolder(RootFSPath)
+
+        shutil.copyfile(MountRootFSImagePath, RootFSImagePath)
+        NeedsExtraction = True
 
     if NeedsExtraction:
         print("Extracting rootfs")
+
         CmdResult = subprocess.call(["unsquashfs", "-f", "-d", RootFSPath, RootFSImagePath])
         if CmdResult != 0:
-            print("Couldn't extract squashfs")
+            print("Couldn't extract squashfs. Removing image file to be safe")
+            os.remove(RootFSImagePath)
             return False
 
     if not os.path.exists(RootFSPath + "/usr"):
-        print("Couldn't extract squashfs")
+        print("Couldn't extract squashfs. Removing image file to be safe")
+        os.remove(RootFSImagePath)
         return False
 
     print("RootFS successfully checked and extracted")
