@@ -10,6 +10,17 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 
   set(TARGET_TYPE SHARED)
   set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
+
+  # uninstall target
+  if(NOT TARGET uninstall)
+    configure_file(
+      "${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/cmake_uninstall.cmake.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
+      IMMEDIATE @ONLY)
+
+    add_custom_target(uninstall
+      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake)
+  endif()
 else()
   # We've been included using add_subdirectory, so set up targets for IDE integration using the host toolchain
   set(GENERATOR_EXE thunkgen)
