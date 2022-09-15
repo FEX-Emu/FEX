@@ -453,17 +453,39 @@ DEF_OP(VAddV) {
 DEF_OP(VUMinV) {
   auto Op = IROp->C<IR::IROp_VUMinV>();
 
-  auto Src = GetSrc(Op->Vector.ID());
-  auto Dest = GetDst(Node);
-  switch (Op->Header.ElementSize) {
+  const auto OpSize = Op->Header.Size;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
+                      "Can't handle a vector of size: {}", OpSize);
+
+  const auto Src = GetSrc(Op->Vector.ID());
+  const auto Dest = GetDst(Node);
+
+  switch (ElementSize) {
     case 2: {
-      phminposuw(Dest, Src);
+      if (OpSize == 32) {
+        // vphminposuw, unfortunately, doesn't traverse the entire
+        // 256-bit ymm register (it just sets the top 128 bits to zero)
+        // so we pull the top 128 bits down into its own vector,
+        // get the horizontal minimum in both vectors, then
+        // take the minimum between the two.
+        vextractf128(xmm15, ToYMM(Src), 1);
+        vphminposuw(xmm15, xmm15);
+        vphminposuw(xmm14, Src);
+        vpminuw(Dest, xmm14, xmm15);
+      } else {
+        vphminposuw(Dest, Src);
+      }
+
       // Extract the upper bits which are zero, overwriting position
       pextrw(eax, Dest, 2);
       pinsrw(Dest, eax, 1);
-    break;
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 

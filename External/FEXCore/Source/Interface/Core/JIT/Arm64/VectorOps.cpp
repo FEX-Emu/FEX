@@ -608,16 +608,53 @@ DEF_OP(VAddV) {
 
 DEF_OP(VUMinV) {
   auto Op = IROp->C<IR::IROp_VUMinV>();
-  const uint8_t OpSize = IROp->Size;
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
-  // Vector
-  switch (Op->Header.ElementSize) {
-    case 1:
-    case 2:
-    case 4:
-      uminv(GetDst(Node).VCast(Op->Header.ElementSize * 8, 1), GetSrc(Op->Vector.ID()).VCast(OpSize * 8, Elements));
-      break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+
+  const auto OpSize = IROp->Size;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Elements = OpSize / ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE) {
+    LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
+                        "Unsupported vector length: {}", OpSize);
+
+    if (OpSize == 16) {
+      ptrue(p0.VnB(), SVE_VL16);
+    } else {
+      ptrue(p0.VnB(), SVE_VL32);
+    }
+
+    switch (ElementSize) {
+      case 1:
+        uminv(Dst.B(), p0, Vector.Z().VnB());
+        break;
+      case 2:
+        uminv(Dst.H(), p0, Vector.Z().VnH());
+        break;
+      case 4:
+        uminv(Dst.S(), p0, Vector.Z().VnS());
+        break;
+      case 8:
+        uminv(Dst.D(), p0, Vector.Z().VnD());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+  } else {
+    // Vector
+    switch (ElementSize) {
+      case 1:
+      case 2:
+      case 4:
+        uminv(Dst.VCast(ElementSize * 8, 1), Vector.VCast(OpSize * 8, Elements));
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 

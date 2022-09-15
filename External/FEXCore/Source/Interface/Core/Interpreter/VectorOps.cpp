@@ -405,19 +405,22 @@ DEF_OP(VUMinV) {
   const int8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16];
+  uint8_t Tmp[32];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
 
   const auto Func = [](auto current, auto a) { return std::min(current, a); };
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_REDUCE_1SRC_OP(1, uint8_t, Func, ~0)
     DO_VECTOR_REDUCE_1SRC_OP(2, uint16_t, Func, ~0)
     DO_VECTOR_REDUCE_1SRC_OP(4, uint32_t, Func, ~0U)
     DO_VECTOR_REDUCE_1SRC_OP(8, uint64_t, Func, ~0ULL)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
-  memcpy(GDP, Tmp, Op->Header.ElementSize);
+  memcpy(GDP, Tmp, ElementSize);
 }
 
 DEF_OP(VURAvg) {
