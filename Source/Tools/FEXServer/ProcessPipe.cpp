@@ -401,10 +401,29 @@ namespace ProcessPipe {
         case FEXServerClient::PacketType::TYPE_GET_PID_FD: {
           int FD = FHU::Syscalls::pidfd_open(::getpid(), 0);
 
-          SendFDSuccessPacket(Socket, FD);
+          if (FD < 0) {
+            // Couldn't get PIDFD due to too old of kernel.
+            // Return a pipe to track the same information.
+            //
+            int fds[2];
+            pipe2(fds, O_CLOEXEC);
+            SendFDSuccessPacket(Socket, fds[0]);
 
-          // Close the FD now since we've sent it
-          close(FD);
+            // Close the read side now, doesn't matter to us
+            close(fds[0]);
+
+            // Check if we need to increase the FD limit.
+            ++NumFilesOpened;
+            CheckRaiseFDLimit();
+
+            // Write side will naturally close on process exit, letting the other process know we have exited.
+          }
+          else {
+            SendFDSuccessPacket(Socket, FD);
+
+            // Close the FD now since we've sent it
+            close(FD);
+          }
 
           CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
           break;
