@@ -1,5 +1,3 @@
-// libs: pthread
-
 /*
   tests one thread modifying another thread's code
 

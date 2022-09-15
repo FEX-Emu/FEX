@@ -3,8 +3,6 @@
     tests shared / mirrored mappings
 */
 
-// libs: rt pthread
-
 auto args = "mmap_fork, shmat_fork, fork_shmat_same_shmid";
 
 #include "smc-common.h"
