@@ -95,12 +95,26 @@ DEF_OP(VAnd) {
 }
 
 DEF_OP(VBic) {
-  auto Op = IROp->C<IR::IROp_VBic>();
-  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector1);
-  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector2);
+  const auto Op = IROp->C<IR::IROp_VBic>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = Src1 & ~Src2;
-  memcpy(GDP, &Dst, 16);
+  if (OpSize == 32) {
+    const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector1);
+    const auto Src2 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector2);
+
+    const auto Dst = InterpVector256{
+      .Lower = Src1.Lower & ~Src2.Lower,
+      .Upper = Src1.Upper & ~Src2.Upper,
+    };
+
+    memcpy(GDP, &Dst, sizeof(Dst));
+  } else {
+    const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector1);
+    const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector2);
+
+    const auto Dst = Src1 & ~Src2;
+    memcpy(GDP, &Dst, sizeof(Dst));
+  }
 }
 
 DEF_OP(VOr) {
