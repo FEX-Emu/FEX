@@ -13,9 +13,10 @@ foreach(TEST ${TESTS})
 
   add_test(NAME "${TEST_NAME}.jit.gcc-target-64"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-    "${CMAKE_SOURCE_DIR}/unittests/gcc-target-tests-64/Known_Failures"
-    "${CMAKE_SOURCE_DIR}/unittests/gcc-target-tests-64/Expected_Output"
-    "${CMAKE_SOURCE_DIR}/unittests/gcc-target-tests-64/Disabled_Tests"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
     "${TEST_NAME}"
     "guest"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"

@@ -13,9 +13,10 @@ foreach(TEST ${TESTS})
 
   add_test(NAME "${TEST_NAME}.jit.gvisor"
     COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Known_Failures"
-    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Expected_Output"
-    "${CMAKE_SOURCE_DIR}/unittests/gvisor-tests/Disabled_Tests"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
     "${TEST_NAME}"
     "guest"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
