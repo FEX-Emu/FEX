@@ -187,3 +187,10 @@ inotify_test
 
 # Needs testing
 semaphore_test
+
+# This test does an unsafe timer test. (NoTimeout subtest specifically).
+# Sets a timer for 100ms then starts a pselect with unlimited timeout.
+# If the timer fires before the pselect starts then pselect will hang forever.
+# Since we are running these tests on a fully loaded system, we tend to context switch,
+# causing the chance of a hang to occur quite frequently.
+pselect_test
