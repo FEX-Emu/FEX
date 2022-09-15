@@ -32,6 +32,17 @@ option(ENABLE_VIXL_SIMULATOR "Forces the FEX JIT to use the VIXL simulator" FALS
 set (X86_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86.cmake" CACHE FILEPATH "Toolchain file for the x86 (cross-)compiler")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
+# uninstall target
+if(NOT TARGET uninstall)
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/CMakeFiles/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+  add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake)
+endif()
+
 # These options are meant for package management
 set (TUNE_CPU "native" CACHE STRING "Override the CPU the build is tuned for")
 set (TUNE_ARCH "generic" CACHE STRING "Override the Arch the build is tuned for")
@@ -421,6 +432,13 @@ if (BUILD_THUNKS)
     )"
     DEPENDS guest-libs
   )
+
+  add_custom_target(uninstall_guest-libs
+    COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
+  )
+
+  add_dependencies(uninstall uninstall_guest-libs)
 endif()
 
 set(FEX_VERSION_MAJOR "0")

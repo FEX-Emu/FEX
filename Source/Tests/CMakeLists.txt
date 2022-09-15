@@ -51,10 +51,10 @@ if(TERMUX_BUILD)
   )
 
   install(
-    CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
+    CODE "MESSAGE(\"-- Installing: $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
     CODE "
     EXECUTE_PROCESS(COMMAND cp FEXLoader FEXInterpreter
-      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+      WORKING_DIRECTORY $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
     )"
   )
 else()
@@ -64,12 +64,20 @@ else()
   )
 
   install(
-    CODE "MESSAGE(\"-- Installing: ${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
+    CODE "MESSAGE(\"-- Installing: $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
     CODE "
     EXECUTE_PROCESS(COMMAND ln -f FEXLoader FEXInterpreter
-      WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/bin/
+      WORKING_DIRECTORY $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
     )"
   )
+
+  if(TARGET uninstall)
+    add_custom_target(uninstall_FEXInterpreter
+      COMMAND "rm" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter"
+    )
+
+    add_dependencies(uninstall uninstall_FEXInterpreter)
+  endif()
 endif()
 
 install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
@@ -101,6 +109,17 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
       COMMAND ${CMAKE_COMMAND} -E
       echo "binfmt_misc FEX-x86_64 installed"
     )
+    if(TARGET uninstall)
+      add_custom_target(uninstall_binfmt_misc_32
+        COMMAND update-binfmts --unimport FEX-x86 || (exit 0)
+      )
+      add_custom_target(uninstall_binfmt_misc_64
+        COMMAND update-binfmts --unimport FEX-x86_64 || (exit 0)
+      )
+
+      add_dependencies(uninstall uninstall_binfmt_misc_32)
+      add_dependencies(uninstall uninstall_binfmt_misc_64)
+    endif()
   else()
     # In the case of update-binfmts not being available (Arch for example) then we need to install manually
     add_custom_target(binfmt_misc_32
@@ -129,6 +148,20 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
       COMMAND ${CMAKE_COMMAND} -E
         echo "binfmt_misc FEX-x86_64 installed"
       )
+
+    if(TARGET uninstall)
+      add_custom_target(uninstall_binfmt_misc_32
+        COMMAND ${CMAKE_COMMAND} -E
+          echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86 || (exit 0)
+      )
+      add_custom_target(uninstall_binfmt_misc_64
+        COMMAND ${CMAKE_COMMAND} -E
+          echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86_64 || (exit 0)
+      )
+
+      add_dependencies(uninstall uninstall_binfmt_misc_32)
+      add_dependencies(uninstall uninstall_binfmt_misc_64)
+    endif()
   endif()
 
   add_custom_target(binfmt_misc
