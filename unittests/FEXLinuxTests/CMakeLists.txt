@@ -6,26 +6,33 @@ ExternalProject_Add(FEXLinuxTests
   CMAKE_ARGS
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
+  "-DBITNESS=64"
   INSTALL_COMMAND ""
   BUILD_ALWAYS ON
   )
 
 ExternalProject_Add(FEXLinuxTests_32
   PREFIX FEXLinuxTests_32
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests-32"
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests_32"
   CMAKE_ARGS
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
+  "-DBITNESS=32"
   INSTALL_COMMAND ""
   BUILD_ALWAYS ON
   )
 
 # this kind of sucks, but reglob
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS tests/*.cpp)
-file(GLOB_RECURSE TESTS_32 CONFIGURE_DEPENDS tests-32/*.cpp)
+file(GLOB_RECURSE TESTS_32_ONLY CONFIGURE_DEPENDS tests/*.32.cpp)
 
-function(AddTests Tests BinDirectory BitnessList)
+set(TESTS_32 ${TESTS})
+
+# Apply bitness-specific exclude lists
+list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})
+
+function(AddTests Tests BinDirectory Bitness)
   foreach(TEST ${Tests})
     get_filename_component(TEST_NAME ${TEST} NAME_WLE)
 
@@ -48,47 +55,45 @@ function(AddTests Tests BinDirectory BitnessList)
     endif()
 
     foreach(VARIATION ${VARIATIONS})
-      foreach(BITNESS ${BitnessList})
-        string(REGEX REPLACE ":" ";" VARIATION "${VARIATION}")
-        list(GET VARIATION 0 VARIATION_NAME)
-        list(GET VARIATION 1 VARIATION_ARG)
-        set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${BITNESS}")
+      string(REGEX REPLACE ":" ";" VARIATION "${VARIATION}")
+      list(GET VARIATION 0 VARIATION_NAME)
+      list(GET VARIATION 1 VARIATION_ARG)
+      set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
 
-        set(TEST_CASE "${VARIATION_NAME}.${BITNESS}")
+      set(TEST_CASE "${VARIATION_NAME}.${Bitness}")
 
-        # Add jit test case
-        add_test(NAME "${TEST_CASE}.jit.flt"
+      # Add jit test case
+      add_test(NAME "${TEST_CASE}.jit.flt"
+        COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
+        "${TEST_CASE}"
+        "guest"
+        "$<TARGET_FILE:FEXLoader>"
+        "--no-silent" "-c" "irjit" "-n" "500" "--"
+        "${BIN_PATH}"
+        "${VARIATION_ARG}")
+      if (_M_X86_64)
+        # Add host test case
+        add_test(NAME "${TEST_CASE}.host.flt"
           COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-          "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+          "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures_Host"
           "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
-          "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+          "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests_Host"
           "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
           "${TEST_CASE}"
-          "guest"
-          "$<TARGET_FILE:FEXLoader>"
-          "--no-silent" "-c" "irjit" "-n" "500" "--"
+          "host"
           "${BIN_PATH}"
           "${VARIATION_ARG}")
-        if (_M_X86_64)
-          # Add host test case
-          add_test(NAME "${TEST_CASE}.host.flt"
-            COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-            "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures_Host"
-            "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
-            "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests_Host"
-            "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
-            "${TEST_CASE}"
-            "host"
-            "${BIN_PATH}"
-            "${VARIATION_ARG}")
-        endif()
-      endforeach()
+      endif()
     endforeach()
   endforeach()
 endfunction()
 
-AddTests("${TESTS}" "FEXLinuxTests" "32;64")
-AddTests("${TESTS_32}" "FEXLinuxTests_32"  "32")
+AddTests("${TESTS}" "FEXLinuxTests" 64)
+AddTests("${TESTS_32}" "FEXLinuxTests_32" 32)
 
 execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
 string(STRIP ${CORES} CORES)
@@ -99,7 +104,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.jit\.flt$$" "--output-on-failure"
-  DEPENDS FEXLinuxTests FEXLoader
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXLoader
   )
 
 # Only host
@@ -108,7 +113,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.host\.flt$$" "--output-on-failure"
-  DEPENDS FEXLinuxTests
+  DEPENDS FEXLinuxTests FEXLinuxTests_32
   )
 
 # Both host and emulated
@@ -117,5 +122,5 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--timeout" "30" "-j${CORES}" "-R" "\.*\.flt$$" "--output-on-failure"
-  DEPENDS FEXLinuxTests FEXLoader
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXLoader
   )
