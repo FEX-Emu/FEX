@@ -10,6 +10,18 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
+# These defines are temporarily defined since python3-clang doesn't yet support these.
+# Once this tool gets switched over to C++ then this won't be an issue.
+
+# Expression that references a C++20 concept.
+CursorKind.CONCEPTSPECIALIZATIONEXPR = CursorKind(153),
+
+# C++2a std::bit_cast expression.
+CursorKind.BUILTINBITCASTEXPR = CursorKind(280)
+
+# a concept declaration.
+CursorKind.CONCEPTDECL = CursorKind(604),
+
 @dataclass
 class TypeDefinition:
     TYPE_UNKNOWN = 0
@@ -268,7 +280,7 @@ def HandleTypeDefDeclCursor(Arch, Cursor):
         if (len(TypeDefName) != 0):
             HandleTypeDefDecl(Arch, Cursor, TypeDefName)
 
-	    # Append namespace
+            # Append namespace
             Arch.NamespaceScope.append(TypeDefName)
             SetNamespace(Arch)
 
@@ -404,19 +416,20 @@ def HandleCursor(Arch, Cursor):
         return
 
     for Child in Cursor.get_children():
-        if (Child.kind == CursorKind.TRANSLATION_UNIT):
+        kind = Child.kind
+        if (kind == CursorKind.TRANSLATION_UNIT):
             Arch = HandleCursor(Arch, Child)
-        elif (Child.kind == CursorKind.FIELD_DECL):
+        elif (kind == CursorKind.FIELD_DECL):
             pass
-        elif (Child.kind == CursorKind.UNION_DECL):
+        elif (kind == CursorKind.UNION_DECL):
             Arch = HandleUnionDeclCursor(Arch, Child)
-        elif (Child.kind == CursorKind.STRUCT_DECL):
+        elif (kind == CursorKind.STRUCT_DECL):
             Arch = HandleStructDeclCursor(Arch, Child)
-        elif (Child.kind == CursorKind.TYPEDEF_DECL):
+        elif (kind == CursorKind.TYPEDEF_DECL):
             Arch = HandleTypeDefDeclCursor(Arch, Child)
-        elif (Child.kind == CursorKind.VAR_DECL):
+        elif (kind == CursorKind.VAR_DECL):
             Arch = HandleVarDeclCursor(Arch, Child)
-        elif (Child.kind == CursorKind.NAMESPACE):
+        elif (kind == CursorKind.NAMESPACE):
             # Append namespace
             Arch.NamespaceScope.append(Child.spelling)
             SetNamespace(Arch)
@@ -427,7 +440,7 @@ def HandleCursor(Arch, Cursor):
             # Pop namespace off
             Arch.NamespaceScope.pop()
             SetNamespace(Arch)
-        elif (Child.kind == CursorKind.TYPE_REF):
+        elif (kind == CursorKind.TYPE_REF):
             # Safe to pass on
             pass
         else:
@@ -638,25 +651,18 @@ def main():
         BaseArgs.append(sys.argv[ArgIndex])
 
     args_x86_32 = [
-        "-I/usr/i686-linux-gnu/include/c++/10/i686-linux-gnu/",
-        "-I/usr/i686-linux-gnu/include/",
         "-O2",
         "-m32",
         "--target=i686-linux-unknown",
     ]
 
     args_x86_64 = [
-        "-I/usr/include/x86_64-linux-gnu",
-        "-I/usr/x86_64-linux-gnu/include/c++/10/x86_64-linux-gnu/",
-        "-I/usr/x86_64-linux-gnu/include/",
         "-O2",
         "--target=x86_64-linux-unknown",
         "-D_M_X86_64",
     ]
 
     args_aarch64 = [
-        "-I/usr/aarch64-linux-gnu/include/c++/10/aarch64-linux-gnu/",
-        "-I/usr/aarch64-linux-gnu/include/",
         "-O2",
         "--target=aarch64-linux-unknown",
         "-D_M_ARM_64",
