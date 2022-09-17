@@ -9,34 +9,31 @@ unset (CMAKE_CXX_FLAGS)
 set(GENERATE_GUEST_INSTALL_TARGETS TRUE)
 
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS *.cpp)
+if(BITNESS EQUAL 64)
+  file(GLOB_RECURSE TESTS_32_ONLY CONFIGURE_DEPENDS *.32.cpp)
+  list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})
+endif()
 
 foreach(TEST ${TESTS})
   get_filename_component(TEST_NAME ${TEST} NAME_WLE)
 
-  add_executable(${TEST_NAME}.32 ${TEST})
-  target_compile_options(${TEST_NAME}.32 PRIVATE -m32)
-  target_link_options(${TEST_NAME}.32 PRIVATE -m32)
-
-  add_executable(${TEST_NAME}.64 ${TEST})
+  add_executable(${TEST_NAME}.${BITNESS} ${TEST})
+  if(BITNESS EQUAL 32)
+    target_compile_options(${TEST_NAME}.${BITNESS} PRIVATE -m32)
+    target_link_options(${TEST_NAME}.${BITNESS} PRIVATE -m32)
+  endif()
 endforeach()
 
-target_link_libraries(pthread_cancel.32 PRIVATE pthread)
-target_link_libraries(pthread_cancel.64 PRIVATE pthread)
+target_link_libraries(pthread_cancel.${BITNESS} PRIVATE pthread)
 
-target_link_options(smc-1-dynamic.32 PRIVATE -z execstack)
-target_link_options(smc-1-dynamic.64 PRIVATE -z execstack)
+target_link_options(smc-1-dynamic.${BITNESS} PRIVATE -z execstack)
 
-target_link_libraries(smc-mt-1.32 PRIVATE pthread)
-target_link_libraries(smc-mt-1.64 PRIVATE pthread)
+target_link_libraries(smc-mt-1.${BITNESS} PRIVATE pthread)
 
-target_link_libraries(smc-mt-2.32 PRIVATE pthread)
-target_link_libraries(smc-mt-2.64 PRIVATE pthread)
+target_link_libraries(smc-mt-2.${BITNESS} PRIVATE pthread)
 
-target_link_libraries(smc-shared-1.32 PRIVATE rt pthread)
-target_link_libraries(smc-shared-1.64 PRIVATE rt pthread)
+target_link_libraries(smc-shared-1.${BITNESS} PRIVATE rt pthread)
 
-target_link_libraries(smc-shared-2.32 PRIVATE rt pthread)
-target_link_libraries(smc-shared-2.64 PRIVATE rt pthread)
+target_link_libraries(smc-shared-2.${BITNESS} PRIVATE rt pthread)
 
-target_link_libraries(timer-sigev-thread.32 PRIVATE rt pthread)
-target_link_libraries(timer-sigev-thread.64 PRIVATE rt pthread)
+target_link_libraries(timer-sigev-thread.${BITNESS} PRIVATE rt pthread)
