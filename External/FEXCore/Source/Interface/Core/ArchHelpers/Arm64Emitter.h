@@ -62,6 +62,21 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
   v8,  v9,  v10, v11, v12, v13, v14, v15
 };
 
+// Contains the address to the currently available CPU state
+#define STATE x28
+
+// GPR temporaries (only x2 and x3 can be used across spill boundaries)
+// so if these ever need to change, be very careful about that.
+#define TMP1 x0
+#define TMP2 x1
+#define TMP3 x2
+#define TMP4 x3
+
+// Vector temporaries
+#define VTMP1 v1
+#define VTMP2 v2
+#define VTMP3 v3
+
 // This class contains common emitter utility functions that can
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public vixl::aarch64::Assembler {
