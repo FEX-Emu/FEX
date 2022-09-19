@@ -599,7 +599,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   SpillSlots = RAData->SpillSlots();
 
   if (SpillSlots) {
-    sub(rsp, SpillSlots * 16);
+    sub(rsp, SpillSlots * MaxSpillSlotSize);
   }
 
 #ifdef BLOCKSTATS

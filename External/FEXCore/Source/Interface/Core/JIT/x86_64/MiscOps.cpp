@@ -47,7 +47,7 @@ DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
 
   if (SpillSlots) {
-    add(rsp, SpillSlots * 16);
+    add(rsp, SpillSlots * MaxSpillSlotSize);
   }
 
   mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);

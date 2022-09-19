@@ -446,9 +446,9 @@ DEF_OP(StoreContextIndexed) {
 }
 
 DEF_OP(SpillRegister) {
-  auto Op = IROp->C<IR::IROp_SpillRegister>();
+  const auto Op = IROp->C<IR::IROp_SpillRegister>();
   const uint8_t OpSize = IROp->Size;
-  const uint32_t SlotOffset = Op->Slot * 16;
+  const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
@@ -492,9 +492,9 @@ DEF_OP(SpillRegister) {
 }
 
 DEF_OP(FillRegister) {
-  auto Op = IROp->C<IR::IROp_FillRegister>();
-  uint8_t OpSize = IROp->Size;
-  uint32_t SlotOffset = Op->Slot * 16;
+  const auto Op = IROp->C<IR::IROp_FillRegister>();
+  const uint8_t OpSize = IROp->Size;
+  const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
