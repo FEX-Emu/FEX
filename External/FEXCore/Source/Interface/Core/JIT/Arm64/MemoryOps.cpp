@@ -446,9 +446,9 @@ DEF_OP(StoreContextIndexed) {
 }
 
 DEF_OP(SpillRegister) {
-  auto Op = IROp->C<IR::IROp_SpillRegister>();
+  const auto Op = IROp->C<IR::IROp_SpillRegister>();
   const uint8_t OpSize = IROp->Size;
-  const uint32_t SlotOffset = Op->Slot * 16;
+  const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
@@ -468,23 +468,36 @@ DEF_OP(SpillRegister) {
       str(GetReg<RA_64>(Op->Value.ID()), MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+      break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
+    const auto Src = GetSrc(Op->Value.ID());
+
     switch (OpSize) {
     case 4: {
-      str(GetSrc(Op->Value.ID()).S(), MemOperand(sp, SlotOffset));
+      str(Src.S(), MemOperand(sp, SlotOffset));
       break;
     }
     case 8: {
-      str(GetSrc(Op->Value.ID()).D(), MemOperand(sp, SlotOffset));
+      str(Src.D(), MemOperand(sp, SlotOffset));
       break;
     }
     case 16: {
-      str(GetSrc(Op->Value.ID()), MemOperand(sp, SlotOffset));
+      str(Src, MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+    case 32: {
+      // TODO: Eliminate ptrue with statically allocated predicate register.
+      ptrue(p7.VnB(), SVE_VL32);
+      mov(TMP3, SlotOffset);
+      st1b(Src.Z().VnB(), p7, SVEMemOperand(sp, TMP3));
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+      break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
@@ -492,9 +505,9 @@ DEF_OP(SpillRegister) {
 }
 
 DEF_OP(FillRegister) {
-  auto Op = IROp->C<IR::IROp_FillRegister>();
-  uint8_t OpSize = IROp->Size;
-  uint32_t SlotOffset = Op->Slot * 16;
+  const auto Op = IROp->C<IR::IROp_FillRegister>();
+  const uint8_t OpSize = IROp->Size;
+  const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     switch (OpSize) {
@@ -514,23 +527,36 @@ DEF_OP(FillRegister) {
       ldr(GetReg<RA_64>(Node), MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+      break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
+    const auto Dst = GetDst(Node);
+
     switch (OpSize) {
     case 4: {
-      ldr(GetDst(Node).S(), MemOperand(sp, SlotOffset));
+      ldr(Dst.S(), MemOperand(sp, SlotOffset));
       break;
     }
     case 8: {
-      ldr(GetDst(Node).D(), MemOperand(sp, SlotOffset));
+      ldr(Dst.D(), MemOperand(sp, SlotOffset));
       break;
     }
     case 16: {
-      ldr(GetDst(Node), MemOperand(sp, SlotOffset));
+      ldr(Dst, MemOperand(sp, SlotOffset));
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+    case 32: {
+      // TODO: Eliminate ptrue with statically allocated predicate register.
+      ptrue(p7.VnB(), SVE_VL32);
+      mov(TMP3, SlotOffset);
+      ld1b(Dst.Z().VnB(), p7.Zeroing(), SVEMemOperand(sp, TMP3));
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+      break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);

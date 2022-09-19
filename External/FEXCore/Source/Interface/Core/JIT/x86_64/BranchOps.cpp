@@ -33,7 +33,7 @@ namespace FEXCore::CPU {
 DEF_OP(SignalReturn) {
   // Adjust the stack first for a regular return
   if (SpillSlots) {
-    add(rsp, SpillSlots * 16); // + 8 to consume return address
+    add(rsp, SpillSlots * MaxSpillSlotSize); // + 8 to consume return address
   }
 
   jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)]);
@@ -42,7 +42,7 @@ DEF_OP(SignalReturn) {
 DEF_OP(CallbackReturn) {
   // Adjust the stack first for a regular return
   if (SpillSlots) {
-    add(rsp, SpillSlots * 16); // + 8 to consume return address
+    add(rsp, SpillSlots * MaxSpillSlotSize); // + 8 to consume return address
   }
 
   // Make sure to adjust the refcounter so we don't clear the cache now
@@ -71,7 +71,7 @@ DEF_OP(ExitFunction) {
 
 
   if (SpillSlots) {
-    add(rsp, SpillSlots * 16);
+    add(rsp, SpillSlots * MaxSpillSlotSize);
   }
 
   uint64_t NewRIP;

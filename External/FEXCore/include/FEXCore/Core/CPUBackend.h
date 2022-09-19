@@ -122,6 +122,10 @@ namespace CPU {
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
   protected:
+    // Max spill slot size in bytes. We need at most 32 bytes
+    // to be able to handle a 256-bit vector store to a slot.
+    constexpr static uint32_t MaxSpillSlotSize = 32;
+
     FEXCore::Core::InternalThreadState *ThreadState;
 
     size_t InitialCodeSize, MaxCodeSize;

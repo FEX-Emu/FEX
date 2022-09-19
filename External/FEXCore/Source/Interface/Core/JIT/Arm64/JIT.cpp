@@ -783,10 +783,12 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   SpillSlots = RAData->SpillSlots();
 
   if (SpillSlots) {
-    if (IsImmAddSub(SpillSlots * 16)) {
-      sub(sp, sp, SpillSlots * 16);
+    const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
+
+    if (IsImmAddSub(TotalSpillSlotsSize)) {
+      sub(sp, sp, TotalSpillSlotsSize);
     } else {
-      LoadConstant(x0, SpillSlots * 16);
+      LoadConstant(x0, TotalSpillSlotsSize);
       sub(sp, sp, x0);
     }
   }
@@ -854,14 +856,17 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 }
 
 void Arm64JITCore::ResetStack() {
-  if (SpillSlots == 0)
+  if (SpillSlots == 0) {
     return;
+  }
 
-  if (IsImmAddSub(SpillSlots * 16)) {
-    add(sp, sp, SpillSlots * 16);
+  const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
+
+  if (IsImmAddSub(TotalSpillSlotsSize)) {
+    add(sp, sp, TotalSpillSlotsSize);
   } else {
    // Too big to fit in a 12bit immediate
-   LoadConstant(x0, SpillSlots * 16);
+   LoadConstant(x0, TotalSpillSlotsSize);
    add(sp, sp, x0);
   }
 }
