@@ -355,29 +355,37 @@ DEF_OP(SpillRegister) {
         mov(qword [rsp + SlotOffset], GetSrc<RA_64>(Op->Value.ID()));
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+        break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
+    const auto Src = GetSrc(Op->Value.ID());
+
     switch (OpSize) {
       case 4: {
-        movss(dword [rsp + SlotOffset], GetSrc(Op->Value.ID()));
+        movss(dword [rsp + SlotOffset], Src);
         break;
       }
       case 8: {
-        movsd(qword [rsp + SlotOffset], GetSrc(Op->Value.ID()));
+        movsd(qword [rsp + SlotOffset], Src);
         break;
       }
       case 16: {
-        movaps(xword [rsp + SlotOffset], GetSrc(Op->Value.ID()));
+        movaps(xword [rsp + SlotOffset], Src);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+      case 32: {
+        vmovaps(yword [rsp + SlotOffset], ToYMM(Src));
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize);
+        break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
   }
-
-
 }
 
 DEF_OP(FillRegister) {
@@ -403,23 +411,33 @@ DEF_OP(FillRegister) {
         mov(GetDst<RA_64>(Node), qword [rsp + SlotOffset]);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+        break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
+    const auto Dst = GetDst(Node);
+
     switch (OpSize) {
       case 4: {
-        movss(GetDst(Node), dword [rsp + SlotOffset]);
+        movss(Dst, dword [rsp + SlotOffset]);
         break;
       }
       case 8: {
-        movsd(GetDst(Node), qword [rsp + SlotOffset]);
+        movsd(Dst, qword [rsp + SlotOffset]);
         break;
       }
       case 16: {
-        movaps(GetDst(Node), xword [rsp + SlotOffset]);
+        movaps(Dst, xword [rsp + SlotOffset]);
         break;
       }
-      default:  LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+      case 32: {
+        vmovaps(ToYMM(Dst), yword [rsp + SlotOffset]);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize);
+        break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);
