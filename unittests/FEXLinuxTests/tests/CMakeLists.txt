@@ -18,10 +18,6 @@ foreach(TEST ${TESTS})
   get_filename_component(TEST_NAME ${TEST} NAME_WLE)
 
   add_executable(${TEST_NAME}.${BITNESS} ${TEST})
-  if(BITNESS EQUAL 32)
-    target_compile_options(${TEST_NAME}.${BITNESS} PRIVATE -m32)
-    target_link_options(${TEST_NAME}.${BITNESS} PRIVATE -m32)
-  endif()
 endforeach()
 
 target_link_libraries(pthread_cancel.${BITNESS} PRIVATE pthread)

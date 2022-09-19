@@ -29,7 +29,8 @@ option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
 option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
 option(ENABLE_VIXL_SIMULATOR "Forces the FEX JIT to use the VIXL simulator" FALSE)
 
-set (X86_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86.cmake" CACHE FILEPATH "Toolchain file for the x86 (cross-)compiler")
+set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
+set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 # uninstall target
@@ -96,7 +97,6 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   set(_M_X86_64 1)
   add_definitions(-D_M_X86_64=1)
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcx16")
-  set (X86_TOOLCHAIN_FILE "")
 endif()
 
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "^aarch64|^arm64|^armv8\.*")
@@ -414,7 +414,7 @@ if (BUILD_THUNKS)
     BINARY_DIR "Guest"
     CMAKE_ARGS
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_TOOLCHAIN_FILE}"
+      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
