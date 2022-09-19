@@ -23,16 +23,6 @@ $end_info$
 #include <utility>
 #include <vector>
 
-#define STATE x28
-#define TMP1 x0
-#define TMP2 x1
-#define TMP3 x2
-#define TMP4 x3
-
-#define VTMP1 v1
-#define VTMP2 v2
-#define VTMP3 v3
-
 namespace FEXCore::Core {
   struct InternalThreadState;
 }

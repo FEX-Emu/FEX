@@ -38,8 +38,7 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
-#define STATE x28
+constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
   : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)

@@ -17,7 +17,6 @@
 #include <utility>
 
 namespace FEXCore::CPU {
-#define STATE x28
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
 Arm64Emitter::Arm64Emitter(FEXCore::Context::Context *ctx, size_t size)
