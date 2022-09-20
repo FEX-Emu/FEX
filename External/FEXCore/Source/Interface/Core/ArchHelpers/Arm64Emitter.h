@@ -65,7 +65,7 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 // Contains the address to the currently available CPU state
 #define STATE x28
 
-// GPR temporaries (only x2 and x3 can be used across spill boundaries)
+// GPR temporaries. Only x3 can be used across spill boundaries
 // so if these ever need to change, be very careful about that.
 #define TMP1 x0
 #define TMP2 x1
