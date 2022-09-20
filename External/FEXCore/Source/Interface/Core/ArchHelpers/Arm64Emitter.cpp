@@ -298,20 +298,31 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 }
 
 void Arm64Emitter::PushDynamicRegsAndLR() {
-  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8 + RAFPR.size() * 16, 16);
+  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto GPRSize = (RA64.size() + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                    : Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto FPRSize = RAFPR.size() * FPRRegSize;
+  const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
   sub(sp, sp, SPOffset);
   int i = 0;
 
-  for (auto RA : RAFPR)
-  {
-    str(RA.Q(), MemOperand(sp, i * 8));
-    i+=2;
+  if (CanUseSVE) {
+    for (const auto& RA : RAFPR) {
+      mov(TMP4, i * 8);
+      st1b(RA.Z().VnB(), PRED_TMP_32B, SVEMemOperand(sp, TMP4));
+      i += 4;
+    }
+  } else {
+    for (const auto& RA : RAFPR) {
+      str(RA.Q(), MemOperand(sp, i * 8));
+      i += 2;
+    }
   }
 
 #if 0 // All GPRs should be caller saved
-  for (auto RA : RA64)
-  {
+  for (const auto& RA : RA64) {
     str(RA, MemOperand(sp, i * 8));
     i++;
   }
@@ -321,18 +332,29 @@ void Arm64Emitter::PushDynamicRegsAndLR() {
 }
 
 void Arm64Emitter::PopDynamicRegsAndLR() {
-  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8 + RAFPR.size() * 16, 16);
+  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto GPRSize = (RA64.size() + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                    : Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto FPRSize = RAFPR.size() * FPRRegSize;
+  const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
   int i = 0;
 
-  for (auto RA : RAFPR)
-  {
-    ldr(RA.Q(), MemOperand(sp, i * 8));
-    i+=2;
+  if (CanUseSVE) {
+    for (const auto& RA : RAFPR) {
+      mov(TMP4, i * 8);
+      ld1b(RA.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(sp, TMP4));
+      i += 4;
+    }
+  } else {
+    for (const auto& RA : RAFPR) {
+      ldr(RA.Q(), MemOperand(sp, i * 8));
+      i += 2;
+    }
   }
 
 #if 0 // All GPRs should be caller saved
-  for (auto RA : RA64)
-  {
+  for (const auto& RA : RA64) {
     ldr(RA, MemOperand(sp, i * 8));
     i++;
   }
