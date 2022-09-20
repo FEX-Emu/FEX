@@ -137,6 +137,7 @@ DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
   PushDynamicRegsAndLR();
+  SpillStaticRegs();
 
   if (IsGPR(Op->Value.ID())) {
     mov(x0, GetReg<RA_64>(Op->Value.ID()));
@@ -148,10 +149,10 @@ DEF_OP(Print) {
     fmov(x1, GetSrc(Op->Value.ID()).V1D(), 1);
     ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue)));
   }
-  SpillStaticRegs();
-  blr(x3);
-  FillStaticRegs();
 
+  blr(x3);
+
+  FillStaticRegs();
   PopDynamicRegsAndLR();
 }
 

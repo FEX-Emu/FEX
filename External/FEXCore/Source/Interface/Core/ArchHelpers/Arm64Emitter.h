@@ -92,6 +92,10 @@ protected:
   FEXCore::Context::Context *EmitterCTX;
   vixl::aarch64::CPU CPU;
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
+
+  // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
+  //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then
+  //       TMP4 is left alone.
   void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
 

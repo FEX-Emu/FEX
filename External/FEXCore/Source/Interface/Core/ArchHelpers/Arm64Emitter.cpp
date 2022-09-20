@@ -217,7 +217,8 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
           const auto Reg = SRAFPR[i];
 
           if (((1U << Reg.GetCode()) & FPRSpillMask) != 0) {
-            str(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[i][0])));
+            mov(TMP4, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+            st1b(Reg.Z().VnB(), PRED_TMP_32B, SVEMemOperand(STATE, TMP4));
           }
         }
       } else {
@@ -271,7 +272,8 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
           const auto Reg = SRAFPR[i];
 
           if (((1U << Reg.GetCode()) & FPRFillMask) != 0) {
-            ldr(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[i][0])));
+            mov(TMP4, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+            ld1b(Reg.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(STATE, TMP4));
           }
         }
       } else {

@@ -437,10 +437,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
+    SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
-
-    SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
     GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
 #else
@@ -460,10 +459,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     LDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
+    SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
-
-    SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
     GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
 #else
@@ -483,10 +481,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     LUREMHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
+    SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
-
-    SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
     GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
 #else
@@ -506,10 +503,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     LREMHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR();
+    SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
-
-    SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
     GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
 #else
