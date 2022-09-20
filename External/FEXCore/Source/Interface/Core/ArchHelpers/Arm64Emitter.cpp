@@ -260,6 +260,13 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
     if (FPRs) {
       if (EmitterCTX->HostFeatures.SupportsAVX) {
+        // Set up predicate registers.
+        // We don't bother spilling these in SpillStaticRegs,
+        // since all that matters is we restore them on a fill.
+        // It's not a concern if they get trounced by something else.
+        ptrue(PRED_TMP_16B.VnB(), SVE_VL16);
+        ptrue(PRED_TMP_32B.VnB(), SVE_VL32);
+
         for (size_t i = 0; i < SRAFPR.size(); i++) {
           const auto Reg = SRAFPR[i];
 

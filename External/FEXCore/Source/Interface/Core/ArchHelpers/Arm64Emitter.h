@@ -77,6 +77,12 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 #define VTMP2 v2
 #define VTMP3 v3
 
+// Predicate register temporaries (used when AVX support is enabled)
+// PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
+// PRED_TMP_32B indicates a predicate register that indicates the first 32 bytes set to 1.
+#define PRED_TMP_16B p6
+#define PRED_TMP_32B p7
+
 // This class contains common emitter utility functions that can
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public vixl::aarch64::Assembler {
