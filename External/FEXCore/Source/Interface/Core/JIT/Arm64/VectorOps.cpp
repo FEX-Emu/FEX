@@ -61,7 +61,14 @@ DEF_OP(VectorImm) {
       }
     }();
 
-    dup(Dst, Op->Immediate);
+    if (ElementSize > 1 && (Op->Immediate & 0x80)) {
+      // SVE dup uses sign extension where VectorImm wants zext
+      LoadConstant(TMP1.X(), Op->Immediate);
+      dup(Dst, TMP1.X());
+    }
+    else {
+      dup(Dst, static_cast<int8_t>(Op->Immediate));
+    }
   } else {
     if (ElementSize == 8) {
       // movi with 64bit element size doesn't do what we want here
