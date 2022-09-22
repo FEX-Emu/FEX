@@ -1,25 +1,28 @@
 // Simple test of timer_create + SIGEV_THREAD, glibc implements it via SIG32
 
+#include <catch2/catch.hpp>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <cassert>
+#include <optional>
 #include <signal.h>
 #include <time.h>
 
 int test;
 
-void timer_handler(union sigval sv) {
-  auto ok = sv.sival_ptr == &test;
-  printf("timer_handler called, ok = %d\n", ok);
+std::optional<bool> sigval_ack;
 
-  exit(ok ? 0 : -1);
+void timer_handler(union sigval sv) {
+  sigval_ack = sv.sival_ptr == &test;
+  printf("timer_handler called, ok = %d\n", *sigval_ack);
 }
 
-int main() {
-
+// These sometimes crash FEX with SIGSEGV
+TEST_CASE("timer_create and SIGEV_THREAD", "[!mayfail]") {
   timer_t timer;
   sigevent sige;
   itimerspec spec;
@@ -39,9 +42,10 @@ int main() {
 
   timer_settime(timer, 0, &spec, NULL);
 
-  for (;;)
-    sleep(1);
+  while (!sigval_ack) {
+    usleep(10);
+  }
 
-  assert(false && "should never get here");
-  return -2;
+  REQUIRE(sigval_ack.has_value());
+  CHECK(*sigval_ack == true);
 }

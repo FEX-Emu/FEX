@@ -1,3 +1,5 @@
+#include <catch2/catch.hpp>
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +29,7 @@ void sig_handler(int signum) {
     printf("Signal reentering bug\n");
     exit(-1);
   }
-  
+
   if (count < NUMCOUNT) {
     printf("Nested Raising sig%d, %d of %d times\n", signum, 1 + count, NUMCOUNT);
     count2++;
@@ -42,11 +44,8 @@ void sig_handler(int signum) {
   }
 }
 
-int main() {
-  if (signal(SIGN, sig_handler) != 0) {
-    printf("Signal() failed\n");
-    return -2;
-  }
+TEST_CASE("Signals: samask") {
+  REQUIRE(signal(SIGN, sig_handler) == 0);
 
   // test if sigmask blocks during execution as expected
   last = false;
@@ -54,10 +53,7 @@ int main() {
   while (loop) {
     printf("Inside main loop, raising signal\n");
     raise(SIGN);
-    if (loop) {
-      printf("Error: Signal did not get raised\n");
-      return -4;
-    }
+    REQUIRE_FALSE(loop);
   }
   last = true;
   loop = true;
@@ -70,11 +66,6 @@ int main() {
   while (loop) {
     printf("Inside last loop, raising signal\n");
     raise(SIGN);
-    if (loop) {
-      printf("Error: Signal did not get raised\n");
-      return -3;
-    }
+    REQUIRE_FALSE(loop);
   }
-  printf("All good, Exiting\n");
-  return 0;
 }
