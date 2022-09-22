@@ -11,6 +11,8 @@
 
 #include <atomic>
 
+#include <catch2/catch.hpp>
+
 std::atomic<int> result;
 std::atomic<bool> go;
 
@@ -63,7 +65,7 @@ void *thread(void *) {
   return 0;
 }
 
-int main() {
+TEST_CASE("SMC: Concurrent invalidation of different code from different threads") {
   pthread_t tid[10];
   for (int i = 0; i < 10; i++) {
     pthread_create(&tid[i], 0, &thread, 0);
@@ -76,5 +78,5 @@ int main() {
     pthread_join(tid[i], &rv);
   }
 
-  return result;
+  CHECK(result == 0);
 }

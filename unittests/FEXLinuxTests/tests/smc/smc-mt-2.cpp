@@ -26,6 +26,8 @@
 
 #include <atomic>
 
+#include <catch2/catch.hpp>
+
 std::atomic<bool> ready_for_modification;
 std::atomic<bool> thread_unblocked;
 std::atomic<int> thread_counter;
@@ -100,10 +102,8 @@ void RunIteration() {
   munmap(code, 4096);
 }
 
-int main() {
-  
+TEST_CASE("SMC: One thread modifying another thread's code") {
   for (int i = 0; i < 100; i++) {
     RunIteration();
   }
-  return 0;
 }
