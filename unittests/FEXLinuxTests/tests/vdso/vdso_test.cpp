@@ -10,6 +10,8 @@
 #include <time.h>
 #include <stdio.h>
 
+#include <catch2/catch.hpp>
+
 using time_type = int (*) (time_t* tloc);
 time_type time_vdso = (time_type)::time;
 
@@ -119,45 +121,62 @@ static void LoadVDSO() {
 }
 
 
-int main() {
+TEST_CASE("VDSO") {
   LoadVDSO();
-  printf("VDSO funcs:\n");
-  printf("\ttime: %p\n", time_vdso);
-  printf("\tgettimeofday: %p\n", gettimeofday_vdso);
-  printf("\tgettime: %p\n", gettime_vdso);
-  printf("\tgetres: %p\n", getres_vdso);
-  printf("\tgetcpu: %p\n", getcpu_vdso);
+  REQUIRE(time_vdso != 0);
+  REQUIRE(gettimeofday_vdso != 0);
+  REQUIRE(gettime_vdso != 0);
+  REQUIRE(getres_vdso != 0);
+  REQUIRE(getcpu_vdso != 0);
 
-  int result{};
+  // There are few strict guarantees on the return values of these functions,
+  // so instead we make some educated guesses to check for valid outputs below
 
   time_t tloc{};
-  result = time_vdso(&tloc);
-  printf("time\n");
-  printf("\tResult: %d\n", result);
-  printf("\tTime_t: 0x%lx\n", tloc);
+  {
+    int result = time_vdso(&tloc);
+    printf("time\n");
+    CHECK(result != -1);
+    printf("\tResult: %d\n", result);
+    printf("\tTime_t: 0x%lx\n", tloc);
+    CHECK(tloc > 946684800); // Ensure it's later than year 2000
+  }
 
-  timeval tv{};
-  result = gettimeofday_vdso(&tv, nullptr);
-  printf("gettimeofday\n");
-  printf("\tResult: %d\n", result);
-  printf("\tTime: 0x%lx 0x%lx\n", tv.tv_sec, tv.tv_usec);
+  {
+    timeval tv{};
+    int result = gettimeofday_vdso(&tv, nullptr);
+    printf("gettimeofday\n");
+    CHECK(result == 0);
+    printf("\tTime: 0x%lx 0x%lx\n", tv.tv_sec, tv.tv_usec);
+    // Ensure gettimeofday and time results are consistent
+    CHECK(tv.tv_sec >= tloc);
+    CHECK(tv.tv_sec <= tloc + 1);
+  }
 
-  timespec ts{};
-  result = gettime_vdso(CLOCK_MONOTONIC, &ts);
-  printf("clock_gettime\n");
-  printf("\tResult: %d\n", result);
-  printf("\tTime: 0x%lx 0x%lx\n", ts.tv_sec, ts.tv_nsec);
+  {
+    timespec ts{};
+    int result = gettime_vdso(CLOCK_MONOTONIC, &ts);
+    printf("clock_gettime\n");
+    CHECK(result == 0);
+    printf("\tTime: 0x%lx 0x%lx\n", ts.tv_sec, ts.tv_nsec);
+  }
 
-  result = getres_vdso(CLOCK_MONOTONIC, &ts);
-  printf("clock_getres\n");
-  printf("\tResult: %d\n", result);
-  printf("\tTime: 0x%lx 0x%lx\n", ts.tv_sec, ts.tv_nsec);
+  {
+    timespec ts{};
+    int result = getres_vdso(CLOCK_MONOTONIC, &ts);
+    printf("clock_getres\n");
+    CHECK(result == 0);
+    printf("\tTime: 0x%lx 0x%lx\n", ts.tv_sec, ts.tv_nsec);
+    CHECK(ts.tv_sec == 0);
+    CHECK(ts.tv_nsec > 0);
+  }
 
-  uint32_t cpu, node;
-  result = getcpu_vdso(&cpu, &node);
-  printf("getcpu\n");
-  printf("\tResult: %d\n", result);
-  printf("\tCPU: 0x%x\n", cpu);
-  printf("\tNode: 0x%x\n", node);
-  return 0;
+  {
+    uint32_t cpu, node;
+    int result = getcpu_vdso(&cpu, &node);
+    printf("getcpu\n");
+    CHECK(result == 0);
+    printf("\tCPU: 0x%x\n", cpu);
+    printf("\tNode: 0x%x\n", node);
+  }
 }
