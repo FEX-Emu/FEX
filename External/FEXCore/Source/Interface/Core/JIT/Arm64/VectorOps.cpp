@@ -81,42 +81,6 @@ DEF_OP(VectorImm) {
   }
 }
 
-DEF_OP(SplatVector2) {
-  auto Op = IROp->C<IR::IROp_SplatVector2>();
-  const uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
-
-  const uint8_t ElementSize = OpSize / 2;
-
-  switch (ElementSize) {
-    case 4:
-      dup(GetDst(Node).V4S(), GetSrc(Op->Scalar.ID()).V4S(), 0);
-    break;
-    case 8:
-      dup(GetDst(Node).V2D(), GetSrc(Op->Scalar.ID()).V2D(), 0);
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.Size); break;
-  }
-}
-
-DEF_OP(SplatVector4) {
-  auto Op = IROp->C<IR::IROp_SplatVector4>();
-  const uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize <= 16, "Can't handle a vector of size: {}", OpSize);
-
-  const uint8_t ElementSize = OpSize / 4;
-
-  switch (ElementSize) {
-    case 4:
-      dup(GetDst(Node).V4S(), GetSrc(Op->Scalar.ID()).V4S(), 0);
-    break;
-    case 8:
-      dup(GetDst(Node).V2D(), GetSrc(Op->Scalar.ID()).V2D(), 0);
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.Size); break;
-  }
-}
-
 DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
   const uint8_t OpSize = IROp->Size;
@@ -2694,8 +2658,6 @@ void Arm64JITCore::RegisterVectorHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(VECTORZERO,        VectorZero);
   REGISTER_OP(VECTORIMM,         VectorImm);
-  REGISTER_OP(SPLATVECTOR2,      SplatVector2);
-  REGISTER_OP(SPLATVECTOR4,      SplatVector4);
   REGISTER_OP(VMOV,              VMov);
   REGISTER_OP(VAND,              VAnd);
   REGISTER_OP(VBIC,              VBic);
