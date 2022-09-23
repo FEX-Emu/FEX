@@ -364,11 +364,11 @@
       },
 
       "StoreContext u8:#ByteSize, RegisterClass:$Class, SSA:$Value, u32:$Offset": {
-				"Desc": ["Stores a value to the context with offset",
-								 "Ctx[Offset] = Value",
-								 "Zero Extends if value's type is too small",
-								 "Truncates if value's type is too large"
-								],
+        "Desc": ["Stores a value to the context with offset",
+                 "Ctx[Offset] = Value",
+                 "Zero Extends if value's type is too small",
+                 "Truncates if value's type is too large"
+                ],
         "HasSideEffects": true,
         "DestSize": "ByteSize",
         "EmitValidation": [
@@ -845,27 +845,25 @@
         "DestSize": "std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(_TrueVal), GetOpSize(_FalseVal)))"
       },
       "GPR = Extr GPR:$Upper, GPR:$Lower, u8:$LSB": {
-				"Desc": ["Concats the two GPRs to create a value that is the size of the full two GPRs",
-								 "It then extracts a bitfield width that size of a GPR from the LSB",
-								 "Valid LSB range is 0-31 for 32bit and 0-63 for 64bit",
-								 "<Size * 2> ConcatValue = $Upper:$Lower",
-								 "Result = ConcatValue<LSB+Size - 1: LSB>"
-								]
+        "Desc": ["Concats the two GPRs to create a value that is the size of the full two GPRs",
+                 "It then extracts a bitfield width that size of a GPR from the LSB",
+                 "Valid LSB range is 0-31 for 32bit and 0-63 for 64bit",
+                 "<Size * 2> ConcatValue = $Upper:$Lower",
+                 "Result = ConcatValue<LSB+Size - 1: LSB>"
+                ]
       },
       "GPR = PDep GPR:$Input, GPR:$Mask": {
-				"Desc": [
-					"Performs a parallel bit deposit.",
-					"Takes the contiguous low-order bits and deposits them into",
-					"the destination at the locations specified by the Mask."
-				]
+        "Desc": ["Performs a parallel bit deposit.",
+                 "Takes the contiguous low-order bits and deposits them into",
+                 "the destination at the locations specified by the Mask."
+                ]
       },
 
       "GPR = PExt GPR:$Input, GPR:$Mask": {
-				"Desc": [
-					"Performs a parallel bit extract.",
-					"Each bit set in the mask will select the corresponding bit in the Input",
-					"and transfers them to the lower contiguous bits in the destination."
-				]
+        "Desc": ["Performs a parallel bit extract.",
+                 "Each bit set in the mask will select the corresponding bit in the Input",
+                 "and transfers them to the lower contiguous bits in the destination."
+                ]
       },
 
       "GPR = LDiv GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
@@ -924,15 +922,6 @@
       }
     },
     "Vector": {
-      "FPR = SplatVector2 FPR:$Scalar": {
-        "NumElements": "2",
-        "DestSize": "GetOpSize(_Scalar) * 2"
-      },
-      "FPR = SplatVector4 FPR:$Scalar": {
-        "NumElements": "4",
-        "DestSize": "GetOpSize(_Scalar) * 4"
-      },
-
       "FPR = VMov u8:#RegisterSize, FPR:$Source": {
         "Desc" : ["Copy vector register",
                   "When Register size is smaller than Source register size,",
@@ -1124,9 +1113,9 @@
       },
 
       "FPR = VRev64 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
-				"Desc" : ["Reverses elements in 64-bit halfwords",
-									"Available element size: 1byte, 2 byte, 4 byte"
-								 ],
+        "Desc" : ["Reverses elements in 64-bit halfwords",
+                  "Available element size: 1byte, 2 byte, 4 byte"
+                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
@@ -1583,9 +1572,9 @@
         "DestSize": "16"
       },
       "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2, u32:$Flags": {
-				"Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
-								 "Ordering flag result is true if either float input is NaN"
-								],
+        "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
+                 "Ordering flag result is true if either float input is NaN"
+                ],
         "DestSize": "4"
       },
       "FPR = F80BCDLoad FPR:$X80Src": {

@@ -978,7 +978,8 @@ void OpDispatchBuilder::PAVGOp<2>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Res =  _SplatVector2(Src);
+  OrderedNode *Res = _VDupElement(16, GetSrcSize(Op), Src, 0);
+
   StoreResult(FPRClass, Op, Res, -1);
 }
 

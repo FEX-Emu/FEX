@@ -186,8 +186,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   // Vector ops
   REGISTER_OP(VECTORZERO,             VectorZero);
   REGISTER_OP(VECTORIMM,              VectorImm);
-  REGISTER_OP(SPLATVECTOR2,           SplatVector);
-  REGISTER_OP(SPLATVECTOR4,           SplatVector);
   REGISTER_OP(VMOV,                   VMov);
   REGISTER_OP(VAND,                   VAnd);
   REGISTER_OP(VBIC,                   VBic);

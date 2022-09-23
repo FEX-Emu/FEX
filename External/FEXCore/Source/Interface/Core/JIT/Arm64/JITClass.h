@@ -360,8 +360,6 @@ private:
   ///< Vector ops
   DEF_OP(VectorZero);
   DEF_OP(VectorImm);
-  DEF_OP(SplatVector2);
-  DEF_OP(SplatVector4);
   DEF_OP(VMov);
   DEF_OP(VAnd);
   DEF_OP(VBic);
