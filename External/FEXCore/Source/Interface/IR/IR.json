@@ -1320,10 +1320,6 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VInsScalarElement u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, FPR:$DestVector, FPR:$SrcScalar": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
       "FPR = VInsGPR u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"

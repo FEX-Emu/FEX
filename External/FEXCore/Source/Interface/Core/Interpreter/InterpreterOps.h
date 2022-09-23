@@ -264,7 +264,6 @@ namespace FEXCore::CPU {
   DEF_OP(VUShrS);
   DEF_OP(VSShrS);
   DEF_OP(VInsElement);
-  DEF_OP(VInsScalarElement);
   DEF_OP(VExtractElement);
   DEF_OP(VDupElement);
   DEF_OP(VExtr);

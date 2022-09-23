@@ -1618,41 +1618,6 @@ DEF_OP(VInsElement) {
   movapd(GetDst(Node), xmm15);
 }
 
-DEF_OP(VInsScalarElement) {
-  auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-  movapd(xmm15, GetSrc(Op->DestVector.ID()));
-
-  // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
-
-  // pextrq reg64/mem64, xmm, imm
-  // pinsrq xmm, reg64/mem64, imm8
-  switch (Op->Header.ElementSize) {
-  case 1: {
-    pextrb(eax, GetSrc(Op->SrcScalar.ID()), 0);
-    pinsrb(xmm15, eax, Op->DestIdx);
-  break;
-  }
-  case 2: {
-    pextrw(eax, GetSrc(Op->SrcScalar.ID()), 0);
-    pinsrw(xmm15, eax, Op->DestIdx);
-  break;
-  }
-  case 4: {
-    pextrd(eax, GetSrc(Op->SrcScalar.ID()), 0);
-    pinsrd(xmm15, eax, Op->DestIdx);
-  break;
-  }
-  case 8: {
-    pextrq(rax, GetSrc(Op->SrcScalar.ID()), 0);
-    pinsrq(xmm15, rax, Op->DestIdx);
-  break;
-  }
-  default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  }
-
-  movapd(GetDst(Node), xmm15);
-}
-
 DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
 
@@ -2395,7 +2360,6 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUSHRS,            VUShrS);
   REGISTER_OP(VSSHRS,            VSShrS);
   REGISTER_OP(VINSELEMENT,       VInsElement);
-  REGISTER_OP(VINSSCALARELEMENT, VInsScalarElement);
   REGISTER_OP(VEXTRACTELEMENT,   VExtractElement);
   REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);

@@ -2077,41 +2077,6 @@ DEF_OP(VInsElement) {
   }
 }
 
-DEF_OP(VInsScalarElement) {
-  auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-
-  auto reg = GetSrc(Op->DestVector.ID());
-
-  if (GetDst(Node).GetCode() != reg.GetCode()) {
-    mov(VTMP1, reg);
-    reg = VTMP1;
-  }
-
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      mov(reg.V16B(), Op->DestIdx, GetSrc(Op->SrcScalar.ID()).V16B(), 0);
-    break;
-    }
-    case 2: {
-      mov(reg.V8H(), Op->DestIdx, GetSrc(Op->SrcScalar.ID()).V8H(), 0);
-    break;
-    }
-    case 4: {
-      mov(reg.V4S(), Op->DestIdx, GetSrc(Op->SrcScalar.ID()).V4S(), 0);
-    break;
-    }
-    case 8: {
-      mov(reg.V2D(), Op->DestIdx, GetSrc(Op->SrcScalar.ID()).V2D(), 0);
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  }
-
-  if (GetDst(Node).GetCode() != reg.GetCode()) {
-    mov(GetDst(Node), reg);
-  }
-}
-
 DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
   switch (Op->Header.Size) {
@@ -2754,7 +2719,6 @@ void Arm64JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUSHRS,            VUShrS);
   REGISTER_OP(VSSHRS,            VSShrS);
   REGISTER_OP(VINSELEMENT,       VInsElement);
-  REGISTER_OP(VINSSCALARELEMENT, VInsScalarElement);
   REGISTER_OP(VEXTRACTELEMENT,   VExtractElement);
   REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);

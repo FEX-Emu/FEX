@@ -1424,46 +1424,6 @@ DEF_OP(VInsElement) {
   memcpy(GDP, Tmp, OpSize);
 }
 
-DEF_OP(VInsScalarElement) {
-  auto Op = IROp->C<IR::IROp_VInsScalarElement>();
-  const uint8_t OpSize = IROp->Size;
-
-  void *Src1 = GetSrc<void*>(Data->SSAData, Op->DestVector);
-  void *Src2 = GetSrc<void*>(Data->SSAData, Op->SrcScalar);
-  uint8_t Tmp[16];
-
-  // Copy src1 in to dest
-  memcpy(Tmp, Src1, OpSize);
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
-      auto Src2_d = *reinterpret_cast<uint8_t*>(Src2);
-      Dst_d[Op->DestIdx] = Src2_d;
-      break;
-    }
-    case 2: {
-      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
-      auto Src2_d = *reinterpret_cast<uint16_t*>(Src2);
-      Dst_d[Op->DestIdx] = Src2_d;
-      break;
-    }
-    case 4: {
-      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
-      auto Src2_d = *reinterpret_cast<uint32_t*>(Src2);
-      Dst_d[Op->DestIdx] = Src2_d;
-      break;
-    }
-    case 8: {
-      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
-      auto Src2_d = *reinterpret_cast<uint64_t*>(Src2);
-      Dst_d[Op->DestIdx] = Src2_d;
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  };
-  memcpy(GDP, Tmp, OpSize);
-}
-
 DEF_OP(VExtractElement) {
   auto Op = IROp->C<IR::IROp_VExtractElement>();
 
