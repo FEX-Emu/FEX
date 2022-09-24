@@ -601,10 +601,12 @@ template<> struct fex_gen_config<XESetError> : fexgen::returns_guest_pointer {};
 
 template<> struct fex_gen_config<XSetIOErrorHandler> : fexgen::returns_guest_pointer {};
 
+#if __SIZEOF_POINTER__ == 8
+template<> struct fex_gen_config<_XData32> {};
 template<> struct fex_gen_config<_XRead32> {};
+#endif
 template<> struct fex_gen_config<_XRead> {};
 template<> struct fex_gen_config<_XReadPad> {};
-template<> struct fex_gen_config<_XData32> {};
 template<> struct fex_gen_config<_XEatData> {};
 template<> struct fex_gen_config<_XEatDataWords> {};
 

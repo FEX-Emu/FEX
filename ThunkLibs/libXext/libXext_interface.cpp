@@ -126,8 +126,10 @@ template<> struct fex_gen_config<XextRemoveDisplay> {};
 template<> struct fex_gen_config<XextFindDisplay> {};
 template<> struct fex_gen_config<_XGetRequest> {};
 template<> struct fex_gen_config<_XFlushGCCache> {};
+#if __SIZEOF_POINTER__ == 8
 template<> struct fex_gen_config<_XData32> {};
 template<> struct fex_gen_config<_XRead32> {};
+#endif
 template<> struct fex_gen_config<_XDeqAsyncHandler> {};
 template<> struct fex_gen_config<_XError> {};
 template<> struct fex_gen_config<_XIOError> {};
