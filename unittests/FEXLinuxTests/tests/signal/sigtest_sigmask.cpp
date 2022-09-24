@@ -1,3 +1,5 @@
+#include <catch2/catch.hpp>
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,26 +25,19 @@ void sig_handler(int signum, siginfo_t *info, void *context) {
   sigfillset(&uctx->uc_sigmask);
 }
 
-int main() {
+TEST_CASE("Signals: sigmask") {
   struct sigaction act = {0};
 
   act.sa_flags = SA_SIGINFO;
   act.sa_sigaction = &sig_handler;
-  if (sigaction(SIGN, &act, NULL) != 0) {
-    printf("sigaction() failed\n");
-    return -2;
-  }
+  REQUIRE(sigaction(SIGN, &act, NULL) == 0);
 
   loop = true;
   while (loop) {
     printf("Inside main loop, raising signal\n");
     raise(SIGN);
-    if (loop) {
-      printf("Error: Signal did not get raised\n");
-      return -3;
-    }
-  }
 
-  printf("Exiting\n");
-  return 0;
+    // Ensure the signal got indeed raised
+    REQUIRE_FALSE(loop);
+  }
 }

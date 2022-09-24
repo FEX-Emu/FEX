@@ -1,3 +1,7 @@
+#include "invalid_util.h"
+
+#include <catch2/catch.hpp>
+
 #include <atomic>
 #include <signal.h>
 #include <sys/mman.h>
@@ -9,7 +13,7 @@ __attribute__((naked, nocf_check))
   static void InvalidINT() {
   __asm volatile(R"(
   ud2;
-  ret; # Just incase it gets past the int
+  ret;
   )");
   }
 
@@ -19,31 +23,25 @@ constexpr int EXPECTED_ERR = 0;
 constexpr int EXPECTED_SI_CODE = 2;
 constexpr int EXPECTED_SIGNAL = SIGILL;
 
-static void handler(int signal, siginfo_t *siginfo, void* context) {
-  ucontext_t* _context = (ucontext_t*)context;
-#ifndef REG_RIP
-#define REG_RIP REG_EIP
-#endif
-  if (_context->uc_mcontext.gregs[REG_RIP] == EXPECTED_RIP &&
-      _context->uc_mcontext.gregs[REG_TRAPNO] == EXPECTED_TRAPNO &&
-      _context->uc_mcontext.gregs[REG_ERR] == EXPECTED_ERR &&
-      siginfo->si_code == EXPECTED_SI_CODE &&
-      signal == EXPECTED_SIGNAL) {
-    exit(0);
-  }
-  else {
-    exit(1);
-  }
-}
-
-int main() {
+TEST_CASE("Signals: Invalid UD2") {
+  capturing_handler_skip = 2;
   struct sigaction act{};
-  act.sa_sigaction = handler;
+  act.sa_sigaction = CapturingHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(SIGSEGV, &act, nullptr);
   sigaction(SIGTRAP, &act, nullptr);
   sigaction(SIGILL, &act, nullptr);
 
   InvalidINT();
-  return 1;
+
+#ifndef REG_RIP
+#define REG_RIP REG_EIP
+#endif
+
+  REQUIRE(from_handler.has_value());
+  CHECK(from_handler->mctx.gregs[REG_RIP] == EXPECTED_RIP);
+  CHECK(from_handler->mctx.gregs[REG_TRAPNO] == EXPECTED_TRAPNO);
+  CHECK(from_handler->mctx.gregs[REG_ERR] == EXPECTED_ERR);
+  CHECK(from_handler->si_code == EXPECTED_SI_CODE);
+  CHECK(from_handler->signal == EXPECTED_SIGNAL);
 }

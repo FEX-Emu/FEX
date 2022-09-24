@@ -41,54 +41,33 @@ function(AddTests Tests BinDirectory Bitness)
     # Used to insert a configuration dependency to the test file
     CONFIGURE_FILE(${TEST} ${CMAKE_BINARY_DIR}/junk.file)
 
-    set(ARGS_REGEX "auto args = \"([^\"]+)\";")
-    string(REGEX MATCH ${ARGS_REGEX} TEST_ARGS ${TEST_CODE})
-    # if cannot handle multiline variables, so we have to match the line first
-    if(${TEST_ARGS} MATCHES ${ARGS_REGEX})
-      string(REGEX REPLACE " |," ";" ARGS "${CMAKE_MATCH_1}")
-      set(VARIATIONS "")
-      foreach(ARG ${ARGS})
-        list(APPEND VARIATIONS "${TEST_NAME}-${ARG}:${ARG}")
-      endforeach()
-    else()
-      set(VARIATIONS "${TEST_NAME}:")
-    endif()
+    set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
+    set(TEST_CASE "${TEST_NAME}.${Bitness}")
 
-    foreach(VARIATION ${VARIATIONS})
-      string(REGEX REPLACE ":" ";" VARIATION "${VARIATION}")
-      list(GET VARIATION 0 VARIATION_NAME)
-      list(GET VARIATION 1 VARIATION_ARG)
-      set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
-
-      set(TEST_CASE "${VARIATION_NAME}.${Bitness}")
-
-      # Add jit test case
-      add_test(NAME "${TEST_CASE}.jit.flt"
+    # Add jit test case
+    add_test(NAME "${TEST_CASE}.jit.flt"
+      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
+      "${TEST_CASE}"
+      "guest"
+      "$<TARGET_FILE:FEXLoader>"
+      "--no-silent" "-c" "irjit" "-n" "500" "--"
+      "${BIN_PATH}")
+    if (_M_X86_64)
+      # Add host test case
+      add_test(NAME "${TEST_CASE}.host.flt"
         COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures_Host"
         "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests_Host"
         "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
         "${TEST_CASE}"
-        "guest"
-        "$<TARGET_FILE:FEXLoader>"
-        "--no-silent" "-c" "irjit" "-n" "500" "--"
-        "${BIN_PATH}"
-        "${VARIATION_ARG}")
-      if (_M_X86_64)
-        # Add host test case
-        add_test(NAME "${TEST_CASE}.host.flt"
-          COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-          "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures_Host"
-          "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
-          "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests_Host"
-          "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
-          "${TEST_CASE}"
-          "host"
-          "${BIN_PATH}"
-          "${VARIATION_ARG}")
-      endif()
-    endforeach()
+        "host"
+        "${BIN_PATH}")
+    endif()
   endforeach()
 endfunction()
 

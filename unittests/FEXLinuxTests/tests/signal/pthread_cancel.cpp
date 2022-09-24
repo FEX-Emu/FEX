@@ -1,3 +1,5 @@
+#include <catch2/catch.hpp>
+
 #include <atomic>
 #include <errno.h>
 #include <pthread.h>
@@ -59,36 +61,26 @@ static void *thread_func(void *ignored_argument) {
   return NULL;
 }
 
-int main(void) {
+TEST_CASE("pthreads cancel") {
   pthread_t thr;
   void *res;
   int s;
 
   /* Start a thread and then send it a cancellation request. */
 
-  s = pthread_create(&thr, NULL, &thread_func, NULL);
-  if (s != 0)
-    handle_error_en(s, "pthread_create");
+  REQUIRE(pthread_create(&thr, NULL, &thread_func, NULL) == 0);
 
   while (!thread_ready.load())
     ;
 
   printf("main(): sending cancellation request\n");
-  s = pthread_cancel(thr);
-  if (s != 0)
-    handle_error_en(s, "pthread_cancel");
+  REQUIRE(pthread_cancel(thr) == 0);
 
   cancel_sent = true;
 
   /* Join with thread to see what its exit status was. */
 
-  s = pthread_join(thr, &res);
-  if (s != 0)
-    handle_error_en(s, "pthread_join");
+  REQUIRE(pthread_join(thr, &res) == 0);
 
-  if (res == PTHREAD_CANCELED)
-    printf("main(): thread was canceled\n");
-  else
-    printf("main(): thread wasn't canceled (shouldn't happen!)\n");
-  exit(EXIT_SUCCESS);
+  CHECK(res == PTHREAD_CANCELED);
 }
