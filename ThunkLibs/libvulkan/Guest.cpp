@@ -56,7 +56,7 @@ static PFN_vkVoidFunction MakeGuestCallable(const char* origin, PFN_vkVoidFuncti
         }
         return nullptr;
     }
-    fprintf(stderr, "Linking address %p to host invoker %#lx\n", func, It->second);
+    fprintf(stderr, "Linking address %p to host invoker %#zx\n", func, It->second);
     LinkAddressToFunction((uintptr_t)func, It->second);
     return func;
 }
