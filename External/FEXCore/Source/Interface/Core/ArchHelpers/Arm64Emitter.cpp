@@ -217,7 +217,8 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
           const auto Reg = SRAFPR[i];
 
           if (((1U << Reg.GetCode()) & FPRSpillMask) != 0) {
-            str(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[i][0])));
+            mov(TMP4, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+            st1b(Reg.Z().VnB(), PRED_TMP_32B, SVEMemOperand(STATE, TMP4));
           }
         }
       } else {
@@ -260,11 +261,19 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
     if (FPRs) {
       if (EmitterCTX->HostFeatures.SupportsAVX) {
+        // Set up predicate registers.
+        // We don't bother spilling these in SpillStaticRegs,
+        // since all that matters is we restore them on a fill.
+        // It's not a concern if they get trounced by something else.
+        ptrue(PRED_TMP_16B.VnB(), SVE_VL16);
+        ptrue(PRED_TMP_32B.VnB(), SVE_VL32);
+
         for (size_t i = 0; i < SRAFPR.size(); i++) {
           const auto Reg = SRAFPR[i];
 
           if (((1U << Reg.GetCode()) & FPRFillMask) != 0) {
-            ldr(Reg.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.avx.data[i][0])));
+            mov(TMP4, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+            ld1b(Reg.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(STATE, TMP4));
           }
         }
       } else {
@@ -289,20 +298,31 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 }
 
 void Arm64Emitter::PushDynamicRegsAndLR() {
-  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8 + RAFPR.size() * 16, 16);
+  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto GPRSize = (RA64.size() + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                    : Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto FPRSize = RAFPR.size() * FPRRegSize;
+  const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
   sub(sp, sp, SPOffset);
   int i = 0;
 
-  for (auto RA : RAFPR)
-  {
-    str(RA.Q(), MemOperand(sp, i * 8));
-    i+=2;
+  if (CanUseSVE) {
+    for (const auto& RA : RAFPR) {
+      mov(TMP4, i * 8);
+      st1b(RA.Z().VnB(), PRED_TMP_32B, SVEMemOperand(sp, TMP4));
+      i += 4;
+    }
+  } else {
+    for (const auto& RA : RAFPR) {
+      str(RA.Q(), MemOperand(sp, i * 8));
+      i += 2;
+    }
   }
 
 #if 0 // All GPRs should be caller saved
-  for (auto RA : RA64)
-  {
+  for (const auto& RA : RA64) {
     str(RA, MemOperand(sp, i * 8));
     i++;
   }
@@ -312,18 +332,29 @@ void Arm64Emitter::PushDynamicRegsAndLR() {
 }
 
 void Arm64Emitter::PopDynamicRegsAndLR() {
-  uint64_t SPOffset = AlignUp((RA64.size() + 1) * 8 + RAFPR.size() * 16, 16);
+  const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
+  const auto GPRSize = (RA64.size() + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                    : Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto FPRSize = RAFPR.size() * FPRRegSize;
+  const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
   int i = 0;
 
-  for (auto RA : RAFPR)
-  {
-    ldr(RA.Q(), MemOperand(sp, i * 8));
-    i+=2;
+  if (CanUseSVE) {
+    for (const auto& RA : RAFPR) {
+      mov(TMP4, i * 8);
+      ld1b(RA.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(sp, TMP4));
+      i += 4;
+    }
+  } else {
+    for (const auto& RA : RAFPR) {
+      ldr(RA.Q(), MemOperand(sp, i * 8));
+      i += 2;
+    }
   }
 
 #if 0 // All GPRs should be caller saved
-  for (auto RA : RA64)
-  {
+  for (const auto& RA : RA64) {
     ldr(RA, MemOperand(sp, i * 8));
     i++;
   }

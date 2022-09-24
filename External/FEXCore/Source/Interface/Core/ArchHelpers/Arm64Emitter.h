@@ -65,7 +65,7 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 // Contains the address to the currently available CPU state
 #define STATE x28
 
-// GPR temporaries (only x2 and x3 can be used across spill boundaries)
+// GPR temporaries. Only x3 can be used across spill boundaries
 // so if these ever need to change, be very careful about that.
 #define TMP1 x0
 #define TMP2 x1
@@ -77,6 +77,12 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 #define VTMP2 v2
 #define VTMP3 v3
 
+// Predicate register temporaries (used when AVX support is enabled)
+// PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
+// PRED_TMP_32B indicates a predicate register that indicates the first 32 bytes set to 1.
+#define PRED_TMP_16B p6
+#define PRED_TMP_32B p7
+
 // This class contains common emitter utility functions that can
 // be used by both Arm64 JIT and ARM64 Dispatcher
 class Arm64Emitter : public vixl::aarch64::Assembler {
@@ -86,6 +92,10 @@ protected:
   FEXCore::Context::Context *EmitterCTX;
   vixl::aarch64::CPU CPU;
   void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
+
+  // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
+  //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then
+  //       TMP4 is left alone.
   void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
 

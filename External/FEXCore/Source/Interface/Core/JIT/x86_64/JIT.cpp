@@ -60,32 +60,42 @@ static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
 namespace FEXCore::CPU {
 
 void X86JITCore::PushRegs() {
-  sub(rsp, 16 * RAXMM_x.size());
+  const auto AVXRegSize = Core::CPUState::XMM_AVX_REG_SIZE;
+
+  sub(rsp, AVXRegSize * RAXMM_x.size());
   for (size_t i = 0; i < RAXMM_x.size(); ++i) {
-    movaps(ptr[rsp + i * 16], RAXMM_x[i]);
+    vmovups(ptr[rsp + i * AVXRegSize], ToYMM(RAXMM_x[i]));
   }
 
-  for (auto &Reg : RA64)
+  for (const auto &Reg : RA64) {
     push(Reg);
+  }
 
-  auto NumPush = RA64.size();
-  if (NumPush & 1)
-    sub(rsp, 8); // Align
+  const auto NumPush = RA64.size();
+  if ((NumPush & 1) != 0) {
+    // Align
+    sub(rsp, 8);
+  }
 }
 
 void X86JITCore::PopRegs() {
-  auto NumPush = RA64.size();
+  const auto AVXRegSize = Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto NumPush = RA64.size();
 
-  if (NumPush & 1)
-    add(rsp, 8); // Align
-  for (uint32_t i = RA64.size(); i > 0; --i)
-    pop(RA64[i - 1]);
-
-  for (size_t i = 0; i < RAXMM_x.size(); ++i) {
-    movaps(RAXMM_x[i], ptr[rsp + i * 16]);
+  if ((NumPush & 1) != 0) {
+    // Align
+    add(rsp, 8);
   }
 
-  add(rsp, 16 * RAXMM_x.size());
+  for (uint32_t i = RA64.size(); i > 0; --i) {
+    pop(RA64[i - 1]);
+  }
+
+  for (size_t i = 0; i < RAXMM_x.size(); ++i) {
+    vmovups(ToYMM(RAXMM_x[i]), ptr[rsp + i * AVXRegSize]);
+  }
+
+  add(rsp, AVXRegSize * RAXMM_x.size());
 }
 
 void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {

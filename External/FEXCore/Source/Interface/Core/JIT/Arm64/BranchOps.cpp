@@ -471,6 +471,7 @@ DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
   PushDynamicRegsAndLR();
+  SpillStaticRegs();
 
   // x0 = CPUID Handler
   // x1 = CPUID Function
@@ -479,14 +480,13 @@ DEF_OP(CPUID) {
   ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction)));
   mov(x1, GetReg<RA_64>(Op->Function.ID()));
   mov(x2, GetReg<RA_64>(Op->Leaf.ID()));
-  SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
   GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(x3);
 #else
   blr(x3);
 #endif
-  FillStaticRegs();
 
+  FillStaticRegs();
   PopDynamicRegsAndLR();
 
   // Results are in x0, x1
