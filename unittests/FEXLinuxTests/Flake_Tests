@@ -3,3 +3,4 @@ smc-mt-2.32
 smc-mt-1.64
 smc-mt-2.64
 pthread_cancel.64
+pthread_cancel.32
