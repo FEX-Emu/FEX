@@ -126,10 +126,20 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   uint8_t *sha256 = (uint8_t *)(Op->PC + 2);
 
-  _Thunk(
-    _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI)),
-    *reinterpret_cast<SHA256Sum*>(sha256)
-  );
+  if (CTX->Config.Is64BitMode) {
+    // x86-64 ABI puts the function argument in RDI
+    _Thunk(
+      _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI)),
+      *reinterpret_cast<SHA256Sum*>(sha256)
+    );
+  }
+  else {
+    // x86 fastcall ABI puts the function argument in ECX
+    _Thunk(
+      _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX)),
+      *reinterpret_cast<SHA256Sum*>(sha256)
+    );
+  }
 
   auto Constant = _Constant(GPRSize);
   auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);

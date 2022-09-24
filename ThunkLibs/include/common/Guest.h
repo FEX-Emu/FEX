@@ -4,18 +4,25 @@
 
 #include "PackedArguments.h"
 
+#if __SIZEOF_POINTER__ == 8
+#define THUNK_ABI
+#else
+#define THUNK_ABI [[gnu::fastcall]]
+#endif
+
 template<typename signature>
+THUNK_ABI
 const int (*fexthunks_invoke_callback)(void*);
 
 #ifndef _M_ARM_64
 #define MAKE_THUNK(lib, name, hash) \
-  extern "C" int fexthunks_##lib##_##name(void *args); \
+  extern "C" THUNK_ABI int fexthunks_##lib##_##name(void *args); \
   asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
 
 #define MAKE_CALLBACK_THUNK(name, signature, hash) \
-  extern "C" int fexthunks_##name(void *args); \
+  extern "C" THUNK_ABI int fexthunks_##name(void *args); \
   asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash ); \
-  template<> inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
+  template<> THUNK_ABI inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
 
 #else
 // We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
@@ -112,14 +119,14 @@ inline Result CallHostFunction(Args... args) {
 // Convenience wrapper that returns the function pointer to a CallHostFunction
 // instantiation matching the function signature of `host_func`
 template<typename Result, typename...Args>
-static auto GetCallerForHostFunction(Result (*host_func)(Args...))
-    -> Result(*)(Args...) {
-  return &CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
+static auto GetCallerForHostFunction(THUNK_ABI Result (*host_func)(Args...))
+    -> THUNK_ABI Result(*)(Args...) {
+  return &CallHostFunction<fexthunks_invoke_callback<THUNK_ABI Result(Args...)>, Result, Args...>;
 }
 
 // Ensures the given host function can safely be called from guest code.
 template<typename Result, typename...Args>
-inline void MakeHostFunctionGuestCallable(Result (*host_func)(Args...)) {
+inline void MakeHostFunctionGuestCallable(THUNK_ABI Result (*host_func)(Args...)) {
   auto caller = (uintptr_t)GetCallerForHostFunction(host_func);
   LinkAddressToFunction((uintptr_t)host_func, (uintptr_t)caller);
 }
