@@ -390,11 +390,9 @@ int main(int argc, char **argv, char **const envp) {
   auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
   auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
 
-  if (Loader.Is64BitMode()) {
-    // Load VDSO in to memory prior to mapping our ELFs.
-    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Mapper);
-    Loader.SetVDSOBase(VDSOBase);
-  }
+  // Load VDSO in to memory prior to mapping our ELFs.
+  void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), Mapper);
+  Loader.SetVDSOBase(VDSOBase);
 
   if (!Loader.MapMemory(Mapper, Unmapper)) {
     // failed to map

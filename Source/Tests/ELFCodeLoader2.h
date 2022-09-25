@@ -465,17 +465,18 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
       // we don't support vsyscall so we don't set those
       //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
-      if (VDSOBase) {
-        AuxVariables.emplace_back(auxv_t{33, reinterpret_cast<uint64_t>(VDSOBase)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
-      }
     }
     else {
       AuxVariables.emplace_back(auxv_t{4, 0x20}); // AT_PHENT
 
-      // we don't support vsyscall or vDSO so we don't set those
+      // we don't support vsyscall so we don't set those
       //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
-      //AuxVariables.emplace_back(auxv_t{33, 0}); // AT_SYSINFO_EHDR - Address of the start of VDSO
     }
+
+    if (VDSOBase) {
+      AuxVariables.emplace_back(auxv_t{33, reinterpret_cast<uint64_t>(VDSOBase)}); // AT_SYSINFO_EHDR - Address of the start of VDSO
+    }
+
     AuxVariables.emplace_back(auxv_t{3, MainElfBase + MainElf.ehdr.e_phoff}); // Program header
     AuxVariables.emplace_back(auxv_t{7, InterpeterElfBase}); // AT_BASE - Interpreter address
     AuxVariables.emplace_back(auxv_t{9, MainElfEntrypoint}); // AT_ENTRY
