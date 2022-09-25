@@ -413,8 +413,26 @@ if (BUILD_THUNKS)
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
     BINARY_DIR "Guest"
     CMAKE_ARGS
+      "-DBITNESS=64"
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
+      "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
+      "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
+      "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
+      "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS ON
+    DEPENDS thunkgen
+  )
+
+  ExternalProject_Add(guest-libs-32
+    PREFIX guest-libs-32
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
+    BINARY_DIR "Guest_32"
+    CMAKE_ARGS
+      "-DBITNESS=32"
+      "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_32_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
@@ -433,12 +451,27 @@ if (BUILD_THUNKS)
     DEPENDS guest-libs
   )
 
+  install(
+    CODE "MESSAGE(\"-- Installing: guest-libs-32\")"
+    CODE "
+    EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} --build . --target install
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
+    )"
+    DEPENDS guest-libs-32
+  )
+
   add_custom_target(uninstall_guest-libs
     COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
   )
 
+  add_custom_target(uninstall_guest-libs-32
+    COMMAND ${CMAKE_COMMAND} "--build" "." "--target" "uninstall"
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
+  )
+
   add_dependencies(uninstall uninstall_guest-libs)
+  add_dependencies(uninstall uninstall_guest-libs-32)
 endif()
 
 set(FEX_VERSION_MAJOR "0")
