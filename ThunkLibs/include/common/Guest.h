@@ -16,11 +16,11 @@ const int (*fexthunks_invoke_callback)(void*);
 
 #ifndef _M_ARM_64
 #define MAKE_THUNK(lib, name, hash) \
-  extern "C" THUNK_ABI int fexthunks_##lib##_##name(void *args); \
+  extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##lib##_##name(void *args); \
   asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash );
 
 #define MAKE_CALLBACK_THUNK(name, signature, hash) \
-  extern "C" THUNK_ABI int fexthunks_##name(void *args); \
+  extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##name(void *args); \
   asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash ); \
   template<> THUNK_ABI inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
 
