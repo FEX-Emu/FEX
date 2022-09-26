@@ -181,7 +181,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   // Move ops
   REGISTER_OP(EXTRACTELEMENTPAIR,     ExtractElementPair);
   REGISTER_OP(CREATEELEMENTPAIR,      CreateElementPair);
-  REGISTER_OP(MOV,                    Mov);
 
   // Vector ops
   REGISTER_OP(VECTORZERO,             VectorZero);

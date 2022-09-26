@@ -355,7 +355,6 @@ private:
   ///< Move ops
   DEF_OP(ExtractElementPair);
   DEF_OP(CreateElementPair);
-  DEF_OP(Mov);
 
   ///< Vector ops
   DEF_OP(VectorZero);
