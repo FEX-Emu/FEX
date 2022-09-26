@@ -13,6 +13,7 @@ $end_info$
 #include <sys/time.h>
 #include <time.h>
 
+#include "Types.h"
 #include "common/Guest.h"
 
 #include "thunkgen_guest_libVDSO.inl"
@@ -23,4 +24,26 @@ int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz) __attribute__((
 int __vdso_clock_gettime(clockid_t, struct timespec *) __attribute__((alias("fexfn_pack_clock_gettime")));
 int __vdso_clock_getres(clockid_t, struct timespec *) __attribute__((alias("fexfn_pack_clock_getres")));
 int __vdso_getcpu(uint32_t *, uint32_t *) __attribute__((alias("fexfn_pack_getcpu")));
+
+#if __SIZEOF_POINTER__ == 4
+int __vdso_clock_gettime64(clockid_t, struct timespec64 *) __attribute__((alias("fexfn_pack_clock_gettime64")));
+
+__attribute__((naked))
+int __kernel_vsyscall() {
+  asm volatile(R"(
+  .intel_syntax noprefix
+  push ecx;
+  push edx;
+  push ebp;
+  mov ebp, ecx;
+  int 0x80;
+  pop ebp;
+  pop edx;
+  pop ecx;
+  ret;
+  .att_syntax prefix
+  )"
+  ::: "memory");
+}
+#endif
 }

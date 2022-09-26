@@ -90,6 +90,13 @@
           "Folder to find the guest-side thunking libraries."
         ]
       },
+      "ThunkGuestLibs32": {
+        "Type": "str",
+        "Default": "@CMAKE_INSTALL_PREFIX@/share/fex-emu/GuestThunks_32/",
+        "Desc": [
+          "Folder to find the 32-bit guest-side thunking libraries."
+        ]
+      },
       "ThunkConfig": {
         "Type": "str",
         "Default": "",

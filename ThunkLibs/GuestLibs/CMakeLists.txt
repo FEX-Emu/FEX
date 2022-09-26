@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
 
+option(BITNESS "Which bitness the thunks are building for" 64)
+
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
   set(CMAKE_CXX_STANDARD 17)
@@ -48,11 +50,16 @@ function(generate NAME SOURCE_FILE)
 
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
+  set (BITNESS_FLAGS "")
+  if (BITNESS EQUAL 32)
+    set (BITNESS_FLAGS "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
+  endif()
+
   add_custom_command(
     OUTPUT "${OUTFILE}"
     DEPENDS "${GENERATOR_EXE}"
     DEPENDS "${SOURCE_FILE}"
-    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" -- -std=c++17
+    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" -- -std=c++17 ${BITNESS_FLAGS}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters
@@ -72,6 +79,9 @@ function(add_guest_lib NAME SONAME)
   set (SOURCE_LDS_FILE ../lib${NAME}/lib${NAME}_Guest.lds)
   get_filename_component(SOURCE_LDS_FILE_ABS "${SOURCE_LDS_FILE}" ABSOLUTE)
 
+  set (SOURCE_LDS_32_FILE ../lib${NAME}/lib${NAME}_Guest_32.lds)
+  get_filename_component(SOURCE_LDS_32_FILE_ABS "${SOURCE_LDS_32_FILE}" ABSOLUTE)
+
   if (NOT EXISTS "${SOURCE_FILE_ABS}")
     set (SOURCE_FILE ../lib${NAME}/Guest.cpp)
     get_filename_component(SOURCE_FILE_ABS "${SOURCE_FILE}" ABSOLUTE)
@@ -88,9 +98,19 @@ function(add_guest_lib NAME SONAME)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-guest PRIVATE -fwrapv)
 
+  if (BITNESS EQUAL 32)
+    # Makes the GOT/PLT lookups slightly less painful
+    target_compile_options(${NAME}-guest PRIVATE -fno-plt)
+    target_link_options(VDSO-guest PRIVATE "LINKER:-z,now" "LINKER:-z,relro" "LINKER:-z,notext")
+  endif()
+
   # Add linker script if set
-  if (EXISTS "${SOURCE_LDS_FILE_ABS}")
+  if (BITNESS EQUAL 64 AND EXISTS "${SOURCE_LDS_FILE_ABS}")
     target_link_options(${NAME}-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../lib${NAME}/lib${NAME}_Guest.lds")
+  endif()
+
+  if (BITNESS EQUAL 32 AND EXISTS "${SOURCE_LDS_32_FILE_ABS}")
+    target_link_options(${NAME}-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../lib${NAME}/lib${NAME}_Guest_32.lds")
   endif()
 
   # We need to override the soname for the linker.
@@ -111,108 +131,119 @@ function(add_guest_lib NAME SONAME)
   set_target_properties(${NAME}-guest PROPERTIES NO_SONAME ON)
 
   if (GENERATE_GUEST_INSTALL_TARGETS)
-    install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
+    if (BITNESS EQUAL 64)
+      install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks/)
+    else()
+      install(TARGETS ${NAME}-guest DESTINATION ${DATA_DIRECTORY}/GuestThunks_32/)
+    endif()
   endif()
 endfunction()
 
-#add_guest_lib(fex_malloc_loader)
-#target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
+# These thunks only support 64-bit
+if (BITNESS EQUAL 64)
+  #add_guest_lib(fex_malloc_loader)
+  #target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
 
-#generate(libfex_malloc)
-#add_guest_lib(fex_malloc)
+  #generate(libfex_malloc)
+  #add_guest_lib(fex_malloc)
 
-generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp)
-add_guest_lib(asound "libasound.so.2")
+  generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp)
+  add_guest_lib(asound "libasound.so.2")
 
-generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
-add_guest_lib(EGL "libEGL.so.1")
+  generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
+  add_guest_lib(EGL "libEGL.so.1")
 
-generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
-add_guest_lib(GL "libGL.so.1")
+  generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
+  add_guest_lib(GL "libGL.so.1")
 
-# libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
-add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
-target_link_libraries(GL-guest PRIVATE X11)
+  # libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
+  add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
+  target_link_libraries(GL-guest PRIVATE X11)
 
-# disabled for now, headers are platform specific
-# find_package(SDL2 REQUIRED)
-# generate(libSDL2)
-# add_guest_lib(SDL2)
-# target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
-# target_link_libraries(SDL2-guest PRIVATE GL)
-# target_link_libraries(SDL2-guest PRIVATE dl)
+  # disabled for now, headers are platform specific
+  # find_package(SDL2 REQUIRED)
+  # generate(libSDL2)
+  # add_guest_lib(SDL2)
+  # target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
+  # target_link_libraries(SDL2-guest PRIVATE GL)
+  # target_link_libraries(SDL2-guest PRIVATE dl)
 
-find_package(PkgConfig)
-pkg_search_module(X11 REQUIRED x11)
+  find_package(PkgConfig)
+  pkg_search_module(X11 REQUIRED x11)
 
-string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
-set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
-set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
-set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
+  string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
+  set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
+  set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
+  set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
 
-generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
-add_guest_lib(X11 "libX11.so.6")
+  generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
+  add_guest_lib(X11 "libX11.so.6")
 
-target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
-target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
-target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
+  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
-generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp)
-add_guest_lib(Xext "libXext.so.6")
+  generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp)
+  add_guest_lib(Xext "libXext.so.6")
 
-target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
-target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
-target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
+  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
-generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp)
-add_guest_lib(Xrender "libXrender.so.1")
+  generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp)
+  add_guest_lib(Xrender "libXrender.so.1")
 
-generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
-add_guest_lib(Xfixes "libXfixes.so.3")
+  generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
+  add_guest_lib(Xfixes "libXfixes.so.3")
 
-generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
-target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-add_guest_lib(vulkan "libvulkan.so.1")
+  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
+  target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+  add_guest_lib(vulkan "libvulkan.so.1")
 
-generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
-add_guest_lib(xcb "libxcb.so.1")
+  generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
+  add_guest_lib(xcb "libxcb.so.1")
 
-generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
-add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
+  generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
+  add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
-generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp)
-add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
+  generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp)
+  add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
 
-generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp)
-add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
+  generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp)
+  add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
 
-generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp)
-add_guest_lib(xcb-shm "libxcb-shm.so.0")
+  generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp)
+  add_guest_lib(xcb-shm "libxcb-shm.so.0")
 
-generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp)
-add_guest_lib(xcb-sync "libxcb-sync.so.1")
+  generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp)
+  add_guest_lib(xcb-sync "libxcb-sync.so.1")
 
-generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp)
-add_guest_lib(xcb-present "libxcb-present.so.0")
+  generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp)
+  add_guest_lib(xcb-present "libxcb-present.so.0")
 
-generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp)
-add_guest_lib(xcb-randr "libxcb-randr.so.0")
+  generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp)
+  add_guest_lib(xcb-randr "libxcb-randr.so.0")
 
-generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp)
-add_guest_lib(xcb-glx "libxcb-glx.so.0")
+  generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp)
+  add_guest_lib(xcb-glx "libxcb-glx.so.0")
 
-generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
-add_guest_lib(xshmfence "libxshmfence.so.1")
+  generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
+  add_guest_lib(xshmfence "libxshmfence.so.1")
 
-generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
-target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
-target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
-add_guest_lib(drm "libdrm.so.2")
+  generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
+  target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
+  target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
+  add_guest_lib(drm "libdrm.so.2")
+endif()
 
 generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
 add_guest_lib(VDSO "linux-vdso.so.1")
 # Can't use a stack protector because otherwise cross-compiling fails
 # Not necessary anyway because it only trampolines
 target_compile_options(VDSO-guest PRIVATE "-fno-stack-protector")
-target_link_options(VDSO-guest PRIVATE "-T" "${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_Guest.lds" "-nostdlib"
-  "LINKER:--no-undefined" "LINKER:-z,max-page-size=4096" "LINKER:--hash-style=both")
+target_link_options(VDSO-guest PRIVATE "-nostdlib" "LINKER:--no-undefined" "LINKER:-z,max-page-size=4096" "LINKER:--hash-style=both")
+
+if (BITNESS EQUAL 32)
+  # 32-bit entrypoint points to __kernel_vsyscall and needs to exist
+  target_link_options(VDSO-guest PRIVATE "LINKER:-e,__kernel_vsyscall")
+endif()

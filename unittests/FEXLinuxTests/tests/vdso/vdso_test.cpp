@@ -27,6 +27,16 @@ getres_type getres_vdso = (getres_type)::clock_getres;
 using getcpu_type = int (*) (uint32_t *cpu, uint32_t *node);
 getcpu_type getcpu_vdso = (getcpu_type)::getcpu;
 
+#if __SIZEOF_POINTER__ == 4
+struct timespec64 {
+  int64_t tv_sec;
+  int64_t tv_nsec;
+};
+
+using gettime64_type = int (*)(clockid_t, struct timespec64 *);
+gettime64_type gettime64_vdso = nullptr;
+#endif
+
 class VDSOParser {
 #if __SIZEOF_POINTER__ == 8
   using ELFHeader = Elf64_Ehdr;
@@ -118,6 +128,13 @@ static void LoadVDSO() {
   if (it) {
     getcpu_vdso = reinterpret_cast<getcpu_type>(it);
   }
+
+#if __SIZEOF_POINTER__ == 4
+  it = VDSO.GetVDSOSymbol("__vdso_clock_gettime64");
+  if (it) {
+    gettime64_vdso = reinterpret_cast<gettime64_type>(it);
+  }
+#endif
 }
 
 
@@ -179,4 +196,14 @@ TEST_CASE("VDSO") {
     printf("\tCPU: 0x%x\n", cpu);
     printf("\tNode: 0x%x\n", node);
   }
+
+#if __SIZEOF_POINTER__ == 4
+  if (gettime64_vdso) {
+    timespec64 ts{};
+    int result = gettime64_vdso(CLOCK_MONOTONIC, &ts);
+    printf("clock_gettime64\n");
+    CHECK(result == 0);
+    printf("\tTime: 0x%llx 0x%llx\n", ts.tv_sec, ts.tv_nsec);
+  }
+#endif
 }
