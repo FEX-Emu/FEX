@@ -1867,8 +1867,6 @@ void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
 
   if (Size == 8) {
     Size <<= 1;
-    Src1 = _VBitcast(Size, 2, Src1);
-    Src2 = _VBitcast(Size, 2, Src2);
   }
 
   auto Src1_L = _VSXTL(Size, 2, Src1);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
@@ -1955,9 +1953,6 @@ void OpDispatchBuilder::PMULHW(OpcodeArgs) {
 
   OrderedNode *Res{};
   if (Size == 8) {
-    Dest = _VBitcast(Size * 2, 2, Dest);
-    Src = _VBitcast(Size * 2, 2, Src);
-
     // Implementation is more efficient for 8byte registers
     if (Signed)
       Res = _VSMull(Size * 2, 2, Dest, Src);

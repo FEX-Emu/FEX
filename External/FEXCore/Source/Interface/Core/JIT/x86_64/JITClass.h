@@ -439,7 +439,6 @@ private:
   DEF_OP(VShlI);
   DEF_OP(VUShrNI);
   DEF_OP(VUShrNI2);
-  DEF_OP(VBitcast);
   DEF_OP(VSXTL);
   DEF_OP(VSXTL2);
   DEF_OP(VUXTL);
