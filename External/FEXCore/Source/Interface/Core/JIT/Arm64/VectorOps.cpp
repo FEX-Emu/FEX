@@ -591,24 +591,21 @@ DEF_OP(VUMinV) {
     LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
                         "Unsupported vector length: {}", OpSize);
 
-    if (OpSize == 16) {
-      ptrue(p0.VnB(), SVE_VL16);
-    } else {
-      ptrue(p0.VnB(), SVE_VL32);
-    }
+    const auto Pred = OpSize == 16 ? PRED_TMP_16B
+                                   : PRED_TMP_32B;
 
     switch (ElementSize) {
       case 1:
-        uminv(Dst.B(), p0, Vector.Z().VnB());
+        uminv(Dst.B(), Pred, Vector.Z().VnB());
         break;
       case 2:
-        uminv(Dst.H(), p0, Vector.Z().VnH());
+        uminv(Dst.H(), Pred, Vector.Z().VnH());
         break;
       case 4:
-        uminv(Dst.S(), p0, Vector.Z().VnS());
+        uminv(Dst.S(), Pred, Vector.Z().VnS());
         break;
       case 8:
-        uminv(Dst.D(), p0, Vector.Z().VnD());
+        uminv(Dst.D(), Pred, Vector.Z().VnD());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
@@ -644,25 +641,25 @@ DEF_OP(VURAvg) {
     // a temporary for performing operations.
     mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
-    // No unpredicated version, so we need to set up a
-    // predicate register
-    ptrue(p0.VnB());
-
     switch (ElementSize) {
       case 1: {
-        urhadd(VTMP1.Z().VnB(), p0.Merging(), VTMP1.Z().VnB(), Vector2.Z().VnB());
+        urhadd(VTMP1.Z().VnB(), PRED_TMP_32B.Merging(),
+               VTMP1.Z().VnB(), Vector2.Z().VnB());
         break;
       }
       case 2: {
-        urhadd(VTMP1.Z().VnH(), p0.Merging(), VTMP1.Z().VnH(), Vector2.Z().VnH());
+        urhadd(VTMP1.Z().VnH(), PRED_TMP_32B.Merging(),
+               VTMP1.Z().VnH(), Vector2.Z().VnH());
         break;
       }
       case 4: {
-        urhadd(VTMP1.Z().VnS(), p0.Merging(), VTMP1.Z().VnS(), Vector2.Z().VnS());
+        urhadd(VTMP1.Z().VnS(), PRED_TMP_32B.Merging(),
+               VTMP1.Z().VnS(), Vector2.Z().VnS());
         break;
       }
       case 8: {
-        urhadd(VTMP1.Z().VnD(), p0.Merging(), VTMP1.Z().VnD(), Vector2.Z().VnD());
+        urhadd(VTMP1.Z().VnD(), PRED_TMP_32B.Merging(),
+               VTMP1.Z().VnD(), Vector2.Z().VnD());
         break;
       }
       default:
