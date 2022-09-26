@@ -360,6 +360,58 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       return false;
     }
 
+    // Load the interpreter ELF first.
+    // This allows the top-down allocation of the kernel to put this at the top of the VA space.
+    // This matches behaviour of native execution more closely.
+    //
+    // eg:
+    // 555555554000-555555558000 r--p 00000000 103:0a 1311400                   /usr/bin/ls
+    // 555555558000-55555556c000 r-xp 00004000 103:0a 1311400                   /usr/bin/ls
+    // 55555556c000-555555574000 r--p 00018000 103:0a 1311400                   /usr/bin/ls
+    // 555555575000-555555577000 rw-p 00020000 103:0a 1311400                   /usr/bin/ls
+    // 555555577000-555555578000 rw-p 00000000 00:00 0                          [heap]
+    // 7ffff7fbb000-7ffff7fbd000 rw-p 00000000 00:00 0
+    // 7ffff7fbd000-7ffff7fc1000 r--p 00000000 00:00 0                          [vvar]
+    // 7ffff7fc1000-7ffff7fc3000 r-xp 00000000 00:00 0                          [vdso]
+    // 7ffff7fc3000-7ffff7fc5000 r--p 00000000 103:0a 1316948                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7ffff7fc5000-7ffff7fef000 r-xp 00002000 103:0a 1316948                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7ffff7fef000-7ffff7ffa000 r--p 0002c000 103:0a 1316948                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7ffff7ffb000-7ffff7fff000 rw-p 00037000 103:0a 1316948                   /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7ffffffdd000-7ffffffff000 rw-p 00000000 00:00 0                          [stack]
+    // ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+    //
+    // ARM:
+    // 7ffffee9e000-7ffffeea2000 r--p 00000000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 7ffffeea2000-7ffffeeb6000 r-xp 00004000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 7ffffeeb6000-7ffffeebe000 r--p 00018000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 7ffffeebe000-7ffffeebf000 ---p 00000000 00:00 0
+    // 7ffffeebf000-7ffffeec1000 rw-p 00020000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 7ffffeec1000-7fffff6c2000 rw-p 00000000 00:00 0
+    // 7fffff6c2000-7fffff6c4000 r--p 00000000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7fffff6c4000-7fffff6ee000 r-xp 00002000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7fffff6ee000-7fffff6f9000 r--p 0002c000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7fffff6f9000-7fffff6fa000 ---p 00000000 00:00 0
+    // 7fffff6fa000-7fffff6fe000 rw-p 00037000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+    // 7fffff7fe000-7fffffffe000 rw-p 00000000 00:00 0
+    // 7fffffffe000-7ffffffff000 r--p 00000000 08:82 7082611                    /usr/share/fex-emu/GuestThunks/libVDSO-guest.so
+    // 7ffffffff000-800000000000 rw-p 00000000 00:00 0
+
+    if (!MainElf.InterpreterElf.empty()) {
+      uint64_t InterpLoadBase = 0;
+      if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper)) {
+        InterpLoadBase = *elf;
+      } else {
+        LogMan::Msg::EFmt("Failed to load interpreter elf file");
+        return false;
+      }
+
+      InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - InterpElf.phdrs.front().p_offset;
+      Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
+    } else {
+      InterpeterElfBase = 0;
+      Entrypoint = MainElfEntrypoint;
+    }
+
     // load the main elf
 
     uintptr_t BrkBase = 0;
@@ -387,22 +439,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     MainElfBase = LoadBase + MainElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
     MainElfEntrypoint = LoadBase + MainElf.ehdr.e_entry;
-
-    if (!MainElf.InterpreterElf.empty()) {
-      uint64_t InterpLoadBase = 0;
-      if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper)) {
-        InterpLoadBase = *elf;
-      } else {
-        LogMan::Msg::EFmt("Failed to load interpreter elf file");
-        return false;
-      }
-
-      InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - InterpElf.phdrs.front().p_offset;
-      Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
-    } else {
-      InterpeterElfBase = 0;
-      Entrypoint = MainElfEntrypoint;
-    }
 
     // All done
 
