@@ -996,7 +996,7 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   // upper 16 bits [79:64]
   _StoreMem(FPRClass, 8, ST0Location, data, 1);
   ST0Location = _Add(ST0Location, _Constant(8));
-  auto topBytes = _VExtractElement(16, 2, data, 4);
+  auto topBytes = _VDupElement(16, 2, data, 4);
   _StoreMem(FPRClass, 2, ST0Location, topBytes, 1);
 
   // reset to default

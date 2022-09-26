@@ -1389,35 +1389,6 @@ DEF_OP(VInsElement) {
   memcpy(GDP, Tmp, OpSize);
 }
 
-DEF_OP(VExtractElement) {
-  auto Op = IROp->C<IR::IROp_VExtractElement>();
-
-  const uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Vector);
-  LOGMAN_THROW_AA_FMT(IROp->Size <= 16, "OpSize is too large for VExtractElement: {}", IROp->Size);
-  if (SourceSize == 16) {
-    __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
-    if (Op->Header.ElementSize == 8)
-      SourceMask = ~0ULL;
-
-    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
-    Src >>= Shift;
-    Src &= SourceMask;
-    memcpy(GDP, &Src, Op->Header.ElementSize);
-  }
-  else {
-    uint64_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
-    if (Op->Header.ElementSize == 8)
-      SourceMask = ~0ULL;
-
-    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
-    Src >>= Shift;
-    Src &= SourceMask;
-    GD = Src;
-  }
-}
-
 DEF_OP(VDupElement) {
   auto Op = IROp->C<IR::IROp_VDupElement>();
   const uint8_t OpSize = IROp->Size;
