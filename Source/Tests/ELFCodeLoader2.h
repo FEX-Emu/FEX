@@ -3,6 +3,7 @@
 
 #include "Common/Config.h"
 #include "Common/FDUtils.h"
+#include "FEXCore/Utils/Allocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
@@ -13,6 +14,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -21,6 +23,7 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <elf.h>
 #include <fcntl.h>
@@ -103,7 +106,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   template <typename TMap, typename TUnmap>
-  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper) {
+  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper, uint64_t LoadHint = 0) {
 
     uintptr_t LoadBase = 0;
 
@@ -114,7 +117,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
-      LoadBase = (uintptr_t)Mapper(0, TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      LoadBase = (uintptr_t)Mapper(reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if ((void*)LoadBase == MAP_FAILED) {
         return {};
       }
@@ -378,12 +381,13 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
     //
     // ARM:
-    // 7ffffee9e000-7ffffeea2000 r--p 00000000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
-    // 7ffffeea2000-7ffffeeb6000 r-xp 00004000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
-    // 7ffffeeb6000-7ffffeebe000 r--p 00018000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
-    // 7ffffeebe000-7ffffeebf000 ---p 00000000 00:00 0
-    // 7ffffeebf000-7ffffeec1000 rw-p 00020000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
-    // 7ffffeec1000-7fffff6c2000 rw-p 00000000 00:00 0
+    // 55ccaf8b1000-55ccaf8b5000 r--p 00000000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 55ccaf8b5000-55ccaf8c9000 r-xp 00004000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 55ccaf8c9000-55ccaf8d1000 r--p 00018000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 55ccaf8d1000-55ccaf8d2000 ---p 00000000 00:00 0
+    // 55ccaf8d2000-55ccaf8d4000 rw-p 00020000 00:2a 4                          /tmp/.FEXMount178532-oiFrTF/usr/bin/ls
+    // 55ccaf8d4000-55ccb00d5000 rw-p 00000000 00:00 0
+    // <... Snip of misc allocations ...>
     // 7fffff6c2000-7fffff6c4000 r--p 00000000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
     // 7fffff6c4000-7fffff6ee000 r-xp 00002000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
     // 7fffff6ee000-7fffff6f9000 r--p 0002c000 00:2a 22                         /tmp/.FEXMount178532-oiFrTF/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
@@ -392,6 +396,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // 7fffff7fe000-7fffffffe000 rw-p 00000000 00:00 0
     // 7fffffffe000-7ffffffff000 r--p 00000000 08:82 7082611                    /usr/share/fex-emu/GuestThunks/libVDSO-guest.so
     // 7ffffffff000-800000000000 rw-p 00000000 00:00 0
+    uint64_t ELFLoadHint = 0;
 
     if (!MainElf.InterpreterElf.empty()) {
       uint64_t InterpLoadBase = 0;
@@ -404,6 +409,52 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
       InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - InterpElf.phdrs.front().p_offset;
       Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
+
+      // If the ELF has an interpreter and is dynamic then we should provide a address hint for loading.
+      // The kernel calculates this `load_bias` by dividing the task size by three then multiplying by two.
+      // It then also offsets by a random number for ASLR purposes.
+      //
+      // Random number that gets added to the base needs to be in the number of bits (multiplied by pages):
+      // 64-bit: [28, 32] bits
+      // 32-bit: [8, 16] bits
+      // By default the /minimum/ number of bits is used here.
+      constexpr uint64_t TASK_SIZE_64 = (1ULL << 47);
+      constexpr uint64_t TASK_SIZE_32 = (1ULL << 32);
+      if (Is64BitMode()) {
+        // Ensure that if we are running on a 36-bit VA system, we don't try hinting that an ELF should
+        // live way outside the VA space.
+        uint64_t HostVASize = 1ULL << FEXCore::Allocator::DetermineVASize();
+        ELFLoadHint = std::min(HostVASize, TASK_SIZE_64) / 3 * 2;
+      }
+      else {
+        ELFLoadHint = TASK_SIZE_32 / 3 * 2;
+      }
+#define ASLR_LOAD
+#ifdef ASLR_LOAD
+      // Only enable ASLR randomization if the personality has it enabled.
+      uint32_t Personality = personality(~0ULL);
+      bool NoRandomize = (Personality & ADDR_NO_RANDOMIZE) == ADDR_NO_RANDOMIZE;
+
+      if (!NoRandomize) {
+        constexpr uint64_t ASLR_BITS_64 = 28;
+        constexpr uint64_t ASLR_BITS_32 = 8;
+        std::random_device rd;
+        std::uniform_int_distribution<uint64_t> d(0);
+        uint64_t ASLR_Offset = d(rd);
+
+        if (Is64BitMode()) {
+          ASLR_Offset &= (1ULL << ASLR_BITS_64) - 1;
+        }
+        else {
+          ASLR_Offset &= (1ULL << ASLR_BITS_32) - 1;
+        }
+
+        ASLR_Offset <<= FHU::FEX_PAGE_SHIFT;
+        ELFLoadHint += ASLR_Offset;
+      }
+#endif
+      // Align the mapping
+      ELFLoadHint &= FHU::FEX_PAGE_MASK;
     }
 
     // load the main elf
@@ -412,7 +463,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     uintptr_t LoadBase = 0;
 
-    if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper)) {
+    if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper, ELFLoadHint)) {
       LoadBase = *elf;
       if (MainElf.ehdr.e_type == ET_DYN) {
         BaseOffset = LoadBase;
