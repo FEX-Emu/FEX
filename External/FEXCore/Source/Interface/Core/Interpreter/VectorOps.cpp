@@ -411,21 +411,24 @@ DEF_OP(VURAvg) {
 }
 
 DEF_OP(VAbs) {
-  auto Op = IROp->C<IR::IROp_VAbs>();
+  const auto Op = IROp->C<IR::IROp_VAbs>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
 
   const auto Func = [](auto a) { return std::abs(a); };
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_OP(1, int8_t, Func)
     DO_VECTOR_1SRC_OP(2, int16_t, Func)
     DO_VECTOR_1SRC_OP(4, int32_t, Func)
     DO_VECTOR_1SRC_OP(8, int64_t, Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
