@@ -635,35 +635,47 @@ DEF_OP(VFAddP) {
 }
 
 DEF_OP(VFSub) {
-  auto Op = IROp->C<IR::IROp_VFSub>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VFSub>();
+  const auto OpSize = IROp->Size;
 
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (IsScalar) {
+    switch (ElementSize) {
       case 4: {
-        vsubss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
-      break;
+        vsubss(Dst, Vector1, Vector2);
+        break;
       }
       case 8: {
-        vsubsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
-      break;
+        vsubsd(Dst, Vector1, Vector2);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+  } else {
+    const auto DstYMM = ToYMM(Dst);
+    const auto Vector1YMM = ToYMM(Vector1);
+    const auto Vector2YMM = ToYMM(Vector2);
+
+    switch (ElementSize) {
       case 4: {
-        vsubps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
-      break;
+        vsubps(DstYMM, Vector1YMM, Vector2YMM);
+        break;
       }
       case 8: {
-        vsubpd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
-      break;
+        vsubpd(DstYMM, Vector1YMM, Vector2YMM);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }
