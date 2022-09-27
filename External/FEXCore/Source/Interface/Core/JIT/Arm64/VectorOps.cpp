@@ -775,17 +775,77 @@ DEF_OP(VFAdd) {
 }
 
 DEF_OP(VFAddP) {
-  auto Op = IROp->C<IR::IROp_VFAddP>();
-  switch (Op->Header.ElementSize) {
-    case 4: {
-      faddp(GetDst(Node).V4S(), GetSrc(Op->VectorLower.ID()).V4S(), GetSrc(Op->VectorUpper.ID()).V4S());
-    break;
+  const auto Op = IROp->C<IR::IROp_VFAddP>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  const bool Is256Bit = OpSize == 32;
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Pred = PRED_TMP_32B.Merging();
+
+    // SVE FADDP is a destructive operation, so we need a temporary
+    mov(VTMP1.Z().VnD(), VectorLower.Z().VnD());
+
+    // Unlike Adv. SIMD's version of FADDP, which acts like it concats the
+    // upper vector onto the end of the lower vector and then performs
+    // pairwise addition, the SVE version actually interleaves the
+    // results of the pairwise addition (gross!), so we need to undo that.
+    switch (ElementSize) {
+      case 2: {
+        faddp(VTMP1.Z().VnH(), Pred, VectorLower.Z().VnH(), VectorUpper.Z().VnH());
+        uzp1(VTMP2.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
+        uzp2(VTMP3.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
+        break;
+      }
+      case 4: {
+        faddp(VTMP1.Z().VnS(), Pred, VTMP1.Z().VnS(), VectorUpper.Z().VnS());
+        uzp1(VTMP2.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
+        uzp2(VTMP3.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
+        break;
+      }
+      case 8: {
+        faddp(VTMP1.Z().VnD(), Pred, VTMP1.Z().VnD(), VectorUpper.Z().VnD());
+        uzp1(VTMP2.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        uzp2(VTMP3.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-    case 8: {
-      faddp(GetDst(Node).V2D(), GetSrc(Op->VectorLower.ID()).V2D(), GetSrc(Op->VectorUpper.ID()).V2D());
-    break;
+
+    // Shift the entire vector over by 64 bits (128-bit vector case)
+    // or by 128 bits (256-bit vector case).
+    mov(TMP1, 0);
+    insr(VTMP3.Z().VnD(), TMP1);
+    insr(VTMP3.Z().VnD(), TMP1);
+
+    // Now combine the lower and upper halves.
+    orr(Dst.Z().VnD(), VTMP2.Z().VnD(), VTMP3.Z().VnD());
+  } else {
+    switch (ElementSize) {
+      case 2: {
+        faddp(Dst.V8H(), VectorLower.V8H(), VectorUpper.V8H());
+        break;
+      }
+      case 4: {
+        faddp(Dst.V4S(), VectorLower.V4S(), VectorUpper.V4S());
+        break;
+      }
+      case 8: {
+        faddp(Dst.V2D(), VectorLower.V2D(), VectorUpper.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
