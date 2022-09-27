@@ -751,25 +751,58 @@ DEF_OP(VAbs) {
 }
 
 DEF_OP(VPopcount) {
-  auto Op = IROp->C<IR::IROp_VPopcount>();
-  const uint8_t OpSize = IROp->Size;
-  if (OpSize == 8) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
-      case 1: {
-        cnt(GetDst(Node).V8B(), GetSrc(Op->Vector.ID()).V8B());
-      break;
-      }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-    }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VPopcount>();
+  const auto OpSize = IROp->Size;
+  const bool IsScalar = OpSize == 8;
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Src = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && !IsScalar) {
+    const auto Pred = OpSize == 16 ? PRED_TMP_16B.Merging()
+                                   : PRED_TMP_32B.Merging();
+
+    switch (ElementSize) {
       case 1:
-        cnt(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B());
+        cnt(Dst.Z().VnB(), Pred, Src.Z().VnB());
         break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      case 2:
+        cnt(Dst.Z().VnH(), Pred, Src.Z().VnH());
+        break;
+      case 4:
+        cnt(Dst.Z().VnS(), Pred, Src.Z().VnS());
+        break;
+      case 8:
+        cnt(Dst.Z().VnD(), Pred, Src.Z().VnD());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    if (IsScalar) {
+      // Scalar
+      switch (ElementSize) {
+        case 1: {
+          cnt(Dst.V8B(), Src.V8B());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
+    } else {
+      // Vector
+      switch (ElementSize) {
+        case 1:
+          cnt(Dst.V16B(), Src.V16B());
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
     }
   }
 }
