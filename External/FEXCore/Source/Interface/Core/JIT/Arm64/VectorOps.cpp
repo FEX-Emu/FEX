@@ -808,34 +808,71 @@ DEF_OP(VPopcount) {
 }
 
 DEF_OP(VFAdd) {
-  auto Op = IROp->C<IR::IROp_VFAdd>();
-  const uint8_t OpSize = IROp->Size;
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VFAdd>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (HostSupportsSVE && !IsScalar) {
+    switch (ElementSize) {
+      case 2: {
+        fadd(Dst.Z().VnH(), Vector1.Z().VnH(), Vector2.Z().VnH());
+        break;
+      }
       case 4: {
-        fadd(GetDst(Node).S(), GetSrc(Op->Vector1.ID()).S(), GetSrc(Op->Vector2.ID()).S());
-      break;
+        fadd(Dst.Z().VnS(), Vector1.Z().VnS(), Vector2.Z().VnS());
+        break;
       }
       case 8: {
-        fadd(GetDst(Node).D(), GetSrc(Op->Vector1.ID()).D(), GetSrc(Op->Vector2.ID()).D());
-      break;
+        fadd(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
-      case 4: {
-        fadd(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-      break;
+  } else {
+    if (IsScalar) {
+      switch (ElementSize) {
+        case 2: {
+          fadd(Dst.H(), Vector1.H(), Vector2.H());
+          break;
+        }
+        case 4: {
+          fadd(Dst.S(), Vector1.S(), Vector2.S());
+          break;
+        }
+        case 8: {
+          fadd(Dst.D(), Vector1.D(), Vector2.D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
       }
-      case 8: {
-        fadd(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-      break;
+    } else {
+      switch (ElementSize) {
+        case 2: {
+          fadd(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+          break;
+        }
+        case 4: {
+          fadd(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+          break;
+        }
+        case 8: {
+          fadd(Dst.V2D(), Vector1.V2D(), Vector2.V2D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
