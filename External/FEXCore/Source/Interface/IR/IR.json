@@ -302,10 +302,6 @@
       }
     },
     "Moves": {
-      "GPR = Mov GPR:$Value": {
-        "DestSize": "GetOpSize(_Value)"
-      },
-
       "GPR = ExtractElementPair GPRPair:$Pair, u8:$Element": {
         "Desc": ["Extracts a register for the register pair"],
         "DestSize": "GetOpSize(_Pair) >> 1"

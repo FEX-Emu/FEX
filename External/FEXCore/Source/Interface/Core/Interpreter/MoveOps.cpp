@@ -30,13 +30,6 @@ DEF_OP(CreateElementPair) {
   memcpy(Dst + IROp->ElementSize, Src_Upper, IROp->ElementSize);
 }
 
-DEF_OP(Mov) {
-  auto Op = IROp->C<IR::IROp_Mov>();
-  const uint8_t OpSize = IROp->Size;
-
-  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Value), OpSize);
-}
-
 #undef DEF_OP
 
 } // namespace FEXCore::CPU

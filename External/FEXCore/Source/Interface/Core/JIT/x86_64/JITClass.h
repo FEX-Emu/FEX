@@ -209,7 +209,7 @@ private:
   * @brief Current guest RIP entrypoint
   */
   uint8_t *GuestEntry{};
-  
+
   using SetCC = void (X86JITCore::*)(const Operand& op);
   using CMovCC = void (X86JITCore::*)(const Reg& reg, const Operand& op);
   using JCC = void (X86JITCore::*)(const Label& label, LabelType type);
@@ -366,7 +366,6 @@ private:
   ///< Move ops
   DEF_OP(ExtractElementPair);
   DEF_OP(CreateElementPair);
-  DEF_OP(Mov);
 
   ///< Vector ops
   DEF_OP(VectorZero);

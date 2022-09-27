@@ -68,17 +68,11 @@ DEF_OP(CreateElementPair) {
   }
 }
 
-DEF_OP(Mov) {
-  auto Op = IROp->C<IR::IROp_Mov>();
-  mov(GetReg<RA_64>(Node), GetReg<RA_64>(Op->Value.ID()));
-}
-
 #undef DEF_OP
 void Arm64JITCore::RegisterMoveHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
   REGISTER_OP(EXTRACTELEMENTPAIR, ExtractElementPair);
   REGISTER_OP(CREATEELEMENTPAIR,  CreateElementPair);
-  REGISTER_OP(MOV,                Mov);
 #undef REGISTER_OP
 }
 }
