@@ -449,7 +449,6 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
  *   %ssa26 i128 = LoadMem %ssa25 i64, 0x10
  *   (%%ssa27) StoreContext %ssa26 i128, 0x10, 0xb0
  *   %ssa28 i128 = LoadContext 0x10, 0x90
- *   %ssa29 i128 = VBitcast %ssa26 i128
  *
  * eg.
  * 		%ssa6 i128 = LoadContext 0x10, 0x90
@@ -462,13 +461,11 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
  * eg.
  *   (%%ssa189) StoreContext %ssa188 i128, 0x10, 0xa0
  *   %ssa190 i128 = LoadContext 0x10, 0x90
- *   %ssa191 i128 = VBitcast %ssa188 i128
- *   %ssa192 i128 = VAdd %ssa191 i128, %ssa190 i128, 0x10, 0x4
+ *   %ssa192 i128 = VAdd %ssa188 i128, %ssa190 i128, 0x10, 0x4
  *   (%%ssa193) StoreContext %ssa192 i128, 0x10, 0xa0
  * Converts to
  *   %ssa173 i128 = LoadContext 0x10, 0x90
- *   %ssa174 i128 = VBitcast %ssa172 i128
- *   %ssa175 i128 = VAdd %ssa174 i128, %ssa173 i128, 0x10, 0x4
+ *   %ssa175 i128 = VAdd %ssa172 i128, %ssa173 i128, 0x10, 0x4
  *   (%%ssa176) StoreContext %ssa175 i128, 0x10, 0xa0
 
  */

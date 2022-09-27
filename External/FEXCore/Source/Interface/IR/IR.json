@@ -930,12 +930,6 @@
         "DestSize": "RegisterSize"
       },
 
-      "FPR = VBitcast u8:#RegisterSize, u8:#ElementSize, FPR:$Source": {
-        "Desc": ["Workaround for issue with LLVM breaking when loading scalar elements to vectors"],
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-
       "FPR = VectorZero u8:#RegisterSize": {
         "Desc": ["Generates a vector zero",
                  "Useful to generate a zero vector without any previous dependencies"

@@ -2287,11 +2287,6 @@ DEF_OP(VUShrNI2) {
   mov(GetDst(Node), VTMP1);
 }
 
-DEF_OP(VBitcast) {
-  auto Op = IROp->C<IR::IROp_VBitcast>();
-  mov(GetDst(Node), GetSrc(Op->Source.ID()));
-}
-
 DEF_OP(VSXTL) {
   auto Op = IROp->C<IR::IROp_VSXTL>();
   switch (Op->Header.ElementSize) {
@@ -2688,7 +2683,6 @@ void Arm64JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VSHLI,             VShlI);
   REGISTER_OP(VUSHRNI,           VUShrNI);
   REGISTER_OP(VUSHRNI2,          VUShrNI2);
-  REGISTER_OP(VBITCAST,          VBitcast);
   REGISTER_OP(VSXTL,             VSXTL);
   REGISTER_OP(VSXTL2,            VSXTL2);
   REGISTER_OP(VUXTL,             VUXTL);

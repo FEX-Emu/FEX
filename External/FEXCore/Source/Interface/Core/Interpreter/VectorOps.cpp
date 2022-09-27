@@ -1606,11 +1606,6 @@ DEF_OP(VUShrNI2) {
   memcpy(GDP, Tmp, OpSize);
 }
 
-DEF_OP(VBitcast) {
-  auto Op = IROp->C<IR::IROp_VBitcast>();
-  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Source), 16);
-}
-
 DEF_OP(VSXTL) {
   auto Op = IROp->C<IR::IROp_VSXTL>();
   const uint8_t OpSize = IROp->Size;
