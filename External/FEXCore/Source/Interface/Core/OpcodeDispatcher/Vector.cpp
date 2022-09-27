@@ -74,8 +74,7 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
     // xmm, xmm is movhlps special case
     if (Op->Src[0].IsGPR()) {
       OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8, 16);
-      Src = _VExtractElement(16, 8, Src, 1);
-      auto Result = _VInsElement(16, 8, 0, 0, Dest, Src);
+      auto Result = _VInsElement(16, 8, 0, 1, Dest, Src);
       StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 16, 16);
     }
     else {
@@ -1715,8 +1714,8 @@ void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
 
   OrderedNode *ResSubSrc{};
   OrderedNode *ResSubDest{};
-  auto UpperSubDest = _VExtractElement(Size, 4, Dest, 1);
-  auto UpperSubSrc = _VExtractElement(Size, 4, Src, 1);
+  auto UpperSubDest = _VDupElement(Size, 4, Dest, 1);
+  auto UpperSubSrc = _VDupElement(Size, 4, Src, 1);
 
   ResSubDest = _VFSub(4, 4, Dest, UpperSubDest);
   ResSubSrc = _VFSub(4, 4, Src, UpperSubSrc);
@@ -1734,7 +1733,7 @@ void OpDispatchBuilder::PFPNACCOp(OpcodeArgs) {
 
   OrderedNode *ResAdd{};
   OrderedNode *ResSub{};
-  auto UpperSubDest = _VExtractElement(Size, 4, Dest, 1);
+  auto UpperSubDest = _VDupElement(Size, 4, Dest, 1);
 
   ResSub = _VFSub(4, 4, Dest, UpperSubDest);
   ResAdd = _VFAddP(Size, 4, Src, Src);

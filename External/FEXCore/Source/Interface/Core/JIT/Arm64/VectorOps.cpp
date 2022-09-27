@@ -2038,25 +2038,6 @@ DEF_OP(VInsElement) {
   }
 }
 
-DEF_OP(VExtractElement) {
-  auto Op = IROp->C<IR::IROp_VExtractElement>();
-  switch (Op->Header.Size) {
-    case 1:
-      mov(GetDst(Node).B(), GetSrc(Op->Vector.ID()).V16B(), Op->Index);
-    break;
-    case 2:
-      mov(GetDst(Node).H(), GetSrc(Op->Vector.ID()).V8H(), Op->Index);
-    break;
-    case 4:
-      mov(GetDst(Node).S(), GetSrc(Op->Vector.ID()).V4S(), Op->Index);
-    break;
-    case 8:
-      mov(GetDst(Node).D(), GetSrc(Op->Vector.ID()).V2D(), Op->Index);
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled VExtractElement element size: {}", Op->Header.Size);
-  }
-}
-
 DEF_OP(VDupElement) {
   auto Op = IROp->C<IR::IROp_VDupElement>();
   switch (Op->Header.ElementSize) {
@@ -2673,7 +2654,6 @@ void Arm64JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUSHRS,            VUShrS);
   REGISTER_OP(VSSHRS,            VSShrS);
   REGISTER_OP(VINSELEMENT,       VInsElement);
-  REGISTER_OP(VEXTRACTELEMENT,   VExtractElement);
   REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);
   REGISTER_OP(VSLI,              VSLI);
