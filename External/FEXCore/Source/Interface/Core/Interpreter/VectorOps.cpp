@@ -479,20 +479,23 @@ DEF_OP(VFAdd) {
 }
 
 DEF_OP(VFAddP) {
-  auto Op = IROp->C<IR::IROp_VFAddP>();
+  const auto Op = IROp->C<IR::IROp_VFAddP>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  const uint8_t Elements = (OpSize / Op->Header.ElementSize) / 2;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = (OpSize / ElementSize) / 2;
 
   const auto Func = [](auto a, auto b) { return a + b; };
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_PAIR_OP(4, float, Func)
     DO_VECTOR_PAIR_OP(8, double, Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
