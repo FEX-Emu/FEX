@@ -509,30 +509,53 @@ DEF_OP(VAbs) {
   }
 }
 
+// This only supports 8bit popcount on 8byte to 32byte registers
 DEF_OP(VPopcount) {
-  auto Op = IROp->C<IR::IROp_VPopcount>();
+  const auto Op = IROp->C<IR::IROp_VPopcount>();
   const uint8_t OpSize = IROp->Size;
-  // This only supports 8bit popcount on 8byte to 16byte registers
+  const bool Is256Bit = OpSize == 32;
 
-  auto Src = GetSrc(Op->Vector.ID());
-  auto Dest = GetDst(Node);
+  const auto Src = GetSrc(Op->Vector.ID());
+  const auto Dest = GetDst(Node);
+
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+
   vpxor(xmm15, xmm15, xmm15);
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
   // This is disgustingly bad on x86-64 but we only need it for compatibility
-  switch (Op->Header.ElementSize) {
+  // NOTE: If, in the distant future, we ever use AVX-512, consider
+  //       using vpopcnt{b, d, q, w} to shorten all of this down to one
+  //       instruction.
+  switch (ElementSize) {
     case 1: {
-      for (size_t i = 0; i < Elements; ++i) {
-        pextrb(eax, Src, i);
-        popcnt(eax, eax);
-        pinsrb(xmm15, eax, i);
+      const uint8_t NumElements = Is256Bit ? Elements / 2
+                                           : Elements;
+
+      const auto VectorPopcount = [this, NumElements](const Xbyak::Xmm& src, const Xbyak::Xmm& dst) {
+        for (size_t i = 0; i < NumElements; ++i) {
+          pextrb(eax, src, i);
+          popcnt(eax, eax);
+          pinsrb(dst, eax, i);
+        }
+      };
+
+      // Bottom 128 bits
+      VectorPopcount(Src, xmm15);
+      movaps(Dest, xmm15);
+
+      // Now do the top 128 bits, if necessary
+      if (Is256Bit) {
+        vextracti128(xmm14, ToYMM(Src), 1);
+        VectorPopcount(xmm14, xmm14);
+        vinserti128(ToYMM(Dest), ToYMM(Dest), xmm14, 1);
       }
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
-
-  movaps(Dest, xmm15);
 }
 
 DEF_OP(VFAdd) {
