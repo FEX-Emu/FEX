@@ -516,45 +516,106 @@ DEF_OP(VSQSub) {
 }
 
 DEF_OP(VAddP) {
-  auto Op = IROp->C<IR::IROp_VAddP>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VAddP>();
+  const auto OpSize = IROp->Size;
+  const auto IsScalar = OpSize == 8;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  if (OpSize == 8) {
-    switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (HostSupportsSVE && Is256Bit && !IsScalar) {
+    const auto Pred = PRED_TMP_32B.Merging();
+
+    // SVE ADDP is a destructive operation, so we need a temporary
+    eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+    mov(VTMP1.Z().VnD(), Pred, VectorLower.Z().VnD());
+
+    // Unlike Adv. SIMD's version of ADDP, which acts like it concats the
+    // upper vector onto the end of the lower vector and then performs
+    // pairwise addition, the SVE version actually interleaves the
+    // results of the pairwise addition (gross!), so we need to undo that.
+    switch (ElementSize) {
       case 1: {
-        addp(GetDst(Node).V8B(), GetSrc(Op->VectorLower.ID()).V8B(), GetSrc(Op->VectorUpper.ID()).V8B());
+        addp(VTMP1.Z().VnB(), Pred, VTMP1.Z().VnB(), VectorUpper.Z().VnB());
+        uzp1(VTMP2.Z().VnB(), VTMP1.Z().VnB(), VTMP1.Z().VnB());
+        uzp2(VTMP3.Z().VnB(), VTMP1.Z().VnB(), VTMP1.Z().VnB());
         break;
       }
       case 2: {
-        addp(GetDst(Node).V4H(), GetSrc(Op->VectorLower.ID()).V4H(), GetSrc(Op->VectorUpper.ID()).V4H());
+        addp(VTMP1.Z().VnH(), Pred, VTMP1.Z().VnH(), VectorUpper.Z().VnH());
+        uzp1(VTMP2.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
+        uzp2(VTMP3.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
         break;
       }
       case 4: {
-        addp(GetDst(Node).V2S(), GetSrc(Op->VectorLower.ID()).V2S(), GetSrc(Op->VectorUpper.ID()).V2S());
-        break;
-      }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-    }
-  }
-  else {
-    switch (Op->Header.ElementSize) {
-      case 1: {
-        addp(GetDst(Node).V16B(), GetSrc(Op->VectorLower.ID()).V16B(), GetSrc(Op->VectorUpper.ID()).V16B());
-        break;
-      }
-      case 2: {
-        addp(GetDst(Node).V8H(), GetSrc(Op->VectorLower.ID()).V8H(), GetSrc(Op->VectorUpper.ID()).V8H());
-        break;
-      }
-      case 4: {
-        addp(GetDst(Node).V4S(), GetSrc(Op->VectorLower.ID()).V4S(), GetSrc(Op->VectorUpper.ID()).V4S());
+        addp(VTMP1.Z().VnS(), Pred, VTMP1.Z().VnS(), VectorUpper.Z().VnS());
+        uzp1(VTMP2.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
+        uzp2(VTMP3.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
         break;
       }
       case 8: {
-        addp(GetDst(Node).V2D(), GetSrc(Op->VectorLower.ID()).V2D(), GetSrc(Op->VectorUpper.ID()).V2D());
+        addp(VTMP1.Z().VnD(), Pred, VTMP1.Z().VnD(), VectorUpper.Z().VnD());
+        uzp1(VTMP2.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        uzp2(VTMP3.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    // Shift the entire vector over by 128 bits.
+    mov(TMP1, 0);
+    insr(VTMP3.Z().VnD(), TMP1.X());
+    insr(VTMP3.Z().VnD(), TMP1.X());
+
+    // Now combine the lower and upper halves.
+    orr(Dst.Z().VnD(), VTMP2.Z().VnD(), VTMP3.Z().VnD());
+  } else {
+    if (IsScalar) {
+      switch (ElementSize) {
+        case 1: {
+          addp(Dst.V8B(), VectorLower.V8B(), VectorUpper.V8B());
+          break;
+        }
+        case 2: {
+          addp(Dst.V4H(), VectorLower.V4H(), VectorUpper.V4H());
+          break;
+        }
+        case 4: {
+          addp(Dst.V2S(), VectorLower.V2S(), VectorUpper.V2S());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
+    } else {
+      switch (ElementSize) {
+        case 1: {
+          addp(Dst.V16B(), VectorLower.V16B(), VectorUpper.V16B());
+          break;
+        }
+        case 2: {
+          addp(Dst.V8H(), VectorLower.V8H(), VectorUpper.V8H());
+          break;
+        }
+        case 4: {
+          addp(Dst.V4S(), VectorLower.V4S(), VectorUpper.V4S());
+          break;
+        }
+        case 8: {
+          addp(Dst.V2D(), VectorLower.V2D(), VectorUpper.V2D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
     }
   }
 }

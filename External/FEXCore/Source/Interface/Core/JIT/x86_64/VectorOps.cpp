@@ -323,17 +323,23 @@ DEF_OP(VSQSub) {
 }
 
 DEF_OP(VAddP) {
-  auto Op = IROp->C<IR::IROp_VAddP>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VAddP>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   if (OpSize == 8) {
     // Can't handle this natively without dropping to MMX
     // Emulate
     vpxor(xmm14, xmm14, xmm14);
-    movq(xmm15, GetSrc(Op->VectorLower.ID()));
-    vshufpd(xmm15, xmm15, GetSrc(Op->VectorUpper.ID()), 0b00);
-    vpaddw(GetDst(Node), xmm15, xmm14);
-    switch (Op->Header.ElementSize) {
+    movq(xmm15, VectorLower);
+    vshufpd(xmm15, xmm15, VectorUpper, 0b00);
+    vpaddw(Dst, xmm15, xmm14);
+    switch (ElementSize) {
       case 1:
         vpunpcklbw(xmm0, xmm15, xmm14);
         vpunpckhbw(xmm12, xmm15, xmm14);
@@ -347,44 +353,52 @@ DEF_OP(VAddP) {
         vpunpcklbw(xmm15, xmm0, xmm12);
         vpunpckhbw(xmm14, xmm0, xmm12);
 
-        vpaddb(GetDst(Node), xmm15, xmm14);
+        vpaddb(Dst, xmm15, xmm14);
         break;
       case 2:
-        vphaddw(GetDst(Node), xmm15, xmm14);
+        vphaddw(Dst, xmm15, xmm14);
         break;
       case 4:
-        vphaddd(GetDst(Node), xmm15, xmm14);
+        vphaddd(Dst, xmm15, xmm14);
         break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
   else {
-    switch (Op->Header.ElementSize) {
+    const auto DstYMM = ToYMM(Dst);
+    const auto VectorLowerYMM = ToYMM(VectorLower);
+    const auto VectorUpperYMM = ToYMM(VectorUpper);
+
+    switch (ElementSize) {
       case 1:
-        movdqu(xmm15, GetSrc(Op->VectorLower.ID()));
-        movdqu(xmm14, GetSrc(Op->VectorUpper.ID()));
+        vmovdqu(ymm15, VectorLowerYMM);
+        vmovdqu(ymm14, VectorUpperYMM);
 
-        vpunpcklbw(xmm0, xmm15, xmm14);
-        vpunpckhbw(xmm12, xmm15, xmm14);
+        vpunpcklbw(ymm0, ymm15, ymm14);
+        vpunpckhbw(ymm12, ymm15, ymm14);
 
-        vpunpcklbw(xmm15, xmm0, xmm12);
-        vpunpckhbw(xmm14, xmm0, xmm12);
+        vpunpcklbw(ymm15, ymm0, ymm12);
+        vpunpckhbw(ymm14, ymm0, ymm12);
 
-        vpunpcklbw(xmm0, xmm15, xmm14);
-        vpunpckhbw(xmm12, xmm15, xmm14);
+        vpunpcklbw(ymm0, ymm15, ymm14);
+        vpunpckhbw(ymm12, ymm15, ymm14);
 
-        vpunpcklbw(xmm15, xmm0, xmm12);
-        vpunpckhbw(xmm14, xmm0, xmm12);
+        vpunpcklbw(ymm15, ymm0, ymm12);
+        vpunpckhbw(ymm14, ymm0, ymm12);
 
-        vpaddb(GetDst(Node), xmm15, xmm14);
+        vpaddb(DstYMM, ymm15, ymm14);
         break;
       case 2:
-        vphaddw(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()));
+        vphaddw(DstYMM, VectorLowerYMM, VectorUpperYMM);
         break;
       case 4:
-        vphaddd(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()));
+        vphaddd(DstYMM, VectorLowerYMM, VectorUpperYMM);
         break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }
