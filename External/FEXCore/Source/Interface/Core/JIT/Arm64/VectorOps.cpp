@@ -954,7 +954,8 @@ DEF_OP(VFAddP) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE FADDP is a destructive operation, so we need a temporary
-    mov(VTMP1.Z().VnD(), VectorLower.Z().VnD());
+    eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+    mov(VTMP1.Z().VnD(), Pred, VectorLower.Z().VnD());
 
     // Unlike Adv. SIMD's version of FADDP, which acts like it concats the
     // upper vector onto the end of the lower vector and then performs
@@ -962,7 +963,7 @@ DEF_OP(VFAddP) {
     // results of the pairwise addition (gross!), so we need to undo that.
     switch (ElementSize) {
       case 2: {
-        faddp(VTMP1.Z().VnH(), Pred, VectorLower.Z().VnH(), VectorUpper.Z().VnH());
+        faddp(VTMP1.Z().VnH(), Pred, VTMP1.Z().VnH(), VectorUpper.Z().VnH());
         uzp1(VTMP2.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
         uzp2(VTMP3.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
         break;
