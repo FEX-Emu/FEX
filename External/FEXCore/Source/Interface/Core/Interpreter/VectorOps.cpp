@@ -45,7 +45,10 @@ DEF_OP(VMov) {
   auto Op = IROp->C<IR::IROp_VMov>();
   const uint8_t OpSize = IROp->Size;
 
-  const auto Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Source);
+  LOGMAN_THROW_AA_FMT(OpSize <= Core::CPUState::XMM_AVX_REG_SIZE,
+                      "Moves larger than 256-bit aren't supported");
+
+  const auto Src = *GetSrc<InterpVector256*>(Data->SSAData, Op->Source);
 
   memcpy(GDP, &Src, OpSize);
 }
