@@ -841,32 +841,40 @@ DEF_OP(VFMax) {
 }
 
 DEF_OP(VFRecp) {
-  auto Op = IROp->C<IR::IROp_VFRecp>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VFRecp>();
+  const auto OpSize = IROp->Size;
 
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (IsScalar) {
+    switch (ElementSize) {
       case 4: {
         mov(eax, 0x3f800000); // 1.0f
         vmovd(xmm15, eax);
-        vdivss(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-      break;
+        vdivss(Dst, xmm15, Vector);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
   else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+    switch (ElementSize) {
       case 4: {
         mov(eax, 0x3f800000); // 1.0f
         vmovd(xmm15, eax);
-        pshufd(xmm15, xmm15, 0);
-        vdivps(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-      break;
+        vbroadcastss(ymm15, xmm15);
+        vdivps(ToYMM(Dst), ymm15, ToYMM(Vector));
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }
