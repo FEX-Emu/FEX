@@ -946,26 +946,34 @@ DEF_OP(VFRSqrt) {
 }
 
 DEF_OP(VNeg) {
-  auto Op = IROp->C<IR::IROp_VNeg>();
+  const auto Op = IROp->C<IR::IROp_VNeg>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
   vpxor(xmm15, xmm15, xmm15);
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     case 1: {
-      vpsubb(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-    break;
+      vpsubb(Dst, ymm15, Vector);
+      break;
     }
     case 2: {
-      vpsubw(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-    break;
+      vpsubw(Dst, ymm15, Vector);
+      break;
     }
     case 4: {
-      vpsubd(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-    break;
+      vpsubd(Dst, ymm15, Vector);
+      break;
     }
     case 8: {
-      vpsubq(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-    break;
+      vpsubq(Dst, ymm15, Vector);
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
