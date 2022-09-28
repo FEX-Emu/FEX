@@ -872,35 +872,46 @@ DEF_OP(VFRecp) {
 }
 
 DEF_OP(VFSqrt) {
-  auto Op = IROp->C<IR::IROp_VFSqrt>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VFSqrt>();
+  const auto OpSize = IROp->Size;
 
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (IsScalar) {
+    switch (ElementSize) {
       case 4: {
-        vsqrtss(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->Vector.ID()));
-      break;
+        vsqrtss(Dst, Vector, Vector);
+        break;
       }
       case 8: {
-        vsqrtsd(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->Vector.ID()));
-      break;
+        vsqrtsd(Dst, Vector, Vector);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
   else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+    const auto DstYMM = ToYMM(Dst);
+    const auto VectorYMM = ToYMM(Vector);
+
+    switch (ElementSize) {
       case 4: {
-        vsqrtps(GetDst(Node), GetSrc(Op->Vector.ID()));
-      break;
+        vsqrtps(DstYMM, VectorYMM);
+        break;
       }
       case 8: {
-        vsqrtpd(GetDst(Node), GetSrc(Op->Vector.ID()));
-      break;
+        vsqrtpd(DstYMM, VectorYMM);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }
