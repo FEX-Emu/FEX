@@ -1537,34 +1537,74 @@ DEF_OP(VFRecp) {
 }
 
 DEF_OP(VFSqrt) {
-  auto Op = IROp->C<IR::IROp_VFRSqrt>();
-  const uint8_t OpSize = IROp->Size;
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VFRSqrt>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && !IsScalar) {
+    const auto Pred = Is256Bit ? PRED_TMP_32B.Merging()
+                               : PRED_TMP_16B.Merging();
+
+    switch (ElementSize) {
+      case 2: {
+        fsqrt(Dst.Z().VnH(), Pred, Vector.Z().VnH());
+        break;
+      }
       case 4: {
-        fsqrt(GetDst(Node).S(), GetSrc(Op->Vector.ID()).S());
-      break;
+        fsqrt(Dst.Z().VnS(), Pred, Vector.Z().VnS());
+        break;
       }
       case 8: {
-        fsqrt(GetDst(Node).D(), GetSrc(Op->Vector.ID()).D());
-      break;
+        fsqrt(Dst.Z().VnD(), Pred, Vector.Z().VnD());
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
-      case 4: {
-        fsqrt(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
-      break;
+  } else {
+    if (IsScalar) {
+      switch (ElementSize) {
+        case 2: {
+          fsqrt(Dst.H(), Vector.H());
+          break;
+        }
+        case 4: {
+          fsqrt(Dst.S(), Vector.S());
+          break;
+        }
+        case 8: {
+          fsqrt(Dst.D(), Vector.D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
       }
-      case 8: {
-        fsqrt(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
-      break;
+    } else {
+      switch (ElementSize) {
+        case 2: {
+          fsqrt(Dst.V8H(), Vector.V8H());
+          break;
+        }
+        case 4: {
+          fsqrt(Dst.V4S(), Vector.V4S());
+          break;
+        }
+        case 8: {
+          fsqrt(Dst.V2D(), Vector.V2D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
