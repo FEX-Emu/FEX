@@ -965,41 +965,52 @@ DEF_OP(VFSqrt) {
 }
 
 DEF_OP(VFRSqrt) {
-  auto Op = IROp->C<IR::IROp_VFRSqrt>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VFRSqrt>();
+  const auto OpSize = IROp->Size;
 
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (IsScalar) {
+    switch (ElementSize) {
       case 4: {
         mov(eax, 0x3f800000); // 1.0f
-        sqrtss(xmm15, GetSrc(Op->Vector.ID()));
-        vmovd(GetDst(Node), eax);
-        divss(GetDst(Node), xmm15);
-      break;
+        sqrtss(xmm15, Vector);
+        vmovd(Dst, eax);
+        divss(Dst, xmm15);
+        break;
       }
       case 8: {
         mov(eax, 0x3f800000); // 1.0f
-        sqrtsd(xmm15, GetSrc(Op->Vector.ID()));
-        vmovd(GetDst(Node), eax);
-        divsd(GetDst(Node), xmm15);
-      break;
+        sqrtsd(xmm15, Vector);
+        vmovd(Dst, eax);
+        divsd(Dst, xmm15);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
   else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+    const auto DstYMM = ToYMM(Dst);
+    const auto VectorYMM = ToYMM(Vector);
+
+    switch (ElementSize) {
       case 4: {
         mov(rax, 0x3f800000); // 1.0f
-        sqrtps(xmm15, GetSrc(Op->Vector.ID()));
-        vmovd(GetDst(Node), eax);
-        pshufd(GetDst(Node), GetDst(Node), 0);
-        divps(GetDst(Node), xmm15);
-      break;
+        vsqrtps(ymm15, VectorYMM);
+        vmovd(Dst, eax);
+        vbroadcastss(DstYMM, Dst);
+        vdivps(Dst, ymm15);
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }

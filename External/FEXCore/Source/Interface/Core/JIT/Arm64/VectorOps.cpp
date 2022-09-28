@@ -1610,42 +1610,93 @@ DEF_OP(VFSqrt) {
 }
 
 DEF_OP(VFRSqrt) {
-  auto Op = IROp->C<IR::IROp_VFRSqrt>();
-  const uint8_t OpSize = IROp->Size;
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VFRSqrt>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit && !IsScalar) {
+    const auto Pred = PRED_TMP_32B.Merging();
+
+    switch (ElementSize) {
+      case 2: {
+        fmov(VTMP1.Z().VnH(), 1.0);
+        fsqrt(VTMP2.Z().VnH(), Pred, Vector.Z().VnH());
+        fdiv(VTMP1.Z().VnH(), Pred, VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        break;
+      }
       case 4: {
-        fmov(VTMP1.S(), 1.0f);
-        fsqrt(VTMP2.S(), GetSrc(Op->Vector.ID()).S());
-        fdiv(GetDst(Node).S(), VTMP1.S(), VTMP2.S());
-      break;
+        fmov(VTMP1.Z().VnS(), 1.0);
+        fsqrt(VTMP2.Z().VnS(), Pred, Vector.Z().VnS());
+        fdiv(VTMP1.Z().VnS(), Pred, VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        break;
       }
       case 8: {
-        fmov(VTMP1.D(), 1.0);
-        fsqrt(VTMP2.D(), GetSrc(Op->Vector.ID()).D());
-        fdiv(GetDst(Node).D(), VTMP1.D(), VTMP2.D());
-      break;
+        fmov(VTMP1.Z().VnD(), 1.0);
+        fsqrt(VTMP2.Z().VnD(), Pred, Vector.Z().VnD());
+        fdiv(VTMP1.Z().VnD(), Pred, VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
-      case 4: {
-        fmov(VTMP1.V4S(), 1.0f);
-        fsqrt(VTMP2.V4S(), GetSrc(Op->Vector.ID()).V4S());
-        fdiv(GetDst(Node).V4S(), VTMP1.V4S(), VTMP2.V4S());
-      break;
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    if (IsScalar) {
+      switch (ElementSize) {
+        case 2: {
+          fmov(VTMP1.H(), Float16{1.0});
+          fsqrt(VTMP2.H(), Vector.H());
+          fdiv(Dst.H(), VTMP1.H(), VTMP2.H());
+          break;
+        }
+        case 4: {
+          fmov(VTMP1.S(), 1.0f);
+          fsqrt(VTMP2.S(), Vector.S());
+          fdiv(Dst.S(), VTMP1.S(), VTMP2.S());
+          break;
+        }
+        case 8: {
+          fmov(VTMP1.D(), 1.0);
+          fsqrt(VTMP2.D(), Vector.D());
+          fdiv(Dst.D(), VTMP1.D(), VTMP2.D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
       }
-      case 8: {
-        fmov(VTMP1.V2D(), 1.0);
-        fsqrt(VTMP2.V2D(), GetSrc(Op->Vector.ID()).V2D());
-        fdiv(GetDst(Node).V2D(), VTMP1.V2D(), VTMP2.V2D());
-      break;
+    } else {
+      switch (ElementSize) {
+        case 2: {
+          fmov(VTMP1.V8H(), Float16{1.0});
+          fsqrt(VTMP2.V8H(), Vector.V8H());
+          fdiv(Dst.V8H(), VTMP1.V8H(), VTMP2.V8H());
+          break;
+        }
+        case 4: {
+          fmov(VTMP1.V4S(), 1.0f);
+          fsqrt(VTMP2.V4S(), Vector.V4S());
+          fdiv(Dst.V4S(), VTMP1.V4S(), VTMP2.V4S());
+          break;
+        }
+        case 8: {
+          fmov(VTMP1.V2D(), 1.0);
+          fsqrt(VTMP2.V2D(), Vector.V2D());
+          fdiv(Dst.V2D(), VTMP1.V2D(), VTMP2.V2D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
     }
   }
 }
