@@ -7,6 +7,8 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
+
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/BitUtils.h>
 
 #include <bit>
@@ -25,7 +27,7 @@ DEF_OP(VectorImm) {
   auto Op = IROp->C<IR::IROp_VectorImm>();
   uint8_t OpSize = IROp->Size;
 
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   uint8_t Elements = OpSize / Op->Header.ElementSize;
   uint8_t Imm = Op->Immediate;
@@ -148,7 +150,7 @@ DEF_OP(VAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -172,7 +174,7 @@ DEF_OP(VSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -196,7 +198,7 @@ DEF_OP(VUQAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -223,7 +225,7 @@ DEF_OP(VUQSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -250,7 +252,7 @@ DEF_OP(VSQAdd) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -291,7 +293,7 @@ DEF_OP(VSQSub) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -370,7 +372,7 @@ DEF_OP(VUMinV) {
   const int8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
@@ -394,7 +396,7 @@ DEF_OP(VURAvg) {
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[32];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / ElementSize;
