@@ -1129,21 +1129,30 @@ DEF_OP(VSMin) {
 }
 
 DEF_OP(VUMax) {
-  auto Op = IROp->C<IR::IROp_VUMax>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUMax>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1: {
-      vpmaxub(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpmaxub(Dst, Vector1, Vector2);
       break;
     }
     case 2: {
-      vpmaxuw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpmaxuw(Dst, Vector1, Vector2);
       break;
     }
     case 4: {
-      vpmaxud(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpmaxud(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 

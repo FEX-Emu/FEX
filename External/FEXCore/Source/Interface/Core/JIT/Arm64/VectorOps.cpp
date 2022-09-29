@@ -1824,28 +1824,71 @@ DEF_OP(VSMin) {
 }
 
 DEF_OP(VUMax) {
-  auto Op = IROp->C<IR::IROp_VUMax>();
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      umax(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+  const auto Op = IROp->C<IR::IROp_VUMax>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (HostSupportsSVE && Is256Bit && !IsScalar) {
+    const auto Pred = PRED_TMP_32B.Merging();
+
+    // SVE UMAX is a destructive operation, so we need a temporary.
+    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+
+    switch (ElementSize) {
+      case 1: {
+        umax(VTMP1.Z().VnB(), Pred, VTMP1.Z().VnB(), Vector2.Z().VnB());
+        break;
+      }
+      case 2: {
+        umax(VTMP1.Z().VnH(), Pred, VTMP1.Z().VnH(), Vector2.Z().VnH());
+        break;
+      }
+      case 4: {
+        umax(VTMP1.Z().VnS(), Pred, VTMP1.Z().VnS(), Vector2.Z().VnS());
+        break;
+      }
+      case 8: {
+        umax(VTMP1.Z().VnD(), Pred, VTMP1.Z().VnD(), Vector2.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-    case 2: {
-      umax(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        umax(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+        break;
+      }
+      case 2: {
+        umax(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+        break;
+      }
+      case 4: {
+        umax(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+        break;
+      }
+      case 8: {
+        cmhi(VTMP1.V2D(), Vector2.V2D(), Vector1.V2D());
+        mov(VTMP2.V2D(), Vector1.V2D());
+        bit(VTMP2.V16B(), Vector2.V16B(), VTMP1.V16B());
+        mov(Dst.V2D(), VTMP2.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      umax(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-    break;
-    }
-    case 8: {
-      cmhi(VTMP1.V2D(), GetSrc(Op->Vector2.ID()).V2D(), GetSrc(Op->Vector1.ID()).V2D());
-      mov(VTMP2.V2D(), GetSrc(Op->Vector1.ID()).V2D());
-      bit(VTMP2.V16B(), GetSrc(Op->Vector2.ID()).V16B(), VTMP1.V16B());
-      mov(GetDst(Node).V2D(), VTMP2.V2D());
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
