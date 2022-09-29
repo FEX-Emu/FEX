@@ -1075,36 +1075,53 @@ DEF_OP(VNot) {
 }
 
 DEF_OP(VUMin) {
-  auto Op = IROp->C<IR::IROp_VUMin>();
-  if (Op->Header.Size == Op->Header.ElementSize) {
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUMin>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = OpSize == ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (IsScalar) {
+    switch (ElementSize) {
       case 8: {
         // This isn't very nice on x86 until AVX-512
-        pextrq(TMP1, GetSrc(Op->Vector1.ID()), 0);
-        pextrq(TMP2, GetSrc(Op->Vector2.ID()), 0);
+        pextrq(TMP1, Vector1, 0);
+        pextrq(TMP2, Vector2, 0);
         cmp(TMP1, TMP2);
         cmovb(TMP2, TMP1);
-        pinsrq(GetDst(Node), TMP2, 0);
+        pinsrq(Dst, TMP2, 0);
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
   else {
-    switch (Op->Header.ElementSize) {
+    const auto DstYMM = ToYMM(Dst);
+    const auto Vector1YMM = ToYMM(Vector1);
+    const auto Vector2YMM = ToYMM(Vector2);
+
+    switch (ElementSize) {
       case 1: {
-        vpminub(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+        vpminub(DstYMM, Vector1YMM, Vector2YMM);
         break;
       }
       case 2: {
-        vpminuw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+        vpminuw(DstYMM, Vector1YMM, Vector2YMM);
         break;
       }
       case 4: {
-        vpminud(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+        vpminud(DstYMM, Vector1YMM, Vector2YMM);
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }
