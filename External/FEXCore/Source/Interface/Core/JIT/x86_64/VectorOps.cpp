@@ -1048,23 +1048,38 @@ DEF_OP(VNeg) {
 }
 
 DEF_OP(VFNeg) {
-  auto Op = IROp->C<IR::IROp_VNeg>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VNeg>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
+  switch (ElementSize) {
+    case 2: {
+      mov(rax, 0x80008000);
+      vmovd(xmm15, eax);
+      vbroadcastss(ymm15, xmm15);
+      vxorps(Dst, ymm15, Vector);
+      break;
+    }
     case 4: {
       mov(rax, 0x80000000);
       vmovd(xmm15, eax);
-      pshufd(xmm15, xmm15, 0);
-      vxorps(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-    break;
+      vbroadcastss(ymm15, xmm15);
+      vxorps(Dst, ymm15, Vector);
+      break;
     }
     case 8: {
       mov(rax, 0x8000000000000000ULL);
       vmovq(xmm15, rax);
-      pshufd(xmm15, xmm15, 0b01'00'01'00);
-      vxorpd(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
-    break;
+      vbroadcastsd(ymm15, xmm15);
+      vxorpd(Dst, ymm15, Vector);
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
