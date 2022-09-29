@@ -1084,9 +1084,13 @@ DEF_OP(VFNeg) {
 }
 
 DEF_OP(VNot) {
-  auto Op = IROp->C<IR::IROp_VNot>();
-  pcmpeqd(xmm15, xmm15);
-  vpxor(GetDst(Node), xmm15, GetSrc(Op->Vector.ID()));
+  const auto Op = IROp->C<IR::IROp_VNot>();
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
+  vpcmpeqd(ymm15, ymm15, ymm15);
+  vpxor(Dst, ymm15, Vector);
 }
 
 DEF_OP(VUMin) {

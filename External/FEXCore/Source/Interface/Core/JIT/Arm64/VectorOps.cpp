@@ -1800,8 +1800,18 @@ DEF_OP(VFNeg) {
 }
 
 DEF_OP(VNot) {
-  auto Op = IROp->C<IR::IROp_VNot>();
-  mvn(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B());
+  const auto Op = IROp->C<IR::IROp_VNot>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    not_(Dst.Z().VnB(), PRED_TMP_32B.Merging(), Vector.Z().VnB());
+  } else {
+    mvn(Dst.V16B(), Vector.V16B());
+  }
 }
 
 DEF_OP(VUMin) {
