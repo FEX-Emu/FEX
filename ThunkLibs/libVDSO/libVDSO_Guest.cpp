@@ -32,14 +32,7 @@ __attribute__((naked))
 int __kernel_vsyscall() {
   asm volatile(R"(
   .intel_syntax noprefix
-  push ecx;
-  push edx;
-  push ebp;
-  mov ebp, ecx;
   int 0x80;
-  pop ebp;
-  pop edx;
-  pop ecx;
   ret;
   .att_syntax prefix
   )"
