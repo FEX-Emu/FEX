@@ -1754,15 +1754,48 @@ DEF_OP(VNeg) {
 }
 
 DEF_OP(VFNeg) {
-  auto Op = IROp->C<IR::IROp_VFNeg>();
-  switch (Op->Header.ElementSize) {
-  case 4:
-    fneg(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
-    break;
-  case 8:
-    fneg(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
-    break;
-  default: LOGMAN_MSG_A_FMT("Unsupported VFNeg size: {}", IROp->Size);
+  const auto Op = IROp->C<IR::IROp_VFNeg>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE) {
+    const auto Pred = Is256Bit ? PRED_TMP_32B.Merging()
+                               : PRED_TMP_16B.Merging();
+
+    switch (ElementSize) {
+      case 2:
+        fneg(Dst.Z().VnH(), Pred, Vector.Z().VnH());
+        break;
+      case 4:
+        fneg(Dst.Z().VnS(), Pred, Vector.Z().VnS());
+        break;
+      case 8:
+        fneg(Dst.Z().VnD(), Pred, Vector.Z().VnD());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unsupported VFNeg element size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 2:
+        fneg(Dst.V8H(), Vector.V8H());
+        break;
+      case 4:
+        fneg(Dst.V4S(), Vector.V4S());
+        break;
+      case 8:
+        fneg(Dst.V2D(), Vector.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unsupported VFNeg element size: {}", ElementSize);
+        break;
+    }
   }
 }
 
