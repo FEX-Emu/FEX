@@ -723,11 +723,15 @@ DEF_OP(VFNeg) {
 }
 
 DEF_OP(VNot) {
-  auto Op = IROp->C<IR::IROp_VNot>();
-  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
+  const auto Op = IROp->C<IR::IROp_VNot>();
+  const auto Src = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector);
 
-  const auto Dst = ~Src1;
-  memcpy(GDP, &Dst, 16);
+  const auto Dst = InterpVector256{
+    .Lower = ~Src.Lower,
+    .Upper = ~Src.Upper,
+  };
+
+  memcpy(GDP, &Dst, sizeof(Dst));
 }
 
 DEF_OP(VUMin) {
