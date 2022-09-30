@@ -88,6 +88,7 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 class Arm64Emitter : public vixl::aarch64::Assembler {
 protected:
   Arm64Emitter(FEXCore::Context::Context *ctx, size_t size);
+  ~Arm64Emitter();
 
   FEXCore::Context::Context *EmitterCTX;
   vixl::aarch64::CPU CPU;
