@@ -2263,16 +2263,31 @@ DEF_OP(VUnZip2) {
 }
 
 DEF_OP(VBSL) {
-  auto Op = IROp->C<IR::IROp_VBSL>();
-  if (IROp->Size == 16) {
-    mov(VTMP1.V16B(), GetSrc(Op->VectorMask.ID()).V16B());
-    bsl(VTMP1.V16B(), GetSrc(Op->VectorTrue.ID()).V16B(), GetSrc(Op->VectorFalse.ID()).V16B());
-    mov(GetDst(Node).V16B(), VTMP1.V16B());
-  }
-  else {
-    mov(VTMP1.V8B(), GetSrc(Op->VectorMask.ID()).V8B());
-    bsl(VTMP1.V8B(), GetSrc(Op->VectorTrue.ID()).V8B(), GetSrc(Op->VectorFalse.ID()).V8B());
-    mov(GetDst(Node).V8B(), VTMP1.V8B());
+  const auto Op = IROp->C<IR::IROp_VBSL>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorFalse = GetSrc(Op->VectorFalse.ID());
+  const auto VectorTrue = GetSrc(Op->VectorTrue.ID());
+  const auto VectorMask = GetSrc(Op->VectorMask.ID());
+
+  if (HostSupportsSVE) {
+    // NOTE: Slight parameter difference from ASIMD
+    //       ASIMD -> BSL Mask, True, False
+    //       SVE   -> BSL True, True, False, Mask
+    mov(VTMP1.Z().VnD(), VectorTrue.Z().VnD());
+    bsl(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VectorFalse.Z().VnD(), VectorMask.Z().VnD());
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    if (OpSize == 8) {
+      mov(VTMP1.V8B(), VectorMask.V8B());
+      bsl(VTMP1.V8B(), VectorTrue.V8B(), VectorFalse.V8B());
+      mov(Dst.V8B(), VTMP1.V8B());
+    } else {
+      mov(VTMP1.V16B(), VectorMask.V16B());
+      bsl(VTMP1.V16B(), VectorTrue.V16B(), VectorFalse.V16B());
+      mov(Dst.V16B(), VTMP1.V16B());
+    }
   }
 }
 
