@@ -1089,7 +1089,7 @@ DEF_OP(VCMPLTZ) {
 }
 
 DEF_OP(VFCMPEQ) {
-  auto Op = IROp->C<IR::IROp_VFCMPEQ>();
+  const auto Op = IROp->C<IR::IROp_VFCMPEQ>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
@@ -1097,21 +1097,28 @@ DEF_OP(VFCMPEQ) {
 
   const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
 
-  uint8_t Tmp[16];
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  if (Op->Header.ElementSize == OpSize) {
-    switch (Op->Header.ElementSize) {
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  if (IsScalar) {
+    switch (ElementSize) {
     DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
     DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-    default: LOGMAN_MSG_A_FMT("Unsupported elementSize: {}", Op->Header.ElementSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported elementSize: {}", ElementSize);
+      break;
     }
   }
   else {
-    switch (Op->Header.ElementSize) {
+    switch (ElementSize) {
     DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
     DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-    default: LOGMAN_MSG_A_FMT("Unsupported elementSize: {}", Op->Header.ElementSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported elementSize: {}", ElementSize);
+      break;
     }
   }
 
@@ -1119,7 +1126,7 @@ DEF_OP(VFCMPEQ) {
 }
 
 DEF_OP(VFCMPNEQ) {
-  auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
+  const auto Op = IROp->C<IR::IROp_VFCMPNEQ>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
@@ -1127,21 +1134,28 @@ DEF_OP(VFCMPNEQ) {
 
   const auto Func = [](auto a, auto b) { return a != b ? ~0ULL : 0; };
 
-  uint8_t Tmp[16];
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  if (Op->Header.ElementSize == OpSize) {
-    switch (Op->Header.ElementSize) {
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  if (IsScalar) {
+    switch (ElementSize) {
     DO_SCALAR_COMPARE_OP(4, float, uint32_t, Func);
     DO_SCALAR_COMPARE_OP(8, double, uint64_t, Func);
-    default: LOGMAN_MSG_A_FMT("Unsupported elementSize: {}", Op->Header.ElementSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
+      break;
     }
   }
   else {
-    switch (Op->Header.ElementSize) {
+    switch (ElementSize) {
     DO_VECTOR_COMPARE_OP(4, float, uint32_t, Func);
     DO_VECTOR_COMPARE_OP(8, double, uint64_t, Func);
-    default: LOGMAN_MSG_A_FMT("Unsupported elementSize: {}", Op->Header.ElementSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
+      break;
     }
   }
 
