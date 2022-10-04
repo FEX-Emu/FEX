@@ -1486,23 +1486,31 @@ DEF_OP(VCMPGT) {
 }
 
 DEF_OP(VCMPGTZ) {
-  auto Op = IROp->C<IR::IROp_VCMPGTZ>();
-  vpxor(xmm15, xmm15, xmm15);
+  const auto Op = IROp->C<IR::IROp_VCMPGTZ>();
 
-  switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto ZeroVector = ymm15;
+
+  vpxor(ZeroVector, ZeroVector, ZeroVector);
+  switch (ElementSize) {
     case 1:
-      vpcmpgtb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
+      vpcmpgtb(Dst, Vector, ZeroVector);
       break;
     case 2:
-      vpcmpgtw(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
+      vpcmpgtw(Dst, Vector, ZeroVector);
       break;
     case 4:
-      vpcmpgtd(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
+      vpcmpgtd(Dst, Vector, ZeroVector);
       break;
     case 8:
-      vpcmpgtq(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
+      vpcmpgtq(Dst, Vector, ZeroVector);
       break;
-    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
+      break;
   }
 }
 
