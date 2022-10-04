@@ -1520,29 +1520,44 @@ DEF_OP(VCMPLTZ) {
 }
 
 DEF_OP(VFCMPEQ) {
-  auto Op = IROp->C<IR::IROp_VFCMPEQ>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VFCMPEQ>();
+  const auto OpSize = IROp->Size;
 
-  if (Op->Header.ElementSize == OpSize) {
-    switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (IsScalar) {
+    switch (ElementSize) {
     case 4:
-      vcmpss(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
-    break;
+      vcmpss(Dst, Vector1, Vector2, 0);
+      break;
     case 8:
-      vcmpsd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
-    break;
-    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
+      vcmpsd(Dst, Vector1, Vector2, 0);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
+      break;
     }
   }
   else {
-    switch (Op->Header.ElementSize) {
+    const auto DstYMM = ToYMM(Dst);
+    const auto Vector1YMM = ToYMM(Vector1);
+    const auto Vector2YMM = ToYMM(Vector2);
+
+    switch (ElementSize) {
     case 4:
-      vcmpps(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
-    break;
+      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 0);
+      break;
     case 8:
-      vcmppd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()), 0);
-    break;
-    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
+      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 0);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
+      break;
     }
   }
 }
