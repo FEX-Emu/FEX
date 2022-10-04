@@ -1410,10 +1410,16 @@ DEF_OP(VUnZip2) {
 
 
 DEF_OP(VBSL) {
-  auto Op = IROp->C<IR::IROp_VBSL>();
-  vpand(xmm0, GetSrc(Op->VectorMask.ID()), GetSrc(Op->VectorTrue.ID()));
-  vpandn(xmm12, GetSrc(Op->VectorMask.ID()), GetSrc(Op->VectorFalse.ID()));
-  vpor(GetDst(Node), xmm0, xmm12);
+  const auto Op = IROp->C<IR::IROp_VBSL>();
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto VectorFalse = ToYMM(GetSrc(Op->VectorFalse.ID()));
+  const auto VectorTrue = ToYMM(GetSrc(Op->VectorTrue.ID()));
+  const auto VectorMask = ToYMM(GetSrc(Op->VectorMask.ID()));
+
+  vpand(ymm0, VectorMask, VectorTrue);
+  vpandn(ymm12, VectorMask, VectorFalse);
+  vpor(Dst, ymm0, ymm12);
 }
 
 DEF_OP(VCMPEQ) {
