@@ -2373,42 +2373,92 @@ DEF_OP(VCMPEQ) {
 }
 
 DEF_OP(VCMPEQZ) {
-  auto Op = IROp->C<IR::IROp_VCMPEQZ>();
-  const uint8_t OpSize = IROp->Size;
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
-      case 4: {
-        cmeq(GetDst(Node).S(), GetSrc(Op->Vector.ID()).S(), 0);
-      break;
-      }
-      case 8: {
-        cmeq(GetDst(Node).D(), GetSrc(Op->Vector.ID()).D(), 0);
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-    }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VCMPEQZ>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit && !IsScalar) {
+    const auto Mask = PRED_TMP_32B.Zeroing();
+    const auto ComparePred = p0;
+
+    // Ensure no junk is in the temp (important for ensuring
+    // non-equal entries remain as zero).
+    eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+
+    // Unlike with VCMPEQ, we can skip needing to bitwise OR the
+    // final results, since if our elements are equal to zero,
+    // we just need to bitwise NOT them and they're already set
+    // to all 1s.
+    switch (ElementSize) {
       case 1: {
-        cmeq(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B(), 0);
-      break;
+        cmpeq(ComparePred.VnB(), Mask, Vector.Z().VnB(), 0);
+        not_(VTMP1.Z().VnB(), ComparePred.Merging(), Vector.Z().VnB());
+        break;
       }
       case 2: {
-        cmeq(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V8H(), 0);
-      break;
+        cmpeq(ComparePred.VnH(), Mask, Vector.Z().VnH(), 0);
+        not_(VTMP1.Z().VnH(), ComparePred.Merging(), Vector.Z().VnH());
+        break;
       }
       case 4: {
-        cmeq(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S(), 0);
-      break;
+        cmpeq(ComparePred.VnS(), Mask, Vector.Z().VnS(), 0);
+        not_(VTMP1.Z().VnS(), ComparePred.Merging(), Vector.Z().VnS());
+        break;
       }
       case 8: {
-        cmeq(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D(), 0);
-      break;
+        cmpeq(ComparePred.VnD(), Mask, Vector.Z().VnD(), 0);
+        not_(VTMP1.Z().VnD(), ComparePred.Merging(), Vector.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    if (IsScalar) {
+      switch (ElementSize) {
+        case 4: {
+          cmeq(Dst.S(), Vector.S(), 0);
+          break;
+        }
+        case 8: {
+          cmeq(Dst.D(), Vector.D(), 0);
+          break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+      }
+    } else {
+      switch (ElementSize) {
+        case 1: {
+          cmeq(Dst.V16B(), Vector.V16B(), 0);
+          break;
+        }
+        case 2: {
+          cmeq(Dst.V8H(), Vector.V8H(), 0);
+          break;
+        }
+        case 4: {
+          cmeq(Dst.V4S(), Vector.V4S(), 0);
+          break;
+        }
+        case 8: {
+          cmeq(Dst.V2D(), Vector.V2D(), 0);
+          break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+      }
     }
   }
 }
