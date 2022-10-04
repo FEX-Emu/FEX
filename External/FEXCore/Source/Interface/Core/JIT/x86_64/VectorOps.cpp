@@ -1417,22 +1417,30 @@ DEF_OP(VBSL) {
 }
 
 DEF_OP(VCMPEQ) {
-  auto Op = IROp->C<IR::IROp_VCMPEQ>();
+  const auto Op = IROp->C<IR::IROp_VCMPEQ>();
 
-  switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 1:
-      vpcmpeqb(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpcmpeqb(Dst, Vector1, Vector2);
       break;
     case 2:
-      vpcmpeqw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpcmpeqw(Dst, Vector1, Vector2);
       break;
     case 4:
-      vpcmpeqd(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpcmpeqd(Dst, Vector1, Vector2);
       break;
     case 8:
-      vpcmpeqq(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpcmpeqq(Dst, Vector1, Vector2);
       break;
-    default: LOGMAN_MSG_A_FMT("Unsupported element size: {}", Op->Header.ElementSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
+      break;
   }
 }
 
