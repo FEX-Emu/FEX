@@ -964,44 +964,50 @@ DEF_OP(VBSL) {
 }
 
 DEF_OP(VCMPEQ) {
-  auto Op = IROp->C<IR::IROp_VCMPEQ>();
+  const auto Op = IROp->C<IR::IROp_VCMPEQ>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+
   const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
-
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_OP(1, uint8_t,   Func)
     DO_VECTOR_OP(2, uint16_t,  Func)
     DO_VECTOR_OP(4, uint32_t,  Func)
     DO_VECTOR_OP(8, uint64_t,  Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 
   memcpy(GDP, Tmp, OpSize);
 }
 
 DEF_OP(VCMPEQZ) {
-  auto Op = IROp->C<IR::IROp_VCMPEQZ>();
+  const auto Op = IROp->C<IR::IROp_VCMPEQZ>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Src2[16]{};
-  uint8_t Tmp[16];
+  uint8_t Src2[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
+
   const auto Func = [](auto a, auto b) { return a == b ? ~0ULL : 0; };
-
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_OP(1, uint8_t,   Func)
     DO_VECTOR_OP(2, uint16_t,  Func)
     DO_VECTOR_OP(4, uint32_t,  Func)
     DO_VECTOR_OP(8, uint64_t,  Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 
   memcpy(GDP, Tmp, OpSize);
