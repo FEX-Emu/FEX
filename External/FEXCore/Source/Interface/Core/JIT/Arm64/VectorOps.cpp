@@ -3183,48 +3183,105 @@ DEF_OP(VFCMPLE) {
 }
 
 DEF_OP(VFCMPORD) {
-  auto Op = IROp->C<IR::IROp_VFCMPORD>();
-  const uint8_t OpSize = IROp->Size;
-  if (Op->Header.ElementSize == OpSize) {
-    // Scalar
-    switch (Op->Header.ElementSize) {
-      case 4: {
-        fcmge(VTMP1.S(), GetSrc(Op->Vector1.ID()).S(), GetSrc(Op->Vector2.ID()).S());
-        fcmgt(VTMP2.S(), GetSrc(Op->Vector2.ID()).S(), GetSrc(Op->Vector1.ID()).S());
-        orr(GetDst(Node).V8B(), VTMP1.V8B(), VTMP2.V8B());
-      break;
-      }
-      case 8: {
-        fcmge(VTMP1.D(), GetSrc(Op->Vector1.ID()).D(), GetSrc(Op->Vector2.ID()).D());
-        fcmgt(VTMP2.D(), GetSrc(Op->Vector2.ID()).D(), GetSrc(Op->Vector1.ID()).D());
-        orr(GetDst(Node).V8B(), VTMP1.V8B(), VTMP2.V8B());
-      break;
-      }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-    }
-  }
-  else {
-    // Vector
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VFCMPORD>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto IsScalar = ElementSize == OpSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (HostSupportsSVE && Is256Bit && !IsScalar) {
+    const auto Mask = PRED_TMP_32B.Zeroing();
+    const auto ComparePred = p0;
+
+    // Ensure there's no junk in the temporary.
+    eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+
+    // The idea is like comparing for unordered, but we just
+    // invert the predicate from the comparison to instead
+    // select all ordered elements in the vector.
+
+    switch (ElementSize) {
       case 2: {
-        fcmge(VTMP1.V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-        fcmgt(VTMP2.V8H(), GetSrc(Op->Vector2.ID()).V8H(), GetSrc(Op->Vector1.ID()).V8H());
-        orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
-      break;
+        fcmuo(ComparePred.VnH(), Mask, Vector1.Z().VnH(), Vector2.Z().VnH());
+        not_(ComparePred.VnB(), Mask, ComparePred.VnB());
+        not_(VTMP1.Z().VnH(), ComparePred.Merging(), Vector1.Z().VnH());
+        orr(VTMP1.Z().VnH(), ComparePred.Merging(), VTMP1.Z().VnH(), Vector1.Z().VnH());
+        break;
       }
       case 4: {
-        fcmge(VTMP1.V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-        fcmgt(VTMP2.V4S(), GetSrc(Op->Vector2.ID()).V4S(), GetSrc(Op->Vector1.ID()).V4S());
-        orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
-      break;
+        fcmuo(ComparePred.VnS(), Mask, Vector1.Z().VnS(), Vector2.Z().VnS());
+        not_(ComparePred.VnB(), Mask, ComparePred.VnB());
+        not_(VTMP1.Z().VnS(), ComparePred.Merging(), Vector1.Z().VnS());
+        orr(VTMP1.Z().VnS(), ComparePred.Merging(), VTMP1.Z().VnS(), Vector1.Z().VnS());
+        break;
       }
       case 8: {
-        fcmge(VTMP1.V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-        fcmgt(VTMP2.V2D(), GetSrc(Op->Vector2.ID()).V2D(), GetSrc(Op->Vector1.ID()).V2D());
-        orr(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
-      break;
+        fcmuo(ComparePred.VnD(), Mask, Vector1.Z().VnD(), Vector2.Z().VnD());
+        not_(ComparePred.VnB(), Mask, ComparePred.VnB());
+        not_(VTMP1.Z().VnD(), ComparePred.Merging(), Vector1.Z().VnD());
+        orr(VTMP1.Z().VnD(), ComparePred.Merging(), VTMP1.Z().VnD(), Vector1.Z().VnD());
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    if (IsScalar) {
+      switch (ElementSize) {
+        case 2: {
+          fcmge(VTMP1.H(), Vector1.H(), Vector2.H());
+          fcmgt(VTMP2.H(), Vector2.H(), Vector1.H());
+          orr(Dst.V8B(), VTMP1.V8B(), VTMP2.V8B());
+          break;
+        }
+        case 4: {
+          fcmge(VTMP1.S(), Vector1.S(), Vector2.S());
+          fcmgt(VTMP2.S(), Vector2.S(), Vector1.S());
+          orr(Dst.V8B(), VTMP1.V8B(), VTMP2.V8B());
+          break;
+        }
+        case 8: {
+          fcmge(VTMP1.D(), Vector1.D(), Vector2.D());
+          fcmgt(VTMP2.D(), Vector2.D(), Vector1.D());
+          orr(Dst.V8B(), VTMP1.V8B(), VTMP2.V8B());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
+    } else {
+      switch (ElementSize) {
+        case 2: {
+          fcmge(VTMP1.V8H(), Vector1.V8H(), Vector2.V8H());
+          fcmgt(VTMP2.V8H(), Vector2.V8H(), Vector1.V8H());
+          orr(Dst.V16B(), VTMP1.V16B(), VTMP2.V16B());
+          break;
+        }
+        case 4: {
+          fcmge(VTMP1.V4S(), Vector1.V4S(), Vector2.V4S());
+          fcmgt(VTMP2.V4S(), Vector2.V4S(), Vector1.V4S());
+          orr(Dst.V16B(), VTMP1.V16B(), VTMP2.V16B());
+          break;
+        }
+        case 8: {
+          fcmge(VTMP1.V2D(), Vector1.V2D(), Vector2.V2D());
+          fcmgt(VTMP2.V2D(), Vector2.V2D(), Vector1.V2D());
+          orr(Dst.V16B(), VTMP1.V16B(), VTMP2.V16B());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
     }
   }
 }
