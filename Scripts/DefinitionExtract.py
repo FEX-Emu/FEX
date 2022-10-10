@@ -154,6 +154,9 @@ def HandleFunctionDeclCursor(Arch, Cursor):
         elif (Child.kind == CursorKind.ASM_LABEL_ATTR):
             # Whatever you are we don't care about you
             return Arch
+        elif (Child.kind == CursorKind.WARN_UNUSED_RESULT_ATTR):
+            # Whatever you are we don't care about you
+            return Arch
         elif (Child.kind == CursorKind.VISIBILITY_ATTR):
             pass
         else:
@@ -165,7 +168,7 @@ def HandleFunctionDeclCursor(Arch, Cursor):
 
 def PrintFunctionDecls():
     for Decl in FunctionDecls:
-        print("fn(\"{0} {1}({2})\")".format(Decl.Ret, Decl.Name, ", ".join(Decl.Params)))
+        print("template<> struct fex_gen_config<{}> {{}};".format(Decl.Name))
 
 def FindClangArguments(OriginalArguments):
     AddedArguments = ["clang"]
