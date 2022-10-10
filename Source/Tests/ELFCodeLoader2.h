@@ -407,9 +407,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
       InterpeterElfBase = InterpLoadBase + InterpElf.phdrs.front().p_vaddr - InterpElf.phdrs.front().p_offset;
       Entrypoint = InterpLoadBase + InterpElf.ehdr.e_entry;
-    } else {
-      InterpeterElfBase = 0;
-      Entrypoint = MainElfEntrypoint;
     }
 
     // load the main elf
@@ -439,6 +436,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     MainElfBase = LoadBase + MainElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
     MainElfEntrypoint = LoadBase + MainElf.ehdr.e_entry;
+
+    if (MainElf.InterpreterElf.empty()) {
+      InterpeterElfBase = 0;
+      Entrypoint = MainElfEntrypoint;
+    }
 
     // All done
 
