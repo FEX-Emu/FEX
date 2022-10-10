@@ -3,6 +3,12 @@ project(host-thunks)
 
 set(CMAKE_CXX_STANDARD 17)
 set (HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
+option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
+
+if (ENABLE_CLANG_THUNKS)
+  set (LD_OVERRIDE "-fuse-ld=lld")
+  add_link_options(${LD_OVERRIDE})
+endif()
 
 # Syntax: generate(libxyz libxyz-interface.cpp)
 # This defines two targets and a custom command:

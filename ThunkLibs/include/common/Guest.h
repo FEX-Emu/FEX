@@ -7,7 +7,11 @@
 #if __SIZEOF_POINTER__ == 8
 #define THUNK_ABI
 #else
+#ifdef __clang__
+#define THUNK_ABI __fastcall
+#else
 #define THUNK_ABI [[gnu::fastcall]]
+#endif
 #endif
 
 template<typename signature>

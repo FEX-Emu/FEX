@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
 
 option(BITNESS "Which bitness the thunks are building for" 64)
+option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
+
+if (ENABLE_CLANG_THUNKS)
+  set (LD_OVERRIDE "-fuse-ld=lld")
+  add_link_options(${LD_OVERRIDE})
+endif()
 
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
