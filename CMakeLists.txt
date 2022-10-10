@@ -7,6 +7,7 @@ CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
+option(BUILD_CLANG_THUNKS "Build thunks with clang" FALSE)
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)
 option(ENABLE_LTO "Enable LTO with compilation" TRUE)
@@ -415,6 +416,7 @@ if (BUILD_THUNKS)
     CMAKE_ARGS
       "-DBITNESS=64"
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DENABLE_CLANG_THUNKS=${ENABLE_CLANG_THUNKS}"
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
@@ -432,6 +434,7 @@ if (BUILD_THUNKS)
     CMAKE_ARGS
       "-DBITNESS=32"
       "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+      "-DENABLE_CLANG_THUNKS=${ENABLE_CLANG_THUNKS}"
       "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_32_TOOLCHAIN_FILE}"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DSTRUCT_VERIFIER=${CMAKE_SOURCE_DIR}/Scripts/StructPackVerifier.py"
