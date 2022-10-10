@@ -45,6 +45,8 @@ namespace FEXCore::Allocator {
   FREE_Hook free {::free};
 #endif
 
+  uint64_t HostVASize{};
+
   using GLIBC_MALLOC_Hook = void*(*)(size_t, const void *caller);
   using GLIBC_REALLOC_Hook = void*(*)(void*, size_t, const void *caller);
   using GLIBC_FREE_Hook = void(*)(void*, const void *caller);
@@ -97,6 +99,10 @@ namespace FEXCore::Allocator {
 #pragma GCC diagnostic pop
 
   FEX_DEFAULT_VISIBILITY size_t DetermineVASize() {
+    if (HostVASize) {
+      return HostVASize;
+    }
+
     static constexpr std::array<uintptr_t, 7> TLBSizes = {
       57,
       52,
@@ -127,6 +133,7 @@ namespace FEXCore::Allocator {
       };
 
       if (Find(Size)) {
+        HostVASize = Bits;
         return Bits;
       }
     }
