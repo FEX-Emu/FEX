@@ -166,6 +166,10 @@ add_host_lib(xcb-glx)
 generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
 add_host_lib(xshmfence)
 
+generate(libOpenCL ${CMAKE_CURRENT_SOURCE_DIR}/../libOpenCL/libOpenCL_interface.cpp)
+target_include_directories(libOpenCL-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/OpenCL-Headers/)
+add_host_lib(OpenCL)
+
 generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
 target_include_directories(libdrm-deps INTERFACE /usr/include/drm/)
 target_include_directories(libdrm-deps INTERFACE /usr/include/libdrm/)

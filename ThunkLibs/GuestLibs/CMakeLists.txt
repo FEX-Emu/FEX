@@ -247,6 +247,10 @@ if (BITNESS EQUAL 64)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
   add_guest_lib(drm "libdrm.so.2")
+
+  generate(libOpenCL ${CMAKE_CURRENT_SOURCE_DIR}/../libOpenCL/libOpenCL_interface.cpp)
+  target_include_directories(libOpenCL-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/OpenCL-Headers/)
+  add_guest_lib(OpenCL "libOpenCL.so.1")
 endif()
 
 generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
