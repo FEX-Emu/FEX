@@ -61,13 +61,17 @@ typedef void fex_call_callback_t(uintptr_t callback, void *arg0, void* arg1);
  */
 struct fex_guest_function_ptr {
 private:
-    [[maybe_unused]] void* value = nullptr;
+    void* value = nullptr;
 
 public:
     fex_guest_function_ptr() = default;
 
     template<typename Ret, typename... Args>
     fex_guest_function_ptr(Ret (*ptr)(Args...)) : value(reinterpret_cast<void*>(ptr)) {}
+
+    inline operator bool() const {
+      return value != nullptr;
+    }
 };
 
 #define EXPORTS(name) \
