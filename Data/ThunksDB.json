@@ -165,6 +165,14 @@
         "@PREFIX_LIB@/x86_64-linux-gnu/libXfixes.so.3.1.0"
       ]
     },
+    "OpenCL": {
+      "Library" : "libOpenCL-guest.so",
+      "Overlay": [
+        "@PREFIX_LIB@/x86_64-linux-gnu/libOpenCL.so",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libOpenCL.so.1",
+        "@PREFIX_LIB@/x86_64-linux-gnu/libOpenCL.so.1.0.0"
+      ]
+    },
     "":{}
   }
 }
