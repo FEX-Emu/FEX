@@ -119,9 +119,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         return {};
       }
 
-      if (Unmapper((void*)LoadBase, TotalSize) == -1) {
-        return {};
-      }
       //fprintf(stderr, "elf %d: %lx-%lx\n", Elf.fd, LoadBase, LoadBase + TotalSize);
       if (BrkBase) {
         *BrkBase = LoadBase + (TotalSize - BRK_SIZE);
@@ -132,10 +129,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       if (Header.p_type != PT_LOAD)
         continue;
 
-			int MapProt = MapFlags(Header);
-      int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED_NOREPLACE;
+      int MapProt = MapFlags(Header);
+      int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED;
 
-			if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper)) {
+      if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper)) {
         return {};
       }
 
@@ -427,7 +424,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     // XXX Randomise brk?
 
-    BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED_NOREPLACE, -1, 0);
+    BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
     if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
