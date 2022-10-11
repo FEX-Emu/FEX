@@ -58,8 +58,9 @@ DEF_OP(VMov) {
 DEF_OP(VAnd) {
   const auto Op = IROp->C<IR::IROp_VAnd>();
   const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  if (OpSize == 32) {
+  if (Is256Bit) {
     const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector1);
     const auto Src2 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector2);
 
@@ -81,8 +82,9 @@ DEF_OP(VAnd) {
 DEF_OP(VBic) {
   const auto Op = IROp->C<IR::IROp_VBic>();
   const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  if (OpSize == 32) {
+  if (Is256Bit) {
     const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector1);
     const auto Src2 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector2);
 
@@ -104,8 +106,9 @@ DEF_OP(VBic) {
 DEF_OP(VOr) {
   const auto Op = IROp->C<IR::IROp_VOr>();
   const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  if (OpSize == 32) {
+  if (Is256Bit) {
     const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector1);
     const auto Src2 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector2);
 
@@ -127,8 +130,9 @@ DEF_OP(VOr) {
 DEF_OP(VXor) {
   const auto Op = IROp->C<IR::IROp_VXor>();
   const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  if (OpSize == 32) {
+  if (Is256Bit) {
     const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector1);
     const auto Src2 = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector2);
 
