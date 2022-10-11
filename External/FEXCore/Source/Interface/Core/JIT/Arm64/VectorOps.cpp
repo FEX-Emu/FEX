@@ -3402,94 +3402,232 @@ DEF_OP(VSShr) {
 }
 
 DEF_OP(VUShlS) {
-  auto Op = IROp->C<IR::IROp_VUShlS>();
+  const auto Op = IROp->C<IR::IROp_VUShlS>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      dup(VTMP1.V16B(), GetSrc(Op->ShiftScalar.ID()).V16B(), 0);
-      ushl(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B(), VTMP1.V16B());
-    break;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    // NOTE: SVE LSL is a destructive operation.
+
+    switch (ElementSize) {
+      case 1: {
+        dup(VTMP1.Z().VnB(), ShiftScalar.Z().VnB(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsl(Dst.Z().VnB(), Mask, Dst.Z().VnB(), VTMP1.Z().VnB());
+        break;
+      }
+      case 2: {
+        dup(VTMP1.Z().VnH(), ShiftScalar.Z().VnH(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsl(Dst.Z().VnH(), Mask, Dst.Z().VnH(), VTMP1.Z().VnH());
+        break;
+      }
+      case 4: {
+        dup(VTMP1.Z().VnS(), ShiftScalar.Z().VnS(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsl(Dst.Z().VnS(), Mask, Dst.Z().VnS(), VTMP1.Z().VnS());
+        break;
+      }
+      case 8: {
+        dup(VTMP1.Z().VnD(), ShiftScalar.Z().VnD(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsl(Dst.Z().VnD(), Mask, Dst.Z().VnD(), VTMP1.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      dup(VTMP1.V8H(), GetSrc(Op->ShiftScalar.ID()).V8H(), 0);
-      ushl(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V8H(), VTMP1.V8H());
-    break;
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        dup(VTMP1.V16B(), ShiftScalar.V16B(), 0);
+        ushl(Dst.V16B(), Vector.V16B(), VTMP1.V16B());
+        break;
+      }
+      case 2: {
+        dup(VTMP1.V8H(), ShiftScalar.V8H(), 0);
+        ushl(Dst.V8H(), Vector.V8H(), VTMP1.V8H());
+        break;
+      }
+      case 4: {
+        dup(VTMP1.V4S(), ShiftScalar.V4S(), 0);
+        ushl(Dst.V4S(), Vector.V4S(), VTMP1.V4S());
+        break;
+      }
+      case 8: {
+        dup(VTMP1.V2D(), ShiftScalar.V2D(), 0);
+        ushl(Dst.V2D(), Vector.V2D(), VTMP1.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      dup(VTMP1.V4S(), GetSrc(Op->ShiftScalar.ID()).V4S(), 0);
-      ushl(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S(), VTMP1.V4S());
-    break;
-    }
-    case 8: {
-      dup(VTMP1.V2D(), GetSrc(Op->ShiftScalar.ID()).V2D(), 0);
-      ushl(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D(), VTMP1.V2D());
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
 DEF_OP(VUShrS) {
-  auto Op = IROp->C<IR::IROp_VUShrS>();
+  const auto Op = IROp->C<IR::IROp_VUShrS>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      dup(VTMP1.V16B(), GetSrc(Op->ShiftScalar.ID()).V16B(), 0);
-      neg(VTMP1.V16B(), VTMP1.V16B());
-      ushl(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B(), VTMP1.V16B());
-    break;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    // NOTE: SVE LSR is a destructive operation.
+
+    switch (ElementSize) {
+      case 1: {
+        dup(VTMP1.Z().VnB(), ShiftScalar.Z().VnB(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsr(Dst.Z().VnB(), Mask, Dst.Z().VnB(), VTMP1.Z().VnB());
+        break;
+      }
+      case 2: {
+        dup(VTMP1.Z().VnH(), ShiftScalar.Z().VnH(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsr(Dst.Z().VnH(), Mask, Dst.Z().VnH(), VTMP1.Z().VnH());
+        break;
+      }
+      case 4: {
+        dup(VTMP1.Z().VnS(), ShiftScalar.Z().VnS(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsr(Dst.Z().VnS(), Mask, Dst.Z().VnS(), VTMP1.Z().VnS());
+        break;
+      }
+      case 8: {
+        dup(VTMP1.Z().VnD(), ShiftScalar.Z().VnD(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        lsr(Dst.Z().VnD(), Mask, Dst.Z().VnD(), VTMP1.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      dup(VTMP1.V8H(), GetSrc(Op->ShiftScalar.ID()).V8H(), 0);
-      neg(VTMP1.V8H(), VTMP1.V8H());
-      ushl(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V8H(), VTMP1.V8H());
-    break;
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        dup(VTMP1.V16B(), ShiftScalar.V16B(), 0);
+        neg(VTMP1.V16B(), VTMP1.V16B());
+        ushl(Dst.V16B(), Vector.V16B(), VTMP1.V16B());
+        break;
+      }
+      case 2: {
+        dup(VTMP1.V8H(), ShiftScalar.V8H(), 0);
+        neg(VTMP1.V8H(), VTMP1.V8H());
+        ushl(Dst.V8H(), Vector.V8H(), VTMP1.V8H());
+        break;
+      }
+      case 4: {
+        dup(VTMP1.V4S(), ShiftScalar.V4S(), 0);
+        neg(VTMP1.V4S(), VTMP1.V4S());
+        ushl(Dst.V4S(), Vector.V4S(), VTMP1.V4S());
+        break;
+      }
+      case 8: {
+        dup(VTMP1.V2D(), ShiftScalar.V2D(), 0);
+        neg(VTMP1.V2D(), VTMP1.V2D());
+        ushl(Dst.V2D(), Vector.V2D(), VTMP1.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      dup(VTMP1.V4S(), GetSrc(Op->ShiftScalar.ID()).V4S(), 0);
-      neg(VTMP1.V4S(), VTMP1.V4S());
-      ushl(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S(), VTMP1.V4S());
-    break;
-    }
-    case 8: {
-      dup(VTMP1.V2D(), GetSrc(Op->ShiftScalar.ID()).V2D(), 0);
-      neg(VTMP1.V2D(), VTMP1.V2D());
-      ushl(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D(), VTMP1.V2D());
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
 DEF_OP(VSShrS) {
-  auto Op = IROp->C<IR::IROp_VSShrS>();
+  const auto Op = IROp->C<IR::IROp_VSShrS>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      dup(VTMP1.V16B(), GetSrc(Op->ShiftScalar.ID()).V16B(), 0);
-      neg(VTMP1.V16B(), VTMP1.V16B());
-      sshl(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B(), VTMP1.V16B());
-    break;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    // NOTE: SVE ASR is a destructive operation.
+
+    switch (ElementSize) {
+      case 1: {
+        dup(VTMP1.Z().VnB(), ShiftScalar.Z().VnB(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        asr(Dst.Z().VnB(), Mask, Dst.Z().VnB(), VTMP1.Z().VnB());
+        break;
+      }
+      case 2: {
+        dup(VTMP1.Z().VnH(), ShiftScalar.Z().VnH(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        asr(Dst.Z().VnH(), Mask, Dst.Z().VnH(), VTMP1.Z().VnH());
+        break;
+      }
+      case 4: {
+        dup(VTMP1.Z().VnS(), ShiftScalar.Z().VnS(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        asr(Dst.Z().VnS(), Mask, Dst.Z().VnS(), VTMP1.Z().VnS());
+        break;
+      }
+      case 8: {
+        dup(VTMP1.Z().VnD(), ShiftScalar.Z().VnD(), 0);
+        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        asr(Dst.Z().VnD(), Mask, Dst.Z().VnD(), VTMP1.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      dup(VTMP1.V8H(), GetSrc(Op->ShiftScalar.ID()).V8H(), 0);
-      neg(VTMP1.V8H(), VTMP1.V8H());
-      sshl(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V8H(), VTMP1.V8H());
-    break;
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        dup(VTMP1.V16B(), ShiftScalar.V16B(), 0);
+        neg(VTMP1.V16B(), VTMP1.V16B());
+        sshl(Dst.V16B(), Vector.V16B(), VTMP1.V16B());
+        break;
+      }
+      case 2: {
+        dup(VTMP1.V8H(), ShiftScalar.V8H(), 0);
+        neg(VTMP1.V8H(), VTMP1.V8H());
+        sshl(Dst.V8H(), Vector.V8H(), VTMP1.V8H());
+        break;
+      }
+      case 4: {
+        dup(VTMP1.V4S(), ShiftScalar.V4S(), 0);
+        neg(VTMP1.V4S(), VTMP1.V4S());
+        sshl(Dst.V4S(), Vector.V4S(), VTMP1.V4S());
+        break;
+      }
+      case 8: {
+        dup(VTMP1.V2D(), ShiftScalar.V2D(), 0);
+        neg(VTMP1.V2D(), VTMP1.V2D());
+        sshl(Dst.V2D(), Vector.V2D(), VTMP1.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      dup(VTMP1.V4S(), GetSrc(Op->ShiftScalar.ID()).V4S(), 0);
-      neg(VTMP1.V4S(), VTMP1.V4S());
-      sshl(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S(), VTMP1.V4S());
-    break;
-    }
-    case 8: {
-      dup(VTMP1.V2D(), GetSrc(Op->ShiftScalar.ID()).V2D(), 0);
-      neg(VTMP1.V2D(), VTMP1.V2D());
-      sshl(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D(), VTMP1.V2D());
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
