@@ -2608,13 +2608,19 @@ DEF_OP(VTBL1) {
 }
 
 DEF_OP(VRev64) {
-  auto Op = IROp->C<IR::IROp_VRev64>();
+  const auto Op = IROp->C<IR::IROp_VRev64>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 1: {
       mov(rax, 0x00'01'02'03'04'05'06'07); // Lower
       vmovq(xmm15, rax);
-      if (IROp->Size == 16) {
+      if (OpSize >= Core::CPUState::XMM_SSE_REG_SIZE) {
         // Full 8bit byteswap in each 64-bit element
         mov(rcx, 0x08'09'0A'0B'0C'0D'0E'0F); // Upper
         pinsrq(xmm15, rcx, 1);
@@ -2626,14 +2632,20 @@ DEF_OP(VRev64) {
         pinsrq(xmm15, rcx, 1);
       }
 
-      vpshufb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
+      if (OpSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+        // Replicate to the upper lane
+        vinsertf128(ymm15, ymm15, xmm15, 1);
+        vpshufb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpshufb(Dst, Vector, xmm15);
+      }
       break;
     }
     case 2: {
       // Full 16-bit byteswap in each 64-bit element
       mov(rax, 0x01'00'03'02'05'04'07'06); // Lower
       vmovq(xmm15, rax);
-      if (IROp->Size == 16) {
+      if (OpSize >= Core::CPUState::XMM_SSE_REG_SIZE) {
         mov(rcx, 0x09'08'0B'0A'0D'0C'0F'0E); // Upper
         pinsrq(xmm15, rcx, 1);
       }
@@ -2643,34 +2655,55 @@ DEF_OP(VRev64) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         pinsrq(xmm15, rcx, 1);
       }
-      vpshufb(GetDst(Node), GetSrc(Op->Vector.ID()), xmm15);
+
+      if (OpSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+        // Replicate to the upper lane
+        vinsertf128(ymm15, ymm15, xmm15, 1);
+        vpshufb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpshufb(Dst, Vector, xmm15);
+      }
       break;
     }
     case 4: {
-      if (IROp->Size == 16) {
-      vpshufd(GetDst(Node),
-        GetSrc(Op->Vector.ID()),
-        (0b11 << 0) |
-        (0b10 << 2) |
-        (0b01 << 4) |
-        (0b00 << 6));
-      }
-      else {
+      if (OpSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+        // Lower
+        mov(rax, 0x03'02'01'00'07'06'05'04);
+        vmovq(xmm15, rax);
 
-      vpshufd(GetDst(Node),
-        GetSrc(Op->Vector.ID()),
-        (0b01 << 0) |
-        (0b00 << 2) |
-        (0b11 << 4) | // Last two don't matter, will be overwritten with zero
-        (0b11 << 6));
+        // Upper
+        mov(rax, 0x0B'0A'09'08'0F'0E'0D'0C);
+        pinsrq(xmm15, rax, 1);
+
+        // Replicate to upper lane
+        vinsertf128(ymm15, ymm15, xmm15, 1);
+
+        // And finish it off.
+        vpshufb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else if (OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
+        vpshufd(Dst,
+          Vector,
+          (0b11 << 0) |
+          (0b10 << 2) |
+          (0b01 << 4) |
+          (0b00 << 6));
+      } else {
+        vpshufd(Dst,
+          Vector,
+          (0b01 << 0) |
+          (0b00 << 2) |
+          (0b11 << 4) | // Last two don't matter, will be overwritten with zero
+          (0b11 << 6));
 
         // Zero upper 64-bits
         mov(rcx, 0);
-        pinsrq(GetDst(Node), rcx, 1);
+        pinsrq(Dst, rcx, 1);
       }
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 

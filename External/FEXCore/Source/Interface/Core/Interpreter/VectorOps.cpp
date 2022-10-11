@@ -2065,13 +2065,14 @@ DEF_OP(VTBL1) {
 }
 
 DEF_OP(VRev64) {
-  auto Op = IROp->C<IR::IROp_VRev64>();
+  const auto Op = IROp->C<IR::IROp_VRev64>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
 
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
+  const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / 8;
 
   // The element working size is always 64-bit
@@ -2087,14 +2088,15 @@ DEF_OP(VRev64) {
     return (a >> 32) | (a << 32);
   };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_OP(1, uint64_t, Func8)
     DO_VECTOR_1SRC_OP(2, uint64_t, Func16)
     DO_VECTOR_1SRC_OP(4, uint64_t, Func32)
-
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
-  memcpy(GDP, Tmp, Op->Header.Size);
+  memcpy(GDP, Tmp, OpSize);
 }
 
 #undef DEF_OP
