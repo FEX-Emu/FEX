@@ -1935,19 +1935,27 @@ DEF_OP(VUShrS) {
 }
 
 DEF_OP(VSShrS) {
-  auto Op = IROp->C<IR::IROp_VSShrS>();
+  const auto Op = IROp->C<IR::IROp_VSShrS>();
 
-  switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
+  switch (ElementSize) {
     case 2: {
-      vpsraw(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
+      vpsraw(Dst, Vector, ShiftScalar);
       break;
     }
     case 4: {
-      vpsrad(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
+      vpsrad(Dst, Vector, ShiftScalar);
       break;
     }
-    case 8: // Doesn't exist on x86
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    case 8: // VPSRAQ is only introduced in AVX-512
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
