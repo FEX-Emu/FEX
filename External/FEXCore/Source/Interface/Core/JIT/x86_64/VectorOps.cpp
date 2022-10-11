@@ -2057,22 +2057,30 @@ DEF_OP(VSRI) {
 }
 
 DEF_OP(VUShrI) {
-  auto Op = IROp->C<IR::IROp_VUShrI>();
-  movapd(GetDst(Node), GetSrc(Op->Vector.ID()));
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUShrI>();
+
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
+  switch (ElementSize) {
     case 2: {
-      psrlw(GetDst(Node), Op->BitShift);
+      vpsrlw(Dst, Vector, BitShift);
       break;
     }
     case 4: {
-      psrld(GetDst(Node), Op->BitShift);
+      vpsrld(Dst, Vector, BitShift);
       break;
     }
     case 8: {
-      psrlq(GetDst(Node), Op->BitShift);
+      vpsrlq(Dst, Vector, BitShift);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
