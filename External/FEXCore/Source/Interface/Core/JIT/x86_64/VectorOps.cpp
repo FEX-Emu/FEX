@@ -2085,40 +2085,61 @@ DEF_OP(VUShrI) {
 }
 
 DEF_OP(VSShrI) {
-  auto Op = IROp->C<IR::IROp_VSShrI>();
-  auto Dest = GetDst(Node);
-  movapd(Dest, GetSrc(Op->Vector.ID()));
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VSShrI>();
+
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dest = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 1: {
       // This isn't a native instruction on x86
-      const uint8_t OpSize = IROp->Size;
-      const uint8_t Elements = OpSize / Op->Header.ElementSize;
-      for (int i = 0; i < Elements; ++i) {
-        pextrb(eax, Dest, i);
-        movsx(eax, al);
-        sar(al, Op->BitShift);
-        pinsrb(Dest, eax, i);
-      }
+      const auto PerformShifts = [&](const Xbyak::Xmm& reg) {
+        for (int i = 0; i < int(Core::CPUState::XMM_SSE_REG_SIZE); ++i) {
+          pextrb(eax, reg, i);
+          movsx(eax, al);
+          sar(al, BitShift);
+          pinsrb(reg, eax, i);
+        }
+      };
+
+      vmovapd(ToYMM(Dest), ToYMM(Vector));
+      PerformShifts(Dest);
+      vextractf128(xmm15, ToYMM(Dest), 1);
+      PerformShifts(xmm15);
+      vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
       break;
     }
     case 2: {
-      psraw(Dest, Op->BitShift);
+      vpsraw(ToYMM(Dest), ToYMM(Vector), BitShift);
       break;
     }
     case 4: {
-      psrad(Dest, Op->BitShift);
+      vpsrad(ToYMM(Dest), ToYMM(Vector), BitShift);
       break;
     }
     case 8: {
-      // This isn't a native instruction on x86
-      for (int i = 0; i < 2; ++i) {
-        pextrq(rax, Dest, i);
-        sar(rax, Op->BitShift);
-        pinsrq(Dest, rax, i);
-      }
+      // VPSRAQ is only introduced in AVX-512, so we can't use it.
+      const auto PerformShifts = [&](const Xbyak::Xmm& reg) {
+        for (int i = 0; i < 2; ++i) {
+          pextrq(rax, reg, i);
+          sar(rax, BitShift);
+          pinsrq(reg, rax, i);
+        }
+      };
+
+      vmovapd(ToYMM(Dest), ToYMM(Vector));
+      PerformShifts(Dest);
+      vextractf128(xmm15, ToYMM(Dest), 1);
+      PerformShifts(xmm15);
+      vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 

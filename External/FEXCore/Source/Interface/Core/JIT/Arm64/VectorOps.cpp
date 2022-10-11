@@ -3702,26 +3702,65 @@ DEF_OP(VUShrI) {
 }
 
 DEF_OP(VSShrI) {
-  auto Op = IROp->C<IR::IROp_VSShrI>();
+  const auto Op = IROp->C<IR::IROp_VSShrI>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      sshr(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B(), std::min((uint8_t)(Op->Header.ElementSize * 8 - 1), Op->BitShift));
-    break;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Shift = std::min(uint8_t(ElementSize * 8 - 1), Op->BitShift);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    // SVE ASR is destructive, so lets set up the destination.
+    mov(Dst.Z().VnD(), Vector.Z().VnD());
+
+    switch (ElementSize) {
+      case 1: {
+        asr(Dst.Z().VnB(), Mask, Dst.Z().VnB(), Shift);
+        break;
+      }
+      case 2: {
+        asr(Dst.Z().VnH(), Mask, Dst.Z().VnH(), Shift);
+        break;
+      }
+      case 4: {
+        asr(Dst.Z().VnS(), Mask, Dst.Z().VnS(), Shift);
+        break;
+      }
+      case 8: {
+        asr(Dst.Z().VnD(), Mask, Dst.Z().VnD(), Shift);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      sshr(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V8H(), std::min((uint8_t)(Op->Header.ElementSize * 8 - 1), Op->BitShift));
-    break;
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        sshr(Dst.V16B(), Vector.V16B(), Shift);
+        break;
+      }
+      case 2: {
+        sshr(Dst.V8H(), Vector.V8H(), Shift);
+        break;
+      }
+      case 4: {
+        sshr(Dst.V4S(), Vector.V4S(), Shift);
+        break;
+      }
+      case 8: {
+        sshr(Dst.V2D(), Vector.V2D(), Shift);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      sshr(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S(), std::min((uint8_t)(Op->Header.ElementSize * 8 - 1), Op->BitShift));
-    break;
-    }
-    case 8: {
-      sshr(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D(), std::min((uint8_t)(Op->Header.ElementSize * 8 - 1), Op->BitShift));
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
