@@ -2412,17 +2412,26 @@ DEF_OP(VSQXTUN2) {
 }
 
 DEF_OP(VMul) {
-  auto Op = IROp->C<IR::IROp_VUMul>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUMul>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
+  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+
+  switch (ElementSize) {
     case 2: {
-      vpmullw(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpmullw(Dst, Vector1, Vector2);
       break;
     }
     case 4: {
-      vpmulld(GetDst(Node), GetSrc(Op->Vector1.ID()), GetSrc(Op->Vector2.ID()));
+      vpmulld(Dst, Vector1, Vector2);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
