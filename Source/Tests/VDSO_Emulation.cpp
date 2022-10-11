@@ -5,6 +5,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -18,13 +19,13 @@ namespace FEX::VDSO {
   using GetTimeOfDayType = decltype(::gettimeofday)*;
   using ClockGetTimeType = decltype(::clock_gettime)*;
   using ClockGetResType = decltype(::clock_getres)*;
-  using GetCPUType = decltype(::getcpu)*;
+  using GetCPUType = decltype(FHU::Syscalls::getcpu)*;
 
   TimeType TimePtr = ::time;
   GetTimeOfDayType GetTimeOfDayPtr = ::gettimeofday;
   ClockGetTimeType ClockGetTimePtr = ::clock_gettime;
   ClockGetResType ClockGetResPtr = ::clock_getres;
-  GetCPUType GetCPUPtr = ::getcpu;
+  GetCPUType GetCPUPtr = FHU::Syscalls::getcpu;
 
   static void time(void* ArgsRV) {
     struct ArgsRV_t {
