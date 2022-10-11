@@ -2144,22 +2144,30 @@ DEF_OP(VSShrI) {
 }
 
 DEF_OP(VShlI) {
-  auto Op = IROp->C<IR::IROp_VShlI>();
-  movapd(GetDst(Node), GetSrc(Op->Vector.ID()));
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VShlI>();
+
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
+  switch (ElementSize) {
     case 2: {
-      psllw(GetDst(Node), Op->BitShift);
+      vpsllw(Dst, Vector, BitShift);
       break;
     }
     case 4: {
-      pslld(GetDst(Node), Op->BitShift);
+      vpslld(Dst, Vector, BitShift);
       break;
     }
     case 8: {
-      psllq(GetDst(Node), Op->BitShift);
+      vpsllq(Dst, Vector, BitShift);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
