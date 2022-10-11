@@ -4319,18 +4319,47 @@ DEF_OP(VTBL1) {
 }
 
 DEF_OP(VRev64) {
-  auto Op = IROp->C<IR::IROp_VRev64>();
-  const uint8_t OpSize = IROp->Size;
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
-  // Vector
-  switch (Op->Header.ElementSize) {
-    case 1:
-    case 2:
-    case 4:
-      rev64(GetDst(Node).VCast(OpSize * 8, Elements), GetSrc(Op->Vector.ID()).VCast(OpSize * 8, Elements));
-      break;
-    case 8:
-    default: LOGMAN_MSG_A_FMT("Invalid Element Size: {}", Op->Header.ElementSize); break;
+  const auto Op = IROp->C<IR::IROp_VRev64>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Elements = OpSize / ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    switch (ElementSize) {
+      case 1: {
+        revb(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+        break;
+      }
+      case 2: {
+        revh(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+        break;
+      }
+      case 4: {
+        revw(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 1:
+      case 2:
+      case 4:
+        rev64(Dst.VCast(OpSize * 8, Elements), Vector.VCast(OpSize * 8, Elements));
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Invalid Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 
