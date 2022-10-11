@@ -341,9 +341,12 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
 }
 
 void SyscallHandler::TrackShmdt(uintptr_t Base) {
-  FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
+  uintptr_t Length = 0;
+  {
+    FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
 
-  auto Length = VMATracking.ClearShmUnsafe(CTX, Base);
+    Length = VMATracking.ClearShmUnsafe(CTX, Base);
+  }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     // This might over flush if the shm has holes in it

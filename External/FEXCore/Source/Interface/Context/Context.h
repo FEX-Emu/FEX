@@ -15,6 +15,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXHeaderUtils/Syscalls.h>
 #include <stdint.h>
 
 
@@ -189,7 +190,7 @@ namespace FEXCore::Context {
     static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
       auto Thread = Frame->Thread;
       
-      LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), gettid());
+      LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == FHU::Syscalls::gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), FHU::Syscalls::gettid());
 
       FHU::ScopedSignalMaskWithUniqueLock lk(Thread->CTX->CodeInvalidationMutex);
 
