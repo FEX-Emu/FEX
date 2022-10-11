@@ -1907,22 +1907,30 @@ DEF_OP(VUShlS) {
 }
 
 DEF_OP(VUShrS) {
-  auto Op = IROp->C<IR::IROp_VUShrS>();
+  const auto Op = IROp->C<IR::IROp_VUShrS>();
 
-  switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
+  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+
+  switch (ElementSize) {
     case 2: {
-      vpsrlw(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
+      vpsrlw(Dst, Vector, ShiftScalar);
       break;
     }
     case 4: {
-      vpsrld(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
+      vpsrld(Dst, Vector, ShiftScalar);
       break;
     }
     case 8: {
-      vpsrlq(GetDst(Node), GetSrc(Op->Vector.ID()), GetSrc(Op->ShiftScalar.ID()));
+      vpsrlq(Dst, Vector, ShiftScalar);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
