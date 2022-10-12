@@ -53,3 +53,7 @@
 	shallow = true
 	path = External/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "External/OpenCL-Headers"]
+	shallow = true
+	path = External/OpenCL-Headers
+	url = https://github.com/KhronosGroup/OpenCL-Headers.git
