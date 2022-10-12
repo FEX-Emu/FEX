@@ -4184,25 +4184,58 @@ DEF_OP(VSQXTUN2) {
 }
 
 DEF_OP(VMul) {
-  auto Op = IROp->C<IR::IROp_VUMul>();
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      mul(GetDst(Node).V16B(), GetSrc(Op->Vector1.ID()).V16B(), GetSrc(Op->Vector2.ID()).V16B());
-    break;
+  const auto Op = IROp->C<IR::IROp_VUMul>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (HostSupportsSVE) {
+    switch (ElementSize) {
+      case 1: {
+        mul(Dst.Z().VnB(), Vector1.Z().VnB(), Vector2.Z().VnB());
+        break;
+      }
+      case 2: {
+        mul(Dst.Z().VnH(), Vector1.Z().VnH(), Vector2.Z().VnH());
+        break;
+      }
+      case 4: {
+        mul(Dst.Z().VnS(), Vector1.Z().VnS(), Vector2.Z().VnS());
+        break;
+      }
+      case 8: {
+        mul(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      mul(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8H(), GetSrc(Op->Vector2.ID()).V8H());
-    break;
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        mul(Dst.V16B(), Vector1.V16B(), Vector2.V16B());
+        break;
+      }
+      case 2: {
+        mul(Dst.V8H(), Vector1.V8H(), Vector2.V8H());
+        break;
+      }
+      case 4: {
+        mul(Dst.V4S(), Vector1.V4S(), Vector2.V4S());
+        break;
+      }
+      case 8: {
+        mul(Dst.V2D(), Vector1.V2D(), Vector2.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      mul(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4S(), GetSrc(Op->Vector2.ID()).V4S());
-    break;
-    }
-    case 8: {
-      mul(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2D(), GetSrc(Op->Vector2.ID()).V2D());
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 

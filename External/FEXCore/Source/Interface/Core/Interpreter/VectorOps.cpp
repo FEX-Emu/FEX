@@ -1899,22 +1899,25 @@ DEF_OP(VSQXTUN2) {
 }
 
 DEF_OP(VUMul) {
-  auto Op = IROp->C<IR::IROp_VUMul>();
+  const auto Op = IROp->C<IR::IROp_VUMul>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
   const auto Func = [](auto a, auto b) { return a * b; };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_OP(1, uint8_t,  Func)
     DO_VECTOR_OP(2, uint16_t, Func)
     DO_VECTOR_OP(4, uint32_t, Func)
     DO_VECTOR_OP(8, uint64_t, Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
@@ -1941,22 +1944,25 @@ DEF_OP(VUMull) {
 }
 
 DEF_OP(VSMul) {
-  auto Op = IROp->C<IR::IROp_VSMul>();
+  const auto Op = IROp->C<IR::IROp_VSMul>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->Vector1);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->Vector2);
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
   const auto Func = [](auto a, auto b) { return a * b; };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_OP(1, int8_t,  Func)
     DO_VECTOR_OP(2, int16_t, Func)
     DO_VECTOR_OP(4, int32_t, Func)
     DO_VECTOR_OP(8, int64_t, Func)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
