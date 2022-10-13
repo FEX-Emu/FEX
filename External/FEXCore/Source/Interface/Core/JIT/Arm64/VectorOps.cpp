@@ -4316,21 +4316,63 @@ DEF_OP(VSMull2) {
 }
 
 DEF_OP(VUABDL) {
-  auto Op = IROp->C<IR::IROp_VUABDL>();
-  switch (Op->Header.ElementSize) {
-    case 2: {
-      uabdl(GetDst(Node).V8H(), GetSrc(Op->Vector1.ID()).V8B(), GetSrc(Op->Vector2.ID()).V8B());
-    break;
+  const auto Op = IROp->C<IR::IROp_VUABDL>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // To mimic the behavior of AdvSIMD UABDL, we need to get the
+    // absolute difference of the even elements (UADBLB), get the
+    // absolute difference of the odd elemenets (UABDLT), then
+    // interleave the results in both vectors together.
+    
+    switch (ElementSize) {
+      case 2: {
+        uabdlb(VTMP1.Z().VnH(), Vector1.Z().VnB(), Vector2.Z().VnB());
+        uabdlt(VTMP2.Z().VnH(), Vector1.Z().VnB(), Vector2.Z().VnB());
+        zip1(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        break;
+      }
+      case 4: {
+        uabdlb(VTMP1.Z().VnS(), Vector1.Z().VnH(), Vector2.Z().VnH());
+        uabdlt(VTMP2.Z().VnS(), Vector1.Z().VnH(), Vector2.Z().VnH());
+        zip1(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        break;
+      }
+      case 8: {
+        uabdlb(VTMP1.Z().VnD(), Vector1.Z().VnS(), Vector2.Z().VnS());
+        uabdlt(VTMP2.Z().VnD(), Vector1.Z().VnS(), Vector2.Z().VnS());
+        zip1(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize >> 1);
+        return;
     }
-    case 4: {
-      uabdl(GetDst(Node).V4S(), GetSrc(Op->Vector1.ID()).V4H(), GetSrc(Op->Vector2.ID()).V4H());
-    break;
+  } else {
+    switch (ElementSize) {
+      case 2: {
+        uabdl(Dst.V8H(), Vector1.V8B(), Vector2.V8B());
+        break;
+      }
+      case 4: {
+        uabdl(Dst.V4S(), Vector1.V4H(), Vector2.V4H());
+        break;
+      }
+      case 8: {
+        uabdl(Dst.V2D(), Vector1.V2S(), Vector2.V2S());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize >> 1);
+        break;
     }
-    case 8: {
-      uabdl(GetDst(Node).V2D(), GetSrc(Op->Vector1.ID()).V2S(), GetSrc(Op->Vector2.ID()).V2S());
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize >> 1); break;
   }
 }
 
