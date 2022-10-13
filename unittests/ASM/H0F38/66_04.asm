@@ -3,7 +3,7 @@
   "RegData": {
     "XMM0": ["0x0", "0x0"],
     "XMM1": ["0xFE02FE02FE02FE02", "0xFE02FE02FE02FE02"],
-    "XMM2": ["0x7F7F7F7F7F7F7F7F", "0x7F7F7F7F7F7F7F7F"],
+    "XMM2": ["0x7E027E027E027E02", "0x7E027E027E027E02"],
     "XMM3": ["0x7FFF7FFF7FFF7FFF", "0x7FFF7FFF7FFF7FFF"],
     "XMM4": ["0x057306BC07B808B8", "0xBC53BC0EBAE5BA2E"],
     "XMM5": ["0xA473A5BCA6B8A7B8", "0x0553070E07E5092E"]
@@ -45,7 +45,7 @@ pmaddubsw xmm1, [rdx + 8 * 2]
 
 ; 127
 movaps xmm2, [rdx + 8 * 4]
-pmaddubsw mm2, [rdx + 8 * 4]
+pmaddubsw xmm2, [rdx + 8 * 4]
 
 ; 255 and 127
 movaps xmm3, [rdx + 8 * 2]
