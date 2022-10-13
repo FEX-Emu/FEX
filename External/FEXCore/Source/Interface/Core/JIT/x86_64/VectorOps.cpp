@@ -2353,18 +2353,40 @@ DEF_OP(VSXTL2) {
 }
 
 DEF_OP(VUXTL) {
-  auto Op = IROp->C<IR::IROp_VUXTL>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUXTL>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 2:
-      pmovzxbw(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
+      if (Is256Bit) {
+        vpmovzxbw(ToYMM(Dst), Vector);
+      } else {
+        vpmovzxbw(Dst, Vector);
+      }
+      break;
     case 4:
-      pmovzxwd(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
+      if (Is256Bit) {
+        vpmovzxwd(ToYMM(Dst), Vector);
+      } else {
+        vpmovzxwd(Dst, Vector);
+      }
+      break;
     case 8:
-      pmovzxdq(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+      if (Is256Bit) {
+        vpmovzxdq(ToYMM(Dst), Vector);
+      } else {
+        vpmovzxdq(Dst, Vector);
+      }
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
