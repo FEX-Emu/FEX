@@ -769,7 +769,11 @@ void OpDispatchBuilder::CalculcateFlags_ShiftLeftImmediate(uint8_t SrcSize, Orde
   // CF
   {
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, SrcSize * 8 - Shift, Src1));
+    auto OpSize = SrcSize * 8;
+    if (SrcSize * 8 < Shift) {
+      Shift &= (OpSize - 1);
+    }
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, OpSize - Shift, Src1));
   }
 
   // PF
@@ -977,7 +981,9 @@ void OpDispatchBuilder::CalculcateFlags_RotateRightImmediate(uint8_t SrcSize, Or
   if (Shift == 0) return;
 
   auto OpSize = SrcSize * 8;
-
+  if (SrcSize * 8 < Shift) {
+    Shift &= (OpSize - 1);
+  }
   auto NewCF = _Bfe(1, OpSize - Shift, Src1);
 
   // CF
