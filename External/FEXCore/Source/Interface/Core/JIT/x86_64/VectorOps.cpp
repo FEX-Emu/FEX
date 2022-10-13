@@ -2628,23 +2628,32 @@ DEF_OP(VSMull2) {
 }
 
 DEF_OP(VUABDL) {
-  auto Op = IROp->C<IR::IROp_VUABDL>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUABDL>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = ToYMM(GetDst(Node));
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 2: {
-      pmovzxbw(xmm14, GetSrc(Op->Vector1.ID()));
-      pmovzxbw(xmm15, GetSrc(Op->Vector2.ID()));
-      vpsubw(GetDst(Node), xmm14, xmm15);
-      vpabsw(GetDst(Node), GetDst(Node));
+      vpmovzxbw(ymm14, Vector1);
+      vpmovzxbw(ymm15, Vector2);
+      vpsubw(Dst, ymm14, ymm15);
+      vpabsw(Dst, Dst);
       break;
     }
     case 4: {
-      pmovzxwd(xmm14, GetSrc(Op->Vector1.ID()));
-      pmovzxwd(xmm15, GetSrc(Op->Vector2.ID()));
-      vpsubd(GetDst(Node), xmm14, xmm15);
-      vpabsd(GetDst(Node), GetDst(Node));
+      vpmovzxwd(ymm14, Vector1);
+      vpmovzxwd(ymm15, Vector2);
+      vpsubd(Dst, ymm14, ymm15);
+      vpabsd(Dst, Dst);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
