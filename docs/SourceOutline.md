@@ -1,4 +1,4 @@
-# FEX-2209
+# FEX-2210
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -209,6 +209,10 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### asound
 - [libasound_Guest.cpp](../ThunkLibs/libasound/libasound_Guest.cpp)
 - [libasound_Host.cpp](../ThunkLibs/libasound/libasound_Host.cpp)
+
+#### cef
+- [libcef_Guest.cpp](../ThunkLibs/libcef/libcef_Guest.cpp)
+- [libcef_Host.cpp](../ThunkLibs/libcef/libcef_Host.cpp)
 
 #### drm
 - [Guest.cpp](../ThunkLibs/libdrm/Guest.cpp)
