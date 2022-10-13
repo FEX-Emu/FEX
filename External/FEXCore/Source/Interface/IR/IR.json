@@ -1065,7 +1065,7 @@
       },
       "FPR = VSXTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
         "Desc": ["Sign extends elements from the source element size to the next size up",
-                 "Source elements come from the upper 64bits of the register"
+                 "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"

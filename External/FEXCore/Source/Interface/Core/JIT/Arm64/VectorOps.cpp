@@ -4103,18 +4103,54 @@ DEF_OP(VSXTL) {
 }
 
 DEF_OP(VSXTL2) {
-  auto Op = IROp->C<IR::IROp_VSXTL2>();
-  switch (Op->Header.ElementSize) {
-    case 2:
-      sxtl2(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V16B());
-    break;
-    case 4:
-      sxtl2(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V8H());
-    break;
-    case 8:
-      sxtl2(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V4S());
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_VSXTL2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // See VSXTL implementation for in depth explanation
+    // of all the instructions below.
+
+    switch (ElementSize) {
+      case 2:
+        sshllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
+        sshllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
+        zip2(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        break;
+      case 4:
+        sshllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
+        sshllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
+        zip2(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        break;
+      case 8:
+        sshllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
+        sshllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
+        zip2(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 2:
+        sxtl2(Dst.V8H(), Vector.V16B());
+        break;
+      case 4:
+        sxtl2(Dst.V4S(), Vector.V8H());
+        break;
+      case 8:
+        sxtl2(Dst.V2D(), Vector.V4S());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 
