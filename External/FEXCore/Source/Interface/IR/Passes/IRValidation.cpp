@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <cstdint>
 #include <memory>
@@ -32,6 +33,8 @@ IRValidation::~IRValidation() {
 }
 
 bool IRValidation::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::IRValidation");
+
   bool HadError = false;
   bool HadWarning = false;
 

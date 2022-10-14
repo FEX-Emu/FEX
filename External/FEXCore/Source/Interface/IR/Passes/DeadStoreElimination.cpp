@@ -12,6 +12,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <memory>
 #include <stddef.h>
@@ -154,6 +155,8 @@ struct Info {
  *
  */
 bool DeadStoreElimination::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::DSE");
+
   std::unordered_map<OrderedNode*, Info> InfoMap;
 
   bool Changed = false;

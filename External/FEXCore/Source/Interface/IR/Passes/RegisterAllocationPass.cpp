@@ -15,6 +15,8 @@ $end_info$
 #include <FEXCore/Utils/BucketList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/Profiler.h>
+
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>
@@ -1527,6 +1529,7 @@ namespace {
   }
 
   bool ConstrainedRAPass::Run(IREmitter *IREmit) {
+    FEXCORE_PROFILE_SCOPED("PassManager::RA");
     bool Changed = false;
 
     auto IR = IREmit->ViewIR();

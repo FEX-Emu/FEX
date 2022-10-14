@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -52,6 +53,8 @@ IRCompaction::IRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator)
 }
 
 bool IRCompaction::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::IRCompaction");
+
   LocalBuilder.ReownOrClaimBuffer();
 
   auto CurrentIR = IREmit->ViewIR();

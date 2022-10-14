@@ -29,10 +29,23 @@ option(ENABLE_INTERPRETER "Enables FEX's Interpreter" FALSE)
 option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
 option(ENABLE_TERMUX_BUILD "Forces building for Termux on a non-Termux build machine" FALSE)
 option(ENABLE_VIXL_SIMULATOR "Forces the FEX JIT to use the VIXL simulator" FALSE)
+option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling capabilities" FALSE)
+set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend you want to use for the FEXCore profiler")
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
+
+if (ENABLE_FEXCORE_PROFILER)
+  add_definitions(-DENABLE_FEXCORE_PROFILER=1)
+  string(TOUPPER "${FEXCORE_PROFILER_BACKEND}" FEXCORE_PROFILER_BACKEND)
+
+  if (FEXCORE_PROFILER_BACKEND STREQUAL "GPUVIS")
+    add_definitions(-DFEXCORE_PROFILER_BACKEND=1)
+  else()
+    message(FATAL_ERROR "Unknown FEXCore profiler backend ${FEXCORE_PROFILER_BACKEND}")
+  endif()
+endif()
 
 # uninstall target
 if(NOT TARGET uninstall)

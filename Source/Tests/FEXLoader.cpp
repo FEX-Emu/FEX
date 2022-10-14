@@ -24,6 +24,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <atomic>
 #include <cerrno>
@@ -283,6 +284,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
+  FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
   RootFSRedirect(&Program.first, LDPath());
@@ -503,6 +505,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.second);
+  FEXCore::Profiler::Shutdown();
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
   }

@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
@@ -731,6 +732,8 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
                                 FEXCore::Core::DebugData *DebugData,
                                 FEXCore::IR::RegisterAllocationData *RAData,
                                 bool GDBEnabled) {
+  FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
+
   using namespace aarch64;
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();

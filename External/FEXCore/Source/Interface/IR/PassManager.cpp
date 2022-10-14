@@ -12,6 +12,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/Profiler.h>
 
 namespace FEXCore::IR {
 class IREmitter;
@@ -66,6 +67,8 @@ void PassManager::InsertRegisterAllocationPass(bool OptimizeSRA, bool SupportsAV
 }
 
 bool PassManager::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::Run");
+
   bool Changed = false;
   for (auto const &Pass : Passes) {
     Changed |= Pass->Run(IREmit);
