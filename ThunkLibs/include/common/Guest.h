@@ -101,23 +101,41 @@ inline bool IsLibLoaded(const char *libname) {
 template<auto Thunk, typename Result, typename... Args>
 inline Result CallHostFunction(Args... args) {
 #ifndef _M_ARM_64
-    uintptr_t host_addr;
-    asm volatile("mov %%r11, %0" : "=r" (host_addr));
+  // This magic incantation of using a register variable with an empty asm block is necessary for correct operation!
+  // If we only use inline asm that sets a variable then the compiler will reorder the function
+  // prologue to be BEFORE our inline asm. Which makes sense in hindsight, but for anything with 8+ arguments this
+  // will clobber our r11 register we save the data that is inside of it.
+
+  // First we need to declare the r11 register variable
+  register uintptr_t host_addr asm ("r11");
+
+  // We then create an empty *volatile* asm block saying that it is assigning the register variable.
+  // Yes, it is already set coming in to this function due to custom ABI.
+  // This gets both GCC and Clang to understand that the variable is set, seemingly at the start of the function.
+  // So its own internal live-range tracking extends its begining range to the start of the function.
+  //
+  // To verify this in the future, search for `mov     r11` in binaryninja, and ensure that all uses inside of `CallHostFunction`
+  // don't have intersecting ranges.
+  //
+  // Note that this issue is more likely to occur when clang is used to compile thunks, since its optimizer is more aggressive at using R11.
+  // This magic incantation also works in that instance so this is about the best we can do without adding a new attribute to clang for modifying the
+  // ABI.
+  asm volatile("" : "=r" (host_addr));
 #else
-    uintptr_t host_addr = 0;
+  uintptr_t host_addr = 0;
 #endif
 
-    PackedArguments<Result, Args..., uintptr_t> packed_args = {
-        args...,
-        host_addr
-        // Return value not explicitly initialized since an initializer would fail to compile for the void case
-    };
+  PackedArguments<Result, Args..., uintptr_t> packed_args = {
+    args...,
+    host_addr
+    // Return value not explicitly initialized since an initializer would fail to compile for the void case
+  };
 
-    Thunk(reinterpret_cast<void*>(&packed_args));
+  Thunk(reinterpret_cast<void*>(&packed_args));
 
-    if constexpr (!std::is_void_v<Result>) {
-        return packed_args.rv;
-    }
+  if constexpr (!std::is_void_v<Result>) {
+    return packed_args.rv;
+  }
 }
 
 // Convenience wrapper that returns the function pointer to a CallHostFunction
