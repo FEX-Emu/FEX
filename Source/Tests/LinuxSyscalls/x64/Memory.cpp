@@ -36,7 +36,7 @@ namespace FEX::HLE::x64 {
         Result = -1;
       }
     } else {
-      Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(addr), length, prot, flags, fd, offset));
+      Result = reinterpret_cast<uint64_t>(::mmap(reinterpret_cast<void*>(addr), length, prot, flags, fd, offset));
     }
 
     if (Result != -1) {
@@ -56,7 +56,7 @@ namespace FEX::HLE::x64 {
         Result = -1;
       }
     } else {
-      Result = FEXCore::Allocator::munmap(addr, length);
+      Result = ::munmap(addr, length);
     }
 
     if (Result != -1) {
