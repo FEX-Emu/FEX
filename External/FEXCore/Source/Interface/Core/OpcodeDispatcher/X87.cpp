@@ -782,6 +782,12 @@ void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
   // Overwrite the op
   result.first->Header.Op = IROp;
 
+  if constexpr (IROp == IR::OP_F80SIN ||
+                IROp == IR::OP_F80COS) {
+    // TODO: ACCURACY: should check source is in range –2^63 to +2^63
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+  }
+
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 16, MMBaseOffset(), 16, FPRClass);
 }
@@ -855,6 +861,9 @@ void OpDispatchBuilder::X87SinCos(OpcodeArgs) {
   auto sin = _F80SIN(a);
   auto cos = _F80COS(a);
 
+  // TODO: ACCURACY: should check source is in range –2^63 to +2^63
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+
   // Write to ST[TOP]
   _StoreContextIndexed(sin, orig_top, 16, MMBaseOffset(), 16, FPRClass);
   _StoreContextIndexed(cos, top, 16, MMBaseOffset(), 16, FPRClass);
@@ -900,6 +909,9 @@ void OpDispatchBuilder::X87TAN(OpcodeArgs) {
   auto high = _Constant(0b0'011'1111'1111'1111ULL);
   OrderedNode *data = _VCastFromGPR(16, 8, low);
   data = _VInsGPR(16, 8, 1, data, high);
+
+  // TODO: ACCURACY: should check source is in range –2^63 to +2^63
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, orig_top, 16, MMBaseOffset(), 16, FPRClass);
