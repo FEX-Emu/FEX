@@ -393,6 +393,7 @@ int main(int argc, char **argv, char **const envp) {
   // Load VDSO in to memory prior to mapping our ELFs.
   void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), Mapper);
   Loader.SetVDSOBase(VDSOBase);
+  Loader.CalculateHWCaps(CTX);
 
   if (!Loader.MapMemory(Mapper, Unmapper)) {
     // failed to map
