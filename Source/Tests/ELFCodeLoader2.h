@@ -14,9 +14,9 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <list>
 #include <random>
 #include <string>
-#include <vector>
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
@@ -499,19 +499,16 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     AuxVariables.emplace_back(auxv_t{14, getauxval(AT_EGID)}); // AT_EGID
     AuxVariables.emplace_back(auxv_t{17, getauxval(AT_CLKTCK)}); // AT_CLKTIK
     AuxVariables.emplace_back(auxv_t{6, 0x1000}); // AT_PAGESIZE
-    AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
+    AuxRandom = &AuxVariables.emplace_back(auxv_t{25, ~0ULL}); // AT_RANDOM
     AuxVariables.emplace_back(auxv_t{23, 0}); // AT_SECURE
     AuxVariables.emplace_back(auxv_t{8, 0}); // AT_FLAGS
     AuxVariables.emplace_back(auxv_t{5, MainElf.phdrs.size()}); // AT_PHNUM
+    AuxVariables.emplace_back(auxv_t{16, HWCap}); // AT_HWCAP
+    AuxVariables.emplace_back(auxv_t{26, HWCap2}); // AT_HWCAP2
+    AuxPlatform = &AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
 
     if (Is64BitMode()) {
       AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
-      // On x86 this is the value returned from CPUID 01h EDX
-      AuxVariables.emplace_back(auxv_t{16, 0}); // AT_HWCAP
-
-      //AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
-      // On x86 only allows userspace to check for monitor and fs/gs base writing in CPL3
-      //AuxVariables.emplace_back(auxv_t{26, 0}); // AT_HWCAP2
 
       // we don't support vsyscall so we don't set those
       //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
@@ -550,10 +547,11 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     uint64_t EnvpOffset,
     const std::vector<std::string> &Args,
     const std::vector<std::string> &EnvironmentVariables,
-    const std::vector<auxv_t> &AuxVariables,
+    const std::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
     uint64_t *AuxTabSize,
-    PointerType RandomNumberOffset
+    PointerType RandomNumberOffset,
+    PointerType PlatformNameOffset
     ) {
     // Pointer list offsets
     PointerType *ArgumentPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize);
@@ -607,20 +605,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // Last envp needs to be nullptr
     EnvpPointers[EnvironmentVariables.size()] = 0;
 
-    for (size_t i = 0; i < AuxVariables.size(); ++i) {
-      if (AuxVariables[i].key == 25) {
-        // Random value is always 128bits
-        AuxType Random{25, static_cast<PointerType>(StackPointer + RandomNumberOffset)};
-        uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(StackPointer + RandomNumberOffset);
-        RandomLoc[0] = 0xDEAD;
-        RandomLoc[1] = 0xDEAD2;
-        AuxVPointers[i].key = Random.key;
-        AuxVPointers[i].val = Random.val;
-      }
-      else {
-        AuxVPointers[i].key = AuxVariables[i].key;
-        AuxVPointers[i].val = AuxVariables[i].val;
-      }
+    for (size_t i = 0; auto const &Variable : AuxVariables) {
+      AuxVPointers[i].key = Variable.key;
+      AuxVPointers[i].val = Variable.val;
+      ++i;
     }
 
     *AuxTabBase = reinterpret_cast<uint64_t>(AuxVPointers);
@@ -656,11 +644,43 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     TotalArgumentMemSize += EnvironmentBackingSize;
 
     // Random number location
-    uint32_t RandomNumberLocation = TotalArgumentMemSize;
+    uint64_t RandomNumberLocation = TotalArgumentMemSize;
     TotalArgumentMemSize += 16;
+
+    uint64_t PlatformNameLocation =  TotalArgumentMemSize;
+    TotalArgumentMemSize += platform_string_max_size;
 
     // Offset the stack by how much memory we need
     StackPointer -= TotalArgumentMemSize;
+
+    // Setup our AUXP values that need memory now that the stack is setup
+    AuxPlatform->val = StackPointer + PlatformNameLocation;
+    char *PlatformLoc = reinterpret_cast<char*>(AuxPlatform->val);
+    memset(PlatformLoc, 0, platform_string_max_size);
+    if (Is64BitMode()) {
+      strncpy(PlatformLoc, platform_name_x86_64.data(), platform_string_max_size);
+    }
+    else {
+      strncpy(PlatformLoc, platform_name_i686.data(), platform_string_max_size);
+    }
+
+    // Random value is always 128bits
+    AuxRandom->val = StackPointer + RandomNumberLocation;
+    uint64_t *RandomLoc = reinterpret_cast<uint64_t*>(AuxRandom->val);
+    uint64_t *HostRandom = reinterpret_cast<uint64_t*>(getauxval(AT_RANDOM));
+    if (HostRandom) {
+      // Pass through the host's random values
+      RandomLoc[0] = HostRandom[0];
+      RandomLoc[1] = HostRandom[1];
+    }
+    else {
+      // Nothing provided from the kernel, generate our own random values.
+      std::random_device rd;
+      std::uniform_int_distribution<uint64_t> d(0);
+
+      RandomLoc[0] = d(rd);
+      RandomLoc[1] = d(rd);
+    }
 
     // Stack setup
     // [0, 8):   Argument Count
@@ -687,7 +707,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         AuxVariables,
         &AuxTabBase,
         &AuxTabSize,
-        RandomNumberLocation
+        RandomNumberLocation,
+        PlatformNameLocation
         );
     }
     else {
@@ -701,7 +722,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
         AuxVariables,
         &AuxTabBase,
         &AuxTabSize,
-        RandomNumberLocation
+        RandomNumberLocation,
+        PlatformNameLocation
         );
     }
   }
@@ -734,6 +756,18 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     VDSOBase = Base;
   }
 
+  void CalculateHWCaps(FEXCore::Context::Context *ctx) {
+    // HWCAP is just CPUID function 0x1, the EDX result
+    auto res_1 = FEXCore::Context::RunCPUIDFunction(ctx, 1, 0);
+    HWCap = res_1.edx;
+
+    // HWCAP2 is as follows:
+    // Bits:
+    // 0 - MONITOR/MWAIT available in CPL3
+    // 1 - FSGSBASE instructions available in CPL3
+    HWCap2 = 0;
+  }
+
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 
@@ -741,12 +775,21 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   std::vector<std::string> EnvironmentVariables;
   std::vector<char const*> LoaderArgs;
 
-  std::vector<auxv_t> AuxVariables;
+  std::list<auxv_t> AuxVariables;
   uint64_t AuxTabBase, AuxTabSize;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
   uint64_t BaseOffset{};
   void* VDSOBase{};
+  uint64_t HWCap{};
+  uint64_t HWCap2{};
+
+  auxv_t *AuxRandom{};
+  auxv_t *AuxPlatform{};
+
+  static constexpr std::string_view platform_name_x86_64 = "x86_64";
+  static constexpr std::string_view platform_name_i686 = "i686";
+  static constexpr size_t platform_string_max_size = std::max(platform_name_x86_64.size(), platform_name_i686.size());
 
   FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
 };
