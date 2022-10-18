@@ -2536,10 +2536,19 @@ DEF_OP(VMul) {
 }
 
 DEF_OP(VUMull) {
-  auto Op = IROp->C<IR::IROp_VUMull>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUMull>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 4: {
-      // IR operation:
+      // IR operation (128-bit):
       // [31:00 ] = src1[15:00] * src2[15:00]
       // [63:32 ] = src1[31:16] * src2[31:16]
       // [95:64 ] = src1[47:32] * src2[47:32]
@@ -2547,22 +2556,50 @@ DEF_OP(VUMull) {
       //
       vpxor(xmm15, xmm15, xmm15);
       vpxor(xmm14, xmm14, xmm14);
-      vpunpcklwd(xmm15, GetSrc(Op->Vector1.ID()), xmm15);
-      vpunpcklwd(xmm14, GetSrc(Op->Vector2.ID()), xmm14);
-      vpmulld(GetDst(Node), xmm14, xmm15);
+
+      if (Is256Bit) {
+        vpxor(xmm13, xmm13, xmm13);
+        vpxor(xmm12, xmm12, xmm12);
+
+        vpunpckhwd(xmm13, Vector1, xmm13);
+        vpunpckhwd(xmm12, Vector2, xmm12);
+      }
+
+      vpunpcklwd(xmm15, Vector1, xmm15);
+      vpunpcklwd(xmm14, Vector2, xmm14);
+
+      if (Is256Bit) {
+        vinserti128(ymm15, ymm15, xmm13, 1);
+        vinserti128(ymm14, ymm14, xmm12, 1);
+        vpmulld(ToYMM(Dst), ymm14, ymm15);
+      } else {
+        vpmulld(Dst, xmm14, xmm15);
+      }
       break;
     }
     case 8: {
       // We need to shuffle the data for this one
       // x86 PMULUDQ wants the 32bit values in [31:0] and [95:64]
       // Which then extends out to [63:0] and [127:64]
-      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b10'10'00'00);
-      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b10'10'00'00);
+      vpshufd(xmm14, Vector1, 0b01'01'00'00);
+      vpshufd(xmm15, Vector2, 0b01'01'00'00);
 
-      vpmuludq(GetDst(Node), xmm14, xmm15);
-    break;
+      if (Is256Bit) {
+        vpshufd(xmm13, Vector1, 0b11'11'10'10);
+        vpshufd(xmm12, Vector2, 0b11'11'10'10);
+
+        vinserti128(ymm14, ymm14, xmm13, 1);
+        vinserti128(ymm15, ymm15, xmm12, 1);
+
+        vpmuludq(ToYMM(Dst), ymm14, ymm15);
+      } else {
+        vpmuludq(Dst, xmm14, xmm15);
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
@@ -2591,8 +2628,8 @@ DEF_OP(VSMull) {
       // We need to shuffle the data for this one
       // x86 PMULDQ wants the 32bit values in [31:0] and [95:64]
       // Which then extends out to [63:0] and [127:64]
-      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b10'10'00'00);
-      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b10'10'00'00);
+      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b01'01'00'00);
+      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b01'01'00'00);
 
       vpmuldq(GetDst(Node), xmm14, xmm15);
     break;
@@ -2602,10 +2639,19 @@ DEF_OP(VSMull) {
 }
 
 DEF_OP(VUMull2) {
-  auto Op = IROp->C<IR::IROp_VUMull2>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUMull2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
     case 4: {
-      // IR operation:
+      // IR operation (128-bit):
       // [31:00 ] = src1[79:64  ] * src2[79:64  ]
       // [63:32 ] = src1[95:80  ] * src2[95:80  ]
       // [95:64 ] = src1[111:96 ] * src2[111:96 ]
@@ -2613,13 +2659,37 @@ DEF_OP(VUMull2) {
       //
       vpxor(xmm15, xmm15, xmm15);
       vpxor(xmm14, xmm14, xmm14);
-      vpunpckhwd(xmm15, GetSrc(Op->Vector1.ID()), xmm15);
-      vpunpckhwd(xmm14, GetSrc(Op->Vector2.ID()), xmm14);
-      vpmulld(GetDst(Node), xmm14, xmm15);
+
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector1), 1);
+        vextracti128(xmm14, ToYMM(Vector2), 1);
+
+        vpxor(xmm12, xmm12, xmm12);
+        vpxor(xmm13, xmm13, xmm13);
+        vpxor(Dst, Dst, Dst);
+
+        // Bottom half
+        vpunpcklwd(xmm13, xmm15, xmm13);
+        vpunpcklwd(xmm12, xmm14, xmm12);
+
+        // Top half
+        vpunpckhwd(xmm15, xmm15, Dst);
+        vpunpckhwd(xmm14, xmm14, Dst);
+
+        // Reinsert
+        vinserti128(ymm13, ymm13, xmm15, 1);
+        vinserti128(ymm12, ymm12, xmm14, 1);
+
+        vpmulld(ToYMM(Dst), ymm12, ymm13);
+      } else {
+        vpunpckhwd(xmm15, Vector1, xmm15);
+        vpunpckhwd(xmm14, Vector2, xmm14);
+        vpmulld(Dst, xmm14, xmm15);
+      }
       break;
     }
     case 8: {
-      // IR operation:
+      // IR operation (128-bit):
       // [63:00 ] = src1[95:64 ] * src2[95:64 ]
       // [127:64] = src1[127:96] * src2[127:96]
       //
@@ -2627,13 +2697,31 @@ DEF_OP(VUMull2) {
       // [63:00 ] = src1[31:0 ] * src2[31:0 ]
       // [127:64] = src1[95:64] * src2[95:64]
 
-      vpshufd(xmm14, GetSrc(Op->Vector1.ID()), 0b11'11'10'10);
-      vpshufd(xmm15, GetSrc(Op->Vector2.ID()), 0b11'11'10'10);
+      if (Is256Bit) {
+        vextracti128(xmm14, ToYMM(Vector1), 1);
+        vextracti128(xmm15, ToYMM(Vector2), 1);
 
-      vpmuludq(GetDst(Node), xmm14, xmm15);
-    break;
+        vpshufd(xmm12, xmm14, 0b01'01'00'00);
+        vpshufd(xmm13, xmm15, 0b01'01'00'00);
+
+        vpshufd(xmm14, xmm14, 0b11'11'10'10);
+        vpshufd(xmm15, xmm15, 0b11'11'10'10);
+
+        vinserti128(ymm12, ymm12, xmm14, 1);
+        vinserti128(ymm13, ymm13, xmm15, 1);
+
+        vpmuludq(ToYMM(Dst), ymm14, ymm15);
+      } else {
+        vpshufd(xmm14, Vector1, 0b11'11'10'10);
+        vpshufd(xmm15, Vector2, 0b11'11'10'10);
+
+        vpmuludq(Dst, xmm14, xmm15);
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
