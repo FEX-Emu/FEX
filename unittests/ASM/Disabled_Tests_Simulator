@@ -70,15 +70,3 @@ Test_H0F3A/66_09.asm
 Test_H0F3A/66_0A.asm
 Test_H0F3A/66_0B.asm
 Test_OpSize/66_5B.asm
-
-# Simulator has a bug in narrowing or widening operations
-Test_H0F38/66_03.asm
-Test_H0F38/66_04.asm
-Test_H0F38/66_07.asm
-Test_H0F38/66_2B.asm
-Test_H0F38/XX_03.asm
-Test_H0F38/XX_04.asm
-Test_H0F38/XX_07.asm
-Test_OpSize/66_63.asm
-Test_OpSize/66_67.asm
-Test_OpSize/66_6B.asm
