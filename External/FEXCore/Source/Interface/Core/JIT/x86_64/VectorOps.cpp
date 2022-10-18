@@ -2760,7 +2760,7 @@ DEF_OP(VUMull2) {
         vinserti128(ymm12, ymm12, xmm14, 1);
         vinserti128(ymm13, ymm13, xmm15, 1);
 
-        vpmuludq(ToYMM(Dst), ymm14, ymm15);
+        vpmuludq(ToYMM(Dst), ymm12, ymm13);
       } else {
         vpshufd(xmm14, Vector1, 0b11'11'10'10);
         vpshufd(xmm15, Vector2, 0b11'11'10'10);
