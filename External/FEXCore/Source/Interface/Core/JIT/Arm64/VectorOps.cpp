@@ -4065,24 +4065,15 @@ DEF_OP(VSXTL2) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    // See VSXTL implementation for in depth explanation
-    // of all the instructions below.
-
     switch (ElementSize) {
       case 2:
-        sshllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
-        sshllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
-        zip2(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        sunpkhi(Dst.Z().VnH(), Vector.Z().VnB());
         break;
       case 4:
-        sshllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
-        sshllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
-        zip2(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        sunpkhi(Dst.Z().VnS(), Vector.Z().VnH());
         break;
       case 8:
-        sshllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
-        sshllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
-        zip2(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        sunpkhi(Dst.Z().VnD(), Vector.Z().VnS());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
