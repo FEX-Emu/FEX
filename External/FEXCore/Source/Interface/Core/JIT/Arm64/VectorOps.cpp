@@ -4343,41 +4343,92 @@ DEF_OP(VSQXTN) {
 }
 
 DEF_OP(VSQXTN2) {
-  auto Op = IROp->C<IR::IROp_VSQXTN2>();
-  uint8_t OpSize = IROp->Size;
-  mov(VTMP1, GetSrc(Op->VectorLower.ID()));
-  if (OpSize == 8) {
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VSQXTN2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // Need to use the destructive variant of SPLICE, since
+    // the constructive variant requires a register list, and
+    // we can't guarantee VectorLower and VectorUpper will always
+    // have consecutive indexes with one another.
+    mov(VTMP1.Z().VnD(), VectorLower.Z().VnD());
+
+    // We use the 16 byte mask due to how SPLICE works. We only
+    // want to get at the first 16 bytes in the lower vector, so
+    // that SPLICE will then begin copying the first 16 bytes
+    // from the upper vector and begin placing them after the
+    // previously copied lower 16 bytes.
+    const auto Mask = PRED_TMP_16B;
+
+    switch (ElementSize) {
       case 1:
-        sqxtn(VTMP2.V8B(), GetSrc(Op->VectorUpper.ID()).V8H());
-        ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
-      break;
+        sqxtnb(VTMP2.Z().VnB(), VectorUpper.Z().VnH());
+        uzp1(VTMP2.Z().VnB(), VTMP2.Z().VnB(), VTMP2.Z().VnB());
+        splice(VTMP1.Z().VnB(), Mask, VTMP1.Z().VnB(), VTMP2.Z().VnB());
+        break;
       case 2:
-        sqxtn(VTMP2.V4H(), GetSrc(Op->VectorUpper.ID()).V4S());
-        ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
-      break;
+        sqxtnb(VTMP2.Z().VnH(), VectorUpper.Z().VnS());
+        uzp1(VTMP2.Z().VnH(), VTMP2.Z().VnH(), VTMP2.Z().VnH());
+        splice(VTMP1.Z().VnH(), Mask, VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        break;
       case 4:
-        sqxtn(VTMP2.V2S(), GetSrc(Op->VectorUpper.ID()).V2D());
-        ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
-      break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+        sqxtnb(VTMP2.Z().VnS(), VectorUpper.Z().VnD());
+        uzp1(VTMP2.Z().VnS(), VTMP2.Z().VnS(), VTMP2.Z().VnS());
+        splice(VTMP1.Z().VnS(), Mask, VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-  }
-  else {
-    switch (Op->Header.ElementSize) {
-      case 1:
-        sqxtn2(VTMP1.V16B(), GetSrc(Op->VectorUpper.ID()).V8H());
-      break;
-      case 2:
-        sqxtn2(VTMP1.V8H(), GetSrc(Op->VectorUpper.ID()).V4S());
-      break;
-      case 4:
-        sqxtn2(VTMP1.V4S(), GetSrc(Op->VectorUpper.ID()).V2D());
-      break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    mov(VTMP1, VectorLower);
+
+    if (OpSize == 8) {
+      switch (ElementSize) {
+        case 1:
+          sqxtn(VTMP2.V8B(), VectorUpper.V8H());
+          ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
+          break;
+        case 2:
+          sqxtn(VTMP2.V4H(), VectorUpper.V4S());
+          ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
+          break;
+        case 4:
+          sqxtn(VTMP2.V2S(), VectorUpper.V2D());
+          ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          return;
+      }
+    } else {
+      switch (ElementSize) {
+        case 1:
+          sqxtn2(VTMP1.V16B(), VectorUpper.V8H());
+          break;
+        case 2:
+          sqxtn2(VTMP1.V8H(), VectorUpper.V4S());
+          break;
+        case 4:
+          sqxtn2(VTMP1.V4S(), VectorUpper.V2D());
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          return;
+      }
     }
+
+    mov(Dst, VTMP1);
   }
-  mov(GetDst(Node), VTMP1);
 }
 
 DEF_OP(VSQXTUN) {
