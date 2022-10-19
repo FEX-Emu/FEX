@@ -266,10 +266,10 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0x17, 1, X86InstInfo{"POP SS",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS,    0, nullptr}},
     {0x1E, 1, X86InstInfo{"PUSH DS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0, nullptr}},
     {0x1F, 1, X86InstInfo{"POP DS",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS,    0, nullptr}},
-    {0x27, 1, X86InstInfo{"DAA",      TYPE_INST, FLAGS_NONE,                                                      0, nullptr}},
-    {0x2F, 1, X86InstInfo{"DAS",      TYPE_INST, FLAGS_NONE,                                                      0, nullptr}},
-    {0x37, 1, X86InstInfo{"AAA",      TYPE_INST, FLAGS_NONE,                                                      0, nullptr}},
-    {0x3F, 1, X86InstInfo{"AAS",      TYPE_INST, FLAGS_NONE,                                                      0, nullptr}},
+    {0x27, 1, X86InstInfo{"DAA",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                   0, nullptr}},
+    {0x2F, 1, X86InstInfo{"DAS",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                   0, nullptr}},
+    {0x37, 1, X86InstInfo{"AAA",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX,                  0, nullptr}},
+    {0x3F, 1, X86InstInfo{"AAS",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX,                  0, nullptr}},
 
     {0x40, 8, X86InstInfo{"INC",    TYPE_INST, FLAGS_SF_REX_IN_BYTE,                                              0, nullptr}},
     {0x48, 8, X86InstInfo{"DEC",    TYPE_INST, FLAGS_SF_REX_IN_BYTE,                                              0, nullptr}},
@@ -283,8 +283,8 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xA1, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET,                               4, nullptr}},
     {0xA3, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET,                               4, nullptr}},
     {0xCE, 1, X86InstInfo{"INTO",   TYPE_INST, FLAGS_NONE,                                                        0, nullptr}},
-    {0xD4, 1, X86InstInfo{"AAM",    TYPE_INST, FLAGS_NONE,                                                        1, nullptr}},
-    {0xD5, 1, X86InstInfo{"AAD",    TYPE_INST, FLAGS_NONE,                                                        1, nullptr}},
+    {0xD4, 1, X86InstInfo{"AAM",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                    1, nullptr}},
+    {0xD5, 1, X86InstInfo{"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                    1, nullptr}},
     {0xEA, 1, X86InstInfo{"JMPF",   TYPE_INST, FLAGS_NONE,                                                        0, nullptr}},
   };
 

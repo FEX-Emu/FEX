@@ -3342,6 +3342,222 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   GenerateFlags_POPCOUNT(Op, Src);
 }
 
+void OpDispatchBuilder::DAAOp(OpcodeArgs) {
+  CalculateDeferredFlags();
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));  
+  auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+  auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
+  auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+
+  _CondJump(Cond, TrueBlock, FalseBlock);
+  SetCurrentCodeBlock(FalseBlock);
+  {
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(TrueBlock);
+  {
+    auto NewAL = _Add(AL, _Constant(0x6));
+    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    CalculateDeferredFlags();
+    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(EndBlock);
+
+  Cond = _Or(CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
+  FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+  TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
+  EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+  _CondJump(Cond, TrueBlock, FalseBlock);
+  SetCurrentCodeBlock(FalseBlock);
+  {
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(TrueBlock);
+  {
+    AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+    auto NewAL = _Add(AL, _Constant(0x60));
+    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(EndBlock);
+  // Update Flags
+  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  auto EightBitMask = _Constant(0xFF);
+  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
+  auto XorOp = _Xor(PopCountOp, _Constant(1));
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+}
+
+void OpDispatchBuilder::DASOp(OpcodeArgs) {
+  CalculateDeferredFlags();
+  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));  
+  auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+  auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
+  auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+
+  _CondJump(Cond, TrueBlock, FalseBlock);
+  SetCurrentCodeBlock(FalseBlock);
+  {
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(TrueBlock);
+  {
+    auto NewAL = _Sub(AL, _Constant(0x6));
+    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    CalculateDeferredFlags();
+    auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(EndBlock);
+
+  Cond = _Or(CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
+  FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+  TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
+  EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+  _CondJump(Cond, TrueBlock, FalseBlock);
+  SetCurrentCodeBlock(FalseBlock);
+  {
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(TrueBlock);
+  {
+    AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+    auto NewAL = _Sub(AL, _Constant(0x60));
+    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(EndBlock);
+  // Update Flags
+  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  auto EightBitMask = _Constant(0xFF);
+  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
+  auto XorOp = _Xor(PopCountOp, _Constant(1));
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+}
+
+void OpDispatchBuilder::AAAOp(OpcodeArgs) {
+  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto AX = _LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX));
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));  
+
+  auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+  auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
+  auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+  _CondJump(Cond, TrueBlock, FalseBlock);
+
+  SetCurrentCodeBlock(FalseBlock);
+  {
+    auto NewAX = _And(AX, _Constant(0xFF0F));
+    _StoreContext(2, GPRClass, NewAX, GPROffset(X86State::REG_RAX));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(TrueBlock);
+  {
+    auto NewAX = _Add(AX, _Constant(0x106));
+    auto Result = _And(NewAX, _Constant(0xFF0F));
+    _StoreContext(2, GPRClass, Result, GPROffset(X86State::REG_RAX));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(EndBlock);
+}
+
+void OpDispatchBuilder::AASOp(OpcodeArgs) {
+  auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
+  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto AX = _LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX));
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));  
+
+  auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+  auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
+  auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
+  _CondJump(Cond, TrueBlock, FalseBlock);
+
+  SetCurrentCodeBlock(FalseBlock);
+  {
+    auto NewAX = _And(AX, _Constant(0xFF0F));
+    _StoreContext(2, GPRClass, NewAX, GPROffset(X86State::REG_RAX));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(TrueBlock);
+  {
+    auto NewAX = _Sub(AX, _Constant(6));
+    NewAX = _Sub(NewAX, _Constant(0x100));
+    auto Result = _And(NewAX, _Constant(0xFF0F));
+    _StoreContext(2, GPRClass, Result, GPROffset(X86State::REG_RAX));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    _Jump(EndBlock);
+  }
+  SetCurrentCodeBlock(EndBlock);
+}
+
+void OpDispatchBuilder::AAMOp(OpcodeArgs) {
+  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
+  auto UDivOp = _UDiv(AL, Imm8);
+  auto URemOp = _URem(AL, Imm8);
+  auto AH = _Lshl(UDivOp, _Constant(8));
+  auto AX = _Add(AH, URemOp);
+  _StoreContext(2, GPRClass, AX, GPROffset(X86State::REG_RAX));
+  // Update Flags
+  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  auto EightBitMask = _Constant(0xFF);
+  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
+  auto XorOp = _Xor(PopCountOp, _Constant(1));
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+}
+
+void OpDispatchBuilder::AADOp(OpcodeArgs) {
+  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto AH = _Lshr(_LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX)), _Constant(8));
+  auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
+  auto NewAL = _Add(AL, _Mul(AH, Imm8));
+  auto Result = _And(NewAL, _Constant(0xFF));
+  _StoreContext(2, GPRClass, Result, GPROffset(X86State::REG_RAX));
+  // Update Flags
+  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
+  auto EightBitMask = _Constant(0xFF);
+  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
+  auto XorOp = _Xor(PopCountOp, _Constant(1));
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+}
+
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   const uint32_t RAXOffset = GPROffset(X86State::REG_RAX);
   const uint32_t RBXOffset = GPROffset(X86State::REG_RBX);
@@ -5505,12 +5721,18 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x17, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
     {0x1E, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
     {0x1F, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
+    {0x27, 1, &OpDispatchBuilder::DAAOp},
+    {0x2F, 1, &OpDispatchBuilder::DASOp},
+    {0x37, 1, &OpDispatchBuilder::AAAOp},
+    {0x3F, 1, &OpDispatchBuilder::AASOp},
     {0x40, 8, &OpDispatchBuilder::INCOp},
     {0x48, 8, &OpDispatchBuilder::DECOp},
 
     {0x60, 1, &OpDispatchBuilder::PUSHAOp},
     {0x61, 1, &OpDispatchBuilder::POPAOp},
     {0xCE, 1, &OpDispatchBuilder::INTOp},
+    {0xD4, 1, &OpDispatchBuilder::AAMOp},
+    {0xD5, 1, &OpDispatchBuilder::AADOp},
   };
 
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable_64[] = {
