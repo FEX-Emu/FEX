@@ -4264,18 +4264,81 @@ DEF_OP(VUXTL2) {
 }
 
 DEF_OP(VSQXTN) {
-  auto Op = IROp->C<IR::IROp_VSQXTN>();
-  switch (Op->Header.ElementSize) {
-    case 1:
-      sqxtn(GetDst(Node).V8B(), GetSrc(Op->Vector.ID()).V8H());
-    break;
-    case 2:
-      sqxtn(GetDst(Node).V4H(), GetSrc(Op->Vector.ID()).V4S());
-    break;
-    case 4:
-      sqxtn(GetDst(Node).V2S(), GetSrc(Op->Vector.ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_VSQXTN>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // Note that SVE SQXTNB and SQXTNT are a tad different
+    // in behavior compared to most other [name]B and [name]T
+    // instructions.
+    //
+    // Most other bottom and top instructions operate
+    // on even (bottom) or odd (top) elements and store each
+    // result into the next subsequent element in the destination
+    // vector
+    //
+    // SQXTNB and SQXTNT will operate on the same elements regardless
+    // of which one is chosen, but will instead place results from
+    // the operation into either each subsequent even (bottom) element
+    // or odd (top) element. However the bottom instruction will zero the
+    // odd elements out in the destination vector, while the top instruction
+    // will leave the even elements alone (in a behavior similar to Adv.SIMD's
+    // SQXTN/SQXTN2 instructions).
+    //
+    // e.g. consider this 64-bit (for brevity) vector with four 16-bit elements:
+    //
+    // ╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗
+    // ║  Value 3  ║║  Value 2  ║║  Value 1  ║║  Value 0  ║ 
+    // ╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝
+    //
+    // SQXTNB Dst.VnB, Src.VnH will result in:
+    //
+    // ╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗
+    // ║  0  ║║ V3  ║║  0  ║║ V2  ║║  0  ║║ V1  ║║  0  ║║ V0  ║ 
+    // ╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝
+    //
+    // This is kind of convenient, considering we only need
+    // to use the bottom variant and then concatenate all the
+    // even elements with SVE UZP1.
+
+    switch (ElementSize) {
+      case 1:
+        sqxtnb(Dst.Z().VnB(), Vector.Z().VnH());
+        uzp1(Dst.Z().VnB(), Dst.Z().VnB(), Dst.Z().VnB());
+        break;
+      case 2:
+        sqxtnb(Dst.Z().VnH(), Vector.Z().VnS());
+        uzp1(Dst.Z().VnH(), Dst.Z().VnH(), Dst.Z().VnH());
+        break;
+      case 4:
+        sqxtnb(Dst.Z().VnS(), Vector.Z().VnD());
+        uzp1(Dst.Z().VnS(), Dst.Z().VnS(), Dst.Z().VnS());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 1:
+        sqxtn(Dst.V8B(), Vector.V8H());
+        break;
+      case 2:
+        sqxtn(Dst.V4H(), Vector.V4S());
+        break;
+      case 4:
+        sqxtn(Dst.V2S(), Vector.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 

@@ -1829,21 +1829,24 @@ DEF_OP(VUXTL2) {
 }
 
 DEF_OP(VSQXTN) {
-  auto Op = IROp->C<IR::IROp_VSQXTN>();
+  const auto Op = IROp->C<IR::IROp_VSQXTN>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / (ElementSize << 1);
   const auto Func = [](auto a, auto min, auto max) {
     return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
   };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(1, int8_t, int16_t, Func, std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max())
     DO_VECTOR_1SRC_2TYPE_OP(2, int16_t, int32_t, Func, std::numeric_limits<int16_t>::min(), std::numeric_limits<int16_t>::max())
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
