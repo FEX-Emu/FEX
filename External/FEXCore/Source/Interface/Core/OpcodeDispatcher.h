@@ -278,6 +278,12 @@ public:
   void NOTOp(OpcodeArgs);
   void XADDOp(OpcodeArgs);
   void PopcountOp(OpcodeArgs);
+  void DAAOp(OpcodeArgs);
+  void DASOp(OpcodeArgs);
+  void AAAOp(OpcodeArgs);
+  void AASOp(OpcodeArgs);
+  void AAMOp(OpcodeArgs);
+  void AADOp(OpcodeArgs);
   void XLATOp(OpcodeArgs);
   template<bool Reseed>
   void RDRANDOp(OpcodeArgs);
