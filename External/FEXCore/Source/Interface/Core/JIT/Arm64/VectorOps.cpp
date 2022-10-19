@@ -4152,26 +4152,15 @@ DEF_OP(VUXTL2) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    // NOTE: See VSXTL implementation for an explanation on why
-    //       UXTB/UXTH/UXTW aren't used, since the same behavior
-    //       concerns applies here, but with zero-extension
-    //       instead of sign-extension.
-
     switch (ElementSize) {
       case 2:
-        ushllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
-        ushllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
-        zip2(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        uunpkhi(Dst.Z().VnH(), Vector.Z().VnB());
         break;
       case 4:
-        ushllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
-        ushllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
-        zip2(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        uunpkhi(Dst.Z().VnS(), Vector.Z().VnH());
         break;
       case 8:
-        ushllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
-        ushllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
-        zip2(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        uunpkhi(Dst.Z().VnD(), Vector.Z().VnS());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
