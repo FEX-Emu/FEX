@@ -838,17 +838,18 @@ DEF_OP(VSMax) {
 }
 
 DEF_OP(VZip) {
-  auto Op = IROp->C<IR::IROp_VZip>();
+  const auto Op = IROp->C<IR::IROp_VZip>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
-  uint8_t Tmp[16];
-  uint8_t Elements = OpSize / Op->Header.ElementSize;
-  uint8_t BaseOffset = IROp->Op == IR::OP_VZIP2 ? (Elements / 2) : 0;
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  uint8_t Elements = OpSize / ElementSize;
+  const uint8_t BaseOffset = IROp->Op == IR::OP_VZIP2 ? (Elements / 2) : 0;
   Elements >>= 1;
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     case 1: {
       auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
       auto *Src1_d = reinterpret_cast<uint8_t*>(Src1);
@@ -889,7 +890,9 @@ DEF_OP(VZip) {
       }
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 
   memcpy(GDP, Tmp, OpSize);
