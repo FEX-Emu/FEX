@@ -1876,21 +1876,24 @@ DEF_OP(VSQXTN2) {
 }
 
 DEF_OP(VSQXTUN) {
-  auto Op = IROp->C<IR::IROp_VSQXTUN>();
+  const auto Op = IROp->C<IR::IROp_VSQXTUN>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / (ElementSize << 1);
   const auto Func = [](auto a, auto min, auto max) {
     return std::max(std::min(a, (decltype(a))max), (decltype(a))min);
   };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, int16_t, Func, 0, (1 << 8) - 1)
     DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, int32_t, Func, 0, (1 << 16) - 1)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }

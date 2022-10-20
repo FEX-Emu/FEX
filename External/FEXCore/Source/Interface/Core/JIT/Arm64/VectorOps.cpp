@@ -4353,18 +4353,48 @@ DEF_OP(VSQXTN2) {
 }
 
 DEF_OP(VSQXTUN) {
-  auto Op = IROp->C<IR::IROp_VSQXTUN>();
-  switch (Op->Header.ElementSize) {
-    case 1:
-      sqxtun(GetDst(Node).V8B(), GetSrc(Op->Vector.ID()).V8H());
-    break;
-    case 2:
-      sqxtun(GetDst(Node).V4H(), GetSrc(Op->Vector.ID()).V4S());
-    break;
-    case 4:
-      sqxtun(GetDst(Node).V2S(), GetSrc(Op->Vector.ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_VSQXTUN>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    switch (ElementSize) {
+      case 1:
+        sqxtunb(Dst.Z().VnB(), Vector.Z().VnH());
+        uzp1(Dst.Z().VnB(), Dst.Z().VnB(), Dst.Z().VnB());
+        break;
+      case 2:
+        sqxtunb(Dst.Z().VnH(), Vector.Z().VnS());
+        uzp1(Dst.Z().VnH(), Dst.Z().VnH(), Dst.Z().VnH());
+        break;
+      case 4:
+        sqxtunb(Dst.Z().VnS(), Vector.Z().VnD());
+        uzp1(Dst.Z().VnS(), Dst.Z().VnS(), Dst.Z().VnS());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 1:
+        sqxtun(Dst.V8B(), Vector.V8H());
+        break;
+      case 2:
+        sqxtun(Dst.V4H(), Vector.V4S());
+        break;
+      case 4:
+        sqxtun(Dst.V2S(), Vector.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 

@@ -2537,18 +2537,47 @@ DEF_OP(VSQXTN2) {
 }
 
 DEF_OP(VSQXTUN) {
-  auto Op = IROp->C<IR::IROp_VSQXTUN>();
-  switch (Op->Header.ElementSize) {
-    case 1:
-      packuswb(xmm15, GetSrc(Op->Vector.ID()));
-    break;
-    case 2:
-      packusdw(xmm15, GetSrc(Op->Vector.ID()));
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_VSQXTUN>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (Is256Bit) {
+    switch (ElementSize) {
+      case 1:
+        vpackuswb(ToYMM(Dst), ToYMM(Vector), ToYMM(Vector));
+        break;
+      case 2:
+        vpackusdw(ToYMM(Dst), ToYMM(Vector), ToYMM(Vector));
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    vextracti128(xmm15, ToYMM(Dst), 1);
+    pslldq(xmm15, 8);
+    vmovq(Dst, Dst);
+    vpor(Dst, Dst, xmm15);
+  } else {
+    switch (ElementSize) {
+      case 1:
+        vpackuswb(Dst, Vector, Vector);
+        break;
+      case 2:
+        vpackusdw(Dst, Vector, Vector);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+    // Clear upper 64 bits.
+    movq(Dst, Dst);
   }
-  psrldq(xmm15, 8);
-  movaps(GetDst(Node), xmm15);
 }
 
 DEF_OP(VSQXTUN2) {
