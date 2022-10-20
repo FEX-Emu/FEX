@@ -4185,57 +4185,171 @@ DEF_OP(VUXTL2) {
 }
 
 DEF_OP(VSQXTN) {
-  auto Op = IROp->C<IR::IROp_VSQXTN>();
-  switch (Op->Header.ElementSize) {
-    case 1:
-      sqxtn(GetDst(Node).V8B(), GetSrc(Op->Vector.ID()).V8H());
-    break;
-    case 2:
-      sqxtn(GetDst(Node).V4H(), GetSrc(Op->Vector.ID()).V4S());
-    break;
-    case 4:
-      sqxtn(GetDst(Node).V2S(), GetSrc(Op->Vector.ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_VSQXTN>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // Note that SVE SQXTNB and SQXTNT are a tad different
+    // in behavior compared to most other [name]B and [name]T
+    // instructions.
+    //
+    // Most other bottom and top instructions operate
+    // on even (bottom) or odd (top) elements and store each
+    // result into the next subsequent element in the destination
+    // vector
+    //
+    // SQXTNB and SQXTNT will operate on the same elements regardless
+    // of which one is chosen, but will instead place results from
+    // the operation into either each subsequent even (bottom) element
+    // or odd (top) element. However the bottom instruction will zero the
+    // odd elements out in the destination vector, while the top instruction
+    // will leave the even elements alone (in a behavior similar to Adv.SIMD's
+    // SQXTN/SQXTN2 instructions).
+    //
+    // e.g. consider this 64-bit (for brevity) vector with four 16-bit elements:
+    //
+    // ╔═══════════╗╔═══════════╗╔═══════════╗╔═══════════╗
+    // ║  Value 3  ║║  Value 2  ║║  Value 1  ║║  Value 0  ║ 
+    // ╚═══════════╝╚═══════════╝╚═══════════╝╚═══════════╝
+    //
+    // SQXTNB Dst.VnB, Src.VnH will result in:
+    //
+    // ╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗╔═════╗
+    // ║  0  ║║ V3  ║║  0  ║║ V2  ║║  0  ║║ V1  ║║  0  ║║ V0  ║ 
+    // ╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝╚═════╝
+    //
+    // This is kind of convenient, considering we only need
+    // to use the bottom variant and then concatenate all the
+    // even elements with SVE UZP1.
+
+    switch (ElementSize) {
+      case 1:
+        sqxtnb(Dst.Z().VnB(), Vector.Z().VnH());
+        uzp1(Dst.Z().VnB(), Dst.Z().VnB(), Dst.Z().VnB());
+        break;
+      case 2:
+        sqxtnb(Dst.Z().VnH(), Vector.Z().VnS());
+        uzp1(Dst.Z().VnH(), Dst.Z().VnH(), Dst.Z().VnH());
+        break;
+      case 4:
+        sqxtnb(Dst.Z().VnS(), Vector.Z().VnD());
+        uzp1(Dst.Z().VnS(), Dst.Z().VnS(), Dst.Z().VnS());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 1:
+        sqxtn(Dst.V8B(), Vector.V8H());
+        break;
+      case 2:
+        sqxtn(Dst.V4H(), Vector.V4S());
+        break;
+      case 4:
+        sqxtn(Dst.V2S(), Vector.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 
 DEF_OP(VSQXTN2) {
-  auto Op = IROp->C<IR::IROp_VSQXTN2>();
-  uint8_t OpSize = IROp->Size;
-  mov(VTMP1, GetSrc(Op->VectorLower.ID()));
-  if (OpSize == 8) {
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VSQXTN2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // Need to use the destructive variant of SPLICE, since
+    // the constructive variant requires a register list, and
+    // we can't guarantee VectorLower and VectorUpper will always
+    // have consecutive indexes with one another.
+    mov(VTMP1.Z().VnD(), VectorLower.Z().VnD());
+
+    // We use the 16 byte mask due to how SPLICE works. We only
+    // want to get at the first 16 bytes in the lower vector, so
+    // that SPLICE will then begin copying the first 16 bytes
+    // from the upper vector and begin placing them after the
+    // previously copied lower 16 bytes.
+    const auto Mask = PRED_TMP_16B;
+
+    switch (ElementSize) {
       case 1:
-        sqxtn(VTMP2.V8B(), GetSrc(Op->VectorUpper.ID()).V8H());
-        ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
-      break;
+        sqxtnb(VTMP2.Z().VnB(), VectorUpper.Z().VnH());
+        uzp1(VTMP2.Z().VnB(), VTMP2.Z().VnB(), VTMP2.Z().VnB());
+        splice(VTMP1.Z().VnB(), Mask, VTMP1.Z().VnB(), VTMP2.Z().VnB());
+        break;
       case 2:
-        sqxtn(VTMP2.V4H(), GetSrc(Op->VectorUpper.ID()).V4S());
-        ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
-      break;
+        sqxtnb(VTMP2.Z().VnH(), VectorUpper.Z().VnS());
+        uzp1(VTMP2.Z().VnH(), VTMP2.Z().VnH(), VTMP2.Z().VnH());
+        splice(VTMP1.Z().VnH(), Mask, VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        break;
       case 4:
-        sqxtn(VTMP2.V2S(), GetSrc(Op->VectorUpper.ID()).V2D());
-        ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
-      break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+        sqxtnb(VTMP2.Z().VnS(), VectorUpper.Z().VnD());
+        uzp1(VTMP2.Z().VnS(), VTMP2.Z().VnS(), VTMP2.Z().VnS());
+        splice(VTMP1.Z().VnS(), Mask, VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
     }
-  }
-  else {
-    switch (Op->Header.ElementSize) {
-      case 1:
-        sqxtn2(VTMP1.V16B(), GetSrc(Op->VectorUpper.ID()).V8H());
-      break;
-      case 2:
-        sqxtn2(VTMP1.V8H(), GetSrc(Op->VectorUpper.ID()).V4S());
-      break;
-      case 4:
-        sqxtn2(VTMP1.V4S(), GetSrc(Op->VectorUpper.ID()).V2D());
-      break;
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize);
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    mov(VTMP1, VectorLower);
+
+    if (OpSize == 8) {
+      switch (ElementSize) {
+        case 1:
+          sqxtn(VTMP2.V8B(), VectorUpper.V8H());
+          ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
+          break;
+        case 2:
+          sqxtn(VTMP2.V4H(), VectorUpper.V4S());
+          ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
+          break;
+        case 4:
+          sqxtn(VTMP2.V2S(), VectorUpper.V2D());
+          ins(VTMP1.V4S(), 1, VTMP2.V4S(), 0);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          return;
+      }
+    } else {
+      switch (ElementSize) {
+        case 1:
+          sqxtn2(VTMP1.V16B(), VectorUpper.V8H());
+          break;
+        case 2:
+          sqxtn2(VTMP1.V8H(), VectorUpper.V4S());
+          break;
+        case 4:
+          sqxtn2(VTMP1.V4S(), VectorUpper.V2D());
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          return;
+      }
     }
+
+    mov(Dst, VTMP1);
   }
-  mov(GetDst(Node), VTMP1);
 }
 
 DEF_OP(VSQXTUN) {
