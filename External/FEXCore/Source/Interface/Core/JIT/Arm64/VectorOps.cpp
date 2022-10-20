@@ -4023,25 +4023,70 @@ DEF_OP(VUShrNI) {
 }
 
 DEF_OP(VUShrNI2) {
-  auto Op = IROp->C<IR::IROp_VUShrNI2>();
-  mov(VTMP1, GetSrc(Op->VectorLower.ID()));
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      shrn2(VTMP1.V16B(), GetSrc(Op->VectorUpper.ID()).V8H(), Op->BitShift);
-    break;
-    }
-    case 2: {
-      shrn2(VTMP1.V8H(), GetSrc(Op->VectorUpper.ID()).V4S(), Op->BitShift);
-    break;
-    }
-    case 4: {
-      shrn2(VTMP1.V4S(), GetSrc(Op->VectorUpper.ID()).V2D(), Op->BitShift);
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  }
+  const auto Op = IROp->C<IR::IROp_VUShrNI2>();
+  const auto OpSize = IROp->Size;
 
-  mov(GetDst(Node), VTMP1);
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    mov(VTMP1.Z().VnD(), VectorLower.Z().VnD());
+
+    const auto Mask = PRED_TMP_16B;
+
+    switch (ElementSize) {
+      case 1: {
+        shrnb(VTMP2.Z().VnB(), VectorUpper.Z().VnH(), BitShift);
+        uzp1(VTMP2.Z().VnB(), VTMP2.Z().VnB(), VTMP2.Z().VnB());
+        splice(VTMP1.Z().VnB(), Mask, VTMP1.Z().VnB(), VTMP2.Z().VnB());
+        break;
+      }
+      case 2: {
+        shrnb(VTMP2.Z().VnH(), VectorUpper.Z().VnS(), BitShift);
+        uzp1(VTMP2.Z().VnH(), VTMP2.Z().VnH(), VTMP2.Z().VnH());
+        splice(VTMP1.Z().VnH(), Mask, VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        break;
+      }
+      case 4: {
+        shrnb(VTMP2.Z().VnS(), VectorUpper.Z().VnD(), BitShift);
+        uzp1(VTMP2.Z().VnS(), VTMP2.Z().VnS(), VTMP2.Z().VnS());
+        splice(VTMP1.Z().VnS(), Mask, VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    mov(Dst.Z().VnD(), VTMP1.Z().VnD());
+  } else {
+    mov(VTMP1, VectorLower);
+
+    switch (ElementSize) {
+      case 1: {
+        shrn2(VTMP1.V16B(), VectorUpper.V8H(), BitShift);
+        break;
+      }
+      case 2: {
+        shrn2(VTMP1.V8H(), VectorUpper.V4S(), BitShift);
+        break;
+      }
+      case 4: {
+        shrn2(VTMP1.V4S(), VectorUpper.V2D(), BitShift);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    mov(Dst, VTMP1);
+  }
 }
 
 DEF_OP(VSXTL) {
