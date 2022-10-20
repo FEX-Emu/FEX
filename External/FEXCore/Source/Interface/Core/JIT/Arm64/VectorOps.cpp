@@ -4022,63 +4022,15 @@ DEF_OP(VSXTL) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    // A little gross, but SVE SXTB/SXTH/SXTW would be a little
-    // more cumbersome to use here, since those instructions
-    // use the supplied element size to determine indexing across
-    // the vector.
-    //
-    // So for example if we were sign-extending a byte to a halfword
-    // with SXTB, assume the vector is like so:
-    // 
-    // ╔═════════╗╔═════════╗╔═════════╗╔═════════╗
-    // ║ Value 3 ║║ Value 2 ║║ Value 1 ║║ Value 0 ║ 
-    // ╚═════════╝╚═════════╝╚═════════╝╚═════════╝
-    //
-    // (Each element is 8 bits in size, and for brevity assume a vector
-    //  that's only 32 bits wide).
-    //
-    // The operation
-    //
-    // SXTB Dst.VnH, Src.VnB
-    //
-    // Will sign-extend bytes based off the element size and also index
-    // the source vector on a by-element-size basis.
-    //
-    // The problem is, since we've specified halfwords as the element size
-    // (via Dst.VnH), the instruction will skip over Value 1 and sign-extend
-    // Value 2, place it into the Dst vector, and so on. So we'd be ignoring
-    // values and end up with something like:
-    //
-    // ╔════════════════════╗╔════════════════════╗
-    // ║      Value 2       ║║      Value 0       ║
-    // ╚════════════════════╝╚════════════════════╝
-    //
-    // Uh oh!
-    //
-    // What we want is:
-    //
-    // ╔════════════════════╗╔════════════════════╗
-    // ║      Value 1       ║║      Value 0       ║
-    // ╚════════════════════╝╚════════════════════╝
-    //
-    // We want the extending operation to handle each individual value from
-    // the source vector and not overlap or ignore them.
-
     switch (ElementSize) {
       case 2:
-        sshllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
-        sshllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
-        zip1(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        sunpklo(Dst.Z().VnH(), Vector.Z().VnB());
         break;
       case 4:
-        sshllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
-        sshllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
-        zip1(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        sunpklo(Dst.Z().VnS(), Vector.Z().VnH());
         break;
       case 8:
-        sshllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
-        sshllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
-        zip1(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        sunpklo(Dst.Z().VnD(), Vector.Z().VnS());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
@@ -4113,24 +4065,15 @@ DEF_OP(VSXTL2) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    // See VSXTL implementation for in depth explanation
-    // of all the instructions below.
-
     switch (ElementSize) {
       case 2:
-        sshllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
-        sshllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
-        zip2(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        sunpkhi(Dst.Z().VnH(), Vector.Z().VnB());
         break;
       case 4:
-        sshllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
-        sshllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
-        zip2(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        sunpkhi(Dst.Z().VnS(), Vector.Z().VnH());
         break;
       case 8:
-        sshllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
-        sshllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
-        zip2(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        sunpkhi(Dst.Z().VnD(), Vector.Z().VnS());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
@@ -4165,26 +4108,15 @@ DEF_OP(VUXTL) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    // NOTE: See VSXTL implementation for an explanation on why
-    //       UXTB/UXTH/UXTW aren't used, since the same behavior
-    //       concerns applies here, but with zero-extension
-    //       instead of sign-extension.
-
     switch (ElementSize) {
       case 2:
-        ushllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
-        ushllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
-        zip1(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        uunpklo(Dst.Z().VnH(), Vector.Z().VnB());
         break;
       case 4:
-        ushllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
-        ushllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
-        zip1(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        uunpklo(Dst.Z().VnS(), Vector.Z().VnH());
         break;
       case 8:
-        ushllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
-        ushllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
-        zip1(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        uunpklo(Dst.Z().VnD(), Vector.Z().VnS());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
@@ -4220,26 +4152,15 @@ DEF_OP(VUXTL2) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    // NOTE: See VSXTL implementation for an explanation on why
-    //       UXTB/UXTH/UXTW aren't used, since the same behavior
-    //       concerns applies here, but with zero-extension
-    //       instead of sign-extension.
-
     switch (ElementSize) {
       case 2:
-        ushllb(VTMP1.Z().VnH(), Vector.Z().VnB(), 0);
-        ushllt(VTMP2.Z().VnH(), Vector.Z().VnB(), 0);
-        zip2(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP2.Z().VnH());
+        uunpkhi(Dst.Z().VnH(), Vector.Z().VnB());
         break;
       case 4:
-        ushllb(VTMP1.Z().VnS(), Vector.Z().VnH(), 0);
-        ushllt(VTMP2.Z().VnS(), Vector.Z().VnH(), 0);
-        zip2(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP2.Z().VnS());
+        uunpkhi(Dst.Z().VnS(), Vector.Z().VnH());
         break;
       case 8:
-        ushllb(VTMP1.Z().VnD(), Vector.Z().VnS(), 0);
-        ushllt(VTMP2.Z().VnD(), Vector.Z().VnS(), 0);
-        zip2(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP2.Z().VnD());
+        uunpkhi(Dst.Z().VnD(), Vector.Z().VnS());
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
