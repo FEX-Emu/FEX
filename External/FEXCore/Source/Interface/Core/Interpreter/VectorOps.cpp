@@ -1695,23 +1695,26 @@ DEF_OP(VShlI) {
 }
 
 DEF_OP(VUShrNI) {
-  auto Op = IROp->C<IR::IROp_VUShrNI>();
+  const auto Op = IROp->C<IR::IROp_VUShrNI>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t BitShift = Op->BitShift;
-  uint8_t Tmp[16]{};
+  const uint8_t BitShift = Op->BitShift;
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint8_t Elements = OpSize / (Op->Header.ElementSize << 1);
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / (ElementSize << 1);
   const auto Func = [BitShift](auto a, auto min, auto max) {
     return BitShift >= (sizeof(a) * 8) ? 0 : a >> BitShift;
   };
 
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(1, uint8_t, uint16_t, Func, 0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(2, uint16_t, uint32_t, Func, 0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(4, uint32_t, uint64_t, Func, 0, 0)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }

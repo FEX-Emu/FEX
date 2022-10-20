@@ -3970,22 +3970,55 @@ DEF_OP(VShlI) {
 }
 
 DEF_OP(VUShrNI) {
-  auto Op = IROp->C<IR::IROp_VUShrNI>();
+  const auto Op = IROp->C<IR::IROp_VUShrNI>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      shrn(GetDst(Node).V8B(), GetSrc(Op->Vector.ID()).V8H(), Op->BitShift);
-    break;
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    switch (ElementSize) {
+      case 1: {
+        shrnb(Dst.Z().VnB(), Vector.Z().VnH(), BitShift);
+        uzp1(Dst.Z().VnB(), Dst.Z().VnB(), Dst.Z().VnB());
+        break;
+      }
+      case 2: {
+        shrnb(Dst.Z().VnH(), Vector.Z().VnS(), BitShift);
+        uzp1(Dst.Z().VnH(), Dst.Z().VnH(), Dst.Z().VnH());
+        break;
+      }
+      case 4: {
+        shrnb(Dst.Z().VnS(), Vector.Z().VnD(), BitShift);
+        uzp1(Dst.Z().VnS(), Dst.Z().VnS(), Dst.Z().VnS());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      shrn(GetDst(Node).V4H(), GetSrc(Op->Vector.ID()).V4S(), Op->BitShift);
-    break;
+  } else {
+    switch (ElementSize) {
+      case 1: {
+        shrn(Dst.V8B(), Vector.V8H(), BitShift);
+        break;
+      }
+      case 2: {
+        shrn(Dst.V4H(), Vector.V4S(), BitShift);
+        break;
+      }
+      case 4: {
+        shrn(Dst.V2S(), Vector.V2D(), BitShift);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 4: {
-      shrn(GetDst(Node).V2S(), GetSrc(Op->Vector.ID()).V2D(), Op->BitShift);
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
