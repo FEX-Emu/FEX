@@ -2196,75 +2196,141 @@ DEF_OP(VShlI) {
 }
 
 DEF_OP(VUShrNI) {
-  auto Op = IROp->C<IR::IROp_VUShrNI>();
-  movapd(GetDst(Node), GetSrc(Op->Vector.ID()));
+  const auto Op = IROp->C<IR::IROp_VUShrNI>();
+  const auto OpSize = IROp->Size;
+
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto DstYMM = ToYMM(Dst);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  vmovapd(DstYMM, ToYMM(Vector));
   vpxor(xmm15, xmm15, xmm15);
-  switch (Op->Header.ElementSize) {
+
+  switch (ElementSize) {
     case 1: {
-      psrlw(GetDst(Node), Op->BitShift);
+      if (Is256Bit) {
+        vpsrlw(DstYMM, DstYMM, BitShift);
+      } else {
+        vpsrlw(Dst, Dst, BitShift);
+      }
       // <8 x i16> -> <8 x i8>
       mov(rax, 0x0E'0C'0A'08'06'04'02'00); // Lower
       mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
       break;
     }
     case 2: {
-      psrld(GetDst(Node), Op->BitShift);
+      if (Is256Bit) {
+        vpsrld(DstYMM, DstYMM, BitShift);
+      } else {
+        vpsrld(Dst, Dst, BitShift);
+      }
       // <4 x i32> -> <4 x i16>
       mov(rax, 0x0D'0C'09'08'05'04'01'00); // Lower
       mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
       break;
     }
     case 4: {
-      psrlq(GetDst(Node), Op->BitShift);
+      if (Is256Bit) {
+        vpsrlq(DstYMM, DstYMM, BitShift);
+      } else {
+        vpsrlq(Dst, Dst, BitShift);
+      }
       // <2 x i64> -> <2 x i32>
       mov(rax, 0x0B'0A'09'08'03'02'01'00); // Lower
       mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      return;
   }
 
   vmovq(xmm15, rax);
   vmovq(xmm14, rcx);
   punpcklqdq(xmm15, xmm14);
-  pshufb(GetDst(Node), xmm15);
+  if (Is256Bit) {
+    vinserti128(ymm15, ymm15, xmm15, 1);
+    vpshufb(DstYMM, DstYMM, ymm15);
+    vextracti128(xmm14, DstYMM, 1);
+    punpcklqdq(Dst, xmm14);
+  } else {
+    vpshufb(Dst, Dst, xmm15);
+  }
 }
 
 DEF_OP(VUShrNI2) {
   // Src1 = Lower results
   // Src2 = Upper Results
-  auto Op = IROp->C<IR::IROp_VUShrNI2>();
-  movapd(xmm13, GetSrc(Op->VectorUpper.ID()));
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUShrNI2>();
+  const auto OpSize = IROp->Size;
+
+  const auto BitShift = Op->BitShift;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  vmovapd(ymm13, ToYMM(VectorUpper));
+  switch (ElementSize) {
     case 1: {
-      psrlw(xmm13, Op->BitShift);
+      if (Is256Bit) {
+        vpsrlw(ymm13, ymm13, BitShift);
+      } else {
+        vpsrlw(xmm13, xmm13, BitShift);
+      }
       // <8 x i16> -> <8 x i8>
       mov(rax, 0x80'80'80'80'80'80'80'80); // Lower
       mov(rcx, 0x0E'0C'0A'08'06'04'02'00); // Upper
       break;
     }
     case 2: {
-      psrld(xmm13, Op->BitShift);
+      if (Is256Bit) {
+        vpsrld(ymm13, ymm13, BitShift);
+      } else {
+        vpsrld(xmm13, xmm13, BitShift);
+      }
       // <4 x i32> -> <4 x i16>
       mov(rax, 0x80'80'80'80'80'80'80'80); // Lower
       mov(rcx, 0x0D'0C'09'08'05'04'01'00); // Upper
       break;
     }
     case 4: {
-      psrlq(xmm13, Op->BitShift);
+      if (Is256Bit) {
+        vpsrlq(ymm13, ymm13, BitShift);
+      } else {
+        vpsrlq(xmm13, xmm13, BitShift);
+      }
       // <2 x i64> -> <2 x i32>
       mov(rax, 0x80'80'80'80'80'80'80'80); // Lower
       mov(rcx, 0x0B'0A'09'08'03'02'01'00); // Upper
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      return;
   }
 
   vmovq(xmm15, rax);
   vmovq(xmm14, rcx);
   punpcklqdq(xmm15, xmm14);
-  vpshufb(xmm14, xmm13, xmm15);
-  vpor(GetDst(Node), xmm14, GetSrc(Op->VectorLower.ID()));
+  if (Is256Bit) {
+    vinserti128(ymm15, ymm15, xmm15, 1);
+    vpshufb(ymm14, ymm13, ymm15);
+    vextracti128(xmm12, ymm14, 1);
+    punpckhqdq(xmm14, xmm12);
+
+    vmovapd(Dst, VectorLower);
+    vinserti128(ToYMM(Dst), ToYMM(Dst), xmm14, 1);
+  } else {
+    vpshufb(xmm14, xmm13, xmm15);
+    vpor(Dst, xmm14, VectorLower);
+  }
 }
 
 DEF_OP(VSXTL) {
