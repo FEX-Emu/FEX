@@ -69,11 +69,14 @@ namespace Alloc::OSAllocator {
       struct LiveVMARegion {
         ReservedVMARegion *SlabInfo;
         uint64_t FreeSpace{};
+        uint64_t NumManagedPages{};
         uint32_t LastPageAllocation{};
+        bool HadMunmap{};
 
         // Align UsedPages so it pads to the next page.
         // Necessary to take advantage of madvise zero page pooling.
-        alignas(4096) FEXCore::FlexBitSet<uint64_t> UsedPages;
+        using FlexBitElementType = uint64_t;
+        alignas(4096) FEXCore::FlexBitSet<FlexBitElementType> UsedPages;
 
         // This returns the size of the LiveVMARegion in addition to the flex set that tracks the used data
         // The LiveVMARegion lives at the start of the VMA region which means on initialization we need to set that
@@ -85,8 +88,8 @@ namespace Alloc::OSAllocator {
           // 0x100'0000 Pages
           // 1 bit per page for tracking means 0x20'0000 (Pages / 8) bytes of flex space
           // Which is 2MB of tracking
-          uint64_t NumElements = (Size >> FHU::FEX_PAGE_SHIFT) * sizeof(uint64_t);
-          return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<uint64_t>::Size(NumElements);
+          uint64_t NumElements = (Size >> FHU::FEX_PAGE_SHIFT) * sizeof(FlexBitElementType);
+          return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<FlexBitElementType>::Size(NumElements);
         }
 
         static void InitializeVMARegionUsed(LiveVMARegion *Region, size_t AdditionalSize) {
@@ -95,19 +98,21 @@ namespace Alloc::OSAllocator {
 
           Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
 
-          size_t NumPages = SizePlusManagedData >> FHU::FEX_PAGE_SHIFT;
+          size_t NumManagedPages = SizePlusManagedData >> FHU::FEX_PAGE_SHIFT;
+          size_t ManagedSize  = NumManagedPages << FHU::FEX_PAGE_SHIFT;
 
           // Use madvise to set the full tracking region to zero.
           // This ensures unused pages are zero, while not having the backing pages consuming memory.
-          ::madvise(Region->UsedPages.Memory + (NumPages * 4096), (Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT) - (NumPages * 4096), MADV_DONTNEED);
+          ::madvise(Region->UsedPages.Memory + ManagedSize, (Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT) - ManagedSize, MADV_DONTNEED);
 
           // Use madvise to claim WILLNEED on the beginning pages for initial state tracking.
           // Improves performance of the following MemClear by not doing a page level fault dance for data necessary to track >170TB of used pages.
-          ::madvise(Region->UsedPages.Memory, NumPages * 4096, MADV_WILLNEED);
+          ::madvise(Region->UsedPages.Memory, ManagedSize, MADV_WILLNEED);
 
           // Set our reserved pages
-          Region->UsedPages.MemSet(NumPages);
-          Region->LastPageAllocation = NumPages;
+          Region->UsedPages.MemSet(NumManagedPages);
+          Region->LastPageAllocation = NumManagedPages;
+          Region->NumManagedPages = NumManagedPages;
         }
       };
 
@@ -129,6 +134,7 @@ namespace Alloc::OSAllocator {
         ReservedVMARegion *ReservedRegion = *ReservedIterator;
 
         ReservedRegions->erase(ReservedIterator);
+
         // mprotect the new region we've allocated
         size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), FHU::FEX_PAGE_SIZE);
         size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
@@ -152,6 +158,9 @@ namespace Alloc::OSAllocator {
 
       // 32-bit old kernel workarounds
       std::vector<FEXCore::Allocator::MemoryRegion> Steal32BitIfOldKernel();
+
+      void AllocateMemoryRegions(std::vector<FEXCore::Allocator::MemoryRegion> const &Ranges);
+      LiveVMARegion *FindLiveRegionForAddress(uintptr_t Addr, uintptr_t AddrEnd);
   };
 
 void OSAllocator_64Bit::DetermineVASize() {
@@ -165,6 +174,42 @@ void OSAllocator_64Bit::DetermineVASize() {
   #endif
 
   UPPER_BOUND_PAGE = UPPER_BOUND / FHU::FEX_PAGE_SIZE;
+}
+
+OSAllocator_64Bit::LiveVMARegion *OSAllocator_64Bit::FindLiveRegionForAddress(uintptr_t Addr, uintptr_t AddrEnd) {
+  LiveVMARegion *LiveRegion{};
+
+  // Check active slabs to see if we can fit this
+  for (auto it = LiveRegions->begin(); it != LiveRegions->end(); ++it) {
+    uintptr_t RegionBegin = (*it)->SlabInfo->Base;
+    uintptr_t RegionEnd = RegionBegin + (*it)->SlabInfo->RegionSize;
+
+    if (Addr >= RegionBegin &&
+        Addr < RegionEnd) {
+      LiveRegion = *it;
+      // Leave our loop
+      break;
+    }
+  }
+
+  // Couldn't find an active region that fit
+  // Check reserved regions
+  if (!LiveRegion) {
+    // Didn't have a slab that fit this range
+    // Check our reserved regions to see if we have one that fits
+    for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
+      ReservedVMARegion *ReservedRegion = *it;
+      uintptr_t RegionEnd = ReservedRegion->Base + ReservedRegion->RegionSize;
+      if (Addr >= ReservedRegion->Base &&
+          AddrEnd < RegionEnd) {
+        // Found one, let's make it active
+        LiveRegion = MakeRegionActive(it, 0);
+        break;
+      }
+    }
+  }
+
+  return LiveRegion;
 }
 
 void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
@@ -205,41 +250,13 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   LiveVMARegion *LiveRegion{};
 
   if (Fixed || Addr != 0) {
-    // Check active slabs to see if we can fit this
-    for (auto it = LiveRegions->begin(); it != LiveRegions->end(); ++it) {
-      uintptr_t RegionBegin = (*it)->SlabInfo->Base;
-      uintptr_t RegionEnd = RegionBegin + (*it)->SlabInfo->RegionSize;
-
-      if (Addr >= RegionBegin &&
-          Addr < RegionEnd) {
-        LiveRegion = *it;
-        // Leave our loop
-        break;
-      }
-    }
-
-    // Couldn't find an active region that fit
-    // Check reserved regions
-    if (!LiveRegion) {
-      // Didn't have a slab that fit this range
-      // Check our reserved regions to see if we have one that fits
-      for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
-        ReservedVMARegion *ReservedRegion = *it;
-        uintptr_t RegionEnd = ReservedRegion->Base + ReservedRegion->RegionSize;
-        if (Addr >= ReservedRegion->Base &&
-            AddrEnd < RegionEnd) {
-          // Found one, let's make it active
-          LiveRegion = MakeRegionActive(it, 0);
-          break;
-        }
-      }
-    }
+    LiveRegion = FindLiveRegionForAddress(Addr, AddrEnd);
   }
 
   again:
 
   auto CheckIfRangeFits = [&AllocatedOffset](LiveVMARegion *Region, uint64_t length, int prot, int flags, int fd, off_t offset, uint64_t StartingPosition = 0) -> std::pair<LiveVMARegion*, void*> {
-    uint64_t AllocatedPage{};
+    uint64_t AllocatedPage{~0ULL};
     uint64_t NumberOfPages = length >> FHU::FEX_PAGE_SHIFT;
 
     if (Region->FreeSpace >= length) {
@@ -249,72 +266,29 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
         : Region->LastPageAllocation;
       size_t RegionNumberOfPages = Region->SlabInfo->RegionSize >> FHU::FEX_PAGE_SHIFT;
 
-      // Backward scan
-      // We need to do a backward scan first to fill any holes
-      // Otherwise we will very quickly run out of VMA regions (65k maximum)
-      for (size_t CurrentPage = LastAllocation;
-           CurrentPage >= NumberOfPages;) {
-        size_t Remaining = NumberOfPages;
-        assert(Remaining <= CurrentPage);
 
-        while (Remaining) {
-          if (Region->UsedPages[CurrentPage - Remaining]) {
-            // Has an intersecting range
-            break;
-          }
-          --Remaining;
-        }
+      if (Region->HadMunmap) {
+        // Backward scan
+        // We need to do a backward scan first to fill any holes
+        // Otherwise we will very quickly run out of VMA regions (65k maximum)
+        auto SearchResult = Region->UsedPages.BackwardScanForRange<true>(LastAllocation, NumberOfPages, Region->NumManagedPages);
 
-        if (Remaining) {
-          // Didn't find a slab range
-          CurrentPage -= Remaining;
-        }
-        else {
-          // We have a slab range
-          CurrentPage -= NumberOfPages;
+        AllocatedPage = SearchResult.FoundElement;
 
-          // Keep scanning backwards to not introduce ANOTHER gap
-          while (CurrentPage >= 1) {
-            if (Region->UsedPages[CurrentPage - 1]) {
-              // Found a used page, we can leave now
-              break;
-            }
-            --CurrentPage;
-          }
-          AllocatedPage = CurrentPage;
-          break;
+        // If we didn't even have a one page free in the backward search, then unclaim HadMunmap.
+        // Switching over to default forward search.
+        if (SearchResult.FoundElement == ~0ULL && !SearchResult.FoundHole) {
+          Region->HadMunmap = false;
         }
       }
 
       // Foward Scan
-      if (AllocatedPage == 0) {
-        for (size_t CurrentPage = LastAllocation;
-             CurrentPage < (RegionNumberOfPages - NumberOfPages);) {
-          // If we have enough free space, check if we have enough free pages that are contiguous
-          size_t Remaining = NumberOfPages;
-
-          assert((CurrentPage + Remaining - 1) < RegionNumberOfPages);
-          while (Remaining) {
-            if (Region->UsedPages[CurrentPage + Remaining - 1]) {
-              // Has an intersecting range
-              break;
-            }
-            --Remaining;
-          }
-
-          if (Remaining) {
-            // Didn't find a slab range
-            CurrentPage += Remaining;
-          }
-          else {
-            // We have a slab range
-            AllocatedPage = CurrentPage;
-            break;
-          }
-        }
+      if (AllocatedPage == ~0ULL) {
+        auto SearchResult = Region->UsedPages.ForwardScanForRange<true>(LastAllocation, NumberOfPages, RegionNumberOfPages);
+        AllocatedPage = SearchResult.FoundElement;
       }
 
-      if (AllocatedPage) {
+      if (AllocatedPage != ~0ULL) {
         AllocatedOffset = Region->SlabInfo->Base + AllocatedPage * FHU::FEX_PAGE_SIZE;
 
         // We need to setup protections for this
@@ -497,6 +471,8 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
       // This will let us more quickly fill holes
       (*it)->LastPageAllocation = std::min((*it)->LastPageAllocation, SlabPageBegin);
 
+      (*it)->HadMunmap = true;
+
       // XXX: Move region back to reserved list
       return 0;
     }
@@ -537,12 +513,7 @@ std::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfOld
   return FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND_32, UPPER_BOUND_32);
 }
 
-OSAllocator_64Bit::OSAllocator_64Bit() {
-  DetermineVASize();
-  auto LowMem = Steal32BitIfOldKernel();
-
-  auto Ranges = FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND, UPPER_BOUND);
-
+void OSAllocator_64Bit::AllocateMemoryRegions(std::vector<FEXCore::Allocator::MemoryRegion> const &Ranges) {
   for (auto [Ptr, AllocationSize]: Ranges) {
     if (!ObjectAlloc) {
       auto MaxSize = std::min(size_t(64) * 1024 * 1024, AllocationSize);
@@ -564,12 +535,22 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
         continue;
       }
     }
-    
+
     ReservedVMARegion *Region = ObjectAlloc->new_construct<ReservedVMARegion>();
     Region->Base = reinterpret_cast<uint64_t>(Ptr);
     Region->RegionSize = AllocationSize;
     ReservedRegions->emplace_back(Region);
   }
+}
+
+
+OSAllocator_64Bit::OSAllocator_64Bit() {
+  DetermineVASize();
+  auto LowMem = Steal32BitIfOldKernel();
+
+  auto Ranges = FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND, UPPER_BOUND);
+
+  AllocateMemoryRegions(Ranges);
 
   FEXCore::Allocator::ReclaimMemoryRegion(LowMem);
 }
