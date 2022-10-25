@@ -28,7 +28,7 @@ $end_info$
 static void fexfn_impl_libxcb_FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);
 static size_t fexfn_impl_libxcb_FEX_usable_size(void*);
 static void fexfn_impl_libxcb_FEX_free_on_host(void*);
-static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchEvent*, CrossArchEvent*, CBWork*);
+static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchWorkQueueDelegator* a_0);
 
 static int fexfn_impl_libxcb_xcb_take_socket(xcb_connection_t * a_0, fex_guest_function_ptr a_1, void * a_2, int a_3, uint64_t * a_4);
 
@@ -38,9 +38,8 @@ struct xcb_take_socket_CB_args {
   void *closure;
 };
 
-CrossArchEvent *WaitForWork{};
-CrossArchEvent *WorkDone{};
-CBWork *Work{};
+// Cross arch work queue
+CrossArchWorkQueueDelegator *WorkQueue{};
 
 static std::unordered_map<xcb_connection_t*, xcb_take_socket_CB_args> CBArgs{};
 
@@ -52,23 +51,27 @@ static void fexfn_impl_libxcb_FEX_free_on_host(void *a_0){
   free(a_0);
 }
 
-static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchEvent* a_0, CrossArchEvent* a_1, CBWork* a_2){
-  WaitForWork = a_0;
-  WorkDone = a_1;
-  Work = a_2;
+static void fexfn_impl_libxcb_FEX_GiveEvents(CrossArchWorkQueueDelegator* a_0){
+  WorkQueue = a_0;
 }
 
 static void xcb_take_socket_cb(void *closure) {
   xcb_take_socket_CB_args *Args = (xcb_take_socket_CB_args *)closure;
 
+  CBWork Work{};
   // Signalling to the guest thread like this allows us to call the callback function from any thread without
   // creating spurious thread objects inside of FEX
-  Work->cb = Args->CBFunction;
-  Work->argsv = Args->closure;
-  // Tell the thread it has work
-  NotifyWorkFunc(WaitForWork);
-  // Wait for the work to be done
-  WaitForWorkFunc(WorkDone);
+  Work.cb = Args->CBFunction;
+  Work.argsv = Args->closure;
+
+  CrossArchWorkQueueDelegator::CrossArchWorkQueueEvent WorkEvent{};
+  WorkEvent.WorkData = reinterpret_cast<uintptr_t>(&Work);
+
+  // Add the work event to the queue.
+  CrossArchWorkQueueDelegator::AddWorkEvent(WorkQueue, &WorkEvent);
+
+  // Wait for the work to be done.
+  CrossArchEvent::WaitForWorkFunc(&WorkEvent.WorkCompleted);
 }
 
 static int fexfn_impl_libxcb_xcb_take_socket(xcb_connection_t * a_0, fex_guest_function_ptr a_1, void * a_2, int a_3, uint64_t * a_4){

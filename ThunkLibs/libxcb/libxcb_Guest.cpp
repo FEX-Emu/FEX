@@ -31,22 +31,17 @@ $end_info$
 static std::thread CBThread{};
 static std::atomic<bool> CBDone{false};
 static std::mutex CBThreadMutex;
-static uint32_t ScreenRefCount;
+static std::atomic<uint32_t> ScreenRefCount{};
 
-static CrossArchEvent WaitForWork{};
-static CrossArchEvent WorkDone{};
-static CBWork CBWorkData{};
+// Cross arch work queue
+static CrossArchWorkQueueDelegator WorkQueue;
 
 void FEX_Helper_GiveEvents() {
   struct {
-    CrossArchEvent *WaitForWork;
-    CrossArchEvent *WorkDone;
-    CBWork *Work;
+    CrossArchWorkQueueDelegator *WorkQueue;
   } args;
 
-  args.WaitForWork = &WaitForWork;
-  args.WorkDone = &WorkDone;
-  args.Work = &CBWorkData;
+  args.WorkQueue = &WorkQueue;
 
   fexthunks_libxcb_FEX_GiveEvents(&args);
 }
@@ -58,18 +53,24 @@ static void CallbackThreadFunc() {
   // Hand the host our helpers
   FEX_Helper_GiveEvents();
   while (!CBDone) {
-    WaitForWorkFunc(&WaitForWork);
+    CrossArchWorkQueueDelegator::WaitForWork(&WorkQueue);
+
     if (CBDone) {
       return;
     }
-    typedef void take_xcb_fn_t (void* a_0);
-    auto callback = reinterpret_cast<take_xcb_fn_t*>(CBWorkData.cb);
 
-    // On shutdown then callback can change to nullptr
-    if (callback) {
-      callback(CBWorkData.argsv);
+    while (auto WQE = CrossArchWorkQueueDelegator::GetWorkEvent(&WorkQueue))
+    {
+      CBWork *Work = reinterpret_cast<CBWork*>(WQE->WorkData);
+      typedef void take_xcb_fn_t (void* a_0);
+      auto callback = reinterpret_cast<take_xcb_fn_t*>(Work->cb);
+
+      // On shutdown then callback can change to nullptr
+      if (callback) {
+        callback(Work->argsv);
+      }
+      CrossArchEvent::NotifyWorkFunc(&WQE->WorkCompleted);
     }
-    NotifyWorkFunc(&WorkDone);
   }
 }
 
@@ -93,8 +94,7 @@ extern "C" {
     if (ScreenRefCount == 0) {
       if (CBThread.joinable()) {
         CBDone = true;
-        NotifyWorkFunc(&WaitForWork);
-        NotifyWorkFunc(&WorkDone);
+        CrossArchWorkQueueDelegator::NotifyWork(&WorkQueue);
         CBThread.join();
       }
     }
