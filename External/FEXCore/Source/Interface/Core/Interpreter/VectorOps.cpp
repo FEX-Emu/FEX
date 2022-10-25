@@ -1546,37 +1546,67 @@ DEF_OP(VInsElement) {
 }
 
 DEF_OP(VDupElement) {
-  auto Op = IROp->C<IR::IROp_VDupElement>();
+  const auto Op = IROp->C<IR::IROp_VDupElement>();
   const uint8_t OpSize = IROp->Size;
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  LOGMAN_THROW_AA_FMT(OpSize <= 16, "OpSize is too large for VDupElement: {}", OpSize);
-  if (OpSize == 16) {
-    __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
-    if (Op->Header.ElementSize == 8)
+  const uint64_t ElementSize = Op->Header.ElementSize;
+  const uint64_t ElementSizeBits = ElementSize * 8;
+  const uint8_t Elements = OpSize / ElementSize;
+
+  constexpr auto AVXRegSize = Core::CPUState::XMM_AVX_REG_SIZE;
+  constexpr auto SSERegSize = Core::CPUState::XMM_SSE_REG_SIZE;
+  constexpr auto SSEBitSize = SSERegSize * 8;
+
+  const auto Is128BitElement = ElementSizeBits == SSEBitSize;
+  const auto Is256Bit = OpSize == AVXRegSize;
+
+  LOGMAN_THROW_AA_FMT(OpSize <= AVXRegSize,
+                      "OpSize is too large for VDupElement: {}", OpSize);
+
+  if (OpSize >= SSERegSize) {
+    __uint128_t SourceMask = (1ULL << ElementSizeBits) - 1;
+    if (ElementSize == 8) {
       SourceMask = ~0ULL;
-
-    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
-    Src >>= Shift;
-    Src &= SourceMask;
-    for (size_t i = 0; i < Elements; ++i) {
-      memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * i)),
-        &Src, Op->Header.ElementSize);
     }
-  }
-  else {
-    uint64_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
-    if (Op->Header.ElementSize == 8)
-      SourceMask = ~0ULL;
 
-    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
-    Src >>= Shift;
-    Src &= SourceMask;
+    const auto GetResult = [&]() -> __uint128_t {
+      const auto Src = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector);
+      uint64_t Shift = ElementSizeBits * Op->Index;
+
+      if (Is128BitElement) {
+        if (Shift == 0) {
+          return Src.Lower;
+        } else {
+          return Src.Upper;
+        }
+      } else {
+        // Normalize shift to act on upper uint128_t
+        if (Is256Bit && Shift >= SSEBitSize) {
+          Shift -= SSEBitSize;
+          return (Src.Upper >> Shift) & SourceMask;
+        } else {
+          return (Src.Lower >> Shift) & SourceMask;
+        }
+      }
+    };
+
+    const __uint128_t Result = GetResult();
     for (size_t i = 0; i < Elements; ++i) {
-      memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * i)),
-        &Src, Op->Header.ElementSize);
+      auto* Dst = static_cast<uint8_t*>(GDP) + (ElementSize * i);
+      memcpy(Dst, &Result, ElementSize);
+    }
+  } else {
+    const uint64_t Shift = ElementSizeBits * Op->Index;
+    uint64_t SourceMask = (1ULL << ElementSizeBits) - 1;
+    if (ElementSize == 8) {
+      SourceMask = ~0ULL;
+    }
+
+    const uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
+    const uint64_t Result = (Src >> Shift) & SourceMask;
+    for (size_t i = 0; i < Elements; ++i) {
+      auto* Dst = static_cast<uint8_t*>(GDP) + (ElementSize * i);
+      memcpy(Dst, &Result, ElementSize);
     }
   }
 }

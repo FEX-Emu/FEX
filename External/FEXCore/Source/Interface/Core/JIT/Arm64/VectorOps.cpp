@@ -3737,21 +3737,55 @@ DEF_OP(VInsElement) {
 }
 
 DEF_OP(VDupElement) {
-  auto Op = IROp->C<IR::IROp_VDupElement>();
-  switch (Op->Header.ElementSize) {
-    case 1:
-      dup(GetDst(Node).V16B(), GetSrc(Op->Vector.ID()).V16B(), Op->Index);
-    break;
-    case 2:
-      dup(GetDst(Node).V8H(), GetSrc(Op->Vector.ID()).V8H(), Op->Index);
-    break;
-    case 4:
-      dup(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S(), Op->Index);
-    break;
-    case 8:
-      dup(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D(), Op->Index);
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled VDupElement element size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_VDupElement>();
+  const auto OpSize = IROp->Size;
+
+  const auto Index = Op->Index;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    switch (ElementSize) {
+      case 1:
+        dup(Dst.Z().VnB(), Vector.Z().VnB(), Index);
+        break;
+      case 2:
+        dup(Dst.Z().VnH(), Vector.Z().VnH(), Index);
+        break;
+      case 4:
+        dup(Dst.Z().VnS(), Vector.Z().VnS(), Index);
+        break;
+      case 8:
+        dup(Dst.Z().VnD(), Vector.Z().VnD(), Index);
+        break;
+      case 16:
+        dup(Dst.Z().VnQ(), Vector.Z().VnQ(), Index);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled VDupElement element size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 1:
+        dup(Dst.V16B(), Vector.V16B(), Index);
+        break;
+      case 2:
+        dup(Dst.V8H(), Vector.V8H(), Index);
+        break;
+      case 4:
+        dup(Dst.V4S(), Vector.V4S(), Index);
+        break;
+      case 8:
+        dup(Dst.V2D(), Vector.V2D(), Index);
+        break;
+      default: 
+        LOGMAN_MSG_A_FMT("Unhandled VDupElement element size: {}", ElementSize);
+        break;
+    }
   }
 }
 
