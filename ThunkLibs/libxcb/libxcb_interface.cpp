@@ -7,7 +7,9 @@
 #include "WorkEventData.h"
 
 template<auto>
-struct fex_gen_config;
+struct fex_gen_config {
+    unsigned version = 1;
+};
 
 void FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);
 size_t FEX_usable_size(void*);

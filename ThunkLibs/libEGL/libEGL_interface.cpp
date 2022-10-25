@@ -4,6 +4,7 @@
 
 template<auto>
 struct fex_gen_config {
+    unsigned version = 1;
 };
 
 template<> struct fex_gen_config<eglBindAPI> {};

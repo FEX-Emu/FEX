@@ -13,6 +13,7 @@
 
 template<auto>
 struct fex_gen_config {
+    unsigned version = 1;
 };
 
 template<> struct fex_gen_config<glXGetProcAddress> : fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
