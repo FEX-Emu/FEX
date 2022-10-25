@@ -1384,24 +1384,38 @@ DEF_OP(VZip2) {
 }
 
 DEF_OP(VUnZip) {
-  auto Op = IROp->C<IR::IROp_VUnZip>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VUnZip>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   if (OpSize == 8) {
     LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip");
   }
   else {
-    switch (Op->Header.ElementSize) {
+    switch (ElementSize) {
       case 1: {
         // Shuffle low bits
         mov(rax, 0x0E'0C'0A'08'06'04'02'00); // Lower
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         vmovq(xmm15, rax);
         pinsrq(xmm15, rcx, 1);
-        vpshufb(xmm14, GetSrc(Op->VectorLower.ID()), xmm15);
-        vpshufb(xmm13, GetSrc(Op->VectorUpper.ID()), xmm15);
-        // movlhps back to combine
-        vmovlhps(GetDst(Node), xmm14, xmm13);
+        if (Is256Bit) {
+          vinserti128(ymm15, ymm15, xmm15, 1);
+          vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+          vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+          vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+        } else {
+          vpshufb(xmm14, VectorLower, xmm15);
+          vpshufb(xmm13, VectorUpper, xmm15);
+          // movlhps back to combine
+          vmovlhps(Dst, xmm14, xmm13);
+        }
         break;
       }
       case 2: {
@@ -1410,27 +1424,38 @@ DEF_OP(VUnZip) {
         mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
         vmovq(xmm15, rax);
         pinsrq(xmm15, rcx, 1);
-        vpshufb(xmm14, GetSrc(Op->VectorLower.ID()), xmm15);
-        vpshufb(xmm13, GetSrc(Op->VectorUpper.ID()), xmm15);
-        // movlhps back to combine
-        vmovlhps(GetDst(Node), xmm14, xmm13);
+        if (Is256Bit) {
+          vinserti128(ymm15, ymm15, xmm15, 1);
+          vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+          vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+          vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+        } else {
+          vpshufb(xmm14, VectorLower, xmm15);
+          vpshufb(xmm13, VectorUpper, xmm15);
+          // movlhps back to combine
+          vmovlhps(Dst, xmm14, xmm13);
+        }
         break;
       }
       case 4: {
-        vshufps(GetDst(Node),
-          GetSrc(Op->VectorLower.ID()),
-          GetSrc(Op->VectorUpper.ID()),
-          0b10'00'10'00);
+        if (Is256Bit) {
+          vshufps(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b10'00'10'00);
+        } else {
+          vshufps(Dst, VectorLower, VectorUpper, 0b10'00'10'00);
+        }
         break;
       }
       case 8: {
-        vshufpd(GetDst(Node),
-          GetSrc(Op->VectorLower.ID()),
-          GetSrc(Op->VectorUpper.ID()),
-          0b0'0);
+        if (Is256Bit) {
+          vshufpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b0'0);
+        } else {
+          vshufpd(Dst, VectorLower, VectorUpper, 0b0'0);
+        }
         break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
   }
 }

@@ -2247,44 +2247,79 @@ DEF_OP(VZip2) {
 }
 
 DEF_OP(VUnZip) {
-  auto Op = IROp->C<IR::IROp_VUnZip>();
-  const uint8_t OpSize = IROp->Size;
-  if (OpSize == 8) {
-    switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_VUnZip>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    switch (ElementSize) {
       case 1: {
-        uzp1(GetDst(Node).V8B(), GetSrc(Op->VectorLower.ID()).V8B(), GetSrc(Op->VectorUpper.ID()).V8B());
-      break;
+        uzp1(Dst.Z().VnB(), VectorLower.Z().VnB(), VectorUpper.Z().VnB());
+        break;
       }
       case 2: {
-        uzp1(GetDst(Node).V4H(), GetSrc(Op->VectorLower.ID()).V4H(), GetSrc(Op->VectorUpper.ID()).V4H());
-      break;
+        uzp1(Dst.Z().VnH(), VectorLower.Z().VnH(), VectorUpper.Z().VnH());
+        break;
       }
       case 4: {
-        uzp1(GetDst(Node).V2S(), GetSrc(Op->VectorLower.ID()).V2S(), GetSrc(Op->VectorUpper.ID()).V2S());
-      break;
-      }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-    }
-  }
-  else {
-    switch (Op->Header.ElementSize) {
-      case 1: {
-        uzp1(GetDst(Node).V16B(), GetSrc(Op->VectorLower.ID()).V16B(), GetSrc(Op->VectorUpper.ID()).V16B());
-      break;
-      }
-      case 2: {
-        uzp1(GetDst(Node).V8H(), GetSrc(Op->VectorLower.ID()).V8H(), GetSrc(Op->VectorUpper.ID()).V8H());
-      break;
-      }
-      case 4: {
-        uzp1(GetDst(Node).V4S(), GetSrc(Op->VectorLower.ID()).V4S(), GetSrc(Op->VectorUpper.ID()).V4S());
-      break;
+        uzp1(Dst.Z().VnS(), VectorLower.Z().VnS(), VectorUpper.Z().VnS());
+        break;
       }
       case 8: {
-        uzp1(GetDst(Node).V2D(), GetSrc(Op->VectorLower.ID()).V2D(), GetSrc(Op->VectorUpper.ID()).V2D());
-      break;
+        uzp1(Dst.Z().VnD(), VectorLower.Z().VnD(), VectorUpper.Z().VnD());
+        break;
       }
-      default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    if (OpSize == 8) {
+      switch (ElementSize) {
+        case 1: {
+          uzp1(Dst.V8B(), VectorLower.V8B(), VectorUpper.V8B());
+          break;
+        }
+        case 2: {
+          uzp1(Dst.V4H(), VectorLower.V4H(), VectorUpper.V4H());
+          break;
+        }
+        case 4: {
+          uzp1(Dst.V2S(), VectorLower.V2S(), VectorUpper.V2S());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
+    } else {
+      switch (ElementSize) {
+        case 1: {
+          uzp1(Dst.V16B(), VectorLower.V16B(), VectorUpper.V16B());
+          break;
+        }
+        case 2: {
+          uzp1(Dst.V8H(), VectorLower.V8H(), VectorUpper.V8H());
+          break;
+        }
+        case 4: {
+          uzp1(Dst.V4S(), VectorLower.V4S(), VectorUpper.V4S());
+          break;
+        }
+        case 8: {
+          uzp1(Dst.V2D(), VectorLower.V2D(), VectorUpper.V2D());
+          break;
+        }
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
     }
   }
 }
