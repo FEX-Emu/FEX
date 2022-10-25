@@ -2124,55 +2124,134 @@ DEF_OP(VInsElement) {
 }
 
 DEF_OP(VDupElement) {
-  auto Op = IROp->C<IR::IROp_VDupElement>();
+  const auto Op = IROp->C<IR::IROp_VDupElement>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
+  const auto Index = Op->Index;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto ElementSizeBits = ElementSize * 8;
+  const auto BitOffset = ElementSizeBits * Index;
+
+  constexpr auto AVXRegSize = Core::CPUState::XMM_AVX_REG_SIZE;
+  constexpr auto AVXBitSize = AVXRegSize * 8;
+  constexpr auto SSERegSize = Core::CPUState::XMM_SSE_REG_SIZE;
+  constexpr auto SSEBitSize = SSERegSize * 8;
+
+  const auto Is256Bit = OpSize == AVXRegSize;
+  const auto IsInUpperLane = BitOffset >= SSEBitSize;
+
+  // Currently we only handle offsets within 256-bit registers at most.
+  if (BitOffset >= AVXBitSize) {
+    LOGMAN_MSG_A_FMT("Bit offset for element outside maximum range: Offset={}",
+                     BitOffset);
+    return;
+  }
+
+  // If we try to access the upper 128-bit lane on a 128-bit operation
+  // then we have some invalid values being passed in.
+  if (!Is256Bit && IsInUpperLane) {
+    LOGMAN_MSG_A_FMT("Accessing upper 128-bit lane in 128-bit operation: "
+                     "ElementSize={}, Index={}",
+                     ElementSize, Index);
+    return;
+  }
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 1: {
-      // First extract the index
-      pextrb(eax, GetSrc(Op->Vector.ID()), Op->Index);
-      // Insert it in to the first element of the destination
-      pinsrb(GetDst(Node), eax, 0);
-      pinsrb(GetDst(Node), eax, 1);
-      // Shuffle low elements
-      vpshuflw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
-      // Insert element in to the first upper 64bit element
-      pinsrb(GetDst(Node), eax, 8);
-      pinsrb(GetDst(Node), eax, 9);
-      // Shuffle high elements
-      vpshufhw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
+      if (Is256Bit && IsInUpperLane) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+      } else {
+        vmovapd(xmm15, Vector);
+      }
+
+      // First extract the indexed byte and insert it
+      // into the first element of the destination.
+      pextrb(eax, xmm15, Index);
+      pinsrb(Dst, eax, 0);
+
+      // Now replicate.
+      if (Is256Bit) {
+        vpbroadcastb(ToYMM(Dst), Dst);
+      } else {
+        vpbroadcastb(Dst, Dst);
+      }
       break;
     }
     case 2: {
-      // First extract the index
-      pextrw(eax, GetSrc(Op->Vector.ID()), Op->Index);
-      // Insert it in to the first element of the destination
-      pinsrw(GetDst(Node), eax, 0);
-      // Shuffle low elements
-      vpshuflw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
-      // Insert element in to the first upper 64bit element
-      pinsrw(GetDst(Node), eax, 4);
-      // Shuffle high elements
-      vpshufhw(GetDst(Node), GetSrc(Op->Vector.ID()), 0);
+      if (Is256Bit && IsInUpperLane) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+      } else {
+        vmovapd(xmm15, Vector);
+      }
+
+      // First extract the indexed word and insert it
+      // into the first element of the destination.
+      pextrw(eax, xmm15, Index);
+      pinsrw(Dst, eax, 0);
+
+      if (Is256Bit) {
+        vpbroadcastw(ToYMM(Dst), Dst);
+      } else {
+        vpbroadcastw(Dst, Dst);
+      }
       break;
     }
     case 4: {
-      vpshufd(GetDst(Node),
-        GetSrc(Op->Vector.ID()),
-        (Op->Index << 0) |
-        (Op->Index << 2) |
-        (Op->Index << 4) |
-        (Op->Index << 6));
+      if (IsInUpperLane) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+        vpshufd(Dst, xmm15,
+                (Index << 0) |
+                (Index << 2) |
+                (Index << 4) |
+                (Index << 6));
+      } else {
+        vpshufd(Dst, Vector,
+                (Index << 0) |
+                (Index << 2) |
+                (Index << 4) |
+                (Index << 6));
+      }
+      if (Is256Bit) {
+        vinserti128(ToYMM(Dst), ToYMM(Dst), Dst, 1);
+      }
       break;
     }
     case 8: {
-      vshufpd(GetDst(Node),
-        GetSrc(Op->Vector.ID()),
-        GetSrc(Op->Vector.ID()),
-        (Op->Index << 0) |
-        (Op->Index << 1));
+      if (IsInUpperLane) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+        vshufpd(Dst, xmm15, xmm15,
+                (Index << 0) |
+                (Index << 1));
+      } else {
+        vshufpd(Dst, Vector, Vector,
+                (Index << 0) |
+                (Index << 1));
+      }
+      if (Is256Bit) {
+        vinserti128(ToYMM(Dst), ToYMM(Dst), Dst, 1);
+      }
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    case 16: {
+      LOGMAN_THROW_AA_FMT(Is256Bit,
+                        "Can't perform 128-bit broadcast with 128-bit operation: {}",
+                        OpSize);
+
+      vmovapd(ToYMM(Dst), ToYMM(Vector));
+      if (IsInUpperLane) {
+        vextracti128(xmm15, ToYMM(Dst), 1);
+        vinserti128(ToYMM(Dst), ToYMM(Dst), xmm15, 0);
+      } else {
+        vinserti128(ToYMM(Dst), ToYMM(Dst), Dst, 1);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
