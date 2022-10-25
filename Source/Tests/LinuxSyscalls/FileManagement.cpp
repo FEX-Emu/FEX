@@ -230,7 +230,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   auto LoadThunksDB = [this, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
     // If a thunks DB property exists then we pull in data from the thunks database
     // Load the initial thunks database
-    if (LoadedThunkDatabase) {
+    if (!*LoadedThunkDatabase) {
       LoadThunkDatabase(true);
       LoadThunkDatabase(false);
       *LoadedThunkDatabase = true;
