@@ -5,6 +5,8 @@ desc: Handles callbacks and varargs
 $end_info$
 */
 
+extern "C" {
+#define XUTIL_DEFINE_FUNCTIONS
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
@@ -16,6 +18,7 @@ $end_info$
 #include <X11/Xlibint.h>
 #undef min
 #undef max
+}
 
 #include <cstdint>
 #include <stdio.h>
@@ -27,7 +30,6 @@ $end_info$
 #include <stdarg.h>
 
 #include "thunkgen_guest_libX11.inl"
-
 
 // Custom implementations //
 

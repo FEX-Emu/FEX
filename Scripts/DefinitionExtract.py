@@ -148,16 +148,16 @@ def HandleFunctionDeclCursor(Arch, Cursor):
         elif (Child.kind == CursorKind.PARM_DECL):
             # This gives us a parameter type
             Function.Params.append(Child.type.spelling)
-        elif (Child.kind == CursorKind.UNEXPOSED_ATTR):
-            # Whatever you are we don't care about you
-            return Arch
         elif (Child.kind == CursorKind.ASM_LABEL_ATTR):
             # Whatever you are we don't care about you
             return Arch
         elif (Child.kind == CursorKind.WARN_UNUSED_RESULT_ATTR):
             # Whatever you are we don't care about you
             return Arch
-        elif (Child.kind == CursorKind.VISIBILITY_ATTR):
+        elif (Child.kind == CursorKind.VISIBILITY_ATTR or
+              Child.kind == CursorKind.UNEXPOSED_ATTR or
+              Child.kind == CursorKind.CONST_ATTR or
+              Child.kind == CursorKind.PURE_ATTR):
             pass
         else:
             logging.critical ("\tUnhandled FunctionDeclCursor {0}-{1}-{2}".format(Child.kind, Child.type.spelling, Child.spelling))
