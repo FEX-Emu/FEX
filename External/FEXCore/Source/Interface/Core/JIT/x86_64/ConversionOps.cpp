@@ -177,19 +177,36 @@ DEF_OP(Vector_FToS) {
 }
 
 DEF_OP(Vector_FToF) {
-  auto Op = IROp->C<IR::IROp_Vector_FToF>();
-  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const auto Op = IROp->C<IR::IROp_Vector_FToF>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Conv = (ElementSize << 8) | Op->SrcElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      cvtps2pd(GetDst(Node), GetSrc(Op->Vector.ID()));
+      if (Is256Bit) {
+        vcvtps2pd(ToYMM(Dst), Vector);
+      } else {
+        vcvtps2pd(Dst, Vector);
+      }
       break;
     }
     case 0x0408: { // Float <- Double
-      cvtpd2ps(GetDst(Node), GetSrc(Op->Vector.ID()));
+      if (Is256Bit) {
+        vcvtpd2ps(Dst, ToYMM(Vector));
+      } else {
+        vcvtpd2ps(Dst, Vector);
+      }
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF conversion type : 0x{:04x}", Conv); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Vector_FToF conversion type : 0x{:04x}", Conv);
+      break;
   }
 }
 
