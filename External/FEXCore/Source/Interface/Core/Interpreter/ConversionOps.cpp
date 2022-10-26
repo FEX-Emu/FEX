@@ -180,13 +180,14 @@ DEF_OP(Vector_FToF) {
 }
 
 DEF_OP(Vector_FToI) {
-  auto Op = IROp->C<IR::IROp_Vector_FToI>();
+  const auto Op = IROp->C<IR::IROp_Vector_FToI>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
   const auto Func_Nearest = [](auto a) { return std::rint(a); };
   const auto Func_Neg = [](auto a) { return std::floor(a); };
   const auto Func_Pos = [](auto a) { return std::ceil(a); };
@@ -195,31 +196,31 @@ DEF_OP(Vector_FToI) {
 
   switch (Op->Round) {
     case FEXCore::IR::Round_Nearest.Val:
-      switch (Op->Header.ElementSize) {
+      switch (ElementSize) {
         DO_VECTOR_1SRC_OP(4, float, Func_Nearest)
         DO_VECTOR_1SRC_OP(8, double, Func_Nearest)
       }
     break;
     case FEXCore::IR::Round_Negative_Infinity.Val:
-      switch (Op->Header.ElementSize) {
+      switch (ElementSize) {
         DO_VECTOR_1SRC_OP(4, float, Func_Neg)
         DO_VECTOR_1SRC_OP(8, double, Func_Neg)
       }
     break;
     case FEXCore::IR::Round_Positive_Infinity.Val:
-      switch (Op->Header.ElementSize) {
+      switch (ElementSize) {
         DO_VECTOR_1SRC_OP(4, float, Func_Pos)
         DO_VECTOR_1SRC_OP(8, double, Func_Pos)
       }
     break;
     case FEXCore::IR::Round_Towards_Zero.Val:
-      switch (Op->Header.ElementSize) {
+      switch (ElementSize) {
         DO_VECTOR_1SRC_OP(4, float, Func_Trunc)
         DO_VECTOR_1SRC_OP(8, double, Func_Trunc)
       }
     break;
     case FEXCore::IR::Round_Host.Val:
-      switch (Op->Header.ElementSize) {
+      switch (ElementSize) {
         DO_VECTOR_1SRC_OP(4, float, Func_Host)
         DO_VECTOR_1SRC_OP(8, double, Func_Host)
       }

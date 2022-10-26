@@ -230,34 +230,51 @@ DEF_OP(Vector_FToF) {
 }
 
 DEF_OP(Vector_FToI) {
-  auto Op = IROp->C<IR::IROp_Vector_FToI>();
-  uint8_t RoundMode{};
+  const auto Op = IROp->C<IR::IROp_Vector_FToI>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Round) {
-    case FEXCore::IR::Round_Nearest.Val:
-      RoundMode = 0b0000'0'0'00;
-    break;
-    case FEXCore::IR::Round_Negative_Infinity.Val:
-      RoundMode = 0b0000'0'0'01;
-    break;
-    case FEXCore::IR::Round_Positive_Infinity.Val:
-      RoundMode = 0b0000'0'0'10;
-    break;
-    case FEXCore::IR::Round_Towards_Zero.Val:
-      RoundMode = 0b0000'0'0'11;
-    break;
-    case FEXCore::IR::Round_Host.Val:
-      RoundMode = 0b0000'0'1'00;
-    break;
-  }
+  const uint8_t RoundMode = [Op] {
+    switch (Op->Round) {
+      case FEXCore::IR::Round_Nearest.Val:
+        return 0b0000'0'0'00;
+      case FEXCore::IR::Round_Negative_Infinity.Val:
+        return 0b0000'0'0'01;
+      case FEXCore::IR::Round_Positive_Infinity.Val:
+        return 0b0000'0'0'10;
+      case FEXCore::IR::Round_Towards_Zero.Val:
+        return 0b0000'0'0'11;
+      case FEXCore::IR::Round_Host.Val:
+        return 0b0000'0'1'00;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled rounding mode");
+        return 0;
+    }
+  }();
 
-  switch (Op->Header.ElementSize) {
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 4:
-      roundps(GetDst(Node), GetSrc(Op->Vector.ID()), RoundMode);
-    break;
+      if (Is256Bit) {
+        vroundps(ToYMM(Dst), ToYMM(Vector), RoundMode);
+      } else {
+        vroundps(Dst, Vector, RoundMode);
+      }
+      break;
     case 8:
-      roundpd(GetDst(Node), GetSrc(Op->Vector.ID()), RoundMode);
-    break;
+      if (Is256Bit) {
+        vroundpd(ToYMM(Dst), ToYMM(Vector), RoundMode);
+      } else {
+        vroundpd(Dst, Vector, RoundMode);
+      }
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled element size: {}", ElementSize);
+      break;
   }
 }
 
