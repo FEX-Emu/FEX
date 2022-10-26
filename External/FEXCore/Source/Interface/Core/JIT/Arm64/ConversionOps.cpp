@@ -186,17 +186,53 @@ DEF_OP(Vector_FToZS) {
 }
 
 DEF_OP(Vector_FToS) {
-  auto Op = IROp->C<IR::IROp_Vector_FToS>();
-  switch (Op->Header.ElementSize) {
-    case 4:
-      frinti(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
-      fcvtzs(GetDst(Node).V4S(), GetDst(Node).V4S());
-    break;
-    case 8:
-      frinti(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
-      fcvtzs(GetDst(Node).V2D(), GetDst(Node).V2D());
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_Vector_FToS>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    switch (ElementSize) {
+      case 2:
+        frinti(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+        fcvtzs(Dst.Z().VnH(), Mask, Dst.Z().VnH());
+        break;
+      case 4:
+        frinti(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+        fcvtzs(Dst.Z().VnS(), Mask, Dst.Z().VnS());
+        break;
+      case 8:
+        frinti(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+        fcvtzs(Dst.Z().VnD(), Mask, Dst.Z().VnD());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 2:
+        frinti(Dst.V8H(), Vector.V8H());
+        fcvtzs(Dst.V8H(), Dst.V8H());
+        break;
+      case 4:
+        frinti(Dst.V4S(), Vector.V4S());
+        fcvtzs(Dst.V4S(), Dst.V4S());
+        break;
+      case 8:
+        frinti(Dst.V2D(), Vector.V2D());
+        fcvtzs(Dst.V2D(), Dst.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", ElementSize);
+        break;
+    }
   }
 }
 
