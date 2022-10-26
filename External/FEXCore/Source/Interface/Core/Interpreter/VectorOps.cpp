@@ -2136,13 +2136,13 @@ DEF_OP(VUABDL) {
 }
 
 DEF_OP(VTBL1) {
-  auto Op = IROp->C<IR::IROp_VTBL1>();
+  const auto Op = IROp->C<IR::IROp_VTBL1>();
   const uint8_t OpSize = IROp->Size;
 
   const auto *Src1 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorTable);
   const auto *Src2 = GetSrc<uint8_t*>(Data->SSAData, Op->VectorIndices);
 
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   for (size_t i = 0; i < OpSize; ++i) {
     const uint8_t Index = Src2[i];
