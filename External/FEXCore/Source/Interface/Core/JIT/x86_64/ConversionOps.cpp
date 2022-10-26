@@ -104,24 +104,49 @@ DEF_OP(Float_FToF) {
 }
 
 DEF_OP(Vector_SToF) {
-  auto Op = IROp->C<IR::IROp_Vector_SToF>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_Vector_SToF>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 4:
-      cvtdq2ps(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
+      if (Is256Bit) {
+        vcvtdq2ps(ToYMM(Dst), ToYMM(Vector));
+      } else {
+        vcvtdq2ps(Dst, Vector);
+      }
+      break;
     case 8:
       // This operation is a bit disgusting in x86
       // There is no vector form of this instruction until AVX512VL + AVX512DQ (vcvtqq2pd)
       // 1) First extract the top 64bits
       // 2) Do a scalar conversion on each
       // 3) Make sure to merge them together at the end
-      pextrq(rax, GetSrc(Op->Vector.ID()), 1);
-      pextrq(rcx, GetSrc(Op->Vector.ID()), 0);
-      cvtsi2sd(GetDst(Node), rcx);
+      pextrq(rax, Vector, 1);
+      pextrq(rcx, Vector, 0);
+      cvtsi2sd(Dst, rcx);
       cvtsi2sd(xmm15, rax);
-      movlhps(GetDst(Node), xmm15);
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", Op->Header.ElementSize);
+      vmovlhps(Dst, Dst, xmm15);
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+
+        pextrq(rax, xmm15, 1);
+        pextrq(rcx, xmm15, 0);
+        cvtsi2sd(xmm15, rcx);
+        cvtsi2sd(xmm14, rax);
+        movlhps(xmm15, xmm14);
+
+        vinserti128(ToYMM(Dst), ToYMM(Dst), xmm15, 1);
+      }
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", ElementSize);
+      break;
   }
 }
 

@@ -96,15 +96,47 @@ DEF_OP(Float_FToF) {
 }
 
 DEF_OP(Vector_SToF) {
-  auto Op = IROp->C<IR::IROp_Vector_SToF>();
-  switch (Op->Header.ElementSize) {
-    case 4:
-      scvtf(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
-    break;
-    case 8:
-      scvtf(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", Op->Header.ElementSize);
+  const auto Op = IROp->C<IR::IROp_Vector_SToF>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    switch (ElementSize) {
+      case 2:
+        scvtf(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+        break;
+      case 4:
+        scvtf(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+        break;
+      case 8:
+        scvtf(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", ElementSize);
+        break;
+    }
+  } else {
+    switch (ElementSize) {
+      case 2:
+        scvtf(Dst.V8H(), Vector.V8H());
+        break;
+      case 4:
+        scvtf(Dst.V4S(), Vector.V4S());
+        break;
+      case 8:
+        scvtf(Dst.V2D(), Vector.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_SToF element size: {}", ElementSize);
+        break;
+    }
   }
 }
 
