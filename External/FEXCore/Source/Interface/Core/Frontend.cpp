@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <set>
@@ -1132,6 +1133,7 @@ const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, u
 }
 
 void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
+  FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   Blocks.clear();
   BlocksToDecode.clear();
   HasBlocks.clear();
@@ -1166,7 +1168,6 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
   std::set<uint64_t> CodePages = { CurrentCodePage };
 
   AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
-  
 
   while (!BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();

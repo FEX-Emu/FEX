@@ -44,6 +44,7 @@ $end_info$
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TodoDefines.h>
 
@@ -674,6 +675,8 @@ namespace FEXCore::Context {
   }
 
   void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) {
+    FEXCORE_PROFILE_INSTANT("ClearCodeCache");
+
     {
       // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
       // Use the thread's object cache ref counter for this
@@ -741,6 +744,8 @@ namespace FEXCore::Context {
   }
 
   Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {
+    FEXCORE_PROFILE_SCOPED("GenerateIR");
+
     Thread->OpDispatcher->ReownOrClaimBuffer();
     Thread->OpDispatcher->ResetWorkingList();
 
@@ -1011,6 +1016,7 @@ namespace FEXCore::Context {
   }
 
   uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+    FEXCORE_PROFILE_SCOPED("CompileBlock");
     auto Thread = Frame->Thread;
 
     // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled

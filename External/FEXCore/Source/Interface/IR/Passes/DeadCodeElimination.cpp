@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <memory>
 
@@ -22,6 +23,7 @@ private:
 };
 
 bool DeadCodeElimination::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::DCE");
   auto CurrentIR = IREmit->ViewIR();
   int NumRemoved = 0;
 

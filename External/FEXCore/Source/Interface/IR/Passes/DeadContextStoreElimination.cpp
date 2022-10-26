@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <array>
 #include <memory>
@@ -695,6 +696,7 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
 }
 
 bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::RCLSE");
   // XXX: We don't do cross-block optimizations yet
   //CalculateControlFlowInfo(IREmit);
   bool Changed = false;

@@ -143,6 +143,7 @@ set (SRCS
   Utils/NetStream.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp
+  Utils/Profiler.cpp
   )
 
 if (ENABLE_INTERPRETER)

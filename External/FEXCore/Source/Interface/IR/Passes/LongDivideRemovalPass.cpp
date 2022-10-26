@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <memory>
 #include <stdint.h>
@@ -53,6 +54,8 @@ bool LongDivideEliminationPass::IsSextOp(IREmitter *IREmit, OrderedNodeWrapper L
 }
 
 bool LongDivideEliminationPass::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::LDE");
+
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
   auto OriginalWriteCursor = IREmit->GetWriteCursor();

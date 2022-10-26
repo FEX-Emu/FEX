@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <memory>
 #include <stdint.h>
@@ -23,6 +24,8 @@ public:
 };
 
 bool SyscallOptimization::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::SyscallOpt");
+
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
 

@@ -27,6 +27,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <algorithm>
 #include <array>
@@ -370,7 +371,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
   {
     auto &Common = ThreadState->CurrentFrame->Pointers.Common;
-    
+
     Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
     Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::ThreadRemoveCodeEntryFromJit);
@@ -582,6 +583,8 @@ std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::G
 }
 
 void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
+
+  FEXCORE_PROFILE_SCOPED("x86::CompileCode");
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 

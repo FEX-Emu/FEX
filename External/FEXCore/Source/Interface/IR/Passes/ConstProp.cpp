@@ -20,6 +20,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <bit>
 #include <cstdint>
@@ -1028,6 +1029,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 }
 
 bool ConstProp::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::ConstProp");
+
   bool Changed = false;
   auto CurrentIR = IREmit->ViewIR();
   auto OriginalWriteCursor = IREmit->GetWriteCursor();

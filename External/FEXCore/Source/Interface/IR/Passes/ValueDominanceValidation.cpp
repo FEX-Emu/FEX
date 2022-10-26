@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include <functional>
 #include <memory>
@@ -36,6 +37,8 @@ public:
 };
 
 bool ValueDominanceValidation::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::ValueDominanceValidation");
+
   bool HadError = false;
   auto CurrentIR = IREmit->ViewIR();
 

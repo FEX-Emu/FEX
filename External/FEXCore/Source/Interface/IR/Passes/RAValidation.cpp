@@ -6,7 +6,7 @@
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
-
+#include <FEXCore/Utils/Profiler.h>
 
 #include <algorithm>
 #include <deque>
@@ -190,6 +190,8 @@ private:
 
 bool RAValidation::Run(IREmitter *IREmit) {
   if (!Manager->HasPass("RA")) return false;
+
+  FEXCORE_PROFILE_SCOPED("PassManager::RAValidation");
 
   IR::RegisterAllocationData* RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
   BlockExitState.clear();

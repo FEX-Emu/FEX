@@ -9,6 +9,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/Profiler.h>
 
 #include "Interface/IR/PassManager.h"
 
@@ -24,6 +25,8 @@ public:
 };
 
 bool PhiValidation::Run(IREmitter *IREmit) {
+  FEXCORE_PROFILE_SCOPED("PassManager::PHIValidation");
+
   bool HadError = false;
   auto CurrentIR = IREmit->ViewIR();
 
