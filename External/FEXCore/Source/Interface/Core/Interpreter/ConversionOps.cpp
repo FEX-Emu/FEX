@@ -148,13 +148,14 @@ DEF_OP(Vector_FToS) {
 }
 
 DEF_OP(Vector_FToF) {
-  auto Op = IROp->C<IR::IROp_Vector_FToF>();
+  const auto Op = IROp->C<IR::IROp_Vector_FToF>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t ElementSize = Op->Header.ElementSize;
+  const uint16_t Conv = (ElementSize << 8) | Op->SrcElementSize;
 
   const auto Func = [](auto a, auto min, auto max) { return a; };
   switch (Conv) {
@@ -174,7 +175,9 @@ DEF_OP(Vector_FToF) {
       DO_VECTOR_1SRC_2TYPE_OP_NOSIZE(float, double, Func, 0, 0)
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Conversion Type : 0x{:04x}", Conv); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Conversion Type : 0x{:04x}", Conv);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }

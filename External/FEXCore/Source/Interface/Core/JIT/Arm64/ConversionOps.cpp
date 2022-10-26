@@ -237,19 +237,79 @@ DEF_OP(Vector_FToS) {
 }
 
 DEF_OP(Vector_FToF) {
-  auto Op = IROp->C<IR::IROp_Vector_FToF>();
-  uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const auto Op = IROp->C<IR::IROp_Vector_FToF>();
+  const auto OpSize = IROp->Size;
 
-  switch (Conv) {
-    case 0x0804: { // Double <- Float
-      fcvtl(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2S());
-      break;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Conv = (ElementSize << 8) | Op->SrcElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // Curiously, FCVTLT and FCVTNT have no bottom variants,
+    // and also interesting is that FCVTLT will iterate the
+    // source vector by accessing each odd element and storing
+    // them consecutively in the destination.
+    //
+    // FCVTNT is somewhat like the opposite. It will read each
+    // consecutive element, but store each result into every odd
+    // element in the destination vector.
+    //
+    // We need to undo the behavior of FCVTNT with UZP2. In the case
+    // of FCVTLT, we instead need to set the vector up with ZIP1, so
+    // that the elements will be processed correctly.
+
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    switch (Conv) {
+      case 0x0402: { // Float <- Half
+        zip1(VTMP1.Z().VnH(), Vector.Z().VnH(), Vector.Z().VnH());
+        fcvtlt(Dst.Z().VnS(), Mask, VTMP1.Z().VnH());
+        break;
+      }
+      case 0x0804: { // Double <- Float
+        zip1(VTMP1.Z().VnS(), Vector.Z().VnS(), Vector.Z().VnS());
+        fcvtlt(Dst.Z().VnD(), Mask, VTMP1.Z().VnS());
+        break;
+      }
+      case 0x0204: { // Half <- Float
+        fcvtnt(Dst.Z().VnH(), Mask, Vector.Z().VnS());
+        uzp2(Dst.Z().VnH(), Dst.Z().VnH(), Dst.Z().VnH());
+        break;
+      }
+      case 0x0408: { // Float <- Double
+        fcvtnt(Dst.Z().VnS(), Mask, Vector.Z().VnD());
+        uzp2(Dst.Z().VnS(), Dst.Z().VnS(), Dst.Z().VnS());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv);
+        break;
     }
-    case 0x0408: { // Float <- Double
-      fcvtn(GetDst(Node).V2S(), GetSrc(Op->Vector.ID()).V2D());
-      break;
+  } else {
+    switch (Conv) {
+      case 0x0402: { // Float <- Half
+        fcvtl(Dst.V4S(), Vector.V4H());
+        break;
+      }
+      case 0x0804: { // Double <- Float
+        fcvtl(Dst.V2D(), Vector.V2S());
+        break;
+      }
+      case 0x0204: { // Half <- Float
+        fcvtn(Dst.V4H(), Vector.V4S());
+        break;
+      }
+      case 0x0408: { // Float <- Double
+        fcvtn(Dst.V2S(), Vector.V2D());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv);
+        break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToF Type : 0x{:04x}", Conv); break;
   }
 }
 
