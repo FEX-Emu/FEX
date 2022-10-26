@@ -17,27 +17,76 @@ namespace FEXCore::CPU {
 
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(VInsGPR) {
-  auto Op = IROp->C<IR::IROp_VInsGPR>();
-  movapd(GetDst(Node), GetSrc(Op->DestVector.ID()));
+  const auto Op = IROp->C<IR::IROp_VInsGPR>();
+  const auto OpSize = IROp->Size;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      pinsrb(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()), Op->DestIdx);
-      break;
+  const auto Dst = GetDst(Node);
+  const auto DestVector = GetSrc(Op->DestVector.ID());
+
+  const auto DestIdx = Op->DestIdx;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto ElementSizeBits = ElementSize * 8;
+  const auto Offset = ElementSizeBits * DestIdx;
+
+  constexpr auto SSEBitSize = Core::CPUState::XMM_SSE_REG_SIZE * 8;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto InUpperLane = Offset >= SSEBitSize;
+
+  if (InUpperLane && !Is256Bit) {
+    LOGMAN_MSG_A_FMT("Attempt to access upper 128-bit lane in 128-bit operation! Offset={}",
+                     Offset);
+    return;
+  }
+
+  if (Is256Bit) {
+    vmovapd(ToYMM(Dst), ToYMM(DestVector));
+  } else {
+    vmovapd(Dst, DestVector);
+  }
+
+  const auto Insert = [&](const Xbyak::Xmm& reg, int index) {
+    switch (ElementSize) {
+      case 1: {
+        if (InUpperLane) {
+          index -= 16;
+        }
+        pinsrb(reg, GetSrc<RA_32>(Op->Src.ID()), index);
+        break;
+      }
+      case 2: {
+        if (InUpperLane) {
+          index -= 8;
+        }
+        pinsrw(reg, GetSrc<RA_32>(Op->Src.ID()), index);
+        break;
+      }
+      case 4: {
+        if (InUpperLane) {
+          index -= 4;
+        }
+        pinsrd(reg, GetSrc<RA_32>(Op->Src.ID()), index);
+        break;
+      }
+      case 8: {
+        if (InUpperLane) {
+          index -= 2;
+        }
+        pinsrq(reg, GetSrc<RA_64>(Op->Src.ID()), index);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 2: {
-      pinsrw(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()), Op->DestIdx);
-      break;
-    }
-    case 4: {
-      pinsrd(GetDst(Node), GetSrc<RA_32>(Op->Src.ID()), Op->DestIdx);
-      break;
-    }
-    case 8: {
-      pinsrq(GetDst(Node), GetSrc<RA_64>(Op->Src.ID()), Op->DestIdx);
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+  };
+
+  if (InUpperLane) {
+    vextracti128(xmm15, ToYMM(Dst), 1);
+    Insert(xmm15, DestIdx);
+    vinserti128(ToYMM(Dst), ToYMM(Dst), xmm15, 1);
+  } else {
+    Insert(Dst, DestIdx);
   }
 }
 

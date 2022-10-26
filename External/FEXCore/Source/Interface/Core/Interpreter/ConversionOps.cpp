@@ -13,22 +13,46 @@ $end_info$
 namespace FEXCore::CPU {
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(VInsGPR) {
-  auto Op = IROp->C<IR::IROp_VInsGPR>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VInsGPR>();
+  const auto OpSize = IROp->Size;
 
-  auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->DestVector);
-  auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Src);
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto ElementSizeBits = ElementSize * 8;
+  constexpr auto SSEBitSize = Core::CPUState::XMM_SSE_REG_SIZE * 8;
 
-  uint64_t Offset = Op->DestIdx * Op->Header.ElementSize * 8;
-  __uint128_t Mask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-  if (Op->Header.ElementSize == 8) {
+  const uint64_t Offset = Op->DestIdx * ElementSizeBits;
+  const auto InUpperLane = Offset >= SSEBitSize;
+
+  __uint128_t Mask = (1ULL << ElementSizeBits) - 1;
+  if (ElementSize == 8) {
     Mask = ~0ULL;
   }
-  Src2 = Src2 & Mask;
-  Mask <<= Offset;
+
+  const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->DestVector);
+  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Src);
+
+  const auto Scalar = Src2 & Mask;
+  const auto ScaledOffset = InUpperLane ? Offset - SSEBitSize
+                                        : Offset;
+
+  // Now shift into place and set all bits but
+  // the ones where we're going to insert our value.
+  Mask <<= ScaledOffset;
   Mask = ~Mask;
-  __uint128_t Dst = Src1 & Mask;
-  Dst |= Src2 << Offset;
+
+  const auto Dst = [&] {
+    if (InUpperLane) {
+      return InterpVector256{
+        .Lower = Src1.Lower,
+        .Upper = (Src1.Upper & Mask) | (Scalar << ScaledOffset),
+      };
+    } else {
+      return InterpVector256{
+        .Lower = (Src1.Lower & Mask) | (Scalar << ScaledOffset),
+        .Upper = Src1.Upper,
+      };
+    }
+  }();
 
   memcpy(GDP, &Dst, OpSize);
 }
