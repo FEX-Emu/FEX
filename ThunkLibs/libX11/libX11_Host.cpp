@@ -5,6 +5,7 @@ desc: Handles callbacks and varargs
 $end_info$
 */
 
+#include <atomic>
 #include <cstdlib>
 #include <stdio.h>
 
@@ -333,25 +334,32 @@ Status fexfn_impl_libX11__XReply(Display*, xReply*, int, Bool);
 static int (*ACTUAL_XInitDisplayLock_fn)(Display*) = nullptr;
 static int (*INTERNAL_XInitDisplayLock_fn)(Display*) = nullptr;
 
+static std::atomic<bool> Initialized{};
+
 static int _XInitDisplayLock(Display* display) {
-    auto ret = ACTUAL_XInitDisplayLock_fn(display);
-    INTERNAL_XInitDisplayLock_fn(display);
-    return ret;
+  auto ret = ACTUAL_XInitDisplayLock_fn(display);
+  INTERNAL_XInitDisplayLock_fn(display);
+  return ret;
 }
 
 Status fexfn_impl_libX11_XInitThreadsInternal(uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
-    auto ret = fexldr_ptr_libX11_XInitThreads();
-    auto _XInitDisplayLock_fn = (int(**)(Display*))dlsym(fexldr_ptr_libX11_so, "_XInitDisplayLock_fn");
-    ACTUAL_XInitDisplayLock_fn = std::exchange(*_XInitDisplayLock_fn, _XInitDisplayLock);
-    MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &INTERNAL_XInitDisplayLock_fn);
-    return ret;
+  bool Expected = false;
+  if (!Initialized.compare_exchange_strong(Expected, true)) {
+    // If already initialized then this is a no-op.
+    return 1;
+  }
+  auto ret = fexldr_ptr_libX11_XInitThreads();
+  auto _XInitDisplayLock_fn = (int(**)(Display*))dlsym(fexldr_ptr_libX11_so, "_XInitDisplayLock_fn");
+  ACTUAL_XInitDisplayLock_fn = std::exchange(*_XInitDisplayLock_fn, _XInitDisplayLock);
+  MakeHostTrampolineForGuestFunctionAt(GuestTarget, GuestUnpacker, &INTERNAL_XInitDisplayLock_fn);
+  return ret;
 }
 
 Status fexfn_impl_libX11__XReply(Display* display, xReply* reply, int extra, Bool discard) {
-    for(auto handler = display->async_handlers; handler; handler = handler->next) {
-        FinalizeHostTrampolineForGuestFunction(handler->handler);
-    }
-    return fexldr_ptr_libX11__XReply(display, reply, extra, discard);
+  for(auto handler = display->async_handlers; handler; handler = handler->next) {
+    FinalizeHostTrampolineForGuestFunction(handler->handler);
+  }
+  return fexldr_ptr_libX11__XReply(display, reply, extra, discard);
 }
 
 EXPORTS(libX11)
