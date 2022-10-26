@@ -63,8 +63,10 @@ DEF_OP(VCastFromGPR) {
 }
 
 DEF_OP(Float_FromGPR_S) {
-  auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
-  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
+
+  const uint16_t ElementSize = Op->Header.ElementSize;
+  const uint16_t Conv = (ElementSize << 8) | Op->SrcElementSize;
 
   switch (Conv) {
     case 0x0404: { // Float <- int32_t
@@ -83,6 +85,10 @@ DEF_OP(Float_FromGPR_S) {
       cvtsi2sd(GetDst(Node), GetSrc<RA_64>(Op->Src.ID()));
       break;
     }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled conversion mask: Mask=0x{:04x}, ElementSize={}, SrcElementSize={}",
+                       Conv, ElementSize, Op->SrcElementSize);
+      break;
   }
 }
 
