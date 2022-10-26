@@ -532,7 +532,7 @@ DEF_OP(VAddP) {
 
     // SVE ADDP is a destructive operation, so we need a temporary
     eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-    mov(VTMP1.Z().VnD(), Pred, VectorLower.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), VectorLower.Z().VnD());
 
     // Unlike Adv. SIMD's version of ADDP, which acts like it concats the
     // upper vector onto the end of the lower vector and then performs
@@ -692,34 +692,37 @@ DEF_OP(VURAvg) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetDst(Node);
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
-  if (HostSupportsSVE && OpSize == 32) {
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
     // SVE URHADD is a destructive operation, so we need
     // a temporary for performing operations.
-    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
     switch (ElementSize) {
       case 1: {
-        urhadd(VTMP1.Z().VnB(), PRED_TMP_32B.Merging(),
+        urhadd(VTMP1.Z().VnB(), Mask,
                VTMP1.Z().VnB(), Vector2.Z().VnB());
         break;
       }
       case 2: {
-        urhadd(VTMP1.Z().VnH(), PRED_TMP_32B.Merging(),
+        urhadd(VTMP1.Z().VnH(), Mask,
                VTMP1.Z().VnH(), Vector2.Z().VnH());
         break;
       }
       case 4: {
-        urhadd(VTMP1.Z().VnS(), PRED_TMP_32B.Merging(),
+        urhadd(VTMP1.Z().VnS(), Mask,
                VTMP1.Z().VnS(), Vector2.Z().VnS());
         break;
       }
       case 8: {
-        urhadd(VTMP1.Z().VnD(), PRED_TMP_32B.Merging(),
+        urhadd(VTMP1.Z().VnD(), Mask,
                VTMP1.Z().VnD(), Vector2.Z().VnD());
         break;
       }
@@ -948,14 +951,14 @@ DEF_OP(VFAddP) {
   const auto VectorLower = GetSrc(Op->VectorLower.ID());
   const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
-  const bool Is256Bit = OpSize == 32;
+  const bool Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE FADDP is a destructive operation, so we need a temporary
     eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-    mov(VTMP1.Z().VnD(), Pred, VectorLower.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), VectorLower.Z().VnD());
 
     // Unlike Adv. SIMD's version of FADDP, which acts like it concats the
     // upper vector onto the end of the lower vector and then performs
@@ -985,8 +988,7 @@ DEF_OP(VFAddP) {
         return;
     }
 
-    // Shift the entire vector over by 64 bits (128-bit vector case)
-    // or by 128 bits (256-bit vector case).
+    // Shift the entire vector over by 128 bits.
     mov(TMP1, 0);
     insr(VTMP3.Z().VnD(), TMP1);
     insr(VTMP3.Z().VnD(), TMP1);
@@ -1160,29 +1162,31 @@ DEF_OP(VFDiv) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto IsScalar = ElementSize == OpSize;
-  const auto Is256Bit = OpSize == 32;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetDst(Node);
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
     // SVE VDIV is a destructive operation, so we need a temporary.
-    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
     switch (ElementSize) {
       case 2: {
-        fdiv(VTMP1.Z().VnH(), PRED_TMP_32B.Merging(),
+        fdiv(VTMP1.Z().VnH(), Mask,
              VTMP1.Z().VnH(), Vector2.Z().VnH());
         break;
       }
       case 4: {
-        fdiv(VTMP1.Z().VnS(), PRED_TMP_32B.Merging(),
+        fdiv(VTMP1.Z().VnS(), Mask,
              VTMP1.Z().VnS(), Vector2.Z().VnS());
         break;
       }
       case 8: {
-        fdiv(VTMP1.Z().VnD(), PRED_TMP_32B.Merging(),
+        fdiv(VTMP1.Z().VnD(), Mask,
              VTMP1.Z().VnD(), Vector2.Z().VnD());
         break;
       }
@@ -1830,7 +1834,7 @@ DEF_OP(VUMin) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE UMIN is a destructive operation so we need a temporary.
-    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
     switch (ElementSize) {
       case 1: {
@@ -1899,7 +1903,7 @@ DEF_OP(VSMin) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE SMIN is a destructive operation, so we need a temporary.
-    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
     switch (ElementSize) {
       case 1: {
@@ -1968,7 +1972,7 @@ DEF_OP(VUMax) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE UMAX is a destructive operation, so we need a temporary.
-    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
     switch (ElementSize) {
       case 1: {
@@ -2037,7 +2041,7 @@ DEF_OP(VSMax) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE SMAX is a destructive operation, so we need a temporary.
-    mov(VTMP1.Z().VnD(), Vector1.Z().VnD());
+    movprfx(VTMP1.Z().VnD(), Vector1.Z().VnD());
 
     switch (ElementSize) {
       case 1: {
@@ -3560,25 +3564,25 @@ DEF_OP(VUShlS) {
     switch (ElementSize) {
       case 1: {
         dup(VTMP1.Z().VnB(), ShiftScalar.Z().VnB(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsl(Dst.Z().VnB(), Mask, Dst.Z().VnB(), VTMP1.Z().VnB());
         break;
       }
       case 2: {
         dup(VTMP1.Z().VnH(), ShiftScalar.Z().VnH(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsl(Dst.Z().VnH(), Mask, Dst.Z().VnH(), VTMP1.Z().VnH());
         break;
       }
       case 4: {
         dup(VTMP1.Z().VnS(), ShiftScalar.Z().VnS(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsl(Dst.Z().VnS(), Mask, Dst.Z().VnS(), VTMP1.Z().VnS());
         break;
       }
       case 8: {
         dup(VTMP1.Z().VnD(), ShiftScalar.Z().VnD(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsl(Dst.Z().VnD(), Mask, Dst.Z().VnD(), VTMP1.Z().VnD());
         break;
       }
@@ -3634,25 +3638,25 @@ DEF_OP(VUShrS) {
     switch (ElementSize) {
       case 1: {
         dup(VTMP1.Z().VnB(), ShiftScalar.Z().VnB(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsr(Dst.Z().VnB(), Mask, Dst.Z().VnB(), VTMP1.Z().VnB());
         break;
       }
       case 2: {
         dup(VTMP1.Z().VnH(), ShiftScalar.Z().VnH(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsr(Dst.Z().VnH(), Mask, Dst.Z().VnH(), VTMP1.Z().VnH());
         break;
       }
       case 4: {
         dup(VTMP1.Z().VnS(), ShiftScalar.Z().VnS(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsr(Dst.Z().VnS(), Mask, Dst.Z().VnS(), VTMP1.Z().VnS());
         break;
       }
       case 8: {
         dup(VTMP1.Z().VnD(), ShiftScalar.Z().VnD(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         lsr(Dst.Z().VnD(), Mask, Dst.Z().VnD(), VTMP1.Z().VnD());
         break;
       }
@@ -3712,25 +3716,25 @@ DEF_OP(VSShrS) {
     switch (ElementSize) {
       case 1: {
         dup(VTMP1.Z().VnB(), ShiftScalar.Z().VnB(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         asr(Dst.Z().VnB(), Mask, Dst.Z().VnB(), VTMP1.Z().VnB());
         break;
       }
       case 2: {
         dup(VTMP1.Z().VnH(), ShiftScalar.Z().VnH(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         asr(Dst.Z().VnH(), Mask, Dst.Z().VnH(), VTMP1.Z().VnH());
         break;
       }
       case 4: {
         dup(VTMP1.Z().VnS(), ShiftScalar.Z().VnS(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         asr(Dst.Z().VnS(), Mask, Dst.Z().VnS(), VTMP1.Z().VnS());
         break;
       }
       case 8: {
         dup(VTMP1.Z().VnD(), ShiftScalar.Z().VnD(), 0);
-        mov(Dst.Z().VnD(), Vector.Z().VnD());
+        movprfx(Dst.Z().VnD(), Vector.Z().VnD());
         asr(Dst.Z().VnD(), Mask, Dst.Z().VnD(), VTMP1.Z().VnD());
         break;
       }
@@ -3964,7 +3968,7 @@ DEF_OP(VUShrI) {
       const auto Mask = PRED_TMP_32B.Merging();
 
       // SVE LSR is destructive, so lets set up the destination.
-      mov(Dst.Z().VnD(), Vector.Z().VnD());
+      movprfx(Dst.Z().VnD(), Vector.Z().VnD());
 
       switch (ElementSize) {
         case 1: {
@@ -4028,7 +4032,7 @@ DEF_OP(VSShrI) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     // SVE ASR is destructive, so lets set up the destination.
-    mov(Dst.Z().VnD(), Vector.Z().VnD());
+    movprfx(Dst.Z().VnD(), Vector.Z().VnD());
 
     switch (ElementSize) {
       case 1: {
@@ -4094,7 +4098,7 @@ DEF_OP(VShlI) {
       const auto Mask = PRED_TMP_32B.Merging();
 
       // SVE LSL is destructive, so lets set up the destination.
-      mov(Dst.Z().VnD(), Vector.Z().VnD());
+      movprfx(Dst.Z().VnD(), Vector.Z().VnD());
 
       switch (ElementSize) {
         case 1: {
