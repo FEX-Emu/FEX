@@ -1168,25 +1168,79 @@ DEF_OP(Select) {
 }
 
 DEF_OP(VExtractToGPR) {
-  auto Op = IROp->C<IR::IROp_VExtractToGPR>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+  const auto OpSize = IROp->Size;
 
-  switch (OpSize) {
-    case 1:
-      umov(GetReg<RA_32>(Node), GetSrc(Op->Vector.ID()).V16B(), Op->Index);
-    break;
-    case 2:
-      umov(GetReg<RA_32>(Node), GetSrc(Op->Vector.ID()).V8H(), Op->Index);
-    break;
-    case 4:
-      umov(GetReg<RA_32>(Node), GetSrc(Op->Vector.ID()).V4S(), Op->Index);
-    break;
-    case 8:
-      umov(GetReg<RA_64>(Node), GetSrc(Op->Vector.ID()).V2D(), Op->Index);
-    break;
-    default:
-      LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize);
-    break;
+  constexpr auto AVXRegBitSize = Core::CPUState::XMM_AVX_REG_SIZE * 8;
+  constexpr auto SSERegBitSize = Core::CPUState::XMM_SSE_REG_SIZE * 8;
+  const auto ElementSizeBits = Op->Header.ElementSize * 8;
+
+  const auto Offset = ElementSizeBits * Op->Index;
+  const auto Is256Bit = Offset >= SSERegBitSize;
+
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  const auto PerformMove = [&](const aarch64::VRegister& reg, int index) {
+    switch (OpSize) {
+      case 1:
+        umov(GetReg<RA_32>(Node), reg.V16B(), index);
+        break;
+      case 2:
+        umov(GetReg<RA_32>(Node), reg.V8H(), index);
+        break;
+      case 4:
+        umov(GetReg<RA_32>(Node), reg.V4S(), index);
+        break;
+      case 8:
+        umov(GetReg<RA_64>(Node), reg.V2D(), index);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize);
+        break;
+    }
+  };
+
+  if (Offset < SSERegBitSize) {
+    // Desired data lies within the lower 128-bit lane, so we
+    // can treat the operation as a 128-bit operation, even
+    // when acting on larger register sizes.
+    PerformMove(Vector, Op->Index);
+  } else {
+    LOGMAN_THROW_AA_FMT(HostSupportsSVE,
+                        "Host doesn't support SVE. Cannot perform 256-bit operation.");
+    LOGMAN_THROW_AA_FMT(Is256Bit,
+                        "Can't perform 256-bit extraction with op side: {}", OpSize);
+    LOGMAN_THROW_AA_FMT(Offset < AVXRegBitSize,
+                        "Trying to extract element outside bounds of register. Offset={}, Index={}",
+                        Offset, Op->Index);
+
+    // We need to use the upper 128-bit lane, so lets move it down.
+    // Inverting our dedicated predicate for 128-bit operations selects
+    // all of the top lanes. We can then compact those into a temporary.
+    const auto CompactPred = p0;
+    not_(CompactPred.VnB(), PRED_TMP_32B.Zeroing(), PRED_TMP_16B.VnB());
+    compact(VTMP1.Z().VnD(), CompactPred, Vector.Z().VnD());
+
+    // Sanitize the zero-based index to work on the now-moved
+    // upper half of the vector.
+    const auto SanitizedIndex = [OpSize, Op] {
+      switch (OpSize) {
+        case 1:
+          return Op->Index - 16;
+        case 2:
+          return Op->Index - 8;
+        case 4:
+          return Op->Index - 4;
+        case 8:
+          return Op->Index - 2;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled OpSize: {}", OpSize);
+          return 0;
+      }
+    }();
+
+    // Move the value from the now-low-lane data.
+    PerformMove(VTMP1, SanitizedIndex);
   }
 }
 

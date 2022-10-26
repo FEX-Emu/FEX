@@ -894,33 +894,51 @@ DEF_OP(Select) {
 }
 
 DEF_OP(VExtractToGPR) {
-  auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+  const auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+  const auto OpSize = IROp->Size;
+
+  constexpr auto AVXRegSize = Core::CPUState::XMM_AVX_REG_SIZE;
+  constexpr auto SSERegSize = Core::CPUState::XMM_SSE_REG_SIZE;
+  constexpr auto SSEBitSize = SSERegSize * 8;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto ElementSizeBits = ElementSize * 8;
+  const auto Shift = ElementSizeBits * Op->Index;
 
   const uint32_t SourceSize = GetOpSize(Data->CurrentIR, Op->Vector);
 
-  LOGMAN_THROW_AA_FMT(IROp->Size <= 16, "OpSize is too large for VExtractToGPR: {}", IROp->Size);
+  LOGMAN_THROW_AA_FMT(OpSize <= AVXRegSize,
+                      "OpSize is too large for VExtractToGPR: {}", OpSize);
 
-  if (SourceSize == 16) {
-    __uint128_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
-    if (Op->Header.ElementSize == 8)
+  if (SourceSize >= SSERegSize) {
+    __uint128_t SourceMask = (1ULL << ElementSizeBits) - 1;
+    if (ElementSize == 8) {
       SourceMask = ~0ULL;
+    }
 
-    __uint128_t Src = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
-    Src >>= Shift;
-    Src &= SourceMask;
-    memcpy(GDP, &Src, Op->Header.ElementSize);
+    const auto Src = *GetSrc<InterpVector256*>(Data->SSAData, Op->Vector);
+
+    const auto GetResult = [&] {
+      if (Shift >= SSEBitSize) {
+        const auto NormalizedShift = Shift - SSEBitSize;
+        return (Src.Upper >> NormalizedShift) & SourceMask;
+      } else {
+        return (Src.Lower >> Shift) & SourceMask;
+      }
+    };
+
+    const auto Result = GetResult();
+    memcpy(GDP, &Result, ElementSize);
   }
   else {
-    uint64_t SourceMask = (1ULL << (Op->Header.ElementSize * 8)) - 1;
-    uint64_t Shift = Op->Header.ElementSize * Op->Index * 8;
-    if (Op->Header.ElementSize == 8)
+    uint64_t SourceMask = (1ULL << ElementSizeBits) - 1;
+    if (ElementSize == 8) {
       SourceMask = ~0ULL;
+    }
 
-    uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
-    Src >>= Shift;
-    Src &= SourceMask;
-    GD = Src;
+    const uint64_t Src = *GetSrc<uint64_t*>(Data->SSAData, Op->Vector);
+    const uint64_t Result = (Src >> Shift) & SourceMask;
+    GD = Result;
   }
 }
 
