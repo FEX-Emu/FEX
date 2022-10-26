@@ -321,58 +321,161 @@ DEF_OP(Vector_FToF) {
 }
 
 DEF_OP(Vector_FToI) {
-  auto Op = IROp->C<IR::IROp_Vector_FToI>();
-  switch (Op->Round) {
-    case FEXCore::IR::Round_Nearest.Val:
-      switch (Op->Header.ElementSize) {
-        case 4:
-          frintn(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
+  const auto Op = IROp->C<IR::IROp_Vector_FToI>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+    
+    switch (Op->Round) {
+      case FEXCore::IR::Round_Nearest.Val:
+        switch (ElementSize) {
+          case 2:
+            frintn(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+            break;
+          case 4:
+            frintn(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+            break;
+          case 8:
+            frintn(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+            break;
+        }
         break;
-        case 8:
-          frintn(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
+
+      case FEXCore::IR::Round_Negative_Infinity.Val:
+        switch (ElementSize) {
+          case 2:
+            frintm(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+            break;
+          case 4:
+            frintm(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+            break;
+          case 8:
+            frintm(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+            break;
+        }
         break;
-      }
-    break;
-    case FEXCore::IR::Round_Negative_Infinity.Val:
-      switch (Op->Header.ElementSize) {
-        case 4:
-          frintm(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
+
+      case FEXCore::IR::Round_Positive_Infinity.Val:
+        switch (ElementSize) {
+          case 2:
+            frintp(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+            break;
+          case 4:
+            frintp(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+            break;
+          case 8:
+            frintp(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+            break;
+        }
         break;
-        case 8:
-          frintm(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
+
+      case FEXCore::IR::Round_Towards_Zero.Val:
+        switch (ElementSize) {
+          case 2:
+            frintz(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+            break;
+          case 4:
+            frintz(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+            break;
+          case 8:
+            frintz(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+            break;
+        }
         break;
-      }
-    break;
-    case FEXCore::IR::Round_Positive_Infinity.Val:
-      switch (Op->Header.ElementSize) {
-        case 4:
-          frintp(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
+
+      case FEXCore::IR::Round_Host.Val:
+        switch (ElementSize) {
+          case 2:
+            frinti(Dst.Z().VnH(), Mask, Vector.Z().VnH());
+            break;
+          case 4:
+            frinti(Dst.Z().VnS(), Mask, Vector.Z().VnS());
+            break;
+          case 8:
+            frinti(Dst.Z().VnD(), Mask, Vector.Z().VnD());
+            break;
+        }
         break;
-        case 8:
-          frintp(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
+    }
+  } else {
+    switch (Op->Round) {
+      case FEXCore::IR::Round_Nearest.Val:
+        switch (ElementSize) {
+          case 2:
+            frintn(Dst.V8H(), Vector.V8H());
+            break;
+          case 4:
+            frintn(Dst.V4S(), Vector.V4S());
+            break;
+          case 8:
+            frintn(Dst.V2D(), Vector.V2D());
+            break;
+        }
         break;
-      }
-    break;
-    case FEXCore::IR::Round_Towards_Zero.Val:
-      switch (Op->Header.ElementSize) {
-        case 4:
-          frintz(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
+
+      case FEXCore::IR::Round_Negative_Infinity.Val:
+        switch (ElementSize) {
+          case 2:
+            frintm(Dst.V8H(), Vector.V8H());
+            break;
+          case 4:
+            frintm(Dst.V4S(), Vector.V4S());
+            break;
+          case 8:
+            frintm(Dst.V2D(), Vector.V2D());
+            break;
+        }
         break;
-        case 8:
-          frintz(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
+
+      case FEXCore::IR::Round_Positive_Infinity.Val:
+        switch (ElementSize) {
+          case 2:
+            frintp(Dst.V8H(), Vector.V8H());
+            break;
+          case 4:
+            frintp(Dst.V4S(), Vector.V4S());
+            break;
+          case 8:
+            frintp(Dst.V2D(), Vector.V2D());
+            break;
+        }
         break;
-      }
-    break;
-    case FEXCore::IR::Round_Host.Val:
-      switch (Op->Header.ElementSize) {
-        case 4:
-          frinti(GetDst(Node).V4S(), GetSrc(Op->Vector.ID()).V4S());
+
+      case FEXCore::IR::Round_Towards_Zero.Val:
+        switch (ElementSize) {
+          case 2:
+            frintz(Dst.V8H(), Vector.V8H());
+            break;
+          case 4:
+            frintz(Dst.V4S(), Vector.V4S());
+            break;
+          case 8:
+            frintz(Dst.V2D(), Vector.V2D());
+            break;
+        }
         break;
-        case 8:
-          frinti(GetDst(Node).V2D(), GetSrc(Op->Vector.ID()).V2D());
+
+      case FEXCore::IR::Round_Host.Val:
+        switch (ElementSize) {
+          case 2:
+            frinti(Dst.V8H(), Vector.V8H());
+            break;
+          case 4:
+            frinti(Dst.V4S(), Vector.V4S());
+            break;
+          case 8:
+            frinti(Dst.V2D(), Vector.V2D());
+            break;
+        }
         break;
-      }
-    break;
+    }
   }
 }
 
