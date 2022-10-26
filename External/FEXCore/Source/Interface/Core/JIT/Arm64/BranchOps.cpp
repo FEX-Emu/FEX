@@ -243,7 +243,6 @@ DEF_OP(InlineSyscall) {
   bool Intersects{};
   // We always need to spill x8 since we can't know if it is live at this SSA location
   uint32_t SpillMask = 1U << 8;
-  std::vector<vixl::aarch64::Register> IntersectRegs(FEXCore::HLE::SyscallArguments::MAX_ARGS);
   for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
     if (Op->Header.Args[i].IsInvalid()) break;
 
