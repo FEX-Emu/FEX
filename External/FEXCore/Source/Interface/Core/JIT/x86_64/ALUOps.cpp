@@ -1143,26 +1143,59 @@ DEF_OP(Select) {
 }
 
 DEF_OP(VExtractToGPR) {
-  auto Op = IROp->C<IR::IROp_VExtractToGPR>();
+  const auto Op = IROp->C<IR::IROp_VExtractToGPR>();
 
-  switch (Op->Header.ElementSize) {
+  constexpr auto SSERegSize = Core::CPUState::XMM_SSE_REG_SIZE;
+  constexpr auto SSEBitSize = SSERegSize * 8;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto ElementSizeBits = ElementSize * 8;
+  const auto Offset = ElementSizeBits * Op->Index;
+
+  const auto Is256Bit = Offset >= SSEBitSize;
+
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 1: {
-      pextrb(GetDst<RA_32>(Node), GetSrc(Op->Vector.ID()), Op->Index);
-    break;
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+        pextrb(GetDst<RA_32>(Node), xmm15, Op->Index - 16);
+      } else {
+        pextrb(GetDst<RA_32>(Node), Vector, Op->Index);
+      }
+      break;
     }
     case 2: {
-      pextrw(GetDst<RA_32>(Node), GetSrc(Op->Vector.ID()), Op->Index);
-    break;
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+        pextrw(GetDst<RA_32>(Node), xmm15, Op->Index - 8);
+      } else {
+        pextrw(GetDst<RA_32>(Node), Vector, Op->Index);
+      }
+      break;
     }
     case 4: {
-      pextrd(GetDst<RA_32>(Node), GetSrc(Op->Vector.ID()), Op->Index);
-    break;
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+        pextrd(GetDst<RA_32>(Node), xmm15, Op->Index - 4);
+      } else {
+        pextrd(GetDst<RA_32>(Node), Vector, Op->Index);
+      }
+      break;
     }
     case 8: {
-      pextrq(GetDst<RA_64>(Node), GetSrc(Op->Vector.ID()), Op->Index);
-    break;
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector), 1);
+        pextrq(GetDst<RA_64>(Node), xmm15, Op->Index - 2);
+      } else {
+        pextrq(GetDst<RA_64>(Node), Vector, Op->Index);
+      }
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
 }
 
