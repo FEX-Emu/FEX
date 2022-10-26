@@ -103,6 +103,11 @@ function(add_guest_lib NAME SONAME)
 
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-guest PRIVATE -fwrapv)
+  if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    ## Compile for SSE2
+    ## Compile with fpmath=sse to remove x87 usage
+    target_compile_options(${NAME}-guest PRIVATE -msse2 -mfpmath=sse)
+  endif()
 
   if (BITNESS EQUAL 32)
     # Makes the GOT/PLT lookups slightly less painful
