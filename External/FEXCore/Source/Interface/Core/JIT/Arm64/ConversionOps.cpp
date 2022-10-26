@@ -12,26 +12,115 @@ using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 DEF_OP(VInsGPR) {
-  auto Op = IROp->C<IR::IROp_VInsGPR>();
-  mov(GetDst(Node), GetSrc(Op->DestVector.ID()));
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      ins(GetDst(Node).V16B(), Op->DestIdx, GetReg<RA_32>(Op->Src.ID()));
-    break;
+  const auto Op = IROp->C<IR::IROp_VInsGPR>();
+  const auto OpSize = IROp->Size;
+
+  const auto DestIdx = Op->DestIdx;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto DestVector = GetSrc(Op->DestVector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto ElementSizeBits = ElementSize * 8;
+    const auto Offset = ElementSizeBits * DestIdx;
+
+    const auto SSEBitSize = Core::CPUState::XMM_SSE_REG_SIZE * 8;
+    const auto InUpperLane = Offset >= SSEBitSize;
+
+    // This is going to be a little gross. Pls forgive me.
+    // Since SVE has the whole vector length agnostic programming
+    // thing going on, we can't exactly freely insert entries into
+    // arbitrary locations in the vector.
+    //
+    // SVE *does* have INSR, however this only shifts the entire
+    // vector to the left by an element size and inserts a value
+    // at the beginning of the vector. Not *quite* what we need.
+    // (though INSR *is* very useful for other things).
+    //
+    // The idea is (in the case of the upper lane), move the upper
+    // lane down, insert into it and recombine with the lower lane.
+    //
+    // In the case of the lower lane, insert and then recombine with
+    // the upper lane.
+
+    if (InUpperLane) {
+      // Move the upper lane down for the insertion.
+      const auto CompactPred = p0;
+      not_(CompactPred.VnB(), PRED_TMP_32B.Zeroing(), PRED_TMP_16B.VnB());
+      compact(VTMP1.Z().VnD(), CompactPred, DestVector.Z().VnD());
     }
-    case 2: {
-      ins(GetDst(Node).V8H(), Op->DestIdx, GetReg<RA_32>(Op->Src.ID()));
-    break;
+
+    // Put data in place for destructive SPLICE below.
+    mov(Dst.Z().VnD(), DestVector.Z().VnD());
+
+    // Inserts the GPR value into the given V register.
+    // Also automatically adjusts the index in the case of using the
+    // moved upper lane.
+    const auto Insert = [&](const aarch64::VRegister& reg, int index) {
+      switch (ElementSize) {
+        case 1:
+          if (InUpperLane) {
+            index -= 16;
+          }
+          ins(reg.V16B(), index, GetReg<RA_32>(Op->Src.ID()));
+          break;
+        case 2:
+          if (InUpperLane) {
+            index -= 8;
+          }
+          ins(reg.V8H(), index, GetReg<RA_32>(Op->Src.ID()));
+          break;
+        case 4:
+          if (InUpperLane) {
+            index -= 4;
+          }
+          ins(reg.V4S(), index, GetReg<RA_32>(Op->Src.ID()));
+          break;
+        case 8:
+          if (InUpperLane) {
+            index -= 2;
+          }
+          ins(reg.V2D(), index, GetReg<RA_64>(Op->Src.ID()));
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+          break;
+      }
+    };
+
+    if (InUpperLane) {
+      Insert(VTMP1, DestIdx);
+      splice(Dst.Z().VnD(), PRED_TMP_16B, Dst.Z().VnD(), VTMP1.Z().VnD());
+    } else {
+      Insert(Dst, DestIdx);
+      splice(Dst.Z().VnD(), PRED_TMP_16B, Dst.Z().VnD(), DestVector.Z().VnD());
     }
-    case 4: {
-      ins(GetDst(Node).V4S(), Op->DestIdx, GetReg<RA_32>(Op->Src.ID()));
-    break;
+  } else {
+    mov(Dst, DestVector);
+
+    switch (ElementSize) {
+      case 1: {
+        ins(Dst.V16B(), DestIdx, GetReg<RA_32>(Op->Src.ID()));
+        break;
+      }
+      case 2: {
+        ins(Dst.V8H(), DestIdx, GetReg<RA_32>(Op->Src.ID()));
+        break;
+      }
+      case 4: {
+        ins(Dst.V4S(), DestIdx, GetReg<RA_32>(Op->Src.ID()));
+        break;
+      }
+      case 8: {
+        ins(Dst.V2D(), DestIdx, GetReg<RA_64>(Op->Src.ID()));
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
     }
-    case 8: {
-      ins(GetDst(Node).V2D(), Op->DestIdx, GetReg<RA_64>(Op->Src.ID()));
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
   }
 }
 
