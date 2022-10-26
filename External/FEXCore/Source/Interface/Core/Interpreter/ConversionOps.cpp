@@ -106,37 +106,43 @@ DEF_OP(Vector_SToF) {
 }
 
 DEF_OP(Vector_FToZS) {
-  auto Op = IROp->C<IR::IROp_Vector_FToZS>();
+  const auto Op = IROp->C<IR::IROp_Vector_FToZS>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
 
   const auto Func = [](auto a, auto min, auto max) { return std::trunc(a); };
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }
 
 DEF_OP(Vector_FToS) {
-  auto Op = IROp->C<IR::IROp_Vector_FToS>();
+  const auto Op = IROp->C<IR::IROp_Vector_FToS>();
   const uint8_t OpSize = IROp->Size;
 
   void *Src = GetSrc<void*>(Data->SSAData, Op->Vector);
-  uint8_t Tmp[16]{};
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  const uint8_t Elements = OpSize / ElementSize;
 
   const auto Func = [](auto a, auto min, auto max) { return std::nearbyint(a); };
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     DO_VECTOR_1SRC_2TYPE_OP(4, int32_t, float, Func, 0, 0)
     DO_VECTOR_1SRC_2TYPE_OP(8, int64_t, double, Func, 0, 0)
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   }
   memcpy(GDP, Tmp, OpSize);
 }

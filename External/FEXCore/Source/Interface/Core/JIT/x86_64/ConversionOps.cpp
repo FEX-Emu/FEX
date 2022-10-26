@@ -151,28 +151,64 @@ DEF_OP(Vector_SToF) {
 }
 
 DEF_OP(Vector_FToZS) {
-  auto Op = IROp->C<IR::IROp_Vector_FToZS>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_Vector_FToZS>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 4:
-      cvttps2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
+      if (Is256Bit) {
+        vcvttps2dq(ToYMM(Dst), ToYMM(Vector));
+      } else {
+        vcvttps2dq(Dst, Vector);
+      }
+      break;
     case 8:
-      cvttpd2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToZS element size: {}", Op->Header.ElementSize);
+      if (Is256Bit) {
+        vcvttpd2dq(ToYMM(Dst), ToYMM(Vector));
+      } else {
+        vcvttpd2dq(Dst, Vector);
+      }
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Vector_FToZS element size: {}", ElementSize);
+      break;
   }
 }
 
 DEF_OP(Vector_FToS) {
-  auto Op = IROp->C<IR::IROp_Vector_FToS>();
-  switch (Op->Header.ElementSize) {
+  const auto Op = IROp->C<IR::IROp_Vector_FToS>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
     case 4:
-      cvtps2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
+      if (Is256Bit) {
+        vcvtps2dq(ToYMM(Dst), ToYMM(Vector));
+      } else {
+        vcvtps2dq(Dst, Vector);
+      }
+      break;
     case 8:
-      cvtpd2dq(GetDst(Node), GetSrc(Op->Vector.ID()));
-    break;
-    default: LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", Op->Header.ElementSize);
+      if (Is256Bit) {
+        vcvtpd2dq(ToYMM(Dst), ToYMM(Vector));
+      } else {
+        vcvtpd2dq(Dst, Vector);
+      }
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Vector_FToS element size: {}", ElementSize);
+      break;
   }
 }
 
