@@ -5077,19 +5077,32 @@ DEF_OP(VUABDL) {
 }
 
 DEF_OP(VTBL1) {
-  auto Op = IROp->C<IR::IROp_VTBL1>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VTBL1>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorIndices = GetSrc(Op->VectorIndices.ID());
+  const auto VectorTable = GetSrc(Op->VectorTable.ID());
 
   switch (OpSize) {
     case 8: {
-      tbl(GetDst(Node).V8B(), GetSrc(Op->VectorTable.ID()).V16B(), GetSrc(Op->VectorIndices.ID()).V8B());
-    break;
+      tbl(Dst.V8B(), VectorTable.V16B(), VectorIndices.V8B());
+      break;
     }
     case 16: {
-      tbl(GetDst(Node).V16B(), GetSrc(Op->VectorTable.ID()).V16B(), GetSrc(Op->VectorIndices.ID()).V16B());
-    break;
+      tbl(Dst.V16B(), VectorTable.V16B(), VectorIndices.V16B());
+      break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
+    case 32: {
+      LOGMAN_THROW_AA_FMT(HostSupportsSVE,
+                          "Host does not support SVE. Cannot perform 256-bit table lookup");
+
+      tbl(Dst.Z().VnB(), VectorTable.Z().VnB(), VectorIndices.Z().VnB());
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
+      break;
   }
 }
 

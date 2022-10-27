@@ -3307,20 +3307,56 @@ DEF_OP(VUABDL) {
 }
 
 DEF_OP(VTBL1) {
-  auto Op = IROp->C<IR::IROp_VTBL1>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VTBL1>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorIndices = GetSrc(Op->VectorIndices.ID());
+  const auto VectorTable = GetSrc(Op->VectorTable.ID());
 
   switch (OpSize) {
     case 8: {
-      vpshufb(GetDst(Node), GetSrc(Op->VectorTable.ID()), GetSrc(Op->VectorIndices.ID()));
-      movq(GetDst(Node), GetDst(Node));
+      vpshufb(Dst, VectorTable, VectorIndices);
+      vmovq(Dst, Dst);
       break;
     }
     case 16: {
-      vpshufb(GetDst(Node), GetSrc(Op->VectorTable.ID()), GetSrc(Op->VectorIndices.ID()));
+      vpshufb(Dst, VectorTable, VectorIndices);
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize); break;
+    case 32: {
+      // AVX2 vpshufb is a coward and doesn't lane cross, so we
+      // need to get a little creative.
+      const auto DstYMM = ToYMM(Dst);
+      const auto VectorIndicesYMM = ToYMM(VectorIndices);
+      const auto VectorTableYMM = ToYMM(VectorTable);
+
+      // Permute the bottom lane of the table into a register
+      // and do the same for the upper lane.
+      vperm2i128(ymm15, VectorTableYMM, VectorTableYMM, 0b0000'0000);
+      vperm2i128(ymm14, VectorTableYMM, VectorTableYMM, 0b0001'0001);
+
+      // Shuffle away
+      vpshufb(ymm15, ymm15, VectorIndicesYMM);
+      vpshufb(ymm14, ymm14, VectorIndicesYMM);
+
+      // Set up our comparison register
+      mov(eax, 16);
+      vmovd(xmm13, eax);
+      vpbroadcastb(ymm13, xmm13);
+
+      // Now create our control mask
+      vpcmpgtb(ymm12, ymm13, VectorIndicesYMM);
+
+      // And finally blend everything together
+      // from the high and low halves depending
+      // on the control mask.
+      vpblendvb(DstYMM, ymm14, ymm15, ymm12);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown OpSize: {}", OpSize);
+      break;
   }
 }
 
