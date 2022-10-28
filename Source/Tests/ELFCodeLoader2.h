@@ -353,7 +353,36 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     //
     // This is still technically a memory leak if the stack grows, but since the primary thread's stack only gets destroyed on process close, this is
     // fine.
-    StackPointer = reinterpret_cast<uintptr_t>(Mapper(nullptr, StackSize(), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
+
+    // Stacks need to be allocated at the hint location just like on a real x86 system.
+    // These are 128MB regions on both x86-64 and x86.
+    //
+    // These are required to be in the correct location taking up the appropriate 128MB of space, otherwise the wine preloader crashes FEX.
+    // This is due to the wine-preloader hardcoding addresses [0x7FFFFE000000 - 0x7FFFFFFF0000) as a top-down
+    // allocation region. They use mmap with MAP_FIXED, ignoring any previously mapped area at that location and overwriting it.
+    // Wine-preloader is expecting to allocate 32MB out of the total 128MB stack space in this case. Leaving 96MB for the application.
+    //
+    // If FEX doesn't allocate the stack in this region (nullptr mmap hint) then later allocations that FEX does will /eventually/
+    // end up inside of this address space that wine allocates. This usually ends up being a JIT CodeBuffer, which zeroes the memory and faults with a
+    // SIGILL.
+    //
+    // On the upside, this more accurately emulates how the kernel allocates stack space for the application when hinting at the location.
+    //
+    void* StackPointerBase{};
+    uint64_t StackHint = Is64BitMode() ? STACK_HINT_64 : STACK_HINT_32;
+
+    // Allocate the base of the full 128MB stack range.
+    StackPointerBase = Mapper(reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+
+    if (StackPointerBase == reinterpret_cast<void*>(~0ULL)) {
+      LogMan::Msg::EFmt("Allocating stack failed");
+      return false;
+    }
+
+    // Allocate with permissions the 8MB of regular stack size.
+    StackPointer = reinterpret_cast<uintptr_t>(Mapper(
+      reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
+      StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
     if (StackPointer == ~0ULL) {
       LogMan::Msg::EFmt("Allocating stack failed");
@@ -770,6 +799,9 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
+  constexpr static uint64_t FULL_STACK_SIZE = 128 * 1024 * 1024;
+  constexpr static uint64_t STACK_HINT_32 = 0xFFFFE000 - FULL_STACK_SIZE;
+  constexpr static uint64_t STACK_HINT_64 = 0x7FFFFFFFF000 - FULL_STACK_SIZE;
 
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
