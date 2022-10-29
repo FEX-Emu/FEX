@@ -938,6 +938,7 @@ void OpDispatchBuilder::CalculcateFlags_RotateRight(uint8_t SrcSize, OrderedNode
     auto OldOF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
 
     // OF is set to the XOR of the new CF bit and the most significant bit of the result
+    // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
     auto NewOF = _Xor(_Bfe(1, OpSize - 2, Res), NewCF);
 
     // If shift == 0, don't update flags
@@ -967,7 +968,9 @@ void OpDispatchBuilder::CalculcateFlags_RotateLeft(uint8_t SrcSize, OrderedNode 
   // OF
   {
     auto OldOF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    // OF is set to the XOR of the new CF bit and the most significant bit of the result
+    // OF is the LSB and MSB XOR'd together.
+    // OF is set to the XOR of the new CF bit and the most significant bit of the result.
+    // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
     auto NewOF = _Xor(_Bfe(1, OpSize - 1, Res), NewCF);
 
     auto OF = _Select(FEXCore::IR::COND_EQ, Src2, _Constant(0), OldOF, NewOF);
@@ -992,8 +995,10 @@ void OpDispatchBuilder::CalculcateFlags_RotateRightImmediate(uint8_t SrcSize, Or
   // OF
   {
     if (Shift == 1) {
-      // OF is set to the XOR of the new CF bit and the most significant bit of the result
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Res), NewCF));
+      // OF is the top two MSBs XOR'd together
+      // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
+      auto NewOF = _Xor(_Bfe(1, OpSize - 2, Res), NewCF);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
     }
   }
 }
@@ -1003,17 +1008,22 @@ void OpDispatchBuilder::CalculcateFlags_RotateLeftImmediate(uint8_t SrcSize, Ord
 
   auto OpSize = SrcSize * 8;
 
+  auto NewCF = _Bfe(1, 0, Res);
   // CF
   {
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, 0, Res));
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
   }
 
   // OF
   {
     if (Shift == 1) {
-      // OF is the top two MSBs XOR'd together
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(_Bfe(1, OpSize - 1, Src1), _Bfe(1, OpSize - 2, Src1)));
+      // OF is the LSB and MSB XOR'd together.
+      // OF is set to the XOR of the new CF bit and the most significant bit of the result.
+      // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
+      auto NewOF = _Xor(_Bfe(1, OpSize - 1, Res), NewCF);
+
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
     }
   }
 }
