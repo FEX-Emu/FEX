@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -36,6 +37,109 @@ struct FlexBitSet final {
   }
   void MemSet(size_t Elements) {
     memset(Memory, 0xFF, FEXCore::AlignUp(Elements / MinimumSizeBits, MinimumSizeBits));
+  }
+
+  // Range scanning results
+  struct BitsetScanResults {
+    // Which element was found. ~0ULL if not found.
+    size_t FoundElement;
+    // During the scan, found a hole in the allocations that didn't fit.
+    bool FoundHole;
+  };
+
+  // TODO: Make {Forward,Backward}ScanForRange faster
+  // Currently these functions test a single bit at a time, which is fairly costly.
+  // The compiler emits a full element load per iteration, wasting a bunch of time on loads.
+  // If we change these functions to have a pre-amble and post-amble to align the primary loop to the element size then this can go significantly
+  // faster.
+  //
+  // Once the element scanning is aligned to the element size, we can then use native count leading zero(CLZ) and count trailing zero(CTZ)
+  // instructions on a full element to scan uint64_t elements per loop iteration.
+
+  // Implementation details:
+  // Template argument WantUnset
+  // Used to determine if the desired range is for set or unset ranges.
+  // Typically `WantUnset` should be true. Used for finding a unset range inside of a range will set elements.
+  //
+  // @param BeginningElement - The first element in the set to start scanning from.
+  // @param ElementCount - How many elements to find a range for fitting.
+  // @param MinimumElement - Minimum element in the set to search to
+  //
+  // @return The scan results
+  template<bool WantUnset>
+  BitsetScanResults BackwardScanForRange(size_t BeginningElement, size_t ElementCount, size_t MinimumElement) {
+    bool FoundHole {};
+    for (size_t CurrentPage = BeginningElement;
+         CurrentPage >= (MinimumElement + ElementCount);) {
+      size_t Remaining = ElementCount;
+      LOGMAN_THROW_AA_FMT(Remaining <= CurrentPage, "Scanning less than available range");
+
+      while (Remaining) {
+        if (this->Get(CurrentPage - Remaining) == WantUnset) {
+          // Has an intersecting range
+          break;
+        }
+        --Remaining;
+      }
+
+      if (Remaining) {
+        // If we found at least one Element hole then track that
+        if (Remaining != ElementCount) {
+          FoundHole = true;
+        }
+
+        // Didn't find a slab range
+        CurrentPage -= Remaining;
+      }
+      else {
+        // We have a slab range
+        return BitsetScanResults{CurrentPage - ElementCount, FoundHole};
+      }
+    }
+
+    return BitsetScanResults {~0ULL, FoundHole};
+  }
+
+  // @param BeginningElement - The first element in the set to start scanning from.
+  // @param ElementCount - How many elements to find a range for fitting.
+  // @param ElementsInSet - How many elements are in the full set.
+  //
+  // @return The scan results
+  template<bool WantUnset>
+  BitsetScanResults ForwardScanForRange(size_t BeginningElement, size_t ElementCount, size_t ElementsInSet) {
+    bool FoundHole {};
+
+    for (size_t CurrentElement = BeginningElement;
+         CurrentElement < (ElementsInSet - ElementCount);) {
+      // If we have enough free space, check if we have enough free pages that are contiguous
+      size_t Remaining = ElementCount;
+
+      LOGMAN_THROW_AA_FMT((CurrentElement + Remaining - 1) < ElementsInSet, "Scanning less than available range");
+
+      while (Remaining) {
+        if (this->Get(CurrentElement + Remaining - 1) == WantUnset) {
+          // Has an intersecting range
+          break;
+        }
+        --Remaining;
+      }
+
+      if (Remaining) {
+        // If we found at least one Element hole then track that
+        if (Remaining != ElementCount) {
+          FoundHole = true;
+        }
+
+        // Didn't find a slab range
+        CurrentElement += Remaining;
+      }
+      else {
+        // We have a slab range
+        return BitsetScanResults {CurrentElement, FoundHole};
+      }
+    }
+
+    return BitsetScanResults {~0ULL, FoundHole};
   }
 
   // This very explicitly doesn't let you take an address
