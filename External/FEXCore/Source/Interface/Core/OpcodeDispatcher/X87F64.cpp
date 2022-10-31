@@ -778,6 +778,12 @@ void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
   // Overwrite the op
   result.first->Header.Op = IROp;
 
+  if constexpr (IROp == IR::OP_F64SIN ||
+                IROp == IR::OP_F64COS) {
+    // TODO: ACCURACY: should check source is in range –2^63 to +2^63
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+  }
+
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
@@ -832,6 +838,9 @@ void OpDispatchBuilder::X87SinCosF64(OpcodeArgs) {
   auto sin = _F64SIN(a);
   auto cos = _F64COS(a);
 
+  // TODO: ACCURACY: should check source is in range –2^63 to +2^63
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+
   // Write to ST[TOP]
   _StoreContextIndexed(sin, orig_top, 8, MMBaseOffset(), 16, FPRClass);
   _StoreContextIndexed(cos, top, 8, MMBaseOffset(), 16, FPRClass);
@@ -871,6 +880,9 @@ void OpDispatchBuilder::X87TANF64(OpcodeArgs) {
   auto result = _F64TAN(a);
 
   auto one = _VCastFromGPR(8, 8, _Constant(0x3FF0000000000000));
+
+  // TODO: ACCURACY: should check source is in range –2^63 to +2^63
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, orig_top, 8, MMBaseOffset(), 16, FPRClass);
