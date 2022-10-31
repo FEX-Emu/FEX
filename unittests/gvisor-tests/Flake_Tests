@@ -1,1 +1,9 @@
 pselect_test
+poll_test
+# These are majorly flakey
+socket_blocking_local_test
+socket_stream_blocking_tcp_test
+socket_stream_blocking_local_test
+socket_non_stream_blocking_local_test
+socket_unix_pair_test
+socket_blocking_ip_test
