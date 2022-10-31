@@ -431,6 +431,9 @@ namespace ProcessPipe {
           // Invalid
         case FEXServerClient::PacketType::TYPE_ERROR:
         default:
+          // Something sent us an invalid packet. To ensure we don't spin infinitely, consume all the data.
+          LogMan::Msg::EFmt("[FEXServer] InvalidPacket size received 0x{:x} bytes", CurrentRead - CurrentOffset);
+          CurrentOffset = CurrentRead;
           break;
       }
     }
