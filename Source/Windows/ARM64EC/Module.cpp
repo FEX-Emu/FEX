@@ -539,7 +539,7 @@ NTSTATUS ProcessInit() {
   // Not applicable to Windows
   FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
 
-  FEXCore::Profiler::Init();
+  FEXCore::Profiler::Init("", "");
 
   FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_64BIT);
 

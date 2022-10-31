@@ -30,7 +30,7 @@ option(ENABLE_VIXL_SIMULATOR "Enable use of VIXL simulator for emulation (only u
 option(ENABLE_VIXL_DISASSEMBLER "Enables debug disassembler output with VIXL" FALSE)
 option(USE_LEGACY_BINFMTMISC "Uses legacy method of setting up binfmt_misc" FALSE)
 option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling capabilities" FALSE)
-set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend you want to use for the FEXCore profiler")
+set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use for the FEXCore profiler (gpuvis, tracy)")
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
 
@@ -61,6 +61,22 @@ if (ENABLE_FEXCORE_PROFILER)
 
   if (FEXCORE_PROFILER_BACKEND STREQUAL "GPUVIS")
     add_definitions(-DFEXCORE_PROFILER_BACKEND=1)
+  elseif (FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
+    add_definitions(-DFEXCORE_PROFILER_BACKEND=2)
+    add_definitions(-DTRACY_ENABLE=1)
+    # Required so that Tracy will only start in the selected guest application
+    add_definitions(-DTRACY_MANUAL_LIFETIME=1)
+    add_definitions(-DTRACY_DELAYED_INIT=1)
+    # This interferes with FEX's signal handling
+    add_definitions(-DTRACY_NO_CRASH_HANDLER=1)
+    # Tracy can gather call stack samples in regular intervals, but this
+    # isn't useful for us since it would usually sample opaque JIT code
+    add_definitions(-DTRACY_NO_SAMPLING=1)
+    # This pulls in libbacktrace which allocators in global constructors (before FEX can set up its allocator hooks)
+    add_definitions(-DTRACY_NO_CALLSTACK=1)
+    if (MINGW_BUILD)
+      message(FATAL_ERROR "Tracy profiler not supported")
+    endif()
   else()
     message(FATAL_ERROR "Unknown FEXCore profiler backend ${FEXCORE_PROFILER_BACKEND}")
   endif()
@@ -268,6 +284,10 @@ include_directories(External/robin-map/include/)
 if (BUILD_TESTS OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   add_subdirectory(External/vixl/)
   include_directories(SYSTEM External/vixl/src/)
+endif()
+
+if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
+  add_subdirectory(External/tracy)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
