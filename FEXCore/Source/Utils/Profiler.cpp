@@ -17,6 +17,7 @@
 
 #define BACKEND_OFF 0
 #define BACKEND_GPUVIS 1
+#define BACKEND_TRACY 2
 
 #ifdef ENABLE_FEXCORE_PROFILER
 #ifndef _WIN32
@@ -110,35 +111,73 @@ void TraceObject(std::string_view const Format) {
   }
 }
 } // namespace GPUVis
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+#include "tracy/TracyC.h"
+namespace Tracy {
+void Init() {}
+
+void Shutdown() {}
+
+void TraceObject(std::string_view const Format, uint64_t Duration) {}
+
+void TraceObject(std::string_view const Format) {}
+} // namespace Tracy
 #else
 #error Unknown profiler backend
 #endif
 #endif
 
+extern "C" bool g_Enable = false;
 namespace FEXCore::Profiler {
 #ifdef ENABLE_FEXCORE_PROFILER
-void Init() {
+void Init(bool Enable) {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::Init();
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  Tracy::Init();
+  g_Enable = Enable;
+  if (g_Enable) {
+    tracy::StartupProfiler();
+  }
+#endif
+}
+
+bool IsActive() {
+#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
+  // Always active
+  return true;
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  // Active if previously enabled
+  return g_Enable;
 #endif
 }
 
 void Shutdown() {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::Shutdown();
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  if (g_Enable) {
+    tracy::ShutdownProfiler();
+  }
+  Tracy::Shutdown();
 #endif
 }
 
 void TraceObject(std::string_view const Format, uint64_t Duration) {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::TraceObject(Format, Duration);
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  Tracy::TraceObject(Format, Duration);
 #endif
 }
 
 void TraceObject(std::string_view const Format) {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::TraceObject(Format);
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  Tracy::TraceObject(Format);
 #endif
 }
+
 #endif
 } // namespace FEXCore::Profiler

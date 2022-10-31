@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
 
@@ -53,6 +54,8 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
   {
     // Can't use the deferred signal lock in the SIGSEGV handler.
     auto lk = FEXCore::MaskSignalsAndLockMutex<std::shared_lock>(_SyscallHandler->VMATracking.Mutex);
+
+    FEXCORE_PROFILE_SCOPED("SMC segfault");
 
     auto VMATracking = &_SyscallHandler->VMATracking;
 

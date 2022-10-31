@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/FPState.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -59,6 +60,7 @@ static FEX::HLE::ThreadStateObject* GetThreadFromAltStack(const stack_t& alt_sta
 static void SignalHandlerThunk(int Signal, siginfo_t* Info, void* UContext) {
   ucontext_t* _context = (ucontext_t*)UContext;
   auto ThreadObject = GetThreadFromAltStack(_context->uc_stack);
+  FEXCORE_PROFILE_SCOPED("GuestSignalHandler");
   ThreadObject->SignalInfo.Delegator->HandleSignal(ThreadObject, Signal, Info, UContext);
 }
 
@@ -915,6 +917,8 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       // This only handles alignment problems
       return false;
     }
+
+    FEXCORE_PROFILE_SCOPED("HandleAuxSIGBUS");
 
     const auto Delegator = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator;
     const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, Delegator->GetUnalignedHandlerType(), PC,
