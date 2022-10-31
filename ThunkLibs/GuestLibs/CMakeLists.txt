@@ -259,4 +259,20 @@ target_link_options(VDSO-guest PRIVATE "-nostdlib" "LINKER:--no-undefined" "LINK
 if (BITNESS EQUAL 32)
   # 32-bit entrypoint points to __kernel_vsyscall and needs to exist
   target_link_options(VDSO-guest PRIVATE "LINKER:-e,__kernel_vsyscall")
+  # 32-bit VDSO needs to have PIC disabled.
+  # Otherwise GCC/Clang generates GOT prologues on the functions that corrupt vsyscall.
+  # Correct:
+  # 00000350 <__kernel_vsyscall>:
+  #  350:   cd 80                   int    0x80
+  #  352:   c3                      ret
+  #  353:   0f 0b                   ud2
+  # Incorrect:
+  # 0000032a <__kernel_vsyscall>:
+  #  32a:   e8 0b 00 00 00          call   33a <__x86.get_pc_thunk.ax>
+  #  32f:   05 79 03 00 00          add    eax,0x379
+  #  334:   cd 80                   int    0x80
+  #  336:   c3                      ret
+  #  337:   90                      nop
+  #  338:   0f 0b                   ud2
+  target_compile_options(VDSO-guest PRIVATE "-fno-pic")
 endif()
