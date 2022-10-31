@@ -54,6 +54,7 @@ foreach(IR_SRC ${IR_SOURCES})
     add_test(NAME ${TEST_NAME}
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Known_Failures"
+      "${CMAKE_SOURCE_DIR}/unittests/IR/Known_Failures_${TEST_TYPE}"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Disabled_Tests"
       "${CMAKE_SOURCE_DIR}/unittests/IR/Disabled_Tests_${TEST_TYPE}"
       "${RUNNER_DISABLED}"
