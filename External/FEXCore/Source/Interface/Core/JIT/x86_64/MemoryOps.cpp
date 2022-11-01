@@ -449,15 +449,15 @@ DEF_OP(FillRegister) {
 
     switch (OpSize) {
       case 4: {
-        movss(Dst, dword [rsp + SlotOffset]);
+        vmovss(Dst, dword [rsp + SlotOffset]);
         break;
       }
       case 8: {
-        movsd(Dst, qword [rsp + SlotOffset]);
+        vmovsd(Dst, qword [rsp + SlotOffset]);
         break;
       }
       case 16: {
-        movaps(Dst, xword [rsp + SlotOffset]);
+        vmovaps(Dst, xword [rsp + SlotOffset]);
         break;
       }
       case 32: {
