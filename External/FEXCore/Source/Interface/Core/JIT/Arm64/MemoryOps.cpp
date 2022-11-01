@@ -619,15 +619,72 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
   FEX_UNREACHABLE;
 }
 
-DEF_OP(LoadMem) {
-  auto Op = IROp->C<IR::IROp_LoadMem>();
+SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize,
+                                                  aarch64::Register Base,
+                                                  IR::OrderedNodeWrapper Offset,
+                                                  IR::MemOffsetType OffsetType,
+                                                  [[maybe_unused]] uint8_t OffsetScale) {
+  if (Offset.IsInvalid()) {
+    return SVEMemOperand(Base);
+  }
 
-  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
-  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  uint64_t Const{};
+  if (IsInlineConstant(Offset, &Const)) {
+    if (Const == 0) {
+      return SVEMemOperand(Base);
+    }
+
+    const auto SignedConst = static_cast<int64_t>(Const);
+    const auto SignedAVXSize = static_cast<int64_t>(Core::CPUState::XMM_AVX_REG_SIZE);
+
+    const auto IsCleanlyDivisible = (SignedConst % SignedAVXSize) == 0;
+    const auto Index = SignedConst / SignedAVXSize;
+
+    // SVE's immediate variants of load stores are quite limited in terms
+    // of immediate range. They also operate on a by-vector-length basis.
+    //
+    // e.g. On a 256-bit SVE capable system:
+    //
+    //      LD1B Dst.B, Predicate/Z, [Reg, #1, MUL VL]
+    //
+    //      Will add 32 to the base register as the offset
+    //
+    // So if we have a constant that cleanly lies along a 256-bit offset
+    // and is also within the limitations of the immediate of -8 to 7
+    // then we can encode it as an immediate offset.
+    //
+    if (IsCleanlyDivisible && Index >= -8 && Index <= 7) {
+      return SVEMemOperand(Base, static_cast<uint64_t>(Index), SVE_MUL_VL);
+    }
+
+    // If we can't do that for whatever reason, then unfortunately, we need
+    // to move it over to a temporary to use as an offset.
+    mov(TMP1, Const);
+    return SVEMemOperand(Base, TMP1);
+  }
+
+  // Otherwise handle it like normal.
+  // Note that we do nothing with the offset type and offset scale,
+  // since SVE loads and stores don't have the ability to perform an
+  // optional extension or shift as part of their behavior.
+  LOGMAN_THROW_A_FMT(OffsetType.Val == IR::MEM_OFFSET_SXTX.Val,
+                     "Currently only the default offset type (SXTX) is supported.");
+
+  const auto RegOffset = GetReg<RA_64>(Offset.ID());
+  return SVEMemOperand(Base, RegOffset);
+}
+
+DEF_OP(LoadMem) {
+  const auto Op = IROp->C<IR::IROp_LoadMem>();
+  const auto OpSize = IROp->Size;
+
+  const auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto Dst = GetReg<RA_64>(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetReg<RA_64>(Node);
+    const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+    switch (OpSize) {
       case 1:
         ldrb(Dst, MemSrc);
         break;
@@ -640,57 +697,70 @@ DEF_OP(LoadMem) {
       case 8:
         ldr(Dst, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
+        break;
     }
   }
   else {
-    auto Dst = GetDst(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetDst(Node);
+
+    switch (OpSize) {
       case 1:
-        ldr(Dst.B(), MemSrc);
-        break;
       case 2:
-        ldr(Dst.H(), MemSrc);
-        break;
       case 4:
-        ldr(Dst.S(), MemSrc);
-        break;
       case 8:
-        ldr(Dst.D(), MemSrc);
+      case 16: {
+        const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        const auto NewDst = VRegister(Dst.GetCode(), OpSize * 8);
+        ldr(NewDst, MemSrc);
         break;
-      case 16:
-        ldr(Dst, MemSrc);
+      }
+      case 32: {
+        const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), Operand);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
+        break;
     }
   }
 }
 
 DEF_OP(LoadMemTSO) {
-  auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto OpSize = IROp->Size;
 
-  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
-  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
-  if (CTX->HostFeatures.SupportsTSOImm9) {
-    // RCPC2 means that the offset must be an inline constant
-    LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false, "RCPC2 doesn't support register offset. Only Immediate offset");
-  }
-  else {
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "LoadMemTSO: No offset allowed");
-  }
+  const auto GetMemSrc = [&] {
+    const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+    if (CTX->HostFeatures.SupportsTSOImm9) {
+      // RCPC2 means that the offset must be an inline constant
+      LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false,
+                         "RCPC2 doesn't support register offset. Only Immediate offset");
+    } else {
+      LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "LoadMemTSO: No offset allowed");
+    }
+
+    return MemSrc;
+  };
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldapurb(Dst, MemSrc);
     }
     else {
       // Aligned
       nop();
-      auto Dst = GetReg<RA_64>(Node);
-      switch (IROp->Size) {
+      const auto Dst = GetReg<RA_64>(Node);
+      switch (OpSize) {
         case 2:
           ldapurh(Dst, MemSrc);
           break;
@@ -700,22 +770,26 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldapur(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldaprb(Dst, MemSrc);
     }
     else {
       // Aligned
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       nop();
-      switch (IROp->Size) {
+      switch (OpSize) {
         case 2:
           ldaprh(Dst, MemSrc);
           break;
@@ -725,22 +799,26 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldapr(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else if (Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldarb(Dst, MemSrc);
     }
     else {
       // Aligned
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       nop();
-      switch (IROp->Size) {
+      switch (OpSize) {
         case 2:
           ldarh(Dst, MemSrc);
           break;
@@ -750,28 +828,35 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else {
     dmb(InnerShareable, BarrierAll);
-    auto Dst = GetDst(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetDst(Node);
+    switch (OpSize) {
+      case 1:
       case 2:
-        ldr(Dst.H(), MemSrc);
-        break;
       case 4:
-        ldr(Dst.S(), MemSrc);
-        break;
       case 8:
-        ldr(Dst.D(), MemSrc);
+      case 16: {
+        const auto MemSrc = GetMemSrc();
+        const auto NewDst = VRegister(Dst.GetCode(), OpSize * 8);
+        ldr(NewDst, MemSrc);
         break;
-      case 16:
-        ldr(Dst, MemSrc);
+      }
+      case 32: {
+        const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+        break;
     }
     dmb(InnerShareable, BarrierAll);
   }
@@ -908,23 +993,25 @@ DEF_OP(StoreMemTSO) {
 }
 
 DEF_OP(ParanoidLoadMemTSO) {
-  auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto OpSize = IROp->Size;
 
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Addr.ID()));
+  const auto Addr = GetReg<RA_64>(Op->Addr.ID());
+  const auto MemSrc = MemOperand(Addr);
 
   if (!Op->Offset.IsInvalid()) {
     LOGMAN_MSG_A_FMT("ParanoidLoadMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldarb(Dst, MemSrc);
     }
     else {
-      auto Dst = GetReg<RA_64>(Node);
-      switch (IROp->Size) {
+      const auto Dst = GetReg<RA_64>(Node);
+      switch (OpSize) {
         case 2:
           ldarh(Dst, MemSrc);
           break;
@@ -934,13 +1021,19 @@ DEF_OP(ParanoidLoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+          break;
       }
     }
   }
   else {
-    auto Dst = GetDst(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetDst(Node);
+    switch (OpSize) {
+      case 1:
+        ldarb(TMP1.W(), MemSrc);
+        fmov(Dst.B(), TMP1.B());
+        break;
       case 2:
         ldarh(TMP1.W(), MemSrc);
         fmov(Dst.H(), TMP1.W());
@@ -960,7 +1053,14 @@ DEF_OP(ParanoidLoadMemTSO) {
         mov(Dst.V2D(), 0, TMP1);
         mov(Dst.V2D(), 1, TMP2);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", IROp->Size);
+      case 32:
+        dmb(InnerShareable, BarrierAll);
+        ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(Addr));
+        dmb(InnerShareable, BarrierAll);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+        break;
     }
   }
 }
