@@ -489,10 +489,8 @@ DEF_OP(SpillRegister) {
       break;
     }
     case 32: {
-      // TODO: Eliminate ptrue with statically allocated predicate register.
-      ptrue(p7.VnB(), SVE_VL32);
       mov(TMP3, SlotOffset);
-      st1b(Src.Z().VnB(), p7, SVEMemOperand(sp, TMP3));
+      st1b(Src.Z().VnB(), PRED_TMP_32B, SVEMemOperand(sp, TMP3));
       break;
     }
     default:
@@ -548,10 +546,8 @@ DEF_OP(FillRegister) {
       break;
     }
     case 32: {
-      // TODO: Eliminate ptrue with statically allocated predicate register.
-      ptrue(p7.VnB(), SVE_VL32);
       mov(TMP3, SlotOffset);
-      ld1b(Dst.Z().VnB(), p7.Zeroing(), SVEMemOperand(sp, TMP3));
+      ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(sp, TMP3));
       break;
     }
     default:
