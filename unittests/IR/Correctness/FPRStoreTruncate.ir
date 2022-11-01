@@ -26,28 +26,28 @@
     %AddrB i64 = Constant #0x1000010
 
     %ClearVal i128 = LoadMem FPR, #0x10, %AddrB i64, %Invalid, #0x10, SXTX, #1
-    (%Clear1 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xa0
-    (%Clear2 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xc0
-    (%Clear3 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xe0
-    (%Clear4 i128) StoreContext #0x10, FPR, %ClearVal i128, #0x100
+    (%Clear1 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xc0
+    (%Clear2 i128) StoreContext #0x10, FPR, %ClearVal i128, #0xe0
+    (%Clear3 i128) StoreContext #0x10, FPR, %ClearVal i128, #0x100
+    (%Clear4 i128) StoreContext #0x10, FPR, %ClearVal i128, #0x120
 
     %AddrA i64 = Constant #0x1000000
 
     %MemValueA i128 = LoadMem FPR, #0x10, %AddrA i64, %Invalid, #0x10, SXTX, #1
-    (%Store1 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xa0
-    (%Store2 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xc0
-    (%Store3 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xe0
-    (%Store4 i8)   StoreContext  #0x1, FPR, %MemValueA i128, #0x100
+    (%Store1 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xc0
+    (%Store2 i128) StoreContext #0x10, FPR, %MemValueA i128, #0xe0
+    (%Store3 i128) StoreContext #0x10, FPR, %MemValueA i128, #0x100
+    (%Store4 i8)   StoreContext  #0x1, FPR, %MemValueA i128, #0x120
 
-    %Truncated64 i64 = LoadContext #0x8, FPR, #0xa0
-    %Truncated32 i32 = LoadContext #0x4, FPR, #0xc0
-    %Truncated16 i16 = LoadContext #0x2, FPR, #0xe0
-    %Truncated8  i8  = LoadContext #0x1, FPR, #0x100
+    %Truncated64 i64 = LoadContext #0x8, FPR, #0xc0
+    %Truncated32 i32 = LoadContext #0x4, FPR, #0xe0
+    %Truncated16 i16 = LoadContext #0x2, FPR, #0x100
+    %Truncated8  i8  = LoadContext #0x1, FPR, #0x120
 
-    (%Store5 i128) StoreContext #0x10, FPR, %Truncated64 i128, #0x120
-    (%Store6 i128) StoreContext #0x10, FPR, %Truncated32 i128, #0x140
-    (%Store7 i128) StoreContext #0x10, FPR, %Truncated16 i128, #0x160
-    (%Store8 i128) StoreContext #0x10, FPR, %Truncated8 i128, #0x180
-    (%Store9 i128) StoreContext #0x10, FPR, %MemValueA i128, #0x1A0
+    (%Store5 i128) StoreContext #0x10, FPR, %Truncated64 i128, #0x140
+    (%Store6 i128) StoreContext #0x10, FPR, %Truncated32 i128, #0x160
+    (%Store7 i128) StoreContext #0x10, FPR, %Truncated16 i128, #0x180
+    (%Store8 i128) StoreContext #0x10, FPR, %Truncated8 i128, #0x1A0
+    (%Store9 i128) StoreContext #0x10, FPR, %MemValueA i128, #0x1C0
     (%ssa7 i0) Break {0.11.0.128}
     (%end i0) EndBlock %ssa2

@@ -24,7 +24,7 @@ $end_info$
 
 namespace FEX::HLE::x64 {
   uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {
-    Frame->State.fs = reinterpret_cast<uint64_t>(tls);
+    Frame->State.fs_cached = reinterpret_cast<uint64_t>(tls);
     return 0;
   }
 

@@ -28,9 +28,16 @@ namespace FEXCore::Core {
 
     uint64_t rip; ///< Current core's RIP. May not be entirely accurate while JIT is active
     uint64_t gregs[16];
-    uint16_t es, cs, ss, ds;
-    uint64_t gs;
-    uint64_t fs;
+    // Raw segment register indexes
+    uint16_t es_idx, cs_idx, ss_idx, ds_idx;
+    uint16_t gs_idx, fs_idx;
+    uint16_t _pad[2];
+
+    // Segment registers holding base addresses
+    uint32_t es_cached, cs_cached, ss_cached, ds_cached;
+    uint64_t gs_cached;
+    uint64_t fs_cached;
+    uint64_t _pad2[1];
     XMMRegs xmm;
     uint8_t flags[48];
     uint64_t mm[8][2];
