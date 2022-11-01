@@ -53,7 +53,6 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
     "ldr x16, [x11] \n"
     "br x16 \n"
     // Manually align to the next 8-byte boundary
-    // NOTE: GCC over-aligns to a full page when using .align directives on ARM (last tested on GCC 11.2)
     "nop \n"
     "0: \n"
     ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
