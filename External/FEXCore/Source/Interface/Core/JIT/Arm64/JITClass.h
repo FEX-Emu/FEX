@@ -118,6 +118,17 @@ private:
                                               IR::MemOffsetType OffsetType,
                                               uint8_t OffsetScale);
 
+  // NOTE: Will use TMP1 as a way to encode immediates that happen to fall outside
+  //       the limits of the scalar plus immediate variant of SVE load/stores.
+  //
+  //       TMP1 is safe to use again once this memory operand is used with its
+  //       equivalent loads or stores that this was called for.
+  [[nodiscard]] SVEMemOperand GenerateSVEMemOperand(uint8_t AccessSize,
+                                                    aarch64::Register Base,
+                                                    IR::OrderedNodeWrapper Offset,
+                                                    IR::MemOffsetType OffsetType,
+                                                    uint8_t OffsetScale);
+
   [[nodiscard]] bool IsInlineConstant(const IR::OrderedNodeWrapper& Node, uint64_t* Value = nullptr) const;
   [[nodiscard]] bool IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const;
 

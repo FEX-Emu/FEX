@@ -482,69 +482,77 @@ Xbyak::RegExp X86JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper 
 }
 
 DEF_OP(LoadMem) {
-  auto Op = IROp->C<IR::IROp_LoadMem>();
+  const auto Op = IROp->C<IR::IROp_LoadMem>();
+  const auto OpSize = IROp->Size;
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
-
-  auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+  const auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == IR::GPRClass) {
-    auto Dst = GetDst<RA_64>(Node);
+    const auto Dst = GetDst<RA_64>(Node);
 
-    switch (IROp->Size) {
+    switch (OpSize) {
       case 1: {
-        movzx (Dst, byte [MemPtr]);
+        movzx(Dst, byte [MemPtr]);
+        break;
       }
-      break;
       case 2: {
-        movzx (Dst, word [MemPtr]);
+        movzx(Dst, word [MemPtr]);
+        break;
       }
-      break;
       case 4: {
         mov(Dst.cvt32(), dword [MemPtr]);
+        break;
       }
-      break;
       case 8: {
         mov(Dst, qword [MemPtr]);
+        break;
       }
-      break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
+        break;
     }
   }
   else
   {
-    auto Dst = GetDst(Node);
+    const auto Dst = GetDst(Node);
 
-    switch (IROp->Size) {
+    switch (OpSize) {
       case 1: {
         movzx(eax, byte [MemPtr]);
         vmovd(Dst, eax);
+        break;
       }
-      break;
       case 2: {
         movzx(eax, word [MemPtr]);
         vmovd(Dst, eax);
+        break;
       }
-      break;
       case 4: {
         vmovd(Dst, dword [MemPtr]);
+        break;
       }
-      break;
       case 8: {
         vmovq(Dst, qword [MemPtr]);
+        break;
       }
-      break;
       case 16: {
-         if (IROp->Size == Op->Align)
-           movups(GetDst(Node), xword [MemPtr]);
-         else
-           movups(GetDst(Node), xword [MemPtr]);
-         if (MemoryDebug) {
-           movq(rcx, GetDst(Node));
-         }
-       }
-       break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
+        vmovups(Dst, xword [MemPtr]);
+        if (MemoryDebug) {
+          movq(rcx, Dst);
+        }
+        break;
+      }
+      case 32: {
+        vmovups(ToYMM(Dst), yword [MemPtr]);
+        if (MemoryDebug) {
+          movq(rcx, Dst);
+        }
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
+        break;
     }
   }
 }

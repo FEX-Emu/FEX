@@ -599,15 +599,72 @@ MemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize, aarch64::Registe
   FEX_UNREACHABLE;
 }
 
-DEF_OP(LoadMem) {
-  auto Op = IROp->C<IR::IROp_LoadMem>();
+SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize,
+                                                  aarch64::Register Base,
+                                                  IR::OrderedNodeWrapper Offset,
+                                                  IR::MemOffsetType OffsetType,
+                                                  [[maybe_unused]] uint8_t OffsetScale) {
+  if (Offset.IsInvalid()) {
+    return SVEMemOperand(Base);
+  }
 
-  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
-  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  uint64_t Const{};
+  if (IsInlineConstant(Offset, &Const)) {
+    if (Const == 0) {
+      return SVEMemOperand(Base);
+    }
+
+    const auto SignedConst = static_cast<int64_t>(Const);
+    const auto SignedAVXSize = static_cast<int64_t>(Core::CPUState::XMM_AVX_REG_SIZE);
+
+    const auto IsCleanlyDivisible = (SignedConst % SignedAVXSize) == 0;
+    const auto Index = SignedConst / SignedAVXSize;
+
+    // SVE's immediate variants of load stores are quite limited in terms
+    // of immediate range. They also operate on a by-vector-length basis.
+    //
+    // e.g. On a 256-bit SVE capable system:
+    //
+    //      LD1B Dst.B, Predicate/Z, [Reg, #1, MUL VL]
+    //
+    //      Will add 32 to the base register as the offset
+    //
+    // So if we have a constant that cleanly lies along a 256-bit offset
+    // and is also within the limitations of the immediate of -8 to 7
+    // then we can encode it as an immediate offset.
+    //
+    if (IsCleanlyDivisible && Index >= -8 && Index <= 7) {
+      return SVEMemOperand(Base, static_cast<uint64_t>(Index), SVE_MUL_VL);
+    }
+
+    // If we can't do that for whatever reason, then unfortunately, we need
+    // to move it over to a temporary to use as an offset.
+    mov(TMP1, Const);
+    return SVEMemOperand(Base, TMP1);
+  }
+
+  // Otherwise handle it like normal.
+  // Note that we do nothing with the offset type and offset scale,
+  // since SVE loads and stores don't have the ability to perform an
+  // optional extension or shift as part of their behavior.
+  LOGMAN_THROW_A_FMT(OffsetType.Val == IR::MEM_OFFSET_SXTX.Val,
+                     "Currently only the default offset type (SXTX) is supported.");
+
+  const auto RegOffset = GetReg<RA_64>(Offset.ID());
+  return SVEMemOperand(Base, RegOffset);
+}
+
+DEF_OP(LoadMem) {
+  const auto Op = IROp->C<IR::IROp_LoadMem>();
+  const auto OpSize = IROp->Size;
+
+  const auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto Dst = GetReg<RA_64>(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetReg<RA_64>(Node);
+    const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+    switch (OpSize) {
       case 1:
         ldrb(Dst, MemSrc);
         break;
@@ -620,28 +677,33 @@ DEF_OP(LoadMem) {
       case 8:
         ldr(Dst, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
+        break;
     }
   }
   else {
-    auto Dst = GetDst(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetDst(Node);
+
+    switch (OpSize) {
       case 1:
-        ldr(Dst.B(), MemSrc);
-        break;
       case 2:
-        ldr(Dst.H(), MemSrc);
-        break;
       case 4:
-        ldr(Dst.S(), MemSrc);
-        break;
       case 8:
-        ldr(Dst.D(), MemSrc);
+      case 16: {
+        const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        const auto NewDst = VRegister(Dst.GetCode(), OpSize * 8);
+        ldr(NewDst, MemSrc);
         break;
-      case 16:
-        ldr(Dst, MemSrc);
+      }
+      case 32: {
+        const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), Operand);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", IROp->Size);
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize);
+        break;
     }
   }
 }

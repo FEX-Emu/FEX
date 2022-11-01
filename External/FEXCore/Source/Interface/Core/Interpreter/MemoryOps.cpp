@@ -144,8 +144,8 @@ DEF_OP(StoreFlag) {
 }
 
 DEF_OP(LoadMem) {
-  auto Op = IROp->C<IR::IROp_LoadMem>();
-  uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_LoadMem>();
+  const auto OpSize = IROp->Size;
 
   uint8_t const *MemData = *GetSrc<uint8_t const**>(Data->SSAData, Op->Addr);
 
@@ -158,7 +158,8 @@ DEF_OP(LoadMem) {
       case IR::MEM_OFFSET_SXTW.Val: MemData += (int32_t)Offset; break;
     }
   }
-  memset(GDP, 0, 16);
+
+  memset(GDP, 0, Core::CPUState::XMM_AVX_REG_SIZE);
   switch (OpSize) {
     case 1: {
       auto D = reinterpret_cast<const std::atomic<uint8_t>*>(MemData);
@@ -180,9 +181,8 @@ DEF_OP(LoadMem) {
       GD = D->load();
       break;
     }
-
     default:
-      memcpy(GDP, MemData, IROp->Size);
+      memcpy(GDP, MemData, OpSize);
       break;
   }
 }
