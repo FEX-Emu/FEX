@@ -71,44 +71,56 @@ DEF_OP(LoadContext) {
 }
 
 DEF_OP(StoreContext) {
-  auto Op = IROp->C<IR::IROp_StoreContext>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_StoreContext>();
+  const auto OpSize = IROp->Size;
+
   if (Op->Class == FEXCore::IR::GPRClass) {
+    const auto Operand = MemOperand(STATE, Op->Offset);
+
     switch (OpSize) {
     case 1:
-      strb(GetReg<RA_32>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
-    break;
+      strb(GetReg<RA_32>(Op->Value.ID()), Operand);
+      break;
     case 2:
-      strh(GetReg<RA_32>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
-    break;
+      strh(GetReg<RA_32>(Op->Value.ID()), Operand);
+      break;
     case 4:
-      str(GetReg<RA_32>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
-    break;
+      str(GetReg<RA_32>(Op->Value.ID()), Operand);
+      break;
     case 8:
-      str(GetReg<RA_64>(Op->Value.ID()), MemOperand(STATE, Op->Offset));
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
+      str(GetReg<RA_64>(Op->Value.ID()), Operand);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
+      break;
     }
   }
   else {
-    auto Src =  GetSrc(Op->Value.ID());
+    const auto Src =  GetSrc(Op->Value.ID());
+
     switch (OpSize) {
     case 1:
       str(Src.B(), MemOperand(STATE, Op->Offset));
-    break;
+      break;
     case 2:
       str(Src.H(), MemOperand(STATE, Op->Offset));
-    break;
+      break;
     case 4:
       str(Src.S(), MemOperand(STATE, Op->Offset));
-    break;
+      break;
     case 8:
       str(Src.D(), MemOperand(STATE, Op->Offset));
-    break;
+      break;
     case 16:
       str(Src, MemOperand(STATE, Op->Offset));
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
+      break;
+    case 32:
+      mov(TMP1, Op->Offset);
+      st1b(Src.Z().VnB(), PRED_TMP_32B, SVEMemOperand(STATE, TMP1));
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
+      break;
     }
   }
 }

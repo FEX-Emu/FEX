@@ -57,13 +57,13 @@ DEF_OP(LoadContext) {
 }
 
 DEF_OP(StoreContext) {
-  auto Op = IROp->C<IR::IROp_StoreContext>();
-  uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_StoreContext>();
+  const auto OpSize = IROp->Size;
 
-  uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
-  ContextPtr += Op->Offset;
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Dst = ContextPtr + Op->Offset;
 
-  void *MemData = reinterpret_cast<void*>(ContextPtr);
+  void *MemData = reinterpret_cast<void*>(Dst);
   void *Src = GetSrc<void*>(Data->SSAData, Op->Value);
   memcpy(MemData, Src, OpSize);
 }
