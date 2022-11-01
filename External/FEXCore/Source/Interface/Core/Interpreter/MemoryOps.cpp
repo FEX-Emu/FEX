@@ -25,40 +25,45 @@ static inline void CacheLineFlush(char *Addr) {
 
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(LoadContext) {
-  auto Op = IROp->C<IR::IROp_LoadContext>();
-  uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_LoadContext>();
+  const auto OpSize = IROp->Size;
 
-  uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
-  ContextPtr += Op->Offset;
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Src = ContextPtr + Op->Offset;
+
   #define LOAD_CTX(x, y) \
     case x: { \
-      y const *MemData = reinterpret_cast<y const*>(ContextPtr); \
+      y const *MemData = reinterpret_cast<y const*>(Src); \
       GD = *MemData; \
       break; \
     }
+
   switch (OpSize) {
     LOAD_CTX(1, uint8_t)
     LOAD_CTX(2, uint16_t)
     LOAD_CTX(4, uint32_t)
     LOAD_CTX(8, uint64_t)
-    case 16: {
-      void const *MemData = reinterpret_cast<void const*>(ContextPtr);
+    case 16:
+    case 32: {
+      void const *MemData = reinterpret_cast<void const*>(Src);
       memcpy(GDP, MemData, OpSize);
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+      break;
   }
   #undef LOAD_CTX
 }
 
 DEF_OP(StoreContext) {
-  auto Op = IROp->C<IR::IROp_StoreContext>();
-  uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_StoreContext>();
+  const auto OpSize = IROp->Size;
 
-  uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
-  ContextPtr += Op->Offset;
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Dst = ContextPtr + Op->Offset;
 
-  void *MemData = reinterpret_cast<void*>(ContextPtr);
+  void *MemData = reinterpret_cast<void*>(Dst);
   void *Src = GetSrc<void*>(Data->SSAData, Op->Value);
   memcpy(MemData, Src, OpSize);
 }
