@@ -916,27 +916,35 @@ DEF_OP(StoreMem) {
 }
 
 DEF_OP(StoreMemTSO) {
-  auto Op = IROp->C<IR::IROp_StoreMemTSO>();
+  const auto Op = IROp->C<IR::IROp_StoreMemTSO>();
+  const auto OpSize = IROp->Size;
 
-  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
-  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
-  if (CTX->HostFeatures.SupportsTSOImm9) {
-    // RCPC2 means that the offset must be an inline constant
-    LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false, "RCPC2 doesn't support register offset. Only Immediate offset");
-  }
-  else {
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "StoreMemTSO: No offset allowed");
-  }
+  const auto GetMemSrc = [&] {
+    const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+    if (CTX->HostFeatures.SupportsTSOImm9) {
+      // RCPC2 means that the offset must be an inline constant
+      LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false, "RCPC2 doesn't support register offset. Only Immediate offset");
+    }
+    else {
+      LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "StoreMemTSO: No offset allowed");
+    }
+
+    return MemSrc;
+  };
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       stlurb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
     }
     else {
       nop();
-      switch (IROp->Size) {
+      switch (OpSize) {
         case 2:
           stlurh(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
@@ -946,19 +954,23 @@ DEF_OP(StoreMemTSO) {
         case 8:
           stlur(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else if (Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
       stlrb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
     }
     else {
       nop();
-      switch (IROp->Size) {
+      switch (OpSize) {
         case 2:
           stlrh(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
@@ -968,31 +980,35 @@ DEF_OP(StoreMemTSO) {
         case 8:
           stlr(GetReg<RA_64>(Op->Value.ID()), MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else {
     dmb(InnerShareable, BarrierAll);
-    auto Src = GetSrc(Op->Value.ID());
-    switch (IROp->Size) {
+    const auto Src = GetSrc(Op->Value.ID());
+    switch (OpSize) {
       case 1:
-        str(Src.B(), MemSrc);
-        break;
       case 2:
-        str(Src.H(), MemSrc);
-        break;
       case 4:
-        str(Src.S(), MemSrc);
-        break;
       case 8:
-        str(Src.D(), MemSrc);
+      case 16: {
+        const auto MemSrc = GetMemSrc();
+        const auto NewSrc = VRegister(Src.GetCode(), OpSize * 8);
+        str(NewSrc, MemSrc);
         break;
-      case 16:
-        str(Src, MemSrc);
+      }
+      case 32: {
+        const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        st1b(Src.Z().VnB(), PRED_TMP_32B, Operand);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", IROp->Size);
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
+        break;
     }
     dmb(InnerShareable, BarrierAll);
   }
