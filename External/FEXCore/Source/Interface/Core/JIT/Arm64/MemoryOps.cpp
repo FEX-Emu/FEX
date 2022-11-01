@@ -709,30 +709,38 @@ DEF_OP(LoadMem) {
 }
 
 DEF_OP(LoadMemTSO) {
-  auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto OpSize = IROp->Size;
 
-  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
-  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
-  if (CTX->HostFeatures.SupportsTSOImm9) {
-    // RCPC2 means that the offset must be an inline constant
-    LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false, "RCPC2 doesn't support register offset. Only Immediate offset");
-  }
-  else {
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "LoadMemTSO: No offset allowed");
-  }
+  const auto GetMemSrc = [&] {
+    const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+    if (CTX->HostFeatures.SupportsTSOImm9) {
+      // RCPC2 means that the offset must be an inline constant
+      LOGMAN_THROW_A_FMT(MemSrc.IsRegisterOffset() == false,
+                         "RCPC2 doesn't support register offset. Only Immediate offset");
+    } else {
+      LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "LoadMemTSO: No offset allowed");
+    }
+
+    return MemSrc;
+  };
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldapurb(Dst, MemSrc);
     }
     else {
       // Aligned
       nop();
-      auto Dst = GetReg<RA_64>(Node);
-      switch (IROp->Size) {
+      const auto Dst = GetReg<RA_64>(Node);
+      switch (OpSize) {
         case 2:
           ldapurh(Dst, MemSrc);
           break;
@@ -742,22 +750,26 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldapur(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldaprb(Dst, MemSrc);
     }
     else {
       // Aligned
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       nop();
-      switch (IROp->Size) {
+      switch (OpSize) {
         case 2:
           ldaprh(Dst, MemSrc);
           break;
@@ -767,22 +779,26 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldapr(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else if (Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    const auto MemSrc = GetMemSrc();
+
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldarb(Dst, MemSrc);
     }
     else {
       // Aligned
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       nop();
-      switch (IROp->Size) {
+      switch (OpSize) {
         case 2:
           ldarh(Dst, MemSrc);
           break;
@@ -792,28 +808,35 @@ DEF_OP(LoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+          break;
       }
       nop();
     }
   }
   else {
     dmb(InnerShareable, BarrierAll);
-    auto Dst = GetDst(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetDst(Node);
+    switch (OpSize) {
+      case 1:
       case 2:
-        ldr(Dst.H(), MemSrc);
-        break;
       case 4:
-        ldr(Dst.S(), MemSrc);
-        break;
       case 8:
-        ldr(Dst.D(), MemSrc);
+      case 16: {
+        const auto MemSrc = GetMemSrc();
+        const auto NewDst = VRegister(Dst.GetCode(), OpSize * 8);
+        ldr(NewDst, MemSrc);
         break;
-      case 16:
-        ldr(Dst, MemSrc);
+      }
+      case 32: {
+        const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", IROp->Size);
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
+        break;
     }
     dmb(InnerShareable, BarrierAll);
   }
