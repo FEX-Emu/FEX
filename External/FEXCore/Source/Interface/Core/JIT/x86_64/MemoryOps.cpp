@@ -21,62 +21,77 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
 DEF_OP(LoadContext) {
-  auto Op = IROp->C<IR::IROp_LoadContext>();
-  uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_LoadContext>();
+  const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
     switch (OpSize) {
     case 1: {
       movzx(GetDst<RA_32>(Node), byte [STATE + Op->Offset]);
+      break;
     }
-    break;
     case 2: {
       movzx(GetDst<RA_32>(Node), word [STATE + Op->Offset]);
+      break;
     }
-    break;
     case 4: {
       mov(GetDst<RA_32>(Node), dword [STATE + Op->Offset]);
+      break;
     }
-    break;
     case 8: {
       mov(GetDst<RA_64>(Node), qword [STATE + Op->Offset]);
+      break;
     }
-    break;
     case 16: {
       LOGMAN_MSG_A_FMT("Invalid GPR load of size 16");
+      break;
     }
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+      break;
     }
   }
   else {
+    const auto Dst = GetDst(Node);
+
     switch (OpSize) {
     case 1: {
       movzx(rax, byte [STATE + Op->Offset]);
-      vmovq(GetDst(Node), rax);
+      vmovq(Dst, rax);
+      break;
     }
-    break;
     case 2: {
       movzx(rax, word [STATE + Op->Offset]);
-      vmovq(GetDst(Node), rax);
+      vmovq(Dst, rax);
+      break;
     }
-    break;
     case 4: {
-      vmovd(GetDst(Node), dword [STATE + Op->Offset]);
+      vmovd(Dst, dword [STATE + Op->Offset]);
+      break;
     }
-    break;
     case 8: {
-      vmovq(GetDst(Node), qword [STATE + Op->Offset]);
+      vmovq(Dst, qword [STATE + Op->Offset]);
+      break;
     }
-    break;
     case 16: {
-      if (Op->Offset % 16 == 0)
-        movaps(GetDst(Node), xword [STATE + Op->Offset]);
-      else
-        movups(GetDst(Node), xword [STATE + Op->Offset]);
+      if (Op->Offset % 16 == 0) {
+        vmovaps(Dst, xword [STATE + Op->Offset]);
+      } else {
+        vmovups(Dst, xword [STATE + Op->Offset]);
+      }
+      break;
     }
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+    case 32: {
+      if (Op->Offset % 32 == 0) {
+        vmovaps(ToYMM(Dst), yword [STATE + Op->Offset]);
+      } else {
+        vmovups(ToYMM(Dst), yword [STATE + Op->Offset]);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+      break;
     }
   }
 }
