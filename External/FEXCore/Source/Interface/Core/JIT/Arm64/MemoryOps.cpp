@@ -973,23 +973,25 @@ DEF_OP(StoreMemTSO) {
 }
 
 DEF_OP(ParanoidLoadMemTSO) {
-  auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
+  const auto OpSize = IROp->Size;
 
-  auto MemSrc = MemOperand(GetReg<RA_64>(Op->Addr.ID()));
+  const auto Addr = GetReg<RA_64>(Op->Addr.ID());
+  const auto MemSrc = MemOperand(Addr);
 
   if (!Op->Offset.IsInvalid()) {
     LOGMAN_MSG_A_FMT("ParanoidLoadMemTSO: No offset allowed");
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    if (IROp->Size == 1) {
+    if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      auto Dst = GetReg<RA_64>(Node);
+      const auto Dst = GetReg<RA_64>(Node);
       ldarb(Dst, MemSrc);
     }
     else {
-      auto Dst = GetReg<RA_64>(Node);
-      switch (IROp->Size) {
+      const auto Dst = GetReg<RA_64>(Node);
+      switch (OpSize) {
         case 2:
           ldarh(Dst, MemSrc);
           break;
@@ -999,13 +1001,19 @@ DEF_OP(ParanoidLoadMemTSO) {
         case 8:
           ldar(Dst, MemSrc);
           break;
-        default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", IROp->Size);
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+          break;
       }
     }
   }
   else {
-    auto Dst = GetDst(Node);
-    switch (IROp->Size) {
+    const auto Dst = GetDst(Node);
+    switch (OpSize) {
+      case 1:
+        ldarb(TMP1.W(), MemSrc);
+        fmov(Dst.B(), TMP1.B());
+        break;
       case 2:
         ldarh(TMP1.W(), MemSrc);
         fmov(Dst.H(), TMP1.W());
@@ -1025,7 +1033,14 @@ DEF_OP(ParanoidLoadMemTSO) {
         mov(Dst.V2D(), 0, TMP1);
         mov(Dst.V2D(), 1, TMP2);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", IROp->Size);
+      case 32:
+        dmb(InnerShareable, BarrierAll);
+        ld1b(Dst.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(Addr));
+        dmb(InnerShareable, BarrierAll);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+        break;
     }
   }
 }
