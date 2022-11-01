@@ -22,71 +22,35 @@ $end_info$
 
 #include "common/Guest.h"
 #include "WorkEventData.h"
-#include "common/CrossArchEvent.h"
 
 #include <stdarg.h>
 
 #include "thunkgen_guest_libxcb.inl"
 
-static std::thread CBThread{};
-static std::atomic<bool> CBDone{false};
+struct OnStart {
+std::thread thr;
+std::atomic<bool> done { false };
+std::mutex m;
+std::condition_variable var;
 
-static CrossArchEvent WaitForWork{};
-static CrossArchEvent WorkDone{};
-static CBWork CBWorkData{};
+OnStart() : thr([this]() {
+struct { unsigned id = 1; } args;
+fexthunks_fex_register_async_worker_thread(&args);
 
-void FEX_Helper_GiveEvents() {
-  struct {
-    CrossArchEvent *WaitForWork;
-    CrossArchEvent *WorkDone;
-    CBWork *Work;
-  } args;
+std::unique_lock lock(m);
+var.wait(lock, [this]() -> bool { return done; });
 
-  args.WaitForWork = &WaitForWork;
-  args.WorkDone = &WorkDone;
-  args.Work = &CBWorkData;
+fexthunks_fex_unregister_async_worker_thread(&args);
+}) {}
 
-  fexthunks_libxcb_FEX_GiveEvents(&args);
+~OnStart() {
+done = true;
+var.notify_one();
+thr.join();
 }
-
-static void CallbackThreadFunc() {
-  // Set the thread name to make it easy to know what thread this is
-  pthread_setname_np(pthread_self(), "xcb:take_socket");
-
-  // Hand the host our helpers
-  FEX_Helper_GiveEvents();
-  while (!CBDone) {
-    WaitForWorkFunc(&WaitForWork);
-    if (CBDone) {
-      return;
-    }
-    typedef void take_xcb_fn_t (void* a_0);
-    auto callback = reinterpret_cast<take_xcb_fn_t*>(CBWorkData.cb);
-
-    // On shutdown then callback can change to nullptr
-    if (callback) {
-      callback(CBWorkData.argsv);
-    }
-    NotifyWorkFunc(&WorkDone);
-  }
-}
+} on_start;
 
 extern "C" {
-  static void init_lib() {
-    // Start a guest side thread that allows us to do callbacks from xcb safely
-    if (!CBThread.joinable()) {
-      CBThread = std::thread(CallbackThreadFunc);
-    }
-  }
-  __attribute__((destructor)) static void close_lib() {
-    if (CBThread.joinable()) {
-      CBDone = true;
-      NotifyWorkFunc(&WaitForWork);
-      NotifyWorkFunc(&WorkDone);
-      CBThread.join();
-    }
-  }
-
   xcb_extension_t xcb_big_requests_id = {
     .name = "BIG-REQUESTS",
     .global_id = 0,
@@ -1407,4 +1371,4 @@ extern "C" {
   }
 }
 
-LOAD_LIB_INIT(libxcb, init_lib)
+LOAD_LIB(libxcb)
