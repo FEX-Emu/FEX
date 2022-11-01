@@ -193,8 +193,8 @@ DEF_OP(LoadMem) {
 }
 
 DEF_OP(StoreMem) {
-  auto Op = IROp->C<IR::IROp_StoreMem>();
-  uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_StoreMem>();
+  const auto OpSize = IROp->Size;
 
   uint8_t *MemData = *GetSrc<uint8_t **>(Data->SSAData, Op->Addr);
 
@@ -226,7 +226,7 @@ DEF_OP(StoreMem) {
     }
 
     default:
-      memcpy(MemData, GetSrc<void*>(Data->SSAData, Op->Value), IROp->Size);
+      memcpy(MemData, GetSrc<void*>(Data->SSAData, Op->Value), OpSize);
       break;
   }
 }

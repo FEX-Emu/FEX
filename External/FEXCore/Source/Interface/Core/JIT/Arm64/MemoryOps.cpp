@@ -863,14 +863,15 @@ DEF_OP(LoadMemTSO) {
 }
 
 DEF_OP(StoreMem) {
-  auto Op = IROp->C<IR::IROp_StoreMem>();
+  const auto Op = IROp->C<IR::IROp_StoreMem>();
+  const auto OpSize = IROp->Size;
 
-  auto MemReg = GetReg<RA_64>(Op->Addr.ID());
-
-  auto MemSrc = GenerateMemOperand(IROp->Size, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const auto MemReg = GetReg<RA_64>(Op->Addr.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    switch (IROp->Size) {
+    const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+    switch (OpSize) {
       case 1:
         strb(GetReg<RA_64>(Op->Value.ID()), MemSrc);
         break;
@@ -883,28 +884,33 @@ DEF_OP(StoreMem) {
       case 8:
         str(GetReg<RA_64>(Op->Value.ID()), MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize);
+        break;
     }
   }
   else {
-    auto Src = GetSrc(Op->Value.ID());
-    switch (IROp->Size) {
+    const auto Src = GetSrc(Op->Value.ID());
+
+    switch (OpSize) {
       case 1:
-        str(Src.B(), MemSrc);
-        break;
       case 2:
-        str(Src.H(), MemSrc);
-        break;
       case 4:
-        str(Src.S(), MemSrc);
-        break;
       case 8:
-        str(Src.D(), MemSrc);
+      case 16: {
+        const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        const auto NewSrc = VRegister(Src.GetCode(), OpSize * 8);
+        str(NewSrc, MemSrc);
         break;
-      case 16:
-        str(Src, MemSrc);
+      }
+      case 32: {
+        const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+        st1b(Src.Z().VnB(), PRED_TMP_32B, MemSrc);
         break;
-      default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize);
+        break;
     }
   }
 }
