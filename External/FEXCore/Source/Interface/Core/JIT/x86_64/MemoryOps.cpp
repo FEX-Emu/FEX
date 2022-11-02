@@ -587,50 +587,56 @@ DEF_OP(LoadMem) {
 }
 
 DEF_OP(StoreMem) {
-  auto Op = IROp->C<IR::IROp_StoreMem>();
+  const auto Op = IROp->C<IR::IROp_StoreMem>();
+  const auto OpSize = IROp->Size;
 
-  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
-
-  auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+  const auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == IR::GPRClass) {
-    switch (IROp->Size) {
+    switch (OpSize) {
     case 1:
       mov(byte [MemPtr], GetSrc<RA_8>(Op->Value.ID()));
-    break;
+      break;
     case 2:
       mov(word [MemPtr], GetSrc<RA_16>(Op->Value.ID()));
-    break;
+      break;
     case 4:
       mov(dword [MemPtr], GetSrc<RA_32>(Op->Value.ID()));
-    break;
+      break;
     case 8:
       mov(qword [MemPtr], GetSrc<RA_64>(Op->Value.ID()));
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize);
+      break;
     }
   }
   else {
-    switch (IROp->Size) {
+    const auto Value = GetSrc(Op->Value.ID());
+
+    switch (OpSize) {
     case 1:
-      pextrb(byte [MemPtr], GetSrc(Op->Value.ID()), 0);
-    break;
+      pextrb(byte [MemPtr], Value, 0);
+      break;
     case 2:
-      pextrw(word [MemPtr], GetSrc(Op->Value.ID()), 0);
-    break;
+      pextrw(word [MemPtr], Value, 0);
+      break;
     case 4:
-      vmovd(dword [MemPtr], GetSrc(Op->Value.ID()));
-    break;
+      vmovd(dword [MemPtr], Value);
+      break;
     case 8:
-      vmovq(qword [MemPtr], GetSrc(Op->Value.ID()));
-    break;
+      vmovq(qword [MemPtr], Value);
+      break;
     case 16:
-      if (IROp->Size == Op->Align)
-        movups(xword [MemPtr], GetSrc(Op->Value.ID()));
-      else
-        movups(xword [MemPtr], GetSrc(Op->Value.ID()));
-    break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", IROp->Size);
+      vmovups(xword [MemPtr], Value);
+      break;
+    case 32:
+      vmovups(yword [MemPtr], ToYMM(Value));
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize);
+      break;
     }
   }
 }
