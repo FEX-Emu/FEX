@@ -1026,27 +1026,23 @@ DEF_OP(ParanoidLoadMemTSO) {
   }
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    if (OpSize == 1) {
-      // 8bit load is always aligned to natural alignment
-      const auto Dst = GetReg<RA_64>(Node);
-      ldarb(Dst, MemSrc);
-    }
-    else {
-      const auto Dst = GetReg<RA_64>(Node);
-      switch (OpSize) {
-        case 2:
-          ldarh(Dst, MemSrc);
-          break;
-        case 4:
-          ldar(Dst.W(), MemSrc);
-          break;
-        case 8:
-          ldar(Dst, MemSrc);
-          break;
-        default:
-          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
-          break;
-      }
+    const auto Dst = GetReg<RA_64>(Node);
+    switch (OpSize) {
+      case 1:
+        ldarb(Dst, MemSrc);
+        break;
+      case 2:
+        ldarh(Dst, MemSrc);
+        break;
+      case 4:
+        ldar(Dst.W(), MemSrc);
+        break;
+      case 8:
+        ldar(Dst, MemSrc);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+        break;
     }
   }
   else {
