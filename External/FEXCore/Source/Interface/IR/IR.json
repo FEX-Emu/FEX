@@ -355,7 +355,7 @@
         "DestSize": "ByteSize",
         "EmitValidation": [
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
         ]
       },
 
@@ -370,7 +370,7 @@
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class",
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
         ]
       },
 
@@ -381,7 +381,7 @@
         "DestSize": "ByteSize",
         "EmitValidation": [
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
         ]
       },
       "StoreContextIndexed SSA:$Value, GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
@@ -393,7 +393,7 @@
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class",
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
         ]
       },
 
