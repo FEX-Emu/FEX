@@ -28,26 +28,18 @@ $end_info$
 #include "thunkgen_guest_libxcb.inl"
 
 struct OnStart {
-std::thread thr;
-std::atomic<bool> done { false };
-std::mutex m;
-std::condition_variable var;
+  std::thread thr;
 
-OnStart() : thr([this]() {
-struct { unsigned id = 1; } args;
-fexthunks_fex_register_async_worker_thread(&args);
+  OnStart() : thr([this]() {
+    struct { unsigned id = 1; } args;
+    fexthunks_fex_register_async_worker_thread(&args);
+  }) {}
 
-std::unique_lock lock(m);
-var.wait(lock, [this]() -> bool { return done; });
-
-fexthunks_fex_unregister_async_worker_thread(&args);
-}) {}
-
-~OnStart() {
-done = true;
-var.notify_one();
-thr.join();
-}
+  ~OnStart() {
+    struct { unsigned id = 1; } args;
+    fexthunks_fex_unregister_async_worker_thread(&args);
+    thr.join();
+  }
 } on_start;
 
 extern "C" {
