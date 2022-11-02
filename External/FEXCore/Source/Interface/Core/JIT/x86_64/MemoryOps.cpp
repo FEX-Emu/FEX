@@ -274,12 +274,13 @@ DEF_OP(LoadContextIndexed) {
 }
 
 DEF_OP(StoreContextIndexed) {
-  auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  Reg index = GetSrc<RA_64>(Op->Index.ID());
-  size_t size = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+  const auto OpSize = IROp->Size;
+
+  const Reg Index = GetSrc<RA_64>(Op->Index.ID());
 
   if (Op->Class == IR::GPRClass) {
-    auto value = GetSrc<RA_64>(Op->Value.ID());
+    const auto Value = GetSrc<RA_64>(Op->Value.ID());
     lea(rax, dword [STATE + Op->BaseOffset]);
 
     switch (Op->Stride) {
@@ -287,10 +288,10 @@ DEF_OP(StoreContextIndexed) {
     case 2:
     case 4:
     case 8: {
-      if (!(size == 1 || size == 2 || size == 4 || size == 8)) {
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", IROp->Size);
+      if (!(OpSize == 1 || OpSize == 2 || OpSize == 4 || OpSize == 8)) {
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
       }
-      mov(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value);
+      mov(AddressFrame(OpSize * 8) [rax + Index * Op->Stride], Value);
       break;
     }
     default:
@@ -299,57 +300,68 @@ DEF_OP(StoreContextIndexed) {
     }
   }
   else {
-    auto value = GetSrc(Op->Value.ID());
+    const auto Value = GetSrc(Op->Value.ID());
     switch (Op->Stride) {
     case 1:
     case 2:
     case 4:
     case 8: {
       lea(rax, dword [STATE + Op->BaseOffset]);
-      switch (size) {
+      switch (OpSize) {
       case 1:
-        pextrb(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value, 0);
+        pextrb(AddressFrame(OpSize * 8) [rax + Index * Op->Stride], Value, 0);
         break;
       case 2:
-        pextrw(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value, 0);
+        pextrw(AddressFrame(OpSize * 8) [rax + Index * Op->Stride], Value, 0);
         break;
       case 4:
-        vmovd(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value);
+        vmovd(AddressFrame(OpSize * 8) [rax + Index * Op->Stride], Value);
         break;
       case 8:
-        vmovq(AddressFrame(IROp->Size * 8) [rax + index * Op->Stride], value);
+        vmovq(AddressFrame(OpSize * 8) [rax + Index * Op->Stride], Value);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
         break;
       }
       break;
     }
-    case 16: {
-      mov(rax, index);
-      shl(rax, 4);
+    case 16:
+    case 32: {
+      const auto Shift = Op->Stride == 16 ? 4 : 5;
+
+      mov(rax, Index);
+      shl(rax, Shift);
       lea(rax, dword [rax + Op->BaseOffset]);
-      switch (size) {
+      switch (OpSize) {
       case 1:
-        pextrb(AddressFrame(IROp->Size * 8) [STATE + rax], value, 0);
+        pextrb(AddressFrame(OpSize * 8) [STATE + rax], Value, 0);
         break;
       case 2:
-        pextrw(AddressFrame(IROp->Size * 8) [STATE + rax], value, 0);
+        pextrw(AddressFrame(OpSize * 8) [STATE + rax], Value, 0);
         break;
       case 4:
-        vmovd(AddressFrame(IROp->Size * 8) [STATE + rax], value);
+        vmovd(AddressFrame(OpSize * 8) [STATE + rax], Value);
         break;
       case 8:
-        vmovq(AddressFrame(IROp->Size * 8) [STATE + rax], value);
+        vmovq(AddressFrame(OpSize * 8) [STATE + rax], Value);
         break;
       case 16:
-        if (Op->BaseOffset % 16 == 0)
-          movaps(xword [STATE + rax], value);
-        else
-          movups(xword [STATE + rax], value);
+        if (Op->BaseOffset % 16 == 0) {
+          vmovaps(xword [STATE + rax], Value);
+        } else {
+          vmovups(xword [STATE + rax], Value);
+        }
+        break;
+      case 32:
+        if (Op->BaseOffset % 32 == 0) {
+          vmovaps(yword [STATE + rax], ToYMM(Value));
+        } else {
+          vmovups(yword [STATE + rax], ToYMM(Value));
+        }
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
         break;
       }
       break;

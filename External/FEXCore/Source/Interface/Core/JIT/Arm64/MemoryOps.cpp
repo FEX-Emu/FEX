@@ -378,12 +378,13 @@ DEF_OP(LoadContextIndexed) {
 }
 
 DEF_OP(StoreContextIndexed) {
-  auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  const size_t size = IROp->Size;
-  auto index = GetReg<RA_64>(Op->Index.ID());
+  const auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+  const auto OpSize = IROp->Size;
+
+  const auto Index = GetReg<RA_64>(Op->Index.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto value = GetReg<RA_64>(Op->Value.ID());
+    const auto Value = GetReg<RA_64>(Op->Value.ID());
 
     switch (Op->Stride) {
     case 1:
@@ -391,24 +392,26 @@ DEF_OP(StoreContextIndexed) {
     case 4:
     case 8: {
       LoadConstant(TMP1, Op->Stride);
-      mul(TMP1, index, TMP1);
+      mul(TMP1, Index, TMP1);
       add(TMP1, STATE, TMP1);
 
-      switch (size) {
+      const auto Operand = MemOperand(TMP1, Op->BaseOffset);
+
+      switch (OpSize) {
       case 1:
-        strb(value, MemOperand(TMP1, Op->BaseOffset));
+        strb(Value, Operand);
         break;
       case 2:
-        strh(value, MemOperand(TMP1, Op->BaseOffset));
+        strh(Value, Operand);
         break;
       case 4:
-        str(value.W(), MemOperand(TMP1, Op->BaseOffset));
+        str(Value.W(), Operand);
         break;
       case 8:
-        str(value, MemOperand(TMP1, Op->BaseOffset));
+        str(Value, Operand);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", IROp->Size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
         break;
       }
       break;
@@ -422,42 +425,42 @@ DEF_OP(StoreContextIndexed) {
     }
   }
   else {
-    auto value = GetSrc(Op->Value.ID());
+    const auto Value = GetSrc(Op->Value.ID());
 
     switch (Op->Stride) {
     case 1:
     case 2:
     case 4:
     case 8:
-    case 16: {
+    case 16:
+    case 32: {
       LoadConstant(TMP1, Op->Stride);
-      mul(TMP1, index, TMP1);
+      mul(TMP1, Index, TMP1);
       add(TMP1, STATE, TMP1);
 
-      switch (size) {
+      switch (OpSize) {
       case 1:
-        str(value.B(), MemOperand(TMP1, Op->BaseOffset));
-        break;
       case 2:
-        str(value.H(), MemOperand(TMP1, Op->BaseOffset));
-        break;
       case 4:
-        str(value.S(), MemOperand(TMP1, Op->BaseOffset));
+      case 8: {
+        const auto NewValue = VRegister(Value.GetCode(), OpSize * 8);
+        str(NewValue, MemOperand(TMP1, Op->BaseOffset));
         break;
-      case 8:
-        str(value.D(), MemOperand(TMP1, Op->BaseOffset));
-        break;
+      }
       case 16:
         if (Op->BaseOffset % 16 == 0) {
-          str(value, MemOperand(TMP1, Op->BaseOffset));
-        }
-        else {
+          str(Value, MemOperand(TMP1, Op->BaseOffset));
+        } else {
           add(TMP1, TMP1, Op->BaseOffset);
-          stur(value, MemOperand(TMP1, Op->BaseOffset));
+          stur(Value, MemOperand(TMP1, Op->BaseOffset));
         }
         break;
+      case 32:
+        mov(TMP2, Op->BaseOffset);
+        st1b(Value.Z().VnB(), PRED_TMP_32B, SVEMemOperand(TMP1, TMP2));
+        break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", IROp->Size);
+        LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
         break;
       }
       break;

@@ -107,16 +107,17 @@ DEF_OP(LoadContextIndexed) {
 }
 
 DEF_OP(StoreContextIndexed) {
-  auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
-  uint64_t Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Index);
+  const auto Op = IROp->C<IR::IROp_StoreContextIndexed>();
+  const auto OpSize = IROp->Size;
 
-  uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
-  ContextPtr += Op->BaseOffset;
-  ContextPtr += Index * Op->Stride;
+  const auto Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Index);
 
-  void *MemData = reinterpret_cast<void*>(ContextPtr);
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Dst = ContextPtr + Op->BaseOffset + (Index * Op->Stride);
+
+  void *MemData = reinterpret_cast<void*>(Dst);
   void *Src = GetSrc<void*>(Data->SSAData, Op->Value);
-  memcpy(MemData, Src, IROp->Size);
+  memcpy(MemData, Src, OpSize);
 }
 
 DEF_OP(SpillRegister) {
