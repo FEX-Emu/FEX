@@ -77,31 +77,35 @@ DEF_OP(StoreRegister) {
 }
 
 DEF_OP(LoadContextIndexed) {
-  auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-  uint64_t Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Index);
+  const auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+  const auto OpSize = IROp->Size;
 
-  uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Index = *GetSrc<uint64_t*>(Data->SSAData, Op->Index);
 
-  ContextPtr += Op->BaseOffset;
-  ContextPtr += Index * Op->Stride;
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Src = ContextPtr + Op->BaseOffset + (Index * Op->Stride);
 
   #define LOAD_CTX(x, y) \
     case x: { \
-      y const *MemData = reinterpret_cast<y const*>(ContextPtr); \
+      y const *MemData = reinterpret_cast<y const*>(Src); \
       GD = *MemData; \
       break; \
     }
-  switch (IROp->Size) {
+
+  switch (OpSize) {
     LOAD_CTX(1, uint8_t)
     LOAD_CTX(2, uint16_t)
     LOAD_CTX(4, uint32_t)
     LOAD_CTX(8, uint64_t)
-    case 16: {
-      void const *MemData = reinterpret_cast<void const*>(ContextPtr);
-      memcpy(GDP, MemData, IROp->Size);
+    case 16:
+    case 32: {
+      void const *MemData = reinterpret_cast<void const*>(Src);
+      memcpy(GDP, MemData, OpSize);
       break;
     }
-    default:  LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
+      break;
   }
   #undef LOAD_CTX
 }

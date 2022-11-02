@@ -171,9 +171,10 @@ DEF_OP(StoreContext) {
 }
 
 DEF_OP(LoadContextIndexed) {
-  auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
-  size_t size = IROp->Size;
-  Reg index = GetSrc<RA_64>(Op->Index.ID());
+  const auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
+  const auto OpSize = IROp->Size;
+
+  const Reg Index = GetSrc<RA_64>(Op->Index.ID());
 
   if (Op->Class == IR::GPRClass) {
     switch (Op->Stride) {
@@ -182,21 +183,21 @@ DEF_OP(LoadContextIndexed) {
     case 4:
     case 8: {
       lea(rax, dword [STATE + Op->BaseOffset]);
-      switch (size) {
+      switch (OpSize) {
       case 1:
-        movzx(GetDst<RA_32>(Node), byte [rax + index * Op->Stride]);
+        movzx(GetDst<RA_32>(Node), byte [rax + Index * Op->Stride]);
         break;
       case 2:
-        movzx(GetDst<RA_32>(Node), word [rax + index * Op->Stride]);
+        movzx(GetDst<RA_32>(Node), word [rax + Index * Op->Stride]);
         break;
       case 4:
-        mov(GetDst<RA_32>(Node),  dword [rax + index * Op->Stride]);
+        mov(GetDst<RA_32>(Node),  dword [rax + Index * Op->Stride]);
         break;
       case 8:
-        mov(GetDst<RA_64>(Node),  qword [rax + index * Op->Stride]);
+        mov(GetDst<RA_64>(Node),  qword [rax + Index * Op->Stride]);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
         break;
       }
       break;
@@ -215,53 +216,67 @@ DEF_OP(LoadContextIndexed) {
     case 2:
     case 4:
     case 8: {
+      const auto Dst = GetDst(Node);
+
       lea(rax, dword [STATE + Op->BaseOffset]);
-      switch (size) {
+      switch (OpSize) {
       case 1:
-        movzx(eax, byte [rax + index * Op->Stride]);
-        vmovd(GetDst(Node), eax);
+        movzx(eax, byte [rax + Index * Op->Stride]);
+        vmovd(Dst, eax);
         break;
       case 2:
-        movzx(eax, word [rax + index * Op->Stride]);
-        vmovd(GetDst(Node), eax);
+        movzx(eax, word [rax + Index * Op->Stride]);
+        vmovd(Dst, eax);
         break;
       case 4:
-        vmovd(GetDst(Node),  dword [rax + index * Op->Stride]);
+        vmovd(Dst,  dword [rax + Index * Op->Stride]);
         break;
       case 8:
-        vmovq(GetDst(Node),  qword [rax + index * Op->Stride]);
+        vmovq(Dst,  qword [rax + Index * Op->Stride]);
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
         break;
       }
       break;
     }
-    case 16: {
-      mov(rax, index);
-      shl(rax, 4);
+    case 16:
+    case 32: {
+      const auto Dst = GetDst(Node);
+      const auto Shift = Op->Stride == 16 ? 4 : 5;
+
+      mov(rax, Index);
+      shl(rax, Shift);
       lea(rax, dword [rax + Op->BaseOffset]);
-      switch (size) {
+      switch (OpSize) {
       case 1:
-        pinsrb(GetDst(Node), byte [STATE + rax], 0);
+        pinsrb(Dst, byte [STATE + rax], 0);
         break;
       case 2:
-        pinsrw(GetDst(Node), word [STATE + rax], 0);
+        pinsrw(Dst, word [STATE + rax], 0);
         break;
       case 4:
-        vmovd(GetDst(Node), dword [STATE + rax]);
+        vmovd(Dst, dword [STATE + rax]);
         break;
       case 8:
-        vmovq(GetDst(Node), qword [STATE + rax]);
+        vmovq(Dst, qword [STATE + rax]);
         break;
       case 16:
-        if (Op->BaseOffset % 16 == 0)
-          movaps(GetDst(Node), xword [STATE + rax]);
-        else
-          movups(GetDst(Node), xword [STATE + rax]);
+        if (Op->BaseOffset % 16 == 0) {
+          vmovaps(Dst, xword [STATE + rax]);
+        } else {
+          vmovups(Dst, xword [STATE + rax]);
+        }
+        break;
+      case 32:
+        if (Op->BaseOffset % 32 == 0) {
+          vmovaps(ToYMM(Dst), yword [STATE + rax]);
+        } else {
+          vmovups(ToYMM(Dst), yword [STATE + rax]);
+        }
         break;
       default:
-        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", IROp->Size);
+        LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
         break;
       }
       break;
