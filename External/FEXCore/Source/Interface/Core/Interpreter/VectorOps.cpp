@@ -1509,16 +1509,18 @@ DEF_OP(VSShrS) {
 }
 
 DEF_OP(VInsElement) {
-  auto Op = IROp->C<IR::IROp_VInsElement>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VInsElement>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
 
   void *Src1 = GetSrc<void*>(Data->SSAData, Op->DestVector);
   void *Src2 = GetSrc<void*>(Data->SSAData, Op->SrcVector);
-  uint8_t Tmp[16];
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE];
 
   // Copy src1 in to dest
   memcpy(Tmp, Src1, OpSize);
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     case 1: {
       auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
       auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
@@ -1543,7 +1545,9 @@ DEF_OP(VInsElement) {
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
     }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
   };
   memcpy(GDP, Tmp, OpSize);
 }
