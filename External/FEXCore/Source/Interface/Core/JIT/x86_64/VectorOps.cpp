@@ -2089,38 +2089,139 @@ DEF_OP(VSShrS) {
 }
 
 DEF_OP(VInsElement) {
-  auto Op = IROp->C<IR::IROp_VInsElement>();
-  movapd(xmm15, GetSrc(Op->DestVector.ID()));
+  const auto Op = IROp->C<IR::IROp_VInsElement>();
+  const auto OpSize = IROp->Size;
 
-  // Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
+  const auto DestIdx = Op->DestIdx;
+  const auto SrcIdx = Op->SrcIdx;
 
-  // pextrq reg64/mem64, xmm, imm
-  // pinsrq xmm, reg64/mem64, imm8
-  switch (Op->Header.ElementSize) {
-  case 1: {
-    pextrb(eax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
-    pinsrb(xmm15, eax, Op->DestIdx);
-  break;
-  }
-  case 2: {
-    pextrw(eax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
-    pinsrw(xmm15, eax, Op->DestIdx);
-  break;
-  }
-  case 4: {
-    pextrd(eax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
-    pinsrd(xmm15, eax, Op->DestIdx);
-  break;
-  }
-  case 8: {
-    pextrq(rax, GetSrc(Op->SrcVector.ID()), Op->SrcIdx);
-    pinsrq(xmm15, rax, Op->DestIdx);
-  break;
-  }
-  default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  }
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  movapd(GetDst(Node), xmm15);
+  const auto Dst = GetDst(Node);
+  const auto DestVector = GetSrc(Op->DestVector.ID());
+  const auto SrcVector = GetSrc(Op->SrcVector.ID());
+
+  // Actually performs the insertion from the source vector into the destination vector.
+  const auto PerformInsertion = [this, ElementSize](const Xbyak::Xmm& Src, uint32_t SrcIndex,
+                                                    const Xbyak::Xmm& Dest, uint32_t DestIndex) {
+    switch (ElementSize) {
+    case 1: {
+      pextrb(eax, Src, SrcIndex);
+      pinsrb(Dest, eax, DestIndex);
+      break;
+    }
+    case 2: {
+      pextrw(eax, Src, SrcIndex);
+      pinsrw(Dest, eax, DestIndex);
+      break;
+    }
+    case 4: {
+      pextrd(eax, Src, SrcIndex);
+      pinsrd(Dest, eax, DestIndex);
+      break;
+    }
+    case 8: {
+      pextrq(rax, Src, SrcIndex);
+      pinsrq(Dest, rax, DestIndex);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+    }
+  };
+
+  if (Is256Bit) {
+    // Whether or not the index is in the upper lane.
+    const auto IsUpperIdx = [ElementSize](uint32_t Index) {
+      switch (ElementSize) {
+        case 1:
+          return Index >= 16;
+        case 2:
+          return Index >= 8;
+        case 4:
+          return Index >= 4;
+        case 8:
+          return Index >= 2;
+        default:
+          return false;
+      }
+    };
+
+    const auto SrcIsUpper = IsUpperIdx(SrcIdx);
+    const auto DstIsUpper = IsUpperIdx(DestIdx);
+
+    // Sanitizes indices based on whether or not its accessing the upper lane.
+    const auto SanitizeIndex = [ElementSize](uint32_t Index, bool IsUpper) -> uint32_t {
+      switch (ElementSize) {
+        case 1:
+          if (IsUpper) {
+            return Index - 16;
+          }
+          return Index;
+        case 2:
+          if (IsUpper) {
+            return Index - 8;
+          }
+          return Index;
+        case 4:
+          if (IsUpper) {
+            return Index - 4;
+          }
+          return Index;
+        case 8:
+          if (IsUpper) {
+            return Index - 2;
+          }
+          return Index;
+        default:
+          return 0;
+      }
+    };
+
+    // Helpers to get the source and destination vectors depending on
+    // whether or not the top or bottom lane is accessed. Takes a temporary
+    // to move the extracted lane into.
+    const auto GetSrcVector = [this, SrcIsUpper, &SrcVector](const Xbyak::Xmm& Tmp) {
+      if (SrcIsUpper) {
+        vextracti128(Tmp, ToYMM(SrcVector), 1);
+        return Tmp;
+      } else {
+        return SrcVector;
+      }
+    };
+    // Always move the dst into a temporary, since regardless of the outcome
+    // we need to insert it back into the original vector.
+    const auto GetDstVector = [this, DstIsUpper, &DestVector](const Xbyak::Xmm& Tmp) {
+      if (DstIsUpper) {
+        vextracti128(Tmp, ToYMM(DestVector), 1);
+        return Tmp;
+      } else {
+        vmovaps(Tmp, DestVector);
+        return Tmp;
+      }
+    };
+
+    const auto SrcReg = GetSrcVector(xmm14);
+    const auto DstReg = GetDstVector(xmm15);
+
+    const auto SanitizedDstIdx = SanitizeIndex(DestIdx, DstIsUpper);
+    const auto SanitizedSrcIdx = SanitizeIndex(SrcIdx, SrcIsUpper);
+
+    PerformInsertion(SrcReg, SanitizedSrcIdx, DstReg, SanitizedDstIdx);
+
+    vmovapd(ToYMM(Dst), ToYMM(DestVector));
+    if (DstIsUpper) {
+      vinserti128(ToYMM(Dst), ToYMM(Dst), DstReg, 1);
+    } else {
+      vinserti128(ToYMM(Dst), ToYMM(Dst), DstReg, 0);
+    }
+  } else {
+    vmovapd(xmm15, DestVector);
+    PerformInsertion(SrcVector, SrcIdx, xmm15, DestIdx);
+    vmovapd(Dst, xmm15);
+  }
 }
 
 DEF_OP(VDupElement) {

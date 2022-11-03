@@ -3776,37 +3776,125 @@ DEF_OP(VSShrS) {
 }
 
 DEF_OP(VInsElement) {
-  auto Op = IROp->C<IR::IROp_VInsElement>();
+  const auto Op = IROp->C<IR::IROp_VInsElement>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  auto reg = GetSrc(Op->DestVector.ID());
+  const auto ElementSize = Op->Header.ElementSize;
 
-  if (GetDst(Node).GetCode() != reg.GetCode()) {
-    mov(VTMP1, reg);
-    reg = VTMP1;
-  }
+  const auto DestIdx = Op->DestIdx;
+  const auto SrcIdx = Op->SrcIdx;
 
-  switch (Op->Header.ElementSize) {
-    case 1: {
-      mov(reg.V16B(), Op->DestIdx, GetSrc(Op->SrcVector.ID()).V16B(), Op->SrcIdx);
-    break;
-    }
-    case 2: {
-      mov(reg.V8H(), Op->DestIdx, GetSrc(Op->SrcVector.ID()).V8H(), Op->SrcIdx);
-    break;
-    }
-    case 4: {
-      mov(reg.V4S(), Op->DestIdx, GetSrc(Op->SrcVector.ID()).V4S(), Op->SrcIdx);
-    break;
-    }
-    case 8: {
-      mov(reg.V2D(), Op->DestIdx, GetSrc(Op->SrcVector.ID()).V2D(), Op->SrcIdx);
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  }
+  const auto Dst = GetDst(Node);
+  const auto SrcVector = GetSrc(Op->SrcVector.ID());
+  auto Reg = GetSrc(Op->DestVector.ID());
 
-  if (GetDst(Node).GetCode() != reg.GetCode()) {
-    mov(GetDst(Node), reg);
+  if (HostSupportsSVE && Is256Bit) {
+    // We're going to use this to create our predicate register literal.
+    // On an SVE 256-bit capable system, the predicate register will be
+    // 32-bit in size. We want to set up only the element corresponding
+    // to the destination index, since we're going to copy over the equivalent
+    // indexed element from the source vector.
+    auto Data = [ElementSize, DestIdx] {
+      using LiteralType = aarch64::Literal<uint32_t>;
+
+      switch (ElementSize) {
+        case 1:
+          LOGMAN_THROW_AA_FMT(DestIdx <= 31, "DestIdx out of range: {}", DestIdx);
+          return LiteralType{1U << DestIdx};
+        case 2:
+          LOGMAN_THROW_AA_FMT(DestIdx <= 15, "DestIdx out of range: {}", DestIdx);
+          return LiteralType{1U << (DestIdx * 2)};
+        case 4:
+          LOGMAN_THROW_AA_FMT(DestIdx <= 7, "DestIdx out of range: {}", DestIdx);
+          return LiteralType{1U << (DestIdx * 4)};
+        case 8:
+          LOGMAN_THROW_AA_FMT(DestIdx <= 3, "DestIdx out of range: {}", DestIdx);
+          return LiteralType{1U << (DestIdx * 8)};
+        default:
+          return LiteralType{UINT32_MAX};
+      }
+    }();
+
+    // Load our predicate register.
+    const auto Predicate = p0;
+    aarch64::Label DataLocation;
+    adr(TMP1, &DataLocation);
+    ldr(Predicate, SVEMemOperand(TMP1));
+
+    // Broadcast our source value across a temporary,
+    // then combine with the destination.
+    switch (ElementSize) {
+      case 1: {
+        LOGMAN_THROW_AA_FMT(SrcIdx <= 31, "SrcIdx out of range: {}", SrcIdx);
+        dup(VTMP2.Z().VnB(), SrcVector.Z().VnB(), SrcIdx);
+        mov(Dst.Z().VnD(), Reg.Z().VnD());
+        mov(Dst.Z().VnB(), Predicate.Merging(), VTMP2.Z().VnB());
+        break;
+      }
+      case 2: {
+        LOGMAN_THROW_AA_FMT(SrcIdx <= 15, "SrcIdx out of range: {}", SrcIdx);
+        dup(VTMP2.Z().VnH(), SrcVector.Z().VnH(), SrcIdx);
+        mov(Dst.Z().VnD(), Reg.Z().VnD());
+        mov(Dst.Z().VnH(), Predicate.Merging(), VTMP2.Z().VnH());
+        break;
+      }
+      case 4: {
+        LOGMAN_THROW_AA_FMT(SrcIdx <= 7, "SrcIdx out of range: {}", SrcIdx);
+        dup(VTMP2.Z().VnS(), SrcVector.Z().VnS(), SrcIdx);
+        mov(Dst.Z().VnD(), Reg.Z().VnD());
+        mov(Dst.Z().VnS(), Predicate.Merging(), VTMP2.Z().VnS());
+        break;
+      }
+      case 8: {
+        LOGMAN_THROW_AA_FMT(SrcIdx <= 3, "SrcIdx out of range: {}", SrcIdx);
+        dup(VTMP2.Z().VnD(), SrcVector.Z().VnD(), SrcIdx);
+        mov(Dst.Z().VnD(), Reg.Z().VnD());
+        mov(Dst.Z().VnD(), Predicate.Merging(), VTMP2.Z().VnD());
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    // Set up a label to jump over the data we inserted, so we don't try and execute it.
+    aarch64::Label PastConstant;
+    b(&PastConstant);
+    bind(&DataLocation);
+    place(&Data);
+    bind(&PastConstant);
+  } else {
+    if (Dst.GetCode() != Reg.GetCode()) {
+      mov(VTMP1, Reg);
+      Reg = VTMP1;
+    }
+
+    switch (ElementSize) {
+      case 1: {
+        mov(Reg.V16B(), DestIdx, SrcVector.V16B(), SrcIdx);
+        break;
+      }
+      case 2: {
+        mov(Reg.V8H(), DestIdx, SrcVector.V8H(), SrcIdx);
+        break;
+      }
+      case 4: {
+        mov(Reg.V4S(), DestIdx, SrcVector.V4S(), SrcIdx);
+        break;
+      }
+      case 8: {
+        mov(Reg.V2D(), DestIdx, SrcVector.V2D(), SrcIdx);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        return;
+    }
+
+    if (Dst.GetCode() != Reg.GetCode()) {
+      mov(Dst, Reg);
+    }
   }
 }
 
