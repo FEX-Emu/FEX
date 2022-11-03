@@ -361,13 +361,13 @@ DEF_OP(Vector_FToF) {
 
     switch (Conv) {
       case 0x0402: { // Float <- Half
-        zip1(VTMP1.Z().VnH(), Vector.Z().VnH(), Vector.Z().VnH());
-        fcvtlt(Dst.Z().VnS(), Mask, VTMP1.Z().VnH());
+        zip1(Dst.Z().VnH(), Vector.Z().VnH(), Vector.Z().VnH());
+        fcvtlt(Dst.Z().VnS(), Mask, Dst.Z().VnH());
         break;
       }
       case 0x0804: { // Double <- Float
-        zip1(VTMP1.Z().VnS(), Vector.Z().VnS(), Vector.Z().VnS());
-        fcvtlt(Dst.Z().VnD(), Mask, VTMP1.Z().VnS());
+        zip1(Dst.Z().VnS(), Vector.Z().VnS(), Vector.Z().VnS());
+        fcvtlt(Dst.Z().VnD(), Mask, Dst.Z().VnS());
         break;
       }
       case 0x0204: { // Half <- Float
