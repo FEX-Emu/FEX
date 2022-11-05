@@ -421,7 +421,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
 
   Res.ecx =
     (1 <<  0) | // SSE3
-    (1 <<  1) | // PCLMULQDQ
+    (CTX->HostFeatures.SupportsPMULL_128Bit <<  1) | // PCLMULQDQ
     (1 <<  2) | // DS area supports 64bit layout
     (1 <<  3) | // MWait
     (0 <<  4) | // DS-CPL
