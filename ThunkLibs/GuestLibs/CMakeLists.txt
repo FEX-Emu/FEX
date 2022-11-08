@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
 
-option(BITNESS "Which bitness the thunks are building for" 64)
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
 if (ENABLE_CLANG_THUNKS)
@@ -34,6 +33,7 @@ else()
   set(GENERATOR_EXE thunkgen)
   set(TARGET_TYPE OBJECT)
   set(GENERATE_GUEST_INSTALL_TARGETS FALSE)
+  set(BITNESS 64)
 endif()
 
 # Syntax: generate(libxyz libxyz-interface.cpp)
