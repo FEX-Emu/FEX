@@ -621,20 +621,70 @@ DEF_OP(VAddP) {
 }
 
 DEF_OP(VAddV) {
-  auto Op = IROp->C<IR::IROp_VAddV>();
-  const uint8_t OpSize = IROp->Size;
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
-  // Vector
-  switch (Op->Header.ElementSize) {
-    case 1:
-    case 2:
-    case 4:
-      addv(GetDst(Node).VCast(Op->Header.ElementSize * 8, 1), GetSrc(Op->Vector.ID()).VCast(OpSize * 8, Elements));
-      break;
-    case 8:
-      addp(GetDst(Node).VCast(OpSize * 8, 1), GetSrc(Op->Vector.ID()).VCast(OpSize * 8, Elements));
-      break;
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
+  const auto Op = IROp->C<IR::IROp_VAddV>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Elements = OpSize / ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (HostSupportsSVE && Is256Bit) {
+    // SVE doesn't have an equivalent ADDV instruction, so we make do
+    // by performing two Adv. SIMD ADDV operations on the high and low
+    // 128-bit lanes and then sum them up.
+
+    const auto Mask = PRED_TMP_32B.Zeroing();
+    const auto CompactPred = p0;
+
+    // Select all our upper elements to run ADDV over them.
+    not_(CompactPred.VnB(), Mask, PRED_TMP_16B.VnB());
+    compact(VTMP1.Z().VnD(), CompactPred, Vector.Z().VnD());
+
+    switch (ElementSize) {
+      case 1:
+        addv(VTMP2.B(), Vector.V16B());
+        addv(VTMP1.B(), VTMP1.V16B());
+        add(Dst.V16B(), VTMP1.V16B(), VTMP2.V16B());
+        break;
+      case 2:
+        addv(VTMP2.H(), Vector.V8H());
+        addv(VTMP1.H(), VTMP1.V8H());
+        add(Dst.V8H(), VTMP1.V8H(), VTMP2.V8H());
+        break;
+      case 4:
+        addv(VTMP2.S(), Vector.V4S());
+        addv(VTMP1.S(), VTMP1.V4S());
+        add(Dst.V4S(), VTMP1.V4S(), VTMP2.V4S());
+        break;
+      case 8:
+        addp(VTMP2.D(), Vector.V2D());
+        addp(VTMP1.D(), VTMP1.V2D());
+        add(Dst.V2D(), VTMP1.V2D(), VTMP2.V2D());
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
+  } else {
+    const auto OpSizeBits = OpSize * 8;
+    const auto ElementSizeBits = ElementSize * 8;
+
+    switch (ElementSize) {
+      case 1:
+      case 2:
+      case 4:
+        addv(Dst.VCast(ElementSizeBits, 1), Vector.VCast(OpSizeBits, Elements));
+        break;
+      case 8:
+        addp(Dst.VCast(OpSizeBits, 1), Vector.VCast(OpSizeBits, Elements));
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
 }
 

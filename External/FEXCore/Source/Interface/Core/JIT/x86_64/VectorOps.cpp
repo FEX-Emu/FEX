@@ -404,37 +404,71 @@ DEF_OP(VAddP) {
 }
 
 DEF_OP(VAddV) {
-  auto Op = IROp->C<IR::IROp_VAddV>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VAddV>();
+  const auto OpSize = IROp->Size;
 
-  auto Src = GetSrc(Op->Vector.ID());
-  auto Dest = GetDst(Node);
+  const auto Src = GetSrc(Op->Vector.ID());
+  const auto Dest = GetDst(Node);
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Elements = OpSize / ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
   vpxor(xmm15, xmm15, xmm15);
 
-  const uint8_t Elements = OpSize / Op->Header.ElementSize;
-  switch (Op->Header.ElementSize) {
+  switch (ElementSize) {
     case 2: {
-      for (int i = Elements; i > 1; i >>= 1) {
-        vphaddw(Dest, Src, Dest);
-        Src = Dest;
+      const auto HorizontalAdd = [this, Elements](const Xbyak::Xmm& dst, Xbyak::Xmm src, const Xbyak::Xmm& tmp) {
+        for (int i = Elements; i > 1; i >>= 1) {
+          vphaddw(dst, src, dst);
+          src = dst;
+        }
+        pextrw(eax, dst, 0);
+        pinsrw(tmp, eax, 0);
+      };
+
+      if (Is256Bit) {
+        vpxor(xmm13, xmm13, xmm13);
+        vextracti128(xmm14, ToYMM(Src), 1);
+
+        HorizontalAdd(Dest, Src, xmm15);
+        HorizontalAdd(Dest, xmm14, xmm13);
+
+        vpaddw(Dest, xmm13, xmm15);
+      } else {
+        HorizontalAdd(Dest, Src, xmm15);
+        vmovaps(Dest, xmm15);
       }
-      pextrw(eax, Dest, 0);
-      pinsrw(xmm15, eax, 0);
-    break;
+      break;
     }
     case 4: {
-      for (int i = Elements; i > 1; i >>= 1) {
-        vphaddd(Dest, Src, Dest);
-        Src = Dest;
-      }
-      pextrd(eax, Dest, 0);
-      pinsrd(xmm15, eax, 0);
-    break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Element Size: {}", Op->Header.ElementSize); break;
-  }
+      const auto HorizontalAdd = [this, Elements](const Xbyak::Xmm& dst, Xbyak::Xmm src, const Xbyak::Xmm& tmp) {
+        for (int i = Elements; i > 1; i >>= 1) {
+          vphaddd(dst, src, dst);
+          src = dst;
+        }
+        pextrd(eax, dst, 0);
+        pinsrd(tmp, eax, 0);
+      };
 
-  movaps(Dest, xmm15);
+      if (Is256Bit) {
+        vpxor(xmm13, xmm13, xmm13);
+        vextracti128(xmm14, ToYMM(Src), 1);
+
+        HorizontalAdd(Dest, Src, xmm15);
+        HorizontalAdd(Dest, xmm14, xmm13);
+
+        vpaddd(Dest, xmm13, xmm15);
+      } else {
+        HorizontalAdd(Dest, Src, xmm15);
+        vmovaps(Dest, xmm15);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
 }
 
 DEF_OP(VUMinV) {
