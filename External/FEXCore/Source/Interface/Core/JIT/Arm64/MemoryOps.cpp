@@ -214,17 +214,18 @@ DEF_OP(LoadRegister) {
 }
 
 DEF_OP(StoreRegister) {
-  auto Op = IROp->C<IR::IROp_StoreRegister>();
+  const auto Op = IROp->C<IR::IROp_StoreRegister>();
+  const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
-    auto regOffs = Op->Offset & 7;
+    const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
+    const auto regOffs = Op->Offset & 7;
 
     LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
 
-    auto reg = SRA64[regId];
+    const auto reg = SRA64[regId];
 
-    switch(Op->Header.Size) {
+    switch (OpSize) {
       case 1:
         LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         bfi(reg, GetReg<RA_64>(Op->Value.ID()), regOffs * 8, 8);
@@ -242,46 +243,163 @@ DEF_OP(StoreRegister) {
 
       case 8:
         LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (GetReg<RA_64>(Op->Value.ID()).GetCode() != reg.GetCode())
+        if (GetReg<RA_64>(Op->Value.ID()).GetCode() != reg.GetCode()) {
           mov(reg, GetReg<RA_64>(Op->Value.ID()));
+        }
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreRegister GPR size: {}", OpSize);
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = CTX->HostFeatures.SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
-                                                       : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                         : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
-    const auto regOffs = Op->Offset & 15;
 
     LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "regId out of range");
 
-    auto guest = SRAFPR[regId];
-    auto host = GetSrc(Op->Value.ID());
+    const auto guest = SRAFPR[regId];
+    const auto host = GetSrc(Op->Value.ID());
 
-    switch(Op->Header.Size) {
-      case 1:
-        ins(guest.V16B(), regOffs, host.V16B(), 0);
-        break;
+    if (HostSupportsSVE) {
+      // 256-bit capable hardware allows us to expand the allowed
+      // offsets used, however we cannot use Adv. SIMD's INS instruction
+      // at all, since it will zero out the upper lanes of the 256-bit SVE
+      // vectors, so we'll need to set up a proper predicate for performing
+      // the insert.
 
-      case 2:
-        LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs");
-        ins(guest.V8H(), regOffs/2, host.V8H(), 0);
-        break;
+      const auto regOffs = Op->Offset & 31;
 
-      case 4:
-        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs");
-        ins(guest.V4S(), regOffs/4, host.V4S(), 0);
-        break;
+      // Compartmentalized setting up of the predicate for the cases that need it.
+      aarch64::Label DataLocation;
+      const auto LoadPredicate = [this, &DataLocation] {
+        const auto Predicate = p0;
+        adr(TMP1, &DataLocation);
+        ldr(Predicate, SVEMemOperand(TMP1));
+        return Predicate.Merging();
+      };
 
-      case 8:
-        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs");
-        ins(guest.V2D(), regOffs / 8, host.V2D(), 0);
-        break;
+      // Emits the predicate data and provides the necessary jump to go around the
+      // emitted data instead of trying to execute it. Place at end of necessary code.
+      // It's helpful to treat LoadPredicate and EmitData as a prologue and epilogue
+      // respectfully.
+      using DataLiteral = aarch64::Literal<uint32_t>;
+      const auto EmitData = [this, &DataLocation](DataLiteral& Data) {
+        aarch64::Label PastConstant;
+        b(&PastConstant);
+        bind(&DataLocation);
+        place(&Data);
+        bind(&PastConstant);
+      };
 
-      case 16:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (guest.GetCode() != host.GetCode())
-          mov(guest.Q(), host.Q());
-        break;
+      switch (OpSize) {
+        case 1: {
+          LOGMAN_THROW_AA_FMT(regOffs <= 31, "unexpected reg index: {}", regOffs);
+
+          const auto Predicate = LoadPredicate();
+          DataLiteral Data{1U << regOffs};
+
+          dup(VTMP1.Z().VnB(), host.Z().VnB(), 0);
+          mov(guest.Z().VnB(), Predicate, VTMP1.Z().VnB());
+
+          EmitData(Data);
+          break;
+        }
+        
+        case 2: {
+          LOGMAN_THROW_AA_FMT((regOffs / 2) <= 15, "unexpected reg index: {}", regOffs / 2);
+
+          const auto Predicate = LoadPredicate();
+          DataLiteral Data{1U << regOffs};
+
+          dup(VTMP1.Z().VnH(), host.Z().VnH(), 0);
+          mov(guest.Z().VnH(), Predicate, VTMP1.Z().VnH());
+
+          EmitData(Data);
+          break;
+        }
+
+        case 4: {
+          LOGMAN_THROW_AA_FMT((regOffs / 4) <= 7, "unexpected reg index: {}", regOffs / 4);
+
+          const auto Predicate = LoadPredicate();
+          DataLiteral Data{1U << regOffs};
+
+          dup(VTMP1.Z().VnS(), host.Z().VnS(), 0);
+          mov(guest.Z().VnS(), Predicate, VTMP1.Z().VnS());
+
+          EmitData(Data);
+          break;
+        }
+
+        case 8: {
+          LOGMAN_THROW_AA_FMT((regOffs / 8) <= 3, "unexpected reg index: {}", regOffs / 8);
+
+          const auto Predicate = LoadPredicate();
+          DataLiteral Data{1U << regOffs};
+
+          dup(VTMP1.Z().VnD(), host.Z().VnD(), 0);
+          mov(guest.Z().VnD(), Predicate, VTMP1.Z().VnD());
+
+          EmitData(Data);
+          break;
+        }
+
+        case 16: {
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          if (guest.GetCode() != host.GetCode()) {
+            mov(guest.Q(), host.Q());
+          }
+          break;
+        }
+
+        case 32: {
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          if (guest.GetCode() != host.GetCode()) {
+            mov(guest.Z().VnD(), PRED_TMP_32B.Merging(), host.Z().VnD());
+          }
+          break;
+        }
+
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize);
+          break;
+      }
+    } else {
+      const auto regOffs = Op->Offset & 15;
+
+      switch (OpSize) {
+        case 1:
+          ins(guest.V16B(), regOffs, host.V16B(), 0);
+          break;
+
+        case 2:
+          LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs: {}", regOffs);
+          ins(guest.V8H(), regOffs/2, host.V8H(), 0);
+          break;
+
+        case 4:
+          LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+          ins(guest.V4S(), regOffs/4, host.V4S(), 0);
+          break;
+
+        case 8:
+          LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+          ins(guest.V2D(), regOffs / 8, host.V2D(), 0);
+          break;
+
+        case 16:
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          if (guest.GetCode() != host.GetCode()) {
+            mov(guest.Q(), host.Q());
+          }
+          break;
+
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize);
+          break;
+      }
     }
   } else {
     LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
