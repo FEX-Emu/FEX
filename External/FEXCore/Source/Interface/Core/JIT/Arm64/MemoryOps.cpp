@@ -127,17 +127,18 @@ DEF_OP(StoreContext) {
 
 
 DEF_OP(LoadRegister) {
-  auto Op = IROp->C<IR::IROp_LoadRegister>();
+  const auto Op = IROp->C<IR::IROp_LoadRegister>();
+  const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
-    auto regOffs = Op->Offset & 7;
+    const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
+    const auto regOffs = Op->Offset & 7;
 
     LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
 
-    auto reg = SRA64[regId];
+    const auto reg = SRA64[regId];
 
-    switch(Op->Header.Size) {
+    switch (OpSize) {
       case 1:
         LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
         ubfx(GetReg<RA_64>(Node), reg, regOffs * 8, 8);
@@ -156,57 +157,161 @@ DEF_OP(LoadRegister) {
 
       case 8:
         LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (GetReg<RA_64>(Node).GetCode() != reg.GetCode())
+        if (GetReg<RA_64>(Node).GetCode() != reg.GetCode()) {
           mov(GetReg<RA_64>(Node), reg);
+        }
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadRegister GPR size: {}", OpSize);
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = CTX->HostFeatures.SupportsAVX ? Core::CPUState::XMM_AVX_REG_SIZE
-                                                       : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                         : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
-    const auto regOffs = Op->Offset & 15;
 
     LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "out of range regId");
 
-    auto guest = SRAFPR[regId];
-    auto host = GetSrc(Node);
+    const auto guest = SRAFPR[regId];
+    const auto host = GetSrc(Node);
 
-    switch(Op->Header.Size) {
-      case 1:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        mov(host.B(), guest.B());
-        break;
+    if (HostSupportsSVE) {
+      const auto regOffs = Op->Offset & 31;
 
-      case 2:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        fmov(host.H(), guest.H());
-        break;
+      aarch64::Label DataLocation;
+      const auto LoadPredicate = [this, &DataLocation] {
+        const auto Predicate = p0;
+        adr(TMP1, &DataLocation);
+        ldr(Predicate, SVEMemOperand(TMP1));
+        return Predicate.Merging();
+      };
 
-      case 4:
-        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs");
-        if (regOffs == 0) {
-          if (host.GetCode() != guest.GetCode())
-            fmov(host.S(), guest.S());
-        } else {
-          ins(host.V4S(), 0, guest.V4S(), regOffs/4);
+      using DataLiteral = aarch64::Literal<uint32_t>;
+      const auto EmitData = [this, &DataLocation](DataLiteral& Data) {
+        aarch64::Label PastConstant;
+        b(&PastConstant);
+        bind(&DataLocation);
+        place(&Data);
+        bind(&PastConstant);
+      };
+
+      switch (OpSize) {
+        case 1: {
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          mov(host.B(), guest.B());
+          break;
         }
-        break;
 
-      case 8:
-        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs");
-        if (regOffs == 0) {
-          if (host.GetCode() != guest.GetCode())
-            mov(host.D(), guest.D());
-        } else {
-          ins(host.V2D(), 0, guest.V2D(), regOffs/8);
+        case 2: {
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          fmov(host.H(), guest.H());
+          break;
         }
-        break;
+        
+        case 4: {
+          LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+          if (regOffs == 0) {
+            if (host.GetCode() != guest.GetCode()) {
+              fmov(host.S(), guest.S());
+            }
+          } else {
+            const auto Predicate = LoadPredicate();
+            DataLiteral Data{1U << regOffs};
 
-      case 16:
-        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
-        if (host.GetCode() != guest.GetCode())
-          mov(host.Q(), guest.Q());
-        break;
+            dup(VTMP1.Z().VnS(), host.Z().VnS(), 0);
+            mov(guest.Z().VnS(), Predicate, VTMP1.Z().VnS());
+
+            EmitData(Data);
+          }
+          break;
+        }
+
+        case 8: {
+          LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+          if (regOffs == 0) {
+            if (host.GetCode() != guest.GetCode()) {
+              mov(host.D(), guest.D());
+            }
+          } else {
+            const auto Predicate = LoadPredicate();
+            DataLiteral Data{1U << regOffs};
+
+            dup(VTMP1.Z().VnD(), host.Z().VnD(), 0);
+            mov(guest.Z().VnD(), Predicate, VTMP1.Z().VnD());
+
+            EmitData(Data);
+          }
+          break;
+        }
+
+        case 16: {
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          if (host.GetCode() != guest.GetCode()) {
+            mov(host.Q(), guest.Q());
+          }
+          break;
+        }
+
+        case 32: {
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          if (host.GetCode() != guest.GetCode()) {
+            mov(host.Z().VnD(), PRED_TMP_32B.Merging(), guest.Z().VnD());
+          }
+          break;
+        }
+
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize);
+          break;
+      }
+    } else {
+      const auto regOffs = Op->Offset & 15;
+
+      switch (OpSize) {
+        case 1:
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          mov(host.B(), guest.B());
+          break;
+
+        case 2:
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          fmov(host.H(), guest.H());
+          break;
+
+        case 4:
+          LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+          if (regOffs == 0) {
+            if (host.GetCode() != guest.GetCode()) {
+              fmov(host.S(), guest.S());
+            }
+          } else {
+            ins(host.V4S(), 0, guest.V4S(), regOffs/4);
+          }
+          break;
+
+        case 8:
+          LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+          if (regOffs == 0) {
+            if (host.GetCode() != guest.GetCode()) {
+              mov(host.D(), guest.D());
+            }
+          } else {
+            ins(host.V2D(), 0, guest.V2D(), regOffs/8);
+          }
+          break;
+
+        case 16:
+          LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+          if (host.GetCode() != guest.GetCode()) {
+            mov(host.Q(), guest.Q());
+          }
+          break;
+
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled LoadRegister FPR size: {}", OpSize);
+          break;
+      }
     }
   } else {
     LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
