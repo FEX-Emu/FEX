@@ -65,6 +65,7 @@ HostFeatures::HostFeatures() {
   SupportsFlushInputsToZero = Features.Has(vixl::CPUFeatures::Feature::kAFP);
   SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
   SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
+  SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
 
   Supports3DNow = true;
   SupportsSSE4A = true;
@@ -127,6 +128,7 @@ HostFeatures::HostFeatures() {
   SupportsSHA = Features.has(Xbyak::util::Cpu::tSHA);
   SupportsBMI1 = Features.has(Xbyak::util::Cpu::tBMI1);
   SupportsBMI2 = Features.has(Xbyak::util::Cpu::tBMI2);
+  SupportsPMULL_128Bit = Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
 
   // xbyak doesn't know how to check for CLZero
   uint32_t eax, ebx, ecx, edx;
