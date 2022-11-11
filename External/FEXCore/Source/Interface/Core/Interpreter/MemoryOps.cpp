@@ -236,36 +236,6 @@ DEF_OP(StoreMem) {
   }
 }
 
-DEF_OP(VLoadMemElement) {
-  auto Op = IROp->C<IR::IROp_VLoadMemElement>();
-  void const *MemData = *GetSrc<void const**>(Data->SSAData, Op->Value);
-
-  memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Addr), 16);
-  memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GDP) + (Op->Header.ElementSize * Op->Index)),
-    MemData, Op->Header.ElementSize);
-}
-
-DEF_OP(VStoreMemElement) {
-  #define STORE_DATA(x, y) \
-    case x: { \
-      y *MemData = *GetSrc<y**>(Data->SSAData, Op->Value); \
-      memcpy(MemData, &GetSrc<y*>(Data->SSAData, Op->Addr)[Op->Index], sizeof(y)); \
-      break; \
-    }
-
-  auto Op = IROp->C<IR::IROp_VStoreMemElement>();
-  uint8_t OpSize = IROp->Size;
-
-  switch (OpSize) {
-    STORE_DATA(1, uint8_t)
-    STORE_DATA(2, uint16_t)
-    STORE_DATA(4, uint32_t)
-    STORE_DATA(8, uint64_t)
-    default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size"); break;
-  }
-  #undef STORE_DATA
-}
-
 DEF_OP(CacheLineClear) {
   auto Op = IROp->C<IR::IROp_CacheLineClear>();
 
