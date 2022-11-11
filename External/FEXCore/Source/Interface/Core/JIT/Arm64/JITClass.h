@@ -345,8 +345,6 @@ private:
   DEF_OP(StoreMemTSO);
   DEF_OP(ParanoidLoadMemTSO);
   DEF_OP(ParanoidStoreMemTSO);
-  DEF_OP(VLoadMemElement);
-  DEF_OP(VStoreMemElement);
   DEF_OP(CacheLineClear);
   DEF_OP(CacheLineZero);
 

@@ -345,8 +345,6 @@ private:
   DEF_OP(StoreFlag);
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
-  DEF_OP(VLoadMemElement);
-  DEF_OP(VStoreMemElement);
   DEF_OP(CacheLineClear);
   DEF_OP(CacheLineZero);
 

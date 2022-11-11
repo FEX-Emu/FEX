@@ -471,22 +471,6 @@
         ]
       },
 
-      "FPR = VLoadMemElement u8:#RegisterSize, u8:#ElementSize, FPR:$Value, GPR:$Addr, u8:$Index, u8:$Align{1}": {
-        "Desc": ["Loads an element of size #ElementSize in to $Value from $Addr at $Index"
-                ],
-        "OpClass": "Memory",
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-
-      "VStoreMemElement u8:#RegisterSize, u8:#ElementSize, FPR:$Value, GPR:$Addr, u8:$Index, u8:$Align": {
-        "Desc": ["Stores an element of size #ElementSize from $Value[$Index] to $Addr"
-                ],
-        "HasSideEffects": true,
-        "DestSize": "ElementSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-
       "CacheLineClear GPR:$Addr": {
         "Desc": ["Does a 64 byte cacheline clear at the address specified",
                  "Only clears the data cachelines. Doesn't do any zeroing"
