@@ -832,7 +832,8 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   static constexpr std::string_view platform_name_x86_64 = "x86_64";
   static constexpr std::string_view platform_name_i686 = "i686";
-  static constexpr size_t platform_string_max_size = std::max(platform_name_x86_64.size(), platform_name_i686.size());
+  // Need to include null character.
+  static constexpr size_t platform_string_max_size = std::max(platform_name_x86_64.size(), platform_name_i686.size()) + 1;
 
   FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
 };
