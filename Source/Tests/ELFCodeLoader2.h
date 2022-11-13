@@ -5,6 +5,7 @@
 #include "Common/FDUtils.h"
 #include "FEXCore/Utils/Allocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
+#include "Tests/VDSO_Emulation.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
@@ -538,15 +539,25 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
     if (Is64BitMode()) {
       AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
-
-      // we don't support vsyscall so we don't set those
-      //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
     }
     else {
       AuxVariables.emplace_back(auxv_t{4, 0x20}); // AT_PHENT
 
-      // we don't support vsyscall so we don't set those
-      //AuxVariables.emplace_back(auxv_t{32, 0}); // AT_SYSINFO - Entry point to syscall
+      auto VSyscallEntry = FEX::VDSO::GetVSyscallEntry(VDSOBase);
+      if (!VSyscallEntry) [[unlikely]] {
+        // If the VDSO thunk doesn't exist then we might not have a vsyscall entry.
+        // Newer glibc requires vsyscall to exist now. So let's allocate a buffer and stick a vsyscall in to it.
+        auto VSyscallPage = Mapper(nullptr, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        constexpr static uint8_t VSyscallCode[] = {
+          0xcd, 0x80, // int 0x80
+          0xc3,       // ret
+        };
+        memcpy(VSyscallPage, VSyscallCode, sizeof(VSyscallCode));
+        mprotect(VSyscallPage, FHU::FEX_PAGE_SIZE, PROT_READ);
+        VSyscallEntry = reinterpret_cast<uint64_t>(VSyscallPage);
+      }
+
+      AuxVariables.emplace_back(auxv_t{32, VSyscallEntry}); // AT_SYSINFO - Entry point to syscall
     }
 
     if (VDSOBase) {
