@@ -141,6 +141,7 @@ namespace {
         }
       }
     }
+    std::sort(NamedRootFS.begin(), NamedRootFS.end());
   }
 
   void INotifyThread() {
