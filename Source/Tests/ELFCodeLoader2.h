@@ -21,6 +21,8 @@
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -535,6 +537,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     AuxVariables.emplace_back(auxv_t{5, MainElf.phdrs.size()}); // AT_PHNUM
     AuxVariables.emplace_back(auxv_t{16, HWCap}); // AT_HWCAP
     AuxVariables.emplace_back(auxv_t{26, HWCap2}); // AT_HWCAP2
+    AuxVariables.emplace_back(auxv_t{51, CalculateSignalStackSize()}); // AT_MINSIGSTKSZ
     AuxPlatform = &AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
 
     if (Is64BitMode()) {
@@ -780,7 +783,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     return BaseOffset;
   }
 
-  bool Is64BitMode() {
+  bool Is64BitMode() const {
     return MainElf.type == ::ELFLoader::ELFContainer::TYPE_X86_64;
   }
 
@@ -806,6 +809,57 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     // 0 - MONITOR/MWAIT available in CPL3
     // 1 - FSGSBASE instructions available in CPL3
     HWCap2 = 0;
+
+    // We need to know if we support AVX for AT_MINSIGSTKSZ
+    SupportsAVX = !!(res_1.ecx & (1U << 28));
+  }
+
+  uint64_t CalculateSignalStackSize() const {
+    // We must calculate the required signal stack size that the "kernel" consumes.
+    // For FEX this means the amount of state we store in to the guest stack, not including the amount
+    // that FEX stores in to the host stack as well.
+    //
+    // This needs to match what we do in FEXCore's dispatcher (Which should at some point be moved to the frontend).
+    //
+    // This roughly means that we need to calculate the combined size of:
+    // - xstate or _libc_fstate depending on AVX support
+    // - ucontext_t
+    // - siginfo_t
+    // Size of state requiring to be stored is different between 32-bit and 64-bit.
+
+    uint64_t Result{};
+    if (Is64BitMode()) {
+      Result += sizeof(FEXCore::x86_64::ucontext_t);
+      Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::ucontext_t));
+      if (SupportsAVX) {
+        Result += sizeof(FEXCore::x86_64::xstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::xstate));
+      }
+      else {
+        Result += sizeof(FEXCore::x86_64::_libc_fpstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::_libc_fpstate));
+      }
+
+      Result += sizeof(siginfo_t);
+      Result = FEXCore::AlignUp(Result, alignof(siginfo_t));
+    }
+    else {
+      Result += sizeof(FEXCore::x86::ucontext_t);
+      Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::ucontext_t));
+      if (SupportsAVX) {
+        Result += sizeof(FEXCore::x86::xstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::xstate));
+      }
+      else {
+        Result += sizeof(FEXCore::x86::_libc_fpstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::_libc_fpstate));
+      }
+
+      Result += sizeof(FEXCore::x86::siginfo_t);
+      Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::siginfo_t));
+    }
+
+    return Result;
   }
 
   constexpr static uint64_t BRK_SIZE = 8 * 1024 * 1024;
@@ -826,6 +880,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   void* VDSOBase{};
   uint64_t HWCap{};
   uint64_t HWCap2{};
+  bool SupportsAVX{};
 
   auxv_t *AuxRandom{};
   auxv_t *AuxPlatform{};
