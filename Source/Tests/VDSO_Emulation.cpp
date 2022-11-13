@@ -8,6 +8,7 @@
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <dlfcn.h>
+#include <elf.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <sys/mman.h>
@@ -289,6 +290,21 @@ namespace FEX::VDSO {
     }
 
     return VDSOBase;
+  }
+
+  uint64_t GetVSyscallEntry(const void* VDSOBase) {
+    if (!VDSOBase) {
+      return 0;
+    }
+
+    // Extract the vsyscall location from the VDSO header.
+    auto Header = reinterpret_cast<const Elf32_Ehdr*>(VDSOBase);
+
+    if (Header->e_entry) {
+      return reinterpret_cast<uint64_t>(VDSOBase) + Header->e_entry;
+    }
+
+    return 0;
   }
 
   std::vector<FEXCore::IR::ThunkDefinition> const& GetVDSOThunkDefinitions() {
