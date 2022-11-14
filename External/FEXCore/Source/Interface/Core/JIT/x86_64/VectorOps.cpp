@@ -2393,19 +2393,53 @@ DEF_OP(VDupElement) {
 
 
 DEF_OP(VExtr) {
-  auto Op = IROp->C<IR::IROp_VExtr>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VExtr>();
+  const auto OpSize = IROp->Size;
 
-  if (OpSize == 8) {
+  constexpr auto AVXRegSize = Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == AVXRegSize;
+
+  const auto Index = Op->Index;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  if (Is256Bit) {
+    const auto ByteIndex = Index * ElementSize;
+    const auto IsUpperVectorZero = ByteIndex >= OpSize;
+    const auto SanitizedByteIndex = IsUpperVectorZero ? ByteIndex - OpSize
+                                                      : ByteIndex;
+    
+    // Ensure we don't load junk outside of the space we're about to make.
+    LOGMAN_THROW_AA_FMT(SanitizedByteIndex <= 31, "Invalid VExtr byte index: {}",
+                        SanitizedByteIndex);
+
+    const auto RegsSavedSize = AVXRegSize * 2;
+    sub(rsp, RegsSavedSize);
+
+    if (IsUpperVectorZero) {
+      vpxor(xmm15, xmm15, xmm15);
+      vmovups(ptr[rsp + 0 * AVXRegSize], ToYMM(VectorLower));
+      vmovups(ptr[rsp + 1 * AVXRegSize], ymm15);
+    } else {
+      vmovups(ptr[rsp + 0 * AVXRegSize], ToYMM(VectorUpper));
+      vmovups(ptr[rsp + 1 * AVXRegSize], ToYMM(VectorLower));
+    }
+
+    vmovups(ToYMM(Dst), ptr[rsp + SanitizedByteIndex]);
+
+    add(rsp, RegsSavedSize);
+  } else if (OpSize == 8) {
     // No way to do this with 64bit source without dropping to MMX
     // So emulate it
     vpxor(xmm14, xmm14, xmm14);
-    movq(xmm15, GetSrc(Op->VectorUpper.ID()));
-    vshufpd(xmm15, xmm15, GetSrc(Op->VectorLower.ID()), 0b00);
-    vpalignr(GetDst(Node), xmm14, xmm15, Op->Index);
-  }
-  else {
-    vpalignr(GetDst(Node), GetSrc(Op->VectorLower.ID()), GetSrc(Op->VectorUpper.ID()), Op->Index);
+    movq(xmm15, VectorUpper);
+    vshufpd(xmm15, xmm15, VectorLower, 0b00);
+    vpalignr(Dst, xmm14, xmm15, Index);
+  } else {
+    vpalignr(Dst, VectorLower, VectorUpper, Index);
   }
 }
 

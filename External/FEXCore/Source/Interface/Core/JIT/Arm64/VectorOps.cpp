@@ -4002,12 +4002,16 @@ DEF_OP(VDupElement) {
 }
 
 DEF_OP(VExtr) {
-  auto Op = IROp->C<IR::IROp_VExtr>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VExtr>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
+  const auto Dst = GetDst(Node);
   auto UpperBits = GetSrc(Op->VectorLower.ID());
   auto LowerBits = GetSrc(Op->VectorUpper.ID());
+
+  const auto ElementSize = Op->Header.ElementSize;
   auto Index = Op->Index;
 
   if (Index >= OpSize) {
@@ -4020,11 +4024,18 @@ DEF_OP(VExtr) {
     Index -= OpSize;
   }
 
-  if (OpSize == 8) {
-    ext(GetDst(Node).V8B(), LowerBits.V8B(), UpperBits.V8B(), Index * Op->Header.ElementSize);
-  }
-  else {
-    ext(GetDst(Node).V16B(), LowerBits.V16B(), UpperBits.V16B(), Index * Op->Header.ElementSize);
+  const auto CopyFromByte = Index * ElementSize;
+
+  if (HostSupportsSVE && Is256Bit) {
+    movprfx(VTMP2.Z().VnD(), LowerBits.Z().VnD());
+    ext(VTMP2.Z().VnB(), VTMP2.Z().VnB(), UpperBits.Z().VnB(), CopyFromByte);
+    mov(Dst.Z().VnD(), VTMP2.Z().VnD());
+  } else {
+    if (OpSize == 8) {
+      ext(Dst.V8B(), LowerBits.V8B(), UpperBits.V8B(), CopyFromByte);
+    } else {
+      ext(Dst.V16B(), LowerBits.V16B(), UpperBits.V16B(), CopyFromByte);
+    }
   }
 }
 
