@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/BitUtils.h>
 
+#include <array>
 #include <bit>
 #include <cstdint>
 #include <limits>
@@ -1622,23 +1623,52 @@ DEF_OP(VDupElement) {
 }
 
 DEF_OP(VExtr) {
-  auto Op = IROp->C<IR::IROp_VExtr>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VExtr>();
+  const auto OpSize = IROp->Size;
+  const auto OpSizeBits = OpSize * 8;
 
-  const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorLower);
-  const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorUpper);
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Index = Op->Index;
 
-  uint64_t Offset = Op->Index * Op->Header.ElementSize * 8;
-  __uint128_t Dst{};
-  if (Offset >= (OpSize * 8)) {
-    Offset -= OpSize * 8;
-    Dst = Src1 >> Offset;
+  if (Is256Bit) {
+    const auto ByteIndex = Index * ElementSize;
+    const auto IsUpperVectorZero = ByteIndex >= OpSize;
+    const auto SanitizedByteIndex = IsUpperVectorZero ? ByteIndex - OpSize
+                                                      : ByteIndex;
+
+    const auto Vectors = IsUpperVectorZero
+      ?
+        std::array<InterpVector256, 2>{
+          *GetSrc<InterpVector256*>(Data->SSAData, Op->VectorLower),
+          InterpVector256{},
+        }
+      :
+        std::array<InterpVector256, 2>{
+          *GetSrc<InterpVector256*>(Data->SSAData, Op->VectorUpper),
+          *GetSrc<InterpVector256*>(Data->SSAData, Op->VectorLower),
+        };
+
+    const auto* VectorsPtr = reinterpret_cast<const uint8_t*>(Vectors.data());
+    const auto* SrcPtr = VectorsPtr + SanitizedByteIndex;
+
+    memcpy(GDP, SrcPtr, OpSize);
+  } else {
+    uint64_t Offset = Index * ElementSize * 8;
+
+    const auto Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorLower);
+    const auto Src2 = *GetSrc<__uint128_t*>(Data->SSAData, Op->VectorUpper);
+
+    __uint128_t Dst{};
+    if (Offset >= OpSizeBits) {
+      Offset -= OpSizeBits;
+      Dst = Src1 >> Offset;
+    } else {
+      Dst = (Src1 << (OpSizeBits - Offset)) | (Src2 >> Offset);
+    }
+
+    memcpy(GDP, &Dst, OpSize);
   }
-  else {
-    Dst = (Src1 << (OpSize * 8 - Offset)) | (Src2 >> Offset);
-  }
-
-  memcpy(GDP, &Dst, OpSize);
 }
 
 DEF_OP(VUShrI) {
