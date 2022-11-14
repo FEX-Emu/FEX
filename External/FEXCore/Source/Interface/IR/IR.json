@@ -1006,16 +1006,6 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSLI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$ByteShift": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-
-      "FPR = VSRI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$ByteShift": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-
       "FPR = VShlI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"

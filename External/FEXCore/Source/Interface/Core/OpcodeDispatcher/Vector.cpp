@@ -926,7 +926,11 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  auto Result = _VSRI(Size, 16, Dest, Shift);
+  OrderedNode *Result = _VectorZero(Size);
+  if (Shift < Size) {
+    Result = _VExtr(Size, 1, Result, Dest, Shift);
+  }
+
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -938,7 +942,10 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  auto Result = _VSLI(Size, 16, Dest, Shift);
+  OrderedNode *Result = _VectorZero(Size);
+  if (Shift < Size) {
+    Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 

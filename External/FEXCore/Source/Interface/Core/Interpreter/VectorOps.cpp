@@ -1641,24 +1641,6 @@ DEF_OP(VExtr) {
   memcpy(GDP, &Dst, OpSize);
 }
 
-DEF_OP(VSLI) {
-  auto Op = IROp->C<IR::IROp_VSLI>();
-  const __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
-  const __uint128_t Src2 = Op->ByteShift * 8;
-
-  const __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 << Src2;
-  memcpy(GDP, &Dst, 16);
-}
-
-DEF_OP(VSRI) {
-  auto Op = IROp->C<IR::IROp_VSRI>();
-  const __uint128_t Src1 = *GetSrc<__uint128_t*>(Data->SSAData, Op->Vector);
-  const __uint128_t Src2 = Op->ByteShift * 8;
-
-  const __uint128_t Dst = Op->ByteShift >= sizeof(__uint128_t) ? 0 : Src1 >> Src2;
-  memcpy(GDP, &Dst, 16);
-}
-
 DEF_OP(VUShrI) {
   const auto Op = IROp->C<IR::IROp_VUShrI>();
   const uint8_t OpSize = IROp->Size;

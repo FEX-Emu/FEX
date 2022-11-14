@@ -2409,20 +2409,6 @@ DEF_OP(VExtr) {
   }
 }
 
-DEF_OP(VSLI) {
-  auto Op = IROp->C<IR::IROp_VSLI>();
-  movapd(xmm15, GetSrc(Op->Vector.ID()));
-  pslldq(xmm15, Op->ByteShift);
-  movapd(GetDst(Node), xmm15);
-}
-
-DEF_OP(VSRI) {
-  auto Op = IROp->C<IR::IROp_VSRI>();
-  movapd(xmm15, GetSrc(Op->Vector.ID()));
-  psrldq(xmm15, Op->ByteShift);
-  movapd(GetDst(Node), xmm15);
-}
-
 DEF_OP(VUShrI) {
   const auto Op = IROp->C<IR::IROp_VUShrI>();
 
@@ -3661,8 +3647,6 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VINSELEMENT,       VInsElement);
   REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);
-  REGISTER_OP(VSLI,              VSLI);
-  REGISTER_OP(VSRI,              VSRI);
   REGISTER_OP(VUSHRI,            VUShrI);
   REGISTER_OP(VSSHRI,            VSShrI);
   REGISTER_OP(VSHLI,             VShlI);

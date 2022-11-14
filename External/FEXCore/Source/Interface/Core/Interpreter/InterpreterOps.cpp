@@ -243,8 +243,6 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VINSELEMENT,            VInsElement);
   REGISTER_OP(VDUPELEMENT,            VDupElement);
   REGISTER_OP(VEXTR,                  VExtr);
-  REGISTER_OP(VSLI,                   VSLI);
-  REGISTER_OP(VSRI,                   VSRI);
   REGISTER_OP(VUSHRI,                 VUShrI);
   REGISTER_OP(VSSHRI,                 VSShrI);
   REGISTER_OP(VSHLI,                  VShlI);

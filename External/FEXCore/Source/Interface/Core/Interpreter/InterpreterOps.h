@@ -263,8 +263,6 @@ namespace FEXCore::CPU {
   DEF_OP(VInsElement);
   DEF_OP(VDupElement);
   DEF_OP(VExtr);
-  DEF_OP(VSLI);
-  DEF_OP(VSRI);
   DEF_OP(VUShrI);
   DEF_OP(VSShrI);
   DEF_OP(VShlI);
