@@ -4028,66 +4028,6 @@ DEF_OP(VExtr) {
   }
 }
 
-DEF_OP(VSLI) {
-  auto Op = IROp->C<IR::IROp_VSLI>();
-  const uint8_t OpSize = IROp->Size;
-  const uint8_t BitShift = Op->ByteShift * 8;
-  if (BitShift < 64) {
-    // Move to Pair [TMP2:TMP1]
-    mov(TMP1, GetSrc(Op->Vector.ID()).V2D(), 0);
-    mov(TMP2, GetSrc(Op->Vector.ID()).V2D(), 1);
-    // Left shift low 64bits
-    lsl(TMP3, TMP1, BitShift);
-
-    // Extract high 64bits from [TMP2:TMP1]
-    extr(TMP1, TMP2, TMP1, 64 - BitShift);
-
-    mov(GetDst(Node).V2D(), 0, TMP3);
-    mov(GetDst(Node).V2D(), 1, TMP1);
-  }
-  else {
-    if (Op->ByteShift >= OpSize) {
-      eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-    }
-    else {
-      mov(TMP1, GetSrc(Op->Vector.ID()).V2D(), 0);
-      lsl(TMP1, TMP1, BitShift - 64);
-      mov(GetDst(Node).V2D(), 0, xzr);
-      mov(GetDst(Node).V2D(), 1, TMP1);
-    }
-  }
-}
-
-DEF_OP(VSRI) {
-  auto Op = IROp->C<IR::IROp_VSRI>();
-  const uint8_t OpSize = IROp->Size;
-  const uint8_t BitShift = Op->ByteShift * 8;
-  if (BitShift < 64) {
-    // Move to Pair [TMP2:TMP1]
-    mov(TMP1, GetSrc(Op->Vector.ID()).V2D(), 0);
-    mov(TMP2, GetSrc(Op->Vector.ID()).V2D(), 1);
-
-    // Extract Low 64bits [TMP2:TMP2] >> BitShift
-    extr(TMP1, TMP2, TMP1, BitShift);
-    // Right shift high bits
-    lsr(TMP2, TMP2, BitShift);
-
-    mov(GetDst(Node).V2D(), 0, TMP1);
-    mov(GetDst(Node).V2D(), 1, TMP2);
-  }
-  else {
-    if (Op->ByteShift >= OpSize) {
-      eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-    }
-    else {
-      mov(TMP1, GetSrc(Op->Vector.ID()).V2D(), 1);
-      lsr(TMP1, TMP1, BitShift - 64);
-      mov(GetDst(Node).V2D(), 0, TMP1);
-      mov(GetDst(Node).V2D(), 1, xzr);
-    }
-  }
-}
-
 DEF_OP(VUShrI) {
   const auto Op = IROp->C<IR::IROp_VUShrI>();
   const auto OpSize = IROp->Size;
@@ -5354,8 +5294,6 @@ void Arm64JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VINSELEMENT,       VInsElement);
   REGISTER_OP(VDUPELEMENT,       VDupElement);
   REGISTER_OP(VEXTR,             VExtr);
-  REGISTER_OP(VSLI,              VSLI);
-  REGISTER_OP(VSRI,              VSRI);
   REGISTER_OP(VUSHRI,            VUShrI);
   REGISTER_OP(VSSHRI,            VSShrI);
   REGISTER_OP(VSHLI,             VShlI);
