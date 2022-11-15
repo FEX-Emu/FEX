@@ -38,6 +38,18 @@ void OpDispatchBuilder::MOVAPSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
+void OpDispatchBuilder::VMOVAPSOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  if (Op->Dest.IsGPR() && Is128BitDest) {
+    // Perform 32 byte store to clear the upper lane.
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 32, -1);
+  } else {
+    StoreResult(FPRClass, Op, Src, -1);
+  }
+}
+
 void OpDispatchBuilder::MOVUPSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1);
   StoreResult(FPRClass, Op, Src, 1);

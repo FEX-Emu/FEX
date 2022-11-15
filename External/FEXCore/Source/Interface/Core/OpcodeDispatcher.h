@@ -404,6 +404,9 @@ public:
   // ADX Ops
   void ADXOp(OpcodeArgs);
 
+  // AVX Ops
+  void VMOVAPSOp(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);

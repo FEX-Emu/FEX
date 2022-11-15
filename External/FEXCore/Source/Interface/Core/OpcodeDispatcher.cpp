@@ -6986,6 +6986,9 @@ constexpr uint16_t PF_F2 = 3;
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEXTable[] = {
+    {OPD(1, 0b00, 0x28), 1, &OpDispatchBuilder::VMOVAPSOp},
+    {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::VMOVAPSOp},
+
     {OPD(1, 0b01, 0x6E), 2, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::UnimplementedOp},
