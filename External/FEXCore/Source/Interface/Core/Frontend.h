@@ -49,6 +49,7 @@ private:
   struct DecodedHeader {
     uint8_t vvvv; // Encoded operand in a VEX prefix.
     bool w;       // VEX.W bit.
+    bool L;       // VEX.L bit (if set then 256 bit operation, if unset then scalar or 128-bit operation)
   };
 
   FEXCore::Context::Context *CTX;
