@@ -82,11 +82,7 @@ DEF_OP(LoadContext) {
       break;
     }
     case 32: {
-      if (Op->Offset % 32 == 0) {
-        vmovaps(ToYMM(Dst), yword [STATE + Op->Offset]);
-      } else {
-        vmovups(ToYMM(Dst), yword [STATE + Op->Offset]);
-      }
+      vmovups(ToYMM(Dst), yword [STATE + Op->Offset]);
       break;
     }
     default:
@@ -156,11 +152,7 @@ DEF_OP(StoreContext) {
       break;
     }
     case 32: {
-      if (Op->Offset % 32 == 0) {
-        vmovaps(yword [STATE + Op->Offset], ToYMM(Value));
-      } else {
-        vmovups(yword [STATE + Op->Offset], ToYMM(Value));
-      }
+      vmovups(yword [STATE + Op->Offset], ToYMM(Value));
       break;
     }
     default:
@@ -269,11 +261,7 @@ DEF_OP(LoadContextIndexed) {
         }
         break;
       case 32:
-        if (Op->BaseOffset % 32 == 0) {
-          vmovaps(ToYMM(Dst), yword [STATE + rax]);
-        } else {
-          vmovups(ToYMM(Dst), yword [STATE + rax]);
-        }
+        vmovups(ToYMM(Dst), yword [STATE + rax]);
         break;
       default:
         LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize);
@@ -369,11 +357,7 @@ DEF_OP(StoreContextIndexed) {
         }
         break;
       case 32:
-        if (Op->BaseOffset % 32 == 0) {
-          vmovaps(yword [STATE + rax], ToYMM(Value));
-        } else {
-          vmovups(yword [STATE + rax], ToYMM(Value));
-        }
+        vmovups(yword [STATE + rax], ToYMM(Value));
         break;
       default:
         LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize);
@@ -432,7 +416,7 @@ DEF_OP(SpillRegister) {
         break;
       }
       case 32: {
-        vmovaps(yword [rsp + SlotOffset], ToYMM(Src));
+        vmovups(yword [rsp + SlotOffset], ToYMM(Src));
         break;
       }
       default:
@@ -488,7 +472,7 @@ DEF_OP(FillRegister) {
         break;
       }
       case 32: {
-        vmovaps(ToYMM(Dst), yword [rsp + SlotOffset]);
+        vmovups(ToYMM(Dst), yword [rsp + SlotOffset]);
         break;
       }
       default:

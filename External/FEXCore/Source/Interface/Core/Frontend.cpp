@@ -451,8 +451,13 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
       DestSize = 2;
     }
     else if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_128BIT) {
-      DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_128BIT);
-      DestSize = 16;
+      if (Options.L) {
+        DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_256BIT);
+        DestSize = 32;
+      } else {
+        DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_128BIT);
+        DestSize = 16;
+      }
     }
     else if (HasNarrowingDisplacement &&
       (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
@@ -483,7 +488,14 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
     }
     else if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_128BIT) {
-      DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_128BIT);
+      if (Options.L) {
+        DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_256BIT);
+      } else {
+        DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_128BIT);
+      }
+    }
+    else if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_256BIT) {
+      DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_256BIT);
     }
     else if (HasNarrowingDisplacement &&
       (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
@@ -777,6 +789,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     if (Op == 0xC5) { // Two byte VEX
       pp = Byte1 & 0b11;
       options.vvvv = 15 - ((Byte1 & 0b01111000) >> 3);
+      options.L = (Byte1 & 0b100) != 0;
     }
     else { // 0xC4 = Three byte VEX
       const uint8_t Byte2 = ReadByte();
@@ -784,6 +797,7 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
       map_select = Byte1 & 0b11111;
       options.vvvv = 15 - ((Byte2 & 0b01111000) >> 3);
       options.w = (Byte2 & 0b10000000) != 0;
+      options.L = (Byte2 & 0b100) != 0;
       if ((Byte1 & 0b01000000) == 0) {
         LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "VEX.X shouldn't be 0 in 32-bit mode!");
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
