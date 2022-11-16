@@ -1854,15 +1854,24 @@ DEF_OP(VUnZip2) {
 
 DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto VectorFalse = ToYMM(GetSrc(Op->VectorFalse.ID()));
-  const auto VectorTrue = ToYMM(GetSrc(Op->VectorTrue.ID()));
-  const auto VectorMask = ToYMM(GetSrc(Op->VectorMask.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpand(ymm0, VectorMask, VectorTrue);
-  vpandn(ymm12, VectorMask, VectorFalse);
-  vpor(Dst, ymm0, ymm12);
+  const auto Dst = GetDst(Node);
+  const auto VectorFalse = GetSrc(Op->VectorFalse.ID());
+  const auto VectorTrue = GetSrc(Op->VectorTrue.ID());
+  const auto VectorMask = GetSrc(Op->VectorMask.ID());
+
+  if (Is256Bit) {
+    vpand(ymm0, ToYMM(VectorMask), ToYMM(VectorTrue));
+    vpandn(ymm12, ToYMM(VectorMask), ToYMM(VectorFalse));
+    vpor(ToYMM(Dst), ymm0, ymm12);
+  } else {
+    vpand(xmm0, VectorMask, VectorTrue);
+    vpandn(xmm12, VectorMask, VectorFalse);
+    vpor(Dst, xmm0, xmm12);
+  }
 }
 
 DEF_OP(VCMPEQ) {
