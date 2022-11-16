@@ -653,27 +653,45 @@ DEF_OP(VURAvg) {
 
 DEF_OP(VAbs) {
   const auto Op = IROp->C<IR::IROp_VAbs>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Src = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Src = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpabsb(Dst, Src);
+      if (Is256Bit) {
+        vpabsb(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsb(Dst, Src);
+      }
       break;
     }
     case 2: {
-      vpabsw(Dst, Src);
+      if (Is256Bit) {
+        vpabsw(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsw(Dst, Src);
+      }
       break;
     }
     case 4: {
-      vpabsd(Dst, Src);
+      if (Is256Bit) {
+        vpabsd(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsd(Dst, Src);
+      }
       break;
     }
     case 8: {
-      vpabsq(Dst, Src);
+      if (Is256Bit) {
+        vpabsq(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsq(Dst, Src);
+      }
       break;
     }
     default:
