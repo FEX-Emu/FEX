@@ -1341,12 +1341,20 @@ DEF_OP(VFNeg) {
 
 DEF_OP(VNot) {
   const auto Op = IROp->C<IR::IROp_VNot>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpcmpeqd(ymm15, ymm15, ymm15);
-  vpxor(Dst, ymm15, Vector);
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (Is256Bit) {
+    vpcmpeqd(ymm15, ymm15, ymm15);
+    vpxor(ToYMM(Dst), ymm15, ToYMM(Vector));
+  } else {
+    vpcmpeqd(xmm15, xmm15, xmm15);
+    vpxor(Dst, xmm15, Vector);
+  }
 }
 
 DEF_OP(VUMin) {
