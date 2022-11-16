@@ -121,13 +121,20 @@ DEF_OP(VMov) {
 }
 
 DEF_OP(VAnd) {
-  auto Op = IROp->C<IR::IROp_VAnd>();
+  const auto Op = IROp->C<IR::IROp_VAnd>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpand(Dst, Vector1, Vector2);
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (Is256Bit) {
+    vpand(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+  } else {
+    vpand(Dst, Vector1, Vector2);
+  }
 }
 
 DEF_OP(VBic) {
