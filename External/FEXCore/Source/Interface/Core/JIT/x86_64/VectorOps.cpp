@@ -23,9 +23,12 @@ DEF_OP(VectorZero) {
 }
 
 DEF_OP(VectorImm) {
-  auto Op = IROp->C<IR::IROp_VectorImm>();
+  const auto Op = IROp->C<IR::IROp_VectorImm>();
+  const auto OpSize = IROp->Size;
 
-  const uint8_t OpSize = IROp->Size;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
   const uint64_t Imm = Op->Immediate;
 
   const auto Dst = GetDst(Node);
@@ -63,12 +66,10 @@ DEF_OP(VectorImm) {
   mov(TMP1, Element);
   vmovq(Dst, TMP1);
 
-  if (OpSize >= 16) {
-    LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
-                        "Can't handle a vector of size: {}", OpSize);
-
-    // Duplicate into upper elements
-    vbroadcastsd(ToYMM(Dst), Dst);
+  if (Is256Bit) {
+    vpbroadcastq(ToYMM(Dst), Dst);
+  } else if (Is128Bit) {
+    vpbroadcastq(Dst, Dst);
   }
 }
 
