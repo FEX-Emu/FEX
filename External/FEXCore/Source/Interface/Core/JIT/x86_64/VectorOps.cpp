@@ -328,21 +328,31 @@ DEF_OP(VUQAdd) {
 }
 
 DEF_OP(VUQSub) {
-  auto Op = IROp->C<IR::IROp_VUQSub>();
+  const auto Op = IROp->C<IR::IROp_VUQSub>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpsubusb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubusb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubusb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpsubusw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubusw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubusw(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
