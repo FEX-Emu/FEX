@@ -3507,20 +3507,30 @@ DEF_OP(VSQXTUN2) {
 
 DEF_OP(VMul) {
   const auto Op = IROp->C<IR::IROp_VUMul>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpmullw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmullw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmullw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpmulld(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmulld(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmulld(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
