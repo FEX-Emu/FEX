@@ -2531,20 +2531,30 @@ DEF_OP(VUShrS) {
 
 DEF_OP(VSShrS) {
   const auto Op = IROp->C<IR::IROp_VSShrS>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
+  const auto Dst = GetDst(Node);
   const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsraw(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsraw(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsraw(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 4: {
-      vpsrad(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsrad(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsrad(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 8: // VPSRAQ is only introduced in AVX-512
