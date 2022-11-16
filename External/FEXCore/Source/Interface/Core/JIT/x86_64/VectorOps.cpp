@@ -2447,24 +2447,38 @@ DEF_OP(VSShr) {
 
 DEF_OP(VUShlS) {
   const auto Op = IROp->C<IR::IROp_VUShlS>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
+  const auto Dst = GetDst(Node);
   const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsllw(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsllw(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsllw(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 4: {
-      vpslld(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpslld(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpslld(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 8: {
-      vpsllq(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsllq(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsllq(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     default:
