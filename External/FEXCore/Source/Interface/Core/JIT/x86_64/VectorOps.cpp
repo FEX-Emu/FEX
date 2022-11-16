@@ -2344,6 +2344,7 @@ DEF_OP(VFCMPORD) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -2362,18 +2363,21 @@ DEF_OP(VFCMPORD) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 7);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 7);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 7);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 7);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 7);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 7);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
