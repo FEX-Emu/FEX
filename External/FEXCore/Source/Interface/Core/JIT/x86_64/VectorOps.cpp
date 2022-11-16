@@ -177,13 +177,20 @@ DEF_OP(VOr) {
 }
 
 DEF_OP(VXor) {
-  auto Op = IROp->C<IR::IROp_VXor>();
+  const auto Op = IROp->C<IR::IROp_VXor>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpxor(Dst, Vector1, Vector2);
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (Is256Bit) {
+    vpxor(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+  } else {
+    vpxor(Dst, Vector1, Vector2);
+  }
 }
 
 DEF_OP(VAdd) {
