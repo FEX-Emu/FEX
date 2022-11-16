@@ -1186,6 +1186,7 @@ DEF_OP(VFRSqrt) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1211,18 +1212,21 @@ DEF_OP(VFRSqrt) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto VectorYMM = ToYMM(Vector);
-
+  } else {
     switch (ElementSize) {
       case 4: {
         mov(rax, 0x3f800000); // 1.0f
-        vsqrtps(ymm15, VectorYMM);
-        vmovd(Dst, eax);
-        vbroadcastss(DstYMM, Dst);
-        vdivps(Dst, ymm15);
+        if (Is256Bit) {
+          vsqrtps(ymm15, ToYMM(Vector));
+          vmovd(Dst, eax);
+          vbroadcastss(ToYMM(Dst), Dst);
+          vdivps(ToYMM(Dst), ymm15);
+        } else {
+          vsqrtps(xmm15, Vector);
+          vmovd(Dst, eax);
+          vbroadcastss(Dst, Dst);
+          vdivps(Dst, xmm15);
+        }
         break;
       }
       default:
