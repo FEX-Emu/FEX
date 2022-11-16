@@ -2929,9 +2929,11 @@ DEF_OP(VUShrI) {
 
 DEF_OP(VSShrI) {
   const auto Op = IROp->C<IR::IROp_VSShrI>();
+  const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dest = GetDst(Node);
   const auto Vector = GetSrc(Op->Vector.ID());
@@ -2948,19 +2950,32 @@ DEF_OP(VSShrI) {
         }
       };
 
-      vmovapd(ToYMM(Dest), ToYMM(Vector));
-      PerformShifts(Dest);
-      vextractf128(xmm15, ToYMM(Dest), 1);
-      PerformShifts(xmm15);
-      vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      if (Is256Bit) {
+        vmovapd(ToYMM(Dest), ToYMM(Vector));
+        PerformShifts(Dest);
+        vextractf128(xmm15, ToYMM(Dest), 1);
+        PerformShifts(xmm15);
+        vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      } else {
+        vmovapd(Dest, Vector);
+        PerformShifts(Dest);
+      }
       break;
     }
     case 2: {
-      vpsraw(ToYMM(Dest), ToYMM(Vector), BitShift);
+      if (Is256Bit) {
+        vpsraw(ToYMM(Dest), ToYMM(Vector), BitShift);
+      } else {
+        vpsraw(Dest, Vector, BitShift);
+      }
       break;
     }
     case 4: {
-      vpsrad(ToYMM(Dest), ToYMM(Vector), BitShift);
+      if (Is256Bit) {
+        vpsrad(ToYMM(Dest), ToYMM(Vector), BitShift);
+      } else {
+        vpsrad(Dest, Vector, BitShift);
+      }
       break;
     }
     case 8: {
@@ -2973,11 +2988,16 @@ DEF_OP(VSShrI) {
         }
       };
 
-      vmovapd(ToYMM(Dest), ToYMM(Vector));
-      PerformShifts(Dest);
-      vextractf128(xmm15, ToYMM(Dest), 1);
-      PerformShifts(xmm15);
-      vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      if (Is256Bit) {
+        vmovapd(ToYMM(Dest), ToYMM(Vector));
+        PerformShifts(Dest);
+        vextractf128(xmm15, ToYMM(Dest), 1);
+        PerformShifts(xmm15);
+        vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      } else {
+        vmovapd(Dest, Vector);
+        PerformShifts(Dest);
+      }
       break;
     }
     default:
