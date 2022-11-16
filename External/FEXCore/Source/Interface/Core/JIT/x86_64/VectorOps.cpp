@@ -990,6 +990,7 @@ DEF_OP(VFMin) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -997,7 +998,7 @@ DEF_OP(VFMin) {
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   if (IsScalar) {
-    switch (Op->Header.ElementSize) {
+    switch (ElementSize) {
       case 4: {
         vminss(Dst, Vector1, Vector2);
         break;
@@ -1010,19 +1011,22 @@ DEF_OP(VFMin) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
       case 4: {
-        vminps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vminps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vminps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vminpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vminpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vminpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
