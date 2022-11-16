@@ -2887,24 +2887,38 @@ DEF_OP(VExtr) {
 
 DEF_OP(VUShrI) {
   const auto Op = IROp->C<IR::IROp_VUShrI>();
+  const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsrlw(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsrlw(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsrlw(Dst, Vector, BitShift);
+      }
       break;
     }
     case 4: {
-      vpsrld(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsrld(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsrld(Dst, Vector, BitShift);
+      }
       break;
     }
     case 8: {
-      vpsrlq(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsrlq(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsrlq(Dst, Vector, BitShift);
+      }
       break;
     }
     default:
