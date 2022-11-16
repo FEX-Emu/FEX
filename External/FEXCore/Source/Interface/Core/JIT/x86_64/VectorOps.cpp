@@ -1238,28 +1238,46 @@ DEF_OP(VFRSqrt) {
 
 DEF_OP(VNeg) {
   const auto Op = IROp->C<IR::IROp_VNeg>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   vpxor(xmm15, xmm15, xmm15);
   switch (ElementSize) {
     case 1: {
-      vpsubb(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubb(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubb(Dst, xmm15, Vector);
+      }
       break;
     }
     case 2: {
-      vpsubw(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubw(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubw(Dst, xmm15, Vector);
+      }
       break;
     }
     case 4: {
-      vpsubd(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubd(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubd(Dst, xmm15, Vector);
+      }
       break;
     }
     case 8: {
-      vpsubq(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubq(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubq(Dst, xmm15, Vector);
+      }
       break;
     }
     default:
