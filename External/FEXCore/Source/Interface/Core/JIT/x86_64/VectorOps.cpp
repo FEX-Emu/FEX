@@ -138,16 +138,25 @@ DEF_OP(VAnd) {
 }
 
 DEF_OP(VBic) {
-  auto Op = IROp->C<IR::IROp_VBic>();
+  const auto Op = IROp->C<IR::IROp_VBic>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   // This doesn't map directly to ARM
-  vpcmpeqd(ymm15, ymm15, ymm15);
-  vpxor(ymm15, Vector2, ymm15);
-  vpand(Dst, Vector1, ymm15);
+  if (Is256Bit) {
+    vpcmpeqd(ymm15, ymm15, ymm15);
+    vpxor(ymm15, ToYMM(Vector2), ymm15);
+    vpand(ToYMM(Dst), ToYMM(Vector1), ymm15);
+  } else {
+    vpcmpeqd(xmm15, xmm15, xmm15);
+    vpxor(xmm15, Vector2, xmm15);
+    vpand(Dst, Vector1, xmm15);
+  }
 }
 
 DEF_OP(VOr) {
