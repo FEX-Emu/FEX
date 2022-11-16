@@ -2014,26 +2014,43 @@ DEF_OP(VCMPGT) {
 
 DEF_OP(VCMPGTZ) {
   const auto Op = IROp->C<IR::IROp_VCMPGTZ>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
-  const auto ZeroVector = ymm15;
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
-  vpxor(ZeroVector, ZeroVector, ZeroVector);
+  vpxor(xmm15, xmm15, xmm15);
   switch (ElementSize) {
     case 1:
-      vpcmpgtb(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtb(Dst, Vector, xmm15);
+      }
       break;
     case 2:
-      vpcmpgtw(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtw(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtw(Dst, Vector, xmm15);
+      }
       break;
     case 4:
-      vpcmpgtd(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtd(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtd(Dst, Vector, xmm15);
+      }
       break;
     case 8:
-      vpcmpgtq(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtq(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtq(Dst, Vector, xmm15);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
