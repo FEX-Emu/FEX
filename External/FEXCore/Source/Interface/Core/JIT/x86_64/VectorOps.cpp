@@ -802,19 +802,29 @@ DEF_OP(VFAdd) {
 
 DEF_OP(VFAddP) {
   const auto Op = IROp->C<IR::IROp_VFAddP>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto VectorLower = ToYMM(GetSrc(Op->VectorLower.ID()));
-  const auto VectorUpper = ToYMM(GetSrc(Op->VectorUpper.ID()));
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   switch (ElementSize) {
     case 4:
-      vhaddps(Dst, VectorLower, VectorUpper);
+      if (Is256Bit) {
+        vhaddpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+      } else {
+        vhaddps(Dst, VectorLower, VectorUpper);
+      }
       break;
     case 8:
-      vhaddpd(Dst, VectorLower, VectorUpper);
+      if (Is256Bit) {
+        vhaddpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+      } else {
+        vhaddpd(Dst, VectorLower, VectorUpper);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
