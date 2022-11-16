@@ -754,6 +754,7 @@ DEF_OP(VFAdd) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -775,17 +776,21 @@ DEF_OP(VFAdd) {
         break;
     }
   } else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
     switch (ElementSize) {
       case 4: {
-        vaddps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vaddps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vaddps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vaddpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vaddpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vaddpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
