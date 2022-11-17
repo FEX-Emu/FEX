@@ -190,11 +190,11 @@ namespace ProcessPipe {
 
     struct sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    // + 1 for null character initializer.
-    size_t SizeOfSocketString = std::min(ServerSocketName.size(), sizeof(addr.sun_path) - 2);
+    size_t SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
+    addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
     strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
     // Include final null character.
-    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString + 1;
+    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
     // Bind the socket to the path
     int Result = bind(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);

@@ -162,14 +162,14 @@ namespace FEXServerClient {
     // The entirety of the name is used as a path to a socket that doesn't have any filesystem backing.
     struct sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    // + 1 for null character initializer.
-    size_t SizeOfSocketString = std::min(ServerSocketName.size(), sizeof(addr.sun_path) - 2);
+    size_t SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
+    addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
     strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
     // Include final null character.
-    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString + 1;
+    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
     if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
-      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketFile, errno, strerror(errno));
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketName, errno, strerror(errno));
       close(SocketFD);
       return -1;
     }
