@@ -83,7 +83,7 @@ namespace ProcessPipe {
     if (!std::filesystem::exists(ServerFolder, ec)) {
       // Doesn't exist, create the the folder as a user convenience
       if (!std::filesystem::create_directories(ServerFolder, ec)) {
-        LogMan::Msg::AFmt("Couldn't create server pipe folder at: {}", ServerFolder);
+        LogMan::Msg::EFmt("Couldn't create server pipe folder at: {}", ServerFolder);
         return false;
       }
     }
@@ -137,7 +137,7 @@ namespace ProcessPipe {
     }
     else if (Ret == -1) {
       // Unhandled error.
-      LogMan::Msg::AFmt("Unable to create FEXServer named lock file at: {} {} {}", ServerLockPath, errno, strerror(errno));
+      LogMan::Msg::EFmt("Unable to create FEXServer named lock file at: {} {} {}", ServerLockPath, errno, strerror(errno));
       return false;
     }
     else {
@@ -169,7 +169,7 @@ namespace ProcessPipe {
 
     if (Ret == -1) {
       // This shouldn't occur
-      LogMan::Msg::AFmt("Unable to downgrade a write lock to a read lock {} {} {}", ServerLockPath, errno, strerror(errno));
+      LogMan::Msg::EFmt("Unable to downgrade a write lock to a read lock {} {} {}", ServerLockPath, errno, strerror(errno));
       close(ServerLockFD);
       ServerLockFD = -1;
       return false;
@@ -189,7 +189,7 @@ namespace ProcessPipe {
     // Create the initial unix socket
     ServerSocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (ServerSocketFD == -1) {
-      LogMan::Msg::AFmt("Couldn't create AF_UNIX socket: %d %s\n", errno, strerror(errno));
+      LogMan::Msg::EFmt("Couldn't create AF_UNIX socket: {} {}\n", errno, strerror(errno));
       return false;
     }
 
@@ -200,7 +200,7 @@ namespace ProcessPipe {
     // Bind the socket to the path
     int Result = bind(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
     if (Result == -1) {
-      LogMan::Msg::AFmt("Couldn't bind AF_UNIX socket '%s': %d %s\n", addr.sun_path, errno, strerror(errno));
+      LogMan::Msg::EFmt("Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
       close(ServerSocketFD);
       ServerSocketFD = -1;
       return false;

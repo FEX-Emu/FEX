@@ -14,7 +14,14 @@ namespace SquashFS {
 
   constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
   int ServerRootFSLockFD {-1};
+  int FuseMountPID{};
   std::string MountFolder{};
+
+  void ShutdownImagePID() {
+    if (FuseMountPID) {
+      tgkill(FuseMountPID, FuseMountPID, SIGINT);
+    }
+  }
 
   bool InitializeSquashFSPipe() {
     std::string RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
@@ -145,6 +152,7 @@ namespace SquashFS {
       }
     }
     else {
+      FuseMountPID = pid;
       // Parent
       // Wait for the child to exit
       // This will happen with execvpe of squashmount or exit on failure
@@ -185,6 +193,8 @@ namespace SquashFS {
     if (!FEX::FormatCheck::IsSquashFS(LDPath()) && !FEX::FormatCheck::IsEroFS(LDPath())) {
       return;
     }
+
+    SquashFS::ShutdownImagePID();
 
     // Handle final mount removal
     // fusermount for unmounting the mountpoint, then the {erfsfuse, squashfuse} will exit automatically

@@ -109,6 +109,12 @@ namespace {
    * @brief Deparents itself by forking and terminating the parent process.
    */
   void DeparentSelf() {
+    auto SystemdEnv = getenv("SYSTEMD_EXEC_PID");
+    if (SystemdEnv) {
+      // If FEXServer was launched through systemd then don't deparent, otherwise systemd kills the entire server.
+      return;
+    }
+
     pid_t pid = fork();
 
     if (pid != 0) {
