@@ -226,6 +226,11 @@ namespace FEXServerClient {
 
           std::this_thread::sleep_for(std::chrono::seconds(1));
         }
+
+        if (ServerFD == -1) {
+          // Still couldn't connect to the socket.
+          LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} after launching the process", GetServerSocketFile());
+        }
       }
     }
     return ServerFD;
