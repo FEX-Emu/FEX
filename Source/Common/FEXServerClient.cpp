@@ -103,7 +103,15 @@ namespace FEXServerClient {
   std::string GetServerSocketFile() {
     FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
     if (ServerSocketPath().empty()) {
-      return fmt::format("{}/{}.FEXServer.socket", std::filesystem::temp_directory_path().string(), ::geteuid());
+      auto TmpDir = std::filesystem::temp_directory_path().string();
+
+      auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
+      if (XDGRuntimeEnv) {
+        // If the XDG runtime directory works then use that instead.
+        TmpDir = XDGRuntimeEnv;
+      }
+
+      return fmt::format("{}/{}.FEXServer.socket", TmpDir, ::geteuid());
     }
 
     return ServerSocketPath;
