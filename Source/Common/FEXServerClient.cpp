@@ -100,21 +100,39 @@ namespace FEXServerClient {
     return GetServerLockFolder() + "RootFS.lock";
   }
 
-  std::string GetServerTempFolder() {
-    // We need a server temporary folder that has the following requirements.
-    // - Can't be `/tmp/`
+  std::string GetServerMountFolder() {
+    // We need a FEXServer mount directory that has some tricky requirements.
+    // - We don't want to use `/tmp/` if possible.
     //   - systemd services use `PrivateTmp` feature to gives services their own tmp.
-    // - Can't be `$HOME/.fex-emu/`
-    //   - Can be mounted with a filesystem (sshfs) which can't handle mount points inside it.
-    auto Folder = std::filesystem::temp_directory_path().string();
+    //   - We will use this as a fallback path /only/.
+    // - Can't be `[$XDG_DATA_HOME,$HOME]/.fex-emu/`
+    //   - Might be mounted with a filesystem (sshfs) which can't handle mount points inside it.
+    //
+    // Directories it can be in:
+    // - $XDG_RUNTIME_DIR if set
+    //   - Is typically `/run/user/<UID>/`
+    //   - systemd `PrivateTmp` feature doesn't touch this.
+    //   - If this path doesn't exist then fallback to `/tmp/` as a last resort.
+    //   - pressure-vessel explicitly creates an internal XDG_RUNTIME_DIR inside its chroot.
+    //     - This is okay since pressure-vessel rbinds the FEX rootfs from the host to `/run/pressure-vessel/interpreter-root`.
+    std::string Folder{};
     auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
     if (XDGRuntimeEnv) {
-      // If the XDG runtime directory works then use that instead.
+      // If the XDG runtime directory works then use that.
       Folder = XDGRuntimeEnv;
+    }
+    else {
+      // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
+      // Might not be ideal but we don't have much of a choice.
+      Folder = std::filesystem::temp_directory_path().string();
     }
 
     if (FEXCore::Config::FindContainer() == "pressure-vessel") {
-      // In pressure-vessel the server location changes.
+      // In pressure-vessel the mount point changes location.
+      // This is due to pressure-vesssel being a chroot environment.
+      // It by default maps the host-filesystem to `/run/host/` so we need to redirect.
+      // After pressure-vessel is fully set up it will set the `FEX_ROOTFS` environment variable,
+      // which the FEXInterpreter will pick up on.
       Folder = "/run/host/" + Folder;
     }
 

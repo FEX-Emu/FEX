@@ -50,7 +50,7 @@ namespace FEXServerClient {
   std::string GetServerLockFolder();
   std::string GetServerLockFile();
   std::string GetServerRootFSLockFile();
-  std::string GetServerTempFolder();
+  std::string GetServerMountFolder();
   std::string GetServerSocketName();
   int GetServerFD();
 
