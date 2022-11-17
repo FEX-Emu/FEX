@@ -100,21 +100,29 @@ namespace FEXServerClient {
     return GetServerLockFolder() + "RootFS.lock";
   }
 
-  std::string GetServerSocketFile() {
-    FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
-    if (ServerSocketPath().empty()) {
-      auto TmpDir = std::filesystem::temp_directory_path().string();
-
-      auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
-      if (XDGRuntimeEnv) {
-        // If the XDG runtime directory works then use that instead.
-        TmpDir = XDGRuntimeEnv;
-      }
-
-      return fmt::format("{}/{}.FEXServer.socket", TmpDir, ::geteuid());
+  std::string GetServerTempFolder() {
+    // We need a server temporary folder that has the following requirements.
+    // - Can't be `/tmp/`
+    //   - systemd services use `PrivateTmp` feature to gives services their own tmp.
+    // - Can't be `$HOME/.fex-emu/`
+    //   - Can be mounted with a filesystem (sshfs) which can't handle mount points inside it.
+    auto Folder = std::filesystem::temp_directory_path().string();
+    auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
+    if (XDGRuntimeEnv) {
+      // If the XDG runtime directory works then use that instead.
+      Folder = XDGRuntimeEnv;
     }
 
-    return ServerSocketPath;
+    if (FEXCore::Config::FindContainer() == "pressure-vessel") {
+      // In pressure-vessel the server location changes.
+      Folder = "/run/host/" + Folder;
+    }
+
+    return Folder;
+  }
+
+  std::string GetServerSocketName() {
+    return fmt::format("{}.FEXServer.Socket", ::geteuid());
   }
 
   int GetServerFD() {
@@ -122,7 +130,7 @@ namespace FEXServerClient {
   }
 
   int ConnectToServer() {
-    auto ServerSocketFile = GetServerSocketFile();
+    auto ServerSocketName = GetServerSocketName();
 
     // Create the initial unix socket
     int SocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -131,11 +139,18 @@ namespace FEXServerClient {
       return -1;
     }
 
+    // AF_UNIX has a special feature for named socket paths.
+    // If the name of the socket begins with `\0` then it is an "abstract" socket address.
+    // The entirety of the name is used as a path to a socket that doesn't have any filesystem backing.
     struct sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, ServerSocketFile.data(), std::min(ServerSocketFile.size(), sizeof(addr.sun_path)));
+    // + 1 for null character initializer.
+    size_t SizeOfSocketString = std::min(ServerSocketName.size(), sizeof(addr.sun_path) - 2);
+    strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+    // Include final null character.
+    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString + 1;
 
-    if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
+    if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
       LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketFile, errno, strerror(errno));
       close(SocketFD);
       return -1;
@@ -231,7 +246,7 @@ namespace FEXServerClient {
 
         if (ServerFD == -1) {
           // Still couldn't connect to the socket.
-          LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} after launching the process", GetServerSocketFile());
+          LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} after launching the process", GetServerSocketName());
         }
       }
     }

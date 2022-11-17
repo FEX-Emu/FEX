@@ -106,7 +106,7 @@ namespace SquashFS {
 
   bool MountRootFSImagePath(std::string SquashFS, bool EroFS) {
     pid_t ParentTID = ::getpid();
-    MountFolder = fmt::format("{}/.FEXMount{}-XXXXXX", std::filesystem::temp_directory_path().string(), ParentTID);
+    MountFolder = fmt::format("{}/.FEXMount{}-XXXXXX", FEXServerClient::GetServerTempFolder(), ParentTID);
     char *MountFolderStr = MountFolder.data();
 
     // Make the temporary mount folder

@@ -179,12 +179,7 @@ namespace ProcessPipe {
   }
 
   bool InitializeServerSocket() {
-    auto ServerSocketFile = FEXServerClient::GetServerSocketFile();
-
-    // Unlink the socket file if it exists
-    // We are being asked to create a daemon, not error check
-    // We don't care if this failed or not
-    unlink(ServerSocketFile.c_str());
+    auto ServerSocketName = FEXServerClient::GetServerSocketName();
 
     // Create the initial unix socket
     ServerSocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
@@ -195,10 +190,14 @@ namespace ProcessPipe {
 
     struct sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, ServerSocketFile.data(), std::min(ServerSocketFile.size(), sizeof(addr.sun_path)));
+    // + 1 for null character initializer.
+    size_t SizeOfSocketString = std::min(ServerSocketName.size(), sizeof(addr.sun_path) - 2);
+    strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+    // Include final null character.
+    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString + 1;
 
     // Bind the socket to the path
-    int Result = bind(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
+    int Result = bind(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
     if (Result == -1) {
       LogMan::Msg::EFmt("Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
       close(ServerSocketFD);
