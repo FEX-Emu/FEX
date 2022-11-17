@@ -23,9 +23,12 @@ DEF_OP(VectorZero) {
 }
 
 DEF_OP(VectorImm) {
-  auto Op = IROp->C<IR::IROp_VectorImm>();
+  const auto Op = IROp->C<IR::IROp_VectorImm>();
+  const auto OpSize = IROp->Size;
 
-  const uint8_t OpSize = IROp->Size;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
   const uint64_t Imm = Op->Immediate;
 
   const auto Dst = GetDst(Node);
@@ -63,12 +66,10 @@ DEF_OP(VectorImm) {
   mov(TMP1, Element);
   vmovq(Dst, TMP1);
 
-  if (OpSize >= 16) {
-    LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
-                        "Can't handle a vector of size: {}", OpSize);
-
-    // Duplicate into upper elements
-    vbroadcastsd(ToYMM(Dst), Dst);
+  if (Is256Bit) {
+    vpbroadcastq(ToYMM(Dst), Dst);
+  } else if (Is128Bit) {
+    vpbroadcastq(Dst, Dst);
   }
 }
 
@@ -120,72 +121,120 @@ DEF_OP(VMov) {
 }
 
 DEF_OP(VAnd) {
-  auto Op = IROp->C<IR::IROp_VAnd>();
+  const auto Op = IROp->C<IR::IROp_VAnd>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpand(Dst, Vector1, Vector2);
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (Is256Bit) {
+    vpand(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+  } else {
+    vpand(Dst, Vector1, Vector2);
+  }
 }
 
 DEF_OP(VBic) {
-  auto Op = IROp->C<IR::IROp_VBic>();
+  const auto Op = IROp->C<IR::IROp_VBic>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   // This doesn't map directly to ARM
-  vpcmpeqd(ymm15, ymm15, ymm15);
-  vpxor(ymm15, Vector2, ymm15);
-  vpand(Dst, Vector1, ymm15);
+  if (Is256Bit) {
+    vpcmpeqd(ymm15, ymm15, ymm15);
+    vpxor(ymm15, ToYMM(Vector2), ymm15);
+    vpand(ToYMM(Dst), ToYMM(Vector1), ymm15);
+  } else {
+    vpcmpeqd(xmm15, xmm15, xmm15);
+    vpxor(xmm15, Vector2, xmm15);
+    vpand(Dst, Vector1, xmm15);
+  }
 }
 
 DEF_OP(VOr) {
-  auto Op = IROp->C<IR::IROp_VOr>();
+  const auto Op = IROp->C<IR::IROp_VOr>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpor(Dst, Vector1, Vector2);
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (Is256Bit) {
+    vpor(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+  } else {
+    vpor(Dst, Vector1, Vector2);
+  }
 }
 
 DEF_OP(VXor) {
-  auto Op = IROp->C<IR::IROp_VXor>();
+  const auto Op = IROp->C<IR::IROp_VXor>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpxor(Dst, Vector1, Vector2);
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  if (Is256Bit) {
+    vpxor(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+  } else {
+    vpxor(Dst, Vector1, Vector2);
+  }
 }
 
 DEF_OP(VAdd) {
-  auto Op = IROp->C<IR::IROp_VAdd>();
+  const auto Op = IROp->C<IR::IROp_VAdd>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpaddb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpaddw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpaddd(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddd(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 8: {
-      vpaddq(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddq(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddq(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -195,29 +244,47 @@ DEF_OP(VAdd) {
 }
 
 DEF_OP(VSub) {
-  auto Op = IROp->C<IR::IROp_VSub>();
+  const auto Op = IROp->C<IR::IROp_VSub>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpsubb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpsubw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpsubd(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubd(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 8: {
-      vpsubq(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubq(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubq(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -227,21 +294,31 @@ DEF_OP(VSub) {
 }
 
 DEF_OP(VUQAdd) {
-  auto Op = IROp->C<IR::IROp_VUQAdd>();
+  const auto Op = IROp->C<IR::IROp_VUQAdd>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpaddusb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddusb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddusb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpaddusw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddusw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddusw(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -251,21 +328,31 @@ DEF_OP(VUQAdd) {
 }
 
 DEF_OP(VUQSub) {
-  auto Op = IROp->C<IR::IROp_VUQSub>();
+  const auto Op = IROp->C<IR::IROp_VUQSub>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpsubusb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubusb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubusb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpsubusw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubusw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubusw(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -275,21 +362,31 @@ DEF_OP(VUQSub) {
 }
 
 DEF_OP(VSQAdd) {
-  auto Op = IROp->C<IR::IROp_VSQAdd>();
+  const auto Op = IROp->C<IR::IROp_VSQAdd>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpaddsb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddsb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddsb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpaddsw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpaddsw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpaddsw(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -299,21 +396,31 @@ DEF_OP(VSQAdd) {
 }
 
 DEF_OP(VSQSub) {
-  auto Op = IROp->C<IR::IROp_VSQSub>();
+  const auto Op = IROp->C<IR::IROp_VSQSub>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpsubsb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubsb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubsb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpsubsw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpsubsw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpsubsw(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -512,20 +619,30 @@ DEF_OP(VUMinV) {
 
 DEF_OP(VURAvg) {
   const auto Op = IROp->C<IR::IROp_VURAvg>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpavgb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpavgb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpavgb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpavgw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpavgw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpavgw(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -536,27 +653,45 @@ DEF_OP(VURAvg) {
 
 DEF_OP(VAbs) {
   const auto Op = IROp->C<IR::IROp_VAbs>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Src = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Src = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpabsb(Dst, Src);
+      if (Is256Bit) {
+        vpabsb(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsb(Dst, Src);
+      }
       break;
     }
     case 2: {
-      vpabsw(Dst, Src);
+      if (Is256Bit) {
+        vpabsw(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsw(Dst, Src);
+      }
       break;
     }
     case 4: {
-      vpabsd(Dst, Src);
+      if (Is256Bit) {
+        vpabsd(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsd(Dst, Src);
+      }
       break;
     }
     case 8: {
-      vpabsq(Dst, Src);
+      if (Is256Bit) {
+        vpabsq(ToYMM(Dst), ToYMM(Src));
+      } else {
+        vpabsq(Dst, Src);
+      }
       break;
     }
     default:
@@ -619,6 +754,7 @@ DEF_OP(VFAdd) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -640,17 +776,21 @@ DEF_OP(VFAdd) {
         break;
     }
   } else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
     switch (ElementSize) {
       case 4: {
-        vaddps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vaddps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vaddps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vaddpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vaddpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vaddpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -662,19 +802,29 @@ DEF_OP(VFAdd) {
 
 DEF_OP(VFAddP) {
   const auto Op = IROp->C<IR::IROp_VFAddP>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto VectorLower = ToYMM(GetSrc(Op->VectorLower.ID()));
-  const auto VectorUpper = ToYMM(GetSrc(Op->VectorUpper.ID()));
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   switch (ElementSize) {
     case 4:
-      vhaddps(Dst, VectorLower, VectorUpper);
+      if (Is256Bit) {
+        vhaddpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+      } else {
+        vhaddps(Dst, VectorLower, VectorUpper);
+      }
       break;
     case 8:
-      vhaddpd(Dst, VectorLower, VectorUpper);
+      if (Is256Bit) {
+        vhaddpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+      } else {
+        vhaddpd(Dst, VectorLower, VectorUpper);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
@@ -687,6 +837,7 @@ DEF_OP(VFSub) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -708,17 +859,21 @@ DEF_OP(VFSub) {
         break;
     }
   } else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
     switch (ElementSize) {
       case 4: {
-        vsubps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vsubps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vsubps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vsubpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vsubpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vsubpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -733,7 +888,8 @@ DEF_OP(VFMul) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
-  const auto IsScalar = Op->Header.ElementSize == OpSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
   const auto Vector1 = GetSrc(Op->Vector1.ID());
@@ -754,17 +910,21 @@ DEF_OP(VFMul) {
         break;
     }
   } else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
     switch (ElementSize) {
       case 4: {
-        vmulps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vmulps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vmulps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vmulpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vmulpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vmulpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -779,6 +939,7 @@ DEF_OP(VFDiv) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -800,17 +961,21 @@ DEF_OP(VFDiv) {
         break;
     }
   } else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
     switch (ElementSize) {
       case 4: {
-        vdivps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vdivps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vdivps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vdivpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vdivpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vdivpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -825,6 +990,7 @@ DEF_OP(VFMin) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -832,7 +998,7 @@ DEF_OP(VFMin) {
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   if (IsScalar) {
-    switch (Op->Header.ElementSize) {
+    switch (ElementSize) {
       case 4: {
         vminss(Dst, Vector1, Vector2);
         break;
@@ -845,19 +1011,22 @@ DEF_OP(VFMin) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
       case 4: {
-        vminps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vminps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vminps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vminpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vminpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vminpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -872,6 +1041,7 @@ DEF_OP(VFMax) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -892,19 +1062,22 @@ DEF_OP(VFMax) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
       case 4: {
-        vmaxps(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vmaxps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vmaxps(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 8: {
-        vmaxpd(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vmaxpd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vmaxpd(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -919,6 +1092,7 @@ DEF_OP(VFRecp) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -936,14 +1110,18 @@ DEF_OP(VFRecp) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
+  } else {
     switch (ElementSize) {
       case 4: {
         mov(eax, 0x3f800000); // 1.0f
         vmovd(xmm15, eax);
-        vbroadcastss(ymm15, xmm15);
-        vdivps(ToYMM(Dst), ymm15, ToYMM(Vector));
+        if (Is256Bit) {
+          vbroadcastss(ymm15, xmm15);
+          vdivps(ToYMM(Dst), ymm15, ToYMM(Vector));
+        } else {
+          vbroadcastss(xmm15, xmm15);
+          vdivps(Dst, xmm15, Vector);
+        }
         break;
       }
       default:
@@ -958,6 +1136,7 @@ DEF_OP(VFSqrt) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -977,18 +1156,22 @@ DEF_OP(VFSqrt) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto VectorYMM = ToYMM(Vector);
-
+  } else {
     switch (ElementSize) {
       case 4: {
-        vsqrtps(DstYMM, VectorYMM);
+        if (Is256Bit) {
+          vsqrtps(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vsqrtps(Dst, Vector);
+        }
         break;
       }
       case 8: {
-        vsqrtpd(DstYMM, VectorYMM);
+        if (Is256Bit) {
+          vsqrtpd(ToYMM(Dst), ToYMM(Vector));
+        } else {
+          vsqrtpd(Dst, Vector);
+        }
         break;
       }
       default:
@@ -1003,6 +1186,7 @@ DEF_OP(VFRSqrt) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1028,18 +1212,21 @@ DEF_OP(VFRSqrt) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto VectorYMM = ToYMM(Vector);
-
+  } else {
     switch (ElementSize) {
       case 4: {
         mov(rax, 0x3f800000); // 1.0f
-        vsqrtps(ymm15, VectorYMM);
-        vmovd(Dst, eax);
-        vbroadcastss(DstYMM, Dst);
-        vdivps(Dst, ymm15);
+        if (Is256Bit) {
+          vsqrtps(ymm15, ToYMM(Vector));
+          vmovd(Dst, eax);
+          vbroadcastss(ToYMM(Dst), Dst);
+          vdivps(ToYMM(Dst), ymm15);
+        } else {
+          vsqrtps(xmm15, Vector);
+          vmovd(Dst, eax);
+          vbroadcastss(Dst, Dst);
+          vdivps(Dst, xmm15);
+        }
         break;
       }
       default:
@@ -1051,28 +1238,46 @@ DEF_OP(VFRSqrt) {
 
 DEF_OP(VNeg) {
   const auto Op = IROp->C<IR::IROp_VNeg>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   vpxor(xmm15, xmm15, xmm15);
   switch (ElementSize) {
     case 1: {
-      vpsubb(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubb(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubb(Dst, xmm15, Vector);
+      }
       break;
     }
     case 2: {
-      vpsubw(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubw(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubw(Dst, xmm15, Vector);
+      }
       break;
     }
     case 4: {
-      vpsubd(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubd(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubd(Dst, xmm15, Vector);
+      }
       break;
     }
     case 8: {
-      vpsubq(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpsubq(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpsubq(Dst, xmm15, Vector);
+      }
       break;
     }
     default:
@@ -1083,32 +1288,49 @@ DEF_OP(VNeg) {
 
 DEF_OP(VFNeg) {
   const auto Op = IROp->C<IR::IROp_VNeg>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
       mov(rax, 0x80008000);
       vmovd(xmm15, eax);
-      vbroadcastss(ymm15, xmm15);
-      vxorps(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vbroadcastss(ymm15, xmm15);
+        vxorps(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vbroadcastss(xmm15, xmm15);
+        vxorps(Dst, xmm15, Vector);
+      }
       break;
     }
     case 4: {
       mov(rax, 0x80000000);
       vmovd(xmm15, eax);
-      vbroadcastss(ymm15, xmm15);
-      vxorps(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vbroadcastss(ymm15, xmm15);
+        vxorps(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vbroadcastss(xmm15, xmm15);
+        vxorps(Dst, xmm15, Vector);
+      }
       break;
     }
     case 8: {
       mov(rax, 0x8000000000000000ULL);
       vmovq(xmm15, rax);
-      vbroadcastsd(ymm15, xmm15);
-      vxorpd(Dst, ymm15, Vector);
+      if (Is256Bit) {
+        vpbroadcastq(ymm15, xmm15);
+        vxorpd(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpbroadcastq(xmm15, xmm15);
+        vxorpd(Dst, xmm15, Vector);
+      }
       break;
     }
     default:
@@ -1119,12 +1341,20 @@ DEF_OP(VFNeg) {
 
 DEF_OP(VNot) {
   const auto Op = IROp->C<IR::IROp_VNot>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpcmpeqd(ymm15, ymm15, ymm15);
-  vpxor(Dst, ymm15, Vector);
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (Is256Bit) {
+    vpcmpeqd(ymm15, ymm15, ymm15);
+    vpxor(ToYMM(Dst), ymm15, ToYMM(Vector));
+  } else {
+    vpcmpeqd(xmm15, xmm15, xmm15);
+    vpxor(Dst, xmm15, Vector);
+  }
 }
 
 DEF_OP(VUMin) {
@@ -1132,6 +1362,7 @@ DEF_OP(VUMin) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = OpSize == ElementSize;
 
   const auto Dst = GetDst(Node);
@@ -1153,23 +1384,30 @@ DEF_OP(VUMin) {
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
         break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
       case 1: {
-        vpminub(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vpminub(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vpminub(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 2: {
-        vpminuw(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vpminuw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vpminuw(Dst, Vector1, Vector2);
+        }
         break;
       }
       case 4: {
-        vpminud(DstYMM, Vector1YMM, Vector2YMM);
+        if (Is256Bit) {
+          vpminud(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+        } else {
+          vpminud(Dst, Vector1, Vector2);
+        }
         break;
       }
       default:
@@ -1181,24 +1419,38 @@ DEF_OP(VUMin) {
 
 DEF_OP(VSMin) {
   const auto Op = IROp->C<IR::IROp_VSMin>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpminsb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpminsb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpminsb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpminsw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpminsw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpminsw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpminsd(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpminsd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpminsd(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -1209,24 +1461,38 @@ DEF_OP(VSMin) {
 
 DEF_OP(VUMax) {
   const auto Op = IROp->C<IR::IROp_VUMax>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpmaxub(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmaxub(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmaxub(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpmaxuw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmaxuw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmaxuw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpmaxud(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmaxud(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmaxud(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -1237,24 +1503,38 @@ DEF_OP(VUMax) {
 
 DEF_OP(VSMax) {
   const auto Op = IROp->C<IR::IROp_VSMax>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
-      vpmaxsb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmaxsb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmaxsb(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 2: {
-      vpmaxsw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmaxsw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmaxsw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpmaxsd(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmaxsd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmaxsd(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -1574,38 +1854,65 @@ DEF_OP(VUnZip2) {
 
 DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
+  const auto OpSize = IROp->Size;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto VectorFalse = ToYMM(GetSrc(Op->VectorFalse.ID()));
-  const auto VectorTrue = ToYMM(GetSrc(Op->VectorTrue.ID()));
-  const auto VectorMask = ToYMM(GetSrc(Op->VectorMask.ID()));
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  vpand(ymm0, VectorMask, VectorTrue);
-  vpandn(ymm12, VectorMask, VectorFalse);
-  vpor(Dst, ymm0, ymm12);
+  const auto Dst = GetDst(Node);
+  const auto VectorFalse = GetSrc(Op->VectorFalse.ID());
+  const auto VectorTrue = GetSrc(Op->VectorTrue.ID());
+  const auto VectorMask = GetSrc(Op->VectorMask.ID());
+
+  if (Is256Bit) {
+    vpand(ymm0, ToYMM(VectorMask), ToYMM(VectorTrue));
+    vpandn(ymm12, ToYMM(VectorMask), ToYMM(VectorFalse));
+    vpor(ToYMM(Dst), ymm0, ymm12);
+  } else {
+    vpand(xmm0, VectorMask, VectorTrue);
+    vpandn(xmm12, VectorMask, VectorFalse);
+    vpor(Dst, xmm0, xmm12);
+  }
 }
 
 DEF_OP(VCMPEQ) {
   const auto Op = IROp->C<IR::IROp_VCMPEQ>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1:
-      vpcmpeqb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpeqb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpeqb(Dst, Vector1, Vector2);
+      }
       break;
     case 2:
-      vpcmpeqw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpeqw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpeqw(Dst, Vector1, Vector2);
+      }
       break;
     case 4:
-      vpcmpeqd(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpeqd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpeqd(Dst, Vector1, Vector2);
+      }
       break;
     case 8:
-      vpcmpeqq(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpeqq(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpeqq(Dst, Vector1, Vector2);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1615,26 +1922,43 @@ DEF_OP(VCMPEQ) {
 
 DEF_OP(VCMPEQZ) {
   const auto Op = IROp->C<IR::IROp_VCMPEQZ>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
-  const auto ZeroVector = ymm15;
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
-  vpxor(ZeroVector, ZeroVector, ZeroVector);
+  vpxor(xmm15, xmm15, xmm15);
   switch (ElementSize) {
     case 1:
-      vpcmpeqb(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpeqb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpeqb(Dst, Vector, xmm15);
+      }
       break;
     case 2:
-      vpcmpeqw(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpeqw(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpeqw(Dst, Vector, xmm15);
+      }
       break;
     case 4:
-      vpcmpeqd(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpeqd(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpeqd(Dst, Vector, xmm15);
+      }
       break;
     case 8:
-      vpcmpeqq(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpeqq(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpeqq(Dst, Vector, xmm15);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1644,25 +1968,43 @@ DEF_OP(VCMPEQZ) {
 
 DEF_OP(VCMPGT) {
   const auto Op = IROp->C<IR::IROp_VCMPGT>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1:
-      vpcmpgtb(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpgtb(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpgtb(Dst, Vector1, Vector2);
+      }
       break;
     case 2:
-      vpcmpgtw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpgtw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpgtw(Dst, Vector1, Vector2);
+      }
       break;
     case 4:
-      vpcmpgtd(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpgtd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpgtd(Dst, Vector1, Vector2);
+      }
       break;
     case 8:
-      vpcmpgtq(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpcmpgtq(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpcmpgtq(Dst, Vector1, Vector2);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1672,26 +2014,43 @@ DEF_OP(VCMPGT) {
 
 DEF_OP(VCMPGTZ) {
   const auto Op = IROp->C<IR::IROp_VCMPGTZ>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
-  const auto ZeroVector = ymm15;
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
-  vpxor(ZeroVector, ZeroVector, ZeroVector);
+  vpxor(xmm15, xmm15, xmm15);
   switch (ElementSize) {
     case 1:
-      vpcmpgtb(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtb(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtb(Dst, Vector, xmm15);
+      }
       break;
     case 2:
-      vpcmpgtw(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtw(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtw(Dst, Vector, xmm15);
+      }
       break;
     case 4:
-      vpcmpgtd(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtd(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtd(Dst, Vector, xmm15);
+      }
       break;
     case 8:
-      vpcmpgtq(Dst, Vector, ZeroVector);
+      if (Is256Bit) {
+        vpcmpgtq(ToYMM(Dst), ToYMM(Vector), ymm15);
+      } else {
+        vpcmpgtq(Dst, Vector, xmm15);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1701,26 +2060,43 @@ DEF_OP(VCMPGTZ) {
 
 DEF_OP(VCMPLTZ) {
   const auto Op = IROp->C<IR::IROp_VCMPLTZ>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
-  const auto ZeroVector = ymm15;
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
-  vpxor(ZeroVector, ZeroVector, ZeroVector);
+  vpxor(xmm15, xmm15, xmm15);
   switch (ElementSize) {
     case 1:
-      vpcmpgtb(Dst, ZeroVector, Vector);
+      if (Is256Bit) {
+        vpcmpgtb(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpcmpgtb(Dst, xmm15, Vector);
+      }
       break;
     case 2:
-      vpcmpgtw(Dst, ZeroVector, Vector);
+      if (Is256Bit) {
+        vpcmpgtw(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpcmpgtw(Dst, xmm15, Vector);
+      }
       break;
     case 4:
-      vpcmpgtd(Dst, ZeroVector, Vector);
+      if (Is256Bit) {
+        vpcmpgtd(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpcmpgtd(Dst, xmm15, Vector);
+      }
       break;
     case 8:
-      vpcmpgtq(Dst, ZeroVector, Vector);
+      if (Is256Bit) {
+        vpcmpgtq(ToYMM(Dst), ymm15, ToYMM(Vector));
+      } else {
+        vpcmpgtq(Dst, xmm15, Vector);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1733,6 +2109,7 @@ DEF_OP(VFCMPEQ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1751,18 +2128,21 @@ DEF_OP(VFCMPEQ) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 0);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 0);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 0);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 0);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 0);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 0);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1776,6 +2156,7 @@ DEF_OP(VFCMPNEQ) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1794,18 +2175,21 @@ DEF_OP(VFCMPNEQ) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 4);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 4);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 4);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 4);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 4);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 4);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1819,6 +2203,7 @@ DEF_OP(VFCMPLT) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1837,18 +2222,21 @@ DEF_OP(VFCMPLT) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 1);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 1);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 1);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 1);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 1);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 1);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1862,6 +2250,7 @@ DEF_OP(VFCMPGT) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1880,18 +2269,21 @@ DEF_OP(VFCMPGT) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector2YMM, Vector1YMM, 1);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector2), ToYMM(Vector1), 1);
+      } else {
+        vcmpps(Dst, Vector2, Vector1, 1);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector2YMM, Vector1YMM, 1);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector2), ToYMM(Vector1), 1);
+      } else {
+        vcmppd(Dst, Vector2, Vector1, 1);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1905,6 +2297,7 @@ DEF_OP(VFCMPLE) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1923,18 +2316,21 @@ DEF_OP(VFCMPLE) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 2);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 2);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 2);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 2);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 2);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 2);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1948,6 +2344,7 @@ DEF_OP(VFCMPORD) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -1966,18 +2363,21 @@ DEF_OP(VFCMPORD) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 7);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 7);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 7);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 7);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 7);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 7);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -1991,6 +2391,7 @@ DEF_OP(VFCMPUNO) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto IsScalar = ElementSize == OpSize;
 
   const auto Dst = GetDst(Node);
@@ -2009,18 +2410,21 @@ DEF_OP(VFCMPUNO) {
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
       break;
     }
-  }
-  else {
-    const auto DstYMM = ToYMM(Dst);
-    const auto Vector1YMM = ToYMM(Vector1);
-    const auto Vector2YMM = ToYMM(Vector2);
-
+  } else {
     switch (ElementSize) {
     case 4:
-      vcmpps(DstYMM, Vector1YMM, Vector2YMM, 3);
+      if (Is256Bit) {
+        vcmpps(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 3);
+      } else {
+        vcmpps(Dst, Vector1, Vector2, 3);
+      }
       break;
     case 8:
-      vcmppd(DstYMM, Vector1YMM, Vector2YMM, 3);
+      if (Is256Bit) {
+        vcmppd(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2), 3);
+      } else {
+        vcmppd(Dst, Vector1, Vector2, 3);
+      }
       break;
     default:
       LOGMAN_MSG_A_FMT("Unsupported element size: {}", ElementSize);
@@ -2043,24 +2447,38 @@ DEF_OP(VSShr) {
 
 DEF_OP(VUShlS) {
   const auto Op = IROp->C<IR::IROp_VUShlS>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
+  const auto Dst = GetDst(Node);
   const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsllw(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsllw(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsllw(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 4: {
-      vpslld(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpslld(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpslld(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 8: {
-      vpsllq(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsllq(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsllq(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     default:
@@ -2071,24 +2489,38 @@ DEF_OP(VUShlS) {
 
 DEF_OP(VUShrS) {
   const auto Op = IROp->C<IR::IROp_VUShrS>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
+  const auto Dst = GetDst(Node);
   const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsrlw(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsrlw(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsrlw(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 4: {
-      vpsrld(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsrld(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsrld(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 8: {
-      vpsrlq(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsrlq(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsrlq(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     default:
@@ -2099,20 +2531,30 @@ DEF_OP(VUShrS) {
 
 DEF_OP(VSShrS) {
   const auto Op = IROp->C<IR::IROp_VSShrS>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
+  const auto Dst = GetDst(Node);
   const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsraw(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsraw(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsraw(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 4: {
-      vpsrad(Dst, Vector, ShiftScalar);
+      if (Is256Bit) {
+        vpsrad(ToYMM(Dst), ToYMM(Vector), ShiftScalar);
+      } else {
+        vpsrad(Dst, Vector, ShiftScalar);
+      }
       break;
     }
     case 8: // VPSRAQ is only introduced in AVX-512
@@ -2445,24 +2887,38 @@ DEF_OP(VExtr) {
 
 DEF_OP(VUShrI) {
   const auto Op = IROp->C<IR::IROp_VUShrI>();
+  const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsrlw(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsrlw(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsrlw(Dst, Vector, BitShift);
+      }
       break;
     }
     case 4: {
-      vpsrld(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsrld(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsrld(Dst, Vector, BitShift);
+      }
       break;
     }
     case 8: {
-      vpsrlq(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsrlq(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsrlq(Dst, Vector, BitShift);
+      }
       break;
     }
     default:
@@ -2473,9 +2929,11 @@ DEF_OP(VUShrI) {
 
 DEF_OP(VSShrI) {
   const auto Op = IROp->C<IR::IROp_VSShrI>();
+  const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dest = GetDst(Node);
   const auto Vector = GetSrc(Op->Vector.ID());
@@ -2492,19 +2950,32 @@ DEF_OP(VSShrI) {
         }
       };
 
-      vmovapd(ToYMM(Dest), ToYMM(Vector));
-      PerformShifts(Dest);
-      vextractf128(xmm15, ToYMM(Dest), 1);
-      PerformShifts(xmm15);
-      vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      if (Is256Bit) {
+        vmovapd(ToYMM(Dest), ToYMM(Vector));
+        PerformShifts(Dest);
+        vextractf128(xmm15, ToYMM(Dest), 1);
+        PerformShifts(xmm15);
+        vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      } else {
+        vmovapd(Dest, Vector);
+        PerformShifts(Dest);
+      }
       break;
     }
     case 2: {
-      vpsraw(ToYMM(Dest), ToYMM(Vector), BitShift);
+      if (Is256Bit) {
+        vpsraw(ToYMM(Dest), ToYMM(Vector), BitShift);
+      } else {
+        vpsraw(Dest, Vector, BitShift);
+      }
       break;
     }
     case 4: {
-      vpsrad(ToYMM(Dest), ToYMM(Vector), BitShift);
+      if (Is256Bit) {
+        vpsrad(ToYMM(Dest), ToYMM(Vector), BitShift);
+      } else {
+        vpsrad(Dest, Vector, BitShift);
+      }
       break;
     }
     case 8: {
@@ -2517,11 +2988,16 @@ DEF_OP(VSShrI) {
         }
       };
 
-      vmovapd(ToYMM(Dest), ToYMM(Vector));
-      PerformShifts(Dest);
-      vextractf128(xmm15, ToYMM(Dest), 1);
-      PerformShifts(xmm15);
-      vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      if (Is256Bit) {
+        vmovapd(ToYMM(Dest), ToYMM(Vector));
+        PerformShifts(Dest);
+        vextractf128(xmm15, ToYMM(Dest), 1);
+        PerformShifts(xmm15);
+        vinsertf128(ToYMM(Dest), ToYMM(Dest), xmm15, 1);
+      } else {
+        vmovapd(Dest, Vector);
+        PerformShifts(Dest);
+      }
       break;
     }
     default:
@@ -2532,24 +3008,38 @@ DEF_OP(VSShrI) {
 
 DEF_OP(VShlI) {
   const auto Op = IROp->C<IR::IROp_VShlI>();
+  const auto OpSize = IROp->Size;
 
   const auto BitShift = Op->BitShift;
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector = ToYMM(GetSrc(Op->Vector.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpsllw(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsllw(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsllw(Dst, Vector, BitShift);
+      }
       break;
     }
     case 4: {
-      vpslld(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpslld(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpslld(Dst, Vector, BitShift);
+      }
       break;
     }
     case 8: {
-      vpsllq(Dst, Vector, BitShift);
+      if (Is256Bit) {
+        vpsllq(ToYMM(Dst), ToYMM(Vector), BitShift);
+      } else {
+        vpsllq(Dst, Vector, BitShift);
+      }
       break;
     }
     default:
@@ -3065,20 +3555,30 @@ DEF_OP(VSQXTUN2) {
 
 DEF_OP(VMul) {
   const auto Op = IROp->C<IR::IROp_VUMul>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
-  const auto Vector1 = ToYMM(GetSrc(Op->Vector1.ID()));
-  const auto Vector2 = ToYMM(GetSrc(Op->Vector2.ID()));
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpmullw(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmullw(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmullw(Dst, Vector1, Vector2);
+      }
       break;
     }
     case 4: {
-      vpmulld(Dst, Vector1, Vector2);
+      if (Is256Bit) {
+        vpmulld(ToYMM(Dst), ToYMM(Vector1), ToYMM(Vector2));
+      } else {
+        vpmulld(Dst, Vector1, Vector2);
+      }
       break;
     }
     default:
@@ -3433,26 +3933,42 @@ DEF_OP(VSMull2) {
 
 DEF_OP(VUABDL) {
   const auto Op = IROp->C<IR::IROp_VUABDL>();
+  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = ToYMM(GetDst(Node));
+  const auto Dst = GetDst(Node);
   const auto Vector1 = GetSrc(Op->Vector1.ID());
   const auto Vector2 = GetSrc(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 2: {
-      vpmovzxbw(ymm14, Vector1);
-      vpmovzxbw(ymm15, Vector2);
-      vpsubw(Dst, ymm14, ymm15);
-      vpabsw(Dst, Dst);
+      if (Is256Bit) {
+        vpmovzxbw(ymm14, Vector1);
+        vpmovzxbw(ymm15, Vector2);
+        vpsubw(ToYMM(Dst), ymm14, ymm15);
+        vpabsw(ToYMM(Dst), ToYMM(Dst));
+      } else {
+        vpmovzxbw(xmm14, Vector1);
+        vpmovzxbw(xmm15, Vector2);
+        vpsubw(Dst, xmm14, xmm15);
+        vpabsw(Dst, Dst);
+      }
       break;
     }
     case 4: {
-      vpmovzxwd(ymm14, Vector1);
-      vpmovzxwd(ymm15, Vector2);
-      vpsubd(Dst, ymm14, ymm15);
-      vpabsd(Dst, Dst);
+      if (Is256Bit) {
+        vpmovzxwd(ymm14, Vector1);
+        vpmovzxwd(ymm15, Vector2);
+        vpsubd(ToYMM(Dst), ymm14, ymm15);
+        vpabsd(ToYMM(Dst), ToYMM(Dst));
+      } else {
+        vpmovzxwd(xmm14, Vector1);
+        vpmovzxwd(xmm15, Vector2);
+        vpsubd(Dst, xmm14, xmm15);
+        vpabsd(Dst, Dst);
+      }
       break;
     }
     default:
