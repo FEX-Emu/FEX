@@ -109,8 +109,18 @@ namespace FEX::Config {
         }
       }
 
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, true));
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, false));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
+
+      auto SteamID = getenv("SteamAppId");
+      if (SteamID) {
+        // If a SteamID exists then let's search for Steam application configs as well.
+        // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
+        auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, ProgramName.string());
+        FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
+        FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
+      }
+
       return std::make_pair(Program, ProgramName);
     }
     return {};
