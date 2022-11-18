@@ -249,16 +249,39 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     }
   };
 
-  // We try to load ThunksDB from {FEX global config, FEX user config, Defined ThunksConfig option, AppConfig Global, AppConfig Local}
+  // We try to load ThunksDB from:
+  // - FEX global config
+  // - FEX user config
+  // - Defined ThunksConfig option
+  // - Steam AppConfig Global
+  // - AppConfig Global
+  // - Steam AppConfig Local
+  // - AppConfig Local
   // This doesn't support the classic thunks interface.
 
+  auto AppName = AppConfigName();
   std::vector<std::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
     ThunkConfigFile,
-    FEXCore::Config::GetApplicationConfig(AppConfigName(), true),
-    FEXCore::Config::GetApplicationConfig(AppConfigName(), false),
   };
+
+  auto SteamID = getenv("SteamAppId");
+  if (SteamID) {
+    // If a SteamID exists then let's search for Steam application configs as well.
+    // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
+    auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, AppName);
+
+    // Steam application configs interleaved with non-steam for priority sorting.
+    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, true));
+    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
+    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, false));
+    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
+  }
+  else {
+    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, true));
+    ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
+  }
 
   for (const auto &Path : ConfigPaths) {
     std::vector<char> FileData;

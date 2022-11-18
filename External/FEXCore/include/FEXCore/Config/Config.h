@@ -74,7 +74,9 @@ namespace Handler {
     LAYER_GLOBAL_MAIN, ///< /usr/share/fex-emu/Config.json by default
     LAYER_MAIN,
     LAYER_ARGUMENTS,
+    LAYER_GLOBAL_STEAM_APP,
     LAYER_GLOBAL_APP,
+    LAYER_LOCAL_STEAM_APP,
     LAYER_LOCAL_APP,
     LAYER_ENVIRONMENT,
     LAYER_TOP,
@@ -272,7 +274,7 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, bool Global);
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, FEXCore::Config::LayerType Type);
 
   /**
    * @brief iCreate an environment configuration loader

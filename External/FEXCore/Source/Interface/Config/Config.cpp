@@ -211,10 +211,12 @@ namespace JSON {
   static std::map<FEXCore::Config::LayerType, std::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
   static FEXCore::Config::Layer *Meta{};
 
-  constexpr std::array<FEXCore::Config::LayerType, 7> LoadOrder = {
+  constexpr std::array<FEXCore::Config::LayerType, 9> LoadOrder = {
     FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN,
     FEXCore::Config::LayerType::LAYER_MAIN,
+    FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP,
     FEXCore::Config::LayerType::LAYER_GLOBAL_APP,
+    FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP,
     FEXCore::Config::LayerType::LAYER_LOCAL_APP,
     FEXCore::Config::LayerType::LAYER_ARGUMENTS,
     FEXCore::Config::LayerType::LAYER_ENVIRONMENT,
@@ -629,7 +631,7 @@ namespace JSON {
 
   class AppLoader final : public FEXCore::Config::OptionMapper {
   public:
-    explicit AppLoader(const std::string& Filename, bool Global);
+    explicit AppLoader(const std::string& Filename, FEXCore::Config::LayerType Type);
     void Load();
 
   private:
@@ -681,8 +683,10 @@ namespace JSON {
     });
   }
 
-  AppLoader::AppLoader(const std::string& Filename, bool Global)
-    : FEXCore::Config::OptionMapper(Global ? FEXCore::Config::LayerType::LAYER_GLOBAL_APP : FEXCore::Config::LayerType::LAYER_LOCAL_APP) {
+  AppLoader::AppLoader(const std::string& Filename, FEXCore::Config::LayerType Type)
+    : FEXCore::Config::OptionMapper(Type) {
+    const bool Global = Type == FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP ||
+                        Type == FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP;
     Config = FEXCore::Config::GetApplicationConfig(Filename, Global);
 
     // Immediately load so we can reload the meta layer
@@ -754,8 +758,8 @@ namespace JSON {
     }
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, bool Global) {
-    return std::make_unique<FEXCore::Config::AppLoader>(Filename, Global);
+  std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, FEXCore::Config::LayerType Type) {
+    return std::make_unique<FEXCore::Config::AppLoader>(Filename, Type);
   }
 
   std::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]) {
