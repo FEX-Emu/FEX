@@ -27,12 +27,12 @@ void InitializeVEXTables() {
     {OPD(1, 0b10, 0x11), 1, X86InstInfo{"VMOVSS",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x11), 1, X86InstInfo{"VMOVSD",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x12), 1, X86InstInfo{"VMOVLPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x12), 1, X86InstInfo{"VMOVLPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS | FLAGS_VEX_1ST_SRC, 0, nullptr}},
     {OPD(1, 0b01, 0x12), 1, X86InstInfo{"VMOVLPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b10, 0x12), 1, X86InstInfo{"VMOVSLDUP", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x12), 1, X86InstInfo{"VMOVDDUP",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x13), 1, X86InstInfo{"VMOVLPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x13), 1, X86InstInfo{"VMOVLPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x13), 1, X86InstInfo{"VMOVLPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b00, 0x14), 1, X86InstInfo{"VUNPCKLPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

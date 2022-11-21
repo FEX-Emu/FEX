@@ -408,6 +408,8 @@ public:
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
   void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
+  void VMOVLPOp(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);

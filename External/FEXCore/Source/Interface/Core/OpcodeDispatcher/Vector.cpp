@@ -112,6 +112,18 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
+  if (Op->Dest.IsGPR()) {
+    OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 16);
+    OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, 8);
+    OrderedNode *Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+  } else {
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
+  }
+}
+
 void OpDispatchBuilder::MOVSHDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   OrderedNode *Result = _VInsElement(16, 4, 3, 3, Src, Src);
