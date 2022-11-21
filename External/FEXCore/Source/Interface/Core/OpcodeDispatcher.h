@@ -406,6 +406,7 @@ public:
 
   // AVX Ops
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
+  void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>

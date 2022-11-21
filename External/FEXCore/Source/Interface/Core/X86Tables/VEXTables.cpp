@@ -17,12 +17,12 @@ void InitializeVEXTables() {
   static constexpr U16U8InfoStruct VEXTable[] = {
     // Map 0 (Reserved)
     // VEX Map 1
-    {OPD(1, 0b00, 0x10), 1, X86InstInfo{"VMOVUPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x10), 1, X86InstInfo{"VMOVUPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x10), 1, X86InstInfo{"VMODUPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b10, 0x10), 1, X86InstInfo{"VMOVSS",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x10), 1, X86InstInfo{"VMOVSD",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x11), 1, X86InstInfo{"VMOVUPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x11), 1, X86InstInfo{"VMOVUPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x11), 1, X86InstInfo{"VMODUPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b10, 0x11), 1, X86InstInfo{"VMOVSS",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x11), 1, X86InstInfo{"VMOVSD",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
