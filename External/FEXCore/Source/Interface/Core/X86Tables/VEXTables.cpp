@@ -113,10 +113,10 @@ void InitializeVEXTables() {
     // XXX: Confirm all the above encoding opcodes
 
     {OPD(1, 0b00, 0x28), 1, X86InstInfo{"VMOVAPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x28), 1, X86InstInfo{"VMOVAPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x28), 1, X86InstInfo{"VMOVAPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b00, 0x29), 1, X86InstInfo{"VMOVAPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x29), 1, X86InstInfo{"VMOVAPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x29), 1, X86InstInfo{"VMOVAPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b10, 0x2A), 1, X86InstInfo{"VCVTSI2SS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x2A), 1, X86InstInfo{"VCVTSI2SD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

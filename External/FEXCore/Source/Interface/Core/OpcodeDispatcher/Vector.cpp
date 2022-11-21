@@ -38,7 +38,7 @@ void OpDispatchBuilder::MOVAPSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, -1);
 }
 
-void OpDispatchBuilder::VMOVAPSOp(OpcodeArgs) {
+void OpDispatchBuilder::VMOVAPS_VMOVAPD_Op(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
