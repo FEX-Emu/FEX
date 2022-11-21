@@ -82,76 +82,38 @@ DEF_OP(VectorImm) {
 }
 
 DEF_OP(VMov) {
-  auto Op = IROp->C<IR::IROp_VMov>();
-  const uint8_t OpSize = IROp->Size;
+  const auto Op = IROp->C<IR::IROp_VMov>();
+  const auto OpSize = IROp->Size;
 
   const auto Dst = GetDst(Node);
   const auto Source = GetSrc(Op->Source.ID());
 
   switch (OpSize) {
     case 1: {
-      if (HostSupportsSVE) {
-        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-      } else {
-        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-      }
-
+      eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
       mov(VTMP1.V16B(), 0, Source.V16B(), 0);
-
-      if (HostSupportsSVE) {
-        mov(Dst.Z().VnD(), VTMP1.Z().VnD());
-      } else {
-        mov(Dst, VTMP1);
-      }
+      mov(Dst, VTMP1);
       break;
     }
     case 2: {
-      if (HostSupportsSVE) {
-        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-      } else {
-        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-      }
-
+      eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
       mov(VTMP1.V8H(), 0, Source.V8H(), 0);
-
-      if (HostSupportsSVE) {
-        mov(Dst.Z().VnD(), VTMP1.Z().VnD());
-      } else {
-        mov(Dst, VTMP1);
-      }
+      mov(Dst, VTMP1);
       break;
     }
     case 4: {
-      if (HostSupportsSVE) {
-        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-      } else {
-        eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
-      }
-
+      eor(VTMP1.V16B(), VTMP1.V16B(), VTMP1.V16B());
       mov(VTMP1.V4S(), 0, Source.V4S(), 0);
-
-      if (HostSupportsSVE) {
-        mov(Dst.Z().VnD(), VTMP1.Z().VnD());
-      } else {
-        mov(Dst, VTMP1);
-      }
+      mov(Dst, VTMP1);
       break;
     }
     case 8: {
-      if (HostSupportsSVE) {
-        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-        mov(VTMP1.V8B(), Source.V8B());
-        mov(Dst.Z().VnB(), VTMP1.Z().VnB());
-      } else {
-        mov(Dst.V8B(), Source.V8B());
-      }
+      mov(Dst.V8B(), Source.V8B());
       break;
     }
     case 16: {
       if (HostSupportsSVE) {
-        eor(VTMP1.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-        mov(VTMP1.V16B(), Source.V16B());
-        mov(Dst.Z().VnB(), VTMP1.Z().VnB());
+        mov(Dst.V16B(), Source.V16B());
       } else {
         if (Dst.GetCode() != Source.GetCode()) {
           mov(Dst.V16B(), Source.V16B());
