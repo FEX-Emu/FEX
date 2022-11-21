@@ -122,6 +122,10 @@ DEF_OP(VMov) {
       break;
     }
     case 32: {
+      // NOTE: If, in the distant future we support larger moves, or registers
+      //       (*cough* AVX-512 *cough*) make sure to change this to treat
+      //       256-bit moves with zero extending behavior instead of doing only
+      //       a regular SVE move into a 512-bit register.
       if (Dst.GetCode() != Source.GetCode()) {
         mov(Dst.Z().VnD(), Source.Z().VnD());
       }
