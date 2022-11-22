@@ -139,20 +139,46 @@ void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVSHDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
-  OrderedNode *Result = _VInsElement(16, 4, 3, 3, Src, Src);
-  Result = _VInsElement(16, 4, 2, 3, Result, Src);
-  Result = _VInsElement(16, 4, 1, 1, Result, Src);
+  OrderedNode *Result = _VInsElement(16, 4, 2, 3, Src, Src);
   Result = _VInsElement(16, 4, 0, 1, Result, Src);
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = _VInsElement(SrcSize, 4, 2, 3, Src, Src);
+  Result = _VInsElement(SrcSize, 4, 0, 1, Result, Src);
+  if (Is256Bit) {
+    Result = _VInsElement(SrcSize, 4, 4, 5, Result, Src);
+    Result = _VInsElement(SrcSize, 4, 6, 7, Result, Src);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
 }
 
 void OpDispatchBuilder::MOVSLDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   OrderedNode *Result = _VInsElement(16, 4, 3, 2, Src, Src);
-  Result = _VInsElement(16, 4, 2, 2, Result, Src);
   Result = _VInsElement(16, 4, 1, 0, Result, Src);
-  Result = _VInsElement(16, 4, 0, 0, Result, Src);
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = _VInsElement(SrcSize, 4, 3, 2, Src, Src);
+  Result = _VInsElement(SrcSize, 4, 1, 0, Result, Src);
+  if (Is256Bit) {
+    Result = _VInsElement(SrcSize, 4, 5, 4, Result, Src);
+    Result = _VInsElement(SrcSize, 4, 7, 6, Result, Src);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
 }
 
 void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
