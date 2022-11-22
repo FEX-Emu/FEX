@@ -1,4 +1,5 @@
 #pragma once
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 
