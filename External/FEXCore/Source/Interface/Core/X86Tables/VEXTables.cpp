@@ -41,11 +41,11 @@ void InitializeVEXTables() {
     {OPD(1, 0b00, 0x15), 1, X86InstInfo{"VUNPCKHPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x15), 1, X86InstInfo{"VUNPCKHPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x16), 1, X86InstInfo{"VMOVHPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x16), 1, X86InstInfo{"VMOVHPS",   TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS | FLAGS_VEX_1ST_SRC, 0, nullptr}},
     {OPD(1, 0b01, 0x16), 1, X86InstInfo{"VMOVHPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b10, 0x16), 1, X86InstInfo{"VMOVSHDUP", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x17), 1, X86InstInfo{"VMOVHPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x17), 1, X86InstInfo{"VMOVHPS",   TYPE_INST, GenFlagsSizes(SIZE_64BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x17), 1, X86InstInfo{"VMOVHPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b00, 0x50), 1, X86InstInfo{"VMOVMSKPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
