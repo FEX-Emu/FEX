@@ -100,21 +100,47 @@ namespace FEXServerClient {
     return GetServerLockFolder() + "RootFS.lock";
   }
 
-  std::string GetServerSocketFile() {
-    FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
-    if (ServerSocketPath().empty()) {
-      auto TmpDir = std::filesystem::temp_directory_path().string();
-
-      auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
-      if (XDGRuntimeEnv) {
-        // If the XDG runtime directory works then use that instead.
-        TmpDir = XDGRuntimeEnv;
-      }
-
-      return fmt::format("{}/{}.FEXServer.socket", TmpDir, ::geteuid());
+  std::string GetServerMountFolder() {
+    // We need a FEXServer mount directory that has some tricky requirements.
+    // - We don't want to use `/tmp/` if possible.
+    //   - systemd services use `PrivateTmp` feature to gives services their own tmp.
+    //   - We will use this as a fallback path /only/.
+    // - Can't be `[$XDG_DATA_HOME,$HOME]/.fex-emu/`
+    //   - Might be mounted with a filesystem (sshfs) which can't handle mount points inside it.
+    //
+    // Directories it can be in:
+    // - $XDG_RUNTIME_DIR if set
+    //   - Is typically `/run/user/<UID>/`
+    //   - systemd `PrivateTmp` feature doesn't touch this.
+    //   - If this path doesn't exist then fallback to `/tmp/` as a last resort.
+    //   - pressure-vessel explicitly creates an internal XDG_RUNTIME_DIR inside its chroot.
+    //     - This is okay since pressure-vessel rbinds the FEX rootfs from the host to `/run/pressure-vessel/interpreter-root`.
+    std::string Folder{};
+    auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
+    if (XDGRuntimeEnv) {
+      // If the XDG runtime directory works then use that.
+      Folder = XDGRuntimeEnv;
+    }
+    else {
+      // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
+      // Might not be ideal but we don't have much of a choice.
+      Folder = std::filesystem::temp_directory_path().string();
     }
 
-    return ServerSocketPath;
+    if (FEXCore::Config::FindContainer() == "pressure-vessel") {
+      // In pressure-vessel the mount point changes location.
+      // This is due to pressure-vesssel being a chroot environment.
+      // It by default maps the host-filesystem to `/run/host/` so we need to redirect.
+      // After pressure-vessel is fully set up it will set the `FEX_ROOTFS` environment variable,
+      // which the FEXInterpreter will pick up on.
+      Folder = "/run/host/" + Folder;
+    }
+
+    return Folder;
+  }
+
+  std::string GetServerSocketName() {
+    return fmt::format("{}.FEXServer.Socket", ::geteuid());
   }
 
   int GetServerFD() {
@@ -122,7 +148,7 @@ namespace FEXServerClient {
   }
 
   int ConnectToServer() {
-    auto ServerSocketFile = GetServerSocketFile();
+    auto ServerSocketName = GetServerSocketName();
 
     // Create the initial unix socket
     int SocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -131,12 +157,19 @@ namespace FEXServerClient {
       return -1;
     }
 
+    // AF_UNIX has a special feature for named socket paths.
+    // If the name of the socket begins with `\0` then it is an "abstract" socket address.
+    // The entirety of the name is used as a path to a socket that doesn't have any filesystem backing.
     struct sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, ServerSocketFile.data(), std::min(ServerSocketFile.size(), sizeof(addr.sun_path)));
+    size_t SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
+    addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
+    strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+    // Include final null character.
+    size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
-    if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
-      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketFile, errno, strerror(errno));
+    if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketName, errno, strerror(errno));
       close(SocketFD);
       return -1;
     }
@@ -231,7 +264,7 @@ namespace FEXServerClient {
 
         if (ServerFD == -1) {
           // Still couldn't connect to the socket.
-          LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} after launching the process", GetServerSocketFile());
+          LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} after launching the process", GetServerSocketName());
         }
       }
     }
