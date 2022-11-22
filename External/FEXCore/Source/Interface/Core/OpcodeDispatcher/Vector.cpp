@@ -146,6 +146,21 @@ void OpDispatchBuilder::MOVSHDUPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = _VInsElement(SrcSize, 4, 2, 3, Src, Src);
+  Result = _VInsElement(SrcSize, 4, 0, 1, Result, Src);
+  if (Is256Bit) {
+    Result = _VInsElement(SrcSize, 4, 4, 5, Result, Src);
+    Result = _VInsElement(SrcSize, 4, 6, 7, Result, Src);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+}
+
 void OpDispatchBuilder::MOVSLDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   OrderedNode *Result = _VInsElement(16, 4, 3, 2, Src, Src);
