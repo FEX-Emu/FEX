@@ -411,6 +411,7 @@ public:
   void VMOVHPOp(OpcodeArgs);
   void VMOVLPOp(OpcodeArgs);
 
+  void VMOVDDUPOp(OpcodeArgs);
   void VMOVSHDUPOp(OpcodeArgs);
   void VMOVSLDUPOp(OpcodeArgs);
 
