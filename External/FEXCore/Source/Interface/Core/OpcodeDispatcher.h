@@ -412,6 +412,7 @@ public:
   void VMOVLPOp(OpcodeArgs);
 
   void VMOVSHDUPOp(OpcodeArgs);
+  void VMOVSLDUPOp(OpcodeArgs);
 
   // X87 Ops
   template<size_t width>

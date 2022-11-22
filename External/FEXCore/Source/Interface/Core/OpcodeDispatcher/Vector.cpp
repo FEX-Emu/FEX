@@ -168,6 +168,21 @@ void OpDispatchBuilder::MOVSLDUPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = _VInsElement(SrcSize, 4, 3, 2, Src, Src);
+  Result = _VInsElement(SrcSize, 4, 1, 0, Result, Src);
+  if (Is256Bit) {
+    Result = _VInsElement(SrcSize, 4, 5, 4, Result, Src);
+    Result = _VInsElement(SrcSize, 4, 7, 6, Result, Src);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+}
+
 void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
     // MOVSS xmm1, xmm2
