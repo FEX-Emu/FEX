@@ -21,7 +21,6 @@ std::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusiveP
 std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass,
                                                                                   bool OptimizeSRA,
                                                                                   bool SupportsAVX);
-std::unique_ptr<FEXCore::IR::Pass> CreateStaticRegisterAllocationPass(bool SupportsAVX);
 std::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 
 namespace Validation {
