@@ -50,11 +50,19 @@ DEF_OP(Break) {
     add(rsp, SpillSlots * MaxSpillSlotSize);
   }
 
-  mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)], 1);
-  mov(byte [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.Signal)], Op->Reason.Signal);
-  mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)], Op->Reason.TrapNumber);
-  mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)], Op->Reason.ErrorRegister);
-  mov(dword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)], Op->Reason.si_code);
+  Core::CpuStateFrame::SynchronousFaultDataStruct State = {
+    .FaultToTopAndGeneratedException = 1,
+    .Signal = Op->Reason.Signal,
+    .TrapNo = Op->Reason.TrapNumber,
+    .si_code = Op->Reason.si_code,
+    .err_code = Op->Reason.ErrorRegister,
+  };
+
+  uint64_t Constant{};
+  memcpy(&Constant, &State, sizeof(State));
+
+  mov(TMP1, Constant);
+  mov(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData)], TMP1);
 
   switch (Op->Reason.Signal) {
   case SIGILL:

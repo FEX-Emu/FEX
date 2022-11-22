@@ -218,12 +218,13 @@ namespace FEXCore::Core {
 
     uint32_t SignalHandlerRefCounter{};
 
-    struct SynchronousFaultDataStruct {
+    struct alignas(8) SynchronousFaultDataStruct {
       bool FaultToTopAndGeneratedException{};
       uint8_t Signal;
-      uint32_t TrapNo;
-      uint32_t err_code;
-      uint32_t si_code;
+      uint8_t TrapNo;
+      uint8_t si_code;
+      uint16_t err_code;
+      uint32_t _pad : 16;
     } SynchronousFaultData;
 
     InternalThreadState* Thread;
@@ -237,6 +238,9 @@ namespace FEXCore::Core {
   static_assert(offsetof(CpuStateFrame, Pointers) + sizeof(CpuStateFrame::Pointers) <= 32760, "JITPointers maximum pointer needs to be less than architecture maximum 32768");
 
   static_assert(std::is_standard_layout<CpuStateFrame>::value, "This needs to be standard layout");
+  static_assert(sizeof(CpuStateFrame::SynchronousFaultData) == 8, "This needs to be 8 bytes");
+  static_assert(std::alignment_of_v<CpuStateFrame::SynchronousFaultDataStruct> == 8, "This needs to be 8 bytes");
+  static_assert(offsetof(CpuStateFrame, SynchronousFaultData) % 8 == 0, "This needs to be aligned");
 
   FEX_DEFAULT_VISIBILITY std::string_view const& GetFlagName(unsigned Flag);
   FEX_DEFAULT_VISIBILITY std::string_view const& GetGRegName(unsigned Reg);
