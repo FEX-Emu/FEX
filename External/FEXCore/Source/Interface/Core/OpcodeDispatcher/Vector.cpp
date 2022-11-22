@@ -162,9 +162,7 @@ void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
 void OpDispatchBuilder::MOVSLDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
   OrderedNode *Result = _VInsElement(16, 4, 3, 2, Src, Src);
-  Result = _VInsElement(16, 4, 2, 2, Result, Src);
   Result = _VInsElement(16, 4, 1, 0, Result, Src);
-  Result = _VInsElement(16, 4, 0, 0, Result, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
