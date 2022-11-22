@@ -127,6 +127,7 @@ namespace FEXServerClient {
     // Create the initial unix socket
     int SocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
     if (SocketFD == -1) {
+      LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {} {}", errno, strerror(errno));
       return -1;
     }
 
@@ -135,6 +136,7 @@ namespace FEXServerClient {
     strncpy(addr.sun_path, ServerSocketFile.data(), std::min(ServerSocketFile.size(), sizeof(addr.sun_path)));
 
     if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketFile, errno, strerror(errno));
       close(SocketFD);
       return -1;
     }
