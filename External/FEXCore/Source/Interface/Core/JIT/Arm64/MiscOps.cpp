@@ -41,16 +41,19 @@ DEF_OP(Break) {
   // First we must reset the stack
   ResetStack();
 
-  LoadConstant(w1, 1);
-  strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.FaultToTopAndGeneratedException)));
-  LoadConstant(w1, Op->Reason.Signal);
-  strb(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.Signal)));
-  LoadConstant(w1, Op->Reason.TrapNumber);
-  str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.TrapNo)));
-  LoadConstant(w1, Op->Reason.si_code);
-  str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.si_code)));
-  LoadConstant(x1, Op->Reason.ErrorRegister);
-  str(w1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData.err_code)));
+  Core::CpuStateFrame::SynchronousFaultDataStruct State = {
+    .FaultToTopAndGeneratedException = 1,
+    .Signal = Op->Reason.Signal,
+    .TrapNo = Op->Reason.TrapNumber,
+    .si_code = Op->Reason.si_code,
+    .err_code = Op->Reason.ErrorRegister,
+  };
+
+  uint64_t Constant{};
+  memcpy(&Constant, &State, sizeof(State));
+
+  LoadConstant(x1, Constant);
+  str(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData)));
 
   switch (Op->Reason.Signal) {
   case SIGILL:
