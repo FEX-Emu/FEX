@@ -280,6 +280,11 @@ public:
     return Wrapper.GetNode(GetListData());
   }
 
+  ///< Gets an OrderedNode from the IRListView as an OrderedNodeWrapper.
+  [[nodiscard]] OrderedNodeWrapper WrapNode(OrderedNode *Node) const {
+    return Node->Wrapped(GetListData());
+  }
+
 private:
   struct BlockRange {
     using iterator = NodeIterator;
