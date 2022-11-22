@@ -1064,6 +1064,23 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto IsSrcGPR = Op->Src[0].IsGPR();
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto MemSize = Is256Bit ? 32 : 8;
+
+  OrderedNode *Src = IsSrcGPR ? LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1)
+                              : LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], MemSize, Op->Flags, -1);
+
+  OrderedNode *Res = _VInsElement(SrcSize, 8, 1, 0, Src, Src);
+  if (Is256Bit) {
+    Res = _VInsElement(SrcSize, 8, 3, 2, Res, Src);
+  }
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Res, 32, -1);
+}
+
 template<size_t DstElementSize>
 void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
