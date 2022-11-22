@@ -162,6 +162,120 @@ DEF_OP(StoreContext) {
   }
 }
 
+DEF_OP(LoadRegister) {
+  const auto Op = IROp->C<IR::IROp_LoadRegister>();
+  const auto OpSize = IROp->Size;
+
+  if (Op->Class == IR::GPRClass) {
+    switch (OpSize) {
+    case 1: {
+      movzx(GetSrc<RA_32>(Node), byte [STATE + Op->Offset]);
+      break;
+    }
+    case 2: {
+      movzx(GetSrc<RA_32>(Node), word [STATE + Op->Offset]);
+      break;
+    }
+    case 4: {
+      mov(GetSrc<RA_32>(Node), dword [STATE + Op->Offset]);
+      break;
+    }
+    case 8: {
+      mov(GetSrc<RA_64>(Node), qword [STATE + Op->Offset]);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadRegister size: {}", OpSize);
+      break;
+    }
+  }
+  else {
+    const auto Dst = GetSrc(Node);
+
+    switch (OpSize) {
+    case 1: {
+      movzx(rax, byte [STATE + Op->Offset]);
+      vmovq(Dst, rax);
+      break;
+    }
+    case 2: {
+      movzx(rax, word [STATE + Op->Offset]);
+      vmovq(Dst, rax);
+      break;
+    }
+    case 4: {
+      vmovd(Dst, dword [STATE + Op->Offset]);
+      break;
+    }
+    case 8: {
+      vmovq(Dst, qword [STATE + Op->Offset]);
+      break;
+    }
+    case 16: {
+      if (Op->Offset % 16 == 0) {
+        vmovaps(Dst, xword [STATE + Op->Offset]);
+      } else {
+        vmovups(Dst, xword [STATE + Op->Offset]);
+      }
+      break;
+    }
+    case 32: {
+      vmovups(ToYMM(Dst), yword [STATE + Op->Offset]);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadRegister size: {}", OpSize);
+      break;
+    }
+  }
+}
+
+DEF_OP(StoreRegister) {
+  const auto Op = IROp->C<IR::IROp_StoreRegister>();
+  const auto OpSize = IROp->Size;
+
+  if (Op->Class == IR::GPRClass) {
+    const auto regOffs = Op->Offset & 7;
+
+    switch (OpSize) {
+      case 4:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        mov(dword [STATE + Op->Offset], GetSrc<RA_32>(Op->Value.ID()));
+        break;
+
+      case 8:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        mov(qword [STATE + Op->Offset], GetSrc<RA_64>(Op->Value.ID()));
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreRegister GPR size: {}", OpSize);
+        break;
+    }
+  } else if (Op->Class == IR::FPRClass) {
+    const auto Value = GetSrc(Op->Value.ID());
+    switch (OpSize) {
+      case 16: {
+        if (Op->Offset % 16 == 0) {
+          vmovaps(xword [STATE + Op->Offset], Value);
+        } else {
+          vmovups(xword [STATE + Op->Offset], Value);
+        }
+        break;
+      }
+      case 32: {
+        vmovups(yword [STATE + Op->Offset], ToYMM(Value));
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize);
+        break;
+    }
+  } else {
+    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+  }
+}
+
 DEF_OP(LoadContextIndexed) {
   const auto Op = IROp->C<IR::IROp_LoadContextIndexed>();
   const auto OpSize = IROp->Size;
@@ -682,8 +796,8 @@ void X86JITCore::RegisterMemoryHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(LOADCONTEXT,         LoadContext);
   REGISTER_OP(STORECONTEXT,        StoreContext);
-  REGISTER_OP(LOADREGISTER,        Unhandled); // SRA specific, not supported on this backend
-  REGISTER_OP(STOREREGISTER,       Unhandled);
+  REGISTER_OP(LOADREGISTER,        LoadRegister);
+  REGISTER_OP(STOREREGISTER,       StoreRegister);
   REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
   REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
   REGISTER_OP(SPILLREGISTER,       SpillRegister);
