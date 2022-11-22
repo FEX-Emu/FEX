@@ -1212,8 +1212,6 @@ namespace FEXCore::Context {
       IsMemoryShared = true;
 
       if (Config.TSOAutoMigration) {
-        LogMan::Msg::IFmt("Migrating to shared memory mode");
-
         std::lock_guard<std::mutex> lkThreads(ThreadCreationMutex);
         LogMan::Throw::AFmt(Threads.size() == 1, "First MarkMemoryShared called must be before creating any threads");
 
