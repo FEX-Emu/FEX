@@ -408,6 +408,7 @@ public:
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
   void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
+  void VMOVHPOp(OpcodeArgs);
   void VMOVLPOp(OpcodeArgs);
 
   // X87 Ops
