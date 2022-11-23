@@ -52,8 +52,6 @@ namespace FEX::HLE::x32 {
   }
 
   void x32SyscallHandler::RegisterSyscallHandlers() {
-    Definitions.resize(FEX::HLE::x32::SYSCALL_x86_MAX);
-
     auto cvt = [](auto in) {
       union {
         decltype(in) val;
@@ -63,10 +61,10 @@ namespace FEX::HLE::x32 {
       return raw.raw;
     };
 
-    for (auto &Def : Definitions) {
-      Def.NumArgs = 255;
-      Def.Ptr = cvt(&UnimplementedSyscall);
-    }
+    Definitions.resize(FEX::HLE::x32::SYSCALL_x86_MAX, SyscallFunctionDefinition {
+      .NumArgs = 255,
+      .Ptr = cvt(&UnimplementedSyscall),
+    });
 
     FEX::HLE::RegisterEpoll(this);
     FEX::HLE::RegisterFD(this);
