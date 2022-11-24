@@ -162,6 +162,12 @@ class IRParser: public FEXCore::IR::IREmitter {
     else if (Arg == "FPR") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::FPRClass};
     }
+    else if (Arg == "GPRFixed") {
+      return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRFixedClass};
+    }
+    else if (Arg == "FPRFixed") {
+      return {DecodeFailure::DECODE_OKAY, FEXCore::IR::FPRFixedClass};
+    }
     else if (Arg == "GPRPair") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRPairClass};
     }

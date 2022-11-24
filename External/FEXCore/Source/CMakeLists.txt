@@ -135,7 +135,6 @@ set (SRCS
   Interface/IR/Passes/PhiValidation.cpp
   Interface/IR/Passes/RedundantFlagCalculationElimination.cpp
   Interface/IR/Passes/DeadStoreElimination.cpp
-  Interface/IR/Passes/StaticRegisterAllocationPass.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
   Utils/Allocator.cpp

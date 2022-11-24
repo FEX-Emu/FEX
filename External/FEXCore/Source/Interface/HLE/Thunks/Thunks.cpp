@@ -199,7 +199,7 @@ namespace FEXCore {
 
                         const uint8_t GPRSize = CTX->GetGPRSize();
 
-                        emit->_StoreContext(GPRSize, IR::GPRClass, emit->_Constant(Entrypoint), offsetof(Core::CPUState, gregs[X86State::REG_R11]));
+                        emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, gregs[X86State::REG_R11]), IR::GPRClass, IR::GPRFixedClass, GPRSize);
                         emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
                     }, CTX->ThunkHandler.get(), (void*)args->target_addr);
 

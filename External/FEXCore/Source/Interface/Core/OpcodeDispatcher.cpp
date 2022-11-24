@@ -98,7 +98,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     InvalidNode,
   };
   for (size_t i = 0; i < NumArguments; ++i) {
-    Arguments[i] = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs) + GPRIndicesRef[i] * 8);
+    Arguments[i] = LoadGPRRegister(GPRIndicesRef[i]);
   }
 
   auto SyscallOp = _Syscall(
@@ -114,7 +114,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
     // Hangover doesn't want us returning a result here
     // syscall is being abused as a thunk for now.
-    _StoreContext(GPRSize, GPRClass, SyscallOp, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, SyscallOp);
   }
 }
 
@@ -122,32 +122,31 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
   uint8_t *sha256 = (uint8_t *)(Op->PC + 2);
 
   if (CTX->Config.Is64BitMode) {
     // x86-64 ABI puts the function argument in RDI
     _Thunk(
-      _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI)),
+      LoadGPRRegister(X86State::REG_RDI),
       *reinterpret_cast<SHA256Sum*>(sha256)
     );
   }
   else {
     // x86 fastcall ABI puts the function argument in ECX
     _Thunk(
-      _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX)),
+      LoadGPRRegister(X86State::REG_RCX),
       *reinterpret_cast<SHA256Sum*>(sha256)
     );
   }
 
   auto Constant = _Constant(GPRSize);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
   OrderedNode *NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store the new RIP
   _ExitFunction(NewRIP);
@@ -156,17 +155,24 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 
 void OpDispatchBuilder::LEAOp(OpcodeArgs) {
   // LEA specifically ignores segment prefixes
+  const auto SrcSize = GetSrcSize(Op);
+
   if (CTX->Config.Is64BitMode) {
-    uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
+    const uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 :
       X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 : 4;
 
-    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GetSrcSize(Op), Op->Flags, -1, false);
+    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
+    if (DstSize != SrcSize) {
+      // If the SrcSize isn't the DstSize then we need to zero extend.
+      const uint8_t GPRSize = CTX->GetGPRSize();
+      Src = _Bfe(GPRSize, SrcSize * 8, 0, Src);
+    }
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
   else {
     uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
 
-    OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GetSrcSize(Op), Op->Flags, -1, false);
+    auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, -1, false);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   }
 }
@@ -175,7 +181,6 @@ void OpDispatchBuilder::NOPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RETOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // ABI Optimization: Flags don't survive calls or rets
@@ -190,7 +195,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   }
 
   auto Constant = _Constant(GPRSize);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
 
   OrderedNode *NewSP;
@@ -203,7 +208,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   }
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store the new RIP
   _ExitFunction(NewRIP);
@@ -230,12 +235,11 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(GPRSize);
 
-  OrderedNode* SP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto SP = LoadGPRRegister(X86State::REG_RSP);
 
   // RIP (64/32/16 bits)
   auto NewRIP = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
@@ -254,7 +258,8 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   if (CTX->Config.Is64BitMode) {
     // RSP and SS only happen in 64-bit mode or if this is a CPL mode jump!
     // FEX doesn't support a CPL mode switch, so don't need to worry about this on 32-bit
-    _StoreContext(GPRSize, GPRClass, _LoadMem(GPRClass, GPRSize, SP, GPRSize), RSPOffset);
+    StoreGPRRegister(X86State::REG_RSP, _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+
     SP = _Add(SP, Constant);
     // ss
     auto NewSegmentSS = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
@@ -265,7 +270,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   }
   else {
     // Store the stack in 32-bit mode
-    _StoreContext(GPRSize, GPRClass, SP, RSPOffset);
+    StoreGPRRegister(X86State::REG_RSP, SP);
   }
 
   _ExitFunction(NewRIP);
@@ -331,14 +336,14 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   };
 #undef OPD
   // X86 basic ALU ops just do the operation between the destination and a single source
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
+  auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   uint8_t Size = GetDstSize(Op);
   OrderedNode *Result{};
   OrderedNode *Dest{};
 
   if (DestIsLockedMem(Op)) {
     HandledLock = true;
-    OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    auto DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
     switch (IROp) {
       case FEXCore::IR::IROps::OP_ADD: {
@@ -471,36 +476,32 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSP = _Sub(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store our value to the new stack location
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSP = _Sub(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store our value to the new stack location
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
@@ -508,12 +509,10 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   // 32bit only
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = 4;
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
 
   // PUSHA order:
   // Tmp = SP
@@ -529,53 +528,51 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   OrderedNode *Src{};
   OrderedNode *NewSP = OldSP;
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
+  Src = LoadGPRRegister(X86State::REG_RAX);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RCX));
+  Src = LoadGPRRegister(X86State::REG_RCX);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+  Src = LoadGPRRegister(X86State::REG_RDX);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RBX));
+  Src = LoadGPRRegister(X86State::REG_RBX);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   NewSP = _Sub(NewSP, Constant);
   _StoreMem(GPRClass, Size, NewSP, OldSP, Size);
 
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RBP));
+  Src = LoadGPRRegister(X86State::REG_RBP);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RSI));
+  Src = LoadGPRRegister(X86State::REG_RSI);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   NewSP = _Sub(NewSP, Constant);
-  Src = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDI));
+  Src = LoadGPRRegister(X86State::REG_RDI);
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP, 4);
 }
 
 template<uint32_t SegmentReg>
 void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(DstSize);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSP = _Sub(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   OrderedNode *Src{};
   if (!CTX->Config.Is64BitMode()) {
@@ -632,18 +629,15 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
-
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewGPR = _LoadMem(GPRClass, Size, OldSP, Size);
   auto NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store what we loaded from the stack
   StoreResult(GPRClass, Op, NewGPR, -1);
@@ -651,12 +645,11 @@ void OpDispatchBuilder::POPOp(OpcodeArgs) {
 
 void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   // 32bit only
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t Size = GetSrcSize(Op);
   const uint8_t GPRSize = 4;
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
 
   // POPA order:
   // pop EDI
@@ -671,52 +664,50 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   OrderedNode *Src{};
   OrderedNode *NewSP = OldSP;
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RDI));
+  StoreGPRRegister(X86State::REG_RDI, Src, GPRSize);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RSI));
+  StoreGPRRegister(X86State::REG_RSI, Src, GPRSize);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RBP));
+  StoreGPRRegister(X86State::REG_RBP, Src, GPRSize);
   NewSP = _Add(NewSP, _Constant(Size * 2));
 
   // Skip SP loading
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RBX));
+  StoreGPRRegister(X86State::REG_RBX, Src, GPRSize);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RDX));
+  StoreGPRRegister(X86State::REG_RDX, Src, GPRSize);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RCX));
+  StoreGPRRegister(X86State::REG_RCX, Src, GPRSize);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  _StoreContext(Size, GPRClass, Src, GPROffset(X86State::REG_RAX));
+  StoreGPRRegister(X86State::REG_RAX, Src, GPRSize);
   NewSP = _Add(NewSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 }
 
 template<uint32_t SegmentReg>
 void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
-  const uint8_t GPRSize = CTX->GetGPRSize();
 
   auto Constant = _Constant(SrcSize);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSP));
-
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSegment = _LoadMem(GPRClass, SrcSize, OldSP, SrcSize);
   auto NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, GPROffset(X86State::REG_RSP));
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   switch (SegmentReg) {
     case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
@@ -744,27 +735,23 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
-  const uint32_t RBPOffset = GPROffset(X86State::REG_RBP);
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   // First we move RBP in to RSP and then behave effectively like a pop
   const uint8_t Size = GetSrcSize(Op);
 
   auto Constant = _Constant(Size);
-  auto OldBP = _LoadContext(GPRSize, GPRClass, RBPOffset);
+  auto OldBP = LoadGPRRegister(X86State::REG_RBP);
 
   auto NewGPR = _LoadMem(GPRClass, Size, OldBP, Size);
   auto NewSP = _Add(OldBP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, GPROffset(X86State::REG_RSP));
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store what we loaded to RBP
-  _StoreContext(GPRSize, GPRClass, NewGPR, RBPOffset);
+  StoreGPRRegister(X86State::REG_RBP, NewGPR);
 }
 
 void OpDispatchBuilder::CALLOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   BlockSetRIP = true;
@@ -788,12 +775,11 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   auto ConstantPCReturn = GetRelocatedPC(Op);
 
   auto ConstantSize = _Constant(GPRSize);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
-
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSP = _Sub(OldSP, ConstantSize);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   _StoreMem(GPRClass, GPRSize, NewSP, ConstantPCReturn, GPRSize);
 
@@ -802,9 +788,6 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -816,12 +799,11 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   auto ConstantPCReturn = GetRelocatedPC(Op);
 
   auto ConstantSize = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
-
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSP = _Sub(OldSP, ConstantSize);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   _StoreMem(GPRClass, Size, NewSP, ConstantPCReturn, Size);
 
@@ -1176,7 +1158,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
-  OrderedNode *CondReg = _LoadContext(JcxGPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+  OrderedNode *CondReg = LoadGPRRegister(X86State::REG_RCX, JcxGPRSize);
 
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
@@ -1526,8 +1508,8 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
-  const uint32_t RAXOffset = GPROffset(X86State::REG_RAX);
-  OrderedNode *Src = _LoadContext(1, GPRClass, RAXOffset + 1);
+  // Extract AH
+  OrderedNode *Src = LoadGPRRegister(X86State::REG_RAX, 1, 8);
 
   // Clear bits that aren't supposed to be set
   Src = _And(Src, _Constant(~0b101000));
@@ -1540,10 +1522,10 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
 }
 void OpDispatchBuilder::LAHFOp(OpcodeArgs) {
   // Load the lower 8 bits of the Rflags register
-    auto RFLAG = GetPackedRFLAG(true);
+  auto RFLAG = GetPackedRFLAG(true);
 
   // Store the lower 8 bits of the rflags register in to AH
-  _StoreContext(1, GPRClass, RFLAG, GPROffset(X86State::REG_RAX) + 1);
+  StoreGPRRegister(X86State::REG_RAX, RFLAG, 1, 8);
 }
 
 void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
@@ -1751,20 +1733,18 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Leaf = _LoadContext(4, GPRClass, GPROffset(X86State::REG_RCX));
+  OrderedNode *Leaf = LoadGPRRegister(X86State::REG_RCX);
 
   auto Res = _CPUID(Src, Leaf);
 
   OrderedNode *Result_Lower = _ExtractElementPair(Res, 0);
   OrderedNode *Result_Upper = _ExtractElementPair(Res, 1);
 
-  _StoreContext(GPRSize, GPRClass, _Bfe(32, 0,  Result_Lower), GPROffset(X86State::REG_RAX));
-  _StoreContext(GPRSize, GPRClass, _Bfe(32, 32, Result_Lower), GPROffset(X86State::REG_RBX));
-  _StoreContext(GPRSize, GPRClass, _Bfe(32, 32, Result_Upper), GPROffset(X86State::REG_RDX));
-  _StoreContext(GPRSize, GPRClass, _Bfe(32, 0,  Result_Upper), GPROffset(X86State::REG_RCX));
+  StoreGPRRegister(X86State::REG_RAX, _Bfe(32, 0,  Result_Lower));
+  StoreGPRRegister(X86State::REG_RBX, _Bfe(32, 32, Result_Lower));
+  StoreGPRRegister(X86State::REG_RDX, _Bfe(32, 32, Result_Upper));
+  StoreGPRRegister(X86State::REG_RCX, _Bfe(32, 0,  Result_Upper));
 }
 
 template<bool SHL1Bit>
@@ -1991,7 +1971,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-  OrderedNode *Shift = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RCX));
+  OrderedNode *Shift = LoadGPRRegister(X86State::REG_RCX);
 
   const auto Size = GetDstBitSize(Op);
 
@@ -2454,11 +2434,10 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
 
 void OpDispatchBuilder::MULX(OpcodeArgs) {
   // RDX is the implied source operand in the instruction
-  const auto RDXOffset = offsetof(FEXCore::Core::CPUState, gregs[FEXCore::X86State::REG_RDX]);
   const auto OperandSize = GetSrcSize(Op);
 
   OrderedNode* Src1 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode* Src2 = _LoadContext(OperandSize, GPRClass, RDXOffset);
+  OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RDX, OperandSize);
 
   OrderedNode* ResultLo = _UMul(Src1, Src2);
   OrderedNode* ResultHi = _UMulH(Src1, Src2);
@@ -3207,12 +3186,10 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
-  const uint32_t RAXOffset = GPROffset(X86State::REG_RAX);
-  const uint32_t RDXOffset = GPROffset(X86State::REG_RDX);
   const uint8_t Size = GetSrcSize(Op);
 
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = _LoadContext(Size, GPRClass, RAXOffset);
+  OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
 
   if (Size != 8) {
     Src1 = _Sext(Size * 8, Src1);
@@ -3223,15 +3200,15 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   OrderedNode *ResultHigh{};
   if (Size == 1) {
     // Result is stored in AX
-    _StoreContext(2, GPRClass, Result, RAXOffset);
+    StoreGPRRegister(X86State::REG_RAX, Result, 2);
     ResultHigh = _Sbfe(8, 8, Result);
   }
   else if (Size == 2) {
     // 16bits stored in AX
     // 16bits stored in DX
-    _StoreContext(Size, GPRClass, Result, RAXOffset);
+    StoreGPRRegister(X86State::REG_RAX, Result, Size);
     ResultHigh = _Sbfe(16, 16, Result);
-    _StoreContext(Size, GPRClass, ResultHigh, RDXOffset);
+    StoreGPRRegister(X86State::REG_RDX, ResultHigh, Size);
   }
   else if (Size == 4) {
     // 32bits stored in EAX
@@ -3241,8 +3218,8 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     auto LocalResultHigh = _Bfe(32, 32, Result);
     ResultHigh = _Sbfe(32, 32, Result);
     Result = _Sbfe(32, 0, Result);
-    _StoreContext(8, GPRClass, LocalResult, RAXOffset);
-    _StoreContext(8, GPRClass, LocalResultHigh, RDXOffset);
+    StoreGPRRegister(X86State::REG_RAX, LocalResult);
+    StoreGPRRegister(X86State::REG_RDX, LocalResultHigh);
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
@@ -3253,21 +3230,20 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     // 64bits stored in RAX
     // 64bits stored in RDX
     ResultHigh = _MulH(Src1, Src2);
-    _StoreContext(8, GPRClass, Result, RAXOffset);
-    _StoreContext(8, GPRClass, ResultHigh, RDXOffset);
+    StoreGPRRegister(X86State::REG_RAX, Result);
+    StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
 
   GenerateFlags_MUL(Op, Result, ResultHigh);
 }
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
-  const uint32_t RAXOffset = GPROffset(X86State::REG_RAX);
-  const uint32_t RDXOffset = GPROffset(X86State::REG_RDX);
   const uint8_t Size = GetSrcSize(Op);
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   OrderedNode *Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = _LoadContext(Size, GPRClass, RAXOffset);
+  OrderedNode* Src2 = LoadGPRRegister(X86State::REG_RAX);
+
   if (Size != 8) {
     Src1 = _Bfe(8, Size * 8, 0, Src1);
     Src2 = _Bfe(8, Size * 8, 0, Src2);
@@ -3276,24 +3252,24 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   OrderedNode *ResultHigh{};
 
   if (Size == 1) {
-   // Result is stored in AX
-    _StoreContext(2, GPRClass, Result, RAXOffset);
+    // Result is stored in AX
+    StoreGPRRegister(X86State::REG_RAX, Result, 2);
     ResultHigh = _Bfe(8, 8, Result);
   }
   else if (Size == 2) {
     // 16bits stored in AX
     // 16bits stored in DX
-    _StoreContext(Size, GPRClass, Result, RAXOffset);
+    StoreGPRRegister(X86State::REG_RAX, Result, Size);
     ResultHigh = _Bfe(16, 16, Result);
-    _StoreContext(Size, GPRClass, ResultHigh, RDXOffset);
+    StoreGPRRegister(X86State::REG_RDX, ResultHigh, Size);
   }
   else if (Size == 4) {
     // 32bits stored in EAX
     // 32bits stored in EDX
     OrderedNode *ResultLow = _Bfe(GPRSize, 32, 0, Result);
     ResultHigh = _Bfe(GPRSize, 32, 32, Result);
-    _StoreContext(GPRSize, GPRClass, ResultLow, RAXOffset);
-    _StoreContext(GPRSize, GPRClass, ResultHigh, RDXOffset);
+    StoreGPRRegister(X86State::REG_RAX, ResultLow);
+    StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
@@ -3304,8 +3280,8 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     // 64bits stored in RAX
     // 64bits stored in RDX
     ResultHigh = _UMulH(Src1, Src2);
-    _StoreContext(8, GPRClass, Result, RAXOffset);
-    _StoreContext(8, GPRClass, ResultHigh, RDXOffset);
+    StoreGPRRegister(X86State::REG_RAX, Result);
+    StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
 
   GenerateFlags_UMUL(Op, ResultHigh);
@@ -3384,10 +3360,11 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
-  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
 
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));  
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3401,7 +3378,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetCurrentCodeBlock(TrueBlock);
   {
     auto NewAL = _Add(AL, _Constant(0x6));
-    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     CalculateDeferredFlags();
     auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
@@ -3422,15 +3399,17 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   }
   SetCurrentCodeBlock(TrueBlock);
   {
-    AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+    AL = LoadGPRRegister(X86State::REG_RAX, 1);
+
     auto NewAL = _Add(AL, _Constant(0x60));
-    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
   // Update Flags
-  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  AL = LoadGPRRegister(X86State::REG_RAX, 1);
+
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   auto EightBitMask = _Constant(0xFF);
@@ -3443,10 +3422,11 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
-  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
 
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));  
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
@@ -3460,7 +3440,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetCurrentCodeBlock(TrueBlock);
   {
     auto NewAL = _Sub(AL, _Constant(0x6));
-    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     CalculateDeferredFlags();
     auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
@@ -3481,15 +3461,15 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   }
   SetCurrentCodeBlock(TrueBlock);
   {
-    AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+    AL = LoadGPRRegister(X86State::REG_RAX, 1);
     auto NewAL = _Sub(AL, _Constant(0x60));
-    _StoreContext(1, GPRClass, NewAL, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
   // Update Flags
-  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   auto EightBitMask = _Constant(0xFF);
@@ -3500,9 +3480,9 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
-  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
-  auto AX = _LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX));
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));  
+  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
 
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
@@ -3512,7 +3492,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   {
     auto NewAX = _And(AX, _Constant(0xFF0F));
-    _StoreContext(2, GPRClass, NewAX, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
     _Jump(EndBlock);
@@ -3521,7 +3501,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   {
     auto NewAX = _Add(AX, _Constant(0x106));
     auto Result = _And(NewAX, _Constant(0xFF0F));
-    _StoreContext(2, GPRClass, Result, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
     _Jump(EndBlock);
@@ -3531,9 +3511,9 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
-  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
-  auto AX = _LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX));
-  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));  
+  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
+  auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
 
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
@@ -3543,7 +3523,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   {
     auto NewAX = _And(AX, _Constant(0xFF0F));
-    _StoreContext(2, GPRClass, NewAX, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
     _Jump(EndBlock);
@@ -3553,7 +3533,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     auto NewAX = _Sub(AX, _Constant(6));
     NewAX = _Sub(NewAX, _Constant(0x100));
     auto Result = _And(NewAX, _Constant(0xFF0F));
-    _StoreContext(2, GPRClass, Result, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
     _Jump(EndBlock);
@@ -3562,15 +3542,16 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
-  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto UDivOp = _UDiv(AL, Imm8);
   auto URemOp = _URem(AL, Imm8);
   auto AH = _Lshl(UDivOp, _Constant(8));
   auto AX = _Add(AH, URemOp);
-  _StoreContext(2, GPRClass, AX, GPROffset(X86State::REG_RAX));
+  StoreGPRRegister(X86State::REG_RAX, AX, 2);
+
   // Update Flags
-  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   auto EightBitMask = _Constant(0xFF);
@@ -3580,14 +3561,15 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
-  auto AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
-  auto AH = _Lshr(_LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX)), _Constant(8));
+  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto AH = _Lshr(LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto NewAL = _Add(AL, _Mul(AH, Imm8));
   auto Result = _And(NewAL, _Constant(0xFF));
-  _StoreContext(2, GPRClass, Result, GPROffset(X86State::REG_RAX));
+  StoreGPRRegister(X86State::REG_RAX, Result, 2);
+
   // Update Flags
-  AL = _LoadContext(1, GPRClass, GPROffset(X86State::REG_RAX));
+  AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
   auto EightBitMask = _Constant(0xFF);
@@ -3597,19 +3579,15 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
-  const uint32_t RAXOffset = GPROffset(X86State::REG_RAX);
-  const uint32_t RBXOffset = GPROffset(X86State::REG_RBX);
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
-  OrderedNode *Src = _LoadContext(GPRSize, GPRClass, RBXOffset);
-  OrderedNode *Offset = _LoadContext(1, GPRClass, RAXOffset);
+  OrderedNode *Src = LoadGPRRegister(X86State::REG_RBX);
+  OrderedNode *Offset = LoadGPRRegister(X86State::REG_RAX, 1);
 
   Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
   Src = _Add(Src, Offset);
 
   auto Res = _LoadMemAutoTSO(GPRClass, 1, Src, 1);
 
-  _StoreContext(1, GPRClass, Res, RAXOffset);
+  StoreGPRRegister(X86State::REG_RAX, Res, 1);
 }
 
 template<OpDispatchBuilder::Segment Seg>
@@ -3643,8 +3621,6 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::EnterOp(OpcodeArgs) {
-  const uint32_t RBPOffset = GPROffset(X86State::REG_RBP);
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Src1 needs to be literal here");
@@ -3654,17 +3630,17 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const uint8_t Level = (Value >> 16) & 0x1F;
 
   const auto PushValue = [&](uint8_t Size, OrderedNode *Src) {
-    auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+    auto OldSP = LoadGPRRegister(X86State::REG_RSP);
 
     auto NewSP = _Sub(OldSP, _Constant(Size));
     _StoreMem(GPRClass, Size, NewSP, Src, Size);
 
     // Store the new stack pointer
-    _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+    StoreGPRRegister(X86State::REG_RSP, NewSP);
     return NewSP;
   };
 
-  auto OldBP = _LoadContext(GPRSize, GPRClass, RBPOffset);
+  auto OldBP = LoadGPRRegister(X86State::REG_RBP);
   auto NewSP = PushValue(GPRSize, OldBP);
   auto temp_RBP = NewSP;
 
@@ -3678,19 +3654,16 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
     NewSP = PushValue(GPRSize, temp_RBP);
   }
   NewSP = _Sub(NewSP, _Constant(AllocSpace));
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
-
-  _StoreContext(GPRSize, GPRClass, temp_RBP, RBPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RBP, temp_RBP);
 }
 
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
   auto CounterHigh = _Bfe(32, 32, Counter);
-  _StoreContext(GPRSize, GPRClass, CounterLow, GPROffset(X86State::REG_RAX));
-  _StoreContext(GPRSize, GPRClass, CounterHigh, GPROffset(X86State::REG_RDX));
+  StoreGPRRegister(X86State::REG_RAX, CounterLow);
+  StoreGPRRegister(X86State::REG_RDX, CounterHigh);
 }
 
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
@@ -3769,13 +3742,12 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     return;
   }
 
-  const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
     OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-    OrderedNode *Dest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+    OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
     Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3793,9 +3765,10 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
         SizeConst, NegSizeConst);
 
     // Offset the pointer
-    OrderedNode *TailDest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+    OrderedNode *TailDest = LoadGPRRegister(X86State::REG_RDI);
     TailDest = _Add(TailDest, PtrDir);
-    _StoreContext(GPRSize, GPRClass, TailDest, GPROffset(X86State::REG_RDI));
+
+    StoreGPRRegister(X86State::REG_RDI, TailDest);
   }
   else {
     // Calculate deffered flags.
@@ -3827,7 +3800,8 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
 
     SetCurrentCodeBlock(LoopHead);
     {
-      OrderedNode *Counter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+      OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
+
       // Can we end the block?
       _CondJump(Counter, LoopEnd, LoopTail, {COND_EQ});
     }
@@ -3835,7 +3809,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     SetCurrentCodeBlock(LoopTail);
     {
       OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      OrderedNode *Dest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+      OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
       // Only ES prefix
       Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3843,18 +3817,19 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
       // Store to memory where RDI points
       _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
 
-      OrderedNode *TailCounter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
-      OrderedNode *TailDest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
+      OrderedNode *TailDest = LoadGPRRegister(X86State::REG_RDI);
 
       // Decrement counter
       TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRSize, GPRClass, TailCounter, GPROffset(X86State::REG_RCX));
+      StoreGPRRegister(X86State::REG_RCX, TailCounter);
+
 
       // Offset the pointer
       TailDest = _Add(TailDest, PtrDir);
-      _StoreContext(GPRSize, GPRClass, TailDest, GPROffset(X86State::REG_RDI));
+      StoreGPRRegister(X86State::REG_RDI, TailDest);
 
       // Jump back to the start, we have more work to do
       _Jump(LoopHead);
@@ -3874,7 +3849,6 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
   }
 
   // RA now can handle these to be here, to avoid DF accesses
-  const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
   auto SizeConst = _Constant(Size);
   auto NegSizeConst = _Constant(-Size);
@@ -3902,14 +3876,14 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 
     SetCurrentCodeBlock(LoopHead);
     {
-      OrderedNode *Counter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+      OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
       _CondJump(Counter, LoopEnd, LoopTail, {COND_EQ});
     }
 
     SetCurrentCodeBlock(LoopTail);
     {
-      OrderedNode *Src = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
-      OrderedNode *Dest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+      OrderedNode *Src = LoadGPRRegister(X86State::REG_RSI);
+      OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
       Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
       Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
@@ -3918,21 +3892,23 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       // Store to memory where RDI points
       _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
 
-      OrderedNode *TailCounter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
       // Decrement counter
       TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRSize, GPRClass, TailCounter, GPROffset(X86State::REG_RCX));
+      StoreGPRRegister(X86State::REG_RCX, TailCounter);
+
 
       // Offset the pointer
-      OrderedNode *TailSrc = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
-      OrderedNode *TailDest = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+      OrderedNode *TailSrc = LoadGPRRegister(X86State::REG_RSI);
+      OrderedNode *TailDest = LoadGPRRegister(X86State::REG_RDI);
+
       TailSrc = _Add(TailSrc, PtrDir);
       TailDest = _Add(TailDest, PtrDir);
-      _StoreContext(GPRSize, GPRClass, TailSrc, GPROffset(X86State::REG_RSI));
-      _StoreContext(GPRSize, GPRClass, TailDest, GPROffset(X86State::REG_RDI));
+      StoreGPRRegister(X86State::REG_RSI, TailSrc);
+      StoreGPRRegister(X86State::REG_RDI, TailDest);
 
       // Jump back to the start, we have more work to do
       _Jump(LoopHead);
@@ -3943,8 +3919,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     SetCurrentCodeBlock(LoopEnd);
   }
   else {
-    OrderedNode *RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
-    OrderedNode *RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+    OrderedNode *RSI = LoadGPRRegister(X86State::REG_RSI);
+    OrderedNode *RDI = LoadGPRRegister(X86State::REG_RDI);
     RDI= AppendSegmentOffset(RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     RSI = AppendSegmentOffset(RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
@@ -3956,8 +3932,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     RSI = _Add(RSI, PtrDir);
     RDI = _Add(RDI, PtrDir);
 
-    _StoreContext(GPRSize, GPRClass, RSI, GPROffset(X86State::REG_RSI));
-    _StoreContext(GPRSize, GPRClass, RDI, GPROffset(X86State::REG_RDI));
+    StoreGPRRegister(X86State::REG_RSI, RSI);
+    StoreGPRRegister(X86State::REG_RDI, RDI);
   }
 }
 
@@ -3968,13 +3944,12 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     return;
   }
 
-  const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
 
   bool Repeat = Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX);
   if (!Repeat) {
-    OrderedNode *Dest_RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
-    OrderedNode *Dest_RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
+    OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
+    OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
 
     // Only ES prefix
     Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -3997,11 +3972,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // Offset the pointer
     Dest_RDI = _Add(Dest_RDI, PtrDir);
-    _StoreContext(GPRSize, GPRClass, Dest_RDI, GPROffset(X86State::REG_RDI));
+    StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
 
     // Offset second pointer
     Dest_RSI = _Add(Dest_RSI, PtrDir);
-    _StoreContext(GPRSize, GPRClass, Dest_RSI, GPROffset(X86State::REG_RSI));
+    StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
   }
   else {
     // Calculate flags early.
@@ -4021,7 +3996,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
 
-    OrderedNode *Counter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+    OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
     // Can we end the block?
     auto CondJump = _CondJump(Counter, {COND_EQ});
@@ -4033,8 +4008,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // Working loop
     {
-      OrderedNode *Dest_RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
-      OrderedNode *Dest_RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
+      OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
+      OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
 
       // Only ES prefix
       Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
@@ -4053,21 +4028,21 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       // Calculate flags early.
       CalculateDeferredFlags();
 
-      OrderedNode *TailCounter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
       // Decrement counter
       TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRSize, GPRClass, TailCounter, GPROffset(X86State::REG_RCX));
+      StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
       // Offset the pointer
       Dest_RDI = _Add(Dest_RDI, PtrDir);
-      _StoreContext(GPRSize, GPRClass, Dest_RDI, GPROffset(X86State::REG_RDI));
+      StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
 
       // Offset second pointer
       Dest_RSI = _Add(Dest_RSI, PtrDir);
-      _StoreContext(GPRSize, GPRClass, Dest_RSI, GPROffset(X86State::REG_RSI));
+      StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
       OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       InternalCondJump = _CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
@@ -4093,12 +4068,11 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     return;
   }
 
-  const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Dest_RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
+    OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
     Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     auto Src = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
@@ -4114,9 +4088,10 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
         SizeConst, NegSizeConst);
 
     // Offset the pointer
-    OrderedNode *TailDest_RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
+    OrderedNode *TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
+
     TailDest_RSI = _Add(TailDest_RSI, PtrDir);
-    _StoreContext(GPRSize, GPRClass, TailDest_RSI, GPROffset(X86State::REG_RSI));
+    StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
   }
   else {
     // Calculate flags early. because end of block
@@ -4143,7 +4118,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
 
-    OrderedNode *Counter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+    OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
     // Can we end the block?
 
@@ -4156,25 +4131,26 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
 
     // Working loop
     {
-      OrderedNode *Dest_RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
+      OrderedNode *Dest_RSI = LoadGPRRegister(X86State::REG_RSI);
+
       Dest_RSI = AppendSegmentOffset(Dest_RSI, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
       auto Src = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
       StoreResult(GPRClass, Op, Src, -1);
 
-      OrderedNode *TailCounter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
-      OrderedNode *TailDest_RSI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RSI));
+      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
+      OrderedNode *TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
 
       // Decrement counter
       TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRSize, GPRClass, TailCounter, GPROffset(X86State::REG_RCX));
+      StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
       // Offset the pointer
       TailDest_RSI = _Add(TailDest_RSI, PtrDir);
-      _StoreContext(GPRSize, GPRClass, TailDest_RSI, GPROffset(X86State::REG_RSI));
+      StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
 
       // Jump back to the start, we have more work to do
       _Jump(LoopStart);
@@ -4193,12 +4169,11 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     return;
   }
 
-  const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
   const bool Repeat = (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX)) != 0;
 
   if (!Repeat) {
-    OrderedNode *Dest_RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+    OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
     Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -4218,9 +4193,10 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         SizeConst, NegSizeConst);
 
     // Offset the pointer
-    OrderedNode *TailDest_RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+    OrderedNode *TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
+
     TailDest_RDI = _Add(TailDest_RDI, PtrDir);
-    _StoreContext(GPRSize, GPRClass, TailDest_RDI, GPROffset(X86State::REG_RDI));
+    StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
   }
   else {
     // Calculate flags early. because end of block
@@ -4244,7 +4220,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     SetJumpTarget(JumpStart, LoopStart);
     SetCurrentCodeBlock(LoopStart);
 
-    OrderedNode *Counter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
+    OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
 
     // Can we end the block?
     // We leave if RCX = 0
@@ -4257,7 +4233,8 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
     // Working loop
     {
-      OrderedNode *Dest_RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+      OrderedNode *Dest_RDI = LoadGPRRegister(X86State::REG_RDI);
+
       Dest_RDI = AppendSegmentOffset(Dest_RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
       auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -4272,18 +4249,18 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       // Calculate flags early.
       CalculateDeferredFlags();
 
-      OrderedNode *TailCounter = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RCX));
-      OrderedNode *TailDest_RDI = _LoadContext(GPRSize, GPRClass, GPROffset(X86State::REG_RDI));
+      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
+      OrderedNode *TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
 
       // Decrement counter
       TailCounter = _Sub(TailCounter, _Constant(1));
 
       // Store the counter so we don't have to deal with PHI here
-      _StoreContext(GPRSize, GPRClass, TailCounter, GPROffset(X86State::REG_RCX));
+      StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
       // Offset the pointer
       TailDest_RDI = _Add(TailDest_RDI, PtrDir);
-      _StoreContext(GPRSize, GPRClass, TailDest_RDI, GPROffset(X86State::REG_RDI));
+      StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
       OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       InternalCondJump = _CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
@@ -4315,8 +4292,6 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
-  const uint8_t GPRSize = CTX->GetGPRSize();
   const uint8_t Size = GetSrcSize(Op);
 
   OrderedNode *Src = GetPackedRFLAG(false);
@@ -4325,29 +4300,26 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
   }
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   auto NewSP = _Sub(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Store our value to the new stack location
   _StoreMem(GPRClass, Size, NewSP, Src, Size);
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
-  const uint32_t RSPOffset = GPROffset(X86State::REG_RSP);
-  const uint8_t GPRSize = CTX->GetGPRSize();
   const uint8_t Size = GetSrcSize(Op);
 
   auto Constant = _Constant(Size);
-  auto OldSP = _LoadContext(GPRSize, GPRClass, RSPOffset);
-
+  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
   OrderedNode *Src = _LoadMem(GPRClass, Size, OldSP, Size);
   auto NewSP = _Add(OldSP, Constant);
 
   // Store the new stack pointer
-  _StoreContext(GPRSize, GPRClass, NewSP, RSPOffset);
+  StoreGPRRegister(X86State::REG_RSP, NewSP);
 
   // Add back our flag constants
   // Bit 1 is always 1
@@ -4395,32 +4367,33 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
   if (Size == 1) {
-    OrderedNode *Src1 = _LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
 
     auto UDivOp = _UDiv(Src1, Divisor);
     auto URemOp = _URem(Src1, Divisor);
 
-    _StoreContext(Size, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(Size, GPRClass, URemOp, GPROffset(X86State::REG_RAX) + 1);
+    // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
+    auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
+    StoreGPRRegister(X86State::REG_RAX, ResultAX, 2);
   }
   else if (Size == 2) {
-    OrderedNode *Src1 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-    OrderedNode *Src2 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
+    OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
     auto UDivOp = _LUDiv(Src1, Src2, Divisor);
     auto URemOp = _LURem(Src1, Src2, Divisor);
 
-    _StoreContext(Size, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(Size, GPRClass, URemOp, GPROffset(X86State::REG_RDX));
+    StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
+    StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
   }
   else if (Size == 4) {
-    OrderedNode *Src1 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-    OrderedNode *Src2 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
+    OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
     OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LUDiv(Src1, Src2, Divisor));
     OrderedNode *URemOp = _Bfe(Size * 8, 0, _LURem(Src1, Src2, Divisor));
 
-    _StoreContext(GPRSize, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(GPRSize, GPRClass, URemOp, GPROffset(X86State::REG_RDX));
+    StoreGPRRegister(X86State::REG_RAX, UDivOp);
+    StoreGPRRegister(X86State::REG_RDX, URemOp);
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
@@ -4428,14 +4401,14 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
       DecodeFailure = true;
       return;
     }
-    OrderedNode *Src1 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-    OrderedNode *Src2 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX);
+    OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX);
 
     auto UDivOp = _LUDiv(Src1, Src2, Divisor);
     auto URemOp = _LURem(Src1, Src2, Divisor);
 
-    _StoreContext(8, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(8, GPRClass, URemOp, GPROffset(X86State::REG_RDX));
+    StoreGPRRegister(X86State::REG_RAX, UDivOp);
+    StoreGPRRegister(X86State::REG_RDX, URemOp);
   }
 }
 
@@ -4447,34 +4420,35 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
   if (Size == 1) {
-    OrderedNode *Src1 = _LoadContext(2, GPRClass, GPROffset(X86State::REG_RAX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
     Src1 = _Sbfe(16, 0, Src1);
     Divisor = _Sbfe(8, 0, Divisor);
 
     auto UDivOp = _Div(Src1, Divisor);
     auto URemOp = _Rem(Src1, Divisor);
 
-    _StoreContext(Size, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(Size, GPRClass, URemOp, GPROffset(X86State::REG_RAX) + 1);
+    // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
+    auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
+    StoreGPRRegister(X86State::REG_RAX, ResultAX, 2);
   }
   else if (Size == 2) {
-    OrderedNode *Src1 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-    OrderedNode *Src2 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
+    OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
     auto UDivOp = _LDiv(Src1, Src2, Divisor);
     auto URemOp = _LRem(Src1, Src2, Divisor);
 
-    _StoreContext(Size, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(Size, GPRClass, URemOp, GPROffset(X86State::REG_RDX));
+    StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
+    StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
   }
   else if (Size == 4) {
-    OrderedNode *Src1 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-    OrderedNode *Src2 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
+    OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
     OrderedNode *UDivOp = _Bfe(Size * 8, 0, _LDiv(Src1, Src2, Divisor));
     OrderedNode *URemOp = _Bfe(Size * 8, 0, _LRem(Src1, Src2, Divisor));
 
-    _StoreContext(GPRSize, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(GPRSize, GPRClass, URemOp, GPROffset(X86State::REG_RDX));
+    StoreGPRRegister(X86State::REG_RAX, UDivOp);
+    StoreGPRRegister(X86State::REG_RDX, URemOp);
   }
   else if (Size == 8) {
     if (!CTX->Config.Is64BitMode) {
@@ -4482,14 +4456,14 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
       DecodeFailure = true;
       return;
     }
-    OrderedNode *Src1 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-    OrderedNode *Src2 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+    OrderedNode *Src1 = LoadGPRRegister(X86State::REG_RAX);
+    OrderedNode *Src2 = LoadGPRRegister(X86State::REG_RDX);
 
     auto UDivOp = _LDiv(Src1, Src2, Divisor);
     auto URemOp = _LRem(Src1, Src2, Divisor);
 
-    _StoreContext(8, GPRClass, UDivOp, GPROffset(X86State::REG_RAX));
-    _StoreContext(8, GPRClass, URemOp, GPROffset(X86State::REG_RDX));
+    StoreGPRRegister(X86State::REG_RAX, UDivOp);
+    StoreGPRRegister(X86State::REG_RDX, URemOp);
   }
 }
 
@@ -4568,14 +4542,19 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     OrderedNode *Src3Lower{};
     if (GPRSize == 8 && Size == 4) {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, -1);
-      Src1Lower = _Bfe(4, 32, 0, Src1);
-      Src3 = _LoadContext(8, GPRClass, GPROffset(X86State::REG_RAX));
-      Src3Lower = _Bfe(4, 32, 0, Src3);
+      Src3 = LoadGPRRegister(X86State::REG_RAX);
     }
     else {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags, -1);
+      Src3 = LoadGPRRegister(X86State::REG_RAX);
+    }
+
+    if (Size != GPRSize) {
+      Src1Lower = _Bfe(GPRSize, Size * 8, 0, Src1);
+      Src3Lower = _Bfe(GPRSize, Size * 8, 0, Src3);
+    }
+    else {
       Src1Lower = Src1;
-			Src3 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
       Src3Lower = Src3;
     }
 
@@ -4603,11 +4582,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
         Src3, Src1Lower);
 
       // When the size is 4 we need to make sure not zext the GPR when the comparison fails
-      _StoreContext(GPRSize, GPRClass, RAXResult, GPROffset(X86State::REG_RAX));
+      StoreGPRRegister(X86State::REG_RAX, RAXResult);
       StoreResult_WithOpSize(GPRClass, Op, Op->Dest, DestResult, GPRSize, -1);
     }
     else {
-      _StoreContext(Size, GPRClass, CASResult, GPROffset(X86State::REG_RAX));
+      StoreGPRRegister(X86State::REG_RAX, CASResult, Size);
       StoreResult(GPRClass, Op, DestResult, -1);
     }
 
@@ -4626,11 +4605,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     OrderedNode *Src3{};
     OrderedNode *Src3Lower{};
     if (GPRSize == 8 && Size == 4) {
-      Src3 = _LoadContext(8, GPRClass, GPROffset(X86State::REG_RAX));
+      Src3 = LoadGPRRegister(X86State::REG_RAX);
       Src3Lower = _Bfe(4, 32, 0, Src3);
     }
     else {
-      Src3 = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
+      Src3 = LoadGPRRegister(X86State::REG_RAX, Size);
       Src3Lower = Src3;
     }
     // If this is a memory location then we want the pointer to it
@@ -4643,7 +4622,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // This will write to memory! Careful!
     // Third operand must be a calculated guest memory address
     OrderedNode *CASResult = _CAS(Src3Lower, Src2, Src1);
-		OrderedNode *RAXResult = CASResult;
+    OrderedNode *RAXResult = CASResult;
 
     if (GPRSize == 8 && Size == 4) {
       // This allows us to only hit the ZEXT case on failure
@@ -4654,7 +4633,8 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     }
 
     // RAX gets the result of the CAS op
-    _StoreContext(Size, GPRClass, RAXResult, GPROffset(X86State::REG_RAX));
+    StoreGPRRegister(X86State::REG_RAX, RAXResult, Size);
+
 
     const auto Size = GetDstBitSize(Op);
 
@@ -4671,7 +4651,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
   // REX.W used to determine if it is 16byte or 8byte
   // Unlike CMPXCHG, the destination can only be a memory location
   uint8_t Size = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
@@ -4682,12 +4661,12 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   Src1 = AppendSegmentOffset(Src1, Op->Flags);
 
-  OrderedNode *Expected_Lower = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RAX));
-  OrderedNode *Expected_Upper = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RDX));
+  OrderedNode *Expected_Lower = LoadGPRRegister(X86State::REG_RAX, Size);
+  OrderedNode *Expected_Upper = LoadGPRRegister(X86State::REG_RDX, Size);
   OrderedNode *Expected = _CreateElementPair(Expected_Lower, Expected_Upper);
 
-  OrderedNode *Desired_Lower = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RBX));
-  OrderedNode *Desired_Upper = _LoadContext(Size, GPRClass, GPROffset(X86State::REG_RCX));
+  OrderedNode *Desired_Lower = LoadGPRRegister(X86State::REG_RBX, Size);
+  OrderedNode *Desired_Upper = LoadGPRRegister(X86State::REG_RCX, Size);
   OrderedNode *Desired = _CreateElementPair(Desired_Lower, Desired_Upper);
 
   // ssa0 = Expected
@@ -4725,8 +4704,8 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   SetFalseJumpTarget(CondJump, JumpTarget);
   SetCurrentCodeBlock(JumpTarget);
 
-  _StoreContext(GPRSize, GPRClass, Result_Lower, GPROffset(X86State::REG_RAX));
-  _StoreContext(GPRSize, GPRClass, Result_Upper, GPROffset(X86State::REG_RDX));
+  StoreGPRRegister(X86State::REG_RAX, Result_Lower);
+  StoreGPRRegister(X86State::REG_RDX, Result_Upper);
 
   auto Jump = _Jump();
   auto NextJumpTarget = CreateNewCodeBlockAfter(JumpTarget);
@@ -4936,35 +4915,64 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   }
   else if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
+    const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
+
     if (gpr >= FEXCore::X86State::REG_MM_0) {
       Src = _LoadContext(OpSize, FPRClass, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
     }
     else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
-      const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
-      if (CTX->HostFeatures.SupportsAVX) {
-        Src = _LoadContext(OpSize, FPRClass, offsetof(Core::CPUState, xmm.avx.data[gprIndex][highIndex]));
-      } else {
-        Src = _LoadContext(OpSize, FPRClass, offsetof(Core::CPUState, xmm.sse.data[gprIndex][highIndex]));
+      const auto regSize = CTX->HostFeatures.SupportsAVX ?
+        Core::CPUState::XMM_AVX_REG_SIZE :
+        Core::CPUState::XMM_SSE_REG_SIZE;
+
+      const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
+        offsetof(Core::CPUState, xmm.avx.data[gprIndex][0]) :
+        offsetof(Core::CPUState, xmm.sse.data[gprIndex][0]);
+
+      // Load the full register size if it is a XMM register source.
+      Src = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, regSize);
+
+      // If we are wanting a high-index then we need to extract an element from the upper half of the reg.
+      // We can only extract an element size here.
+      // TODO: Have the instruction doing this load do the extract instead of here.
+      // We don't have enough information here to know if we can avoid this dup.
+      if (highIndex && OpSize < Core::CPUState::XMM_SSE_REG_SIZE) {
+        Src = _VDupElement(regSize, OpSize, Src, 1);
+      }
+
+      // Now extract the subregister if it was a partial load /smaller/ than SSE size
+      // TODO: Instead of doing the VMov implicitly on load, hunt down all use cases that require partial loads and do it after load.
+      // We don't have information here to know if the operation needs zero upper bits or can contain data.
+      if (OpSize < Core::CPUState::XMM_SSE_REG_SIZE) {
+        Src = _VMov(OpSize, Src);
+      }
+
+      // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
+      // TODO: Longer term we should enforce the difference between zero and insert.
+      if (regSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
+        Src = _VMov(OpSize, Src);
       }
     }
     else {
-      Src = _LoadContext(OpSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (Operand.Data.GPR.HighBits ? 1 : 0));
+      Src = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (highIndex ? 1 : 0), GPRClass, GPRFixedClass, OpSize);
     }
   }
   else if (Operand.IsGPRDirect()) {
-    Src = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]));
+    Src = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]), GPRClass, GPRFixedClass, GPRSize);
+
     LoadableType = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
       AccessType = MemoryAccessType::ACCESS_NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
-    auto GPR = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]));
+    auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]), GPRClass, GPRFixedClass, GPRSize);
+
     auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
-		Src = _Add(GPR, Constant);
+    Src = _Add(GPR, Constant);
 
     LoadableType = true;
     if (Operand.Data.GPRIndirect.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
@@ -4985,7 +4993,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
     if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]));
+      Tmp = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]), GPRClass, GPRFixedClass, GPRSize);
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
@@ -4997,7 +5005,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     }
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]));
+      auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]), GPRClass, GPRFixedClass, GPRSize);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
@@ -5028,16 +5036,18 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       }
     }
 
-    if (AddrSize < GPRSize) {
-      // If AddrSize == 16 then we need to clear the upper bits
-      // GPRSize will be 32 in this case
-      Src = _Bfe(AddrSize, AddrSize * 8, 0, Src);
-    }
-
     LoadableType = true;
   }
   else {
     LOGMAN_MSG_A_FMT("Unknown Src Type: {}\n", Operand.Type);
+  }
+
+  if (LoadableType && AddrSize < GPRSize) {
+    // For 64-bit AddrSize can be 32-bit or 64-bit
+    // For 32-bit AddrSize can be 32-bit or 16-bit
+    //
+    // If the AddrSize is not the GPRSize then we need to clear the upper bits.
+    Src = _Bfe(GPRSize, AddrSize * 8, 0, Src);
   }
 
   if ((LoadableType && LoadData) || ForceLoad) {
@@ -5056,6 +5066,49 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
 OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   return _EntrypointOffset(Op->PC + Op->InstSize + Offset - Entry, GPRSize);
+}
+
+OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  OrderedNode *Reg = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
+
+  if (Size != -1 || Offset != 0) {
+    // Extract the subregister if requested.
+    Reg = _Bfe(Size, Size * 8, Offset, Reg);
+  }
+  return Reg;
+}
+
+OrderedNode *OpDispatchBuilder::LoadXMMRegister(uint32_t XMM) {
+  const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+  const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
+    offsetof(Core::CPUState, xmm.avx.data[XMM][0]) :
+    offsetof(Core::CPUState, xmm.sse.data[XMM][0]);
+
+  OrderedNode *Reg = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
+  return Reg;
+}
+
+void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, OrderedNode *const Src, int8_t Size, uint8_t Offset) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+  if (Size != -1 || Offset != 0) {
+    // Need to do an insert if not automatic size or zero offset.
+    OrderedNode *Reg = LoadGPRRegister(GPR);
+    Reg = _Bfi(GPRSize, Size * 8, Offset, Reg, Src);
+    _StoreRegister(Reg, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
+  }
+  else {
+    _StoreRegister(Src, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
+  }
+}
+
+void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode *const Src) {
+  const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+  const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
+    offsetof(Core::CPUState, xmm.avx.data[XMM][0]) :
+    offsetof(Core::CPUState, xmm.sse.data[XMM][0]);
+
+  _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
 }
 
 OrderedNode *OpDispatchBuilder::LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData, bool ForceLoad, MemoryAccessType AccessType) {
@@ -5092,36 +5145,74 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       const auto gprIndex = gpr - X86State::REG_XMM_0;
       const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
-      if (CTX->HostFeatures.SupportsAVX) {
-        _StoreContext(OpSize, Class, Src, offsetof(Core::CPUState, xmm.avx.data[gprIndex][highIndex]));
-      } else {
-        _StoreContext(OpSize, Class, Src, offsetof(Core::CPUState, xmm.sse.data[gprIndex][highIndex]));
+      const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
+      const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
+        offsetof(Core::CPUState, xmm.avx.data[gprIndex][highIndex]) :
+        offsetof(Core::CPUState, xmm.sse.data[gprIndex][highIndex]);
+
+      if (highIndex || OpSize != VectorSize) {
+        auto InsertResult = Src;
+        // Partial writes can come from GPR or FPR.
+        // TODO: Fix the instructions doing partial writes rather than dealing with it here.
+        auto SrcVector = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, OpSize);
+
+        if (Class == IR::GPRClass) {
+          InsertResult = _VInsGPR(VectorSize, OpSize, highIndex, SrcVector, Src);
+        }
+        else {
+          // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
+          // TODO: Longer term we should enforce the difference between zero and insert.
+          if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
+            InsertResult = _VMov(OpSize, Src);
+          }
+          else {
+            InsertResult = _VInsElement(VectorSize, OpSize, highIndex, 0, SrcVector, Src);
+          }
+        }
+
+        _StoreRegister(InsertResult, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
+      }
+      else {
+        _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
       }
     }
     else {
       if (GPRSize == 8 && OpSize == 4) {
         // If the Source IR op is 64 bits, we need to zext the upper bits
         // For all other sizes, the upper bits are guaranteed to already be zero
-         OrderedNode *Value = GetOpSize(Src) == 8 ? _Bfe(4, 32, 0, Src) : Src;
+        OrderedNode *Value = GetOpSize(Src) == 8 ? _Bfe(4, 32, 0, Src) : Src;
+        _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, GPRSize);
 
         LOGMAN_THROW_AA_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
-        _StoreContext(GPRSize, Class, Value, offsetof(FEXCore::Core::CPUState, gregs[gpr]));
       }
       else {
         LOGMAN_THROW_AA_FMT(!(GPRSize == 4 && OpSize > 4), "Oops had a {} GPR load", OpSize);
-        _StoreContext(std::min(GPRSize, OpSize), Class, Src, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (Operand.Data.GPR.HighBits ? 1 : 0));
+
+        if (GPRSize != OpSize) {
+          // if the GPR isn't the full size then we need to insert.
+          // eg:
+          // mov al, 2 ; Move in to lower 8-bits.
+          // mov ah, 2 ; Move in to upper 8-bits of 16-bit reg.
+          // mov ax, 2 ; Move in to lower 16-bits of reg.
+          auto RegDest = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, GPRSize);
+          auto Result = _Bfi(GPRSize, OpSize * 8, Operand.Data.GPR.HighBits * 8, RegDest, Src);
+          _StoreRegister(Result, false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, GPRSize);
+        }
+        else {
+          _StoreRegister(Src, false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, std::min(GPRSize, OpSize));
+        }
       }
     }
   }
   else if (Operand.IsGPRDirect()) {
-    MemStoreDst = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]));
+    MemStoreDst = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]), GPRClass, GPRFixedClass, GPRSize);
     MemStore = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
       AccessType = MemoryAccessType::ACCESS_NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
-    auto GPR = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]));
+    auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]), GPRClass, GPRFixedClass, GPRSize);
     auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
     MemStoreDst = _Add(GPR, Constant);
@@ -5143,7 +5234,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
     if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]));
+      Tmp = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]), GPRClass, GPRFixedClass, GPRSize);
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
@@ -5152,7 +5243,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     }
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadContext(AddrSize, GPRClass, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]));
+      auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]), GPRClass, GPRFixedClass, GPRSize);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
@@ -5525,8 +5616,6 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
-
   // RDTSCP is slightly different than RDTSC
   // IA32_TSC_AUX is returned in RCX
   // All previous loads are globally visible
@@ -5540,9 +5629,9 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   auto CounterLow = _Bfe(32, 0, Counter);
   auto CounterHigh = _Bfe(32, 32, Counter);
   auto ID = _ProcessorID();
-  _StoreContext(GPRSize, GPRClass, CounterLow, GPROffset(X86State::REG_RAX));
-  _StoreContext(GPRSize, GPRClass, ID, GPROffset(X86State::REG_RCX));
-  _StoreContext(GPRSize, GPRClass, CounterHigh, GPROffset(X86State::REG_RDX));
+  StoreGPRRegister(X86State::REG_RAX, CounterLow);
+  StoreGPRRegister(X86State::REG_RCX, ID);
+  StoreGPRRegister(X86State::REG_RDX, CounterHigh);
 }
 
 void OpDispatchBuilder::CRC32(OpcodeArgs) {
@@ -6654,7 +6743,7 @@ constexpr uint16_t PF_F2 = 3;
       {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
       {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   };
-  
+
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87OpTable[] = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 

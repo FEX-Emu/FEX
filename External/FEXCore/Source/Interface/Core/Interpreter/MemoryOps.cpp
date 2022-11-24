@@ -69,11 +69,47 @@ DEF_OP(StoreContext) {
 }
 
 DEF_OP(LoadRegister) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
+  const auto Op = IROp->C<IR::IROp_LoadRegister>();
+  const auto OpSize = IROp->Size;
+
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Src = ContextPtr + Op->Offset;
+
+  #define LOAD_CTX(x, y) \
+    case x: { \
+      y const *MemData = reinterpret_cast<y const*>(Src); \
+      GD = *MemData; \
+      break; \
+    }
+
+  switch (OpSize) {
+    LOAD_CTX(1, uint8_t)
+    LOAD_CTX(2, uint16_t)
+    LOAD_CTX(4, uint32_t)
+    LOAD_CTX(8, uint64_t)
+    case 16:
+    case 32: {
+      void const *MemData = reinterpret_cast<void const*>(Src);
+      memcpy(GDP, MemData, OpSize);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize);
+      break;
+  }
+  #undef LOAD_CTX
 }
 
 DEF_OP(StoreRegister) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
+  const auto Op = IROp->C<IR::IROp_StoreRegister>();
+  const auto OpSize = IROp->Size;
+
+  const auto ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
+  const auto Dst = ContextPtr + Op->Offset;
+
+  void *MemData = reinterpret_cast<void*>(Dst);
+  void *Src = GetSrc<void*>(Data->SSAData, Op->Value);
+  memcpy(MemData, Src, OpSize);
 }
 
 DEF_OP(LoadContextIndexed) {

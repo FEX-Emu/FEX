@@ -37,15 +37,6 @@ void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineCo
 
     InsertPass(CreateSyscallOptimization());
     InsertPass(CreatePassDeadCodeElimination());
-
-    // only do SRA if enabled and JIT
-    if (InlineConstants && StaticRegisterAllocation)
-      InsertPass(CreateStaticRegisterAllocationPass(ctx->HostFeatures.SupportsAVX));
-  }
-  else {
-    // only do SRA if enabled and JIT
-    if (InlineConstants && StaticRegisterAllocation)
-      InsertPass(CreateStaticRegisterAllocationPass(ctx->HostFeatures.SupportsAVX));
   }
 
   // If the IR is compacted post-RA then the node indexing gets messed up and the backend isn't able to find the register assigned to a node

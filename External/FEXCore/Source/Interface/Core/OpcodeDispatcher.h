@@ -76,10 +76,10 @@ public:
   OrderedNode* flagsOpSrcSigned{};
 
   FEXCore::Context::Context *CTX{};
-  
+
   // Used during new op bringup
   bool ShouldDump {false};
-  
+
   struct JumpTargetInfo {
     OrderedNode* BlockEntry;
     bool HaveEmitted;
@@ -532,7 +532,7 @@ public:
   void X87FRSTORF64(OpcodeArgs);
   void X87FXAMF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);
-  
+
   template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
   void FCOMIF64(OpcodeArgs);
 
@@ -675,6 +675,11 @@ private:
     // Non-temporal streaming
     ACCESS_STREAM,
   };
+  OrderedNode *LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0);
+  OrderedNode *LoadXMMRegister(uint32_t XMM);
+  void StoreGPRRegister(uint32_t GPR, OrderedNode *const Src, int8_t Size = -1, uint8_t Offset = 0);
+  void StoreXMMRegister(uint32_t XMM, OrderedNode *const Src);
+
   OrderedNode *GetRelocatedPC(FEXCore::X86Tables::DecodedOp const& Op, int64_t Offset = 0);
   OrderedNode *LoadSource(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);
   OrderedNode *LoadSource_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp const& Op, FEXCore::X86Tables::DecodedOperand const& Operand, uint8_t OpSize, uint32_t Flags, int8_t Align, bool LoadData = true, bool ForceLoad = false, MemoryAccessType AccessType = MemoryAccessType::ACCESS_DEFAULT);

@@ -355,7 +355,9 @@
         "DestSize": "ByteSize",
         "EmitValidation": [
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't LoadContext to GPR\"",
+          "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContext to XMM\""
         ]
       },
 
@@ -370,7 +372,9 @@
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class",
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
+          "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContext to XMM\""
         ]
       },
 
@@ -381,7 +385,9 @@
         "DestSize": "ByteSize",
         "EmitValidation": [
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($BaseOffset >= offsetof(Core::CPUState, gregs[0]) && $BaseOffset < offsetof(Core::CPUState, gregs[16])) && \"Can't LoadContextIndexed to GPR\"",
+          "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContextIndexed to XMM\""
         ]
       },
       "StoreContextIndexed SSA:$Value, GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
@@ -393,7 +399,9 @@
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class",
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass"
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($BaseOffset >= offsetof(Core::CPUState, gregs[0]) && $BaseOffset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContextIndexed to GPR\"",
+          "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContextIndexed to XMM\""
         ]
       },
 
