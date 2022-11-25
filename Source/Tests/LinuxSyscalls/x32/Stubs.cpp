@@ -21,10 +21,6 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE::x32 {
   void RegisterStubs(FEX::HLE::SyscallHandler *Handler) {
-    REGISTER_SYSCALL_IMPL_X32(sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      SYSCALL_STUB(sigreturn);
-    });
-
     REGISTER_SYSCALL_IMPL_X32(readdir, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       SYSCALL_STUB(readdir);
     });

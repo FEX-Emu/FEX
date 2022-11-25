@@ -4,8 +4,11 @@ tags: LinuxSyscalls|syscalls-shared
 $end_info$
 */
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/LogManager.h>
 
+#include "FEXCore/Core/Context.h"
+#include <FEXCore/Debug/InternalThreadState.h>
 #include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Tests/LinuxSyscalls/x32/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
@@ -22,10 +25,6 @@ namespace FEXCore::Core {
 
 namespace FEX::HLE {
   void RegisterStubs(FEX::HLE::SyscallHandler *Handler) {
-
-    REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      SYSCALL_STUB(rt_sigreturn);
-    });
 
     REGISTER_SYSCALL_IMPL(ptrace, [](FEXCore::Core::CpuStateFrame *Frame, int /*enum __ptrace_request*/ request, pid_t pid, void *addr, void *data) -> uint64_t {
       // We don't support this

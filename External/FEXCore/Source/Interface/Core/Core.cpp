@@ -305,6 +305,13 @@ namespace FEXCore::Context {
     Thread->CTX->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
   }
 
+  void Context::HandleSignalHandlerReturn(bool RT) {
+    using SignalHandlerReturnFunc = void(*)();
+    SignalHandlerReturnFunc SignalHandlerReturn = reinterpret_cast<SignalHandlerReturnFunc>(Dispatcher->SignalHandlerReturnAddress);
+    SignalHandlerReturn();
+    FEX_UNREACHABLE;
+  }
+
   void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
       SignalDelegation->RegisterHostSignalHandler(Signal, Func, Required);
   }

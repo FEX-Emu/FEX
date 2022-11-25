@@ -311,6 +311,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   }
 
   {
+    SignalHandlerReturnAddressRT = GetCursorAddress<uint64_t>();
+
+    // Now to get back to our old location we need to do a fault dance
+    // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
+    hlt(0);
+  }
+
+  {
     SignalHandlerReturnAddress = GetCursorAddress<uint64_t>();
 
     // Now to get back to our old location we need to do a fault dance
@@ -657,7 +665,8 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
     Common.GuestSignal_SIGILL = GuestSignal_SIGILL;
     Common.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
     Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
-    Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.SignalHandlerReturnAddressRT = SignalHandlerReturnAddressRT;
+    Common.SignalHandlerReturnAddress = SignalHandlerReturnAddress;
 
     auto &AArch64 = Thread->CurrentFrame->Pointers.AArch64;
     AArch64.LUDIVHandler = LUDIVHandlerAddress;

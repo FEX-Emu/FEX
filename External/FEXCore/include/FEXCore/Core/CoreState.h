@@ -158,7 +158,8 @@ namespace FEXCore::Core {
       uint64_t GuestSignal_SIGILL{};
       uint64_t GuestSignal_SIGTRAP{};
       uint64_t GuestSignal_SIGSEGV{};
-      uint64_t SignalReturnHandler{};
+      uint64_t SignalHandlerReturnAddressRT{};
+      uint64_t SignalHandlerReturnAddress{};
       uint64_t L1Pointer{};
       uint64_t L2Pointer{};
       /**  @} */

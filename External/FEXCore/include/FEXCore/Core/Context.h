@@ -244,12 +244,13 @@ namespace FEXCore::Context {
   /**
    * @brief Retrieves a feature struct indicating certain supported aspects from
    *        the hose.
-   * 
+   *
    * @param CTX A valid non-null context instance.
    */
   FEX_DEFAULT_VISIBILITY HostFeatures GetHostFeatures(const FEXCore::Context::Context *CTX);
 
   FEX_DEFAULT_VISIBILITY void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
+  [[noreturn]] FEX_DEFAULT_VISIBILITY void HandleSignalHandlerReturn(FEXCore::Context::Context *CTX, bool RT);
 
   FEX_DEFAULT_VISIBILITY void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);
   FEX_DEFAULT_VISIBILITY void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);
