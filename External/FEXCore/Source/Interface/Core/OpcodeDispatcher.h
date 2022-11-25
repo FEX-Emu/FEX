@@ -298,6 +298,8 @@ public:
   void WriteSegmentReg(OpcodeArgs);
   void EnterOp(OpcodeArgs);
 
+  void SGDTOp(OpcodeArgs);
+
   // SSE
   void MOVAPSOp(OpcodeArgs);
   void MOVUPSOp(OpcodeArgs);

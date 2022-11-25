@@ -3658,6 +3658,29 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RBP, temp_RBP);
 }
 
+void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
+  auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+
+  // Store an emulated value in the format of:
+  // uint16_t Limit;
+  // {uint32_t,uint64_t} Base;
+  //
+  // Limit is always 0
+  // Base is always in kernel space at: 0xFFFFFFFFFFFE0000ULL
+  //
+  // Operand size prefix is ignored on this instruction, size purely depends on operating mode.
+  uint64_t GDTAddress = 0xFFFFFFFFFFFE0000ULL;
+  size_t GDTStoreSize = 8;
+  if (!CTX->Config.Is64BitMode) {
+    // Mask off upper bits if 32-bit result.
+    GDTAddress &= ~0U;
+    GDTStoreSize = 4;
+  }
+
+  _StoreMemAutoTSO(GPRClass, 2, DestAddress, _Constant(0));
+  _StoreMemAutoTSO(GPRClass, GDTStoreSize, _Add(DestAddress, _Constant(2)), _Constant(GDTAddress));
+}
+
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
   auto Counter = _CycleCounter();
   auto CounterLow = _Bfe(32, 0, Counter);
@@ -6413,6 +6436,12 @@ constexpr uint16_t PF_66 = 2;
 constexpr uint16_t PF_F2 = 3;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOpTable[] = {
+    // GROUP 7
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 0), 1, &OpDispatchBuilder::SGDTOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 0), 1, &OpDispatchBuilder::SGDTOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 0), 1, &OpDispatchBuilder::SGDTOp},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 0), 1, &OpDispatchBuilder::SGDTOp},
+
     // GROUP 8
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp<1>},
