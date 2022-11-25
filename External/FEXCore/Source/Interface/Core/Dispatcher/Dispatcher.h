@@ -43,6 +43,7 @@ public:
   uint64_t ThreadPauseHandlerAddress{};
   uint64_t ThreadPauseHandlerAddressSpillSRA{};
   uint64_t ExitFunctionLinkerAddress{};
+  uint64_t SignalHandlerReturnAddressRT{};
   uint64_t SignalHandlerReturnAddress{};
   uint64_t GuestSignal_SIGILL{};
   uint64_t GuestSignal_SIGTRAP{};
@@ -91,7 +92,12 @@ protected:
     {}
 
   ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
-  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext);
+  enum RestoreType {
+    TYPE_RT,
+    TYPE_NONRT,
+    TYPE_PAUSE,
+  };
+  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
   std::stack<uint64_t, std::vector<uint64_t>> SignalFrames;
 
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
