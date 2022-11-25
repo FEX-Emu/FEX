@@ -21,16 +21,6 @@ using namespace vixl;
 using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
-DEF_OP(SignalReturn) {
-  // First we must reset the stack
-  ResetStack();
-
-  // Now branch to our signal return helper
-  // This can't be a direct branch since the code needs to live at a constant location
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)));
-  br(x0);
-}
-
 DEF_OP(CallbackReturn) {
 
   // spill back to CTX
@@ -498,7 +488,6 @@ DEF_OP(CPUID) {
 #undef DEF_OP
 void Arm64JITCore::RegisterBranchHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(SIGNALRETURN,      SignalReturn);
   REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
   REGISTER_OP(EXITFUNCTION,      ExitFunction);
   REGISTER_OP(JUMP,              Jump);
