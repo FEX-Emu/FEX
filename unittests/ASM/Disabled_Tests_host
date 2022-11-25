@@ -12,3 +12,6 @@ Test_Secondary/15_F3_02.asm
 Test_Secondary/15_F3_03.asm
 Test_Secondary/15_F3_02_2.asm
 Test_Secondary/15_F3_03_2.asm
+
+# Zen+ CI doesn't support UMIP so it returns "real" values
+Test_Secondary/07_XX_00.asm

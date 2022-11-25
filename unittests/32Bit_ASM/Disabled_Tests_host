@@ -10,3 +10,6 @@ Test_32Bit_Primary/Primary_8C_2.asm
 # Hecks with CS
 # Causing our host runner a bit of pain
 Test_32Bit_Primary/Primary_CF.asm
+
+# Zen+ CI doesn't support UMIP so it returns "real" values
+Test_32Bit_Secondary/07_XX_00.asm
