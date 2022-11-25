@@ -19,6 +19,7 @@ enum ContextFlags : uint32_t {
 };
 
 struct X86ContextBackup {
+  uint64_t Cookie;
   // Host State
   // RIP and RSP is stored in GPRs here
   uint64_t GPRs[23];
@@ -35,9 +36,12 @@ struct X86ContextBackup {
   uint64_t SigInfoLocation;
   FEXCore::Core::CPUState GuestState;
   static constexpr int RedZoneSize = 128;
+  static constexpr uint64_t COOKIE_VALUE = 0x4142434445464748ULL;
 };
 
 struct ArmContextBackup {
+  uint64_t Cookie;
+
   // Host State
   uint64_t GPRs[31];
   uint64_t PrevSP;
@@ -60,6 +64,7 @@ struct ArmContextBackup {
 
   // Arm64 doesn't have a red zone
   static constexpr int RedZoneSize = 0;
+  static constexpr uint64_t COOKIE_VALUE = 0x4142434445464748ULL;
 };
 
 static inline ucontext_t* GetUContext(void* ucontext) {
@@ -150,6 +155,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
     // Save the signal mask so we can restore it
     memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+    Backup->Cookie = Backup->COOKIE_VALUE;
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -176,6 +182,8 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
+
+    LOGMAN_THROW_A_FMT(Backup->Cookie == Backup->COOKIE_VALUE, "Cookie didn't match! 0x{:x}", Backup->Cookie);
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -237,6 +245,7 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
     // Save the signal mask so we can restore it
     memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+    Backup->Cookie = Backup->COOKIE_VALUE;
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -256,6 +265,7 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
+    LOGMAN_THROW_A_FMT(Backup->Cookie == Backup->COOKIE_VALUE, "Cookie didn't match! 0x{:x}", Backup->Cookie);
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
