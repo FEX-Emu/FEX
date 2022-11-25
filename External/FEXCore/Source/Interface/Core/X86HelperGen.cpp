@@ -23,12 +23,15 @@ X86GeneratedCode::X86GeneratedCode() {
   // Allocate a page for our emulated guest
   CodePtr = AllocateGuestCodeSpace(CODE_SIZE);
 
-  SignalReturn = reinterpret_cast<uint64_t>(CodePtr);
-  CallbackReturn = reinterpret_cast<uint64_t>(CodePtr) + 2;
+  x32_rt_sigreturn = reinterpret_cast<uint64_t>(CodePtr) + 2;
+  CallbackReturn = reinterpret_cast<uint64_t>(CodePtr);
 
   const std::vector<uint8_t> SignalReturnCode = {
-    0x0F, 0x36, // SIGRET FEX instruction
     0x0F, 0x37, // CALLBACKRET FEX Instruction
+
+    // rt_sigreturn
+    0xb8, 0xad, 0x00, 0x00, 0x00, // mov eax, SYS_rt_sigreturn
+    0xcd, 0x80, // int 0x80
   };
 
   memcpy(CodePtr, &SignalReturnCode.at(0), SignalReturnCode.size());
