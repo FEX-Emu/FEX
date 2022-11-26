@@ -16,10 +16,11 @@
       },
       "Multiblock": {
         "Type": "bool",
-        "Default": "true",
+        "Default": "false",
         "ShortArg": "m",
         "Desc": [
-          "Controls multiblock code compilation"
+          "Controls multiblock code compilation",
+          "Can cause long JIT compilation times and stutter"
         ]
       },
       "MaxInst": {
