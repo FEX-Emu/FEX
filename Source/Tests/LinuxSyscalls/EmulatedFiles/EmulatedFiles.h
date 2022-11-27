@@ -27,6 +27,7 @@ namespace FEX::EmulatedFile {
     private:
       FEXCore::Context::Context *CTX;
       std::string cpus_online{};
+      std::once_flag cpu_info_initialized{};
       std::string cpu_info{};
       using FDReadStringFunc = std::function<int32_t(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)>;
       std::unordered_map<std::string, FDReadStringFunc> FDReadCreators;
