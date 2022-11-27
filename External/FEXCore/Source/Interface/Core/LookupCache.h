@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include <mutex>
+#include <tsl/robin_map.h>
 
 namespace FEXCore {
 namespace Context {
@@ -17,7 +18,7 @@ namespace Context {
 class LookupCache {
 public:
 
-  struct LookupCacheEntry { 
+  struct LookupCacheEntry {
     uintptr_t HostCode;
     uintptr_t GuestCode;
   };
@@ -54,7 +55,7 @@ public:
         return L1Entry.HostCode;
       }
     }
-    
+
     // Try L3
     auto HostCode = BlockList.find(Address);
 
@@ -62,7 +63,7 @@ public:
       CacheBlockMapping(Address, HostCode->second);
       return HostCode->second;
     }
-      
+
     // Failed to find
     return 0;
   }
@@ -73,7 +74,7 @@ public:
   // Returns true if new pages are marked as containing code
   bool AddBlockExecutableRange(uint64_t Address, uint64_t Start, uint64_t Length) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
-    
+
     bool rv = false;
 
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length -1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
@@ -88,7 +89,7 @@ public:
   // Adds to Guest -> Host code mapping
   void AddBlockMapping(uint64_t Address, void *HostCode) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
-    
+
     [[maybe_unused]] auto Inserted = BlockList.emplace(Address, (uintptr_t)HostCode).second;
     LOGMAN_THROW_AA_FMT(Inserted, "Duplicate block mapping added");
 
@@ -158,7 +159,7 @@ public:
   constexpr static size_t L1_ENTRIES_MASK = L1_ENTRIES - 1;
 
   // This needs to be taken before reads or writes to L2, L3, CodePages, Thread::DebugStore,
-  // and before writes to L1. Concurrent access from a thread that this LookupCache doesn't belong to 
+  // and before writes to L1. Concurrent access from a thread that this LookupCache doesn't belong to
   // may only happen during cross thread invalidation (::Erase).
   // All other operations must be done from the owning thread.
   // Some care is taken so that L1 lookups can be done without locks, and even tearing is unlikely to lead to a crash.
@@ -167,7 +168,7 @@ public:
   std::recursive_mutex WriteLock;
 
 private:
-  void CacheBlockMapping(uint64_t Address, uintptr_t HostCode) { 
+  void CacheBlockMapping(uint64_t Address, uintptr_t HostCode) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     // Do L1
@@ -239,7 +240,7 @@ private:
 
 
   std::map<BlockLinkTag, std::function<void()>> BlockLinks;
-  std::map<uint64_t, uint64_t> BlockList;
+  tsl::robin_map<uint64_t, uint64_t> BlockList;
 
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(LookupCacheEntry);

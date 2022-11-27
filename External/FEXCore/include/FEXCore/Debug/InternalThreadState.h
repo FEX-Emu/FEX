@@ -8,8 +8,8 @@
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
 
-#include <map>
-#include <unordered_map>
+#include <tsl/robin_map.h>
+
 #include <shared_mutex>
 
 namespace FEXCore {
@@ -101,7 +101,7 @@ namespace FEXCore::Core {
     std::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
     std::unique_ptr<FEXCore::LookupCache> LookupCache;
 
-    std::unordered_map<uint64_t, LocalIREntry> DebugStore;
+    tsl::robin_map<uint64_t, LocalIREntry> DebugStore;
 
     std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     std::unique_ptr<FEXCore::IR::PassManager> PassManager;
@@ -115,7 +115,7 @@ namespace FEXCore::Core {
 
     std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
-    
+
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 
   };
