@@ -80,7 +80,7 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-void Arm64JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
+void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -477,7 +477,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
   return HostCode;
 }
 
-void Arm64JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
+void Arm64JITCore::Op_NoOp(IR::IROp_Header const *IROp, IR::NodeID Node) {
 }
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
