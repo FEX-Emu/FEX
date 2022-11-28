@@ -428,37 +428,38 @@ int main(int argc, char **argv, char **const envp) {
     });
   }
 
-  if (AOTIRLoad() || AOTIRCapture() || AOTIRGenerate()) {
+  const bool AOTEnabled = AOTIRLoad() || AOTIRCapture() || AOTIRGenerate();
+  if (AOTEnabled) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
                       "Capture doesn't work with programs that fork.");
+
+    FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+
+      return open(filepath.c_str(), O_RDONLY);
+    });
+
+    FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+      if (*AOTWrite) {
+        std::filesystem::resize_file(filepath, 0);
+        AOTWrite->seekp(0);
+        LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
+      } else {
+        LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
+      }
+      return AOTWrite;
+    });
+
+    FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
+      auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
+      auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+
+      // Rename the temporary file to atomically update the file
+      std::filesystem::rename(TmpFilepath, NewFilepath);
+    });
   }
-
-  FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
-    return open(filepath.c_str(), O_RDONLY);
-  });
-
-  FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
-    auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
-    if (*AOTWrite) {
-      std::filesystem::resize_file(filepath, 0);
-      AOTWrite->seekp(0);
-      LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
-    } else {
-      LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
-    }
-    return AOTWrite;
-  });
-
-  FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
-    auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-    auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
-    // Rename the temporary file to atomically update the file
-    std::filesystem::rename(TmpFilepath, NewFilepath);
-  });
 
   if (AOTIRGenerate()) {
     for(auto &Section: Loader.Sections) {
@@ -468,21 +469,23 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Context::RunUntilExit(CTX);
   }
 
-  std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
-  if (!ec) {
-    FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
-      int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
-      if (fd != -1) {
-        write(fd, filename.c_str(), filename.size());
-        close(fd);
-      }
-    });
-  }
+  if (AOTEnabled) {
+    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
+    if (!ec) {
+      FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
+        auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+        int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
+        if (fd != -1) {
+          write(fd, filename.c_str(), filename.size());
+          close(fd);
+        }
+      });
+    }
 
-  if (AOTIRCapture() || AOTIRGenerate()) {
-    FEXCore::Context::FinalizeAOTIRCache(CTX);
-    LogMan::Msg::IFmt("AOTIR Cache Stored");
+    if (AOTIRCapture() || AOTIRGenerate()) {
+      FEXCore::Context::FinalizeAOTIRCache(CTX);
+      LogMan::Msg::IFmt("AOTIR Cache Stored");
+    }
   }
 
   auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
