@@ -5840,9 +5840,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::VMOVVectorNTOp},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::UnimplementedOp},
 
+    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::VMOVVectorNTOp},
     {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b01, 0x58), 3, &OpDispatchBuilder::UnimplementedOp},

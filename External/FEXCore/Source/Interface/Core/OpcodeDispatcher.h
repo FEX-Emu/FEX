@@ -417,6 +417,8 @@ public:
   void VMOVSHDUPOp(OpcodeArgs);
   void VMOVSLDUPOp(OpcodeArgs);
 
+  void VMOVVectorNTOp(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);
