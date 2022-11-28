@@ -188,7 +188,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0x7D), 1, X86InstInfo{"VHSUBPD",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x7D), 1, X86InstInfo{"VHSUBPS",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b01, 0x7E), 1, X86InstInfo{"VMOV*",     TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x7E), 1, X86InstInfo{"VMOV*",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_DST_GPR | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b10, 0x7E), 1, X86InstInfo{"VMOVQ",     TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0x7F), 1, X86InstInfo{"VMOVDQA",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
