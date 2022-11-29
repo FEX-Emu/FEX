@@ -71,8 +71,8 @@ void InitializeVEXTables() {
     {OPD(1, 0b00, 0x56), 1, X86InstInfo{"VORPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x56), 1, X86InstInfo{"VORPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x57), 1, X86InstInfo{"VXORPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x57), 1, X86InstInfo{"VDORPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x57), 1, X86InstInfo{"VXORPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x57), 1, X86InstInfo{"VXORPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0x60), 1, X86InstInfo{"VPUNPCKLBW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x61), 1, X86InstInfo{"VPUNPCKLWD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -234,12 +234,12 @@ void InitializeVEXTables() {
 
     {OPD(1, 0b01, 0xE8), 1, X86InstInfo{"VPSUBSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xE9), 1, X86InstInfo{"VPSUBSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xEA), 1, X86InstInfo{"VPMINSW",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xEA), 1, X86InstInfo{"VPMINSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xEB), 1, X86InstInfo{"VPOR",    TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xEC), 1, X86InstInfo{"VPADDSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xED), 1, X86InstInfo{"VPADDSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xEE), 1, X86InstInfo{"VPMAXSW",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xEF), 1, X86InstInfo{"VPXOR",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xEE), 1, X86InstInfo{"VPMAXSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xEF), 1, X86InstInfo{"VPXOR",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b11, 0xF0), 1, X86InstInfo{"VLDDQU",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
