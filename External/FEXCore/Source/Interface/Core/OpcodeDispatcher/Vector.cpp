@@ -410,6 +410,8 @@ void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>(OpcodeArgs);
+template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>(OpcodeArgs);
