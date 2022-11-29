@@ -419,6 +419,8 @@ public:
 
   void VMOVVectorNTOp(OpcodeArgs);
 
+  void VZEROOp(OpcodeArgs);
+
   // X87 Ops
   template<size_t width>
   void FLD(OpcodeArgs);
