@@ -5824,6 +5824,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPD_Op},
     {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPD_Op},
 
+    {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::VMOVVectorNTOp},
+    {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::VMOVVectorNTOp},
+
     {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPD_Op},
@@ -5840,8 +5843,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::VMOVVectorNTOp},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::UnimplementedOp},
 
+    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::VMOVVectorNTOp},
     {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::UnimplementedOp},
 
     {OPD(2, 0b01, 0x58), 3, &OpDispatchBuilder::UnimplementedOp},

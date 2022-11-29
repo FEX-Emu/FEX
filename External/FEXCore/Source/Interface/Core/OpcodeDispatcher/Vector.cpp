@@ -33,6 +33,17 @@ void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
 
+void OpDispatchBuilder::VMOVVectorNTOp(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1, true, false, MemoryAccessType::ACCESS_STREAM);
+
+  // TODO: When stores and loads gain the ability to explicitly express
+  //       whether a vector extension or an insert is desirable, ensure
+  //       the 128-bit case here is a zero extend on store if the destination
+  //       is a register.
+
+  StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
+}
+
 void OpDispatchBuilder::MOVAPSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   StoreResult(FPRClass, Op, Src, -1);
