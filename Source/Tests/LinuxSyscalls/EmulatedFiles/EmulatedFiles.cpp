@@ -622,6 +622,11 @@ namespace FEX::EmulatedFile {
   EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context *ctx)
     : CTX {ctx} {
     FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode) -> int32_t {
+      // Only allow a single thread to initialize the cpu_info.
+      // Jit in-case multiple threads try to initialize at once.
+      // Check if deferred cpuinfo initialization has occured.
+      std::call_once(cpu_info_initialized, [&]() { cpu_info = GenerateCPUInfo(ctx, ThreadsConfig()); });
+
       int FD = GenTmpFD();
       write(FD, (void*)&cpu_info.at(0), cpu_info.size());
       lseek(FD, 0, SEEK_SET);
@@ -700,8 +705,6 @@ namespace FEX::EmulatedFile {
     if (CPUCores > 1) {
       cpus_online += "-" + std::to_string(CPUCores - 1);
     }
-
-    cpu_info = GenerateCPUInfo(ctx, CPUCores);
   }
 
   EmulatedFDManager::~EmulatedFDManager() {
