@@ -2701,4 +2701,28 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto IsVZEROALL = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  if (IsVZEROALL) {
+    // NOTE: Despite the name being VZEROALL, this will still only ever
+    //       zero out up to the first 16 registers (even on AVX-512, where we have 32 registers)
+
+    OrderedNode* ZeroVector = _VectorZero(DstSize);
+    for (uint32_t i = 0; i < NumRegs; i++) {
+      StoreXMMRegister(i, ZeroVector);
+    }
+  } else {
+    // Likewise, VZEROUPPER will only ever zero only up to the first 16 registers
+
+    for (uint32_t i = 0; i < NumRegs; i++) {
+      OrderedNode* Reg = LoadXMMRegister(i);
+      OrderedNode* Dst = _VMov(16, Reg);
+      StoreXMMRegister(i, Dst);
+    }
+  }
+}
+
 }

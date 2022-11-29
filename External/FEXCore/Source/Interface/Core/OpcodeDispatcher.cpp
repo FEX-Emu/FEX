@@ -5834,7 +5834,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0x74), 3, &OpDispatchBuilder::UnimplementedOp},
 
-    {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::UnimplementedOp},
+    {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::VZEROOp},
 
     {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::MOVQOp},
