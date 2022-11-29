@@ -407,6 +407,9 @@ public:
   void ADXOp(OpcodeArgs);
 
   // AVX Ops
+  template <IROps IROp, size_t ElementSize>
+  void AVXVectorALUOp(OpcodeArgs);
+
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
   void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 

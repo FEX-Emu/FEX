@@ -388,6 +388,30 @@ void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>(OpcodeArgs);
 
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  auto ALUOp = _VAdd(Size, ElementSize, Src1, Src2);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  OrderedNode* Result = ALUOp;
+  if (Is128Bit) {
+    // 128-bit variants need to zero the upper lane.
+    Result = _VMov(Size, ALUOp);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>(OpcodeArgs);
+
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
