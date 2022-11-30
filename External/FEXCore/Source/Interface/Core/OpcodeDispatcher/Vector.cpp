@@ -770,6 +770,22 @@ void OpDispatchBuilder::ANDNOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
+void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  Src1 = _VNot(Size, Size, Src1);
+  OrderedNode *Dest = _VAnd(Size, Size, Src1, Src2);
+  if (Is128Bit) {
+    Dest = _VMov(16, Dest);
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
   auto Size = GetDstSize(Op);
