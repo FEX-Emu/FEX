@@ -431,6 +431,9 @@ namespace FEXCore {
 
     FEX_DEFAULT_VISIBILITY
     void FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr* TrampolineAddress, void* HostPacker) {
+
+      if (TrampolineAddress == nullptr) return;
+
       auto& Trampoline = GetInstanceInfo(TrampolineAddress);
 
       LOGMAN_THROW_A_FMT(Trampoline.CallCallback == (uintptr_t)&ThunkHandler_impl::CallCallback,
