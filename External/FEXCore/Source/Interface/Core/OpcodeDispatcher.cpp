@@ -5827,6 +5827,12 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::VMOVVectorNTOp},
     {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::VMOVVectorNTOp},
 
+    {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
+    {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
+
+    {OPD(1, 0b00, 0x55), 1, &OpDispatchBuilder::VANDNOp},
+    {OPD(1, 0b01, 0x55), 1, &OpDispatchBuilder::VANDNOp},
+
     {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
     {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
 
@@ -5850,6 +5856,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::MOVQOp},
     {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(1, 0b01, 0xDB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
+    {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::VANDNOp},
   
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::VMOVVectorNTOp},
 
