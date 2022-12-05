@@ -174,8 +174,6 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
   }
 }
 
-#include <iostream>
-
 void RootFSRedirect(std::string *Filename, std::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader2::ResolveRootfsFile(*Filename, RootFS);
 

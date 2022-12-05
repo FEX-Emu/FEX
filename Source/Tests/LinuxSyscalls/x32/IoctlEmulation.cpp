@@ -143,11 +143,7 @@ namespace FEX::HLE::x32 {
       FDToHandler.DuplicateFD(fd, NewFD);
     }
 
-    #include <stdio.h>
-
     uint32_t RADEON_Handler(int fd, uint32_t cmd, uint32_t args) {
-      //printf(".[%s] trace****** %s:%d \r\n", __FUNCTION__, __FILE__, __LINE__);
-      //printf("radeon handler(%d, %d, 0x%08x). %s:%d\r\n", fd, cmd, args, __FILE__, __LINE__);
 
       switch (_IOC_NR(cmd)) {
 
