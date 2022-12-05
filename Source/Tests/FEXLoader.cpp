@@ -191,10 +191,9 @@ bool IsInterpreterInstalled() {
   // The interpreter is installed if both the binfmt_misc handlers are available
   // Or if we were originally executed with FD. Which means the interpreter is installed
 
-  std::error_code ec{};
   return ExecutedWithFD ||
-         (std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86", ec) &&
-         std::filesystem::exists("/proc/sys/fs/binfmt_misc/FEX-x86_64", ec));
+         (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 &&
+          access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
 }
 
 int main(int argc, char **argv, char **const envp) {
