@@ -778,8 +778,7 @@ void OpDispatchBuilder::ANDNOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   // Dest = ~Src1 & Src2
 
-  Src1 = _VNot(Size, Size, Src1);
-  auto Dest = _VAnd(Size, Size, Src1, Src2);
+  auto Dest = _VBic(Size, Size, Src2, Src1);
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
@@ -791,8 +790,7 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
 
-  Src1 = _VNot(Size, Size, Src1);
-  OrderedNode *Dest = _VAnd(Size, Size, Src1, Src2);
+  OrderedNode *Dest = _VBic(Size, Size, Src2, Src1);
   if (Is128Bit) {
     Dest = _VMov(16, Dest);
   }
