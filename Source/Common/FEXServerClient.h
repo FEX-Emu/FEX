@@ -63,12 +63,16 @@ namespace FEXServerClient {
    */
   int ConnectToAndStartServer(char *InterpreterPath);
 
+  enum class ConnectionOption {
+    Default,
+    NoPrintConnectionError,
+  };
   /**
    * @brief Connect to a FEXServer instance if it exists
    *
    * @return socket FD for communicating with server
    */
-  int ConnectToServer();
+  int ConnectToServer(ConnectionOption ConnectionOption = ConnectionOption::Default);
 
   /**
    * @name Packet request functions
