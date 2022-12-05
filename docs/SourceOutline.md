@@ -1,4 +1,4 @@
-# FEX-2211
+# FEX-2212
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -148,7 +148,6 @@ IR to IR Optimization
 - [RedundantFlagCalculationElimination.cpp](../External/FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
 - [RegisterAllocationPass.cpp](../External/FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
 - [RegisterAllocationPass.h](../External/FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
-- [StaticRegisterAllocationPass.cpp](../External/FEXCore/Source/Interface/IR/Passes/StaticRegisterAllocationPass.cpp): Replaces Load/StoreContext with Load/StoreReg for SRA regs
 - [SyscallOptimization.cpp](../External/FEXCore/Source/Interface/IR/Passes/SyscallOptimization.cpp): Removes unused arguments if known syscall number
 - [ValueDominanceValidation.cpp](../External/FEXCore/Source/Interface/IR/Passes/ValueDominanceValidation.cpp): Sanity Checking
 
