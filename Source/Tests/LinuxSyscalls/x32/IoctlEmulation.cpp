@@ -143,6 +143,36 @@ namespace FEX::HLE::x32 {
       FDToHandler.DuplicateFD(fd, NewFD);
     }
 
+    #include <stdio.h>
+
+    uint32_t RADEON_Handler(int fd, uint32_t cmd, uint32_t args) {
+      //printf(".[%s] trace****** %s:%d \r\n", __FUNCTION__, __FILE__, __LINE__);
+      //printf("radeon handler(%d, %d, 0x%08x). %s:%d\r\n", fd, cmd, args, __FILE__, __LINE__);
+
+      switch (_IOC_NR(cmd)) {
+
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // drm
+#include "Tests/LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
+      {
+        uint64_t Result = ::ioctl(fd, cmd, args);
+        SYSCALL_ERRNO();
+        break;
+      }
+      default:
+        UnhandledIoctl("RADEON", fd, cmd, args);
+        return -EPERM;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
     uint32_t AMDGPU_Handler(int fd, uint32_t cmd, uint32_t args) {
       switch (_IOC_NR(cmd)) {
         case _IOC_NR(FEX_DRM_IOCTL_AMDGPU_GEM_METADATA): {
@@ -434,6 +464,9 @@ namespace FEX::HLE::x32 {
       if (Version.name) {
         if (strcmp(Version.name, "amdgpu") == 0) {
           FDToHandler.SetFDHandler(fd, AMDGPU_Handler);
+        }
+        else if (strcmp(Version.name, "radeon") == 0) {
+          FDToHandler.SetFDHandler(fd, RADEON_Handler);
         }
         else if (strcmp(Version.name, "msm") == 0) {
           FDToHandler.SetFDHandler(fd, MSM_Handler);

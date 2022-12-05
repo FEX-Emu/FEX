@@ -11,6 +11,7 @@ extern "C" {
 #include "fex-drm/drm_mode.h"
 #include "fex-drm/i915_drm.h"
 #include "fex-drm/amdgpu_drm.h"
+#include "fex-drm/radeon_drm.h"
 #include "fex-drm/lima_drm.h"
 #include "fex-drm/panfrost_drm.h"
 #include "fex-drm/msm_drm.h"
@@ -27,6 +28,7 @@ namespace FEX::HLE::x64 {
 
 #include "Tests/LinuxSyscalls/x64/Ioctl/drm.inl"
 #include "Tests/LinuxSyscalls/x64/Ioctl/amdgpu_drm.inl"
+#include "Tests/LinuxSyscalls/x64/Ioctl/radeon_drm.inl"
 #include "Tests/LinuxSyscalls/x64/Ioctl/msm_drm.inl"
 
 }

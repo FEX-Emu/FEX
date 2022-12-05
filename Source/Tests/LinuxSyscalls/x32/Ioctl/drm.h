@@ -11,6 +11,7 @@ extern "C" {
 #include "fex-drm/drm_mode.h"
 #include "fex-drm/i915_drm.h"
 #include "fex-drm/amdgpu_drm.h"
+#include "fex-drm/radeon_drm.h"
 #include "fex-drm/lima_drm.h"
 #include "fex-drm/panfrost_drm.h"
 #include "fex-drm/msm_drm.h"
@@ -711,6 +712,9 @@ fex_drm_amdgpu_gem_metadata {
     memcpy(data.data, val.data.data, sizeof(data.data));
   }
 };
+}
+
+namespace RADEON {
 }
 
 namespace MSM {
