@@ -137,7 +137,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0x2F), 1, X86InstInfo{"VUCOMISD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b00, 0x58), 1, X86InstInfo{"VADDPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x58), 1, X86InstInfo{"VADDPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0x58), 1, X86InstInfo{"VADDPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b10, 0x58), 1, X86InstInfo{"VADDSS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0x58), 1, X86InstInfo{"VADDSD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
