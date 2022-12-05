@@ -444,6 +444,8 @@ void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VectorALUROp<IR::OP_VBIC, 8>(OpcodeArgs);
+template
 void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
@@ -771,17 +773,6 @@ template
 void OpDispatchBuilder::SHUFOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::SHUFOp<8>(OpcodeArgs);
-
-void OpDispatchBuilder::ANDNOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  // Dest = ~Src1 & Src2
-
-  auto Dest = _VBic(Size, Size, Src2, Src1);
-
-  StoreResult(FPRClass, Op, Dest, -1);
-}
 
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);

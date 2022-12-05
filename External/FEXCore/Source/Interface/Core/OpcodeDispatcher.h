@@ -378,7 +378,6 @@ public:
   void VFCMPOp(OpcodeArgs);
   template<size_t ElementSize>
   void SHUFOp(OpcodeArgs);
-  void ANDNOp(OpcodeArgs);
   template<size_t ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
