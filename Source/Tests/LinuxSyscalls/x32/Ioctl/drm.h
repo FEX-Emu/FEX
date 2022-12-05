@@ -15,6 +15,7 @@ extern "C" {
 #include "fex-drm/panfrost_drm.h"
 #include "fex-drm/msm_drm.h"
 #include "fex-drm/nouveau_drm.h"
+#include "fex-drm/radeon_drm.h"
 #include "fex-drm/vc4_drm.h"
 #include "fex-drm/v3d_drm.h"
 #include "fex-drm/virtgpu_drm.h"
@@ -713,6 +714,360 @@ fex_drm_amdgpu_gem_metadata {
 };
 }
 
+namespace RADEON {
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_gem_create")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_gem_create {
+  compat_uint64_t size;
+  compat_uint64_t alignment;
+  __u32 handle;
+  __u32 initial_domain;
+  __u32 flags;
+
+  fex_drm_radeon_gem_create() = delete;
+
+  operator drm_radeon_gem_create() const {
+    drm_radeon_gem_create val{};
+    val.size = size;
+    val.alignment = alignment;
+    val.handle = handle;
+    val.initial_domain = initial_domain;
+    val.flags = flags;
+    return val;
+  }
+
+  fex_drm_radeon_gem_create(struct drm_radeon_gem_create val) {
+    size = val.size;
+    alignment = val.alignment;
+    handle = val.handle;
+    initial_domain = val.initial_domain;
+    flags = val.flags;
+  }
+};
+
+struct
+FEX_PACKED
+FEX_ANNOTATE("alias-x86_32-drm_radeon_init")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_init_t {
+  enum {
+  } func;
+
+  compat_ulong_t sarea_priv_offset;
+  int32_t is_pci;
+  int32_t cp_mode;
+  int32_t gart_size;
+  int32_t ring_size;
+  int32_t usec_timeout;
+
+  uint32_t fb_bpp;
+  uint32_t front_offset, front_pitch;
+  uint32_t back_offset, back_pitch;
+  uint32_t depth_bpp;
+  uint32_t depth_offset, depth_pitch;
+
+  compat_ulong_t fb_offset;
+  compat_ulong_t mmio_offset;
+  compat_ulong_t ring_offset;
+  compat_ulong_t ring_rptr_offset;
+  compat_ulong_t buffers_offset;
+  compat_ulong_t gart_textures_offset;
+
+  fex_drm_radeon_init_t() = delete;
+
+  operator drm_radeon_init_t() const {
+    drm_radeon_init_t val{};
+    val.sarea_priv_offset    = sarea_priv_offset;
+    val.is_pci               = is_pci;
+    val.cp_mode              = cp_mode;
+    val.gart_size            = gart_size;
+    val.ring_size            = ring_size;
+    val.usec_timeout         = usec_timeout;
+    val.fb_bpp               = fb_bpp;
+    val.front_offset         = front_offset;
+    val.front_pitch          = front_pitch;
+    val.back_offset          = back_offset;
+    val.back_pitch           = back_pitch;
+    val.depth_bpp            = depth_bpp;
+    val.depth_offset         = depth_offset;
+    val.depth_pitch          = depth_pitch;
+    val.fb_offset            = fb_offset;
+    val.mmio_offset          = mmio_offset;
+    val.ring_offset          = ring_offset;
+    val.ring_rptr_offset     = ring_rptr_offset;
+    val.buffers_offset       = buffers_offset;
+    val.gart_textures_offset = gart_textures_offset;
+    return val;
+  }
+
+  fex_drm_radeon_init_t(drm_radeon_init_t val) {
+    sarea_priv_offset    = val.sarea_priv_offset;
+    is_pci               = val.is_pci;
+    cp_mode              = val.cp_mode;
+    gart_size            = val.gart_size;
+    ring_size            = val.ring_size;
+    usec_timeout         = val.usec_timeout;
+    fb_bpp               = val.fb_bpp;
+    front_offset         = val.front_offset;
+    front_pitch          = val.front_pitch;
+    back_offset          = val.back_offset;
+    back_pitch           = val.back_pitch;
+    depth_bpp            = val.depth_bpp;
+    depth_offset         = val.depth_offset;
+    depth_pitch          = val.depth_pitch;
+    fb_offset            = val.fb_offset;
+    mmio_offset          = val.mmio_offset;
+    ring_offset          = val.ring_offset;
+    ring_rptr_offset     = val.ring_rptr_offset;
+    buffers_offset       = val.buffers_offset;
+    gart_textures_offset = val.gart_textures_offset;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_clear")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_clear_t {
+  uint32_t flags;
+  uint32_t clear_color;
+  uint32_t clear_depth;
+  uint32_t color_mask;
+  uint32_t depth_mask;
+  compat_ptr<drm_radeon_clear_rect_t> depth_boxes;
+
+  fex_drm_radeon_clear_t() = delete;
+
+  operator drm_radeon_clear_t() const {
+    drm_radeon_clear_t val{};
+    val.flags       = flags;
+    val.clear_color = clear_color;
+    val.clear_depth = clear_depth;
+    val.color_mask  = color_mask;
+    val.depth_mask  = depth_mask;
+    val.depth_boxes = depth_boxes;
+    return val;
+  }
+
+  fex_drm_radeon_clear_t(drm_radeon_clear_t val)
+    : depth_boxes {val.depth_boxes} {
+    flags       = val.flags;
+    clear_color = val.clear_color;
+    clear_depth = val.clear_depth;
+    color_mask  = val.color_mask;
+    depth_mask  = val.depth_mask;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_stipple")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_stipple_t {
+  compat_ptr<uint32_t> mask;
+
+  fex_drm_radeon_stipple_t() = delete;
+
+  operator drm_radeon_stipple_t() const {
+    drm_radeon_stipple_t val{};
+    val.mask = mask;
+    return val;
+  }
+
+  fex_drm_radeon_stipple_t(drm_radeon_stipple_t val)
+    : mask {val.mask} {
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_texture")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_texture_t {
+  uint32_t offset;
+  int32_t pitch;
+  int32_t format;
+  int32_t width;
+  int32_t height;
+  compat_ptr<drm_radeon_tex_image_t> image;
+
+  fex_drm_radeon_texture_t() = delete;
+
+  operator drm_radeon_texture_t() const {
+    drm_radeon_texture_t val{};
+    val.offset = offset;
+    val.pitch  = pitch;
+    val.format = format;
+    val.width  = width;
+    val.height = height;
+    val.image  = image;
+    return val;
+  }
+
+  fex_drm_radeon_texture_t(drm_radeon_texture_t val)
+    : image {val.image} {
+    offset = val.offset;
+    pitch  = val.pitch;
+    format = val.format;
+    width  = val.width;
+    height = val.height;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_vertex2")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_vertex2_t {
+  int32_t idx;
+  int32_t discard;
+  int32_t nr_states;
+  compat_ptr<drm_radeon_state_t> state;
+  int32_t nr_prims;
+  compat_ptr<drm_radeon_prim_t> prim;
+
+  fex_drm_radeon_vertex2_t() = delete;
+
+  operator drm_radeon_vertex2_t() const {
+    drm_radeon_vertex2_t val;
+    val.idx       = idx;
+    val.discard   = discard;
+    val.nr_states = nr_states;
+    val.state     = state;
+    val.nr_prims  = nr_prims;
+    val.prim      = prim;
+    return val;
+  }
+
+  fex_drm_radeon_vertex2_t(drm_radeon_vertex2_t val)
+    : state {val.state}
+    , prim {val.prim} {
+    idx       = val.idx;
+    discard   = val.discard;
+    nr_states = val.nr_states;
+    nr_prims  = val.nr_prims;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_cmd_buffer")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_cmd_buffer_t {
+  int32_t bufsz;
+  compat_ptr<char> buf;
+  int32_t nbox;
+  compat_ptr<drm_clip_rect> boxes;
+
+  fex_drm_radeon_cmd_buffer_t() = delete;
+
+  operator drm_radeon_cmd_buffer_t() const {
+    drm_radeon_cmd_buffer_t val;
+    val.bufsz = bufsz;
+    val.buf   = buf;
+    val.nbox  = nbox;
+    val.boxes = boxes;
+    return val;
+  }
+
+  fex_drm_radeon_cmd_buffer_t(drm_radeon_cmd_buffer_t val)
+    : buf {val.buf}
+    , boxes {val.boxes} {
+    val.bufsz = bufsz;
+    val.nbox  = nbox;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_getparam")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_getparam_t {
+  int32_t param;
+  compat_ptr<void> value;
+
+  fex_drm_radeon_getparam_t() = delete;
+
+  operator drm_radeon_getparam_t() const {
+    drm_radeon_getparam_t val;
+    val.param = param;
+    val.value = value;
+    return val;
+  }
+
+  fex_drm_radeon_getparam_t(drm_radeon_getparam_t val)
+    : value {val.value} {
+    val.param = param;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_mem_alloc")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_mem_alloc_t {
+  int32_t region;
+  int32_t alignment;
+  int32_t size;
+  compat_ptr<int32_t> region_offset;
+
+  fex_drm_radeon_mem_alloc_t() = delete;
+
+  operator drm_radeon_mem_alloc_t() const {
+    drm_radeon_mem_alloc_t val;
+    val.region        = region;
+    val.alignment     = alignment;
+    val.size          = size;
+    val.region_offset = region_offset;
+    return val;
+  }
+
+  fex_drm_radeon_mem_alloc_t(drm_radeon_mem_alloc_t val)
+    : region_offset {val.region_offset} {
+    val.region        = region;
+    val.alignment     = alignment;
+    val.size          = size;
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_irq_emit")
+FEX_ANNOTATE("fex-match")
+fex_drm_radeon_irq_emit_t {
+  compat_ptr<int32_t> irq_seq;
+
+  fex_drm_radeon_irq_emit_t() = delete;
+
+  operator drm_radeon_irq_emit_t() const {
+    drm_radeon_irq_emit_t val;
+    val.irq_seq = irq_seq;
+    return val;
+  }
+
+  fex_drm_radeon_irq_emit_t(drm_radeon_irq_emit_t val)
+    : irq_seq {val.irq_seq} {
+  }
+};
+
+struct
+FEX_ANNOTATE("alias-x86_32-drm_radeon_setparam")
+FEX_ANNOTATE("fex-match")
+FEX_PACKED
+fex_drm_radeon_setparam_t {
+  uint32_t param;
+  compat_int64_t value;
+
+  fex_drm_radeon_setparam_t() = delete;
+
+  operator drm_radeon_setparam_t() const {
+    drm_radeon_setparam_t val;
+    val.param = param;
+    val.value = value;
+    return val;
+  }
+
+  fex_drm_radeon_setparam_t(drm_radeon_setparam_t val) {
+    param = val.param;
+    value = val.value;
+  }
+};
+
+}
+
 namespace MSM {
 struct
 FEX_ANNOTATE("alias-x86_32-drm_msm_timespec")
@@ -1061,6 +1416,7 @@ fex_drm_v3d_submit_csd {
 #include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
 
