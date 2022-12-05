@@ -737,7 +737,7 @@ namespace FEX::EmulatedFile {
     }
 
     std::error_code ec;
-    bool exists = std::filesystem::exists(Path, ec);
+    bool exists = access(Path.c_str(), F_OK) == 0;
     if (ec) {
       return -1;
     }

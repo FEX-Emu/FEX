@@ -15,6 +15,7 @@ $end_info$
 #include <stddef.h>
 #include <string>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 
 #include <unordered_map>
@@ -27,6 +28,18 @@ struct Context;
 }
 
 namespace FEX::HLE {
+[[maybe_unused]]
+static bool IsSymlink(const std::string &Filename) {
+  // Checks to see if a filepath is a symlink.
+  struct stat Buffer{};
+  int Result = lstat(Filename.c_str(), &Buffer);
+  return Result == 0 && S_ISLNK(Buffer.st_mode);
+}
+
+[[maybe_unused]]
+static ssize_t GetSymlink(const std::string &Filename, char *ResultBuffer, size_t ResultBufferSize) {
+  return readlink(Filename.c_str(), ResultBuffer, ResultBufferSize);
+}
 
 struct open_how;
 

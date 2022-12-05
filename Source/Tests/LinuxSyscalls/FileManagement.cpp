@@ -355,7 +355,6 @@ FileManager::~FileManager() {
 }
 
 std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
-  auto RootFSPath = LDPath();
   if (!pathname || // If no pathname
       pathname[0] != '/' || // If relative
       strcmp(pathname, "/") == 0) { // If we are getting root
@@ -367,17 +366,19 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
     return thunkOverlay->second;
   }
 
+  auto RootFSPath = LDPath();
   if (RootFSPath.empty()) { // If RootFS doesn't exist
     return {};
   }
 
   std::string Path = RootFSPath + pathname;
   if (FollowSymlink) {
-    std::error_code ec;
-    while(std::filesystem::is_symlink(Path, ec)) {
-      auto SymlinkTarget = std::filesystem::read_symlink(Path);
-      if (SymlinkTarget.is_absolute()) {
-        Path = RootFSPath + SymlinkTarget.string();
+    char Filename[PATH_MAX];
+    while(FEX::HLE::IsSymlink(Path)) {
+      auto SymlinkSize = FEX::HLE::GetSymlink(Path, Filename, PATH_MAX - 1);
+      if (SymlinkSize > 0 && Filename[0] == '/') {
+        Path = RootFSPath;
+        Path += std::string_view(Filename, SymlinkSize);
       }
       else {
         break;
