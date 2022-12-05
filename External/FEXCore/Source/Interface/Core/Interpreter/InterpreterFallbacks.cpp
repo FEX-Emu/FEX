@@ -146,7 +146,7 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
 
 }
 
-bool InterpreterOps::GetFallbackHandler(IR::IROp_Header *IROp, FallbackInfo *Info) {
+bool InterpreterOps::GetFallbackHandler(IR::IROp_Header const *IROp, FallbackInfo *Info) {
   uint8_t OpSize = IROp->Size;
   switch(IROp->Op) {
     case IR::OP_F80LOADFCW: {
