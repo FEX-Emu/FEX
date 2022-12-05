@@ -147,7 +147,7 @@ namespace FEXServerClient {
     return ServerFD;
   }
 
-  int ConnectToServer() {
+  int ConnectToServer(ConnectionOption ConnectionOption) {
     auto ServerSocketName = GetServerSocketName();
 
     // Create the initial unix socket
@@ -169,7 +169,9 @@ namespace FEXServerClient {
     size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
     if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
-      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketName, errno, strerror(errno));
+      if (ConnectionOption == ConnectionOption::Default || errno != ECONNREFUSED) {
+        LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketName, errno, strerror(errno));
+      }
       close(SocketFD);
       return -1;
     }
@@ -196,7 +198,7 @@ namespace FEXServerClient {
   }
 
   int ConnectToAndStartServer(char *InterpreterPath) {
-    int ServerFD = ConnectToServer();
+    int ServerFD = ConnectToServer(ConnectionOption::NoPrintConnectionError);
     if (ServerFD == -1) {
       // Couldn't connect to the server. Start one
 
@@ -253,7 +255,7 @@ namespace FEXServerClient {
         while (poll(&PollFD, 1, -1) == -1 && errno == EINTR);
 
         for (size_t i = 0; i < 5; ++i) {
-          ServerFD = ConnectToServer();
+          ServerFD = ConnectToServer(ConnectionOption::Default);
 
           if (ServerFD != -1) {
             break;
