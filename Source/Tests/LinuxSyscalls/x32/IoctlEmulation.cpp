@@ -178,6 +178,141 @@ namespace FEX::HLE::x32 {
       return -EPERM;
     }
 
+    uint32_t RADEON_Handler(int fd, uint32_t cmd, uint32_t args) {
+      switch (_IOC_NR(cmd)) {
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_CP_INIT): {
+          RADEON::fex_drm_radeon_init_t *val = reinterpret_cast<RADEON::fex_drm_radeon_init_t*>(args);
+          drm_radeon_init_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_CP_INIT, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_CLEAR): {
+          RADEON::fex_drm_radeon_clear_t *val = reinterpret_cast<RADEON::fex_drm_radeon_clear_t*>(args);
+          drm_radeon_clear_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_CLEAR, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_STIPPLE): {
+          RADEON::fex_drm_radeon_stipple_t *val = reinterpret_cast<RADEON::fex_drm_radeon_stipple_t*>(args);
+          drm_radeon_stipple_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_STIPPLE, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_TEXTURE): {
+          RADEON::fex_drm_radeon_texture_t *val = reinterpret_cast<RADEON::fex_drm_radeon_texture_t*>(args);
+          drm_radeon_texture_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_TEXTURE, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_VERTEX2): {
+          RADEON::fex_drm_radeon_vertex2_t *val = reinterpret_cast<RADEON::fex_drm_radeon_vertex2_t*>(args);
+          drm_radeon_vertex2_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_VERTEX2, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_CMDBUF): {
+          RADEON::fex_drm_radeon_cmd_buffer_t *val = reinterpret_cast<RADEON::fex_drm_radeon_cmd_buffer_t*>(args);
+          drm_radeon_cmd_buffer_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_CMDBUF, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_GETPARAM): {
+          RADEON::fex_drm_radeon_getparam_t *val = reinterpret_cast<RADEON::fex_drm_radeon_getparam_t*>(args);
+          drm_radeon_getparam_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_GETPARAM, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_ALLOC): {
+          RADEON::fex_drm_radeon_mem_alloc_t *val = reinterpret_cast<RADEON::fex_drm_radeon_mem_alloc_t*>(args);
+          drm_radeon_mem_alloc_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_ALLOC, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_IRQ_EMIT): {
+          RADEON::fex_drm_radeon_irq_emit_t *val = reinterpret_cast<RADEON::fex_drm_radeon_irq_emit_t*>(args);
+          drm_radeon_irq_emit_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_IRQ_EMIT, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_SETPARAM): {
+          RADEON::fex_drm_radeon_setparam_t *val = reinterpret_cast<RADEON::fex_drm_radeon_setparam_t*>(args);
+          drm_radeon_setparam_t Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_SETPARAM, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+        case _IOC_NR(FEX_DRM_IOCTL_RADEON_GEM_CREATE): {
+          RADEON::fex_drm_radeon_gem_create *val = reinterpret_cast<RADEON::fex_drm_radeon_gem_create*>(args);
+          drm_radeon_gem_create Host_val = *val;
+          uint64_t Result = ioctl(fd, DRM_IOCTL_RADEON_GEM_CREATE, &Host_val);
+          if (Result != -1) {
+            *val = Host_val;
+          }
+          SYSCALL_ERRNO();
+          break;
+        }
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+      // DRM
+#include "Tests/LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
+        {
+          uint64_t Result = ::ioctl(fd, cmd, args);
+          SYSCALL_ERRNO();
+          break;
+        }
+        default:
+          UnhandledIoctl("RADEON", fd, cmd, args);
+          return -EPERM;
+          break;
+      }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+      return -EPERM;
+    }
+
     uint32_t MSM_Handler(int fd, uint32_t cmd, uint32_t args) {
       switch (_IOC_NR(cmd)) {
         case _IOC_NR(FEX_DRM_IOCTL_MSM_WAIT_FENCE): {
@@ -435,6 +570,9 @@ namespace FEX::HLE::x32 {
         if (strcmp(Version.name, "amdgpu") == 0) {
           FDToHandler.SetFDHandler(fd, AMDGPU_Handler);
         }
+        else if (strcmp(Version.name, "radeon") == 0) {
+          FDToHandler.SetFDHandler(fd, RADEON_Handler);
+        }
         else if (strcmp(Version.name, "msm") == 0) {
           FDToHandler.SetFDHandler(fd, MSM_Handler);
         }
@@ -611,6 +749,7 @@ namespace FEX::HLE::x32 {
 #include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+#include "Tests/LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
 #include "Tests/LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
