@@ -18,7 +18,7 @@ DEF_OP(AESImc) {
 }
 
 DEF_OP(AESEnc) {
-	auto Op = IROp->C<IR::IROp_VAESEnc>();
+  auto Op = IROp->C<IR::IROp_VAESEnc>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
   mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aese(VTMP1.V16B(), VTMP2.V16B());
@@ -27,7 +27,7 @@ DEF_OP(AESEnc) {
 }
 
 DEF_OP(AESEncLast) {
-	auto Op = IROp->C<IR::IROp_VAESEncLast>();
+  auto Op = IROp->C<IR::IROp_VAESEncLast>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
   mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aese(VTMP1.V16B(), VTMP2.V16B());
@@ -35,7 +35,7 @@ DEF_OP(AESEncLast) {
 }
 
 DEF_OP(AESDec) {
-	auto Op = IROp->C<IR::IROp_VAESDec>();
+  auto Op = IROp->C<IR::IROp_VAESDec>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
   mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aesd(VTMP1.V16B(), VTMP2.V16B());
@@ -44,7 +44,7 @@ DEF_OP(AESDec) {
 }
 
 DEF_OP(AESDecLast) {
-	auto Op = IROp->C<IR::IROp_VAESDecLast>();
+  auto Op = IROp->C<IR::IROp_VAESDecLast>();
   eor(VTMP2.V16B(), VTMP2.V16B(), VTMP2.V16B());
   mov(VTMP1.V16B(), GetSrc(Op->State.ID()).V16B());
   aesd(VTMP1.V16B(), VTMP2.V16B());
@@ -52,7 +52,7 @@ DEF_OP(AESDecLast) {
 }
 
 DEF_OP(AESKeyGenAssist) {
-	auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
+  auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
 
   aarch64::Literal ConstantLiteral (0x0C030609'0306090CULL, 0x040B0E01'0B0E0104ULL);
   aarch64::Label PastConstant;
@@ -69,9 +69,8 @@ DEF_OP(AESKeyGenAssist) {
   if (Op->RCON) {
     tbl(VTMP1.V16B(), VTMP1.V16B(), VTMP3.V16B());
 
-    LoadConstant(TMP1.W(), Op->RCON);
-    ins(VTMP2.V4S(), 1, TMP1.W());
-    ins(VTMP2.V4S(), 3, TMP1.W());
+    LoadConstant(TMP1, static_cast<uint64_t>(Op->RCON) << 32);
+    dup(VTMP2.V2D(), TMP1);
     eor(GetDst(Node).V16B(), VTMP1.V16B(), VTMP2.V16B());
   }
   else {
