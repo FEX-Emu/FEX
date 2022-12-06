@@ -563,9 +563,6 @@ public:
   template<bool ToXMM>
   void MOVQ2DQ(OpcodeArgs);
 
-  template<size_t ElementSize, bool Signed>
-  void PSUBSOp(OpcodeArgs);
-
   template<size_t ElementSize>
   void ADDSUBPOp(OpcodeArgs);
 

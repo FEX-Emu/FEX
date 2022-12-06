@@ -1741,33 +1741,6 @@ void OpDispatchBuilder::MOVQ2DQ<false>(OpcodeArgs);
 template
 void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
-template<size_t ElementSize, bool Signed>
-void OpDispatchBuilder::PSUBSOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  OrderedNode *Res{};
-  if constexpr (Signed) {
-    Res = _VSQSub(Size, ElementSize, Dest, Src);
-  }
-  else {
-    Res = _VUQSub(Size, ElementSize, Dest, Src);
-  }
-
-  StoreResult(FPRClass, Op, Res, -1);
-}
-
-template
-void OpDispatchBuilder::PSUBSOp<1, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSUBSOp<1, true>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSUBSOp<2, false>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSUBSOp<2, true>(OpcodeArgs);
-
 template<size_t ElementSize>
 void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
