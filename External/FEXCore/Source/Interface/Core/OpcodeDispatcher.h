@@ -322,10 +322,6 @@ public:
 
   void MOVQOp(OpcodeArgs);
   template<size_t ElementSize>
-  void PADDQOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSUBQOp(OpcodeArgs);
-  template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
   void MOVMSKOpOne(OpcodeArgs);
   template<size_t ElementSize>
@@ -566,12 +562,6 @@ public:
 
   template<bool ToXMM>
   void MOVQ2DQ(OpcodeArgs);
-
-  template<size_t ElementSize, bool Signed>
-  void PADDSOp(OpcodeArgs);
-
-  template<size_t ElementSize, bool Signed>
-  void PSUBSOp(OpcodeArgs);
 
   template<size_t ElementSize>
   void ADDSUBPOp(OpcodeArgs);
