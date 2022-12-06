@@ -322,8 +322,6 @@ public:
 
   void MOVQOp(OpcodeArgs);
   template<size_t ElementSize>
-  void PADDQOp(OpcodeArgs);
-  template<size_t ElementSize>
   void PSUBQOp(OpcodeArgs);
   template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);

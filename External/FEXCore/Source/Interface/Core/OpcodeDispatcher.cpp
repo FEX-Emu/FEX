@@ -6117,7 +6117,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
-    {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
+    {0xD4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>},
     {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::PSUBSOp<1, false>},
@@ -6155,9 +6155,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
     {0xFB, 1, &OpDispatchBuilder::PSUBQOp<8>},
-    {0xFC, 1, &OpDispatchBuilder::PADDQOp<1>},
-    {0xFD, 1, &OpDispatchBuilder::PADDQOp<2>},
-    {0xFE, 1, &OpDispatchBuilder::PADDQOp<4>},
+    {0xFC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 1>},
+    {0xFD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 2>},
+    {0xFE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>},
 
     // FEX reserved instructions
     {0x36, 1, &OpDispatchBuilder::SIGRETOp},
@@ -6417,7 +6417,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
-    {0xD4, 1, &OpDispatchBuilder::PADDQOp<8>},
+    {0xD4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>},
     {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMUL, 2>},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
@@ -6457,9 +6457,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF9, 1, &OpDispatchBuilder::PSUBQOp<2>},
     {0xFA, 1, &OpDispatchBuilder::PSUBQOp<4>},
     {0xFB, 1, &OpDispatchBuilder::PSUBQOp<8>},
-    {0xFC, 1, &OpDispatchBuilder::PADDQOp<1>},
-    {0xFD, 1, &OpDispatchBuilder::PADDQOp<2>},
-    {0xFE, 1, &OpDispatchBuilder::PADDQOp<4>},
+    {0xFC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 1>},
+    {0xFD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 2>},
+    {0xFE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>},
   };
 
 constexpr uint16_t PF_NONE = 0;
