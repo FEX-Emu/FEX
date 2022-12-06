@@ -235,26 +235,6 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
   }
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSUBQOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto ALUOp = _VSub(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-template
-void OpDispatchBuilder::PSUBQOp<1>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSUBQOp<2>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSUBQOp<4>(OpcodeArgs);
-template
-void OpDispatchBuilder::PSUBQOp<8>(OpcodeArgs);
-
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -288,6 +268,14 @@ template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 1>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
 template
