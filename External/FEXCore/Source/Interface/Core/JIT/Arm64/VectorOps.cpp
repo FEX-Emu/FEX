@@ -3827,6 +3827,11 @@ DEF_OP(VInsElement) {
         case 8:
           LOGMAN_THROW_AA_FMT(DestIdx <= 3, "DestIdx out of range: {}", DestIdx);
           return LiteralType{1U << (DestIdx * 8)};
+        case 16:
+          LOGMAN_THROW_AA_FMT(DestIdx <= 1, "DestIdx out of range: {}", DestIdx);
+          // Predicates can't be subdivided into the Q format, so we can just set up
+          // the predicate to select the two adjacent doublewords.
+          return LiteralType{0x101U << (DestIdx * 16)};
         default:
           return LiteralType{UINT32_MAX};
       }
@@ -3865,6 +3870,12 @@ DEF_OP(VInsElement) {
       case 8: {
         LOGMAN_THROW_AA_FMT(SrcIdx <= 3, "SrcIdx out of range: {}", SrcIdx);
         dup(VTMP2.Z().VnD(), SrcVector.Z().VnD(), SrcIdx);
+        mov(Dst.Z().VnD(), Reg.Z().VnD());
+        mov(Dst.Z().VnD(), Predicate.Merging(), VTMP2.Z().VnD());
+        break;
+      case 16:
+        LOGMAN_THROW_AA_FMT(SrcIdx <= 1, "SrcIdx out of range: {}", SrcIdx);
+        dup(VTMP2.Z().VnQ(), SrcVector.Z().VnQ(), SrcIdx);
         mov(Dst.Z().VnD(), Reg.Z().VnD());
         mov(Dst.Z().VnD(), Predicate.Merging(), VTMP2.Z().VnD());
         break;

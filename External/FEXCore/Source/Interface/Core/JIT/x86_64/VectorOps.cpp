@@ -2679,19 +2679,26 @@ DEF_OP(VInsElement) {
       }
     };
 
-    const auto SrcReg = GetSrcVector(xmm14);
-    const auto DstReg = GetDstVector(xmm15);
-
-    const auto SanitizedDstIdx = SanitizeIndex(DestIdx, DstIsUpper);
-    const auto SanitizedSrcIdx = SanitizeIndex(SrcIdx, SrcIsUpper);
-
-    PerformInsertion(SrcReg, SanitizedSrcIdx, DstReg, SanitizedDstIdx);
-
-    vmovapd(ToYMM(Dst), ToYMM(DestVector));
-    if (DstIsUpper) {
-      vinserti128(ToYMM(Dst), ToYMM(Dst), DstReg, 1);
+    const auto Is128BitElement = ElementSize == Core::CPUState::XMM_SSE_REG_SIZE;
+    if (Is128BitElement) {
+      vextracti128(xmm14, ToYMM(SrcVector), SrcIdx);
+      vmovapd(ToYMM(Dst), ToYMM(DestVector));
+      vinserti128(ToYMM(Dst), ToYMM(Dst), xmm14, DestIdx);
     } else {
-      vinserti128(ToYMM(Dst), ToYMM(Dst), DstReg, 0);
+      const auto SrcReg = GetSrcVector(xmm14);
+      const auto DstReg = GetDstVector(xmm15);
+
+      const auto SanitizedDstIdx = SanitizeIndex(DestIdx, DstIsUpper);
+      const auto SanitizedSrcIdx = SanitizeIndex(SrcIdx, SrcIsUpper);
+
+      PerformInsertion(SrcReg, SanitizedSrcIdx, DstReg, SanitizedDstIdx);
+
+      vmovapd(ToYMM(Dst), ToYMM(DestVector));
+      if (DstIsUpper) {
+        vinserti128(ToYMM(Dst), ToYMM(Dst), DstReg, 1);
+      } else {
+        vinserti128(ToYMM(Dst), ToYMM(Dst), DstReg, 0);
+      }
     }
   } else {
     vmovapd(xmm15, DestVector);
