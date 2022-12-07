@@ -4971,12 +4971,6 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       if (OpSize < Core::CPUState::XMM_SSE_REG_SIZE) {
         Src = _VMov(OpSize, Src);
       }
-
-      // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
-      // TODO: Longer term we should enforce the difference between zero and insert.
-      if (regSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
-        Src = _VMov(OpSize, Src);
-      }
     }
     else {
       Src = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (highIndex ? 1 : 0), GPRClass, GPRFixedClass, OpSize);

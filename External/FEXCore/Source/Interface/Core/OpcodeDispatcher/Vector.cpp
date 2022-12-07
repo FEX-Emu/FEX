@@ -35,11 +35,12 @@ void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VMOVVectorNTOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 1, true, false, MemoryAccessType::ACCESS_STREAM);
+  const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
-  // TODO: When stores and loads gain the ability to explicitly express
-  //       whether a vector extension or an insert is desirable, ensure
-  //       the 128-bit case here is a zero extend on store if the destination
-  //       is a register.
+  if (Op->Dest.IsGPR() && Is128BitDest) {
+    // Clear the upper lane
+    Src = _VMov(16, Src);
+  }
 
   StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
@@ -54,11 +55,11 @@ void OpDispatchBuilder::VMOVAPS_VMOVAPD_Op(OpcodeArgs) {
   const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
   if (Op->Dest.IsGPR() && Is128BitDest) {
-    // Perform 32 byte store to clear the upper lane.
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 32, -1);
-  } else {
-    StoreResult(FPRClass, Op, Src, -1);
+    // Clear the upper lane
+    Src = _VMov(16, Src);
   }
+
+  StoreResult(FPRClass, Op, Src, -1);
 }
 
 void OpDispatchBuilder::VMOVUPS_VMOVUPD_Op(OpcodeArgs) {
@@ -66,11 +67,11 @@ void OpDispatchBuilder::VMOVUPS_VMOVUPD_Op(OpcodeArgs) {
   const auto Is128BitDest = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
   if (Op->Dest.IsGPR() && Is128BitDest) {
-    // Perform 32 byte store to clear the upper lane.
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 32, 1);
-  } else {
-    StoreResult(FPRClass, Op, Src, 1);
+    // Clear the upper lane
+    Src = _VMov(16, Src);
   }
+
+  StoreResult(FPRClass, Op, Src, 1);
 }
 
 void OpDispatchBuilder::MOVUPSOp(OpcodeArgs) {
@@ -108,7 +109,11 @@ void OpDispatchBuilder::VMOVHPOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 16);
     OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, 8);
     OrderedNode *Result = _VInsElement(16, 8, 1, 0, Src1, Src2);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+
+    // Clear the upper lane.
+    Result = _VMov(16, Result);
+
+    StoreResult(FPRClass, Op, Result, -1);
   } else {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 16);
     OrderedNode *Result = _VInsElement(16, 8, 0, 1, Src, Src);
@@ -142,7 +147,11 @@ void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
     OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 16);
     OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, 8);
     OrderedNode *Result = _VInsElement(16, 8, 0, 0, Src1, Src2);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+
+    // Clear the upper lane.
+    Result = _VMov(16, Result);
+
+    StoreResult(FPRClass, Op, Result, -1);
   } else {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 8, 8);
@@ -166,9 +175,12 @@ void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
   if (Is256Bit) {
     Result = _VInsElement(SrcSize, 4, 4, 5, Result, Src);
     Result = _VInsElement(SrcSize, 4, 6, 7, Result, Src);
+  } else {
+    // Clear upper lane
+    Result = _VMov(16, Result);
   }
 
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::MOVSLDUPOp(OpcodeArgs) {
@@ -188,9 +200,12 @@ void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
   if (Is256Bit) {
     Result = _VInsElement(SrcSize, 4, 5, 4, Result, Src);
     Result = _VInsElement(SrcSize, 4, 7, 6, Result, Src);
+  } else {
+    // Clear upper lane
+    Result = _VMov(16, Result);
   }
 
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 32, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
@@ -1104,9 +1119,12 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
   OrderedNode *Res = _VInsElement(SrcSize, 8, 1, 0, Src, Src);
   if (Is256Bit) {
     Res = _VInsElement(SrcSize, 8, 3, 2, Res, Src);
+  } else {
+    // Clear the upper lane
+    Res = _VMov(16, Res);
   }
 
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Res, 32, -1);
+  StoreResult(FPRClass, Op, Res, -1);
 }
 
 template<size_t DstElementSize>
