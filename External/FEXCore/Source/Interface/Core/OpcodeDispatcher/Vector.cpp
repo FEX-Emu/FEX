@@ -269,6 +269,10 @@ void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>(OpcodeArgs);
 template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 4>(OpcodeArgs);
+template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 1>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 2>(OpcodeArgs);
@@ -2108,21 +2112,6 @@ template
 void OpDispatchBuilder::HSUBP<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::HSUBP<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PHADD(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  OrderedNode *Res = _VAddP(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, Res, -1);
-}
-
-template
-void OpDispatchBuilder::PHADD<2>(OpcodeArgs);
-template
-void OpDispatchBuilder::PHADD<4>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PHSUB(OpcodeArgs) {
