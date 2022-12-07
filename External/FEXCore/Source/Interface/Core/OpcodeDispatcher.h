@@ -585,8 +585,6 @@ public:
 
   void MOVBEOp(OpcodeArgs);
   template<size_t ElementSize>
-  void HADDP(OpcodeArgs);
-  template<size_t ElementSize>
   void HSUBP(OpcodeArgs);
 
   template<size_t ElementSize>
