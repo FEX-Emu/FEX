@@ -6344,7 +6344,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x5E, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFDIV, 8>},
     {0x5F, 1, &OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp<2, true, true>},
-    {0x7C, 1, &OpDispatchBuilder::HADDP<4>},
+    {0x7C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 4>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
     {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
@@ -6404,7 +6404,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x75, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>},
     {0x76, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>},
     {0x78, 1, nullptr}, // GROUP 17
-    {0x7C, 1, &OpDispatchBuilder::HADDP<8>},
+    {0x7C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 8>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
     {0x7E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {0x7F, 1, &OpDispatchBuilder::MOVUPSOp},
@@ -7045,10 +7045,10 @@ constexpr uint16_t PF_F2 = 3;
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38Table[] = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
     {OPD(PF_38_66,   0x00), 1, &OpDispatchBuilder::PSHUFBOp},
-    {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::PHADD<2>},
-    {OPD(PF_38_66,   0x01), 1, &OpDispatchBuilder::PHADD<2>},
-    {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::PHADD<4>},
-    {OPD(PF_38_66,   0x02), 1, &OpDispatchBuilder::PHADD<4>},
+    {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 2>},
+    {OPD(PF_38_66,   0x01), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 2>},
+    {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 4>},
+    {OPD(PF_38_66,   0x02), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 4>},
     {OPD(PF_38_NONE, 0x03), 1, &OpDispatchBuilder::PHADDS},
     {OPD(PF_38_66,   0x03), 1, &OpDispatchBuilder::PHADDS},
     {OPD(PF_38_NONE, 0x04), 1, &OpDispatchBuilder::PMADDUBSW},
@@ -7178,7 +7178,7 @@ constexpr uint16_t PF_F2 = 3;
     {0xA7, 1, &OpDispatchBuilder::MOVVectorOp},
 
     {0xAA, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>},
-    {0xAE, 1, &OpDispatchBuilder::HADDP<4>},
+    {0xAE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 4>},
 
     {0xB0, 1, &OpDispatchBuilder::VPFCMPOp<0>},
     {0xB4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
