@@ -1549,6 +1549,12 @@ DEF_OP(VInsElement) {
       Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
       break;
     }
+    case 16: {
+      auto *Dst_d  = reinterpret_cast<__uint128_t*>(Tmp);
+      auto *Src2_d = reinterpret_cast<__uint128_t*>(Src2);
+      Dst_d[Op->DestIdx] = Src2_d[Op->SrcIdx];
+      break;
+    }
     default:
       LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
       break;
