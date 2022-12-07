@@ -356,6 +356,10 @@ void OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 4>(OpcodeArgs);
 template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>(OpcodeArgs);
+template
+void OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 2>(OpcodeArgs);
+template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 1>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>(OpcodeArgs);
@@ -1072,21 +1076,6 @@ template
 void OpDispatchBuilder::PSRAIOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSRAIOp<4>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PAVGOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto Result = _VURAvg(Size, ElementSize, Dest, Src);
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-template
-void OpDispatchBuilder::PAVGOp<1>(OpcodeArgs);
-template
-void OpDispatchBuilder::PAVGOp<2>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
