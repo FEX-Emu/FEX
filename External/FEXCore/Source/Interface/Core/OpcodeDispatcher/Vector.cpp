@@ -485,6 +485,36 @@ void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
 
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVXVectorScalarALUOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  // If OpSize == ElementSize then it only does the lower scalar op
+  auto ALUOp = _VAdd(ElementSize, ElementSize, Src1, Src2);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  OrderedNode* Result = ALUOp;
+
+  if (DstSize != ElementSize) {
+    // Insert the lower bits
+    Result = _VInsElement(DstSize, ElementSize, 0, 0, Src1, ALUOp);
+  }
+
+  // AVX scalar ops always clear the upper lane
+  Result = _VMov(16, Result);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
+
 template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);

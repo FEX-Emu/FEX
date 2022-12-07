@@ -402,6 +402,8 @@ public:
   // AVX Ops
   template <IROps IROp, size_t ElementSize>
   void AVXVectorALUOp(OpcodeArgs);
+  template <IROps IROp, size_t ElementSize>
+  void AVXVectorScalarALUOp(OpcodeArgs);
 
   void VANDNOp(OpcodeArgs);
 
