@@ -585,6 +585,37 @@ void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
 
+template <IROps IROp, size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
+  const auto Size = Scalar ? ElementSize : GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+
+  auto ALUOp = _VFSqrt(Size, ElementSize, Src);
+  // Overwrite our IR's op type
+  ALUOp.first->Header.Op = IROp;
+
+  OrderedNode* Result = ALUOp;
+  if constexpr (Scalar) {
+    // Insert the lower bits
+    Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
+  }
+  if (Is128Bit) {
+    // Clear the upper lane.
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8, false>(OpcodeArgs);
+
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
