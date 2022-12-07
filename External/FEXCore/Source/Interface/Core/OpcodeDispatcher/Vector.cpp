@@ -1680,7 +1680,7 @@ void OpDispatchBuilder::UCOMISxOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  // We only support the rounding mode being set
+  // We only support the rounding mode and FTZ bit being set
   OrderedNode *RoundingMode = _Bfe(4, 3, 13, Dest);
   _SetRoundingMode(RoundingMode);
 }

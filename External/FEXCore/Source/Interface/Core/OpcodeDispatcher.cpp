@@ -5887,6 +5887,13 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
+#define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
+  static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXTableGroupOps[] {
+    {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b010), 1, &OpDispatchBuilder::LDMXCSR},
+    {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b011), 1, &OpDispatchBuilder::STMXCSR},
+  };
+#undef OPD
+
   auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
@@ -5919,6 +5926,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
   if (CTX->HostFeatures.SupportsAVX) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
+    InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXTableGroupOps);
   }
 
   if (CTX->HostFeatures.SupportsPMULL_128Bit) {
