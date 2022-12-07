@@ -6128,10 +6128,10 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xDD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>},
     {0xDE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>},
     {0xDF, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VBIC, 8>},
-    {0xE0, 1, &OpDispatchBuilder::PAVGOp<1>},
+    {0xE0, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4>},
-    {0xE3, 1, &OpDispatchBuilder::PAVGOp<2>},
+    {0xE3, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
@@ -6429,10 +6429,10 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xDD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>},
     {0xDE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>},
     {0xDF, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VBIC, 8>},
-    {0xE0, 1, &OpDispatchBuilder::PAVGOp<1>},
+    {0xE0, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4>},
-    {0xE3, 1, &OpDispatchBuilder::PAVGOp<2>},
+    {0xE3, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, false>},
@@ -7187,7 +7187,7 @@ constexpr uint16_t PF_F2 = 3;
     {0xB7, 1, &OpDispatchBuilder::PMULHRWOp},
 
     {0xBB, 1, &OpDispatchBuilder::PSWAPDOp},
-    {0xBF, 1, &OpDispatchBuilder::PAVGOp<1>},
+    {0xBF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>},
   };
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
