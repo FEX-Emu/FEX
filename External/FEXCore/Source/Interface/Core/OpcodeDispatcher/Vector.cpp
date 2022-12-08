@@ -868,6 +868,7 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
+template <size_t ElementSize>
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -876,10 +877,10 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
 
   if (Op->Src[0].IsGPR()) {
     OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    Result = _VDupElement(DstSize, 4, Src, 0);
+    Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
-    Result = _VDupElement(DstSize, 4, Src, 0);
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
+    Result = _VDupElement(DstSize, ElementSize, Src, 0);
   }
 
   if (Is128Bit) {
@@ -888,6 +889,11 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
+
+template
+void OpDispatchBuilder::VBROADCASTOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VBROADCASTOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {

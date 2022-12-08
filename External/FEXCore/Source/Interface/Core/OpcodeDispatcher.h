@@ -409,6 +409,7 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
+  template <size_t ElementSize>
   void VBROADCASTOp(OpcodeArgs);
 
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
