@@ -868,6 +868,27 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
+void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Result{};
+
+  if (Op->Src[0].IsGPR()) {
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    Result = _VDupElement(DstSize, 4, Src, 0);
+  } else {
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    Result = _VDupElement(DstSize, 4, Src, 0);
+  }
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
   auto Size = GetDstSize(Op);

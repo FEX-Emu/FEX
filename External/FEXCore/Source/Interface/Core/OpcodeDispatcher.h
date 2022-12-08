@@ -409,6 +409,8 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
+  void VBROADCASTOp(OpcodeArgs);
+
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
   void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
