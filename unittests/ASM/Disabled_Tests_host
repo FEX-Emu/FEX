@@ -15,3 +15,6 @@ Test_Secondary/15_F3_03_2.asm
 
 # Zen+ CI doesn't support UMIP so it returns "real" values
 Test_Secondary/07_XX_00.asm
+
+# We don't emulate all of the MXCSR bits
+Test_VEX/vldmxcsr.asm
