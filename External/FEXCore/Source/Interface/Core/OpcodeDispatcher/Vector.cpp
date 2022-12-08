@@ -894,6 +894,8 @@ template
 void OpDispatchBuilder::VBROADCASTOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VBROADCASTOp<8>(OpcodeArgs);
+template
+void OpDispatchBuilder::VBROADCASTOp<16>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
