@@ -146,12 +146,17 @@ void FileManager::LoadThunkDatabase(bool Global) {
         }
         else if (strcmp(ItemName, "Overlay") == 0) {
 
-          auto AddWithReplacement = [DBObject, HomeDirectory](json_t const* Value) {
+          auto AddWithReplacement = [this, DBObject, HomeDirectory](json_t const* Value) {
             constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
               "/lib",
               "/usr/lib/pressure-vessel/overrides/lib",
+            };
+
+            constexpr static std::array<std::string_view, 2> ArchPrefixes = {
+              "i386",
+              "x86_64",
             };
 
             auto FindAndReplacePrefixes = [DBObject](std::string_view String, std::string_view Prefix, auto NewPrefixes) -> bool {
@@ -171,37 +176,32 @@ void FileManager::LoadThunkDatabase(bool Global) {
               }
             };
 
-            auto FindAndReplaceSingleNewPrefix = [DBObject](std::string_view String, std::string_view Prefix, auto NewPrefix) -> bool {
+            auto FindAndReplaceSingleNewPrefix = [](std::string &String, std::string_view Prefix, auto NewPrefix) {
               auto it = String.find(Prefix);
               if (it != String.npos) {
                 size_t SizeOfOldPrefix = Prefix.size();
 
-                std::string Replacement {String};
-                Replacement.replace(it, SizeOfOldPrefix, NewPrefix);
-                DBObject->second.Overlays.emplace_back(std::move(Replacement));
-                return true;
-              }
-              else {
-                return false;
+                String.replace(it, SizeOfOldPrefix, NewPrefix);
               }
             };
 
-            std::string NonModifiedLibraryItem {static_cast<const char*>(json_getValue(Value))};
+            std::string LibraryItem {static_cast<const char*>(json_getValue(Value))};
 
             // Prefixes are mutually exclusive currently.
             // Walk through each individual library item and attempt to change prefixes before inserting this in to our overlay system.
 
-            // Attempt to replace @PREFIX_LIB@ first
-            bool Inserted = FindAndReplacePrefixes(NonModifiedLibraryItem, "@PREFIX_LIB@", LibPrefixes);
+            // Attempt to replace @ARCH_PREFIX@ first
+            FindAndReplaceSingleNewPrefix(LibraryItem, "@PREFIX_ARCH@", ArchPrefixes[Is64BitMode()]);
 
             // Attempt to replace @HOME@ second
-            if (!Inserted) {
-              Inserted = FindAndReplaceSingleNewPrefix(NonModifiedLibraryItem, "@HOME@", HomeDirectory);
-            }
+            FindAndReplaceSingleNewPrefix(LibraryItem, "@HOME@", HomeDirectory);
 
-            // Failing to replace prefixes, insert the item unmodifed
+            // Attempt to replace @PREFIX_LIB@ third
+            bool Inserted = FindAndReplacePrefixes(LibraryItem, "@PREFIX_LIB@", LibPrefixes);
+
+            // Insert any items that didn't get replacements.
             if (!Inserted) {
-              DBObject->second.Overlays.emplace_back(NonModifiedLibraryItem);
+              DBObject->second.Overlays.emplace_back(std::move(LibraryItem));
             }
           };
 
@@ -225,7 +225,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
   bool LoadedThunkDatabase{};
   auto ThunkConfigFile = ThunkConfig();
-  auto ThunkGuestPath = std::filesystem::path(ThunkGuestLibs());
+  auto ThunkGuestPath =  std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
 
   auto LoadThunksDB = [this, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
     // If a thunks DB property exists then we pull in data from the thunks database

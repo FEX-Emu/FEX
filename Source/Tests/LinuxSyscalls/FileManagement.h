@@ -90,10 +90,11 @@ private:
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
-  FEX_CONFIG_OPT(ThunkHostLibs, THUNKHOSTLIBS);
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
+  FEX_CONFIG_OPT(ThunkGuestLibs32, THUNKGUESTLIBS32);
   FEX_CONFIG_OPT(ThunkConfig, THUNKCONFIG);
   FEX_CONFIG_OPT(AppConfigName, APP_CONFIG_NAME);
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   uint32_t CurrentPID{};
 
   void LoadThunkDatabase(bool Global);
