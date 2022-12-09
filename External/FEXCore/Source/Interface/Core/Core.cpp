@@ -856,21 +856,24 @@ namespace FEXCore::Context {
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
           }
 
-          // If we had a dispatch error then leave early
-          if (HadDispatchError) {
-            if (TotalInstructions == 0) {
-              // Couldn't handle any instruction in op dispatcher
-              Thread->OpDispatcher->ResetWorkingList();
-              return { nullptr, nullptr, 0, 0, 0, 0 };
-            }
-            else {
-              const uint8_t GPRSize = GetGPRSize();
+          const bool NeedsBlockEnd = (HadDispatchError && TotalInstructions > 0) ||
+            (Thread->OpDispatcher->NeedsBlockEnder() && i + 1 == InstsInBlock);
 
-              // We had some instructions. Early exit
-              Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
-              break;
-            }
+          // If we had a dispatch error then leave early
+          if (HadDispatchError && TotalInstructions == 0) {
+            // Couldn't handle any instruction in op dispatcher
+            Thread->OpDispatcher->ResetWorkingList();
+            return { nullptr, nullptr, 0, 0, 0, 0 };
           }
+
+          if (NeedsBlockEnd) {
+            const uint8_t GPRSize = GetGPRSize();
+
+            // We had some instructions. Early exit
+            Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry + BlockInstructionsLength - GuestRIP, GPRSize));
+            break;
+          }
+
 
           if (Thread->OpDispatcher->FinishOp(DecodedInfo->PC + DecodedInfo->InstSize, i + 1 == InstsInBlock)) {
             break;
