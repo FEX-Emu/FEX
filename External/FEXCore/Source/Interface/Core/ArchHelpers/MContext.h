@@ -3,13 +3,13 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/UContext.h>
+#include <FEXCore/Core/X86Enums.h>
 
 #include <signal.h>
 #include <string.h>
 #include <ucontext.h>
 #include <stdint.h>
 #include <type_traits>
-
 
 namespace FEXCore::ArchHelpers::Context {
 
@@ -76,6 +76,7 @@ static inline mcontext_t* GetMContext(void* ucontext) {
 #ifdef _M_ARM_64
 
 constexpr uint32_t FPR_MAGIC = 0x46508001U;
+constexpr uint32_t ESR1_MAGIC = 0x45535201U;
 
 struct HostCTXHeader {
   uint32_t Magic;
@@ -87,6 +88,11 @@ struct HostFPRState {
   uint32_t FPSR;
   uint32_t FPCR;
   __uint128_t FPRs[32];
+};
+
+struct HostESRState {
+  HostCTXHeader Head;
+  uint64_t ESR;
 };
 
 static inline uint64_t GetSp(void* ucontext) {
@@ -127,6 +133,61 @@ static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
   LOGMAN_THROW_AA_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
 
   return HostState->FPRs[id];
+}
+
+static inline uint64_t GetArmESR(void* ucontext) {
+  auto MContext = GetMContext(ucontext);
+
+  size_t i = 0;
+  auto HostState = reinterpret_cast<HostCTXHeader*>(&MContext->__reserved[i]);
+  do {
+    if (HostState->Magic == ESR1_MAGIC) {
+      auto ESR = reinterpret_cast<HostESRState*>(HostState);
+      return ESR->ESR;
+    }
+    i += HostState->Size;
+    HostState = reinterpret_cast<HostCTXHeader*>(&MContext->__reserved[i]);
+  } while (HostState->Size != 0);
+
+  return 0;
+}
+
+constexpr static uint64_t ESR1_EC = 0b111111U << 26;
+constexpr static uint64_t ESR1_EC_DataAbort = 0b100100U << 26;
+
+// Write-Not-Read flag
+// When set - Abort is due to a write
+constexpr static uint64_t ESR1_WNR = 1 << 6;
+
+// DFSC - Default Status Code
+// Translation fault - No page mapped
+// Permissions fault - Page mapped but with incorrect permission from access.
+constexpr static uint64_t ESR1_DataAbort_DFSC = 0b111111;
+constexpr static uint64_t ESR1_DataAbort_TranslationFault_EL0 = 0b000111;
+constexpr static uint64_t ESR1_DataAbort_PermissionFault_EL0 = 0b001111;
+constexpr static uint64_t ESR1_DataAbort_Level = 0b11;
+constexpr static uint64_t ESR1_DataAbort_Level_EL3 = 0b00;
+constexpr static uint64_t ESR1_DataAbort_Level_EL2 = 0b01;
+constexpr static uint64_t ESR1_DataAbort_Level_EL1 = 0b10;
+constexpr static uint64_t ESR1_DataAbort_Level_EL0 = 0b11;
+
+static inline uint32_t GetProtectFlags(void* ucontext) {
+  uint64_t ESR = GetArmESR(ucontext);
+  LOGMAN_THROW_A_FMT((ESR & ESR1_EC) == ESR1_EC_DataAbort, "Unknown ESR1 EC type: 0x{:x} != 0x{:x}", ESR & ESR1_EC, ESR1_EC_DataAbort);
+
+  uint32_t ProtectFlags{};
+  if ((ESR & ESR1_DataAbort_Level) == ESR1_DataAbort_Level_EL0) {
+    // Always a user error for us.
+    ProtectFlags |= X86State::X86_PF_USER;
+  }
+
+  if (ESR & ESR1_WNR) {
+    // Fault was due to a write
+    ProtectFlags |= X86State::X86_PF_WRITE;
+  }
+
+  // PF_PROT is not returned to user on x86, so don't return the difference between permission fault and translation fault.
+  return ProtectFlags;
 }
 
 using ContextBackup = ArmContextBackup;
@@ -220,6 +281,10 @@ static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
 
 static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
   ERROR_AND_DIE_FMT("Not implemented for x86 host");
+}
+
+static inline uint32_t GetProtectFlags(void* ucontext) {
+  return GetMContext(ucontext)->gregs[REG_ERR];
 }
 
 using ContextBackup = X86ContextBackup;

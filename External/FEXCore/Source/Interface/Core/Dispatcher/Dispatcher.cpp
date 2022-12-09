@@ -288,15 +288,14 @@ static uint32_t ConvertSignalToTrapNo(int Signal, siginfo_t *HostSigInfo) {
   return Signal;
 }
 
-static uint32_t ConvertSignalToError(int Signal, siginfo_t *HostSigInfo) {
+static uint32_t ConvertSignalToError(void *ucontext, int Signal, siginfo_t *HostSigInfo) {
   switch (Signal) {
     case SIGSEGV:
       if (HostSigInfo->si_code == SEGV_MAPERR ||
           HostSigInfo->si_code == SEGV_ACCERR) {
         // Protection fault
         // Always a user fault for us
-        // XXX: PF_PROT and PF_WRITE
-        return X86State::X86_PF_USER;
+        return ArchHelpers::Context::GetProtectFlags(ucontext);
       }
       break;
   }
@@ -477,7 +476,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       }
       else {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
-        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = ConvertSignalToError(ucontext, Signal, HostSigInfo);
       }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_OLDMASK] = 0;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CR2] = 0;
@@ -589,7 +588,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       else {
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
         guest_siginfo->si_code = HostSigInfo->si_code;
-        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(Signal, HostSigInfo);
+        guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(ucontext, Signal, HostSigInfo);
       }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = 0;
