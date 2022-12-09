@@ -167,6 +167,8 @@ namespace FEXCore {
          * address to another function. The original callee address is passed
          * to the target function through an implicit argument stored in r11.
          *
+         * For 32-bit the implicit argument is stored in the lower 32-bits of mm0.
+         *
          * The primary use case of this is ensuring that host function pointers
          * returned from thunked APIs can safely be called by the guest.
          */
@@ -199,7 +201,12 @@ namespace FEXCore {
 
                         const uint8_t GPRSize = CTX->GetGPRSize();
 
-                        emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, gregs[X86State::REG_R11]), IR::GPRClass, IR::GPRFixedClass, GPRSize);
+                        if (GPRSize == 8) {
+                          emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, gregs[X86State::REG_R11]), IR::GPRClass, IR::GPRFixedClass, GPRSize);
+                        }
+                        else {
+                          emit->_StoreRegister(emit->_Constant(Entrypoint), false, offsetof(Core::CPUState, mm[0][0]), IR::GPRClass, IR::GPRFixedClass, GPRSize);
+                        }
                         emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
                     }, CTX->ThunkHandler.get(), (void*)args->target_addr);
 
@@ -263,7 +270,10 @@ namespace FEXCore {
 
             auto Name = Args->Name;
 
-            auto SOName = CTX->Config.ThunkHostLibsPath() + "/" + (const char*)Name + "-host.so";
+            auto SOName = (CTX->Config.Is64BitMode() ?
+                           CTX->Config.ThunkHostLibsPath() :
+                           CTX->Config.ThunkHostLibsPath32())
+                          + "/" + (const char*)Name + "-host.so";
 
             LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
 
