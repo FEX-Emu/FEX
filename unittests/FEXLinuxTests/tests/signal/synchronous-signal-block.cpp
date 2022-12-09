@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
-
+#include <cinttypes>
 #include <cstdint>
 #include <optional>
 #include <setjmp.h>
@@ -28,7 +28,13 @@ struct HandledSignal {
   uintptr_t addr;
 };
 
+struct HandledSignal_ERR {
+  int signal;
+  size_t ERR;
+};
+
 static std::optional<HandledSignal> handled_signal;
+static std::optional<HandledSignal_ERR> handled_signal_err;
 
 static void handler(int sig, siginfo_t *si, void *context) {
   printf("Got %d at address: 0x%lx\n", sig, (long)si->si_addr);
@@ -95,6 +101,67 @@ std::optional<HandledSignal> CheckIfSignalHandlerCalled(F&& f) {
   sigaction(SIGFPE, &oldsa[3], nullptr);
 
   return handled_signal;
+}
+
+static void handler_read(int sig, siginfo_t *si, void *context) {
+  ucontext_t* _context = (ucontext_t*)context;
+  auto mcontext = &_context->uc_mcontext;
+  printf("Got %d at address: 0x%lx with 0x%zx\n", sig, (long)si->si_addr, (size_t)mcontext->gregs[REG_ERR]);
+  handled_signal_err = { sig, (size_t)mcontext->gregs[REG_ERR] };
+  siglongjmp(jmpbuf, 1);
+}
+
+template<typename F>
+std::optional<HandledSignal> CheckIfSignalHandlerCalledWithRegERR(F&& f) {
+  handled_signal = {};
+  struct sigaction oldsa[4];
+
+  if (!sigsetjmp(jmpbuf, 1)) {
+    // Handle all signals by the test handler
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = handler_read;
+    sigaction(SIGSEGV, &sa, &oldsa[0]);
+    sigaction(SIGBUS, &sa, &oldsa[1]);
+    sigaction(SIGILL, &sa, &oldsa[2]);
+    sigaction(SIGFPE, &sa, &oldsa[3]);
+
+    // Mask signals and run given callback
+    std::forward<F>(f)();
+  }
+
+  // Restore previous signal handlers
+  sigaction(SIGSEGV, &oldsa[0], nullptr);
+  sigaction(SIGBUS, &oldsa[1], nullptr);
+  sigaction(SIGILL, &oldsa[2], nullptr);
+  sigaction(SIGFPE, &oldsa[3], nullptr);
+
+  return handled_signal;
+}
+
+TEST_CASE("Signals: Error Flag - Read") {
+  // Check that the signal handler is delayed until unmasking.
+  auto handled_signal = CheckIfSignalHandlerCalledWithRegERR([&]() {
+    uint8_t *Code = (uint8_t*)mmap(nullptr, 4096, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    printf("Read: %d\n", Code[0]);
+  });
+  REQUIRE(handled_signal_err.has_value());
+  CHECK(handled_signal_err->signal == SIGSEGV);
+  constexpr size_t Expected = 0x4;
+  CHECK(handled_signal_err->ERR == Expected); // USER
+}
+
+TEST_CASE("Signals: Error Flag - Write") {
+  // Check that the signal handler is delayed until unmasking.
+  auto handled_signal = CheckIfSignalHandlerCalledWithRegERR([&]() {
+    uint8_t *Code = (uint8_t*)mmap(nullptr, 4096, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+    Code[0] = 1;
+  });
+  REQUIRE(handled_signal_err.has_value());
+  CHECK(handled_signal_err->signal == SIGSEGV);
+  constexpr size_t Expected = 0x6;
+  CHECK(handled_signal_err->ERR == Expected); // USER + WRITE
 }
 
 // For ssegv, we fail to do default signal catching behaviour
