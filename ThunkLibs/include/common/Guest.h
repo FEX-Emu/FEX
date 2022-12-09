@@ -101,6 +101,7 @@ inline bool IsLibLoaded(const char *libname) {
 template<auto Thunk, typename Result, typename... Args>
 inline Result CallHostFunction(Args... args) {
 #ifndef _M_ARM_64
+#if __SIZEOF_POINTER__ == 8
   // This magic incantation of using a register variable with an empty asm block is necessary for correct operation!
   // If we only use inline asm that sets a variable then the compiler will reorder the function
   // prologue to be BEFORE our inline asm. Which makes sense in hindsight, but for anything with 8+ arguments this
@@ -121,6 +122,14 @@ inline Result CallHostFunction(Args... args) {
   // This magic incantation also works in that instance so this is about the best we can do without adding a new attribute to clang for modifying the
   // ABI.
   asm volatile("" : "=r" (host_addr));
+#else
+  // mm0 register is chosen as the register that contains the host_addr.
+  // This register is chosen as it doesn't conflict with vectorcall.
+  // This register also overlaps the x87 st(0) register which is used as float value return.
+  // st(0) is required to be empty coming in to the function because of this.
+  register uintptr_t host_addr asm ("mm0");
+  asm volatile("" : "=r" (host_addr));
+#endif
 #else
   uintptr_t host_addr = 0;
 #endif
