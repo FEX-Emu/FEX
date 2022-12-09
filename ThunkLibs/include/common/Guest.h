@@ -141,9 +141,9 @@ inline Result CallHostFunction(Args... args) {
 // Convenience wrapper that returns the function pointer to a CallHostFunction
 // instantiation matching the function signature of `host_func`
 template<typename Result, typename...Args>
-static auto GetCallerForHostFunction(THUNK_ABI Result (*host_func)(Args...))
-    -> THUNK_ABI Result(*)(Args...) {
-  return &CallHostFunction<fexthunks_invoke_callback<THUNK_ABI Result(Args...)>, Result, Args...>;
+static auto GetCallerForHostFunction(Result (*host_func)(Args...))
+    -> Result(*)(Args...) {
+  return &CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
 }
 
 // Ensures the given host function can safely be called from guest code.
