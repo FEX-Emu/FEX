@@ -686,7 +686,7 @@ namespace JSON {
   AppLoader::AppLoader(const std::string& Filename, FEXCore::Config::LayerType Type)
     : FEXCore::Config::OptionMapper(Type) {
     const bool Global = Type == FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP ||
-                        Type == FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP;
+                        Type == FEXCore::Config::LayerType::LAYER_GLOBAL_APP;
     Config = FEXCore::Config::GetApplicationConfig(Filename, Global);
 
     // Immediately load so we can reload the meta layer
