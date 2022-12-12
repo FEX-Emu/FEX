@@ -625,6 +625,8 @@ template
 void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4, false>(OpcodeArgs);
 
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
