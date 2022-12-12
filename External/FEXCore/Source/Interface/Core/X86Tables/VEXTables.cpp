@@ -91,7 +91,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0x72), 1, X86InstInfo{"",           TYPE_VEX_GROUP_13, FLAGS_NONE, 0, nullptr}}, // VEX Group 13
     {OPD(1, 0b01, 0x73), 1, X86InstInfo{"",           TYPE_VEX_GROUP_14, FLAGS_NONE, 0, nullptr}}, // VEX Group 14
 
-    {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x75), 1, X86InstInfo{"VPCMPEQW",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x76), 1, X86InstInfo{"VPCMPEQD",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
