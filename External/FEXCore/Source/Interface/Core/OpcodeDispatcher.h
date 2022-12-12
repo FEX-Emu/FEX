@@ -153,8 +153,9 @@ public:
   OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
 
   void ResetWorkingList();
-  void ResetDecodeFailure() { DecodeFailure = false; }
+  void ResetDecodeFailure() { NeedsBlockEnd = DecodeFailure = false; }
   bool HadDecodeFailure() const { return DecodeFailure; }
+  bool NeedsBlockEnder() const { return NeedsBlockEnd; }
 
   void BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   void Finalize();
@@ -659,6 +660,7 @@ public:
   bool HandledLock = false;
 private:
   bool DecodeFailure{false};
+  bool NeedsBlockEnd{false};
   FEXCore::IR::IROp_IRHeader *Current_Header{};
   OrderedNode *Current_HeaderNode{};
 

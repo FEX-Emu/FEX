@@ -58,6 +58,7 @@ private:
   bool DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
+  bool BranchTargetCanContinue(bool FinalInstruction) const;
 
   uint8_t ReadByte();
   uint8_t PeekByte(uint8_t Offset) const;

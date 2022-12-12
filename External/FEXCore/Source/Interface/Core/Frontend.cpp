@@ -1127,6 +1127,35 @@ void Decoder::BranchTargetInMultiblockRange() {
   }
 }
 
+bool Decoder::BranchTargetCanContinue(bool FinalInstruction) const {
+  if (FinalInstruction) {
+    return false;
+  }
+
+  uint64_t TargetRIP = 0;
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
+  if (DecodeInst->OP == 0xE8) { // Call - immediate target
+    const uint64_t NextRIP = DecodeInst->PC + DecodeInst->InstSize;
+    LOGMAN_THROW_A_FMT(DecodeInst->Src[0].IsLiteral(), "Had wrong operand type");
+    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Data.Literal.Value;
+
+    if (GPRSize == 4) {
+      // If we are running a 32bit guest then wrap around addresses that go above 32bit
+      TargetRIP &= 0xFFFFFFFFU;
+    }
+
+    if (TargetRIP == NextRIP) {
+      // Optimize the case that the instruction is jumping just after itself.
+      // This is a GOT calculation which we can optimize out.
+      // Optimization occurs inside of the OpDispatcher implementation
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, uint64_t EntryPoint, uint64_t RIP) {
   constexpr uint64_t VSyscall_Base = 0xFFFF'FFFF'FF60'0000ULL;
   constexpr uint64_t VSyscall_End = VSyscall_Base + 0x1000;
@@ -1251,23 +1280,21 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
         CanContinue = true;
       }
 
+      bool FinalInstruction = DecodedSize >= CTX->Config.MaxInstPerBlock ||
+          DecodedSize >= DefaultDecodedBufferSize ||
+          TotalInstructions >= CTX->Config.MaxInstPerBlock;
+
       if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
         // If we have multiblock enabled
         // If the branch target is within our multiblock range then we can keep going on
         // We don't want to short circuit this since we want to calculate our ranges still
         BranchTargetInMultiblockRange();
+
+        // Bypass branches if we can continue through them in some cases.
+        CanContinue |= BranchTargetCanContinue(FinalInstruction);
       }
 
-      if (!CanContinue) {
-        break;
-      }
-
-      if (DecodedSize >= CTX->Config.MaxInstPerBlock ||
-          DecodedSize >= DefaultDecodedBufferSize) {
-        break;
-      }
-
-      if (TotalInstructions >= CTX->Config.MaxInstPerBlock) {
+      if (FinalInstruction || !CanContinue) {
         break;
       }
 

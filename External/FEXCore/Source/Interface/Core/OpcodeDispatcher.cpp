@@ -783,8 +783,17 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 
   _StoreMem(GPRClass, GPRSize, NewSP, ConstantPCReturn, GPRSize);
 
-  // Store the RIP
-  _ExitFunction(NewRIP); // If we get here then leave the function now
+  const uint64_t NextRIP = Op->PC + Op->InstSize;
+  LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Had wrong operand type");
+  const uint64_t TargetRIP = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
+
+  if (NextRIP != TargetRIP) {
+    // Store the RIP
+    _ExitFunction(NewRIP); // If we get here then leave the function now
+  }
+  else {
+    NeedsBlockEnd = true;
+  }
 }
 
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
