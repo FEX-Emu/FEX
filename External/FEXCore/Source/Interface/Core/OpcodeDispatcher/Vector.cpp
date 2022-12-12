@@ -442,6 +442,10 @@ template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>(OpcodeArgs);
@@ -551,6 +555,10 @@ template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
 template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
 void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
