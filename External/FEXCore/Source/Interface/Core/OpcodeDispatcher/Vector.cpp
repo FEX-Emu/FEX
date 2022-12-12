@@ -422,6 +422,9 @@ template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 8>(OpcodeArgs);
 
 template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 1>(OpcodeArgs);
+
+template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
