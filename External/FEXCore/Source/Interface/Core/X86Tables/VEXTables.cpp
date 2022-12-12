@@ -297,7 +297,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0x25), 1, X86InstInfo{"VPMOVSXDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(2, 0b01, 0x28), 1, X86InstInfo{"VPMULDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x29), 1, X86InstInfo{"VPCMPEQQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x29), 1, X86InstInfo{"VPCMPEQQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x2A), 1, X86InstInfo{"VMOVNTDQA", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x2B), 1, X86InstInfo{"VPACKUSDW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x2C), 1, X86InstInfo{"VMASKMOVPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
