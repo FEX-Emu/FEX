@@ -241,7 +241,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xEE), 1, X86InstInfo{"VPMAXSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xEF), 1, X86InstInfo{"VPXOR",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(1, 0b11, 0xF0), 1, X86InstInfo{"VLDDQU",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b11, 0xF0), 1, X86InstInfo{"VLDDQU",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0xF1), 1, X86InstInfo{"VPSLLW",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xF2), 1, X86InstInfo{"VPSLLD",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
