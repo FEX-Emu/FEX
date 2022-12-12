@@ -4,6 +4,7 @@ Test_REP/F3_53.asm
 Test_TwoByte/0F_52.asm
 Test_TwoByte/0F_53.asm
 Test_VEX/vrcpps.asm
+Test_VEX/vrcpss.asm
 Test_VEX/vrsqrtss.asm
 Test_VEX/vrsqrtps.asm
 
