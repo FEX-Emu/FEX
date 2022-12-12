@@ -334,7 +334,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0x5A), 1, X86InstInfo{"VBBROADCASTI128", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
 
     {OPD(2, 0b01, 0x78), 1, X86InstInfo{"VPBROADCASTB", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(2, 0b01, 0x79), 1, X86InstInfo{"VPBROADCASTW", TYPE_INST, FLAGS_MODRM, 0, nullptr}},
+    {OPD(2, 0b01, 0x79), 1, X86InstInfo{"VPBROADCASTW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(2, 0b01, 0x8C), 1, X86InstInfo{"VPMASKMOV", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x8E), 1, X86InstInfo{"VPMASKMOV", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
