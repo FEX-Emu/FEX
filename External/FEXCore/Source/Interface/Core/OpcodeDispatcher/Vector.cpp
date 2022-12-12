@@ -635,6 +635,13 @@ void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 1, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 2, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
+
+template
 void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4, true>(OpcodeArgs);
