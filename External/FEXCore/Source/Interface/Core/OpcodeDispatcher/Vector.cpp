@@ -891,6 +891,10 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VBROADCASTOp<1>(OpcodeArgs);
+template
+void OpDispatchBuilder::VBROADCASTOp<2>(OpcodeArgs);
+template
 void OpDispatchBuilder::VBROADCASTOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VBROADCASTOp<8>(OpcodeArgs);
