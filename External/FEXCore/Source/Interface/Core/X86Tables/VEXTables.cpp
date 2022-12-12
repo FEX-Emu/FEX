@@ -78,9 +78,9 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0x61), 1, X86InstInfo{"VPUNPCKLWD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x62), 1, X86InstInfo{"VPUNPCKLDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0x63), 1, X86InstInfo{"VPACKSSWB",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0x64), 1, X86InstInfo{"VPCMPGTB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x65), 1, X86InstInfo{"VPVMPGTW",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x66), 1, X86InstInfo{"VPVMPGTD",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x64), 1, X86InstInfo{"VPCMPGTB",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x65), 1, X86InstInfo{"VPCMPGTW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x66), 1, X86InstInfo{"VPCMPGTD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x67), 1, X86InstInfo{"VPACKUSWB",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b01, 0x70), 1, X86InstInfo{"VPSHUFD",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -91,9 +91,9 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0x72), 1, X86InstInfo{"",           TYPE_VEX_GROUP_13, FLAGS_NONE, 0, nullptr}}, // VEX Group 13
     {OPD(1, 0b01, 0x73), 1, X86InstInfo{"",           TYPE_VEX_GROUP_14, FLAGS_NONE, 0, nullptr}}, // VEX Group 14
 
-    {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x75), 1, X86InstInfo{"VPCMPEQW",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0x76), 1, X86InstInfo{"VPCMPEQD",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x74), 1, X86InstInfo{"VPCMPEQB",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x75), 1, X86InstInfo{"VPCMPEQW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0x76), 1, X86InstInfo{"VPCMPEQD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b00, 0x77), 1, X86InstInfo{"VZERO*",     TYPE_INST, GenFlagsDstSize(SIZE_128BIT), 0, nullptr}},
 
@@ -297,7 +297,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0x25), 1, X86InstInfo{"VPMOVSXDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(2, 0b01, 0x28), 1, X86InstInfo{"VPMULDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x29), 1, X86InstInfo{"VPCMPEQQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x29), 1, X86InstInfo{"VPCMPEQQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x2A), 1, X86InstInfo{"VMOVNTDQA", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x2B), 1, X86InstInfo{"VPACKUSDW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x2C), 1, X86InstInfo{"VMASKMOVPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -312,7 +312,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0x34), 1, X86InstInfo{"VPMOVZXWQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x35), 1, X86InstInfo{"VPMOVZXDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x36), 1, X86InstInfo{"VPERMD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x37), 1, X86InstInfo{"VPVMPGTQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x37), 1, X86InstInfo{"VPCMPGTQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(2, 0b01, 0x38), 1, X86InstInfo{"VPMINSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x39), 1, X86InstInfo{"VPMINSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
