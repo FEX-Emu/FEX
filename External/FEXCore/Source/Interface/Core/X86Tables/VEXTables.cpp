@@ -216,7 +216,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xDB), 1, X86InstInfo{"VPAND",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xDC), 1, X86InstInfo{"VPADDUSB", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xDD), 1, X86InstInfo{"VPADDUSW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0xDE), 1, X86InstInfo{"VPMAXUB",  TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xDE), 1, X86InstInfo{"VPMAXUB",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xDF), 1, X86InstInfo{"VPANDN",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b01, 0xE0), 1, X86InstInfo{"VPAVGB",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -238,7 +238,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xEB), 1, X86InstInfo{"VPOR",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xEC), 1, X86InstInfo{"VPADDSB", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xED), 1, X86InstInfo{"VPADDSW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0xEE), 1, X86InstInfo{"VPMAXSW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xEE), 1, X86InstInfo{"VPMAXSW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xEF), 1, X86InstInfo{"VPXOR",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(1, 0b11, 0xF0), 1, X86InstInfo{"VLDDQU",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -318,10 +318,10 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0x39), 1, X86InstInfo{"VPMINSD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x3A), 1, X86InstInfo{"VPMINUW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x3B), 1, X86InstInfo{"VPMINUD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(2, 0b01, 0x3C), 1, X86InstInfo{"VPMAXSB", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x3D), 1, X86InstInfo{"VPMAXSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x3E), 1, X86InstInfo{"VPMAXUW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0x3F), 1, X86InstInfo{"VPMAXUD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x3C), 1, X86InstInfo{"VPMAXSB", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x3D), 1, X86InstInfo{"VPMAXSD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x3E), 1, X86InstInfo{"VPMAXUW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0x3F), 1, X86InstInfo{"VPMAXUD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(2, 0b01, 0x40), 1, X86InstInfo{"VPMULLD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x41), 1, X86InstInfo{"VPHMINPOSUW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

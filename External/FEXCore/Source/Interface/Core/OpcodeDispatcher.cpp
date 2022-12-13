@@ -5919,6 +5919,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xDB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
     {OPD(1, 0b01, 0xDC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQADD, 1>},
     {OPD(1, 0b01, 0xDD), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQADD, 2>},
+    {OPD(1, 0b01, 0xDE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 1>},
     {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::VANDNOp},
 
     {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 1>},
@@ -5932,6 +5933,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
     {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 1>},
     {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 2>},
+    {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 2>},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VXOR, 16>},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPD_Op},
@@ -5962,6 +5964,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x39), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 4>},
     {OPD(2, 0b01, 0x3A), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 2>},
     {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 4>},
+    {OPD(2, 0b01, 0x3C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 1>},
+    {OPD(2, 0b01, 0x3D), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 4>},
+    {OPD(2, 0b01, 0x3E), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 2>},
+    {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 4>},
 
     {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::VBROADCASTOp<4>},
     {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::VBROADCASTOp<8>},
