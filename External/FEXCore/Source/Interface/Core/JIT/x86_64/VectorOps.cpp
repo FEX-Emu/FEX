@@ -811,10 +811,15 @@ DEF_OP(VFAddP) {
   const auto VectorLower = GetSrc(Op->VectorLower.ID());
   const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
+  // To behave like FADDP, we need to swap the second and third elements around
+  // in the 256-bit case. FADDP operates as if both vectors are concatenated
+  // together and runs down the length of it adding pairs as it goes, whereas
+  // VHADDPS operates on both individual halves of the entire register.
   switch (ElementSize) {
     case 4:
       if (Is256Bit) {
-        vhaddpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+        vhaddps(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+        vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
       } else {
         vhaddps(Dst, VectorLower, VectorUpper);
       }
@@ -822,6 +827,7 @@ DEF_OP(VFAddP) {
     case 8:
       if (Is256Bit) {
         vhaddpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper));
+        vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
       } else {
         vhaddpd(Dst, VectorLower, VectorUpper);
       }
