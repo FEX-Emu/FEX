@@ -379,8 +379,10 @@ public:
   template<size_t ElementSize>
   void PExtrOp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template <size_t ElementSize>
   void PSIGN(OpcodeArgs);
+  template <size_t ElementSize>
+  void VPSIGN(OpcodeArgs);
 
   // BMI1 Ops
   void ANDNBMIOp(OpcodeArgs);
