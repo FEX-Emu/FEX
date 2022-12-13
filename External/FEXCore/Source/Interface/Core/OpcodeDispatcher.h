@@ -650,8 +650,6 @@ public:
 
   void InvalidOp(OpcodeArgs);
 
-#undef OpcodeArgs
-
   void SetPackedRFLAG(bool Lower8, OrderedNode *Src);
   OrderedNode *GetPackedRFLAG(bool Lower8);
 
@@ -663,6 +661,13 @@ private:
   bool NeedsBlockEnd{false};
   FEXCore::IR::IROp_IRHeader *Current_Header{};
   OrderedNode *Current_HeaderNode{};
+
+  // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
+
+  OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
+                         OrderedNode *Src1, OrderedNode *Src2);
+
+  #undef OpcodeArgs
 
   OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
   void UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t SegmentReg);
