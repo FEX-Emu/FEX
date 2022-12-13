@@ -5928,6 +5928,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 1>},
     {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 2>},
     {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 4>},
+    {OPD(1, 0b01, 0xFB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 8>},
     {OPD(1, 0b01, 0xFC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 1>},
     {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 2>},
     {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 4>},
