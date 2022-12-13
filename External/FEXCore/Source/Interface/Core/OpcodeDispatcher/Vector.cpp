@@ -432,6 +432,8 @@ template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQSUB, 1>(OpcodeArgs);
 
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 1>(OpcodeArgs);
