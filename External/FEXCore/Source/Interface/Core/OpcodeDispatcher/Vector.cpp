@@ -499,6 +499,19 @@ void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 1>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 2>(OpcodeArgs);
 
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 1>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 2>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 1>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 2>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 4>(OpcodeArgs);
+
 template<FEXCore::IR::IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
