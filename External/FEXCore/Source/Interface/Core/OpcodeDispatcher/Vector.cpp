@@ -1087,19 +1087,16 @@ void OpDispatchBuilder::PExtrOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PExtrOp<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSIGN(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+OrderedNode* OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize,
+                                          OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
 
   auto ZeroVec = _VectorZero(Size);
-  auto NegVec = _VNeg(Size, ElementSize, Dest);
+  auto NegVec = _VNeg(Size, ElementSize, Src1);
 
-  OrderedNode *CmpLT = _VCMPLTZ(Size, ElementSize, Src);
-  OrderedNode *CmpEQ = _VCMPEQZ(Size, ElementSize, Src);
-  OrderedNode *CmpGT = _VCMPGTZ(Size, ElementSize, Src);
+  OrderedNode *CmpLT = _VCMPLTZ(Size, ElementSize, Src2);
+  OrderedNode *CmpEQ = _VCMPEQZ(Size, ElementSize, Src2);
+  OrderedNode *CmpGT = _VCMPGTZ(Size, ElementSize, Src2);
 
   // Negative elements return -dest
   CmpLT = _VAnd(Size, ElementSize, CmpLT, NegVec);
@@ -1108,10 +1105,18 @@ void OpDispatchBuilder::PSIGN(OpcodeArgs) {
   CmpEQ = _VAnd(Size, ElementSize, CmpEQ, ZeroVec);
 
   // Positive elements return dest
-  CmpGT = _VAnd(Size, ElementSize, CmpGT, Dest);
+  CmpGT = _VAnd(Size, ElementSize, CmpGT, Src1);
 
   // Or our results
-  OrderedNode *Res = _VOr(Size, ElementSize, CmpGT, _VOr(Size, ElementSize, CmpLT, CmpEQ));
+  return _VOr(Size, ElementSize, CmpGT, _VOr(Size, ElementSize, CmpLT, CmpEQ));
+}
+
+template <size_t ElementSize>
+void OpDispatchBuilder::PSIGN(OpcodeArgs) {
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode* Res = PSIGNImpl(Op, ElementSize, Dest, Src);
+  
   StoreResult(FPRClass, Op, Res, -1);
 }
 
@@ -1121,6 +1126,28 @@ template
 void OpDispatchBuilder::PSIGN<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSIGN<4>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSIGN(OpcodeArgs) {
+  const auto Is128Bit = GetSrcSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode* Res = PSIGNImpl(Op, ElementSize, Src1, Src2);
+
+  if (Is128Bit) {
+    Res = _VMov(16, Res);
+  }
+
+  StoreResult(FPRClass, Op, Res, -1);
+}
+
+template
+void OpDispatchBuilder::VPSIGN<1>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSIGN<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSIGN<4>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
