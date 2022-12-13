@@ -574,6 +574,8 @@ void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFDIV, 4>(OpcodeArgs);
 template
+void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFDIV, 8>(OpcodeArgs);
+template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
