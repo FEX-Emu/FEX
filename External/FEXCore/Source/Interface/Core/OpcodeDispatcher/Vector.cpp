@@ -1146,6 +1146,8 @@ template
 void OpDispatchBuilder::VPSIGN<1>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPSIGN<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSIGN<4>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
