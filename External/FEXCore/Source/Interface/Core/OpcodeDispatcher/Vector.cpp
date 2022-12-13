@@ -991,6 +991,30 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
 }
 
 template <size_t ElementSize>
+void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  OrderedNode *Res = _VFAddP(SrcSize, ElementSize, Src1, Src2);
+  OrderedNode *Dest{};
+
+   if (Is256Bit) {
+    Dest = _VInsElement(SrcSize, 8, 1, 2, Res, Res);
+    Dest = _VInsElement(SrcSize, 8, 2, 1, Dest, Res);
+  } else {
+    Dest = _VMov(SrcSize, Res);
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
+template
+void OpDispatchBuilder::VHADDPOp<4>(OpcodeArgs);
+
+template <size_t ElementSize>
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
