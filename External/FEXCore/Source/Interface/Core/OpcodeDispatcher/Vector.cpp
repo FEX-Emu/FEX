@@ -1013,6 +1013,8 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VHADDPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VHADDPOp<8>(OpcodeArgs);
 
 template <size_t ElementSize>
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
