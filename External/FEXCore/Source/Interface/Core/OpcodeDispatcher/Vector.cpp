@@ -500,6 +500,9 @@ template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 2>(OpcodeArgs);
 
 template
+void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 1>(OpcodeArgs);
+
+template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 1>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 2>(OpcodeArgs);
