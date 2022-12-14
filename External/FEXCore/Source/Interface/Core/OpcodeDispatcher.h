@@ -415,6 +415,9 @@ public:
   template <size_t ElementSize>
   void VBROADCASTOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VHADDPOp(OpcodeArgs);
+
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
   void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
