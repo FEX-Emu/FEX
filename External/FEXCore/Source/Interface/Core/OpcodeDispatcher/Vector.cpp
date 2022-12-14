@@ -2718,6 +2718,8 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::AVXVectorRound<4, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorRound<8, false>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
