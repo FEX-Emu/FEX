@@ -281,9 +281,7 @@ def print_ir_structs(defines):
     output_file.write("\tvoid* Data[0];\n")
     output_file.write("\tIROps Op;\n\n")
     output_file.write("\tuint8_t Size;\n")
-    output_file.write("\tuint8_t NumArgs;\n")
-    output_file.write("\tuint8_t ElementSize : 7;\n")
-    output_file.write("\tbool HasDest : 1;\n")
+    output_file.write("\tuint8_t ElementSize;\n")
 
     output_file.write("\ttemplate<typename T>\n")
     output_file.write("\tT const* C() const { return reinterpret_cast<T const*>(Data); }\n")
@@ -360,6 +358,7 @@ def print_ir_sizes():
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetArgs(IROps Op);\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool HasSideEffects(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool GetHasDest(IROps Op);\n")
 
     output_file.write("#undef IROP_SIZES\n")
     output_file.write("#endif\n\n")
@@ -451,6 +450,25 @@ def print_ir_hassideeffects():
     output_file.write("}\n")
 
     output_file.write("#undef IROP_HASSIDEEFFECTS_IMPL\n")
+    output_file.write("#endif\n\n")
+
+def print_ir_gethasdest():
+    output_file.write("#ifdef IROP_GETHASDEST_IMPL\n")
+
+    output_file.write("constexpr std::array<bool, OP_LAST + 1> IRDest = {\n")
+    for op in IROps:
+        if op.HasDest:
+            output_file.write("\ttrue,\n")
+        else:
+            output_file.write("\tfalse,\n")
+
+    output_file.write("};\n\n")
+
+    output_file.write("bool GetHasDest(IROps Op) {\n")
+    output_file.write("  return IRDest[Op];\n")
+    output_file.write("}\n")
+
+    output_file.write("#undef IROP_GETHASDEST_IMPL\n")
     output_file.write("#endif\n\n")
 
 # Print out IR argument printing
@@ -545,15 +563,15 @@ def print_ir_allocator_helpers():
     output_file.write("\t\treturn HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
-    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\tLOGMAN_THROW_A_FMT(HeaderOp->HasDest, \"Op {} has no dest\\n\", GetName(HeaderOp->Op));\n")
-    output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
-    output_file.write("\t}\n\n")
-
     output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn HeaderOp->HasDest;\n")
+    output_file.write("\t\treturn GetHasDest(HeaderOp->Op);\n");
+    output_file.write("\t}\n\n")
+
+    output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
+    output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
+    output_file.write("\t\tLOGMAN_THROW_A_FMT(OpHasDest(Op), \"Op {} has no nest\\n\", GetName(HeaderOp->Op));\n")
+    output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tIROps GetOpType(const OrderedNode *Op) const {\n")
@@ -631,8 +649,6 @@ def print_ir_allocator_helpers():
 
                     output_file.write("\t\tOp.first->Header.Size = InferSize;\n")
 
-            output_file.write("\t\tOp.first->Header.NumArgs = {};\n".format(op.SSAArgNum))
-
             # Some ops without a destination still need an operating size
             # Effectively reusing the destination size value for operation size
             if op.DestSize != None:
@@ -642,9 +658,6 @@ def print_ir_allocator_helpers():
                 output_file.write("\t\tOp.first->Header.ElementSize = Op.first->Header.Size / ({});\n".format(1))
             else:
                 output_file.write("\t\tOp.first->Header.ElementSize = Op.first->Header.Size / ({});\n".format(op.NumElements))
-
-            if (op.HasDest):
-                output_file.write("\t\tOp.first->Header.HasDest = true;\n")
 
             # Insert validation here
             if op.EmitValidation != None:
@@ -733,6 +746,7 @@ print_ir_reg_classes()
 print_ir_getname()
 print_ir_getraargs()
 print_ir_hassideeffects()
+print_ir_gethasdest()
 print_ir_arg_printer()
 print_ir_allocator_helpers()
 print_ir_parser_switch_helper()

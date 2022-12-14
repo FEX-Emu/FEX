@@ -23,6 +23,7 @@ namespace FEXCore::IR {
 #define IROP_REG_CLASSES_IMPL
 #define IROP_HASSIDEEFFECTS_IMPL
 #define IROP_SIZES_IMPL
+#define IROP_GETHASDEST_IMPL
 
 #include <FEXCore/IR/IRDefines.inc>
 
@@ -125,7 +126,7 @@ static void PrintArg(std::stringstream *out, IRListView const* IR, OrderedNodeWr
     }
   }
 
-  if (IROp->HasDest) {
+  if (GetHasDest(IROp->Op)) {
     uint32_t ElementSize = IROp->ElementSize;
     uint32_t NumElements = IROp->Size;
     if (!IROp->ElementSize) {
@@ -231,7 +232,7 @@ void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationDa
 
       if (!Skip) {
         AddIndent();
-        if (IROp->HasDest) {
+        if (GetHasDest(IROp->Op)) {
 
           uint32_t ElementSize = IROp->ElementSize;
           uint32_t NumElements = IROp->Size;

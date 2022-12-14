@@ -233,7 +233,7 @@ void ConstProp::CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& Cur
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     auto BlockOp = BlockIROp->CW<FEXCore::IR::IROp_CodeBlock>();
     for (auto [UnaryOpNode, UnaryOpHdr] : CurrentIR.GetCode(BlockNode)) {
-      if (UnaryOpHdr->NumArgs == 1 && !HasSideEffects(UnaryOpHdr->Op)) {
+      if (IR::GetArgs(UnaryOpHdr->Op) == 1 && !HasSideEffects(UnaryOpHdr->Op)) {
         // could be moved
         auto SelectOpNode = IREmit->UnwrapNode(UnaryOpHdr->Args[0]);
         auto SelectOpHdr = IREmit->GetOpHeader(UnaryOpHdr->Args[0]);
@@ -255,7 +255,7 @@ void ConstProp::CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& Cur
           // Copy over the op
           memcpy(NewUnaryOp1.first, UnaryOpHdr, OpSize);
 
-          for (int i = 0; i < NewUnaryOp1.first->NumArgs; i++) {
+          for (int i = 0; i < IR::GetArgs(NewUnaryOp1.first->Op); i++) {
             NewUnaryOp1.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
           }
           // Set New Op to operate on the constant
@@ -269,7 +269,7 @@ void ConstProp::CodeMotionAroundSelects(IREmitter *IREmit, const IRListView& Cur
           // Copy over the op
           memcpy(NewUnaryOp2.first, UnaryOpHdr, OpSize);
 
-          for (int i = 0; i < NewUnaryOp2.first->NumArgs; i++) {
+          for (int i = 0; i < IR::GetArgs(NewUnaryOp2.first->Op); i++) {
             NewUnaryOp2.first->Args[i] = IREmit->WrapNode(IREmit->Invalid());
           }
           // Set New Op to operate on the constant
@@ -366,7 +366,7 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
     case OP_ASHR:
     case OP_LSHL:
     case OP_ROR: {
-      for (int i = 0; i < IROp->NumArgs; i++) {
+      for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
         auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], getMask(IROp));
         if (newArg.ID() != IROp->Args[i].ID()) {
           IREmit->ReplaceNodeArgument(CodeNode, i, IREmit->UnwrapNode(newArg));
@@ -378,7 +378,7 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
 
     case OP_AND: {
       // if AND's arguments are imms, they are masking
-      for (int i = 0; i < IROp->NumArgs; i++) {
+      for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
         auto mask = getMask(IROp);
         uint64_t imm = 0;
         if (IREmit->IsValueConstant(IROp->Args[i^1], &imm))
@@ -457,7 +457,7 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
     case OP_VFDIV:
     case OP_FCMP: {
       auto flopSize = IROp->Size;
-      for (int i = 0; i < IROp->NumArgs; i++) {
+      for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
         auto argHeader = IREmit->GetOpHeader(IROp->Args[i]);
 
         if (argHeader->Op == OP_VMOV) {

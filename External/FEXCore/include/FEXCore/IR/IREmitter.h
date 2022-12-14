@@ -58,8 +58,6 @@ friend class FEXCore::IR::PassManager;
     Op.first->Constant = (Constant & Mask);
     Op.first->Header.Size = Size / 8;
     Op.first->Header.ElementSize = Size / 8;
-    Op.first->Header.NumArgs = 0;
-    Op.first->Header.HasDest = true;
     return Op;
   }
   IRPair<IROp_Bfe> _Bfe(uint8_t Width, uint8_t lsb, OrderedNode *ssa0) {
