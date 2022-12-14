@@ -459,6 +459,10 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
         DestSize = 16;
       }
     }
+    else if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_256BIT) {
+      DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_256BIT);
+      DestSize = 32;
+    }
     else if (HasNarrowingDisplacement &&
       (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_DEF ||
        DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
