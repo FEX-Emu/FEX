@@ -89,25 +89,79 @@ private:
   template<uint8_t RAType>
   [[nodiscard]] aarch64::Register GetReg(IR::NodeID Node) const;
 
-  template<>
-  [[nodiscard]] aarch64::Register GetReg<RA_32>(IR::NodeID Node) const;
-  template<>
-  [[nodiscard]] aarch64::Register GetReg<RA_64>(IR::NodeID Node) const;
-
   template<uint8_t RAType>
   [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair(IR::NodeID Node) const;
 
-  template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_32>(IR::NodeID Node) const;
-  template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<RA_64>(IR::NodeID Node) const;
-
-  [[nodiscard]] aarch64::VRegister GetSrc(IR::NodeID Node) const;
-  [[nodiscard]] aarch64::VRegister GetDst(IR::NodeID Node) const;
-
   [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
 
-  [[nodiscard]] IR::PhysicalRegister GetPhys(IR::NodeID Node) const;
+  template<>
+  [[nodiscard]] aarch64::Register GetReg<Arm64JITCore::RA_32>(IR::NodeID Node) const {
+    return GetReg<Arm64JITCore::RA_64>(Node).W();
+  }
+
+  template<>
+  [[nodiscard]] aarch64::Register GetReg<Arm64JITCore::RA_64>(IR::NodeID Node) const {
+    auto Reg = GetPhys(Node);
+
+    LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
+    if (Reg.Class == IR::GPRFixedClass.Val) {
+      return SRA64[Reg.Reg];
+    } else if (Reg.Class == IR::GPRClass.Val) {
+      return RA64[Reg.Reg];
+    }
+
+    FEX_UNREACHABLE;
+  }
+
+  template<>
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<Arm64JITCore::RA_32>(IR::NodeID Node) const {
+    uint32_t Reg = GetPhys(Node).Reg;
+    auto Pair = RA64Pair[Reg];
+    return std::make_pair(Pair.first.W(), Pair.second.W());
+  }
+
+  template<>
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<Arm64JITCore::RA_64>(IR::NodeID Node) const {
+    uint32_t Reg = GetPhys(Node).Reg;
+    return RA64Pair[Reg];
+  }
+
+  [[nodiscard]] aarch64::VRegister GetSrc(IR::NodeID Node) const {
+    auto Reg = GetPhys(Node);
+
+    LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
+    if (Reg.Class == IR::FPRFixedClass.Val) {
+      return SRAFPR[Reg.Reg];
+    } else if (Reg.Class == IR::FPRClass.Val) {
+      return RAFPR[Reg.Reg];
+    }
+
+    FEX_UNREACHABLE;
+  }
+
+  [[nodiscard]] aarch64::VRegister GetDst(IR::NodeID Node) const {
+    auto Reg = GetPhys(Node);
+
+    LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
+
+    if (Reg.Class == IR::FPRFixedClass.Val) {
+      return SRAFPR[Reg.Reg];
+    } else if (Reg.Class == IR::FPRClass.Val) {
+      return RAFPR[Reg.Reg];
+    }
+
+    FEX_UNREACHABLE;
+  }
+
+  [[nodiscard]] IR::PhysicalRegister GetPhys(IR::NodeID Node) const {
+    auto PhyReg = RAData->GetNodeRegister(Node);
+
+    LOGMAN_THROW_A_FMT(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
+
+    return PhyReg;
+  }
 
   [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
