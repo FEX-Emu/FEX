@@ -123,10 +123,9 @@ inline Result CallHostFunction(Args... args) {
   // ABI.
   asm volatile("" : "=r" (host_addr));
 #else
-  // mm0 register is chosen as the register that contains the host_addr.
-  // This register is chosen as it doesn't conflict with vectorcall.
-  // This register also overlaps the x87 st(0) register which is used as float value return.
-  // st(0) is required to be empty coming in to the function because of this.
+  // Use mm0 to pass in host_addr (chosen to avoid conflicts with vectorcall).
+  // Note this register overlaps the x87 st(0) register (used to return float values),
+  // so applications that expect this register to be preserved could run into problems.
   register uintptr_t host_addr asm ("mm0");
   asm volatile("" : "=r" (host_addr));
 #endif
