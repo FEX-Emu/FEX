@@ -2939,6 +2939,38 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
+  const auto Selector = Op->Src[2].Data.Literal.Value;
+
+  OrderedNode *Result = _VectorZero(DstSize);
+
+  const auto SelectElement = [&](uint64_t Index, uint64_t SelectorIdx) {
+    switch (SelectorIdx) {
+      case 0:
+      case 1:
+        return _VInsElement(DstSize, 16, Index, SelectorIdx, Result, Src1);
+      case 2:
+      case 3:
+      default:
+        return _VInsElement(DstSize, 16, Index, SelectorIdx - 2, Result, Src2);
+    }
+  };
+
+  if ((Selector & 0b00001000) == 0) {
+    Result = SelectElement(0, Selector & 0b11);
+  }
+  if ((Selector & 0b10000000) == 0) {
+    Result = SelectElement(1, (Selector >> 4) & 0b11);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);

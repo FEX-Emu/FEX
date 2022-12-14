@@ -411,7 +411,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x02), 1, X86InstInfo{"VPBLENDD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x04), 1, X86InstInfo{"VPERMILPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x05), 1, X86InstInfo{"VPERMILPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x06), 1, X86InstInfo{"VPERM2F128", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x06), 1, X86InstInfo{"VPERM2F128", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(3, 0b01, 0x08), 1, X86InstInfo{"VROUNDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x09), 1, X86InstInfo{"VROUNDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -442,7 +442,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x41), 1, X86InstInfo{"VDPPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x42), 1, X86InstInfo{"VMPSADBW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x44), 1, X86InstInfo{"VPCLMULQDQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
-    {OPD(3, 0b01, 0x46), 1, X86InstInfo{"VPERM2I128", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x46), 1, X86InstInfo{"VPERM2I128", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(3, 0b01, 0x48), 1, X86InstInfo{"VPERMILzz2PS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x49), 1, X86InstInfo{"VPERMILzz2PD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
