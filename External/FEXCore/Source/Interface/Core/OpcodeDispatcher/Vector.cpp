@@ -2663,8 +2663,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
     OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
     auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
-  }
-  else {
+  } else {
     StoreResult(FPRClass, Op, Src, -1);
   }
 }
@@ -2678,6 +2677,47 @@ template
 void OpDispatchBuilder::VectorRound<4, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorRound<8, true>(OpcodeArgs);
+
+template <size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
+  const auto GetMode = [&] {
+    if constexpr (Scalar) {
+      LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
+      return Op->Src[2].Data.Literal.Value;
+    } else {
+      LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+      return Op->Src[1].Data.Literal.Value;
+    }
+  };
+
+  const auto GetSrc = [&] {
+    if constexpr (Scalar) {
+      return LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+    } else {
+      return LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    }
+  };
+
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src = GetSrc();
+  OrderedNode *Result = VectorRoundImpl(Op, ElementSize, Src, GetMode());
+
+  if constexpr (Scalar) {
+    // Insert the lower bits
+    OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
+  }
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVectorRound<4, false>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {

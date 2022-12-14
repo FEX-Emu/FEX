@@ -410,6 +410,9 @@ public:
   template <IROps IROp, size_t ElementSize, bool Scalar>
   void AVXVectorUnaryOp(OpcodeArgs);
 
+  template <size_t ElementSize, bool Scalar>
+  void AVXVectorRound(OpcodeArgs);
+
   void VANDNOp(OpcodeArgs);
 
   template <size_t ElementSize>

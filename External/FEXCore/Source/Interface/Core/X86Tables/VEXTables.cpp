@@ -413,7 +413,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x05), 1, X86InstInfo{"VPERMILPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x06), 1, X86InstInfo{"VPERM2F128", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
 
-    {OPD(3, 0b01, 0x08), 1, X86InstInfo{"VROUNDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x08), 1, X86InstInfo{"VROUNDPS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x09), 1, X86InstInfo{"VROUNDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x0A), 1, X86InstInfo{"VROUNDSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x0B), 1, X86InstInfo{"VROUNDSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
