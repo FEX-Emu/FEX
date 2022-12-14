@@ -435,7 +435,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x21), 1, X86InstInfo{"VINSERTPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x22), 1, X86InstInfo{"VPINSRD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(3, 0b01, 0x38), 1, X86InstInfo{"VINSERTI128", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x38), 1, X86InstInfo{"VINSERTI128", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x39), 1, X86InstInfo{"VEXTRACTI128", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(3, 0b01, 0x40), 1, X86InstInfo{"VDPPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
