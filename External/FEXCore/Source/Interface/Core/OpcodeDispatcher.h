@@ -430,6 +430,7 @@ public:
 
   void VMOVVectorNTOp(OpcodeArgs);
 
+  void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);

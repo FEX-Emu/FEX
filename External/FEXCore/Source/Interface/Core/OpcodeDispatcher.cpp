@@ -5981,6 +5981,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
+    {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
   };
 #undef OPD
 
