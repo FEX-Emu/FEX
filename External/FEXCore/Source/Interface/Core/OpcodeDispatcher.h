@@ -677,6 +677,9 @@ private:
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
 
+  OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
+                               OrderedNode *Src, uint64_t Mode);
+
   #undef OpcodeArgs
 
   OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);

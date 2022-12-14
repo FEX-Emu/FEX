@@ -2627,21 +2627,17 @@ void OpDispatchBuilder::ExtendVectorElements<2, 8, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::ExtendVectorElements<4, 8, true>(OpcodeArgs);
 
-template<size_t ElementSize, bool Scalar>
-void OpDispatchBuilder::VectorRound(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Mode = Op->Src[1].Data.Literal.Value;
-  uint64_t RoundControlSource = (Mode >> 2) & 1;
+OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
+                                                OrderedNode *Src, uint64_t Mode) {
+  const auto Size = GetDstSize(Op);
+  const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
-
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   if (RoundControlSource) {
     RoundControl = 0; // MXCSR
   }
 
-  std::array<FEXCore::IR::RoundType, 5> SourceModes = {
+  static constexpr std::array SourceModes = {
     FEXCore::IR::Round_Nearest,
     FEXCore::IR::Round_Negative_Infinity,
     FEXCore::IR::Round_Positive_Infinity,
@@ -2649,12 +2645,23 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
     FEXCore::IR::Round_Host,
   };
 
-  Src = _Vector_FToI(Size, ElementSize, Src, SourceModes[(RoundControlSource << 2) | RoundControl]);
+  return _Vector_FToI(Size, ElementSize, Src, SourceModes[(RoundControlSource << 2) | RoundControl]);
+}
+
+template<size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::VectorRound(OpcodeArgs) {
+  const auto Size = GetDstSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t Mode = Op->Src[1].Data.Literal.Value;
+
+  Src = VectorRoundImpl(Op, ElementSize, Src, Mode);
 
   if constexpr (Scalar) {
     // Insert the lower bits
     OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-    auto Result = _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Dest, Src);
+    auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
   else {
