@@ -111,8 +111,8 @@ function(add_guest_lib NAME SONAME)
 
   if (BITNESS EQUAL 32)
     # Makes the GOT/PLT lookups slightly less painful
-    target_compile_options(${NAME}-guest PRIVATE -fno-plt)
-    target_link_options(VDSO-guest PRIVATE "LINKER:-z,now" "LINKER:-z,relro" "LINKER:-z,notext")
+    target_compile_options(${NAME}-guest PRIVATE -fno-plt -fno-stack-protector)
+    target_link_options(${NAME}-guest PRIVATE "LINKER:-z,now" "LINKER:-z,relro" "LINKER:-z,notext")
   endif()
 
   # Add linker script if set

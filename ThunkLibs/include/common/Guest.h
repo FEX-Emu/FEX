@@ -101,6 +101,7 @@ inline bool IsLibLoaded(const char *libname) {
 template<auto Thunk, typename Result, typename... Args>
 inline Result CallHostFunction(Args... args) {
 #ifndef _M_ARM_64
+#if __SIZEOF_POINTER__ == 8
   // This magic incantation of using a register variable with an empty asm block is necessary for correct operation!
   // If we only use inline asm that sets a variable then the compiler will reorder the function
   // prologue to be BEFORE our inline asm. Which makes sense in hindsight, but for anything with 8+ arguments this
@@ -122,6 +123,13 @@ inline Result CallHostFunction(Args... args) {
   // ABI.
   asm volatile("" : "=r" (host_addr));
 #else
+  // Use mm0 to pass in host_addr (chosen to avoid conflicts with vectorcall).
+  // Note this register overlaps the x87 st(0) register (used to return float values),
+  // so applications that expect this register to be preserved could run into problems.
+  register uintptr_t host_addr asm ("mm0");
+  asm volatile("" : "=r" (host_addr));
+#endif
+#else
   uintptr_t host_addr = 0;
 #endif
 
@@ -141,9 +149,9 @@ inline Result CallHostFunction(Args... args) {
 // Convenience wrapper that returns the function pointer to a CallHostFunction
 // instantiation matching the function signature of `host_func`
 template<typename Result, typename...Args>
-static auto GetCallerForHostFunction(THUNK_ABI Result (*host_func)(Args...))
-    -> THUNK_ABI Result(*)(Args...) {
-  return &CallHostFunction<fexthunks_invoke_callback<THUNK_ABI Result(Args...)>, Result, Args...>;
+static auto GetCallerForHostFunction(Result (*host_func)(Args...))
+    -> Result(*)(Args...) {
+  return &CallHostFunction<fexthunks_invoke_callback<Result(Args...)>, Result, Args...>;
 }
 
 // Ensures the given host function can safely be called from guest code.

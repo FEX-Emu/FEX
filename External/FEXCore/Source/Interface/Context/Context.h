@@ -105,6 +105,7 @@ namespace FEXCore::Context {
       FEX_CONFIG_OPT(MaxInstPerBlock, MAXINST);
       FEX_CONFIG_OPT(RootFSPath, ROOTFS);
       FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
+      FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
       FEX_CONFIG_OPT(ThunkConfigFile, THUNKCONFIG);
       FEX_CONFIG_OPT(DumpIR, DUMPIR);
       FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
