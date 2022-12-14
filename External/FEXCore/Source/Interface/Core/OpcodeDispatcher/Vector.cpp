@@ -2939,6 +2939,19 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VINSERTOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src2 needs to be literal here");
+  const auto Selector = Op->Src[2].Data.Literal.Value & 1;
+
+  OrderedNode *Result = _VInsElement(DstSize, 16, Selector, 0, Src1, Src2);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
