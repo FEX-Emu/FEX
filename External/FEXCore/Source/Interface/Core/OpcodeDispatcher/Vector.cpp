@@ -2721,6 +2721,9 @@ void OpDispatchBuilder::AVXVectorRound<4, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorRound<8, false>(OpcodeArgs);
 
+template
+void OpDispatchBuilder::AVXVectorRound<4, true>(OpcodeArgs);
+
 template<size_t ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");

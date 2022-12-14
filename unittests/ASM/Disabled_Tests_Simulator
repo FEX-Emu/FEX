@@ -73,3 +73,4 @@ Test_OpSize/66_5B.asm
 Test_VEX/vldmxcsr.asm
 Test_VEX/vroundpd.asm
 Test_VEX/vroundps.asm
+Test_VEX/vroundss.asm
