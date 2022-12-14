@@ -418,6 +418,8 @@ public:
   template <size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
 
+  void VINSERTOp(OpcodeArgs);
+
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
   void VMOVUPS_VMOVUPD_Op(OpcodeArgs);
 
