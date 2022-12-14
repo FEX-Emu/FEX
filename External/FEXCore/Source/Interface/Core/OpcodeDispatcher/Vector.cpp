@@ -2939,6 +2939,21 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const auto Selector = Op->Src[1].Data.Literal.Value;
+
+  OrderedNode *Result = _VectorZero(DstSize);
+  for (size_t i = 0; i < DstSize / 8; i++) {
+    const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
+    Result = _VInsElement(DstSize, 8, i, SrcIndex, Result, Src);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto IsVZEROALL = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;

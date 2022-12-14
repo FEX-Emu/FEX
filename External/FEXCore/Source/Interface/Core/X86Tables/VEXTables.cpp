@@ -406,8 +406,8 @@ void InitializeVEXTables() {
     {OPD(2, 0b11, 0xF7), 1, X86InstInfo{"SHRX", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_2ND_SRC, 0, nullptr}},
 
     // VEX Map 3
-    {OPD(3, 0b01, 0x00), 1, X86InstInfo{"VPERMQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(3, 0b01, 0x01), 1, X86InstInfo{"VPERMPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x00), 1, X86InstInfo{"VPERMQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
+    {OPD(3, 0b01, 0x01), 1, X86InstInfo{"VPERMPD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x02), 1, X86InstInfo{"VPBLENDD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x04), 1, X86InstInfo{"VPERMILPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x05), 1, X86InstInfo{"VPERMILPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

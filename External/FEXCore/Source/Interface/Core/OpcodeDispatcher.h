@@ -430,6 +430,8 @@ public:
 
   void VMOVVectorNTOp(OpcodeArgs);
 
+  void VPERMQOp(OpcodeArgs);
+
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
