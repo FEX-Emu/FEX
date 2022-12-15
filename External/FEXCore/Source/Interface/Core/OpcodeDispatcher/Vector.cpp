@@ -250,9 +250,8 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
   }
 }
 
-template<FEXCore::IR::IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+  const auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -261,6 +260,11 @@ void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
   ALUOp.first->Header.Op = IROp;
 
   StoreResult(FPRClass, Op, ALUOp, -1);
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
+  VectorALUOpImpl(Op, IROp, ElementSize);
 }
 
 template
@@ -391,8 +395,7 @@ void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>(OpcodeArgs);
 
-template <IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
+void OpDispatchBuilder::AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -410,6 +413,11 @@ void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
   }
 
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
+  AVXVectorALUOpImpl(Op, IROp, ElementSize);
 }
 
 template
@@ -525,9 +533,8 @@ void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 2>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 4>(OpcodeArgs);
 
-template<FEXCore::IR::IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+  const auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
@@ -538,6 +545,11 @@ void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
+  VectorALUROpImpl(Op, IROp, ElementSize);
+}
+
 template
 void OpDispatchBuilder::VectorALUROp<IR::OP_VBIC, 8>(OpcodeArgs);
 template
@@ -545,9 +557,8 @@ void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
-template<FEXCore::IR::IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
-  auto DstSize = GetDstSize(Op);
+void OpDispatchBuilder::VectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+  const auto DstSize = GetDstSize(Op);
 
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -565,6 +576,11 @@ void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
   }
 
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorScalarALUOp(OpcodeArgs) {
+  VectorScalarALUOpImpl(Op, IROp, ElementSize);
 }
 
 template
@@ -592,8 +608,7 @@ void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorScalarALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
 
-template <IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::AVXVectorScalarALUOp(OpcodeArgs) {
+void OpDispatchBuilder::AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
 
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
@@ -615,6 +630,11 @@ void OpDispatchBuilder::AVXVectorScalarALUOp(OpcodeArgs) {
   Result = _VMov(16, Result);
 
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVXVectorScalarALUOp(OpcodeArgs) {
+  AVXVectorScalarALUOpImpl(Op, IROp, ElementSize);
 }
 
 template
@@ -642,13 +662,10 @@ void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
-template<FEXCore::IR::IROps IROp, size_t ElementSize, bool Scalar>
-void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  auto DstSize = GetDstSize(Op);
-  if constexpr (Scalar) {
-    Size = ElementSize;
-  }
+void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
+  const auto Size = Scalar ? ElementSize : GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
 
@@ -656,14 +673,18 @@ void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
   // Overwrite our IR's op type
   ALUOp.first->Header.Op = IROp;
 
-  if constexpr (Scalar) {
+  if (Scalar) {
     // Insert the lower bits
     auto Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, ALUOp);
     StoreResult(FPRClass, Op, Result, -1);
-  }
-  else {
+  } else {
     StoreResult(FPRClass, Op, ALUOp, -1);
   }
+}
+
+template <IROps IROp, size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
+  VectorUnaryOpImpl(Op, IROp, ElementSize, Scalar);
 }
 
 template
@@ -692,8 +713,7 @@ void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4, false>(OpcodeArgs);
 
-template <IROps IROp, size_t ElementSize, bool Scalar>
-void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
+void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar) {
   const auto Size = Scalar ? ElementSize : GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -712,7 +732,7 @@ void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
   ALUOp.first->Header.Op = IROp;
 
   OrderedNode* Result = ALUOp;
-  if constexpr (Scalar) {
+  if (Scalar) {
     // Insert the lower bits
     Result = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Result);
   }
@@ -722,6 +742,11 @@ void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
   }
 
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+template <IROps IROp, size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
+  AVXVectorUnaryOpImpl(Op, IROp, ElementSize, Scalar);
 }
 
 template
@@ -748,9 +773,8 @@ void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4, true>(OpcodeArgs);
 
-template<FEXCore::IR::IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
@@ -761,6 +785,11 @@ void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
   // Duplicate the lower bits
   auto Result = _VDupElement(Size, ElementSize, ALUOp, 0);
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+template <IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
+  VectorUnaryDuplicateOpImpl(Op, IROp, ElementSize);
 }
 
 template
