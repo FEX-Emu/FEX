@@ -2708,6 +2708,8 @@ template
 void OpDispatchBuilder::AVXExtendVectorElements<1, 8, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXExtendVectorElements<2, 4, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXExtendVectorElements<2, 8, true>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                                 OrderedNode *Src, uint64_t Mode) {
