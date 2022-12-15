@@ -677,8 +677,18 @@ private:
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
+  void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
+
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
+
+  void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
+  void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
 
   OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                OrderedNode *Src, uint64_t Mode);
