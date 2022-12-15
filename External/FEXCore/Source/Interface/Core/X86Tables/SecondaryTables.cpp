@@ -353,7 +353,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0xD8, 8, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
 
     {0xE0, 6, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
-    {0xE6, 1, X86InstInfo{"CVTDQ2PD",  TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,  0, nullptr}},
+    {0xE6, 1, X86InstInfo{"CVTDQ2PD",  TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,  0, nullptr}},
     {0xE7, 1, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
     {0xE8, 8, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
 
