@@ -307,7 +307,7 @@ void InitializeVEXTables() {
 
     {OPD(2, 0b01, 0x30), 1, X86InstInfo{"VPMOVZXBW", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x31), 1, X86InstInfo{"VPMOVZXBD", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(2, 0b01, 0x32), 1, X86InstInfo{"VPMOVZXBQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x32), 1, X86InstInfo{"VPMOVZXBQ", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_16BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x33), 1, X86InstInfo{"VPMOVZXWD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x34), 1, X86InstInfo{"VPMOVZXWQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0x35), 1, X86InstInfo{"VPMOVZXDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
