@@ -5961,6 +5961,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(2, 0b01, 0x20), 1, &OpDispatchBuilder::AVXExtendVectorElements<1, 2, true>},
     {OPD(2, 0b01, 0x21), 1, &OpDispatchBuilder::AVXExtendVectorElements<1, 4, true>},
+    {OPD(2, 0b01, 0x22), 1, &OpDispatchBuilder::AVXExtendVectorElements<1, 8, true>},
 
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 8>},
     {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::VMOVVectorNTOp},
