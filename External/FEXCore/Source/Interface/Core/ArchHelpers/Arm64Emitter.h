@@ -43,13 +43,6 @@ const std::array<std::pair<aarch64::Register, aarch64::Register>, 4>  RA64Pair =
   {x26, x27},
 }};
 
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 4> RA32Pair = {{
-  {w20, w21},
-  {w22, w23},
-  {w24, w25},
-  {w26, w27},
-}};
-
 // All are caller saved
 const std::array<aarch64::VRegister, 16> SRAFPR = {
   v16, v17, v18, v19, v20, v21, v22, v23,
