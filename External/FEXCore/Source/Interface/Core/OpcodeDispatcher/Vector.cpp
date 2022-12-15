@@ -2700,6 +2700,9 @@ void OpDispatchBuilder::AVXExtendVectorElements<2, 8, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXExtendVectorElements<4, 8, false>(OpcodeArgs);
 
+template
+void OpDispatchBuilder::AVXExtendVectorElements<1, 2, true>(OpcodeArgs);
+
 OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                                 OrderedNode *Src, uint64_t Mode) {
   const auto Size = GetDstSize(Op);
