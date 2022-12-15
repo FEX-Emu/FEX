@@ -2687,6 +2687,9 @@ void OpDispatchBuilder::AVXExtendVectorElements(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+template
+void OpDispatchBuilder::AVXExtendVectorElements<1, 2, false>(OpcodeArgs);
+
 OrderedNode* OpDispatchBuilder::VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                                 OrderedNode *Src, uint64_t Mode) {
   const auto Size = GetDstSize(Op);
