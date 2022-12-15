@@ -375,7 +375,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x24, 6, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0x2A, 1, X86InstInfo{"CVTSI2SD",  TYPE_INST, GenFlagsDstSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR,                    0, nullptr}},
     {0x2B, 1, X86InstInfo{"MOVNTSD",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {0x2C, 1, X86InstInfo{"CVTTSD2SI", TYPE_INST, GenFlagsSrcSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
+    {0x2C, 1, X86InstInfo{"CVTTSD2SI", TYPE_INST, GenFlagsSrcSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
     {0x2D, 1, X86InstInfo{"CVTSD2SI",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR, 0, nullptr}},
     {0x2E, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
 
