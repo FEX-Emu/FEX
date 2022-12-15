@@ -2689,7 +2689,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
 
   if constexpr (Scalar) {
     // Insert the lower bits
-    OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, Size, Op->Flags, -1);
     auto Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   } else {
@@ -2735,7 +2735,7 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
 
   if constexpr (Scalar) {
     // Insert the lower bits
-    OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Size, Op->Flags, -1);
     Result = _VInsElement(Size, ElementSize, 0, 0, Dest, Result);
   }
   if (Is128Bit) {
