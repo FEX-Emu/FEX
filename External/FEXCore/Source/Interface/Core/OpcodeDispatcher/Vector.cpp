@@ -1348,6 +1348,8 @@ void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPSLLIOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSLLIOp<4>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize,
                                          OrderedNode *Src, OrderedNode *ShiftVec) {
