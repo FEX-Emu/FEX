@@ -1368,6 +1368,8 @@ void OpDispatchBuilder::VPSLLOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPSLLOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSLLOp<4>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAOp(OpcodeArgs) {

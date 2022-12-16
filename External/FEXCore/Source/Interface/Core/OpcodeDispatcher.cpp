@@ -5941,6 +5941,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPD_Op},
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::VPSLLOp<2>},
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::VPSLLOp<4>},
     {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 1>},
     {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 2>},
     {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 4>},
