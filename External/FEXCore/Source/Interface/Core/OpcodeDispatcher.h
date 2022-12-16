@@ -701,6 +701,9 @@ private:
   OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize,
                         OrderedNode *Src, OrderedNode *ShiftVec);
 
+  OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
+                           OrderedNode *Src, OrderedNode *ShiftVec);
+
   void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);

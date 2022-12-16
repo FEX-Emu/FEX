@@ -1264,19 +1264,22 @@ void OpDispatchBuilder::VPSIGN<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPSIGN<4>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
+                                            OrderedNode *Src, OrderedNode *ShiftVec) {
+  const auto Size = GetSrcSize(Op);
+
+  // Incoming element size for the shift source is always 8
+  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
+  ShiftVec = _VUMin(8, 8, MaxShift, ShiftVec);
+
+  return _VUShrS(Size, ElementSize, Src, ShiftVec);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Result{};
-
-  // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
-  Src = _VUMin(8, 8, MaxShift, Src);
-  Result = _VUShrS(Size, ElementSize, Dest, Src);
+  OrderedNode *Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
