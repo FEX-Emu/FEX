@@ -5903,8 +5903,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::VZEROOp},
 
-    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<8>},
-    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<4>},
+    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>},
+    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>},
 
     {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::MOVQOp},
@@ -5947,6 +5947,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xFC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 1>},
     {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 2>},
     {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 4>},
+
+    {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>},
+    {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>},
 
     {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::VPSIGN<1>},
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::VPSIGN<2>},

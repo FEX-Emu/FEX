@@ -1019,7 +1019,7 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
-template <size_t ElementSize>
+template <IROps IROp, size_t ElementSize>
 void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
@@ -1027,7 +1027,9 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
 
-  OrderedNode *Res = _VFAddP(SrcSize, ElementSize, Src1, Src2);
+  auto Res = _VFAddP(SrcSize, ElementSize, Src1, Src2);
+  Res.first->Header.Op = IROp;
+
   OrderedNode *Dest{};
 
    if (Is256Bit) {
@@ -1041,9 +1043,13 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
 }
 
 template
-void OpDispatchBuilder::VHADDPOp<4>(OpcodeArgs);
+void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>(OpcodeArgs);
 template
-void OpDispatchBuilder::VHADDPOp<8>(OpcodeArgs);
+void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>(OpcodeArgs);
 
 template <size_t ElementSize>
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {

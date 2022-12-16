@@ -433,6 +433,7 @@ DEF_OP(VAddP) {
   const auto Op = IROp->C<IR::IROp_VAddP>();
   const auto OpSize = IROp->Size;
 
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto ElementSize = Op->Header.ElementSize;
 
   const auto Dst = GetDst(Node);
@@ -478,30 +479,64 @@ DEF_OP(VAddP) {
     const auto VectorLowerYMM = ToYMM(VectorLower);
     const auto VectorUpperYMM = ToYMM(VectorUpper);
 
+    // To behave like ADDP, we need to swap the second and third elements around
+    // in the 256-bit case. ADDP operates as if both vectors are concatenated
+    // together and runs down the length of it adding pairs as it goes, whereas
+    // VPHADDW/D operates on both individual halves of the entire register.
     switch (ElementSize) {
       case 1:
-        vmovdqu(ymm15, VectorLowerYMM);
-        vmovdqu(ymm14, VectorUpperYMM);
+        if (Is256Bit) {
+          vmovdqu(ymm15, VectorLowerYMM);
+          vmovdqu(ymm14, VectorUpperYMM);
 
-        vpunpcklbw(ymm0, ymm15, ymm14);
-        vpunpckhbw(ymm12, ymm15, ymm14);
+          vpunpcklbw(ymm0, ymm15, ymm14);
+          vpunpckhbw(ymm12, ymm15, ymm14);
 
-        vpunpcklbw(ymm15, ymm0, ymm12);
-        vpunpckhbw(ymm14, ymm0, ymm12);
+          vpunpcklbw(ymm15, ymm0, ymm12);
+          vpunpckhbw(ymm14, ymm0, ymm12);
 
-        vpunpcklbw(ymm0, ymm15, ymm14);
-        vpunpckhbw(ymm12, ymm15, ymm14);
+          vpunpcklbw(ymm0, ymm15, ymm14);
+          vpunpckhbw(ymm12, ymm15, ymm14);
 
-        vpunpcklbw(ymm15, ymm0, ymm12);
-        vpunpckhbw(ymm14, ymm0, ymm12);
+          vpunpcklbw(ymm15, ymm0, ymm12);
+          vpunpckhbw(ymm14, ymm0, ymm12);
 
-        vpaddb(DstYMM, ymm15, ymm14);
+          vpaddb(DstYMM, ymm15, ymm14);
+          vpermq(DstYMM, DstYMM, 0b11'01'10'00);
+        } else {
+          vmovdqu(xmm15, VectorLower);
+          vmovdqu(xmm14, VectorUpper);
+
+          vpunpcklbw(xmm0, xmm15, xmm14);
+          vpunpckhbw(xmm12, xmm15, xmm14);
+
+          vpunpcklbw(xmm15, xmm0, xmm12);
+          vpunpckhbw(xmm14, xmm0, xmm12);
+
+          vpunpcklbw(xmm0, xmm15, xmm14);
+          vpunpckhbw(xmm12, xmm15, xmm14);
+
+          vpunpcklbw(xmm15, xmm0, xmm12);
+          vpunpckhbw(xmm14, xmm0, xmm12);
+
+          vpaddb(Dst, xmm15, xmm14);
+        }
         break;
       case 2:
-        vphaddw(DstYMM, VectorLowerYMM, VectorUpperYMM);
+        if (Is256Bit) {
+          vphaddw(DstYMM, VectorLowerYMM, VectorUpperYMM);
+          vpermq(DstYMM, DstYMM, 0b11'01'10'00);
+        } else {
+          vphaddw(Dst, VectorLower, VectorUpper);
+        }
         break;
       case 4:
-        vphaddd(DstYMM, VectorLowerYMM, VectorUpperYMM);
+        if (Is256Bit) {
+          vphaddd(DstYMM, VectorLowerYMM, VectorUpperYMM);
+          vpermq(DstYMM, DstYMM, 0b11'01'10'00);
+        } else {
+          vphaddd(Dst, VectorLower, VectorUpper);
+        }
         break;
       default:
         LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
