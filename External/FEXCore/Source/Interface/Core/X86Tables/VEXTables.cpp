@@ -202,13 +202,13 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xD0), 1, X86InstInfo{"VADDSUBPD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b11, 0xD0), 1, X86InstInfo{"VADDSUBPS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(1, 0b01, 0xD1), 1, X86InstInfo{"VPSRLW",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xD2), 1, X86InstInfo{"VPSRLD",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b01, 0xD3), 1, X86InstInfo{"VPSRLQ",      TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xD1), 1, X86InstInfo{"VPSRLW",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xD2), 1, X86InstInfo{"VPSRLD",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(1, 0b01, 0xD3), 1, X86InstInfo{"VPSRLQ",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xD4), 1, X86InstInfo{"VPADDQ",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xD5), 1, X86InstInfo{"VPMULLW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xD6), 1, X86InstInfo{"VMOVQ",       TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0xD7), 1, X86InstInfo{"VPMOVMSKB",   TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
+    {OPD(1, 0b01, 0xD7), 1, X86InstInfo{"VPMOVMSKB",   TYPE_UNDEC, FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_DST_GPR | FLAGS_SF_MOD_REG_ONLY, 0, nullptr}},
 
     {OPD(1, 0b01, 0xD8), 1, X86InstInfo{"VPSUBUSB", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xD9), 1, X86InstInfo{"VPSUBUSW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
