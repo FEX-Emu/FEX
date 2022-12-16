@@ -441,7 +441,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR();
+    PushDynamicRegsAndLR(x3);
     SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
@@ -463,7 +463,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR();
+    PushDynamicRegsAndLR(x3);
     SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
@@ -485,7 +485,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LUREMHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR();
+    PushDynamicRegsAndLR(x3);
     SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
@@ -507,7 +507,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LREMHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR();
+    PushDynamicRegsAndLR(x3);
     SpillStaticRegs();
 
     ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));

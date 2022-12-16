@@ -91,7 +91,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_VOID_U16:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         uxth(w0, GetReg<RA_32>(IROp->Args[0].ID()));
         ldr(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
@@ -111,7 +111,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F80_F32:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
@@ -134,7 +134,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F80_F64:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
@@ -158,7 +158,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F80_I32: {
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         if (Info.ABI == FABI_F80_I16) {
           uxth(w0, GetReg<RA_32>(IROp->Args[0].ID()));
@@ -186,7 +186,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F32_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -209,7 +209,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F64_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -232,7 +232,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F64_F64: {
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
@@ -254,7 +254,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F64_F64_F64: {
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
         mov(v1.D(), GetSrc(IROp->Args[1].ID()).D());
@@ -277,7 +277,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_I16_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -299,7 +299,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_I32_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -321,7 +321,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_I64_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -343,7 +343,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_I64_F80_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -367,7 +367,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F80_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
@@ -391,7 +391,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       case FABI_F80_F80_F80:{
         SpillStaticRegs();
 
-        PushDynamicRegsAndLR();
+        PushDynamicRegsAndLR(TMP1);
 
         umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
         umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);

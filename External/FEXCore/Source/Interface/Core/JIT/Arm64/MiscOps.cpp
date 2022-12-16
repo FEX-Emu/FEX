@@ -139,7 +139,7 @@ DEF_OP(SetRoundingMode) {
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
-  PushDynamicRegsAndLR();
+  PushDynamicRegsAndLR(TMP1);
   SpillStaticRegs();
 
   if (IsGPR(Op->Value.ID())) {
