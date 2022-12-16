@@ -441,6 +441,9 @@ public:
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPSLLOp(OpcodeArgs);
+
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
