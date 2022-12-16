@@ -242,6 +242,8 @@ private:
   std::map<BlockLinkTag, std::function<void()>> BlockLinks;
   tsl::robin_map<uint64_t, uint64_t> BlockList;
 
+  size_t TotalCacheSize;
+
   constexpr static size_t CODE_SIZE = 128 * 1024 * 1024;
   constexpr static size_t SIZE_PER_PAGE = 4096 * sizeof(LookupCacheEntry);
   constexpr static size_t L1_SIZE = L1_ENTRIES * sizeof(LookupCacheEntry);
