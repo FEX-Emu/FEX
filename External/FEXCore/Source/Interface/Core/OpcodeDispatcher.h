@@ -443,6 +443,8 @@ public:
 
   template <size_t ElementSize>
   void VPSLLOp(OpcodeArgs);
+  template <size_t ElementSize>
+  void VPSLLIOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
 

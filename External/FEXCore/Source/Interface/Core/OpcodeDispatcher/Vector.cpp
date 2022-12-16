@@ -1329,6 +1329,26 @@ void OpDispatchBuilder::PSLLI<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSLLI<8>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+
+  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPSLLIOp<2>(OpcodeArgs);
+
 OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize,
                                          OrderedNode *Src, OrderedNode *ShiftVec) {
   const auto DstSize = GetDstSize(Op);
