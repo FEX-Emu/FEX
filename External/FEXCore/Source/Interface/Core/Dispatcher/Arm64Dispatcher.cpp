@@ -38,12 +38,7 @@ namespace FEXCore::CPU {
 using namespace vixl;
 using namespace vixl::aarch64;
 
-#ifdef VIXL_SIMULATOR
-// Vixl simulator needs at least 4476 bytes for its dispatcher
-constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096 * 2;
-#else
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
-#endif
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
   : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
@@ -51,7 +46,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   , Simulator {&Decoder}
 #endif
 {
-
 #ifdef VIXL_SIMULATOR
   // Hardcode a 256-bit vector width if we are running in the simulator.
   Simulator.SetVectorLengthInBits(256);
