@@ -441,6 +441,9 @@ public:
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPSLLOp(OpcodeArgs);
+
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
@@ -689,6 +692,9 @@ private:
 
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
+
+  OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize,
+                        OrderedNode *Src, OrderedNode *ShiftVec);
 
   void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);

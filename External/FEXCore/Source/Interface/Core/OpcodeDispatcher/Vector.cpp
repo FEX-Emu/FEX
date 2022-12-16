@@ -1324,19 +1324,22 @@ void OpDispatchBuilder::PSLLI<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSLLI<8>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize,
+                                         OrderedNode *Src, OrderedNode *ShiftVec) {
+  const auto DstSize = GetDstSize(Op);
+
+  // Incoming element size for the shift source is always 8
+  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
+  ShiftVec = _VUMin(8, 8, MaxShift, ShiftVec);
+
+  return _VUShlS(DstSize, ElementSize, Src, ShiftVec);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLL(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-
-  auto Size = GetDstSize(Op);
-
-  OrderedNode *Result{};
-
-  // Incoming element size for the shift source is always 8
-  auto MaxShift = _VectorImm(8, 8, ElementSize * 8);
-  Src = _VUMin(8, 8, MaxShift, Src);
-  Result = _VUShlS(Size, ElementSize, Dest, Src);
+  OrderedNode *Result = PSLLImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1347,6 +1350,28 @@ template
 void OpDispatchBuilder::PSLL<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSLL<8>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSLLOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 16, Op->Flags, -1);
+  OrderedNode *Result = PSLLImpl(Op, ElementSize, Src1, Src2);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPSLLOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSLLOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSLLOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
