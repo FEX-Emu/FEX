@@ -1304,17 +1304,22 @@ void OpDispatchBuilder::PSRLI<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSRLI<8>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize,
+                                          OrderedNode *Src, uint64_t Shift) {
+  const auto Size = GetSrcSize(Op);
+  return _VShlI(Size, ElementSize, Src, Shift);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  auto Size = GetSrcSize(Op);
+  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
 
-  auto Shift = _VShlI(Size, ElementSize, Dest, ShiftConstant);
-  StoreResult(FPRClass, Op, Shift, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
