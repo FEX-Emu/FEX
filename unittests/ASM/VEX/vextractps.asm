@@ -25,14 +25,12 @@ vmovaps xmm8, [rdx + 16 * 7]
 mov rax, 0
 mov [rsi + 8 * 0], rax
 
-mov rax, -1
-
-vpextrd eax, xmm1, 0
-vpextrd ebx, xmm2, 0xFF
-vpextrd [rsi + 8 * 0 + 0], xmm3, 2
-vpextrd [rsi + 8 * 0 + 4], xmm4, 0xFF
-vpextrd [rsi + 8 * 1 + 0], xmm5, 4
-vpextrd [rsi + 8 * 1 + 4], xmm6, 5
+vextractps eax, xmm1, 0
+vextractps ebx, xmm2, 0xFF
+vextractps [rsi + 8 * 0 + 0], xmm3, 2
+vextractps [rsi + 8 * 0 + 4], xmm4, 0xFF
+vextractps [rsi + 8 * 1 + 0], xmm5, 4
+vextractps [rsi + 8 * 1 + 4], xmm6, 5
 mov rcx, [rsi + 8 * 0]
 mov rdx, [rsi + 8 * 1]
 
