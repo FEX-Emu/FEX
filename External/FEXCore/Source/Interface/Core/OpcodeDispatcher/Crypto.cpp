@@ -321,11 +321,18 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Selector needs to be literal here");
 
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
 
-  auto Res = _PCLMUL(Src1, Src2, Selector);
+  OrderedNode *Res = _PCLMUL(Src1, Src2, Selector);
+  if (Is128Bit) {
+    Res = _VMov(16, Res);
+  }
+
   StoreResult(FPRClass, Op, Res, -1);
 }
 
