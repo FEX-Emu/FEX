@@ -1291,6 +1291,24 @@ void OpDispatchBuilder::PSRLDOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSRLDOp<8>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSRLDOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Shift = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PSRLDOpImpl(Op, ElementSize, Src, Shift);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPSRLDOp<2>(OpcodeArgs);
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
