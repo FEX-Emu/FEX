@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory_resource>
 #include <stddef.h>
 #include <utility>
 #include <vector>
@@ -105,9 +106,9 @@ public:
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
     // Sever any links to this block
-    auto lower = BlockLinks.lower_bound({Address, 0});
-    auto upper = BlockLinks.upper_bound({Address, UINTPTR_MAX});
-    for (auto it = lower; it != upper; it = BlockLinks.erase(it)) {
+    auto lower = BlockLinks->lower_bound({Address, 0});
+    auto upper = BlockLinks->upper_bound({Address, UINTPTR_MAX});
+    for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
       it->second();
     }
 
@@ -145,7 +146,7 @@ public:
   void AddBlockLink(uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
-    BlockLinks.insert({{GuestDestination, HostLink}, delinker});
+    BlockLinks->insert({{GuestDestination, HostLink}, delinker});
   }
 
   void ClearCache();
@@ -238,8 +239,17 @@ private:
     }
   };
 
+  // Use a monotonic buffer resource to allocate both the std::pmr::map and its members.
+  // This allows us to quickly clear the block link map by clearing the monotonic allocator.
+  // If we had allocated the block link map without the MBR, then clearing the map would require slowly
+  // walking each block member and destructing objects.
+  //
+  // This makes `BlockLinks` look like a raw pointer that could memory leak, but since it is backed by the MBR, it won't.
+  std::pmr::monotonic_buffer_resource BlockLinks_mbr;
+  using BlockLinksMapType = std::pmr::map<BlockLinkTag, std::function<void()>>;
+  std::pmr::polymorphic_allocator<std::byte> BlockLinks_pma {&BlockLinks_mbr};
+  BlockLinksMapType *BlockLinks;
 
-  std::map<BlockLinkTag, std::function<void()>> BlockLinks;
   tsl::robin_map<uint64_t, uint64_t> BlockList;
 
   size_t TotalCacheSize;

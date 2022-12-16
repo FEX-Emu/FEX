@@ -18,6 +18,8 @@ LookupCache::LookupCache(FEXCore::Context::Context *CTX)
   : ctx {CTX} {
 
   TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
+  // Setup our PMR map.
+  BlockLinks = BlockLinks_pma.new_object<BlockLinksMapType>();
 
   // Block cache ends up looking like this
   // PageMemoryMap[VirtualMemoryRegion >> 12]
@@ -51,13 +53,16 @@ LookupCache::LookupCache(FEXCore::Context::Context *CTX)
 LookupCache::~LookupCache() {
   const size_t TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
   FEXCore::Allocator::munmap(reinterpret_cast<void*>(PagePointer), TotalCacheSize);
+
+  // No need to free BlockLinks map.
+  // These will get freed when their memory allocators are deallocated.
 }
 
 void LookupCache::ClearL2Cache() {
   std::lock_guard<std::recursive_mutex> lk(WriteLock);
   // Clear out the page memory
-  madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8, MADV_DONTNEED);
-  madvise(reinterpret_cast<void*>(PageMemory), CODE_SIZE, MADV_DONTNEED);
+  // PagePointer and PageMemory are sequential with each other. Clear both at once.
+  madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE, MADV_DONTNEED);
   AllocateOffset = 0;
 }
 
@@ -66,8 +71,10 @@ void LookupCache::ClearCache() {
 
   // Clear L1 and L2 by clearing the full cache.
   madvise(reinterpret_cast<void*>(PagePointer), TotalCacheSize, MADV_DONTNEED);
-  // All code is gone, remove links
-  BlockLinks.clear();
+  // Clear the BlockLinks allocator which frees the BlockLinks map implicitly.
+  BlockLinks_mbr.release();
+  // Allocate a new pointer from the BlockLinks pma again.
+  BlockLinks = BlockLinks_pma.new_object<BlockLinksMapType>();
   // All code is gone, clear the block list
   BlockList.clear();
 }
