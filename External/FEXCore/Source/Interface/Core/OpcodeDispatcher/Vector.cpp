@@ -1310,6 +1310,8 @@ template
 void OpDispatchBuilder::VPSRLDOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPSRLDOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSRLDOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PSRLI(OpcodeArgs) {
