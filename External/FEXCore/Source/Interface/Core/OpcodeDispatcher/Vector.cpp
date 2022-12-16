@@ -1304,17 +1304,22 @@ void OpDispatchBuilder::PSRLI<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSRLI<8>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize,
+                                          OrderedNode *Src, uint64_t Shift) {
+  const auto Size = GetSrcSize(Op);
+  return _VShlI(Size, ElementSize, Src, Shift);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
 
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  auto Size = GetSrcSize(Op);
+  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
 
-  auto Shift = _VShlI(Size, ElementSize, Dest, ShiftConstant);
-  StoreResult(FPRClass, Op, Shift, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
@@ -1323,6 +1328,30 @@ template
 void OpDispatchBuilder::PSLLI<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSLLI<8>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
+
+  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPSLLIOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSLLIOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSLLIOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize,
                                          OrderedNode *Src, OrderedNode *ShiftVec) {

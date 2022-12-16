@@ -443,6 +443,8 @@ public:
 
   template <size_t ElementSize>
   void VPSLLOp(OpcodeArgs);
+  template <size_t ElementSize>
+  void VPSLLIOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
 
@@ -692,6 +694,9 @@ private:
 
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
+
+  OrderedNode* PSLLIImpl(OpcodeArgs, size_t ElementSize,
+                         OrderedNode *Src, uint64_t Shift);
 
   OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize,
                         OrderedNode *Src, OrderedNode *ShiftVec);
