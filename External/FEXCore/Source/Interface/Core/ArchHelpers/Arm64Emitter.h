@@ -66,9 +66,10 @@ const std::array<aarch64::VRegister, 12> RAFPR = {
 #define TMP4 x3
 
 // Vector temporaries
-#define VTMP1 v1
-#define VTMP2 v2
-#define VTMP3 v3
+#define VTMP1 v0
+#define VTMP2 v1
+#define VTMP3 v2
+#define VTMP4 v3
 
 // Predicate register temporaries (used when AVX support is enabled)
 // PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
@@ -99,7 +100,7 @@ protected:
   // We can't guarantee only the lower 64bits are used so flush everything
   static constexpr uint32_t CALLER_FPR_MASK = ~0U;
 
-  void PushDynamicRegsAndLR();
+  void PushDynamicRegsAndLR(aarch64::Register TmpReg);
   void PopDynamicRegsAndLR();
 
   void PushCalleeSavedRegisters();

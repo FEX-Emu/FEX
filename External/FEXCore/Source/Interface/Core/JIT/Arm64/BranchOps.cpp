@@ -176,7 +176,7 @@ DEF_OP(Syscall) {
   // X2: Pointer to SyscallArguments
 
   FEXCore::IR::SyscallFlags Flags = Op->Flags;
-  PushDynamicRegsAndLR();
+  PushDynamicRegsAndLR(TMP1);
 
   if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
     SpillStaticRegs();
@@ -378,7 +378,7 @@ DEF_OP(Thunk) {
 
   SpillStaticRegs(); // spill to ctx before ra64 spill
 
-  PushDynamicRegsAndLR();
+  PushDynamicRegsAndLR(TMP1);
 
   mov(x0, GetReg<RA_64>(Op->ArgPtr.ID()));
 
@@ -448,7 +448,7 @@ DEF_OP(ThreadRemoveCodeEntry) {
   // X0: Thread
   // X1: RIP
 
-  PushDynamicRegsAndLR();
+  PushDynamicRegsAndLR(TMP1);
 
   mov(x0, STATE);
   LoadConstant(x1, Entry);
@@ -469,7 +469,7 @@ DEF_OP(ThreadRemoveCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
-  PushDynamicRegsAndLR();
+  PushDynamicRegsAndLR(TMP1);
   SpillStaticRegs();
 
   // x0 = CPUID Handler
