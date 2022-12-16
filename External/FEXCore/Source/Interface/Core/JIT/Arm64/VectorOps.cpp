@@ -978,20 +978,20 @@ DEF_OP(VFAddP) {
     switch (ElementSize) {
       case 2: {
         faddp(VTMP1.Z().VnH(), Pred, VTMP1.Z().VnH(), VectorUpper.Z().VnH());
-        uzp1(VTMP2.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
-        uzp2(VTMP3.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
+        uzp1(Dst.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
+        uzp2(VTMP2.Z().VnH(), VTMP1.Z().VnH(), VTMP1.Z().VnH());
         break;
       }
       case 4: {
         faddp(VTMP1.Z().VnS(), Pred, VTMP1.Z().VnS(), VectorUpper.Z().VnS());
-        uzp1(VTMP2.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
-        uzp2(VTMP3.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
+        uzp1(Dst.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
+        uzp2(VTMP2.Z().VnS(), VTMP1.Z().VnS(), VTMP1.Z().VnS());
         break;
       }
       case 8: {
         faddp(VTMP1.Z().VnD(), Pred, VTMP1.Z().VnD(), VectorUpper.Z().VnD());
-        uzp1(VTMP2.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
-        uzp2(VTMP3.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        uzp1(Dst.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
+        uzp2(VTMP2.Z().VnD(), VTMP1.Z().VnD(), VTMP1.Z().VnD());
         break;
       }
       default:
@@ -999,13 +999,8 @@ DEF_OP(VFAddP) {
         return;
     }
 
-    // Shift the entire vector over by 128 bits.
-    mov(TMP1, 0);
-    insr(VTMP3.Z().VnD(), TMP1);
-    insr(VTMP3.Z().VnD(), TMP1);
-
-    // Now combine the lower and upper halves.
-    orr(Dst.Z().VnD(), VTMP2.Z().VnD(), VTMP3.Z().VnD());
+    // Merge upper half with lower half.
+    splice(Dst.Z().VnD(), PRED_TMP_16B, Dst.Z().VnD(), VTMP2.Z().VnD());
   } else {
     switch (ElementSize) {
       case 2: {
