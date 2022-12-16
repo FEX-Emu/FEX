@@ -345,18 +345,20 @@ void Arm64Emitter::PushDynamicRegsAndLR(aarch64::Register TmpReg) {
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
   sub(sp, sp, SPOffset);
-  int i = 0;
+
+  // rsp capable move
+  add(TmpReg, aarch64::sp, 0);
 
   if (CanUseSVE) {
-    for (const auto& RA : RAFPR) {
-      mov(TMP4, i * 8);
-      st1b(RA.Z().VnB(), PRED_TMP_32B, SVEMemOperand(sp, TMP4));
-      i += 4;
+    for (size_t i = 0; i < RAFPR.size(); i += 4) {
+      const auto Reg1 = RAFPR[i];
+      const auto Reg2 = RAFPR[i + 1];
+      const auto Reg3 = RAFPR[i + 2];
+      const auto Reg4 = RAFPR[i + 3];
+      st4b(Reg1.Z().VnB(), Reg2.Z().VnB(), Reg3.Z().VnB(), Reg4.Z().VnB(), PRED_TMP_32B, SVEMemOperand(TmpReg));
+      add(TmpReg, TmpReg, 32 * 4);
     }
-    str(lr, MemOperand(sp, i * 8));
   } else {
-    // rsp capable move
-    add(TmpReg, aarch64::sp, 0);
     for (size_t i = 0; i < RAFPR.size(); i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
@@ -364,29 +366,24 @@ void Arm64Emitter::PushDynamicRegsAndLR(aarch64::Register TmpReg) {
       const auto Reg4 = RAFPR[i + 3];
       st1(Reg1.V2D(), Reg2.V2D(), Reg3.V2D(), Reg4.V2D(), MemOperand(TmpReg, 64, PostIndex));
     }
-    str(aarch64::lr, MemOperand(TmpReg, 0));
   }
+
+  str(aarch64::lr, MemOperand(TmpReg, 0));
 }
 
 void Arm64Emitter::PopDynamicRegsAndLR() {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
-  const auto GPRSize = 1 * Core::CPUState::GPR_REG_SIZE;
-  const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
-                                    : Core::CPUState::XMM_SSE_REG_SIZE;
-  const auto FPRSize = RAFPR.size() * FPRRegSize;
-  const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
-  int i = 0;
 
   if (CanUseSVE) {
-    for (const auto& RA : RAFPR) {
-      mov(TMP4, i * 8);
-      ld1b(RA.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(sp, TMP4));
-      i += 4;
+    for (size_t i = 0; i < RAFPR.size(); i += 4) {
+      const auto Reg1 = RAFPR[i];
+      const auto Reg2 = RAFPR[i + 1];
+      const auto Reg3 = RAFPR[i + 2];
+      const auto Reg4 = RAFPR[i + 3];
+      ld4b(Reg1.Z().VnB(), Reg2.Z().VnB(), Reg3.Z().VnB(), Reg4.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(aarch64::sp));
+      add(aarch64::sp, aarch64::sp, 32 * 4);
     }
-    ldr(lr, MemOperand(sp, i * 8));
-    add(sp, sp, SPOffset);
   } else {
-
     for (size_t i = 0; i < RAFPR.size(); i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
@@ -394,9 +391,9 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
       const auto Reg4 = RAFPR[i + 3];
       ld1(Reg1.V2D(), Reg2.V2D(), Reg3.V2D(), Reg4.V2D(), MemOperand(aarch64::sp, 64, PostIndex));
     }
-
-    ldr(aarch64::lr, MemOperand(aarch64::sp, 16, PostIndex));
   }
+
+  ldr(aarch64::lr, MemOperand(aarch64::sp, 16, PostIndex));
 }
 
 void Arm64Emitter::Align16B() {
