@@ -1164,15 +1164,19 @@ void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
 template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
+  const auto DstSize = GetDstSize(Op);
+  const auto Is32Bit = ElementSize == 4;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Index = Op->Src[1].Data.Literal.Value;
 
-  const uint8_t NumElements = Size / ElementSize;
+  const uint8_t NumElements = Is32Bit ? Size / DstSize
+                                      : Size / ElementSize;
   Index &= NumElements - 1;
 
-  OrderedNode *Result = _VExtractToGPR(16, ElementSize, Src, Index);
+  OrderedNode *Result = Is32Bit ? _VExtractToGPR(16, DstSize, Src, Index)
+                                : _VExtractToGPR(16, ElementSize, Src, Index);
 
   if (Op->Dest.IsGPR()) {
     const uint8_t GPRSize = CTX->GetGPRSize();
@@ -1182,10 +1186,10 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
       Result = _Bfe(GPRSize, ElementSize * 8, 0, Result);
     }
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
-  }
-  else {
+  } else {
     // If we are storing to memory then we store the size of the element extracted
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, ElementSize, -1);
+    const auto StoreSize = Is32Bit ? DstSize : ElementSize;
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, StoreSize, -1);
   }
 }
 
