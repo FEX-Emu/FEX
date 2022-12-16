@@ -2165,24 +2165,22 @@ void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *ResAdd{};
-  OrderedNode *ResSub{};
-  ResAdd = _VFAdd(Size, ElementSize, Dest, Src);
-  ResSub = _VFSub(Size, ElementSize, Dest, Src);
+  OrderedNode *ResAdd = _VFAdd(Size, ElementSize, Dest, Src);
+  OrderedNode *ResSub = _VFSub(Size, ElementSize, Dest, Src);
 
-  // We now need to swizzle results
-  uint8_t NumElements = Size / ElementSize;
   // Even elements are the sub result
   // Odd elements are the add results
-  for (size_t i = 0; i < NumElements; i += 2) {
-    ResAdd = _VInsElement(Size, ElementSize, i, i, ResAdd, ResSub);
-  }
-  StoreResult(FPRClass, Op, ResAdd, -1);
+  OrderedNode *UnzipSub = _VUnZip(Size, ElementSize, ResSub, ResSub);
+  OrderedNode *UnzipAdd = _VUnZip2(Size, ElementSize, ResAdd, ResAdd);
+
+  OrderedNode *Result = _VZip(Size, ElementSize, UnzipSub, UnzipAdd);
+
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
