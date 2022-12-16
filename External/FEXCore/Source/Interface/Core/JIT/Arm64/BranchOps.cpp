@@ -255,10 +255,6 @@ DEF_OP(InlineSyscall) {
       Intersects = true;
     }
   }
-  // XXX: For some reason spilling only the x4, x5, and x8 registers was causing issues
-  // Come back to this once investigation reveals why it fails the gvisor ioctl test
-  // For now override to all GPRs
-  SpillMask = ~0U;
 
   // Ordering is incredibly important here
   // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
