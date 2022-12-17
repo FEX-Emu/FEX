@@ -416,6 +416,9 @@ public:
   template <size_t ElementSize, bool Scalar>
   void AVXVectorRound(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VADDSUBPOp(OpcodeArgs);
+
   void VANDNOp(OpcodeArgs);
 
   template <size_t ElementSize>

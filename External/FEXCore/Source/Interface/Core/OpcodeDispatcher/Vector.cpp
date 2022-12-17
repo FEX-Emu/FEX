@@ -2192,6 +2192,24 @@ void OpDispatchBuilder::ADDSUBPOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::ADDSUBPOp<8>(OpcodeArgs);
 
+template<size_t ElementSize>
+void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = ADDSUBPOpImpl(Op, ElementSize, Src1, Src2);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VADDSUBPOp<4>(OpcodeArgs);
+
 void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
 
