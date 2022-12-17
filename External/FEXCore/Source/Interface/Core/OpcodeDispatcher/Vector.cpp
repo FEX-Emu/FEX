@@ -2150,6 +2150,8 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPACKSSOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPACKSSOp<4>(OpcodeArgs);
 
 template<size_t ElementSize, bool Signed>
 void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
