@@ -441,6 +441,9 @@ public:
 
   void VMOVVectorNTOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPACKSSOp(OpcodeArgs);
+
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
@@ -703,6 +706,9 @@ private:
 
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
+
+  OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
+                            OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
