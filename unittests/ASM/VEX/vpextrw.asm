@@ -2,6 +2,8 @@
 {
   "HostFeatures": ["AVX"],
   "RegData": {
+    "RAX": "0x000000000000A47F",
+    "RBX": "0x00000000000067D2",
     "RCX": "0x1ED2A2A98A67B953"
   }
 }
@@ -21,6 +23,9 @@ vmovaps xmm8, [rdx + 16 * 7]
 
 mov rax, 0
 mov [rsi + 8 * 0], rax
+
+vpextrw eax, xmm1, 0
+vpextrw ebx, xmm2, 0xFF
 
 vpextrw [rsi + 8 * 0 + 0], xmm3, 2
 vpextrw [rsi + 8 * 0 + 2], xmm4, 0xFF
