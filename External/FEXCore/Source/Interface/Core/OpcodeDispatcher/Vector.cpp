@@ -2132,6 +2132,8 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPACKUSOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPACKUSOp<4>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                                              OrderedNode *Src1, OrderedNode *Src2) {
