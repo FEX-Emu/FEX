@@ -450,6 +450,9 @@ public:
   void VPSLLIOp(OpcodeArgs);
 
   template <size_t ElementSize>
+  void VPSRAOp(OpcodeArgs);
+
+  template <size_t ElementSize>
   void VPSRLDOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);

@@ -1461,6 +1461,24 @@ void OpDispatchBuilder::PSRAOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSRAOp<4>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSRAOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PSRAOpImpl(Op, ElementSize, Src1, Src2);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPSRAOp<2>(OpcodeArgs);
+
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint64_t Shift = Op->Src[1].Data.Literal.Value;
