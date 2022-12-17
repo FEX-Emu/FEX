@@ -450,6 +450,9 @@ public:
   void VPSLLIOp(OpcodeArgs);
 
   template <size_t ElementSize>
+  void VPSRAOp(OpcodeArgs);
+
+  template <size_t ElementSize>
   void VPSRLDOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
@@ -709,6 +712,9 @@ private:
 
   OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize,
                         OrderedNode *Src, OrderedNode *ShiftVec);
+
+  OrderedNode* PSRAOpImpl(OpcodeArgs, size_t ElementSize,
+                          OrderedNode *Src, OrderedNode *ShiftVec);
 
   OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
                            OrderedNode *Src, OrderedNode *ShiftVec);
