@@ -2209,6 +2209,8 @@ void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VADDSUBPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VADDSUBPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
