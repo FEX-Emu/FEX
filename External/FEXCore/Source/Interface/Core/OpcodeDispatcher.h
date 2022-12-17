@@ -710,6 +710,9 @@ private:
   OrderedNode* PSLLImpl(OpcodeArgs, size_t ElementSize,
                         OrderedNode *Src, OrderedNode *ShiftVec);
 
+  OrderedNode* PSRAOpImpl(OpcodeArgs, size_t ElementSize,
+                          OrderedNode *Src, OrderedNode *ShiftVec);
+
   OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
                            OrderedNode *Src, OrderedNode *ShiftVec);
 
