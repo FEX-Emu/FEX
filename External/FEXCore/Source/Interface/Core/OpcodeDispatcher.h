@@ -416,6 +416,9 @@ public:
   template <size_t ElementSize, bool Scalar>
   void AVXVectorRound(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VADDSUBPOp(OpcodeArgs);
+
   void VANDNOp(OpcodeArgs);
 
   template <size_t ElementSize>
@@ -687,6 +690,9 @@ private:
   OrderedNode *Current_HeaderNode{};
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
+
+  OrderedNode* ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize,
+                             OrderedNode *Src1, OrderedNode *Src2);
 
   void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);

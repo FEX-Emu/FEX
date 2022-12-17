@@ -2163,27 +2163,54 @@ void OpDispatchBuilder::MOVQ2DQ<false>(OpcodeArgs);
 template
 void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+OrderedNode* OpDispatchBuilder::ADDSUBPOpImpl(OpcodeArgs, size_t ElementSize,
+                                              OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *ResAdd = _VFAdd(Size, ElementSize, Src1, Src2);
+  OrderedNode *ResSub = _VFSub(Size, ElementSize, Src1, Src2);
 
-  OrderedNode *ResAdd{};
-  OrderedNode *ResSub{};
-  ResAdd = _VFAdd(Size, ElementSize, Dest, Src);
-  ResSub = _VFSub(Size, ElementSize, Dest, Src);
-
-  // We now need to swizzle results
-  uint8_t NumElements = Size / ElementSize;
   // Even elements are the sub result
   // Odd elements are the add results
-  for (size_t i = 0; i < NumElements; i += 2) {
-    ResAdd = _VInsElement(Size, ElementSize, i, i, ResAdd, ResSub);
-  }
-  StoreResult(FPRClass, Op, ResAdd, -1);
+  OrderedNode *UnzipSub = _VUnZip(Size, ElementSize, ResSub, ResSub);
+  OrderedNode *UnzipAdd = _VUnZip2(Size, ElementSize, ResAdd, ResAdd);
+
+  return _VZip(Size, ElementSize, UnzipSub, UnzipAdd);
 }
+
+template<size_t ElementSize>
+void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = ADDSUBPOpImpl(Op, ElementSize, Dest, Src);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::ADDSUBPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::ADDSUBPOp<8>(OpcodeArgs);
+
+template<size_t ElementSize>
+void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = ADDSUBPOpImpl(Op, ElementSize, Src1, Src2);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VADDSUBPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VADDSUBPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
@@ -2229,11 +2256,6 @@ void OpDispatchBuilder::PSWAPDOp(OpcodeArgs) {
   auto Result = _VRev64(Size, 4, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template
-void OpDispatchBuilder::ADDSUBPOp<4>(OpcodeArgs);
-template
-void OpDispatchBuilder::ADDSUBPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PI2FWOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
