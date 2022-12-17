@@ -2103,13 +2103,35 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Result = PACKUSOpImpl(Op, ElementSize, Dest, Src);
 
-  StoreResult(FPRClass, Op, Res, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
 void OpDispatchBuilder::PACKUSOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PACKUSOp<4>(OpcodeArgs);
+
+template<size_t ElementSize>
+void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PACKUSOpImpl(Op, ElementSize, Src1, Src2);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  } else {
+    // We do a little cheeky 64-bit swapping to interleave the result.
+    OrderedNode* Swapped = _VInsElement(DstSize, 8, 2, 1, Result, Result);
+    Result = _VInsElement(DstSize, 8, 1, 2, Swapped, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPACKUSOp<2>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                                              OrderedNode *Src1, OrderedNode *Src2) {

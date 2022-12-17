@@ -444,6 +444,9 @@ public:
   template <size_t ElementSize>
   void VPACKSSOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPACKUSOp(OpcodeArgs);
+
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
