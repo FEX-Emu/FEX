@@ -2089,15 +2089,19 @@ void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   StoreResult(GPRClass, Op, MXCSR, -1);
 }
 
+OrderedNode* OpDispatchBuilder::PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
+                                             OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
+
+  OrderedNode *Res = _VSQXTUN(Size, ElementSize, Src1);
+  return _VSQXTUN2(Size, ElementSize, Res, Src2);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  OrderedNode *Res = _VSQXTUN(Size, ElementSize, Dest);
-  Res = _VSQXTUN2(Size, ElementSize, Res, Src);
+  OrderedNode *Result = PACKUSOpImpl(Op, ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Res, -1);
 }

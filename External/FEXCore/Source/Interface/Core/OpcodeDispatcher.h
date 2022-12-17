@@ -710,6 +710,9 @@ private:
   OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
 
+  OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
+                            OrderedNode *Src1, OrderedNode *Src2);
+
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
 
