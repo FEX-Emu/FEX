@@ -1478,6 +1478,8 @@ void OpDispatchBuilder::VPSRAOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPSRAOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSRAOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
