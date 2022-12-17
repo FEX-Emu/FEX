@@ -2107,17 +2107,21 @@ void OpDispatchBuilder::PACKUSOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PACKUSOp<4>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
+                                             OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
+
+  OrderedNode *Res = _VSQXTN(Size, ElementSize, Src1);
+  return _VSQXTN2(Size, ElementSize, Res, Src2);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKSSOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = PACKSSOpImpl(Op, ElementSize, Dest, Src);
 
-  OrderedNode *Res = _VSQXTN(Size, ElementSize, Dest);
-  Res = _VSQXTN2(Size, ElementSize, Res, Src);
-
-  StoreResult(FPRClass, Op, Res, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
