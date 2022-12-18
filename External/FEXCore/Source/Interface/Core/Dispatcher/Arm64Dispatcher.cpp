@@ -46,6 +46,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   , Simulator {&Decoder}
 #endif
 {
+#ifdef VIXL_DISASSEMBLER
+  const auto DisasmBegin = GetCursorAddress<const Instruction*>();
+#endif
+
 #ifdef VIXL_SIMULATOR
   // Hardcode a 256-bit vector width if we are running in the simulator.
   Simulator.SetVectorLengthInBits(256);
@@ -538,6 +542,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
   }
+#ifdef VIXL_DISASSEMBLER
+  const auto DisasmEnd = GetCursorAddress<const Instruction*>();
+  Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
+#endif
 }
 
 #ifdef VIXL_SIMULATOR
