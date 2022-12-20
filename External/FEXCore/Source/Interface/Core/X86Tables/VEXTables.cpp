@@ -380,11 +380,11 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0xB6), 1, X86InstInfo{"VFMADDSUB231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(2, 0b01, 0xB7), 1, X86InstInfo{"VFMSUBADD231", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(2, 0b01, 0xDB), 1, X86InstInfo{"VAESIMC", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xDC), 1, X86InstInfo{"VAESENC", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xDD), 1, X86InstInfo{"VAESENCLAST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xDE), 1, X86InstInfo{"VAESDEC", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(2, 0b01, 0xDF), 1, X86InstInfo{"VAESDECLAST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0xDB), 1, X86InstInfo{"VAESIMC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xDC), 1, X86InstInfo{"VAESENC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xDD), 1, X86InstInfo{"VAESENCLAST", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xDE), 1, X86InstInfo{"VAESDEC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {OPD(2, 0b01, 0xDF), 1, X86InstInfo{"VAESDECLAST", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
     {OPD(2, 0b00, 0xF2), 1, X86InstInfo{"ANDN", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_1ST_SRC, 0, nullptr}},
 
@@ -478,7 +478,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x7E), 1, X86InstInfo{"VFNMSUBSS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x7F), 1, X86InstInfo{"VFNMSUBSD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
-    {OPD(3, 0b01, 0xDF), 1, X86InstInfo{"VAESKEYGENASSIST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0xDF), 1, X86InstInfo{"VAESKEYGENASSIST", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(3, 0b11, 0xF0), 1, X86InstInfo{"RORX", TYPE_INST, FLAGS_MODRM, 1, nullptr}},
 
