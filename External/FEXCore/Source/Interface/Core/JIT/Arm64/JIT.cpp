@@ -664,6 +664,10 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   this->RAData = RAData;
   this->DebugData = DebugData;
 
+#ifdef VIXL_DISASSEMBLER
+  const auto DisasmBegin = GetCursorAddress<const Instruction*>();
+#endif
+
   #ifndef NDEBUG
   LoadConstant(x0, Entry);
   #endif
@@ -769,6 +773,11 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 
   auto CodeEnd = GetCursorAddress<uint8_t *>();
   CPU.EnsureIAndDCacheCoherency(GuestEntry, CodeEnd - GuestEntry);
+
+#ifdef VIXL_DISASSEMBLER
+  const auto DisasmEnd = GetCursorAddress<const Instruction*>();
+  Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
+#endif
 
   if (DebugData) {
     DebugData->HostCodeSize = CodeEnd - GuestEntry;

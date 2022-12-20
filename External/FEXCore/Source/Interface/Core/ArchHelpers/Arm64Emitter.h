@@ -8,6 +8,9 @@
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/operands-aarch64.h>
 #include <platform-vixl.h>
+#ifdef VIXL_DISASSEMBLER
+#include <aarch64/disasm-aarch64.h>
+#endif
 #ifdef VIXL_SIMULATOR
 #include <aarch64/simulator-aarch64.h>
 #include <aarch64/simulator-constants-aarch64.h>
@@ -172,7 +175,9 @@ protected:
   }
 
 #endif
-
+#ifdef VIXL_DISASSEMBLER
+  vixl::aarch64::PrintDisassembler Disasm {stderr};
+#endif
   FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
 };
 
