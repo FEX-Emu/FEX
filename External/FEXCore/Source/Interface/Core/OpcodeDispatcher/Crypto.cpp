@@ -311,6 +311,12 @@ void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VAESKeyGenAssistOp(OpcodeArgs) {
+  OrderedNode *Assist = AESKeyGenAssistImpl(Op);
+  OrderedNode *Result = _VMov(16, Assist);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Selector needs to be literal here");
 
