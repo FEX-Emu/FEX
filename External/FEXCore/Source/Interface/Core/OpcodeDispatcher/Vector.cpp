@@ -1549,6 +1549,8 @@ void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPSRAIOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSRAIOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
