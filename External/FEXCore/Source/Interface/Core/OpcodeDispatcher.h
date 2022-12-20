@@ -420,6 +420,7 @@ public:
   void VADDSUBPOp(OpcodeArgs);
 
   void VAESEncOp(OpcodeArgs);
+  void VAESEncLastOp(OpcodeArgs);
   void VAESIMCOp(OpcodeArgs);
   void VAESKeyGenAssistOp(OpcodeArgs);
 

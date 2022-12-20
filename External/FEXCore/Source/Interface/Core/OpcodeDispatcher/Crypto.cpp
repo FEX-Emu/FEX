@@ -307,8 +307,25 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Res = _VAESEncLast(Dest, Src);
-  StoreResult(FPRClass, Op, Res, -1);
+  OrderedNode *Result = _VAESEncLast(Dest, Src);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  // TODO: Handle 256-bit VAESENCLAST.
+  LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENCLAST unimplemented");
+
+  OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = _VAESEncLast(State, Key);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
