@@ -6045,6 +6045,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXTableGroupOps[] {
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<2>},
     {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<2>},
     {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::VPSRAIOp<2>},
 

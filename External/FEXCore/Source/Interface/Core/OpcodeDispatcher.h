@@ -471,6 +471,9 @@ public:
   template <size_t ElementSize>
   void VPSRLDOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPSRLIOp(OpcodeArgs);
+
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops
