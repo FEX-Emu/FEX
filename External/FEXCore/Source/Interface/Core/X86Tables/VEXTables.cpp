@@ -489,7 +489,7 @@ void InitializeVEXTables() {
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   static constexpr U8U8InfoStruct VEXGroupTable[] = {
     {OPD(TYPE_VEX_GROUP_12, 1, 0b010), 1, X86InstInfo{"VPSRLW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
-    {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},
+    {OPD(TYPE_VEX_GROUP_12, 1, 0b100), 1, X86InstInfo{"VPSRAW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_DST | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(TYPE_VEX_GROUP_12, 1, 0b110), 1, X86InstInfo{"VPSLLW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_DST | FLAGS_XMM_FLAGS, 1, nullptr}},
 
     {OPD(TYPE_VEX_GROUP_13, 1, 0b010), 1, X86InstInfo{"VPSRLD",   TYPE_UNDEC, FLAGS_MODRM, 0, nullptr}},

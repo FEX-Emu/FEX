@@ -1530,6 +1530,26 @@ void OpDispatchBuilder::PSRAIOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSRAIOp<4>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const uint64_t Shift = Op->Src[1].Data.Literal.Value;
+
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = _VSShrI(Size, ElementSize, Src, Shift);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPSRAIOp<2>(OpcodeArgs);
+
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Res = _VDupElement(16, GetSrcSize(Op), Src, 0);
