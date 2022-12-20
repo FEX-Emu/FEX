@@ -419,6 +419,7 @@ public:
   template <size_t ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
+  void VAESEncOp(OpcodeArgs);
   void VAESIMCOp(OpcodeArgs);
   void VAESKeyGenAssistOp(OpcodeArgs);
 
