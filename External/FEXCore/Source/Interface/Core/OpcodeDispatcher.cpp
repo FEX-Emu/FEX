@@ -6015,6 +6015,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::VBROADCASTOp<1>},
     {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::VBROADCASTOp<2>},
 
+    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::VAESIMCOp},
+
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},

@@ -419,6 +419,7 @@ public:
   template <size_t ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
+  void VAESIMCOp(OpcodeArgs);
   void VAESKeyGenAssistOp(OpcodeArgs);
 
   void VANDNOp(OpcodeArgs);
@@ -710,6 +711,7 @@ private:
   void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
 
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
+  OrderedNode* AESIMCImpl(OpcodeArgs);
 
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
