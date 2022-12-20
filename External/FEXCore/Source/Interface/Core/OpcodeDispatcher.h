@@ -459,6 +459,9 @@ public:
   void VPSRAOp(OpcodeArgs);
 
   template <size_t ElementSize>
+  void VPSRAIOp(OpcodeArgs);
+
+  template <size_t ElementSize>
   void VPSRLDOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
