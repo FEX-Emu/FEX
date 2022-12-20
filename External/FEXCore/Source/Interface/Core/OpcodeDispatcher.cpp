@@ -6018,6 +6018,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::VAESIMCOp},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
     {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},
+    {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::VAESDecOp},
 
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},

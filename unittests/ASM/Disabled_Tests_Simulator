@@ -5,6 +5,7 @@ Test_H0F38/66_DD.asm
 Test_H0F38/66_DE.asm
 Test_H0F38/66_DF.asm
 Test_H0F3A/0_66_DF.asm
+Test_VEX/vaesdec.asm
 Test_VEX/vaesenc.asm
 Test_VEX/vaesenclast.asm
 Test_VEX/vaesimc.asm

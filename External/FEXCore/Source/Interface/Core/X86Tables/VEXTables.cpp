@@ -383,7 +383,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0xDB), 1, X86InstInfo{"VAESIMC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0xDC), 1, X86InstInfo{"VAESENC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0xDD), 1, X86InstInfo{"VAESENCLAST", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(2, 0b01, 0xDE), 1, X86InstInfo{"VAESDEC", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0xDE), 1, X86InstInfo{"VAESDEC", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0xDF), 1, X86InstInfo{"VAESDECLAST", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(2, 0b00, 0xF2), 1, X86InstInfo{"ANDN", TYPE_INST, FLAGS_MODRM | FLAGS_VEX_1ST_SRC, 0, nullptr}},

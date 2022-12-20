@@ -419,6 +419,7 @@ public:
   template <size_t ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
+  void VAESDecOp(OpcodeArgs);
   void VAESEncOp(OpcodeArgs);
   void VAESEncLastOp(OpcodeArgs);
   void VAESIMCOp(OpcodeArgs);
