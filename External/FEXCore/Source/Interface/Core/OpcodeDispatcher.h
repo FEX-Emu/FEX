@@ -707,6 +707,8 @@ private:
   void AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
 
+  OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
+
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
 

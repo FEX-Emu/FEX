@@ -298,13 +298,17 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
-void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
+OrderedNode* OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t RCON = Op->Src[1].Data.Literal.Value;
+  const uint64_t RCON = Op->Src[1].Data.Literal.Value;
 
-  auto Res = _VAESKeyGenAssist(Src, RCON);
-  StoreResult(FPRClass, Op, Res, -1);
+  return _VAESKeyGenAssist(Src, RCON);
+}
+
+void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
+  OrderedNode *Result = AESKeyGenAssistImpl(Op);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
