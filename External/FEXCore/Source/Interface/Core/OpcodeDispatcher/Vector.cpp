@@ -1359,6 +1359,8 @@ template
 void OpDispatchBuilder::VPSRLIOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPSRLIOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSRLIOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize,
                                           OrderedNode *Src, uint64_t Shift) {
