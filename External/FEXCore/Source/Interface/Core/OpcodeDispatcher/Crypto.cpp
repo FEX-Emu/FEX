@@ -35,19 +35,16 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  auto W0 = _VExtractToGPR(16, 4, Dest, 3);
-  auto W1 = _VExtractToGPR(16, 4, Dest, 2);
-  auto W2 = _VExtractToGPR(16, 4, Dest, 1);
-  auto W3 = _VExtractToGPR(16, 4, Dest, 0);
-  auto W4 = _VExtractToGPR(16, 4, Src, 3);
-  auto W5 = _VExtractToGPR(16, 4, Src, 2);
+  OrderedNode *NewVec{};
+  NewVec = _VInsElement(16, 4, 3, 1, Dest, Dest);
+  NewVec = _VInsElement(16, 4, 2, 0, NewVec, Dest);
+  NewVec = _VInsElement(16, 4, 1, 3, NewVec, Src);
+  NewVec = _VInsElement(16, 4, 0, 2, NewVec, Src);
 
-  auto D3 = _VInsGPR(16, 4, 3, Dest, _Xor(W2, W0));
-  auto D2 = _VInsGPR(16, 4, 2, D3,   _Xor(W3, W1));
-  auto D1 = _VInsGPR(16, 4, 1, D2,   _Xor(W4, W2));
-  auto D0 = _VInsGPR(16, 4, 0, D1,   _Xor(W5, W3));
+  // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
+  OrderedNode *Result = _VXor(16, 1, Dest, NewVec);
 
-  StoreResult(FPRClass, Op, D0, -1);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
