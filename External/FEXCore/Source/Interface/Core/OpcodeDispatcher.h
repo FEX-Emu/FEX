@@ -419,6 +419,9 @@ public:
   template <size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
+  template <size_t ElementSize, bool Scalar>
+  void AVXVFCMPOp(OpcodeArgs);
+
   template <size_t ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
@@ -751,6 +754,9 @@ private:
 
   OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
                            OrderedNode *Src, OrderedNode *ShiftVec);
+
+  OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool Scalar,
+                           OrderedNode *Src1, OrderedNode *Src2, uint8_t CompType);
 
   void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
