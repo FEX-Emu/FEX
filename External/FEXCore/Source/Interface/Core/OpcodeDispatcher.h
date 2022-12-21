@@ -474,6 +474,7 @@ public:
 
   template <size_t ElementSize>
   void VPSRLDOp(OpcodeArgs);
+  void VPSRLDQOp(OpcodeArgs);
 
   template <size_t ElementSize>
   void VPSRLIOp(OpcodeArgs);
