@@ -146,9 +146,9 @@ void InitializeVEXTables() {
     {OPD(1, 0b10, 0x59), 1, X86InstInfo{"VMULSS",   TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b11, 0x59), 1, X86InstInfo{"VMULSD",   TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(1, 0b00, 0x5B), 1, X86InstInfo{"VCVTDQ2PS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b00, 0x5B), 1, X86InstInfo{"VCVTDQ2PS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x5B), 1, X86InstInfo{"VCVTPS2DQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b10, 0x5B), 1, X86InstInfo{"VCVTPS2DQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b10, 0x5B), 1, X86InstInfo{"VCVTTPS2DQ",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b00, 0x5C), 1, X86InstInfo{"VSUBPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0x5C), 1, X86InstInfo{"VSUBPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -227,7 +227,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xE5), 1, X86InstInfo{"VPMULHW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b01, 0xE6), 1, X86InstInfo{"VCVTTPD2DQ",  TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
-    {OPD(1, 0b10, 0xE6), 1, X86InstInfo{"VCVTDQ2PD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b10, 0xE6), 1, X86InstInfo{"VCVTDQ2PD",   TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b11, 0xE6), 1, X86InstInfo{"VCVTPD2DQ",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b01, 0xE7), 1, X86InstInfo{"VMOVNTDQ",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},

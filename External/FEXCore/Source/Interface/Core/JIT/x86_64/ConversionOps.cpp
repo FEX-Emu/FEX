@@ -186,8 +186,8 @@ DEF_OP(Vector_SToF) {
       pextrq(rcx, Vector, 0);
       cvtsi2sd(Dst, rcx);
       cvtsi2sd(xmm15, rax);
-      vmovlhps(Dst, Dst, xmm15);
       if (Is256Bit) {
+        movlhps(Dst, xmm15);
         vextracti128(xmm15, ToYMM(Vector), 1);
 
         pextrq(rax, xmm15, 1);
@@ -197,6 +197,8 @@ DEF_OP(Vector_SToF) {
         movlhps(xmm15, xmm14);
 
         vinserti128(ToYMM(Dst), ToYMM(Dst), xmm15, 1);
+      } else {
+        vmovlhps(Dst, Dst, xmm15);
       }
       break;
     default:

@@ -1677,26 +1677,55 @@ void OpDispatchBuilder::CVTFPR_To_GPR<8, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::CVTFPR_To_GPR<8, false>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool Widen>
-void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+OrderedNode* OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen) {
+  const size_t Size = GetDstSize(Op);
+
+  OrderedNode *Src = [&] {
+    if (Widen) {
+      const auto LoadSize = 8 * (Size / 16);
+      return LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags, -1);
+    } else {
+      return LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    }
+  }();
 
   size_t ElementSize = SrcElementSize;
-  size_t Size = GetDstSize(Op);
-  if constexpr (Widen) {
+  if (Widen) {
     Src = _VSXTL(Size, ElementSize, Src);
     ElementSize <<= 1;
   }
 
-  Src = _Vector_SToF(Size, ElementSize, Src);
+  return _Vector_SToF(Size, ElementSize, Src);
+}
 
-  StoreResult(FPRClass, Op, Src, -1);
+template<size_t SrcElementSize, bool Widen>
+void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
+  OrderedNode *Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
 void OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>(OpcodeArgs);
+
+template <size_t SrcElementSize, bool Widen>
+void OpDispatchBuilder::AVXVector_CVT_Int_To_Float(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {

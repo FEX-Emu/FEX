@@ -5871,6 +5871,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMUL, 4>},
     {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMUL, 8>},
 
+    {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>},
+
     {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 4>},
     {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 8>},
     {OPD(1, 0b10, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFSUB, 4>},
@@ -5940,7 +5942,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::VPSRAOp<2>},
     {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::VPSRAOp<4>},
     {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 2>},
-  
+
+    {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>},
+
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::VMOVVectorNTOp},
 
     {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQSUB, 1>},
