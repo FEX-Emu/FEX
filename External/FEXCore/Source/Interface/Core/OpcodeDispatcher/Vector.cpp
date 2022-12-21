@@ -1651,20 +1651,23 @@ void OpDispatchBuilder::CVTFPR_To_GPR<8, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::CVTFPR_To_GPR<8, false>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool Widen>
-void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
+OrderedNode* OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   size_t ElementSize = SrcElementSize;
-  size_t Size = GetDstSize(Op);
-  if constexpr (Widen) {
+  const size_t Size = GetDstSize(Op);
+  if (Widen) {
     Src = _VSXTL(Size, ElementSize, Src);
     ElementSize <<= 1;
   }
 
-  Src = _Vector_SToF(Size, ElementSize, Src);
+  return _Vector_SToF(Size, ElementSize, Src);
+}
 
-  StoreResult(FPRClass, Op, Src, -1);
+template<size_t SrcElementSize, bool Widen>
+void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
+  OrderedNode *Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template

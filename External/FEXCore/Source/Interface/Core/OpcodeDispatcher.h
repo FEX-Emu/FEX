@@ -756,6 +756,8 @@ private:
   OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                OrderedNode *Src, uint64_t Mode);
 
+  OrderedNode* Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen);
+
   #undef OpcodeArgs
 
   OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
