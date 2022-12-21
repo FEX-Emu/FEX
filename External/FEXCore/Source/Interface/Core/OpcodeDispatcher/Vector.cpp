@@ -1941,52 +1941,60 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   }
 }
 
-template<size_t ElementSize, bool Scalar>
-void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
-  uint8_t CompType = Op->Src[1].Data.Literal.Value;
+OrderedNode* OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool Scalar,
+                                            OrderedNode *Src1, OrderedNode *Src2, uint8_t CompType) {
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Result{};
-  // This maps 1:1 to an AArch64 NEON Op
-  //auto ALUOp = _VCMPGT(Size, ElementSize, Dest, Src);
   switch (CompType) {
     case 0x00: case 0x08: case 0x10: case 0x18: // EQ
-      Result = _VFCMPEQ(Size, ElementSize, Dest, Src);
-    break;
+      Result = _VFCMPEQ(Size, ElementSize, Src1, Src2);
+      break;
     case 0x01: case 0x09: case 0x11: case 0x19: // LT, GT(Swapped operand)
-      Result = _VFCMPLT(Size, ElementSize, Dest, Src);
-    break;
+      Result = _VFCMPLT(Size, ElementSize, Src1, Src2);
+      break;
     case 0x02: case 0x0A: case 0x12: case 0x1A: // LE, GE(Swapped operand)
-      Result = _VFCMPLE(Size, ElementSize, Dest, Src);
-    break;
+      Result = _VFCMPLE(Size, ElementSize, Src1, Src2);
+      break;
     case 0x03: case 0x0B: case 0x13: case 0x1B: // Unordered
-      Result = _VFCMPUNO(Size, ElementSize, Dest, Src);
-    break;
+      Result = _VFCMPUNO(Size, ElementSize, Src1, Src2);
+      break;
     case 0x04: case 0x0C: case 0x14: case 0x1C: // NEQ
-      Result = _VFCMPNEQ(Size, ElementSize, Dest, Src);
-    break;
+      Result = _VFCMPNEQ(Size, ElementSize, Src1, Src2);
+      break;
     case 0x05: case 0x0D: case 0x15: case 0x1D: // NLT, NGT(Swapped operand)
-      Result = _VFCMPLT(Size, ElementSize, Dest, Src);
+      Result = _VFCMPLT(Size, ElementSize, Src1, Src2);
       Result = _VNot(Size, ElementSize, Result);
-    break;
+      break;
     case 0x06: case 0x0E: case 0x16: case 0x1E: // NLE, NGE(Swapped operand)
-      Result = _VFCMPLE(Size, ElementSize, Dest, Src);
+      Result = _VFCMPLE(Size, ElementSize, Src1, Src2);
       Result = _VNot(Size, ElementSize, Result);
-    break;
+      break;
     case 0x07: case 0x0F: case 0x17: case 0x1F: // Ordered
-      Result = _VFCMPORD(Size, ElementSize, Dest, Src);
-    break;
+      Result = _VFCMPORD(Size, ElementSize, Src1, Src2);
+      break;
     default:
       LOGMAN_MSG_A_FMT("Unknown Comparison type: {}", CompType);
-    break;
+      break;
   }
 
-  if constexpr (Scalar) {
+  if (Scalar) {
     // Insert the lower bits
-    Result = _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Dest, Result);
+    Result = _VInsElement(GetDstSize(Op), ElementSize, 0, 0, Src1, Result);
   }
+
+  return Result;
+}
+
+template<size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
+  const uint8_t CompType = Op->Src[1].Data.Literal.Value;
+
+  OrderedNode* Result = VFCMPOpImpl(Op, ElementSize, Scalar, Dest, Src, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
