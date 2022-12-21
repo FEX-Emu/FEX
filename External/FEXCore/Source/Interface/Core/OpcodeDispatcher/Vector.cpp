@@ -2028,6 +2028,8 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::AVXVFCMPOp<4, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVFCMPOp<8, false>(OpcodeArgs);
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
