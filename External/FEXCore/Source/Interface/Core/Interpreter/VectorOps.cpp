@@ -1657,8 +1657,9 @@ DEF_OP(VExtr) {
 
     const auto* VectorsPtr = reinterpret_cast<const uint8_t*>(Vectors.data());
     const auto* SrcPtr = VectorsPtr + SanitizedByteIndex;
+    const auto CopyAmount = std::max(0, int(sizeof(Vectors) - SanitizedByteIndex));
 
-    memcpy(GDP, SrcPtr, OpSize);
+    memcpy(GDP, SrcPtr, CopyAmount);
   } else {
     uint64_t Offset = Index * ElementSize * 8;
 
