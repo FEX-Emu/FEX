@@ -99,7 +99,7 @@ void InitializeVEXTables() {
 
     {OPD(1, 0b00, 0xC2), 1, X86InstInfo{"VCMPccPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(1, 0b01, 0xC2), 1, X86InstInfo{"VCMPccPD",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
-    {OPD(1, 0b10, 0xC2), 1, X86InstInfo{"VCMPccSS",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b10, 0xC2), 1, X86InstInfo{"VCMPccSS",   TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(1, 0b11, 0xC2), 1, X86InstInfo{"VCMPccSD",   TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
 
     {OPD(1, 0b01, 0xC4), 1, X86InstInfo{"VPINSRW",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},

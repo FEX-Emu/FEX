@@ -2031,6 +2031,8 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
 template
 void OpDispatchBuilder::AVXVFCMPOp<4, false>(OpcodeArgs);
 template
+void OpDispatchBuilder::AVXVFCMPOp<4, true>(OpcodeArgs);
+template
 void OpDispatchBuilder::AVXVFCMPOp<8, false>(OpcodeArgs);
 
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
