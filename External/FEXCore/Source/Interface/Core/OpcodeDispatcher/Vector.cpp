@@ -2563,7 +2563,6 @@ void OpDispatchBuilder::VPFCMPOp(OpcodeArgs) {
   OrderedNode *Result{};
   // This maps 1:1 to an AArch64 NEON Op
   //auto ALUOp = _VCMPGT(Size, 4, Dest, Src);
-  LogMan::Msg::DFmt("CompType: {} Size: {}", CompType, Size);
   switch (CompType) {
     case 0x00: // EQ
       Result = _VFCMPEQ(Size, 4, Dest, Src);
