@@ -2008,6 +2008,27 @@ void OpDispatchBuilder::VFCMPOp<8, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::VFCMPOp<8, true>(OpcodeArgs);
 
+template <size_t ElementSize, bool Scalar>
+void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal");
+  const uint8_t CompType = Op->Src[2].Data.Literal.Value;
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = VFCMPOpImpl(Op, ElementSize, Scalar, Src1, Src2, CompType);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVFCMPOp<4, false>(OpcodeArgs);
+
 void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
   Mem = AppendSegmentOffset(Mem, Op->Flags);
