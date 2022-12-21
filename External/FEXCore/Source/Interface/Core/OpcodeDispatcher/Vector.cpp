@@ -1652,10 +1652,18 @@ template
 void OpDispatchBuilder::CVTFPR_To_GPR<8, false>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen) {
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const size_t Size = GetDstSize(Op);
+
+  OrderedNode *Src = [&] {
+    if (Widen) {
+      const auto LoadSize = 8 * (Size / 16);
+      return LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags, -1);
+    } else {
+      return LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+    }
+  }();
 
   size_t ElementSize = SrcElementSize;
-  const size_t Size = GetDstSize(Op);
   if (Widen) {
     Src = _VSXTL(Size, ElementSize, Src);
     ElementSize <<= 1;
@@ -1690,6 +1698,8 @@ void OpDispatchBuilder::AVXVector_CVT_Int_To_Float(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
