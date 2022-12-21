@@ -1550,7 +1550,6 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
     if (Shift < DstSize) {
       Result = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
     }
-    Result = _VMov(16, Result);
   } else {
     if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
       OrderedNode *ResultBottom = _VExtr(16, 1, Src, Result, 16 - Shift);
