@@ -929,7 +929,8 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
 
 template<size_t ElementSize, bool HalfSize, bool Low>
 void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
-  LOGMAN_THROW_AA_FMT(ElementSize != 0, "What. No element size?");
+  static_assert(ElementSize != 0);
+
   const auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
@@ -966,7 +967,8 @@ void OpDispatchBuilder::PSHUFDOp<4, false, true>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
-  LOGMAN_THROW_AA_FMT(ElementSize != 0, "What. No element size?");
+  static_assert(ElementSize != 0);
+
   const auto Size = GetSrcSize(Op);
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
