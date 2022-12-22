@@ -1105,7 +1105,7 @@ DEF_OP(Sbfe) {
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
 
-#define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
+#define GRFCMP(Node) (Op->CompareSize == 4 ? GetVReg(Node).S() : GetVReg(Node).D())
 
 Condition MapSelectCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
@@ -1178,7 +1178,7 @@ DEF_OP(VExtractToGPR) {
   const auto Offset = ElementSizeBits * Op->Index;
   const auto Is256Bit = Offset >= SSERegBitSize;
 
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   const auto PerformMove = [&](const aarch64::VRegister& reg, int index) {
     switch (OpSize) {
@@ -1249,10 +1249,10 @@ DEF_OP(Float_ToGPR_ZS) {
   aarch64::Register Dst{};
   aarch64::VRegister Src{};
   if (Op->SrcElementSize == 8) {
-    Src = GetSrc(Op->Scalar.ID()).D();
+    Src = GetVReg(Op->Scalar.ID()).D();
   }
   else {
-    Src = GetSrc(Op->Scalar.ID()).S();
+    Src = GetVReg(Op->Scalar.ID()).S();
   }
 
   if (IROp->Size == 8) {
@@ -1271,11 +1271,11 @@ DEF_OP(Float_ToGPR_S) {
   aarch64::Register Dst{};
   aarch64::VRegister Src{};
   if (Op->SrcElementSize == 8) {
-    frinti(VTMP1.D(), GetSrc(Op->Scalar.ID()).D());
+    frinti(VTMP1.D(), GetVReg(Op->Scalar.ID()).D());
     Src = VTMP1.D();
   }
   else {
-    frinti(VTMP1.S(), GetSrc(Op->Scalar.ID()).S());
+    frinti(VTMP1.S(), GetVReg(Op->Scalar.ID()).S());
     Src = VTMP1.S();
   }
 
@@ -1293,10 +1293,10 @@ DEF_OP(FCmp) {
   auto Op = IROp->C<IR::IROp_FCmp>();
 
   if (Op->ElementSize == 4) {
-    fcmp(GetSrc(Op->Scalar1.ID()).S(), GetSrc(Op->Scalar2.ID()).S());
+    fcmp(GetVReg(Op->Scalar1.ID()).S(), GetVReg(Op->Scalar2.ID()).S());
   }
   else {
-    fcmp(GetSrc(Op->Scalar1.ID()).D(), GetSrc(Op->Scalar2.ID()).D());
+    fcmp(GetVReg(Op->Scalar1.ID()).D(), GetVReg(Op->Scalar2.ID()).D());
   }
   auto Dst = GetReg<RA_64>(Node);
 

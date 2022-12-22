@@ -127,21 +127,8 @@ private:
     return RA64Pair[Reg];
   }
 
-  [[nodiscard]] aarch64::VRegister GetSrc(IR::NodeID Node) const {
-    auto Reg = GetPhys(Node);
 
-    LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
-
-    if (Reg.Class == IR::FPRFixedClass.Val) {
-      return SRAFPR[Reg.Reg];
-    } else if (Reg.Class == IR::FPRClass.Val) {
-      return RAFPR[Reg.Reg];
-    }
-
-    FEX_UNREACHABLE;
-  }
-
-  [[nodiscard]] aarch64::VRegister GetDst(IR::NodeID Node) const {
+  [[nodiscard]] aarch64::VRegister GetVReg(IR::NodeID Node) const {
     auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);

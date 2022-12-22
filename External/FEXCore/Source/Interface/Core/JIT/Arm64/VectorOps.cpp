@@ -13,19 +13,19 @@ using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 DEF_OP(VectorZero) {
   if (HostSupportsSVE) {
-    const auto Dst = GetDst(Node).Z().VnD();
+    const auto Dst = GetVReg(Node).Z().VnD();
     eor(Dst, Dst, Dst);
   } else {
     const uint8_t OpSize = IROp->Size;
 
     switch (OpSize) {
       case 8: {
-        const auto Dst = GetDst(Node).V8B();
+        const auto Dst = GetVReg(Node).V8B();
         eor(Dst, Dst, Dst);
         break;
       }
       case 16: {
-        const auto Dst = GetDst(Node).V16B();
+        const auto Dst = GetVReg(Node).V16B();
         eor(Dst, Dst, Dst);
         break;
       }
@@ -45,7 +45,7 @@ DEF_OP(VectorImm) {
 
   if (HostSupportsSVE) {
     const auto Dst = [&] {
-      const auto Tmp = GetDst(Node).Z();
+      const auto Tmp = GetVReg(Node).Z();
       switch (ElementSize) {
       case 1:
         return Tmp.VnB();
@@ -73,10 +73,10 @@ DEF_OP(VectorImm) {
     if (ElementSize == 8) {
       // movi with 64bit element size doesn't do what we want here
       LoadConstant(TMP1.X(), Op->Immediate);
-      dup(GetDst(Node).V2D(), TMP1.X());
+      dup(GetVReg(Node).V2D(), TMP1.X());
     }
     else {
-      movi(GetDst(Node).VCast(OpSize * 8, Elements), Op->Immediate);
+      movi(GetVReg(Node).VCast(OpSize * 8, Elements), Op->Immediate);
     }
   }
 }
@@ -85,8 +85,8 @@ DEF_OP(VMov) {
   const auto Op = IROp->C<IR::IROp_VMov>();
   const auto OpSize = IROp->Size;
 
-  const auto Dst = GetDst(Node);
-  const auto Source = GetSrc(Op->Source.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Source = GetVReg(Op->Source.ID());
 
   switch (OpSize) {
     case 1: {
@@ -140,9 +140,9 @@ DEF_OP(VMov) {
 DEF_OP(VAnd) {
   auto Op = IROp->C<IR::IROp_VAnd>();
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE) {
     and_(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
@@ -154,9 +154,9 @@ DEF_OP(VAnd) {
 DEF_OP(VBic) {
   auto Op = IROp->C<IR::IROp_VBic>();
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE) {
     bic(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
@@ -168,9 +168,9 @@ DEF_OP(VBic) {
 DEF_OP(VOr) {
   auto Op = IROp->C<IR::IROp_VOr>();
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE) {
     orr(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
@@ -182,9 +182,9 @@ DEF_OP(VOr) {
 DEF_OP(VXor) {
   auto Op = IROp->C<IR::IROp_VXor>();
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE) {
     eor(Dst.Z().VnD(), Vector1.Z().VnD(), Vector2.Z().VnD());
@@ -198,9 +198,9 @@ DEF_OP(VAdd) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
@@ -246,9 +246,9 @@ DEF_OP(VSub) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
@@ -294,9 +294,9 @@ DEF_OP(VUQAdd) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
@@ -342,9 +342,9 @@ DEF_OP(VUQSub) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
@@ -390,9 +390,9 @@ DEF_OP(VSQAdd) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
@@ -438,9 +438,9 @@ DEF_OP(VSQSub) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   switch (ElementSize) {
     case 1: {
@@ -489,9 +489,9 @@ DEF_OP(VAddP) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -589,8 +589,8 @@ DEF_OP(VAddV) {
   const auto Elements = OpSize / ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // SVE doesn't have an equivalent ADDV instruction, so we make do
@@ -656,8 +656,8 @@ DEF_OP(VUMinV) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Elements = OpSize / ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE) {
     LOGMAN_THROW_AA_FMT(OpSize == 16 || OpSize == 32,
@@ -705,9 +705,9 @@ DEF_OP(VURAvg) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -771,8 +771,8 @@ DEF_OP(VAbs) {
   const uint8_t ElementSize = Op->Header.ElementSize;
   const uint8_t Elements = OpSize / Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Src = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Src = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && OpSize == 32) {
     switch (ElementSize) {
@@ -832,8 +832,8 @@ DEF_OP(VPopcount) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Src = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Src = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && !IsScalar) {
     const auto Pred = OpSize == 16 ? PRED_TMP_16B.Merging()
@@ -889,9 +889,9 @@ DEF_OP(VFAdd) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto IsScalar = ElementSize == OpSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && !IsScalar) {
     switch (ElementSize) {
@@ -958,9 +958,9 @@ DEF_OP(VFAddP) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   const bool Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
@@ -1029,9 +1029,9 @@ DEF_OP(VFSub) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto IsScalar = ElementSize == OpSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && !IsScalar) {
     switch (ElementSize) {
@@ -1099,9 +1099,9 @@ DEF_OP(VFMul) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto IsScalar = ElementSize == OpSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && !IsScalar) {
     switch (ElementSize) {
@@ -1170,9 +1170,9 @@ DEF_OP(VFDiv) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -1251,9 +1251,9 @@ DEF_OP(VFMin) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   // NOTE: We don't directly use FMIN here for any of the implementations,
   //       because it has undesirable NaN handling behavior (it sets
@@ -1369,9 +1369,9 @@ DEF_OP(VFMax) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   // NOTE: See VFMin implementation for reasons why we
   //       don't just use FMAX/FMIN for these implementations.
@@ -1470,8 +1470,8 @@ DEF_OP(VFRecp) {
   const auto IsScalar = Op->Header.ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && !IsScalar) {
     const auto Pred = Is256Bit ? PRED_TMP_32B.Merging()
@@ -1554,8 +1554,8 @@ DEF_OP(VFSqrt) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && !IsScalar) {
     const auto Pred = Is256Bit ? PRED_TMP_32B.Merging()
@@ -1627,8 +1627,8 @@ DEF_OP(VFRSqrt) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1718,8 +1718,8 @@ DEF_OP(VNeg) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE) {
     const auto Pred = Is256Bit ? PRED_TMP_32B.Merging()
@@ -1770,8 +1770,8 @@ DEF_OP(VFNeg) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE) {
     const auto Pred = Is256Bit ? PRED_TMP_32B.Merging()
@@ -1814,8 +1814,8 @@ DEF_OP(VNot) {
   const auto OpSize = IROp->Size;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     not_(Dst.Z().VnB(), PRED_TMP_32B.Merging(), Vector.Z().VnB());
@@ -1832,9 +1832,9 @@ DEF_OP(VUMin) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1901,9 +1901,9 @@ DEF_OP(VSMin) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -1970,9 +1970,9 @@ DEF_OP(VUMax) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2039,9 +2039,9 @@ DEF_OP(VSMax) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Pred = PRED_TMP_32B.Merging();
@@ -2107,9 +2107,9 @@ DEF_OP(VZip) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -2185,9 +2185,9 @@ DEF_OP(VZip2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -2263,9 +2263,9 @@ DEF_OP(VUnZip) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -2341,9 +2341,9 @@ DEF_OP(VUnZip2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -2416,10 +2416,10 @@ DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
   const auto OpSize = IROp->Size;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorFalse = GetSrc(Op->VectorFalse.ID());
-  const auto VectorTrue = GetSrc(Op->VectorTrue.ID());
-  const auto VectorMask = GetSrc(Op->VectorMask.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorFalse = GetVReg(Op->VectorFalse.ID());
+  const auto VectorTrue = GetVReg(Op->VectorTrue.ID());
+  const auto VectorMask = GetVReg(Op->VectorMask.ID());
 
   if (HostSupportsSVE) {
     // NOTE: Slight parameter difference from ASIMD
@@ -2449,9 +2449,9 @@ DEF_OP(VCMPEQ) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2545,8 +2545,8 @@ DEF_OP(VCMPEQZ) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2636,9 +2636,9 @@ DEF_OP(VCMPGT) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2732,8 +2732,8 @@ DEF_OP(VCMPGTZ) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2823,8 +2823,8 @@ DEF_OP(VCMPLTZ) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2914,9 +2914,9 @@ DEF_OP(VFCMPEQ) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -2999,9 +2999,9 @@ DEF_OP(VFCMPNEQ) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3085,9 +3085,9 @@ DEF_OP(VFCMPLT) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3170,9 +3170,9 @@ DEF_OP(VFCMPGT) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3255,9 +3255,9 @@ DEF_OP(VFCMPLE) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3340,9 +3340,9 @@ DEF_OP(VFCMPORD) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3444,9 +3444,9 @@ DEF_OP(VFCMPUNO) {
   const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit && !IsScalar) {
     const auto Mask = PRED_TMP_32B.Zeroing();
@@ -3558,9 +3558,9 @@ DEF_OP(VUShlS) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3632,9 +3632,9 @@ DEF_OP(VUShrS) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3710,9 +3710,9 @@ DEF_OP(VSShrS) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto ShiftScalar = GetSrc(Op->ShiftScalar.ID());
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto ShiftScalar = GetVReg(Op->ShiftScalar.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -3791,9 +3791,9 @@ DEF_OP(VInsElement) {
   const auto DestIdx = Op->DestIdx;
   const auto SrcIdx = Op->SrcIdx;
 
-  const auto Dst = GetDst(Node);
-  const auto SrcVector = GetSrc(Op->SrcVector.ID());
-  auto Reg = GetSrc(Op->DestVector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto SrcVector = GetVReg(Op->SrcVector.ID());
+  auto Reg = GetVReg(Op->DestVector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // We're going to use this to create our predicate register literal.
@@ -3923,8 +3923,8 @@ DEF_OP(VDupElement) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -3974,9 +3974,9 @@ DEF_OP(VExtr) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   // AArch64 ext op has bit arrangement as [Vm:Vn] so arguments need to be swapped
-  const auto Dst = GetDst(Node);
-  auto UpperBits = GetSrc(Op->VectorLower.ID());
-  auto LowerBits = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  auto UpperBits = GetVReg(Op->VectorLower.ID());
+  auto LowerBits = GetVReg(Op->VectorUpper.ID());
 
   const auto ElementSize = Op->Header.ElementSize;
   auto Index = Op->Index;
@@ -4014,8 +4014,8 @@ DEF_OP(VUShrI) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (BitShift >= (ElementSize * 8)) {
     eor(Dst.V16B(), Dst.V16B(), Dst.V16B());
@@ -4081,8 +4081,8 @@ DEF_OP(VSShrI) {
   const auto Shift = std::min(uint8_t(ElementSize * 8 - 1), Op->BitShift);
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -4144,8 +4144,8 @@ DEF_OP(VShlI) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (BitShift >= (ElementSize * 8)) {
     eor(Dst.V16B(), Dst.V16B(), Dst.V16B());
@@ -4211,8 +4211,8 @@ DEF_OP(VUShrNI) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4264,9 +4264,9 @@ DEF_OP(VUShrNI2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     mov(VTMP1.Z().VnD(), VectorLower.Z().VnD());
@@ -4330,8 +4330,8 @@ DEF_OP(VSXTL) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4373,8 +4373,8 @@ DEF_OP(VSXTL2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4416,8 +4416,8 @@ DEF_OP(VUXTL) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4460,8 +4460,8 @@ DEF_OP(VUXTL2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4503,8 +4503,8 @@ DEF_OP(VSQXTN) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // Note that SVE SQXTNB and SQXTNT are a tad different
@@ -4582,9 +4582,9 @@ DEF_OP(VSQXTN2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // Need to use the destructive variant of SPLICE, since
@@ -4671,8 +4671,8 @@ DEF_OP(VSQXTUN) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4717,9 +4717,9 @@ DEF_OP(VSQXTUN2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorLower = GetSrc(Op->VectorLower.ID());
-  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // NOTE: See VSQXTN2 implementation for an in-depth explanation
@@ -4796,9 +4796,9 @@ DEF_OP(VMul) {
 
   const auto ElementSize = Op->Header.ElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE) {
     switch (ElementSize) {
@@ -4854,9 +4854,9 @@ DEF_OP(VUMull) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4910,9 +4910,9 @@ DEF_OP(VSMull) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -4966,9 +4966,9 @@ DEF_OP(VUMull2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -5022,9 +5022,9 @@ DEF_OP(VSMull2) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     switch (ElementSize) {
@@ -5078,9 +5078,9 @@ DEF_OP(VUABDL) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector1 = GetSrc(Op->Vector1.ID());
-  const auto Vector2 = GetSrc(Op->Vector2.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // To mimic the behavior of AdvSIMD UABDL, we need to get the
@@ -5136,9 +5136,9 @@ DEF_OP(VTBL1) {
   const auto Op = IROp->C<IR::IROp_VTBL1>();
   const auto OpSize = IROp->Size;
 
-  const auto Dst = GetDst(Node);
-  const auto VectorIndices = GetSrc(Op->VectorIndices.ID());
-  const auto VectorTable = GetSrc(Op->VectorTable.ID());
+  const auto Dst = GetVReg(Node);
+  const auto VectorIndices = GetVReg(Op->VectorIndices.ID());
+  const auto VectorTable = GetVReg(Op->VectorTable.ID());
 
   switch (OpSize) {
     case 8: {
@@ -5170,8 +5170,8 @@ DEF_OP(VRev64) {
   const auto Elements = OpSize / ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();

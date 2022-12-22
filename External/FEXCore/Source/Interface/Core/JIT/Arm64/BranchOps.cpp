@@ -104,7 +104,7 @@ DEF_OP(Jump) {
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
-#define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
+#define GRFCMP(Node) (Op->CompareSize == 4 ? GetVReg(Node).S() : GetVReg(Node).D())
 
 static Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
