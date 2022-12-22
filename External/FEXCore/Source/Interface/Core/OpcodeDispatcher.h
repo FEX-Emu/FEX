@@ -465,6 +465,8 @@ public:
 
   void VPHMINPOSUWOp(OpcodeArgs);
 
+  void VPMULHRSWOp(OpcodeArgs);
+
   template <bool Signed>
   void VPMULHWOp(OpcodeArgs);
 

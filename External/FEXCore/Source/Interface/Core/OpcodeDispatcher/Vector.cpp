@@ -2824,6 +2824,20 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PMULHRSWOpImpl(Op, Dest, Src);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::HSUBP(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
