@@ -2344,37 +2344,37 @@ void OpDispatchBuilder::VPACKSSOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPACKSSOp<4>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
+                                            OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
+
+  if (Size == 8) {
+    if (Signed) {
+      return _VSMull(16, ElementSize, Src1, Src2);
+    } else {
+      return _VUMull(16, ElementSize, Src1, Src2);
+    }
+  } else {
+    OrderedNode *InsSrc1 = _VInsElement(Size, ElementSize, 1, 2, Src1, Src1);
+    OrderedNode *InsSrc2 = _VInsElement(Size, ElementSize, 1, 2, Src2, Src2);
+
+    if (Signed) {
+      return _VSMull(Size, ElementSize, InsSrc1, InsSrc2);
+    } else {
+      return _VUMull(Size, ElementSize, InsSrc1, InsSrc2);
+    }
+  }
+}
+
 template<size_t ElementSize, bool Signed>
 void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
   static_assert(ElementSize == sizeof(uint32_t),
                 "Currently only handles 32-bit -> 64-bit");
 
-  auto Size = GetSrcSize(Op);
-
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Res = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
 
-  OrderedNode *Res{};
-
-  if (Size == 8) {
-    if constexpr (Signed) {
-      Res = _VSMull(16, ElementSize, Src1, Src2);
-    }
-    else {
-      Res = _VUMull(16, ElementSize, Src1, Src2);
-    }
-  }
-  else {
-    Src1 = _VInsElement(Size, ElementSize, 1, 2, Src1, Src1);
-    Src2 = _VInsElement(Size, ElementSize, 1, 2, Src2, Src2);
-
-    if constexpr (Signed) {
-      Res = _VSMull(Size, ElementSize, Src1, Src2);
-    }
-    else {
-      Res = _VUMull(Size, ElementSize, Src1, Src2);
-    }
-  }
   StoreResult(FPRClass, Op, Res, -1);
 }
 
