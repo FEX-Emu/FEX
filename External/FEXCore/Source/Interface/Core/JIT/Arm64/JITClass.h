@@ -90,7 +90,7 @@ private:
   [[nodiscard]] aarch64::Register GetReg(IR::NodeID Node) const;
 
   template<uint8_t RAType>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair(IR::NodeID Node) const;
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetRegPair(IR::NodeID Node) const;
 
   [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
 
@@ -115,33 +115,20 @@ private:
   }
 
   template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<Arm64JITCore::RA_32>(IR::NodeID Node) const {
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetRegPair<Arm64JITCore::RA_32>(IR::NodeID Node) const {
     uint32_t Reg = GetPhys(Node).Reg;
     auto Pair = RA64Pair[Reg];
     return std::make_pair(Pair.first.W(), Pair.second.W());
   }
 
   template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetSrcPair<Arm64JITCore::RA_64>(IR::NodeID Node) const {
+  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetRegPair<Arm64JITCore::RA_64>(IR::NodeID Node) const {
     uint32_t Reg = GetPhys(Node).Reg;
     return RA64Pair[Reg];
   }
 
-  [[nodiscard]] aarch64::VRegister GetSrc(IR::NodeID Node) const {
-    auto Reg = GetPhys(Node);
 
-    LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
-
-    if (Reg.Class == IR::FPRFixedClass.Val) {
-      return SRAFPR[Reg.Reg];
-    } else if (Reg.Class == IR::FPRClass.Val) {
-      return RAFPR[Reg.Reg];
-    }
-
-    FEX_UNREACHABLE;
-  }
-
-  [[nodiscard]] aarch64::VRegister GetDst(IR::NodeID Node) const {
+  [[nodiscard]] aarch64::VRegister GetVReg(IR::NodeID Node) const {
     auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);

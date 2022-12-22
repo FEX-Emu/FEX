@@ -104,7 +104,7 @@ DEF_OP(Jump) {
 }
 
 #define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
-#define GRFCMP(Node) (Op->CompareSize == 4 ? GetDst(Node).S() : GetDst(Node).D())
+#define GRFCMP(Node) (Op->CompareSize == 4 ? GetVReg(Node).S() : GetVReg(Node).D())
 
 static Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
@@ -486,7 +486,7 @@ DEF_OP(CPUID) {
 
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
-  auto Dst = GetSrcPair<RA_64>(Node);
+  auto Dst = GetRegPair<RA_64>(Node);
   mov(Dst.first,  x0);
   mov(Dst.second, x1);
 }

@@ -19,8 +19,8 @@ DEF_OP(VInsGPR) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto DestVector = GetSrc(Op->DestVector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto DestVector = GetVReg(Op->DestVector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto ElementSizeBits = ElementSize * 8;
@@ -129,17 +129,17 @@ DEF_OP(VCastFromGPR) {
   switch (Op->Header.ElementSize) {
     case 1:
       uxtb(TMP1.W(), GetReg<RA_32>(Op->Src.ID()));
-      fmov(GetDst(Node).S(), TMP1.W());
+      fmov(GetVReg(Node).S(), TMP1.W());
       break;
     case 2:
       uxth(TMP1.W(), GetReg<RA_32>(Op->Src.ID()));
-      fmov(GetDst(Node).S(), TMP1.W());
+      fmov(GetVReg(Node).S(), TMP1.W());
       break;
     case 4:
-      fmov(GetDst(Node).S(), GetReg<RA_32>(Op->Src.ID()).W());
+      fmov(GetVReg(Node).S(), GetReg<RA_32>(Op->Src.ID()).W());
       break;
     case 8:
-      fmov(GetDst(Node).D(), GetReg<RA_64>(Op->Src.ID()).X());
+      fmov(GetVReg(Node).D(), GetReg<RA_64>(Op->Src.ID()).X());
       break;
     default: LOGMAN_MSG_A_FMT("Unknown castGPR element size: {}", Op->Header.ElementSize);
   }
@@ -153,19 +153,19 @@ DEF_OP(Float_FromGPR_S) {
 
   switch (Conv) {
     case 0x0404: { // Float <- int32_t
-      scvtf(GetDst(Node).S(), GetReg<RA_32>(Op->Src.ID()));
+      scvtf(GetVReg(Node).S(), GetReg<RA_32>(Op->Src.ID()));
       break;
     }
     case 0x0408: { // Float <- int64_t
-      scvtf(GetDst(Node).S(), GetReg<RA_64>(Op->Src.ID()));
+      scvtf(GetVReg(Node).S(), GetReg<RA_64>(Op->Src.ID()));
       break;
     }
     case 0x0804: { // Double <- int32_t
-      scvtf(GetDst(Node).D(), GetReg<RA_32>(Op->Src.ID()));
+      scvtf(GetVReg(Node).D(), GetReg<RA_32>(Op->Src.ID()));
       break;
     }
     case 0x0808: { // Double <- int64_t
-      scvtf(GetDst(Node).D(), GetReg<RA_64>(Op->Src.ID()));
+      scvtf(GetVReg(Node).D(), GetReg<RA_64>(Op->Src.ID()));
       break;
     }
     default:
@@ -180,11 +180,11 @@ DEF_OP(Float_FToF) {
   const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
   switch (Conv) {
     case 0x0804: { // Double <- Float
-      fcvt(GetDst(Node).D(), GetSrc(Op->Scalar.ID()).S());
+      fcvt(GetVReg(Node).D(), GetVReg(Op->Scalar.ID()).S());
       break;
     }
     case 0x0408: { // Float <- Double
-      fcvt(GetDst(Node).S(), GetSrc(Op->Scalar.ID()).D());
+      fcvt(GetVReg(Node).S(), GetVReg(Op->Scalar.ID()).D());
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unknown FCVT sizes: 0x{:x}", Conv);
@@ -198,8 +198,8 @@ DEF_OP(Vector_SToF) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -243,8 +243,8 @@ DEF_OP(Vector_FToZS) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -288,8 +288,8 @@ DEF_OP(Vector_FToS) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
@@ -340,8 +340,8 @@ DEF_OP(Vector_FToF) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Conv = (ElementSize << 8) | Op->SrcElementSize;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     // Curiously, FCVTLT and FCVTNT have no bottom variants,
@@ -416,8 +416,8 @@ DEF_OP(Vector_FToI) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto Dst = GetDst(Node);
-  const auto Vector = GetSrc(Op->Vector.ID());
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();

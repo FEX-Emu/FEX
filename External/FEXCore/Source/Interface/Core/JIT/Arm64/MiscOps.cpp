@@ -147,9 +147,9 @@ DEF_OP(Print) {
     ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue)));
   }
   else {
-    fmov(x0, GetSrc(Op->Value.ID()).V1D());
+    fmov(x0, GetVReg(Op->Value.ID()).V1D());
     // Bug in vixl that source vector needs to b V1D rather than V2D?
-    fmov(x1, GetSrc(Op->Value.ID()).V1D(), 1);
+    fmov(x1, GetVReg(Op->Value.ID()).V1D(), 1);
     ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue)));
   }
 
@@ -216,7 +216,7 @@ DEF_OP(RDRAND) {
 
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
-  auto Dst = GetSrcPair<RA_64>(Node);
+  auto Dst = GetRegPair<RA_64>(Node);
 
   if (Op->GetReseeded) {
     mrs(Dst.first, RNDRRS);

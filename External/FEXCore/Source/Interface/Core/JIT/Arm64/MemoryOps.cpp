@@ -41,7 +41,7 @@ DEF_OP(LoadContext) {
     }
   }
   else {
-    const auto Dst = GetDst(Node);
+    const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
     case 1:
@@ -96,7 +96,7 @@ DEF_OP(StoreContext) {
     }
   }
   else {
-    const auto Src =  GetSrc(Op->Value.ID());
+    const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
     case 1:
@@ -174,7 +174,7 @@ DEF_OP(LoadRegister) {
     LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "out of range regId");
 
     const auto guest = SRAFPR[regId];
-    const auto host = GetSrc(Node);
+    const auto host = GetVReg(Node);
 
     if (HostSupportsSVE) {
       const auto regOffs = Op->Offset & 31;
@@ -365,7 +365,7 @@ DEF_OP(StoreRegister) {
     LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "regId out of range");
 
     const auto guest = SRAFPR[regId];
-    const auto host = GetSrc(Op->Value.ID());
+    const auto host = GetVReg(Op->Value.ID());
 
     if (HostSupportsSVE) {
       // 256-bit capable hardware allows us to expand the allowed
@@ -569,7 +569,7 @@ DEF_OP(LoadContextIndexed) {
       mul(TMP1, Index, TMP1);
       add(TMP1, STATE, TMP1);
 
-      const auto Dst = GetDst(Node);
+      const auto Dst = GetVReg(Node);
 
       switch (OpSize) {
       case 1:
@@ -653,7 +653,7 @@ DEF_OP(StoreContextIndexed) {
     }
   }
   else {
-    const auto Value = GetSrc(Op->Value.ID());
+    const auto Value = GetVReg(Op->Value.ID());
 
     switch (Op->Stride) {
     case 1:
@@ -728,7 +728,7 @@ DEF_OP(SpillRegister) {
       break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
-    const auto Src = GetSrc(Op->Value.ID());
+    const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
     case 4: {
@@ -785,7 +785,7 @@ DEF_OP(FillRegister) {
       break;
     }
   } else if (Op->Class == FEXCore::IR::FPRClass) {
-    const auto Dst = GetDst(Node);
+    const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
     case 4: {
@@ -934,7 +934,7 @@ DEF_OP(LoadMem) {
     }
   }
   else {
-    const auto Dst = GetDst(Node);
+    const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
       case 1:
@@ -1068,7 +1068,7 @@ DEF_OP(LoadMemTSO) {
   }
   else {
     dmb(InnerShareable, BarrierAll);
-    const auto Dst = GetDst(Node);
+    const auto Dst = GetVReg(Node);
     switch (OpSize) {
       case 1:
       case 2:
@@ -1121,7 +1121,7 @@ DEF_OP(StoreMem) {
     }
   }
   else {
-    const auto Src = GetSrc(Op->Value.ID());
+    const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
       case 1:
@@ -1220,7 +1220,7 @@ DEF_OP(StoreMemTSO) {
   }
   else {
     dmb(InnerShareable, BarrierAll);
-    const auto Src = GetSrc(Op->Value.ID());
+    const auto Src = GetVReg(Op->Value.ID());
     switch (OpSize) {
       case 1:
       case 2:
@@ -1277,7 +1277,7 @@ DEF_OP(ParanoidLoadMemTSO) {
     }
   }
   else {
-    const auto Dst = GetDst(Node);
+    const auto Dst = GetVReg(Node);
     switch (OpSize) {
       case 1:
         ldarb(TMP1.W(), MemSrc);
@@ -1345,7 +1345,7 @@ DEF_OP(ParanoidStoreMemTSO) {
     }
   }
   else {
-    const auto Src = GetSrc(Op->Value.ID());
+    const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
       case 1:

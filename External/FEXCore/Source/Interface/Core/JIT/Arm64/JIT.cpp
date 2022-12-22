@@ -113,7 +113,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        fmov(v0.S(), GetSrc(IROp->Args[0].ID()).S()) ;
+        fmov(v0.S(), GetVReg(IROp->Args[0].ID()).S()) ;
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
         GenerateIndirectRuntimeCall<__uint128_t, float>(x0);
@@ -125,9 +125,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-        ins(GetDst(Node).V2D(), 0, x0);
-        ins(GetDst(Node).V8H(), 4, w1);
+        eor(GetVReg(Node).V16B(), GetVReg(Node).V16B(), GetVReg(Node).V16B());
+        ins(GetVReg(Node).V2D(), 0, x0);
+        ins(GetVReg(Node).V8H(), 4, w1);
       }
       break;
 
@@ -136,7 +136,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
+        mov(v0.D(), GetVReg(IROp->Args[0].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
         GenerateIndirectRuntimeCall<__uint128_t, double>(x0);
@@ -148,9 +148,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-        ins(GetDst(Node).V2D(), 0, x0);
-        ins(GetDst(Node).V8H(), 4, w1);
+        eor(GetVReg(Node).V16B(), GetVReg(Node).V16B(), GetVReg(Node).V16B());
+        ins(GetVReg(Node).V2D(), 0, x0);
+        ins(GetVReg(Node).V8H(), 4, w1);
       }
       break;
 
@@ -177,9 +177,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-        ins(GetDst(Node).V2D(), 0, x0);
-        ins(GetDst(Node).V8H(), 4, w1);
+        eor(GetVReg(Node).V16B(), GetVReg(Node).V16B(), GetVReg(Node).V16B());
+        ins(GetVReg(Node).V2D(), 0, x0);
+        ins(GetVReg(Node).V8H(), 4, w1);
       }
       break;
 
@@ -188,8 +188,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -202,7 +202,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        fmov(GetDst(Node).S(), v0.S());
+        fmov(GetVReg(Node).S(), v0.S());
       }
       break;
 
@@ -211,8 +211,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -225,7 +225,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        mov(GetDst(Node).D(), v0.D());
+        mov(GetVReg(Node).D(), v0.D());
       }
       break;
 
@@ -234,7 +234,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
+        mov(v0.D(), GetVReg(IROp->Args[0].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
         GenerateIndirectRuntimeCall<double, double>(x0);
@@ -246,7 +246,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        mov(GetDst(Node).D(), v0.D());
+        mov(GetVReg(Node).D(), v0.D());
 
       }
       break;
@@ -256,8 +256,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        mov(v0.D(), GetSrc(IROp->Args[0].ID()).D());
-        mov(v1.D(), GetSrc(IROp->Args[1].ID()).D());
+        mov(v0.D(), GetVReg(IROp->Args[0].ID()).D());
+        mov(v1.D(), GetVReg(IROp->Args[1].ID()).D());
         ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
         GenerateIndirectRuntimeCall<double, double, double>(x0);
@@ -269,7 +269,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        mov(GetDst(Node).D(), v0.D());
+        mov(GetVReg(Node).D(), v0.D());
 
       }
       break;
@@ -279,8 +279,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -301,8 +301,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -323,8 +323,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -345,11 +345,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
-        umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
-        umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
+        umov(x2, GetVReg(IROp->Args[1].ID()).V2D(), 0);
+        umov(w3, GetVReg(IROp->Args[1].ID()).V8H(), 4);
 
         ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -369,8 +369,8 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
         ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -383,9 +383,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-        ins(GetDst(Node).V2D(), 0, x0);
-        ins(GetDst(Node).V8H(), 4, w1);
+        eor(GetVReg(Node).V16B(), GetVReg(Node).V16B(), GetVReg(Node).V16B());
+        ins(GetVReg(Node).V2D(), 0, x0);
+        ins(GetVReg(Node).V8H(), 4, w1);
       }
       break;
       case FABI_F80_F80_F80:{
@@ -393,11 +393,11 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         PushDynamicRegsAndLR(TMP1);
 
-        umov(x0, GetSrc(IROp->Args[0].ID()).V2D(), 0);
-        umov(w1, GetSrc(IROp->Args[0].ID()).V8H(), 4);
+        umov(x0, GetVReg(IROp->Args[0].ID()).V2D(), 0);
+        umov(w1, GetVReg(IROp->Args[0].ID()).V8H(), 4);
 
-        umov(x2, GetSrc(IROp->Args[1].ID()).V2D(), 0);
-        umov(w3, GetSrc(IROp->Args[1].ID()).V8H(), 4);
+        umov(x2, GetVReg(IROp->Args[1].ID()).V2D(), 0);
+        umov(w3, GetVReg(IROp->Args[1].ID()).V8H(), 4);
 
         ldr(x4, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])));
 #ifdef VIXL_SIMULATOR
@@ -410,9 +410,9 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         FillStaticRegs();
 
-        eor(GetDst(Node).V16B(), GetDst(Node).V16B(), GetDst(Node).V16B());
-        ins(GetDst(Node).V2D(), 0, x0);
-        ins(GetDst(Node).V8H(), 4, w1);
+        eor(GetVReg(Node).V16B(), GetVReg(Node).V16B(), GetVReg(Node).V16B());
+        ins(GetVReg(Node).V2D(), 0, x0);
+        ins(GetVReg(Node).V8H(), 4, w1);
       }
       break;
 
