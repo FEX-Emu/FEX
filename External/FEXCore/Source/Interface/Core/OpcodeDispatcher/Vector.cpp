@@ -2784,28 +2784,24 @@ void OpDispatchBuilder::VPMULHWOp<false>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPMULHWOp<true>(OpcodeArgs);
 
-void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+OrderedNode* OpDispatchBuilder::PMULHRSWOpImpl(OpcodeArgs, OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Res{};
   if (Size == 8) {
     // Implementation is more efficient for 8byte registers
-    Res = _VSMull(Size * 2, 2, Dest, Src);
+    Res = _VSMull(Size * 2, 2, Src1, Src2);
     Res = _VSShrI(Size * 2, 4, Res, 14);
     auto OneVector = _VectorImm(Size * 2, 4, 1);
     Res = _VAdd(Size * 2, 4, Res, OneVector);
-    Res = _VUShrNI(Size * 2, 4, Res, 1);
-  }
-  else {
-    // 128bit is less efficient
+    return _VUShrNI(Size * 2, 4, Res, 1);
+  } else {
+    // 128-bit and 256-bit are less efficient
     OrderedNode *ResultLow;
     OrderedNode *ResultHigh;
 
-    ResultLow = _VSMull(Size, 2, Dest, Src);
-    ResultHigh = _VSMull2(Size, 2, Dest, Src);
+    ResultLow = _VSMull(Size, 2, Src1, Src2);
+    ResultHigh = _VSMull2(Size, 2, Src1, Src2);
 
     ResultLow = _VSShrI(Size, 4, ResultLow, 14);
     ResultHigh = _VSShrI(Size, 4, ResultHigh, 14);
@@ -2816,10 +2812,30 @@ void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
 
     // Combine the results
     Res = _VUShrNI(Size, 4, ResultLow, 1);
-    Res = _VUShrNI2(Size, 4, Res, ResultHigh, 1);
+    return _VUShrNI2(Size, 4, Res, ResultHigh, 1);
   }
+}
 
-  StoreResult(FPRClass, Op, Res, -1);
+void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = PMULHRSWOpImpl(Op, Dest, Src);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PMULHRSWOpImpl(Op, Dest, Src);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize>

@@ -465,6 +465,8 @@ public:
 
   void VPHMINPOSUWOp(OpcodeArgs);
 
+  void VPMULHRSWOp(OpcodeArgs);
+
   template <bool Signed>
   void VPMULHWOp(OpcodeArgs);
 
@@ -749,6 +751,8 @@ private:
                             OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
+
+  OrderedNode* PMULHRSWOpImpl(OpcodeArgs, OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PMULHWOpImpl(OpcodeArgs, bool Signed,
                             OrderedNode *Src1, OrderedNode *Src2);
