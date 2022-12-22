@@ -747,6 +747,9 @@ private:
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
 
+  OrderedNode* PMULHWOpImpl(OpcodeArgs, bool Signed,
+                            OrderedNode *Src1, OrderedNode *Src2);
+
   OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
                            OrderedNode *Src1, OrderedNode *Src2);
 
