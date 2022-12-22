@@ -2718,48 +2718,71 @@ void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
   }
 }
 
-template<bool Signed>
-void OpDispatchBuilder::PMULHW(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
+OrderedNode* OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed,
+                                             OrderedNode *Src1, OrderedNode *Src2) {
+  const auto Size = GetSrcSize(Op);
   OrderedNode *Res{};
+
   if (Size == 8) {
     // Implementation is more efficient for 8byte registers
-    if (Signed)
-      Res = _VSMull(Size * 2, 2, Dest, Src);
-    else
-      Res = _VUMull(Size * 2, 2, Dest, Src);
+    if (Signed) {
+      Res = _VSMull(Size * 2, 2, Src1, Src2);
+    } else {
+      Res = _VUMull(Size * 2, 2, Src1, Src2);
+    }
 
-    Res = _VUShrNI(Size * 2, 4, Res, 16);
-  }
-  else {
-    // 128bit is less efficient
+    return _VUShrNI(Size * 2, 4, Res, 16);
+  } else {
+    // 128-bit and 256-bit is less efficient
     OrderedNode *ResultLow;
     OrderedNode *ResultHigh;
     if (Signed) {
-      ResultLow = _VSMull(Size, 2, Dest, Src);
-      ResultHigh = _VSMull2(Size, 2, Dest, Src);
-    }
-    else {
-      ResultLow = _VUMull(Size, 2, Dest, Src);
-      ResultHigh = _VUMull2(Size, 2, Dest, Src);
+      ResultLow = _VSMull(Size, 2, Src1, Src2);
+      ResultHigh = _VSMull2(Size, 2, Src1, Src2);
+    } else {
+      ResultLow = _VUMull(Size, 2, Src1, Src2);
+      ResultHigh = _VUMull2(Size, 2, Src1, Src2);
     }
 
     // Combine the results
     Res = _VUShrNI(Size, 4, ResultLow, 16);
-    Res = _VUShrNI2(Size, 4, Res, ResultHigh, 16);
+    return _VUShrNI2(Size, 4, Res, ResultHigh, 16);
   }
+}
 
-  StoreResult(FPRClass, Op, Res, -1);
+template<bool Signed>
+void OpDispatchBuilder::PMULHW(OpcodeArgs) {
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = PMULHWOpImpl(Op, Signed, Dest, Src);
+
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
 void OpDispatchBuilder::PMULHW<false>(OpcodeArgs);
 template
 void OpDispatchBuilder::PMULHW<true>(OpcodeArgs);
+
+template <bool Signed>
+void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PMULHWOpImpl(Op, Signed, Dest, Src);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPMULHWOp<false>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPMULHWOp<true>(OpcodeArgs);
 
 void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
   auto Size = GetSrcSize(Op);

@@ -465,6 +465,9 @@ public:
 
   void VPHMINPOSUWOp(OpcodeArgs);
 
+  template <bool Signed>
+  void VPMULHWOp(OpcodeArgs);
+
   template <size_t ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
@@ -746,6 +749,9 @@ private:
                             OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
+
+  OrderedNode* PMULHWOpImpl(OpcodeArgs, bool Signed,
+                            OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
                            OrderedNode *Src1, OrderedNode *Src2);
