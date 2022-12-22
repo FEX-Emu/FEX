@@ -2780,6 +2780,8 @@ void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VPMULHWOp<false>(OpcodeArgs);
+template
 void OpDispatchBuilder::VPMULHWOp<true>(OpcodeArgs);
 
 void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
