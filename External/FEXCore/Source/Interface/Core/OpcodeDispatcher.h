@@ -743,6 +743,8 @@ private:
   OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
 
+  OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
+
   OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
                            OrderedNode *Src1, OrderedNode *Src2);
 
