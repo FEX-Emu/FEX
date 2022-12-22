@@ -463,6 +463,9 @@ public:
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
+  template <size_t ElementSize, bool Signed>
+  void VPMULLOp(OpcodeArgs);
+
   template <size_t ElementSize>
   void VPSLLOp(OpcodeArgs);
   void VPSLLDQOp(OpcodeArgs);
@@ -739,6 +742,9 @@ private:
 
   OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
+
+  OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
+                           OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);

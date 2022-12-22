@@ -5965,6 +5965,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::VPSLLOp<2>},
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::VPSLLOp<4>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::VPSLLOp<8>},
+    {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<4, false>},
     {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 1>},
     {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 2>},
     {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 4>},
@@ -5994,6 +5995,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::AVXExtendVectorElements<2, 8, true>},
     {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::AVXExtendVectorElements<4, 8, true>},
 
+    {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<4, true>},
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 8>},
     {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::VMOVVectorNTOp},
     {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::VPACKUSOp<4>},

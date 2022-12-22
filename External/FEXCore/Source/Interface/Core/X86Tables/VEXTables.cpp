@@ -246,7 +246,7 @@ void InitializeVEXTables() {
     {OPD(1, 0b01, 0xF1), 1, X86InstInfo{"VPSLLW",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xF2), 1, X86InstInfo{"VPSLLD",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xF3), 1, X86InstInfo{"VPSLLQ",      TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
-    {OPD(1, 0b01, 0xF4), 1, X86InstInfo{"VPMULUDQ",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(1, 0b01, 0xF4), 1, X86InstInfo{"VPMULUDQ",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(1, 0b01, 0xF5), 1, X86InstInfo{"VPMADDWD",    TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xF6), 1, X86InstInfo{"VPSADBW",     TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(1, 0b01, 0xF7), 1, X86InstInfo{"VMASKMOVDQU", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
@@ -296,7 +296,7 @@ void InitializeVEXTables() {
     {OPD(2, 0b01, 0x24), 1, X86InstInfo{"VPMOVSXWQ", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x25), 1, X86InstInfo{"VPMOVSXDQ", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
 
-    {OPD(2, 0b01, 0x28), 1, X86InstInfo{"VPMULDQ", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(2, 0b01, 0x28), 1, X86InstInfo{"VPMULDQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x29), 1, X86InstInfo{"VPCMPEQQ", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x2A), 1, X86InstInfo{"VMOVNTDQA", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS, 0, nullptr}},
     {OPD(2, 0b01, 0x2B), 1, X86InstInfo{"VPACKUSDW", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 0, nullptr}},
