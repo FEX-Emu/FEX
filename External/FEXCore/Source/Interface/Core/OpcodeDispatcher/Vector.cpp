@@ -3295,8 +3295,8 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(ZeroConst);
 }
 
-void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto Min = _VUMinV(Size, 2, Src);
@@ -3321,15 +3321,24 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   for (size_t i = 8; i > 0; --i) {
     auto Element = _VExtractToGPR(16, 2, Src, i - 1);
     Pos = _Select(FEXCore::IR::COND_EQ,
-        Element, MinGPR, Indexes[i - 1], Pos);
+                  Element, MinGPR, Indexes[i - 1], Pos);
   }
 
   // Insert the minimum in to bits [15:0]
   OrderedNode *Result = _VMov(2, Min);
 
   // Insert position in to bits [18:16]
-  Result = _VInsGPR(16, 2, 1, Result, Pos);
+  return _VInsGPR(16, 2, 1, Result, Pos);
+}
 
+void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
+  OrderedNode *Result = PHMINPOSUWOpImpl(Op);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPHMINPOSUWOp(OpcodeArgs) {
+  OrderedNode *MinPos = PHMINPOSUWOpImpl(Op);
+  OrderedNode *Result = _VMov(16, MinPos);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
