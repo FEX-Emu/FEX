@@ -3336,6 +3336,12 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPHMINPOSUWOp(OpcodeArgs) {
+  OrderedNode *MinPos = PHMINPOSUWOpImpl(Op);
+  OrderedNode *Result = _VMov(16, MinPos);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::DPPOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");

@@ -463,6 +463,8 @@ public:
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
+  void VPHMINPOSUWOp(OpcodeArgs);
+
   template <size_t ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
