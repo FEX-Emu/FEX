@@ -2355,8 +2355,17 @@ OrderedNode* OpDispatchBuilder::PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool
       return _VUMull(16, ElementSize, Src1, Src2);
     }
   } else {
+    const auto Is256Bit = Size == Core::CPUState::XMM_AVX_REG_SIZE;
+
     OrderedNode *InsSrc1 = _VInsElement(Size, ElementSize, 1, 2, Src1, Src1);
     OrderedNode *InsSrc2 = _VInsElement(Size, ElementSize, 1, 2, Src2, Src2);
+    if (Is256Bit) {
+      InsSrc1 = _VInsElement(Size, ElementSize, 2, 4, InsSrc1, Src1);
+      InsSrc1 = _VInsElement(Size, ElementSize, 3, 6, InsSrc1, Src1);
+
+      InsSrc2 = _VInsElement(Size, ElementSize, 2, 4, InsSrc2, Src2);
+      InsSrc2 = _VInsElement(Size, ElementSize, 3, 6, InsSrc2, Src2);
+    }
 
     if (Signed) {
       return _VSMull(Size, ElementSize, InsSrc1, InsSrc2);
@@ -2382,6 +2391,28 @@ template
 void OpDispatchBuilder::PMULLOp<4, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::PMULLOp<4, true>(OpcodeArgs);
+
+template <size_t ElementSize, bool Signed>
+void OpDispatchBuilder::VPMULLOp(OpcodeArgs) {
+  static_assert(ElementSize == sizeof(uint32_t),
+                "Currently only handles 32-bit -> 64-bit");
+
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PMULLOpImpl(Op, ElementSize, Signed, Src1, Src2);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPMULLOp<4, true>(OpcodeArgs);
 
 template<bool ToXMM>
 void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
