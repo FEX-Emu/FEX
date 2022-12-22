@@ -14,9 +14,9 @@ using namespace vixl::aarch64;
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   // Size is the size of each pair element
-  auto Dst = GetSrcPair<RA_64>(Node);
-  auto Expected = GetSrcPair<RA_64>(Op->Expected.ID());
-  auto Desired = GetSrcPair<RA_64>(Op->Desired.ID());
+  auto Dst = GetRegPair<RA_64>(Node);
+  auto Expected = GetRegPair<RA_64>(Op->Expected.ID());
+  auto Desired = GetRegPair<RA_64>(Op->Desired.ID());
   auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsAtomics) {

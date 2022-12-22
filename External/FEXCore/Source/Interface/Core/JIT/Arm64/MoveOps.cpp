@@ -15,13 +15,13 @@ DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
   switch (Op->Header.Size) {
     case 4: {
-      auto Src = GetSrcPair<RA_32>(Op->Pair.ID());
+      auto Src = GetRegPair<RA_32>(Op->Pair.ID());
       std::array<aarch64::Register, 2> Regs = {Src.first, Src.second};
       mov (GetReg<RA_32>(Node), Regs[Op->Element]);
       break;
     }
     case 8: {
-      auto Src = GetSrcPair<RA_64>(Op->Pair.ID());
+      auto Src = GetRegPair<RA_64>(Op->Pair.ID());
       std::array<aarch64::Register, 2> Regs = {Src.first, Src.second};
       mov (GetReg<RA_64>(Node), Regs[Op->Element]);
       break;
@@ -39,14 +39,14 @@ DEF_OP(CreateElementPair) {
 
   switch (IROp->ElementSize) {
     case 4: {
-      Dst = GetSrcPair<RA_32>(Node);
+      Dst = GetRegPair<RA_32>(Node);
       RegFirst = GetReg<RA_32>(Op->Lower.ID());
       RegSecond = GetReg<RA_32>(Op->Upper.ID());
       RegTmp = w0;
       break;
     }
     case 8: {
-      Dst = GetSrcPair<RA_64>(Node);
+      Dst = GetRegPair<RA_64>(Node);
       RegFirst = GetReg<RA_64>(Op->Lower.ID());
       RegSecond = GetReg<RA_64>(Op->Upper.ID());
       RegTmp = x0;

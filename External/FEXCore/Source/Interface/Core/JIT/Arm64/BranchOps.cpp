@@ -486,7 +486,7 @@ DEF_OP(CPUID) {
 
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
-  auto Dst = GetSrcPair<RA_64>(Node);
+  auto Dst = GetRegPair<RA_64>(Node);
   mov(Dst.first,  x0);
   mov(Dst.second, x1);
 }

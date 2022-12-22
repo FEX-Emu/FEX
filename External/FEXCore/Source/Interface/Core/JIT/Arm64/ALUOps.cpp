@@ -20,8 +20,8 @@ DEF_OP(TruncElementPair) {
 
   switch (IROp->Size) {
     case 4: {
-      auto Dst = GetSrcPair<RA_32>(Node);
-      auto Src = GetSrcPair<RA_32>(Op->Pair.ID());
+      auto Dst = GetRegPair<RA_32>(Node);
+      auto Src = GetRegPair<RA_32>(Op->Pair.ID());
       mov(Dst.first, Src.first);
       mov(Dst.second, Src.second);
       break;
