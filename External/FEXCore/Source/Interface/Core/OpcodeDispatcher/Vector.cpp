@@ -2412,6 +2412,8 @@ void OpDispatchBuilder::VPMULLOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VPMULLOp<4, false>(OpcodeArgs);
+template
 void OpDispatchBuilder::VPMULLOp<4, true>(OpcodeArgs);
 
 template<bool ToXMM>
