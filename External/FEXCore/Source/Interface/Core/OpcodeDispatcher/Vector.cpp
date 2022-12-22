@@ -2733,7 +2733,7 @@ OrderedNode* OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed,
 
     return _VUShrNI(Size * 2, 4, Res, 16);
   } else {
-    // 128bit is less efficient
+    // 128-bit and 256-bit is less efficient
     OrderedNode *ResultLow;
     OrderedNode *ResultHigh;
     if (Signed) {
@@ -2763,6 +2763,24 @@ template
 void OpDispatchBuilder::PMULHW<false>(OpcodeArgs);
 template
 void OpDispatchBuilder::PMULHW<true>(OpcodeArgs);
+
+template <bool Signed>
+void OpDispatchBuilder::VPMULHWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  OrderedNode *Result = PMULHWOpImpl(Op, Signed, Dest, Src);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPMULHWOp<true>(OpcodeArgs);
 
 void OpDispatchBuilder::PMULHRSW(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
