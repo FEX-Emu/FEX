@@ -1793,6 +1793,22 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, false>(OpcodeArgs);
 
+template <size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>(OpcodeArgs);
+
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);

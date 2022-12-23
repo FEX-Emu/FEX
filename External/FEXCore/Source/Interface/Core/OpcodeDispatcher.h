@@ -416,6 +416,9 @@ public:
   template <size_t ElementSize, bool Scalar>
   void AVXVectorRound(OpcodeArgs);
 
+  template <size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  void AVXVector_CVT_Float_To_Int(OpcodeArgs);
+
   template <size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
