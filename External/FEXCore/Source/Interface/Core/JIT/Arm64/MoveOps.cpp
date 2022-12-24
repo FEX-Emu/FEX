@@ -7,64 +7,37 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-
-using namespace vixl;
-using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 DEF_OP(ExtractElementPair) {
   auto Op = IROp->C<IR::IROp_ExtractElementPair>();
-  switch (Op->Header.Size) {
-    case 4: {
-      auto Src = GetRegPair<RA_32>(Op->Pair.ID());
-      std::array<aarch64::Register, 2> Regs = {Src.first, Src.second};
-      mov (GetReg<RA_32>(Node), Regs[Op->Element]);
-      break;
-    }
-    case 8: {
-      auto Src = GetRegPair<RA_64>(Op->Pair.ID());
-      std::array<aarch64::Register, 2> Regs = {Src.first, Src.second};
-      mov (GetReg<RA_64>(Node), Regs[Op->Element]);
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Size"); break;
-  }
+  LOGMAN_THROW_AA_FMT(Op->Header.Size == 4 || Op->Header.Size == 8, "Invalid size");
+  const auto EmitSize = Op->Header.Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  const auto Src = GetRegPair(Op->Pair.ID());
+  const std::array<ARMEmitter::Register, 2> Regs = {Src.first, Src.second};
+  mov(EmitSize, GetReg(Node), Regs[Op->Element]);
 }
 
 DEF_OP(CreateElementPair) {
   auto Op = IROp->C<IR::IROp_CreateElementPair>();
-  std::pair<aarch64::Register, aarch64::Register> Dst;
-  aarch64::Register RegFirst;
-  aarch64::Register RegSecond;
-  aarch64::Register RegTmp;
+  LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Invalid size");
+  std::pair<ARMEmitter::Register, ARMEmitter::Register> Dst = GetRegPair(Node);
+  ARMEmitter::Register RegFirst = GetReg(Op->Lower.ID());
+  ARMEmitter::Register RegSecond = GetReg(Op->Upper.ID());
+  ARMEmitter::Register RegTmp = TMP1.R();
 
-  switch (IROp->ElementSize) {
-    case 4: {
-      Dst = GetRegPair<RA_32>(Node);
-      RegFirst = GetReg<RA_32>(Op->Lower.ID());
-      RegSecond = GetReg<RA_32>(Op->Upper.ID());
-      RegTmp = w0;
-      break;
-    }
-    case 8: {
-      Dst = GetRegPair<RA_64>(Node);
-      RegFirst = GetReg<RA_64>(Op->Lower.ID());
-      RegSecond = GetReg<RA_64>(Op->Upper.ID());
-      RegTmp = x0;
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unknown Size"); break;
-  }
+  const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  if (Dst.first.GetCode() != RegSecond.GetCode()) {
-    mov(Dst.first, RegFirst);
-    mov(Dst.second, RegSecond);
-  } else if (Dst.second.GetCode() != RegFirst.GetCode()) {
-    mov(Dst.second, RegSecond);
-    mov(Dst.first, RegFirst);
+  if (Dst.first.Idx() != RegSecond.Idx()) {
+    mov(EmitSize, Dst.first, RegFirst);
+    mov(EmitSize, Dst.second, RegSecond);
+  } else if (Dst.second.Idx() != RegFirst.Idx()) {
+    mov(EmitSize, Dst.second, RegSecond);
+    mov(EmitSize, Dst.first, RegFirst);
   } else {
-    mov(RegTmp, RegFirst);
-    mov(Dst.second, RegSecond);
-    mov(Dst.first, RegTmp);
+    mov(EmitSize, RegTmp, RegFirst);
+    mov(EmitSize, Dst.second, RegSecond);
+    mov(EmitSize, Dst.first, RegTmp);
   }
 }
 

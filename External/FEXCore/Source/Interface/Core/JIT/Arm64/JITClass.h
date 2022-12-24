@@ -8,6 +8,7 @@ $end_info$
 
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 
 #include <aarch64/assembler-aarch64.h>
@@ -28,9 +29,6 @@ namespace FEXCore::Core {
 }
 
 namespace FEXCore::CPU {
-using namespace vixl;
-using namespace vixl::aarch64;
-
 class Arm64JITCore final : public CPUBackend, public Arm64Emitter  {
 public:
   explicit Arm64JITCore(FEXCore::Context::Context *ctx,
@@ -58,12 +56,12 @@ private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
   const bool HostSupportsSVE{};
 
-  Label *PendingTargetLabel;
+  ARMEmitter::BiDirectionalLabel *PendingTargetLabel;
   FEXCore::Context::Context *CTX;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
 
-  std::map<IR::NodeID, aarch64::Label> JumpTargets;
+  std::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
   /**
    * @name Register Allocation
@@ -86,22 +84,8 @@ private:
   constexpr static uint8_t RA_64 = 1;
   constexpr static uint8_t RA_FPR = 2;
 
-  template<uint8_t RAType>
-  [[nodiscard]] aarch64::Register GetReg(IR::NodeID Node) const;
-
-  template<uint8_t RAType>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetRegPair(IR::NodeID Node) const;
-
-  [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
-
-  template<>
-  [[nodiscard]] aarch64::Register GetReg<Arm64JITCore::RA_32>(IR::NodeID Node) const {
-    return GetReg<Arm64JITCore::RA_64>(Node).W();
-  }
-
-  template<>
-  [[nodiscard]] aarch64::Register GetReg<Arm64JITCore::RA_64>(IR::NodeID Node) const {
-    auto Reg = GetPhys(Node);
+  [[nodiscard]] FEXCore::ARMEmitter::Register GetReg(IR::NodeID Node) const {
+    const auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
 
@@ -114,22 +98,8 @@ private:
     FEX_UNREACHABLE;
   }
 
-  template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetRegPair<Arm64JITCore::RA_32>(IR::NodeID Node) const {
-    uint32_t Reg = GetPhys(Node).Reg;
-    auto Pair = RA64Pair[Reg];
-    return std::make_pair(Pair.first.W(), Pair.second.W());
-  }
-
-  template<>
-  [[nodiscard]] std::pair<aarch64::Register, aarch64::Register> GetRegPair<Arm64JITCore::RA_64>(IR::NodeID Node) const {
-    uint32_t Reg = GetPhys(Node).Reg;
-    return RA64Pair[Reg];
-  }
-
-
-  [[nodiscard]] aarch64::VRegister GetVReg(IR::NodeID Node) const {
-    auto Reg = GetPhys(Node);
+  [[nodiscard]] FEXCore::ARMEmitter::VRegister GetVReg(IR::NodeID Node) const {
+    const auto Reg = GetPhys(Node);
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
 
@@ -142,6 +112,16 @@ private:
     FEX_UNREACHABLE;
   }
 
+  [[nodiscard]] std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register> GetRegPair(IR::NodeID Node) const {
+    const auto Reg = GetPhys(Node);
+
+    LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRPairClass.Val, "Unexpected Class: {}", Reg.Class);
+
+    return RA64Pair[Reg.Reg];
+  }
+
+  [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
+
   [[nodiscard]] IR::PhysicalRegister GetPhys(IR::NodeID Node) const {
     auto PhyReg = RAData->GetNodeRegister(Node);
 
@@ -153,8 +133,8 @@ private:
   [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
 
-  [[nodiscard]] MemOperand GenerateMemOperand(uint8_t AccessSize,
-                                              aarch64::Register Base,
+  [[nodiscard]] FEXCore::ARMEmitter::ExtendedMemOperand GenerateMemOperand(uint8_t AccessSize,
+                                              FEXCore::ARMEmitter::Register Base,
                                               IR::OrderedNodeWrapper Offset,
                                               IR::MemOffsetType OffsetType,
                                               uint8_t OffsetScale);
@@ -164,8 +144,8 @@ private:
   //
   //       TMP1 is safe to use again once this memory operand is used with its
   //       equivalent loads or stores that this was called for.
-  [[nodiscard]] SVEMemOperand GenerateSVEMemOperand(uint8_t AccessSize,
-                                                    aarch64::Register Base,
+  [[nodiscard]] FEXCore::ARMEmitter::SVEMemOperand GenerateSVEMemOperand(uint8_t AccessSize,
+                                                    FEXCore::ARMEmitter::Register Base,
                                                     IR::OrderedNodeWrapper Offset,
                                                     IR::MemOffsetType OffsetType,
                                                     uint8_t OffsetScale);
@@ -203,7 +183,8 @@ private:
      * @brief A literal pair relocation object for named symbol literals
      */
     struct NamedSymbolLiteralPair {
-      Literal<uint64_t> Lit;
+      ARMEmitter::ForwardLabel Loc;
+      uint64_t Lit;
       Relocation MoveABI{};
     };
 
@@ -213,7 +194,7 @@ private:
      * @param Reg - The GPR to move the thunk handler in to
      * @param Sum - The hash of the thunk
      */
-    void InsertNamedThunkRelocation(vixl::aarch64::Register Reg, const IR::SHA256Sum &Sum);
+    void InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR::SHA256Sum &Sum);
 
     /**
      * @brief Inserts a guest GPR move relocation
@@ -221,7 +202,7 @@ private:
      * @param Reg - The GPR to move the guest RIP in to
      * @param Constant - The guest RIP that will be relocated
      */
-    void InsertGuestRIPMove(vixl::aarch64::Register Reg, uint64_t Constant);
+    void InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constant);
 
     /**
      * @brief Inserts a named symbol as a literal in memory

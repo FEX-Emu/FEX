@@ -5,917 +5,436 @@ $end_info$
 */
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
 namespace FEXCore::CPU {
-using namespace vixl;
-using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
+  LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Wrong element size");
   // Size is the size of each pair element
-  auto Dst = GetRegPair<RA_64>(Node);
-  auto Expected = GetRegPair<RA_64>(Op->Expected.ID());
-  auto Desired = GetRegPair<RA_64>(Op->Desired.ID());
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto Dst = GetRegPair(Node);
+  auto Expected = GetRegPair(Op->Expected.ID());
+  auto Desired = GetRegPair(Op->Desired.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
 
+  const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(TMP3, Expected.first);
-    mov(TMP4, Expected.second);
+    mov(EmitSize, TMP3, Expected.first);
+    mov(EmitSize, TMP4, Expected.second);
 
-    switch (IROp->ElementSize) {
-    case 4:
-      caspal(TMP3.W(), TMP4.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
-      mov(Dst.first.W(), TMP3.W());
-      mov(Dst.second.W(), TMP4.W());
-      break;
-    case 8:
-      caspal(TMP3.X(), TMP4.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
-      mov(Dst.first, TMP3);
-      mov(Dst.second, TMP4);
-      break;
-    default: LOGMAN_MSG_A_FMT("Unsupported: {}", IROp->ElementSize);
-    }
+    caspal(EmitSize, TMP3, TMP4, Desired.first, Desired.second, MemSrc);
+    mov(EmitSize, Dst.first, TMP3.R());
+    mov(EmitSize, Dst.second, TMP4.R());
   }
   else {
-    switch (IROp->ElementSize) {
-      case 4: {
-        aarch64::Label LoopTop;
-        aarch64::Label LoopNotExpected;
-        aarch64::Label LoopExpected;
-        bind(&LoopTop);
+    ARMEmitter::BackwardLabel LoopTop;
+    ARMEmitter::ForwardLabel LoopNotExpected;
+    ARMEmitter::ForwardLabel LoopExpected;
+    Bind(&LoopTop);
 
-        ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc));
-        cmp(TMP2.W(), Expected.first.W());
-        ccmp(TMP3.W(), Expected.second.W(), NoFlag, Condition::eq);
-        b(&LoopNotExpected, Condition::ne);
-        stlxp(TMP2.W(), Desired.first.W(), Desired.second.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        mov(Dst.first.W(), Expected.first.W());
-        mov(Dst.second.W(), Expected.second.W());
+    ldaxp(EmitSize, TMP2, TMP3, MemSrc);
+    cmp(EmitSize, TMP2, Expected.first);
+    ccmp(EmitSize, TMP3, Expected.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+    b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
+    stlxp(EmitSize, TMP2, Desired.first, Desired.second, MemSrc);
+    cbnz(EmitSize, TMP2, &LoopTop);
+    mov(EmitSize, Dst.first, Expected.first);
+    mov(EmitSize, Dst.second, Expected.second);
 
-        b(&LoopExpected);
+    b(&LoopExpected);
 
-          bind(&LoopNotExpected);
-          mov(Dst.first.W(), TMP2.W());
-          mov(Dst.second.W(), TMP3.W());
-          // exclusive monitor needs to be cleared here
-          // Might have hit the case where ldaxr was hit but stlxr wasn't
-          clrex();
-        bind(&LoopExpected);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        aarch64::Label LoopNotExpected;
-        aarch64::Label LoopExpected;
-        bind(&LoopTop);
-
-        ldaxp(TMP2.X(), TMP3.X(), MemOperand(MemSrc));
-        cmp(TMP2.X(), Expected.first.X());
-        ccmp(TMP3.X(), Expected.second.X(), NoFlag, Condition::eq);
-        b(&LoopNotExpected, Condition::ne);
-        stlxp(TMP2.X(), Desired.first.X(), Desired.second.X(), MemOperand(MemSrc));
-        cbnz(TMP2.X(), &LoopTop);
-        mov(Dst.first.X(), Expected.first.X());
-        mov(Dst.second.X(), Expected.second.X());
-
-        b(&LoopExpected);
-
-          bind(&LoopNotExpected);
-          mov(Dst.first.X(), TMP2.X());
-          mov(Dst.second.X(), TMP3.X());
-          // exclusive monitor needs to be cleared here
-          // Might have hit the case where ldaxr was hit but stlxr wasn't
-          clrex();
-        bind(&LoopExpected);
-        break;
-      }
-      default: LOGMAN_MSG_A_FMT("Unsupported: {}", IROp->ElementSize);
-    }
+      Bind(&LoopNotExpected);
+      mov(EmitSize, Dst.first, TMP2.R());
+      mov(EmitSize, Dst.second, TMP3.R());
+      // exclusive monitor needs to be cleared here
+      // Might have hit the case where ldaxr was hit but stlxr wasn't
+      clrex();
+    Bind(&LoopExpected);
   }
 }
 
 DEF_OP(CAS) {
   auto Op = IROp->C<IR::IROp_CAS>();
   uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
   // DataSrc = *Src1
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
   // This will write to memory! Careful!
 
-  auto Expected = GetReg<RA_64>(Op->Expected.ID());
-  auto Desired = GetReg<RA_64>(Op->Desired.ID());
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto Expected = GetReg(Op->Expected.ID());
+  auto Desired = GetReg(Op->Desired.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(TMP2, Expected);
-    switch (OpSize) {
-    case 1: casalb(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
-    case 2: casalh(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
-    case 4: casal(TMP2.W(), Desired.W(), MemOperand(MemSrc)); break;
-    case 8: casal(TMP2.X(), Desired.X(), MemOperand(MemSrc)); break;
-    default: LOGMAN_MSG_A_FMT("Unsupported: {}", OpSize);
-    }
-    mov(GetReg<RA_64>(Node), TMP2);
+    mov(EmitSize, TMP2, Expected);
+    casal(SubEmitSize, TMP2, Desired, MemSrc);
+    mov(EmitSize, GetReg(Node), TMP2.R());
   }
   else {
-    switch (OpSize) {
-      case 1: {
-        aarch64::Label LoopTop;
-        aarch64::Label LoopNotExpected;
-        aarch64::Label LoopExpected;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        cmp(TMP2.W(), Operand(Expected.W(), Extend::UXTB));
-        b(&LoopNotExpected, Condition::ne);
-        stlxrb(TMP3.W(), Desired.W(), MemOperand(MemSrc));
-        cbnz(TMP3.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), Expected.W());
-        b(&LoopExpected);
-
-          bind(&LoopNotExpected);
-          mov(GetReg<RA_32>(Node), TMP2.W());
-          // exclusive monitor needs to be cleared here
-          // Might have hit the case where ldaxr was hit but stlxr wasn't
-          clrex();
-        bind(&LoopExpected);
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        aarch64::Label LoopNotExpected;
-        aarch64::Label LoopExpected;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        cmp(TMP2.W(), Operand(Expected.W(), Extend::UXTH));
-        b(&LoopNotExpected, Condition::ne);
-        stlxrh(TMP3.W(), Desired.W(), MemOperand(MemSrc));
-        cbnz(TMP3.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), Expected.W());
-        b(&LoopExpected);
-
-          bind(&LoopNotExpected);
-          mov(GetReg<RA_32>(Node), TMP2.W());
-          // exclusive monitor needs to be cleared here
-          // Might have hit the case where ldaxr was hit but stlxr wasn't
-          clrex();
-        bind(&LoopExpected);
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        aarch64::Label LoopNotExpected;
-        aarch64::Label LoopExpected;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        cmp(TMP2.W(), Expected.W());
-        b(&LoopNotExpected, Condition::ne);
-        stlxr(TMP3.W(), Desired.W(), MemOperand(MemSrc));
-        cbnz(TMP3.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), Expected.W());
-        b(&LoopExpected);
-
-          bind(&LoopNotExpected);
-          mov(GetReg<RA_32>(Node), TMP2.W());
-          // exclusive monitor needs to be cleared here
-          // Might have hit the case where ldaxr was hit but stlxr wasn't
-          clrex();
-        bind(&LoopExpected);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        aarch64::Label LoopNotExpected;
-        aarch64::Label LoopExpected;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        cmp(TMP2, Expected);
-        b(&LoopNotExpected, Condition::ne);
-        stlxr(TMP2, Desired, MemOperand(MemSrc));
-        cbnz(TMP2, &LoopTop);
-        mov(GetReg<RA_64>(Node), Expected);
-        b(&LoopExpected);
-
-          bind(&LoopNotExpected);
-          mov(GetReg<RA_64>(Node), TMP2);
-          // exclusive monitor needs to be cleared here
-          // Might have hit the case where ldaxr was hit but stlxr wasn't
-          clrex();
-        bind(&LoopExpected);
-
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", OpSize);
+    ARMEmitter::BackwardLabel LoopTop;
+    ARMEmitter::ForwardLabel LoopNotExpected;
+    ARMEmitter::ForwardLabel LoopExpected;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    if (OpSize == 1) {
+      cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTB, 0);
     }
+    else if (OpSize == 2) {
+      cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTH, 0);
+    }
+    else {
+      cmp(EmitSize, TMP2, Expected);
+    }
+    b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
+    stlxr(SubEmitSize, TMP3, Desired, MemSrc);
+    cbnz(EmitSize, TMP3, &LoopTop);
+    mov(EmitSize, GetReg(Node), Expected);
+    b(&LoopExpected);
+
+      Bind(&LoopNotExpected);
+      mov(EmitSize, GetReg(Node), TMP2.R());
+      // exclusive monitor needs to be cleared here
+      // Might have hit the case where ldaxr was hit but stlxr wasn't
+      clrex();
+    Bind(&LoopExpected);
   }
 }
 
 DEF_OP(AtomicAdd) {
   auto Op = IROp->C<IR::IROp_AtomicAdd>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    switch (IROp->Size) {
-    case 1: staddlb(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 2: staddlh(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 4: staddl(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 8: staddl(GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    staddl(SubEmitSize, Src, MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        add(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        add(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP2, TMP2, MemOperand(MemSrc));
-        cbnz(TMP2, &LoopTop);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    add(EmitSize, TMP2, TMP2, Src);
+    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
+    cbnz(EmitSize, TMP2, &LoopTop);
   }
 }
 
 DEF_OP(AtomicSub) {
   auto Op = IROp->C<IR::IROp_AtomicSub>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    neg(TMP2, GetReg<RA_64>(Op->Value.ID()));
-    switch (IROp->Size) {
-    case 1: staddlb(TMP2.W(), MemOperand(MemSrc)); break;
-    case 2: staddlh(TMP2.W(), MemOperand(MemSrc)); break;
-    case 4: staddl(TMP2.W(), MemOperand(MemSrc)); break;
-    case 8: staddl(TMP2.X(), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    neg(EmitSize, TMP2, Src);
+    staddl(SubEmitSize, TMP2, MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        sub(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP2, TMP2, MemOperand(MemSrc));
-        cbnz(TMP2, &LoopTop);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    sub(EmitSize, TMP2, TMP2, Src);
+    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
+    cbnz(EmitSize, TMP2, &LoopTop);
   }
 }
 
 DEF_OP(AtomicAnd) {
   auto Op = IROp->C<IR::IROp_AtomicAnd>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mvn(TMP2, GetReg<RA_64>(Op->Value.ID()));
-    switch (IROp->Size) {
-    case 1: stclrlb(TMP2.W(), MemOperand(MemSrc)); break;
-    case 2: stclrlh(TMP2.W(), MemOperand(MemSrc)); break;
-    case 4: stclrl(TMP2.W(), MemOperand(MemSrc)); break;
-    case 8: stclrl(TMP2.X(), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    mvn(EmitSize, TMP2, Src);
+    stclrl(SubEmitSize, TMP2, MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        and_(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP2, TMP2, MemOperand(MemSrc));
-        cbnz(TMP2, &LoopTop);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    and_(EmitSize, TMP2, TMP2, Src);
+    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
+    cbnz(EmitSize, TMP2, &LoopTop);
   }
 }
 
 DEF_OP(AtomicOr) {
   auto Op = IROp->C<IR::IROp_AtomicOr>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    switch (IROp->Size) {
-    case 1: stsetlb(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 2: stsetlh(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 4: stsetl(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 8: stsetl(GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    stsetl(SubEmitSize, Src, MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        orr(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP2, TMP2, MemOperand(MemSrc));
-        cbnz(TMP2, &LoopTop);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    orr(EmitSize, TMP2, TMP2, Src);
+    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
+    cbnz(EmitSize, TMP2, &LoopTop);
   }
 }
 
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    switch (IROp->Size) {
-    case 1: steorlb(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 2: steorlh(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 4: steorl(GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    case 8: steorl(GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    steorl(SubEmitSize, Src, MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP2.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP2.W(), TMP2.W(), MemOperand(MemSrc));
-        cbnz(TMP2.W(), &LoopTop);
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        eor(TMP2, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP2, TMP2, MemOperand(MemSrc));
-        cbnz(TMP2, &LoopTop);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    eor(EmitSize, TMP2, TMP2, Src);
+    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
+    cbnz(EmitSize, TMP2, &LoopTop);
   }
 }
 
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(TMP2, GetReg<RA_64>(Op->Value.ID()));
-    switch (IROp->Size) {
-    case 1: swpalb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: swpalh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: swpal(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: swpal(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    mov(EmitSize, TMP2, Src);
+    ldswpal(SubEmitSize, TMP2, GetReg(Node), MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        stlxrb(TMP4.W(), GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        uxtb(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        stlxrh(TMP4.W(), GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        uxtw(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        stlxr(TMP4.W(), GetReg<RA_32>(Op->Value.ID()), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        stlxr(TMP4, GetReg<RA_64>(Op->Value.ID()), MemOperand(MemSrc));
-        cbnz(TMP4, &LoopTop);
-        mov(GetReg<RA_64>(Node), TMP2.X());
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    stlxr(SubEmitSize, TMP4, Src, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    ubfm(EmitSize, GetReg(Node), TMP2, 0, OpSize * 8 - 1);
   }
 }
 
 DEF_OP(AtomicFetchAdd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAdd>();
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    switch (IROp->Size) {
-    case 1: ldaddalb(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldaddalh(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldaddal(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldaddal(GetReg<RA_64>(Op->Value.ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ldaddal(SubEmitSize, Src, GetReg(Node), MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        add(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        add(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP4, TMP3, MemOperand(MemSrc));
-        cbnz(TMP4, &LoopTop);
-        mov(GetReg<RA_64>(Node), TMP2);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    add(EmitSize, TMP3, TMP2, Src);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
 
 DEF_OP(AtomicFetchSub) {
   auto Op = IROp->C<IR::IROp_AtomicFetchSub>();
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    neg(TMP2, GetReg<RA_64>(Op->Value.ID()));
-    switch (IROp->Size) {
-    case 1: ldaddalb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldaddalh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldaddal(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldaddal(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    neg(EmitSize, TMP2, Src);
+    ldaddal(SubEmitSize, TMP2, GetReg(Node), MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        sub(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        sub(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP4, TMP3, MemOperand(MemSrc));
-        cbnz(TMP4, &LoopTop);
-        mov(GetReg<RA_64>(Node), TMP2);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    sub(EmitSize, TMP3, TMP2, Src);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
 
 DEF_OP(AtomicFetchAnd) {
   auto Op = IROp->C<IR::IROp_AtomicFetchAnd>();
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mvn(TMP2, GetReg<RA_64>(Op->Value.ID()));
-    switch (IROp->Size) {
-    case 1: ldclralb(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldclralh(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldclral(TMP2.W(), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldclral(TMP2.X(), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    mvn(EmitSize, TMP2, Src);
+    ldclral(SubEmitSize, TMP2, GetReg(Node), MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        and_(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        and_(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP4, TMP3, MemOperand(MemSrc));
-        cbnz(TMP4, &LoopTop);
-        mov(GetReg<RA_64>(Node), TMP2);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    and_(EmitSize, TMP3, TMP2, Src);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
 
 DEF_OP(AtomicFetchOr) {
   auto Op = IROp->C<IR::IROp_AtomicFetchOr>();
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    switch (IROp->Size) {
-    case 1: ldsetalb(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldsetalh(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldsetal(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldsetal(GetReg<RA_64>(Op->Value.ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ldsetal(SubEmitSize, Src, GetReg(Node), MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        orr(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        orr(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP4, TMP3, MemOperand(MemSrc));
-        cbnz(TMP4, &LoopTop);
-        mov(GetReg<RA_64>(Node), TMP2);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    orr(EmitSize, TMP3, TMP2, Src);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
 
 DEF_OP(AtomicFetchXor) {
   auto Op = IROp->C<IR::IROp_AtomicFetchXor>();
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+
+  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Src = GetReg(Op->Value.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    switch (IROp->Size) {
-    case 1: ldeoralb(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 2: ldeoralh(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 4: ldeoral(GetReg<RA_32>(Op->Value.ID()), GetReg<RA_32>(Node), MemOperand(MemSrc)); break;
-    case 8: ldeoral(GetReg<RA_64>(Op->Value.ID()), GetReg<RA_64>(Node), MemOperand(MemSrc)); break;
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ldeoral(SubEmitSize, Src, GetReg(Node), MemSrc);
   }
   else {
-    // TMP2-TMP3
-    switch (IROp->Size) {
-      case 1: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrb(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 2: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxrh(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 4: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2.W(), MemOperand(MemSrc));
-        eor(TMP3.W(), TMP2.W(), GetReg<RA_32>(Op->Value.ID()));
-        stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-        cbnz(TMP4.W(), &LoopTop);
-        mov(GetReg<RA_32>(Node), TMP2.W());
-        break;
-      }
-      case 8: {
-        aarch64::Label LoopTop;
-        bind(&LoopTop);
-        ldaxr(TMP2, MemOperand(MemSrc));
-        eor(TMP3, TMP2, GetReg<RA_64>(Op->Value.ID()));
-        stlxr(TMP4, TMP3, MemOperand(MemSrc));
-        cbnz(TMP4, &LoopTop);
-        mov(GetReg<RA_64>(Node), TMP2);
-        break;
-      }
-      default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-    }
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    eor(EmitSize, TMP3, TMP2, Src);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
 
 DEF_OP(AtomicFetchNeg) {
   auto Op = IROp->C<IR::IROp_AtomicFetchNeg>();
-  auto MemSrc = GetReg<RA_64>(Op->Addr.ID());
+  uint8_t OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
 
-  // TMP2-TMP3
-  switch (IROp->Size) {
-    case 1: {
-      aarch64::Label LoopTop;
-      bind(&LoopTop);
-      ldaxrb(TMP2.W(), MemOperand(MemSrc));
-      neg(TMP3.W(), TMP2.W());
-      stlxrb(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-      cbnz(TMP4.W(), &LoopTop);
-      mov(GetReg<RA_32>(Node), TMP2.W());
-      break;
-    }
-    case 2: {
-      aarch64::Label LoopTop;
-      bind(&LoopTop);
-      ldaxrh(TMP2.W(), MemOperand(MemSrc));
-      neg(TMP3.W(), TMP2.W());
-      stlxrh(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-      cbnz(TMP4.W(), &LoopTop);
-      mov(GetReg<RA_32>(Node), TMP2.W());
-      break;
-    }
-    case 4: {
-      aarch64::Label LoopTop;
-      bind(&LoopTop);
-      ldaxr(TMP2.W(), MemOperand(MemSrc));
-      neg(TMP3.W(), TMP2.W());
-      stlxr(TMP4.W(), TMP3.W(), MemOperand(MemSrc));
-      cbnz(TMP4.W(), &LoopTop);
-      mov(GetReg<RA_32>(Node), TMP2.W());
-      break;
-    }
-    case 8: {
-      aarch64::Label LoopTop;
-      bind(&LoopTop);
-      ldaxr(TMP2, MemOperand(MemSrc));
-      neg(TMP3, TMP2);
-      stlxr(TMP4, TMP3, MemOperand(MemSrc));
-      cbnz(TMP4, &LoopTop);
-      mov(GetReg<RA_64>(Node), TMP2);
-      break;
-    }
-    default:  LOGMAN_MSG_A_FMT("Unhandled Atomic size: {}", IROp->Size);
-  }
+  auto MemSrc = GetReg(Op->Addr.ID());
+
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  ARMEmitter::BackwardLabel LoopTop;
+  Bind(&LoopTop);
+  ldaxr(SubEmitSize, TMP2, MemSrc);
+  neg(EmitSize, TMP3, TMP2);
+  stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+  cbnz(EmitSize, TMP4, &LoopTop);
+  mov(EmitSize, GetReg(Node), TMP2.R());
 }
 
 #undef DEF_OP

@@ -1,3 +1,4 @@
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/ArchHelpers/MContext.h"
@@ -30,13 +31,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#define STATE_PTR(STATE_TYPE, FIELD) \
-  MemOperand(STATE, offsetof(FEXCore::Core::STATE_TYPE, FIELD))
-
 namespace FEXCore::CPU {
-
-using namespace vixl;
-using namespace vixl::aarch64;
 
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
@@ -46,16 +41,18 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   , Simulator {&Decoder}
 #endif
 {
-#ifdef VIXL_DISASSEMBLER
-  const auto DisasmBegin = GetCursorAddress<const Instruction*>();
-#endif
-
 #ifdef VIXL_SIMULATOR
   // Hardcode a 256-bit vector width if we are running in the simulator.
   Simulator.SetVectorLengthInBits(256);
 #endif
 
-  SetAllowAssembler(true);
+  EmitDispatcher();
+}
+
+void Arm64Dispatcher::EmitDispatcher() {
+#ifdef VIXL_DISASSEMBLER
+  const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
+#endif
 
   DispatchPtr = GetCursorAddress<AsmDispatch>();
 
@@ -67,9 +64,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   //    Ptr();
   // }
 
-  Literal l_CTX {reinterpret_cast<uintptr_t>(CTX)};
-  Literal l_Sleep {reinterpret_cast<uint64_t>(SleepThread)};
-  Literal l_CompileBlock {GetCompileBlockPtr()};
+  ARMEmitter::ForwardLabel l_CTX;
+  ARMEmitter::ForwardLabel l_Sleep;
+  ARMEmitter::ForwardLabel l_CompileBlock;
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -77,12 +74,12 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   // Push our memory base to the correct register
   // Move our thread pointer to the correct register
   // This is passed in to parameter 0 (x0)
-  mov(STATE, x0);
+  mov(STATE, ARMEmitter::XReg::x0);
 
   // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
   // regardless of where we were in the stack
-  add(x0, sp, 0);
-  str(x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::rsp, 0);
+  str(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
 
   AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
 
@@ -92,91 +89,97 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
-  aarch64::Label FullLookup{};
-  aarch64::Label CallBlock{};
-  aarch64::Label LoopTop{};
-  aarch64::Label ExitSpillSRA{};
-  aarch64::Label ThreadPauseHandler{};
+  ARMEmitter::BiDirectionalLabel FullLookup{};
+  ARMEmitter::BiDirectionalLabel CallBlock{};
+  ARMEmitter::BackwardLabel LoopTop{};
 
-  bind(&LoopTop);
-  AbsoluteLoopTopAddress = GetLabelAddress<uint64_t>(&LoopTop);
+  Bind(&LoopTop);
+  AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
 
   // Load in our RIP
   // Don't modify x2 since it contains our RIP once the block doesn't exist
-  ldr(x2, STATE_PTR(CpuStateFrame, State.rip));
-  auto RipReg = x2;
+
+  auto RipReg = ARMEmitter::XReg::x2;
+  ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
 
   // L1 Cache
-  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+  ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
-  and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
-  add(x0, x0, Operand(x3, Shift::LSL, 4));
-  ldp(x3, x0, MemOperand(x0));
-  cmp(x0, RipReg);
-  b(&FullLookup, Condition::ne);
+  and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::r0, ARMEmitter::Reg::r3, ARMEmitter::ShiftType::LSL , 4);
+  ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, 0);
+  cmp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, RipReg.R());
+  b(ARMEmitter::Condition::CC_NE, &FullLookup);
 
-  br(x3);
+  br(ARMEmitter::Reg::r3);
 
   // L1C check failed, do a full lookup
-  bind(&FullLookup);
+  Bind(&FullLookup);
 
   // This is the block cache lookup routine
   // It matches what is going on it LookupCache.h::FindBlock
-  ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
+  ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
 
   // Mask the address by the virtual address size so we can check for aliases
   uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
   if (std::popcount(VirtualMemorySize) == 1) {
-    and_(x3, RipReg, VirtualMemorySize - 1);
+    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), VirtualMemorySize - 1);
   }
   else {
-    LoadConstant(x3, VirtualMemorySize);
-    and_(x3, RipReg, x3);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, VirtualMemorySize);
+    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), ARMEmitter::Reg::r3);
   }
 
-  aarch64::Label NoBlock;
+#ifdef VIXL_SIMULATOR
+  // VIXL simulator can't run syscalls.
+  constexpr bool SignalSafeCompile = false;
+#else
+  constexpr bool SignalSafeCompile = true;
+#endif
+
+  ARMEmitter::ForwardLabel NoBlock;
+
   {
     // Offset the address and add to our page pointer
-    lsr(x1, x3, 12);
+    lsr(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::r3, 12);
 
     // Load the pointer from the offset
-    ldr(x0, MemOperand(x0, x1, Shift::LSL, 3));
+    ldr(ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::ExtendedType::LSL_64, 3);
 
     // If page pointer is zero then we have no block
-    cbz(x0, &NoBlock);
+    cbz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, &NoBlock);
 
     // Steal the page offset
-    and_(x1, x3, 0x0FFF);
+    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::r3, 0x0FFF);
 
     // Shift the offset by the size of the block cache entry
-    add(x0, x0, Operand(x1, Shift::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry))));
+    add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
 
     // Load the guest address first to ensure it maps to the address we are currently at
     // This fixes aliasing problems
-    ldr(x1, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode)));
-    cmp(x1, RipReg);
-    b(&NoBlock, Condition::ne);
+    ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r0, offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode));
+    cmp(ARMEmitter::XReg::x1, RipReg);
+    b(ARMEmitter::Condition::CC_NE, &NoBlock);
 
     // Now load the actual host block to execute if we can
-    ldr(x3, MemOperand(x0, offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode)));
-    cbz(x3, &NoBlock);
+    ldr(ARMEmitter::XReg::x3, ARMEmitter::Reg::r0, offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode));
+    cbz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, &NoBlock);
 
     // If we've made it here then we have a real compiled block
     {
       // update L1 cache
-      ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+      ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
 
-      and_(x1, RipReg, LookupCache::L1_ENTRIES_MASK);
-      add(x0, x0, Operand(x1, Shift::LSL, 4));
-      stp(x3, x2, MemOperand(x0));
+      and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
+      add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::ShiftType::LSL, 4);
+      stp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x2, ARMEmitter::Reg::r0);
 
       // Jump to the block
-      br(x3);
+      br(ARMEmitter::Reg::r3);
     }
   }
 
   {
-    bind(&ExitSpillSRA);
     ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
@@ -190,12 +193,6 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ret();
   }
 
-#ifdef VIXL_SIMULATOR
-  // VIXL simulator can't run syscalls.
-  constexpr bool SignalSafeCompile = false;
-#else
-  constexpr bool SignalSafeCompile = true;
-#endif
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
@@ -210,52 +207,52 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
       // X3: Size of mask, sizeof(uint64_t)
       // X8: Syscall
 
-      LoadConstant(x0, ~0ULL);
-      stp(x0, x0, MemOperand(sp, -16, PreIndex));
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      add(x2, sp, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ~0ULL);
+      stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::Reg::rsp, -16);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
       svc(0);
     }
 
-    mov(x0, STATE);
-    mov(x1, lr);
+    mov(ARMEmitter::XReg::x0, STATE);
+    mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
 
-    ldr(x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
+    ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uintptr_t, void *, void *>(x2);
+    GenerateIndirectRuntimeCall<uintptr_t, void *, void *>(ARMEmitter::Reg::r2);
 #else
-    blr(x2);
+    blr(ARMEmitter::Reg::r2);
 #endif
 
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location
 
-      mov(x4, x0);
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      LoadConstant(x2, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
+      mov(ARMEmitter::XReg::x4, ARMEmitter::XReg::x0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
       svc(0);
 
       // Bring stack back
-      add(sp, sp, 16);
-
-      mov(x0, x4);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
+      mov(ARMEmitter::XReg::x0, ARMEmitter::XReg::x4);
     }
 
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
-    br(x0);
+
+    br(ARMEmitter::Reg::r0);
   }
 
   // Need to create the block
   {
-    bind(&NoBlock);
+    Bind(&NoBlock);
 
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
@@ -269,42 +266,42 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
       // X3: Size of mask, sizeof(uint64_t)
       // X8: Syscall
 
-      LoadConstant(x0, ~0ULL);
-      stp(x0, x2, MemOperand(sp, -16, PreIndex));
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      add(x2, sp, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ~0ULL);
+      stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::x0, ARMEmitter::XReg::x2, ARMEmitter::Reg::rsp, -16);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
       svc(0);
 
       // Reload x2 to bring back RIP
-      ldr(x2, MemOperand(sp, 8, Offset));
+      ldr(ARMEmitter::XReg::x2, ARMEmitter::Reg::rsp, 8);
     }
 
-    ldr(x0, &l_CTX);
-    mov(x1, STATE);
-    ldr(x3, &l_CompileBlock);
+    ldr(ARMEmitter::XReg::x0, &l_CTX);
+    mov(ARMEmitter::XReg::x1, STATE);
+    ldr(ARMEmitter::XReg::x3, &l_CompileBlock);
 
     // X2 contains our guest RIP
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<void, void *, uint64_t, void *>(x3);
+    GenerateIndirectRuntimeCall<void, void *, uint64_t, void *>(ARMEmitter::Reg::r3);
 #else
-    blr(x3); // { CTX, Frame, RIP}
+    blr(ARMEmitter::Reg::r3); // { CTX, Frame, RIP}
 #endif
 
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location
-      LoadConstant(x0, SIG_SETMASK);
-      add(x1, sp, 0);
-      LoadConstant(x2, 0);
-      LoadConstant(x3, 8);
-      LoadConstant(x8, SYS_rt_sigprocmask);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, 0);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
       svc(0);
 
       // Bring stack back
-      add(sp, sp, 16);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
     }
 
     if (config.StaticRegisterAllocation)
@@ -324,7 +321,7 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
-    GuestSignal_SIGILL  = GetCursorAddress<uint64_t>();
+    GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
 
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
@@ -355,8 +352,8 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     // brk = SIGTRAP
     // ??? = SIGSEGV
     // Force a SIGSEGV by loading zero
-    LoadConstant(x1, 0);
-    ldr(x1, MemOperand(x1));
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0);
+    ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r1);
   }
 
   {
@@ -364,19 +361,18 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
-    bind(&ThreadPauseHandler);
     ThreadPauseHandlerAddress = GetCursorAddress<uint64_t>();
     // We are pausing, this means the frontend should be waiting for this thread to idle
     // We will have faulted and jumped to this location at this point
 
     // Call our sleep handler
-    ldr(x0, &l_CTX);
-    mov(x1, STATE);
-    ldr(x2, &l_Sleep);
+    ldr(ARMEmitter::XReg::x0, &l_CTX);
+    mov(ARMEmitter::XReg::x1, STATE);
+    ldr(ARMEmitter::XReg::x2, &l_Sleep);
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<void, void *, void *>(x2);
+    GenerateIndirectRuntimeCall<void, void *, void *>(ARMEmitter::Reg::r2);
 #else
-    blr(x2);
+    blr(ARMEmitter::Reg::r2);
 #endif
 
     PauseReturnInstruction = GetCursorAddress<uint64_t>();
@@ -406,27 +402,27 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     PushCalleeSavedRegisters();
 
     // First thing we need to move the thread state pointer back in to our register
-    mov(STATE, x0);
+    mov(STATE, ARMEmitter::XReg::x0);
 
     // Make sure to adjust the refcounter so we don't clear the cache now
-    ldr(w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
-    add(w2, w2, 1);
-    str(w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
+    ldr(ARMEmitter::WReg::w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
+    add(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, 1);
+    str(ARMEmitter::WReg::w2, STATE_PTR(CpuStateFrame, SignalHandlerRefCounter));
 
     // Now push the callback return trampoline to the guest stack
     // Guest will be misaligned because calling a thunk won't correct the guest's stack once we call the callback from the host
-    LoadConstant(x0, CTX->X86CodeGen.CallbackReturn);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, CTX->X86CodeGen.CallbackReturn);
 
-    ldr(x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
-    sub(x2, x2, 16);
-    str(x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
+    ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
+    sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, 16);
+    str(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, State.gregs[X86State::REG_RSP]));
 
     // Store the trampoline to the guest stack
     // Guest stack is now correctly misaligned after a regular call instruction
-    str(x0, MemOperand(x2));
+    str(ARMEmitter::XReg::x0, ARMEmitter::Reg::r2, 0);
 
     // Store RIP to the context state
-    str(x1, STATE_PTR(CpuStateFrame, State.rip));
+    str(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, State.rip));
 
     // load static regs
     if (config.StaticRegisterAllocation)
@@ -439,14 +435,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR(x3);
+    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
     SpillStaticRegs();
 
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
+    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-    blr(x3);
+    blr(ARMEmitter::Reg::r3);
 #endif
     FillStaticRegs();
 
@@ -461,14 +457,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR(x3);
+    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
     SpillStaticRegs();
 
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
+    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-    blr(x3);
+    blr(ARMEmitter::Reg::r3);
 #endif
     FillStaticRegs();
 
@@ -483,14 +479,14 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LUREMHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR(x3);
+    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
     SpillStaticRegs();
 
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
+    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-    blr(x3);
+    blr(ARMEmitter::Reg::r3);
 #endif
     FillStaticRegs();
 
@@ -505,14 +501,15 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   {
     LREMHandlerAddress = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR(x3);
+    PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
     SpillStaticRegs();
 
-    ldr(x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
+    ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
+
 #ifdef VIXL_SIMULATOR
-    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(x3);
+    GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-    blr(x3);
+    blr(ARMEmitter::Reg::r3);
 #endif
     FillStaticRegs();
 
@@ -524,16 +521,16 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
     ret();
   }
 
-  place(&l_CTX);
-  place(&l_Sleep);
-  place(&l_CompileBlock);
+  Bind(&l_CTX);
+  dc64(reinterpret_cast<uintptr_t>(CTX));
+  Bind(&l_Sleep);
+  dc64(reinterpret_cast<uint64_t>(SleepThread));
+  Bind(&l_CompileBlock);
+  dc64(GetCompileBlockPtr());
 
-
-  FinalizeCode();
   Start = reinterpret_cast<uint64_t>(DispatchPtr);
   End = GetCursorAddress<uint64_t>();
-  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
-  GetBuffer()->SetExecutable();
+  ClearICache(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
 
   if (CTX->Config.BlockJITNaming()) {
     std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
@@ -542,8 +539,9 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
   if (CTX->Config.GlobalJITNaming()) {
     CTX->Symbols.RegisterJITSpace(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
   }
+
 #ifdef VIXL_DISASSEMBLER
-  const auto DisasmEnd = GetCursorAddress<const Instruction*>();
+  const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
   Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
 #endif
 }
@@ -551,101 +549,90 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const Dispatche
 #ifdef VIXL_SIMULATOR
 void Arm64Dispatcher::ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
   Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
-  Simulator.RunFrom(reinterpret_cast<Instruction const*>(DispatchPtr));
+  Simulator.RunFrom(reinterpret_cast<vixl::aarch64::Instruction const*>(DispatchPtr));
 }
 
 void Arm64Dispatcher::ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
   Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
   Simulator.WriteXRegister(1, RIP);
-  Simulator.RunFrom(reinterpret_cast<Instruction const*>(CallbackPtr));
+  Simulator.RunFrom(reinterpret_cast<vixl::aarch64::Instruction const*>(CallbackPtr));
 }
 
 #endif
 
-// Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline, destination buffer is set before use
-static thread_local vixl::aarch64::Assembler emit((uint8_t*)&emit, 1);
-
 size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
+  FEXCore::ARMEmitter::Emitter emit{CodeBuffer, MaxGDBPauseCheckSize};
 
-  *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxGDBPauseCheckSize);
-
-  vixl::CodeBufferCheckScope scope(&emit, MaxGDBPauseCheckSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
-
-  aarch64::Label RunBlock;
+  ARMEmitter::ForwardLabel RunBlock;
 
   // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
   // This happens when single stepping
 
   static_assert(sizeof(FEXCore::Context::Context::Config.RunningMode) == 4, "This is expected to be size of 4");
-  emit.ldr(x0, STATE_PTR(CpuStateFrame, Thread)); // Get thread
-  emit.ldr(x0, MemOperand(x0, offsetof(FEXCore::Core::InternalThreadState, CTX))); // Get Context
-  emit.ldr(w0, MemOperand(x0, offsetof(FEXCore::Context::Context, Config.RunningMode)));
+  emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Thread));
+  emit.ldr(ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, offsetof(FEXCore::Core::InternalThreadState, CTX)); // Get Context
+  emit.ldr(ARMEmitter::WReg::w0, ARMEmitter::Reg::r0, offsetof(FEXCore::Context::Context, Config.RunningMode));
 
   // If the value == 0 then we don't need to stop
-  emit.cbz(w0, &RunBlock);
+  emit.cbz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, &RunBlock);
   {
-    Literal l_GuestRIP {GuestRIP};
+    ARMEmitter::ForwardLabel l_GuestRIP;
     // Make sure RIP is syncronized to the context
-    emit.ldr(x0, &l_GuestRIP);
-    emit.str(x0, STATE_PTR(CpuStateFrame, State.rip));
+    emit.ldr(ARMEmitter::XReg::x0, &l_GuestRIP);
+    emit.str(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, State.rip));
 
     // Stop the thread
-    emit.ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
-    emit.br(x0);
-    emit.place(&l_GuestRIP);
+    emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.ThreadPauseHandlerSpillSRA));
+    emit.br(ARMEmitter::Reg::r0);
+    emit.Bind(&l_GuestRIP);
+    emit.dc64(GuestRIP);
   }
-  emit.bind(&RunBlock);
-  emit.FinalizeCode();
+  emit.Bind(&RunBlock);
 
-  auto UsedBytes = emit.GetBuffer()->GetCursorOffset();
-  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, UsedBytes);
+  auto UsedBytes = emit.GetCursorOffset();
+  emit.ClearICache(CodeBuffer, UsedBytes);
   return UsedBytes;
 }
 
 size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   LOGMAN_THROW_AA_FMT(!config.StaticRegisterAllocation, "GenerateInterpreterTrampoline dispatcher does not support SRA");
 
-  *emit.GetBuffer() = vixl::CodeBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
+  FEXCore::ARMEmitter::Emitter emit{CodeBuffer, MaxInterpreterTrampolineSize};
+  ARMEmitter::ForwardLabel InlineIRData;
 
-  vixl::CodeBufferCheckScope scope(&emit, MaxInterpreterTrampolineSize, vixl::CodeBufferCheckScope::kDontReserveBufferSpace, vixl::CodeBufferCheckScope::kNoAssert);
+  emit.mov(ARMEmitter::XReg::x0, STATE);
+  emit.adr(ARMEmitter::Reg::r1, &InlineIRData);
 
-  aarch64::Label InlineIRData;
+  emit.ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
+  emit.blr(ARMEmitter::Reg::r3);
 
-  emit.mov(x0, STATE);
-  emit.adr(x1, &InlineIRData);
+  emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+  emit.br(ARMEmitter::Reg::r0);
 
-  emit.ldr(x3, STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));
-  emit.blr(x3);
+  emit.Bind(&InlineIRData);
 
-  emit.ldr(x0, STATE_PTR(CpuStateFrame, Pointers.Common.DispatcherLoopTop));
-  emit.br(x0);
-
-  emit.bind(&InlineIRData);
-
-  emit.FinalizeCode();
-
-  auto UsedBytes = emit.GetBuffer()->GetCursorOffset();
-  vixl::aarch64::CPU::EnsureIAndDCacheCoherency(CodeBuffer, UsedBytes);
+  auto UsedBytes = emit.GetCursorOffset();
+  emit.ClearICache(CodeBuffer, UsedBytes);
   return UsedBytes;
 }
 
 void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
   for (size_t i = 0; i < SRA64.size(); i++) {
-    if (IgnoreMask & (1U << SRA64[i].GetCode())) {
+    if (IgnoreMask & (1U << SRA64[i].Idx())) {
       // Skip this one, it's already spilled
       continue;
     }
-    Thread->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].GetCode());
+    Thread->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].Idx());
   }
 
   if (EmitterCTX->HostFeatures.SupportsAVX) {
     for (size_t i = 0; i < SRAFPR.size(); i++) {
-      auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].GetCode());
+      auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].Idx());
       memcpy(&Thread->CurrentFrame->State.xmm.avx.data[i][0], &FPR, sizeof(__uint128_t));
     }
   } else {
     for (size_t i = 0; i < SRAFPR.size(); i++) {
-      auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].GetCode());
+      auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].Idx());
       memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
     }
   }

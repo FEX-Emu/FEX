@@ -5,12 +5,11 @@ $end_info$
 */
 
 #include <syscall.h>
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "FEXCore/Debug/InternalThreadState.h"
 
 namespace FEXCore::CPU {
-using namespace vixl;
-using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
 DEF_OP(GuestOpcode) {
@@ -23,13 +22,13 @@ DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
   switch (Op->Fence) {
     case IR::Fence_Load.Val:
-      dmb(FullSystem, BarrierReads);
+      dmb(FEXCore::ARMEmitter::BarrierScope::LD);
       break;
     case IR::Fence_LoadStore.Val:
-      dmb(FullSystem, BarrierAll);
+      dmb(FEXCore::ARMEmitter::BarrierScope::SY);
       break;
     case IR::Fence_Store.Val:
-      dmb(FullSystem, BarrierWrites);
+      dmb(FEXCore::ARMEmitter::BarrierScope::ST);
       break;
     default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
   }
@@ -52,88 +51,88 @@ DEF_OP(Break) {
   uint64_t Constant{};
   memcpy(&Constant, &State, sizeof(State));
 
-  LoadConstant(x1, Constant);
-  str(x1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData)));
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Constant);
+  str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
   switch (Op->Reason.Signal) {
   case SIGILL:
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGILL)));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGILL));
     br(TMP1);
     break;
   case SIGTRAP:
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP)));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
     br(TMP1);
     break;
   case SIGSEGV:
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV)));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV));
     br(TMP1);
     break;
   default:
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP)));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
     br(TMP1);
     break;
   }
 }
 
 DEF_OP(GetRoundingMode) {
-  auto Dst = GetReg<RA_64>(Node);
-  mrs(Dst, FPCR);
-  lsr(Dst, Dst,  22);
+  auto Dst = GetReg(Node);
+  mrs(Dst, ARMEmitter::SystemRegister::FPCR);
+  lsr(ARMEmitter::Size::i64Bit, Dst, Dst, 22);
 
   // FTZ is already in the correct location
   // Rounding mode is different
-  and_(TMP1, Dst, 0b11);
+  and_(ARMEmitter::Size::i64Bit, TMP1, Dst, 0b11);
 
-  cmp(TMP1, 1);
-  LoadConstant(TMP3, IR::ROUND_MODE_POSITIVE_INFINITY);
-  csel(TMP2, TMP3, xzr, vixl::aarch64::Condition::eq);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, 1);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, IR::ROUND_MODE_POSITIVE_INFINITY);
+  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_EQ);
 
-  cmp(TMP1, 2);
-  LoadConstant(TMP3, IR::ROUND_MODE_NEGATIVE_INFINITY);
-  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, 2);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, IR::ROUND_MODE_NEGATIVE_INFINITY);
+  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
 
-  cmp(TMP1, 3);
-  LoadConstant(TMP3, IR::ROUND_MODE_TOWARDS_ZERO);
-  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, 3);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, IR::ROUND_MODE_TOWARDS_ZERO);
+  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
 
-  orr(Dst, Dst, TMP2);
+  orr(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2.R());
 
-  bfi(Dst, TMP2, 0, 2);
+  bfi(ARMEmitter::Size::i64Bit, Dst, TMP2, 0, 2);
 }
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetReg<RA_64>(Op->RoundMode.ID());
+  auto Src = GetReg(Op->RoundMode.ID());
 
   // Setup the rounding flags correctly
-  and_(TMP1, Src, 0b11);
+  and_(ARMEmitter::Size::i64Bit, TMP1, Src, 0b11);
 
-  cmp(TMP1, IR::ROUND_MODE_POSITIVE_INFINITY);
-  LoadConstant(TMP3, 1);
-  csel(TMP2, TMP3, xzr, vixl::aarch64::Condition::eq);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, IR::ROUND_MODE_POSITIVE_INFINITY);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 1);
+  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_EQ);
 
-  cmp(TMP1, IR::ROUND_MODE_NEGATIVE_INFINITY);
-  LoadConstant(TMP3, 2);
-  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, IR::ROUND_MODE_NEGATIVE_INFINITY);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 2);
+  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
 
-  cmp(TMP1, IR::ROUND_MODE_TOWARDS_ZERO);
-  LoadConstant(TMP3, 3);
-  csel(TMP2, TMP3, TMP2, vixl::aarch64::Condition::eq);
+  cmp(ARMEmitter::Size::i64Bit, TMP1, IR::ROUND_MODE_TOWARDS_ZERO);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP3, 3);
+  csel(ARMEmitter::Size::i64Bit, TMP2, TMP3, TMP2, ARMEmitter::Condition::CC_EQ);
 
-  mrs(TMP1, FPCR);
+  mrs(TMP1, ARMEmitter::SystemRegister::FPCR);
 
   // vixl simulator doesn't support anything beyond ties-to-even rounding
 #ifndef VIXL_SIMULATOR
   // Insert the rounding flags
-  bfi(TMP1, TMP2, 22, 2);
+  bfi(ARMEmitter::Size::i64Bit, TMP1, TMP2, 22, 2);
 #endif
 
   // Insert the FTZ flag
-  lsr(TMP2, Src, 2);
-  bfi(TMP1, TMP2, 24, 1);
+  lsr(ARMEmitter::Size::i64Bit, TMP2, Src, 2);
+  bfi(ARMEmitter::Size::i64Bit, TMP1, TMP2, 24, 1);
 
   // Now save the new FPCR
-  msr(FPCR, TMP1);
+  msr(ARMEmitter::SystemRegister::FPCR, TMP1);
 }
 
 DEF_OP(Print) {
@@ -143,17 +142,16 @@ DEF_OP(Print) {
   SpillStaticRegs();
 
   if (IsGPR(Op->Value.ID())) {
-    mov(x0, GetReg<RA_64>(Op->Value.ID()));
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue)));
+    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->Value.ID()));
+    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue));
   }
   else {
-    fmov(x0, GetVReg(Op->Value.ID()).V1D());
-    // Bug in vixl that source vector needs to b V1D rather than V2D?
-    fmov(x1, GetVReg(Op->Value.ID()).V1D(), 1);
-    ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue)));
+    fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetVReg(Op->Value.ID()), false);
+    fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetVReg(Op->Value.ID()), true);
+    ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue));
   }
 
-  blr(x3);
+  blr(ARMEmitter::Reg::r3);
 
   FillStaticRegs();
   PopDynamicRegsAndLR();
@@ -173,27 +171,27 @@ DEF_OP(ProcessorID) {
   // 16bit LoadConstant to be a single instruction
   // We must always spill at least one register (x8) so this value always has a bit set
   // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(x0, SpillMask & 0xFFFF);
-  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SpillMask & 0xFFFF);
+  str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   // Allocate some temporary space for storing the uint32_t CPU and Node IDs
-  sub(sp, sp, 16);
+  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
 
   // Load the getcpu syscall number
-  LoadConstant(x8, SYS_getcpu);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_getcpu);
 
   // CPU pointer in x0
-  add(x0, sp, 0);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::rsp, 0);
   // Node in x1
-  add(x1, sp, 4);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 4);
 
   svc(0);
   // On updated signal mask we can receive a signal RIGHT HERE
 
   // Load the values returned by the kernel
-  ldp(w0, w1, MemOperand(sp));
+  ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::WReg::w0, ARMEmitter::WReg::w1, ARMEmitter::Reg::rsp);
   // Deallocate stack space
-  sub(sp, sp, 16);
+  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
 
   // Now that we are done in the syscall we need to carefully peel back the state
   // First unspill the registers from before
@@ -201,14 +199,13 @@ DEF_OP(ProcessorID) {
 
   // Now the registers we've spilled are back in their original host registers
   // We can safely claim we are no longer in a syscall
-  str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
-
+  str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   // Now store the result in the destination in the expected format
   // uint32_t Res = (node << 12) | cpu;
   // CPU is in w0
   // Node is in w1
-  orr(GetReg<RA_64>(Node), x0, Operand(x1, LSL, 12));
+  orr(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::ShiftType::LSL, 12);
 }
 
 DEF_OP(RDRAND) {
@@ -216,21 +213,21 @@ DEF_OP(RDRAND) {
 
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
-  auto Dst = GetRegPair<RA_64>(Node);
+  auto Dst = GetRegPair(Node);
 
   if (Op->GetReseeded) {
-    mrs(Dst.first, RNDRRS);
+    mrs(Dst.first, ARMEmitter::SystemRegister::RNDRRS);
   }
   else {
-    mrs(Dst.first, RNDR);
+    mrs(Dst.first, ARMEmitter::SystemRegister::RNDR);
   }
 
   // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
-  cset(Dst.second, Condition::ne);
+  cset(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Condition::CC_NE);
 }
 
 DEF_OP(Yield) {
-  hint(SystemHint::YIELD);
+  yield();
 }
 
 #undef DEF_OP
