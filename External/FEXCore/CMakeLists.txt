@@ -82,3 +82,7 @@ add_subdirectory(Source/)
 install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
   DESTINATION include
   COMPONENT Development)
+
+if (BUILD_TESTS)
+  add_subdirectory(unittests/)
+endif()
