@@ -20,6 +20,9 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
   add_library(${NAME}-${GUEST_BITNESS}-deps INTERFACE)
   target_include_directories(${NAME}-${GUEST_BITNESS}-deps INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
   target_link_libraries(${NAME}-${GUEST_BITNESS}-deps INTERFACE FEXLoader)
+  if (GUEST_BITNESS EQUAL 32)
+    target_compile_definitions(${NAME}-${GUEST_BITNESS}-deps INTERFACE IS_32BIT_THUNK)
+  endif ()
   # Shorthand for the include directories added after calling this function.
   # This is not evaluated directly, hence directories added after return are still picked up
   set(prop "$<TARGET_PROPERTY:${NAME}-${GUEST_BITNESS}-deps,INTERFACE_INCLUDE_DIRECTORIES>")
