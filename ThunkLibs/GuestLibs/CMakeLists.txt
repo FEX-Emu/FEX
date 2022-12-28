@@ -276,3 +276,6 @@ endif()
   ##  338:   0f 0b                   ud2
   #target_compile_options(VDSO-guest PRIVATE "-fno-pic")
 #endif()
+
+generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp)
+add_guest_lib(fex_thunk_test "libfex_thunk_test.so.0")

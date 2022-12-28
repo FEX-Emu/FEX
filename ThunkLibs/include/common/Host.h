@@ -78,7 +78,10 @@ public:
   extern "C" { \
     ExportEntry* fexthunks_exports_##name() { \
       if (!fexldr_init_##name()) { \
-        return nullptr; \
+fprintf(stderr, "FAILED TO FEXLDR_INIT\n"); \
+std::abort(); \
+/* Disabled for test thunk library */ \
+        /*return nullptr*/; \
       } \
       return exports; \
     } \

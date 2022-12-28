@@ -181,4 +181,7 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   #target_include_directories(libdrm-${GUEST_BITNESS}-deps INTERFACE /usr/include/drm/)
   #target_include_directories(libdrm-${GUEST_BITNESS}-deps INTERFACE /usr/include/libdrm/)
   #add_host_lib(drm ${GUEST_BITNESS})
+
+  generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp ${GUEST_BITNESS})
+  add_host_lib(fex_thunk_test ${GUEST_BITNESS})
 endforeach()

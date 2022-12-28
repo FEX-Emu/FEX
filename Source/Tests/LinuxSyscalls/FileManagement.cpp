@@ -361,14 +361,14 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
     return {};
   }
 
-  auto thunkOverlay = ThunkOverlays.find(pathname);
-  if (thunkOverlay != ThunkOverlays.end()) {
-    return thunkOverlay->second;
-  }
-
   auto RootFSPath = LDPath();
   if (RootFSPath.empty()) { // If RootFS doesn't exist
     return {};
+  }
+
+  auto thunkOverlay = ThunkOverlays.find(pathname);
+  if (thunkOverlay != ThunkOverlays.end()) {
+    return thunkOverlay->second;
   }
 
   std::string Path = RootFSPath + pathname;
