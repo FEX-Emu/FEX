@@ -247,6 +247,9 @@ template<typename T>
 struct unpacked_arg {
   using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
   host_layout<type> data;
+  type get() {
+    return data.data;
+  }
 };
 
 template<typename T>

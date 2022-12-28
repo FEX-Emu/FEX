@@ -289,6 +289,7 @@ private:
     std::unordered_set<const clang::Type*> funcptr_types;
 
     struct RepackedType {
+        bool is_opaque = false;
         std::unordered_set<const clang::FieldDecl*> custom_repacked_members;
     };
 
@@ -356,9 +357,34 @@ void GenerateThunkLibsAction::ExecuteAction() {
     }
 }
 
+struct TypeAnnotations {
+    bool is_opaque = false;
+};
+
+static TypeAnnotations GetTypeAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
+    if (!decl->hasDefinition()) {
+        return {};
+    }
+
+    ErrorReporter report_error { context };
+    TypeAnnotations ret;
+
+    for (const clang::CXXBaseSpecifier& base : decl->bases()) {
+        auto annotation = base.getType().getAsString();
+        if (annotation == "fexgen::opaque_type") {
+            ret.is_opaque = true;
+        } else {
+            throw report_error(base.getSourceRange().getBegin(), "Unknown type annotation");
+        }
+    }
+
+    return ret;
+}
+
 void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
     ErrorReporter report_error { context };
 
+    // TODO: Assert fex_gen_type is not declared at non-global namespaces
     if (auto template_decl = FindClassTemplateDeclByName(*context.getTranslationUnitDecl(), "fex_gen_type")) {
         for (auto* decl : template_decl->specializations()) {
             const auto& template_args = decl->getTemplateArgs();
@@ -368,8 +394,18 @@ void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
             //       named types (e.g. GLuint/GLenum) are represented by
             //       different Type instances. The canonical type they refer
             //       to is unique, however.
-            auto type = context.getCanonicalType(template_args[0].getAsType()).getTypePtr();
-            funcptr_types.insert(type);
+            clang::QualType type = context.getCanonicalType(template_args[0].getAsType());
+            type = type->getLocallyUnqualifiedSingleStepDesugaredType();
+
+            auto annotations = GetTypeAnnotations(context, decl);
+            if (annotations.is_opaque) {
+                auto [it, inserted] = types.emplace(type.getTypePtr(), RepackedType { true });
+                assert(inserted);
+            } else {
+                if (type->isFunctionPointerType()) {
+                    funcptr_types.insert(type.getTypePtr());
+                }
+            }
         }
     }
 
@@ -422,7 +458,6 @@ void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
                     // Get or add parent type to list of structure types
                     auto repack_info_it = types.emplace(annotated_member->getParent()->getTypeForDecl(), RepackedType {}).first;
                     // Add member to its list of members
-                    fprintf(stderr, "%p, %s\n", annotated_member->getParent()->getTypeForDecl()->getCanonicalTypeUnqualified().getTypePtr(), clang::QualType{annotated_member->getParent()->getTypeForDecl(), 0}.getAsString().c_str());
                     repack_info_it->second.custom_repacked_members.insert(annotated_member);
                 } else {
                     throw report_error(template_arg_loc, "Cannot annotate this kind of symbol");
@@ -490,18 +525,19 @@ void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
                                 throw report_error(template_arg_loc, "Variadic callbacks are not supported");
                             }
                         } else if (param->getType()->isPointerType()) {
-                            auto pointee_type = param->getType()->getPointeeType();
-                            fprintf(stderr, "%s %d %p\n", pointee_type.getAsString().c_str(), pointee_type->isIncompleteType(), pointee_type.getTypePtr());
-                            if (pointee_type->isStructureType()) {
+                            auto pointee_type = param->getType()->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType();
+                            if (types.contains(pointee_type.getTypePtr()) && types.at(pointee_type.getTypePtr()).is_opaque) {
+                                // Nothing to do
+                            } else if ( pointee_type->isStructureType() &&
+                                        !(types.contains(pointee_type.getTypePtr()) &&
+                                          types.at(pointee_type.getTypePtr()).is_opaque)) {
                                 if (pointee_type->isIncompleteType()) {
-                                    throw report_error(pointee_type->getAsTagDecl()->getBeginLoc(), "Unannotated pointer with incomplete struct type")
+                                    throw report_error(pointee_type->getAsTagDecl()->getBeginLoc(), "Unannotated pointer with incomplete struct type; consider using an opaque_type annotation")
                                           .addNote(report_error(emitted_function->getNameInfo().getLoc(), "in function", clang::DiagnosticsEngine::Note))
                                           .addNote(report_error(template_arg_loc, "used in annotation here", clang::DiagnosticsEngine::Note));
                                 }
 
                                 for (auto* member : pointee_type->getAsStructureType()->getDecl()->fields()) {
-                                    fprintf(stderr, "%p %s\n", pointee_type.getTypePtr(), clang::QualType{pointee_type.getTypePtr(), 0}.getAsString().c_str());
-
                                     auto annotated_type = types.find(pointee_type->getCanonicalTypeUnqualified().getTypePtr());
                                     if (annotated_type == types.end() || !annotated_type->second.custom_repacked_members.contains(member)) {
                                         if (!member->getType()->isPointerType()) {
@@ -515,7 +551,6 @@ void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
                                     }
                                 }
 
-                                // TODO: Redundant. We implicitly do this at the top now
                                 types.emplace(pointee_type.getTypePtr(), RepackedType { });
                             } else {
                                 throw report_error(param->getBeginLoc(), "Unsupported parameter type")
@@ -750,6 +785,33 @@ void GenerateThunkLibsAction::EmitOutput() {
                 struct_name = struct_name.substr(6);
             }
 
+            // For opaque types, implement the layout types only at pointer level (T*)
+            if (type_repack_info.is_opaque) {
+                fmt::print(file, "template<>\nstruct guest_layout<{}*> {{\n", struct_name);
+                fmt::print(file, "  using type = {}*;\n", struct_name);
+                fmt::print(file, "  type data;\n");
+                fmt::print(file, "}};\n");
+
+                // Host layout definition
+                fmt::print(file, "template<>\n");
+                fmt::print(file, "struct host_layout<{}*> {{\n", struct_name);
+                fmt::print(file, "  using type = {}*;\n", struct_name);
+                fmt::print(file, "  type data;\n");
+                fmt::print(file, "\n");
+                fmt::print(file, "  host_layout(const guest_layout<{}*>& from) :\n", struct_name);
+                fmt::print(file, "    data {{ reinterpret_cast<{}*>(from.data) }} {{\n", struct_name);
+                fmt::print(file, "  }}\n");
+                fmt::print(file, "}};\n\n");
+
+                fmt::print(file, "template<>\n");
+                fmt::print(file, "struct unpacked_arg<{}*> {{\n", struct_name);
+                fmt::print(file, "  host_layout<{}*> data;\n", struct_name);
+                fmt::print(file, "  unpacked_arg(const guest_layout<{}*>& from) : data(from) {{}}\n", struct_name);
+                fmt::print(file, "  {}* get() {{ return data.data; }}\n", struct_name);
+                fmt::print(file, "}};\n\n");
+                continue;
+            }
+
             // Guest layout definition
             fmt::print(file, "template<>\nstruct guest_layout<{}> {{\n", struct_name);
             fmt::print(file, "  struct type {{\n");
@@ -905,7 +967,8 @@ auto GetTypeName = [](const clang::QualType& type) {
                 fmt::print(file, "  unpacked_arg<{}> a_{} {{ args->a_{} }};\n", GetTypeName(param_type), param_idx, param_idx);
 
                 // Custom repacking happens here
-                if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType()) {
+                if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType() &&
+                    !types.at(param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType().getTypePtr()).is_opaque) {
                     fmt::print(file, "  fex_apply_custom_repacking(*a_{}.data);\n", param_idx);
                 }
             }
@@ -913,12 +976,7 @@ auto GetTypeName = [](const clang::QualType& type) {
             file << (thunk.return_type->isVoidType() ? "  " : "  args->rv = ") << function_to_call << "(";
             {
                 auto format_param = [&](std::size_t idx) {
-                    std::string raw_arg = fmt::format("a_{}", idx);
-                    if (libname != "libfex_thunk_test") {
-                        raw_arg = "args->" + std::move(raw_arg);
-                    } else {
-                        raw_arg += ".get()";
-                    }
+                    std::string raw_arg = fmt::format("a_{}.get()", idx);
 
                     auto cb = thunk.callbacks.find(idx);
                     if (cb != thunk.callbacks.end() && cb->second.is_stub) {
@@ -942,7 +1000,8 @@ auto GetTypeName = [](const clang::QualType& type) {
             for (unsigned param_idx = 0; param_idx != thunk.param_types.size(); ++param_idx) {
                 auto& param_type = thunk.param_types[param_idx];
                 if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType()) {
-                    if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType()) {
+                    if (param_type->isPointerType() && param_type->getPointeeType()->isStructureType() &&
+                        !types.at(param_type->getPointeeType()->getLocallyUnqualifiedSingleStepDesugaredType().getTypePtr()).is_opaque) {
                         fmt::print(file, "  fex_apply_custom_repacking_postcall(*a_{}.data);\n", param_idx);
                     }
                 }
