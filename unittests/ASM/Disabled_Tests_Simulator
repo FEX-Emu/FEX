@@ -76,6 +76,7 @@ Test_H0F3A/66_09.asm
 Test_H0F3A/66_0A.asm
 Test_H0F3A/66_0B.asm
 Test_OpSize/66_5B.asm
+Test_VEX/vcvtpd2dq_inexact.asm
 Test_VEX/vcvtps2dq_inexact.asm
 Test_VEX/vldmxcsr.asm
 Test_VEX/vroundpd.asm
