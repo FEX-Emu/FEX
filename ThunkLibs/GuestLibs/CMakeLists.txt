@@ -154,125 +154,125 @@ endfunction()
 
 # These thunks only support 64-bit
 if (BITNESS EQUAL 64)
-  #add_guest_lib(fex_malloc_loader)
-  #target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
+  ##add_guest_lib(fex_malloc_loader)
+  ##target_link_libraries(fex_malloc_loader-guest PRIVATE dl)
 
-  #generate(libfex_malloc)
-  #add_guest_lib(fex_malloc)
+  ##generate(libfex_malloc)
+  ##add_guest_lib(fex_malloc)
 
-  generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp)
-  add_guest_lib(asound "libasound.so.2")
+  #generate(libasound ${CMAKE_CURRENT_SOURCE_DIR}/../libasound/libasound_interface.cpp)
+  #add_guest_lib(asound "libasound.so.2")
 
-  generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
-  add_guest_lib(EGL "libEGL.so.1")
+  #generate(libEGL ${CMAKE_CURRENT_SOURCE_DIR}/../libEGL/libEGL_interface.cpp)
+  #add_guest_lib(EGL "libEGL.so.1")
 
-  generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
-  add_guest_lib(GL "libGL.so.1")
+  #generate(libGL ${CMAKE_CURRENT_SOURCE_DIR}/../libGL/libGL_interface.cpp)
+  #add_guest_lib(GL "libGL.so.1")
 
-  # libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
-  add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
-  target_link_libraries(GL-guest PRIVATE X11)
+  ## libGL must pull in libX11.so, so generate a placeholder libX11.so to link against
+  #add_library(X11 SHARED ../libX11/libX11_NativeGuest.cpp)
+  #target_link_libraries(GL-guest PRIVATE X11)
 
-  # disabled for now, headers are platform specific
-  # find_package(SDL2 REQUIRED)
-  # generate(libSDL2)
-  # add_guest_lib(SDL2)
-  # target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
-  # target_link_libraries(SDL2-guest PRIVATE GL)
-  # target_link_libraries(SDL2-guest PRIVATE dl)
+  ## disabled for now, headers are platform specific
+  ## find_package(SDL2 REQUIRED)
+  ## generate(libSDL2)
+  ## add_guest_lib(SDL2)
+  ## target_include_directories(SDL2-guest PRIVATE ${SDL2_INCLUDE_DIRS})
+  ## target_link_libraries(SDL2-guest PRIVATE GL)
+  ## target_link_libraries(SDL2-guest PRIVATE dl)
 
-  find_package(PkgConfig)
-  pkg_search_module(X11 REQUIRED x11)
+  #find_package(PkgConfig)
+  #pkg_search_module(X11 REQUIRED x11)
 
-  string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
-  set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
-  set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
-  set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
+  #string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
+  #set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
+  #set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
+  #set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
 
-  generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
-  add_guest_lib(X11 "libX11.so.6")
+  #generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
+  #add_guest_lib(X11 "libX11.so.6")
 
-  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
-  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
-  target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
+  #target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+  #target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+  #target_compile_definitions(libX11-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
-  generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp)
-  add_guest_lib(Xext "libXext.so.6")
+  #generate(libXext ${CMAKE_CURRENT_SOURCE_DIR}/../libXext/libXext_interface.cpp)
+  #add_guest_lib(Xext "libXext.so.6")
 
-  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
-  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
-  target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
+  #target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MAJOR=${X11_VERSION_MAJOR})
+  #target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_MINOR=${X11_VERSION_MINOR})
+  #target_compile_definitions(libXext-guest-deps INTERFACE -DX11_VERSION_PATCH=${X11_VERSION_PATCH})
 
-  generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp)
-  add_guest_lib(Xrender "libXrender.so.1")
+  #generate(libXrender ${CMAKE_CURRENT_SOURCE_DIR}/../libXrender/libXrender_interface.cpp)
+  #add_guest_lib(Xrender "libXrender.so.1")
 
-  generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
-  add_guest_lib(Xfixes "libXfixes.so.3")
+  #generate(libXfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libXfixes/libXfixes_interface.cpp)
+  #add_guest_lib(Xfixes "libXfixes.so.3")
 
   generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
   target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
   add_guest_lib(vulkan "libvulkan.so.1")
 
-  generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
-  add_guest_lib(xcb "libxcb.so.1")
+  #generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
+  #add_guest_lib(xcb "libxcb.so.1")
 
-  generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
-  add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
+  #generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
+  #add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
-  generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp)
-  add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
+  #generate(libxcb-dri3 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri3/libxcb-dri3_interface.cpp)
+  #add_guest_lib(xcb-dri3 "libxcb-dri3.so.0")
 
-  generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp)
-  add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
+  #generate(libxcb-xfixes ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-xfixes/libxcb-xfixes_interface.cpp)
+  #add_guest_lib(xcb-xfixes "libxcb-xfixes.so.0")
 
-  generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp)
-  add_guest_lib(xcb-shm "libxcb-shm.so.0")
+  #generate(libxcb-shm ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-shm/libxcb-shm_interface.cpp)
+  #add_guest_lib(xcb-shm "libxcb-shm.so.0")
 
-  generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp)
-  add_guest_lib(xcb-sync "libxcb-sync.so.1")
+  #generate(libxcb-sync ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-sync/libxcb-sync_interface.cpp)
+  #add_guest_lib(xcb-sync "libxcb-sync.so.1")
 
-  generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp)
-  add_guest_lib(xcb-present "libxcb-present.so.0")
+  #generate(libxcb-present ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-present/libxcb-present_interface.cpp)
+  #add_guest_lib(xcb-present "libxcb-present.so.0")
 
-  generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp)
-  add_guest_lib(xcb-randr "libxcb-randr.so.0")
+  #generate(libxcb-randr ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-randr/libxcb-randr_interface.cpp)
+  #add_guest_lib(xcb-randr "libxcb-randr.so.0")
 
-  generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp)
-  add_guest_lib(xcb-glx "libxcb-glx.so.0")
+  #generate(libxcb-glx ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-glx/libxcb-glx_interface.cpp)
+  #add_guest_lib(xcb-glx "libxcb-glx.so.0")
 
-  generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
-  add_guest_lib(xshmfence "libxshmfence.so.1")
+  #generate(libxshmfence ${CMAKE_CURRENT_SOURCE_DIR}/../libxshmfence/libxshmfence_interface.cpp)
+  #add_guest_lib(xshmfence "libxshmfence.so.1")
 
-  generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
-  target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
-  target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
-  add_guest_lib(drm "libdrm.so.2")
+  #generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
+  #target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
+  #target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
+  #add_guest_lib(drm "libdrm.so.2")
 endif()
 
-generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
-add_guest_lib(VDSO "linux-vdso.so.1")
-# Can't use a stack protector because otherwise cross-compiling fails
-# Not necessary anyway because it only trampolines
-target_compile_options(VDSO-guest PRIVATE "-fno-stack-protector")
-target_link_options(VDSO-guest PRIVATE "-nostdlib" "LINKER:--no-undefined" "LINKER:-z,max-page-size=4096" "LINKER:--hash-style=both")
+#generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
+#add_guest_lib(VDSO "linux-vdso.so.1")
+## Can't use a stack protector because otherwise cross-compiling fails
+## Not necessary anyway because it only trampolines
+#target_compile_options(VDSO-guest PRIVATE "-fno-stack-protector")
+#target_link_options(VDSO-guest PRIVATE "-nostdlib" "LINKER:--no-undefined" "LINKER:-z,max-page-size=4096" "LINKER:--hash-style=both")
 
-if (BITNESS EQUAL 32)
-  # 32-bit entrypoint points to __kernel_vsyscall and needs to exist
-  target_link_options(VDSO-guest PRIVATE "LINKER:-e,__kernel_vsyscall")
-  # 32-bit VDSO needs to have PIC disabled.
-  # Otherwise GCC/Clang generates GOT prologues on the functions that corrupt vsyscall.
-  # Correct:
-  # 00000350 <__kernel_vsyscall>:
-  #  350:   cd 80                   int    0x80
-  #  352:   c3                      ret
-  #  353:   0f 0b                   ud2
-  # Incorrect:
-  # 0000032a <__kernel_vsyscall>:
-  #  32a:   e8 0b 00 00 00          call   33a <__x86.get_pc_thunk.ax>
-  #  32f:   05 79 03 00 00          add    eax,0x379
-  #  334:   cd 80                   int    0x80
-  #  336:   c3                      ret
-  #  337:   90                      nop
-  #  338:   0f 0b                   ud2
-  target_compile_options(VDSO-guest PRIVATE "-fno-pic")
-endif()
+#if (BITNESS EQUAL 32)
+  ## 32-bit entrypoint points to __kernel_vsyscall and needs to exist
+  #target_link_options(VDSO-guest PRIVATE "LINKER:-e,__kernel_vsyscall")
+  ## 32-bit VDSO needs to have PIC disabled.
+  ## Otherwise GCC/Clang generates GOT prologues on the functions that corrupt vsyscall.
+  ## Correct:
+  ## 00000350 <__kernel_vsyscall>:
+  ##  350:   cd 80                   int    0x80
+  ##  352:   c3                      ret
+  ##  353:   0f 0b                   ud2
+  ## Incorrect:
+  ## 0000032a <__kernel_vsyscall>:
+  ##  32a:   e8 0b 00 00 00          call   33a <__x86.get_pc_thunk.ax>
+  ##  32f:   05 79 03 00 00          add    eax,0x379
+  ##  334:   cd 80                   int    0x80
+  ##  336:   c3                      ret
+  ##  337:   90                      nop
+  ##  338:   0f 0b                   ud2
+  #target_compile_options(VDSO-guest PRIVATE "-fno-pic")
+#endif()

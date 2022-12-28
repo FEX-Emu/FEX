@@ -192,3 +192,82 @@ void FinalizeHostTrampolineForGuestFunction(F* PreallocatedTrampolineForGuestFun
       (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
       (void*)&CallbackUnpack<F>::CallGuestPtr);
 }
+
+template<typename T>
+struct guest_layout {
+  using type = std::enable_if_t<!std::is_pointer_v<T> && !std::is_class_v<T>, T>;
+  type data;
+};
+
+template<typename T>
+struct guest_layout<T*> {
+#ifdef IS_32BIT_THUNK
+  using type = uint32_t;
+#else
+  using type = uint64_t;
+#endif
+  type data;
+
+  guest_layout<T>* get_pointer() {
+    return reinterpret_cast<guest_layout<T>*>(uintptr_t { data });
+  }
+
+  const guest_layout<T>* get_pointer() const {
+    return reinterpret_cast<const guest_layout<T>*>(uintptr_t { data });
+  }
+};
+
+template<typename T>
+struct host_layout {
+  // TODO: This generic implementation shouldn't be needed. Instead, auto-specialize host_layout for all types used as members.
+
+  T data;
+
+  host_layout(const guest_layout<T>& from) : data { from.data } {
+    static_assert(!std::is_class_v<T>, "No host_layout specialization generated for struct/class type");
+
+    // NOTE: This is not strictly neccessary since differently sized types may
+    //       be used across architectures. It's important that the host type
+    //       can represent all guest values without loss, however.
+    static_assert(sizeof(data) == sizeof(from));
+  }
+};
+
+template<typename T>
+struct host_layout<T*> {
+  T* data;
+
+  host_layout(const guest_layout<T*>& from) : data { from.get_pointer() } {
+  }
+};
+
+// Storage for unpacked parameters. May carry additional data for aiding conversion (such as short-lived, stack-allocated data instances to repoint pointer arguments to).
+// Not suitable for nested struct repacking
+template<typename T>
+struct unpacked_arg {
+  using type = std::enable_if_t<!std::is_pointer_v<T>, T>;
+  host_layout<type> data;
+};
+
+template<typename T>
+struct unpacked_arg<T*> {
+  unpacked_arg(const guest_layout<T*>& data) : data(&extra), extra(*data.get_pointer()) {
+  }
+
+  T* get() {
+    static_assert(sizeof(T) == sizeof(host_layout<T>));
+    static_assert(alignof(T) == alignof(host_layout<T>));
+    return reinterpret_cast<T*>(data);
+  }
+
+  host_layout<T>* data;
+  host_layout<T> extra; // Temporary storage for layout-repacked data
+};
+
+template<typename>
+struct pmd_traits;
+template<typename Parent, typename Data>
+struct pmd_traits<Data Parent::*> {
+//    using parent_t = Parent;
+    using member_t = Data;
+};
