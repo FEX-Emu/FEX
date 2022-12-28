@@ -1807,6 +1807,8 @@ void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, false>(OpcodeArgs);
+template
 void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>(OpcodeArgs);
 
 template<size_t DstElementSize, size_t SrcElementSize>

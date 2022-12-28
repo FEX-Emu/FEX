@@ -5873,6 +5873,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>},
     {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>},
+    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, false>},
 
     {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 4>},
     {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 8>},
