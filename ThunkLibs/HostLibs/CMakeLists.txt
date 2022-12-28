@@ -32,7 +32,7 @@ function(generate NAME SOURCE_FILE GUEST_BITNESS)
 
   # Target for IDE integration
   add_library(${NAME}-${GUEST_BITNESS}-interface EXCLUDE_FROM_ALL ${SOURCE_FILE})
-  target_link_libraries(${NAME}-${GUEST_BITNESS}-interface PRIVATE lib${NAME}-${GUEST_BITNESS}-deps)
+  target_link_libraries(${NAME}-${GUEST_BITNESS}-interface PRIVATE ${NAME}-${GUEST_BITNESS}-deps)
 
   # Run thunk generator for each of the given output files
   set(OUTFOLDER "${CMAKE_CURRENT_BINARY_DIR}/gen_${GUEST_BITNESS}")
