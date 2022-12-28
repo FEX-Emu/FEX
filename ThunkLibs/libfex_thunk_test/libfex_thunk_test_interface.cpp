@@ -17,4 +17,7 @@ struct fex_gen_type {};
 template<> struct fex_gen_config<&TestStruct1::Next> : fexgen::custom_repack {};
 template<> struct fex_gen_config<&TestStruct2::Next> : fexgen::custom_repack {};
 
+template<> struct fex_gen_type<TestHandle> : fexgen::opaque_type {};
+
 template<> struct fex_gen_config<TestFunction> : fexgen::custom_guest_entrypoint, fexgen::custom_host_impl {};
+template<> struct fex_gen_config<TestFunction2> {};

@@ -27,6 +27,9 @@ struct TestStruct2 {
     int Data1;
 };
 
+// Equivalent of e.g. VkCommandBuffer
+struct TestHandle;
+
 //// Equivalent of e.g. VkDeviceQueueCreateInfo (references an array of structs that also need custom repacking)
 //struct TestStruct3 {
 //    StructType Type;
@@ -36,6 +39,7 @@ struct TestStruct2 {
 //};
 
 extern "C" void TestFunction(TestStruct1*);
+extern "C" void TestFunction2(TestHandle*);
 //void TestFunctionStruct3(TestStruct3*);
 
 // TODO: Test unaligned struct members (see https://godbolt.org/z/adcvq1E5d)
