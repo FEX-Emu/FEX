@@ -11,8 +11,11 @@ struct fex_gen_config {
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #include <vulkan/vulkan.h>
 
+#if 0
 template<> struct fex_gen_config<vkGetDeviceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
 template<> struct fex_gen_config<vkGetInstanceProcAddr> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint, fexgen::returns_guest_pointer {};
+#endif
+
 
 namespace internal {
 
@@ -20,15 +23,18 @@ template<auto>
 struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {
 };
 
-template<> struct fex_gen_config<vkCreateInstance> : fexgen::custom_host_impl {};
-template<> struct fex_gen_config<vkDestroyInstance> {};
-template<> struct fex_gen_config<vkEnumeratePhysicalDevices> {};
-template<> struct fex_gen_config<vkGetPhysicalDeviceFeatures> {};
-template<> struct fex_gen_config<vkGetPhysicalDeviceFormatProperties> {};
-template<> struct fex_gen_config<vkGetPhysicalDeviceImageFormatProperties> {};
-template<> struct fex_gen_config<vkGetPhysicalDeviceProperties> {};
-template<> struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyProperties> {};
-template<> struct fex_gen_config<vkGetPhysicalDeviceMemoryProperties> {};
+//template<> struct fex_gen_config<&VkInstanceCreateInfo::pNext> : fexgen::custom_repack {};
+
+//template<> struct fex_gen_config<vkCreateInstance> : fexgen::custom_host_impl {};
+//template<> struct fex_gen_config<vkDestroyInstance> {};
+//template<> struct fex_gen_config<vkEnumeratePhysicalDevices> {};
+//template<> struct fex_gen_config<vkGetPhysicalDeviceFeatures> {};
+//template<> struct fex_gen_config<vkGetPhysicalDeviceFormatProperties> {};
+//template<> struct fex_gen_config<vkGetPhysicalDeviceImageFormatProperties> {};
+//template<> struct fex_gen_config<vkGetPhysicalDeviceProperties> {};
+//template<> struct fex_gen_config<vkGetPhysicalDeviceQueueFamilyProperties> {};
+//template<> struct fex_gen_config<vkGetPhysicalDeviceMemoryProperties> {};
+#if 0
 // Manually implemented
 // template<> struct fex_gen_config<vkGetInstanceProcAddr> {};
 // template<> struct fex_gen_config<vkGetDeviceProcAddr> {};
@@ -127,7 +133,9 @@ template<> struct fex_gen_config<vkCmdSetStencilReference> {};
 template<> struct fex_gen_config<vkCmdBindDescriptorSets> {};
 template<> struct fex_gen_config<vkCmdBindIndexBuffer> {};
 template<> struct fex_gen_config<vkCmdBindVertexBuffers> {};
+#endif
 template<> struct fex_gen_config<vkCmdDraw> {};
+#if 0
 template<> struct fex_gen_config<vkCmdDrawIndexed> {};
 template<> struct fex_gen_config<vkCmdDrawIndirect> {};
 template<> struct fex_gen_config<vkCmdDrawIndexedIndirect> {};
@@ -586,4 +594,5 @@ template<> struct fex_gen_config<vkGetPhysicalDeviceXcbPresentationSupportKHR> {
 // vulkan_xlib.h
 template<> struct fex_gen_config<vkCreateXlibSurfaceKHR> {};
 template<> struct fex_gen_config<vkGetPhysicalDeviceXlibPresentationSupportKHR> {};
+#endif
 } // namespace internal
