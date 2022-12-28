@@ -79,7 +79,7 @@ public:
     ExportEntry* fexthunks_exports_##name() { \
       if (!fexldr_init_##name()) { \
 fprintf(stderr, "FAILED TO FEXLDR_INIT\n"); \
-std::abort(); \
+/*std::abort();*/ \
 /* Disabled for test thunk library */ \
         /*return nullptr*/; \
       } \
