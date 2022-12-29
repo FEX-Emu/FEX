@@ -907,6 +907,8 @@ void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPUNPCKLOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPUNPCKLOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs) {
