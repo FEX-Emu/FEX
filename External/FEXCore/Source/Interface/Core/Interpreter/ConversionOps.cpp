@@ -195,7 +195,7 @@ DEF_OP(Vector_FToF) {
       // Sometimes is used to convert from a 128bit vector register
       // in to a 64bit vector register with different sized elements
       // eg: %ssa5 i32v2 = Vector_FToF %ssa4 i128, #0x8
-      uint8_t Elements = (OpSize << 1) / Op->SrcElementSize;
+      uint8_t Elements = OpSize == 8 ? 2 : OpSize / Op->SrcElementSize;
       DO_VECTOR_1SRC_2TYPE_OP_NOSIZE(float, double, Func, 0, 0)
       break;
     }

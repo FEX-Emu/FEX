@@ -1754,26 +1754,31 @@ void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<4, true>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
-void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
+OrderedNode* OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize,
+                                                            bool Narrow, bool HostRoundingMode) {
+  const size_t DstSize = GetDstSize(Op);
+  size_t ElementSize = SrcElementSize;
+
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  size_t ElementSize = SrcElementSize;
-  size_t Size = GetDstSize(Op);
-
-  if constexpr (Narrow) {
-    Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
+  if (Narrow) {
+    Src = _Vector_FToF(DstSize, SrcElementSize >> 1, Src, SrcElementSize);
     ElementSize >>= 1;
   }
 
-  if constexpr (HostRoundingMode) {
-    Src = _Vector_FToS(Size, ElementSize, Src);
+  if (HostRoundingMode) {
+    return _Vector_FToS(DstSize, ElementSize, Src);
+  } else {
+    return _Vector_FToZS(DstSize, ElementSize, Src);
   }
-  else {
-    Src = _Vector_FToZS(Size, ElementSize, Src);
-  }
+}
 
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, -1);
+template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
+  const size_t DstSize = GetDstSize(Op);
+  OrderedNode *Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
 }
 
 template
@@ -1787,6 +1792,32 @@ template
 void OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, false>(OpcodeArgs);
+
+template <size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  // VCVTPD2DQ/VCVTTPD2DQ only use the bottom lane, even for the 256-bit version.
+  const auto Truncate = SrcElementSize == 8 && Narrow;
+
+  OrderedNode *Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+
+  if (Is128Bit || Truncate) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, -1);
+}
+
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>(OpcodeArgs);
+
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {

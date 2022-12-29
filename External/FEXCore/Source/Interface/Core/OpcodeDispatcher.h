@@ -416,6 +416,9 @@ public:
   template <size_t ElementSize, bool Scalar>
   void AVXVectorRound(OpcodeArgs);
 
+  template <size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  void AVXVector_CVT_Float_To_Int(OpcodeArgs);
+
   template <size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
@@ -786,6 +789,8 @@ private:
 
   OrderedNode* VectorRoundImpl(OpcodeArgs, size_t ElementSize,
                                OrderedNode *Src, uint64_t Mode);
+
+  OrderedNode* Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 
   OrderedNode* Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen);
 
