@@ -5833,6 +5833,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, false>},
 
     {OPD(1, 0b10, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
+    {OPD(1, 0b11, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
 
     {OPD(1, 0b00, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<4>},
     {OPD(1, 0b01, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<8>},
