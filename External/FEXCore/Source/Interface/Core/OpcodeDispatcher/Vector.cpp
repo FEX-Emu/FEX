@@ -956,6 +956,8 @@ void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPUNPCKHOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
