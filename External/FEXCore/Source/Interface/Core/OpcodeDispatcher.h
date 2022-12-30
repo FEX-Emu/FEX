@@ -493,6 +493,9 @@ public:
   void VPSRLDQOp(OpcodeArgs);
 
   template <size_t ElementSize>
+  void VPUNPCKHOp(OpcodeArgs);
+
+  template <size_t ElementSize>
   void VPUNPCKLOp(OpcodeArgs);
 
   template <size_t ElementSize>

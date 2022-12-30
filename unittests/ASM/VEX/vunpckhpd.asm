@@ -1,0 +1,39 @@
+%ifdef CONFIG
+{
+  "HostFeatures": ["AVX"],
+  "RegData": {
+    "XMM2": ["0x5152535455565758", "0x7172737475767778", "0x0000000000000000", "0x0000000000000000"],
+    "XMM3": ["0x5152535455565758", "0x7172737475767778", "0x0000000000000000", "0x0000000000000000"],
+    "XMM4": ["0x5152535455565758", "0x7172737475767778", "0xEEEEEEEEEEEEEEEE", "0xCCCCCCCCCCCCCCCC"],
+    "XMM5": ["0x5152535455565758", "0x7172737475767778", "0xEEEEEEEEEEEEEEEE", "0xCCCCCCCCCCCCCCCC"]
+  },
+  "MemoryRegions": {
+    "0x100000000": "4096"
+  }
+}
+%endif
+
+lea rdx, [rel .data]
+
+vmovapd ymm0, [rdx]
+vmovapd ymm1, [rdx + 32]
+
+vunpckhpd xmm2, xmm0, xmm1
+vunpckhpd xmm3, xmm0, [rdx + 32]
+
+vunpckhpd ymm4, ymm0, ymm1
+vunpckhpd ymm5, ymm0, [rdx + 32]
+
+hlt
+
+align 32
+.data:
+dq 0x4142434445464748
+dq 0x5152535455565758
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xEEEEEEEEEEEEEEEE
+
+dq 0x6162636465666768
+dq 0x7172737475767778
+dq 0xBBBBBBBBBBBBBBBB
+dq 0xCCCCCCCCCCCCCCCC
