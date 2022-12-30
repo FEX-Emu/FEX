@@ -933,6 +933,30 @@ void OpDispatchBuilder::PUNPCKHOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PUNPCKHOp<8>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  OrderedNode *Result{};
+  if (Is128Bit) {
+    Result = _VZip2(SrcSize, ElementSize, Src1, Src2);
+  } else {
+    OrderedNode *ZipLo = _VZip(SrcSize, ElementSize, Src1, Src2);
+    OrderedNode *ZipHi = _VZip2(SrcSize, ElementSize, Src1, Src2);
+
+    Result = _VInsElement(SrcSize, 16, 0, 1, ZipHi, ZipLo);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
+
 void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
