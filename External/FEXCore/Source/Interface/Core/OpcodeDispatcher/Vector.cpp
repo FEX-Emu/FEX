@@ -1184,48 +1184,64 @@ void OpDispatchBuilder::PINSROp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PINSROp<8>(OpcodeArgs);
 
-void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint8_t Imm = Op->Src[1].Data.Literal.Value;
-  uint8_t CountS = (Imm >> 6);
-  uint8_t CountD = (Imm >> 4) & 0b11;
-  uint8_t ZMask = Imm & 0xF;
+OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                                               const X86Tables::DecodedOperand& Src2,
+                                               const X86Tables::DecodedOperand& Imm) {
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
+  const uint8_t ImmValue = Imm.Data.Literal.Value;
+  uint8_t CountS = (ImmValue >> 6);
+  uint8_t CountD = (ImmValue >> 4) & 0b11;
+  const uint8_t ZMask = ImmValue & 0xF;
+
+  const auto DstSize = GetDstSize(Op);
 
   OrderedNode *Dest{};
   if (ZMask != 0xF) {
     // Only need to load destination if it isn't a full zero
-    Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
+    Dest = LoadSource_WithOpSize(FPRClass, Op, Src1, DstSize, Op->Flags, -1);
   }
 
-  if (!(ZMask & (1 << CountD))) {
+  if ((ZMask & (1 << CountD)) == 0) {
     // In the case that ZMask overwrites the destination element, then don't even insert
     OrderedNode *Src{};
-    if (Op->Src[0].IsGPR()) {
-      Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-    }
-    else {
+    if (Src2.IsGPR()) {
+      Src = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
+    } else {
       // If loading from memory then CountS is forced to zero
       CountS = 0;
-      Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+      Src = LoadSource_WithOpSize(FPRClass, Op, Src2, 4, Op->Flags, -1);
     }
 
-    Dest = _VInsElement(GetDstSize(Op), 4, CountD, CountS, Dest, Src);
+    Dest = _VInsElement(DstSize, 4, CountD, CountS, Dest, Src);
   }
 
   // ZMask happens after insert
   if (ZMask == 0xF) {
-    Dest = _VectorImm(16, 4, 0);
+    return _VectorImm(16, 4, 0);
   }
-  else if (ZMask) {
+
+  if (ZMask) {
     auto Zero = _VectorImm(16, 4, 0);
     for (size_t i = 0; i < 4; ++i) {
-      if (ZMask & (1 << i)) {
-        Dest = _VInsElement(GetDstSize(Op), 4, i, 0, Dest, Zero);
+      if ((ZMask & (1 << i)) != 0) {
+        Dest = _VInsElement(DstSize, 4, i, 0, Dest, Zero);
       }
     }
   }
 
-  StoreResult(FPRClass, Op, Dest, -1);
+  return Dest;
+}
+
+void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
+  OrderedNode *Result = InsertPSOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
+  OrderedNode *Insert = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  OrderedNode *Result = _VMov(16, Insert);
+
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize>
