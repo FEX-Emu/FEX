@@ -3545,6 +3545,8 @@ void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VDPPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VDPPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
