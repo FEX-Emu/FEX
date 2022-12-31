@@ -955,6 +955,10 @@ void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VPUNPCKHOp<1>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPUNPCKHOp<2>(OpcodeArgs);
+template
 void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPUNPCKHOp<8>(OpcodeArgs);
