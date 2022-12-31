@@ -750,6 +750,10 @@ private:
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
   OrderedNode* AESIMCImpl(OpcodeArgs);
 
+  OrderedNode* DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                         const X86Tables::DecodedOperand& Src2,
+                         const X86Tables::DecodedOperand& Imm, size_t ElementSize);
+
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
 
