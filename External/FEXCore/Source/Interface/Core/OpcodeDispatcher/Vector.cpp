@@ -2966,24 +2966,30 @@ void OpDispatchBuilder::HSUBP<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PHSUB(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  uint8_t NumElements = Size / ElementSize;
+  const auto Size = GetSrcSize(Op);
 
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
   // This is a bit complicated since AArch64 doesn't support a pairwise subtract
-  auto Dest_Neg = _VNeg(Size, ElementSize, Dest);
-  auto Src_Neg = _VNeg(Size, ElementSize, Src);
+  OrderedNode *Dest_Neg = _VNeg(Size, ElementSize, Dest);
+  OrderedNode *Src_Neg = _VNeg(Size, ElementSize, Src);
 
   // Now we need to swizzle the values
-  OrderedNode *Swizzle_Dest = Dest;
-  OrderedNode *Swizzle_Src = Src;
+  OrderedNode *Swizzle_Dest{};
+  OrderedNode *Swizzle_Src{};
+  if (Size == 8 && ElementSize == 4) {
+    Swizzle_Dest = _VInsElement(Size, ElementSize, 1, 1, Dest, Dest_Neg);
+    Swizzle_Src = _VInsElement(Size, ElementSize, 1, 1, Src, Src_Neg);
+  } else {
+    OrderedNode *UzpDest = _VUnZip(Size, ElementSize, Dest, Dest);
+    OrderedNode *UzpSrc = _VUnZip(Size, ElementSize, Src, Src);
 
-  // Odd elements turn in to negated elements
-  for (size_t i = 1; i < NumElements; i += 2) {
-    Swizzle_Dest = _VInsElement(Size, ElementSize, i, i, Swizzle_Dest, Dest_Neg);
-    Swizzle_Src = _VInsElement(Size, ElementSize, i, i, Swizzle_Src, Src_Neg);
+    OrderedNode *UzpDestNeg = _VUnZip2(Size, ElementSize, Dest_Neg, Dest_Neg);
+    OrderedNode *UzpSrcNeg = _VUnZip2(Size, ElementSize, Src_Neg, Src_Neg);
+
+    Swizzle_Dest = _VZip(Size, ElementSize, UzpDest, UzpDestNeg);
+    Swizzle_Src = _VZip(Size, ElementSize, UzpSrc, UzpSrcNeg);
   }
 
   OrderedNode *Res = _VAddP(Size, ElementSize, Swizzle_Dest, Swizzle_Src);
