@@ -753,6 +753,10 @@ private:
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
 
+  OrderedNode* InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                              const X86Tables::DecodedOperand& Src2,
+                              const X86Tables::DecodedOperand& Imm);
+
   OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
 
