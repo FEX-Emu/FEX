@@ -1237,6 +1237,13 @@ void OpDispatchBuilder::InsertPSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
+  OrderedNode *Insert = InsertPSOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
+  OrderedNode *Result = _VMov(16, Insert);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
