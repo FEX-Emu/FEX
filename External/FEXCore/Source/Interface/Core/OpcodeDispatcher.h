@@ -440,6 +440,9 @@ public:
   template <size_t ElementSize>
   void VBROADCASTOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VDPPOp(OpcodeArgs);
+
   template <IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
 

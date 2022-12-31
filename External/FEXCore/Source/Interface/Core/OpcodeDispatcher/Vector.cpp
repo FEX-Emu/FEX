@@ -3534,6 +3534,18 @@ void OpDispatchBuilder::DPPOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
+  OrderedNode *Result = DPPOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], ElementSize);
+
+  // We don't need to emit a _VMov to clear the upper lane, since DPPOpImpl uses a zero vector
+  // to construct the results, so the upper lane will always be cleared for the 128-bit version.
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VDPPOp<4>(OpcodeArgs);
+
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   uint8_t Select = Op->Src[1].Data.Literal.Value;

@@ -6076,6 +6076,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::VINSERTOp},
 
+    {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<4>},
+
     {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
 
     {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::VAESKeyGenAssistOp},
