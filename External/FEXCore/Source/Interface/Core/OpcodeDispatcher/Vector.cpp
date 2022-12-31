@@ -3488,47 +3488,60 @@ void OpDispatchBuilder::VPHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::DPPOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint8_t Mask = Op->Src[1].Data.Literal.Value;
-  uint8_t SrcMask = Mask >> 4;
-  uint8_t DstMask = Mask & 0xF;
+OrderedNode* OpDispatchBuilder::DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                                          const X86Tables::DecodedOperand& Src2,
+                                          const X86Tables::DecodedOperand& Imm, size_t ElementSize) {
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
+  const uint8_t Mask = Imm.Data.Literal.Value;
+  const uint8_t SrcMask = Mask >> 4;
+  const uint8_t DstMask = Mask & 0xF;
 
-  OrderedNode *ZeroVec = _VectorZero(16);
+  const auto DstSize = GetDstSize(Op);
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
+  OrderedNode *Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
+
+  OrderedNode *ZeroVec = _VectorZero(DstSize);
 
   // First step is to do an FMUL
-  OrderedNode *Temp = _VFMul(16, ElementSize, Dest, Src);
+  OrderedNode *Temp = _VFMul(DstSize, ElementSize, Src1V, Src2V);
 
   // Now we zero out elements based on src mask
-  for (size_t i = 0; i < (16 / ElementSize); ++i) {
-    if ((SrcMask & (1 << i)) == 0) {
-      Temp = _VInsElement(16, ElementSize, i, 0, Temp, ZeroVec);
+  for (size_t i = 0; i < (DstSize / ElementSize); ++i) {
+    const auto Bit = 1U << (i % 4);
+
+    if ((SrcMask & Bit) == 0) {
+      Temp = _VInsElement(DstSize, ElementSize, i, 0, Temp, ZeroVec);
     }
   }
 
   // Now we need to do a horizontal add of the elements
   // We only have pairwise float add so this needs to be done in steps
-  Temp = _VFAddP(16, ElementSize, Temp, ZeroVec);
+  Temp = _VFAddP(DstSize, ElementSize, Temp, ZeroVec);
 
-  if constexpr (ElementSize == 4) {
+  if (ElementSize == 4) {
     // For 32-bit float we need one more step to add all four results together
-    Temp = _VFAddP(16, ElementSize, Temp, ZeroVec);
+    Temp = _VFAddP(DstSize, ElementSize, Temp, ZeroVec);
   }
 
   // Now using the destination mask we choose where the result ends up
   // It can duplicate and zero results
-  auto Result = ZeroVec;
+  OrderedNode *Result = ZeroVec;
 
-  for (size_t i = 0; i < (16 / ElementSize); ++i) {
-    if (DstMask & (1 << i)) {
-      Result = _VInsElement(16, ElementSize, i, 0, Result, Temp);
+  for (size_t i = 0; i < (DstSize / ElementSize); ++i) {
+    const auto Bit = 1U << (i % 4);
+
+    if ((DstMask & Bit) != 0) {
+      Result = _VInsElement(DstSize, ElementSize, i, 0, Result, Temp);
     }
   }
 
+  return Result;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::DPPOp(OpcodeArgs) {
+  OrderedNode *Result = DPPOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], ElementSize);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -3536,6 +3549,20 @@ template
 void OpDispatchBuilder::DPPOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::DPPOp<8>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
+  OrderedNode *Result = DPPOpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2], ElementSize);
+
+  // We don't need to emit a _VMov to clear the upper lane, since DPPOpImpl uses a zero vector
+  // to construct the results, so the upper lane will always be cleared for the 128-bit version.
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VDPPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VDPPOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
