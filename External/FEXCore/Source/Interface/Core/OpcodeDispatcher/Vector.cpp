@@ -3039,6 +3039,8 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
 
 template
 void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPHSUBOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PHADDS(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
