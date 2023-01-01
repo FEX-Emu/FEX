@@ -3803,6 +3803,8 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VPERMILImmOp<4>(OpcodeArgs);
+template
 void OpDispatchBuilder::VPERMILImmOp<8>(OpcodeArgs);
 
 }
