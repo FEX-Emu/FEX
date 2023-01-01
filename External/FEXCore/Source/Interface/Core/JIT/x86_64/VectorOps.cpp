@@ -1794,6 +1794,7 @@ DEF_OP(VUnZip) {
           vpshufb(ymm14, ToYMM(VectorLower), ymm15);
           vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
           vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vpshufb(xmm14, VectorLower, xmm15);
           vpshufb(xmm13, VectorUpper, xmm15);
@@ -1813,6 +1814,7 @@ DEF_OP(VUnZip) {
           vpshufb(ymm14, ToYMM(VectorLower), ymm15);
           vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
           vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vpshufb(xmm14, VectorLower, xmm15);
           vpshufb(xmm13, VectorUpper, xmm15);
@@ -1824,6 +1826,7 @@ DEF_OP(VUnZip) {
       case 4: {
         if (Is256Bit) {
           vshufps(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b10'00'10'00);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vshufps(Dst, VectorLower, VectorUpper, 0b10'00'10'00);
         }
@@ -1832,6 +1835,7 @@ DEF_OP(VUnZip) {
       case 8: {
         if (Is256Bit) {
           vshufpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b0'0);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vshufpd(Dst, VectorLower, VectorUpper, 0b0'0);
         }
@@ -1900,6 +1904,7 @@ DEF_OP(VUnZip2) {
           vpshufb(ymm14, ToYMM(VectorLower), ymm15);
           vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
           vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vpshufb(xmm14, VectorLower, xmm15);
           vpshufb(xmm13, VectorUpper, xmm15);
@@ -1919,6 +1924,7 @@ DEF_OP(VUnZip2) {
           vpshufb(ymm14, ToYMM(VectorLower), ymm15);
           vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
           vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vpshufb(xmm14, VectorLower, xmm15);
           vpshufb(xmm13, VectorUpper, xmm15);
@@ -1930,6 +1936,7 @@ DEF_OP(VUnZip2) {
       case 4: {
         if (Is256Bit) {
           vshufps(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b11'01'11'01);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vshufps(Dst, VectorLower, VectorUpper, 0b11'01'11'01);
         }
@@ -1938,6 +1945,7 @@ DEF_OP(VUnZip2) {
       case 8: {
         if (Is256Bit) {
           vshufpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b1'1);
+          vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vshufpd(Dst, VectorLower, VectorUpper, 0b1'1);
         }

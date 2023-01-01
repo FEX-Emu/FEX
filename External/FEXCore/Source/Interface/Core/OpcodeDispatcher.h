@@ -472,6 +472,9 @@ public:
 
   void VPHMINPOSUWOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPHSUBOp(OpcodeArgs);
+
   void VPMULHRSWOp(OpcodeArgs);
 
   template <bool Signed>
@@ -772,6 +775,9 @@ private:
                             OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
+
+  OrderedNode* PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                           const X86Tables::DecodedOperand& Src2, size_t ElementSize);
 
   OrderedNode* PMULHRSWOpImpl(OpcodeArgs, OrderedNode *Src1, OrderedNode *Src2);
 

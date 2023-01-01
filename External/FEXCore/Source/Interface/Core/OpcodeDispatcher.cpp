@@ -6006,6 +6006,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>},
     {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>},
 
+    {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::VPHSUBOp<2>},
+    {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::VPHSUBOp<4>},
+
     {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::VPSIGN<1>},
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::VPSIGN<2>},
     {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::VPSIGN<4>},
