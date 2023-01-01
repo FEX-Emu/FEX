@@ -472,6 +472,9 @@ public:
 
   void VPHMINPOSUWOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPHSUBOp(OpcodeArgs);
+
   void VPMULHRSWOp(OpcodeArgs);
 
   template <bool Signed>

@@ -3022,6 +3022,24 @@ void OpDispatchBuilder::PHSUB<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::PHSUB<4>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Result = PHSUBOpImpl(Op, Op->Src[0], Op->Src[1], ElementSize);
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  } else {
+    OrderedNode *Inserted = _VInsElement(DstSize, 8, 1, 2, Result, Result);
+    Result = _VInsElement(DstSize, 8, 2, 1, Inserted, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
+
 void OpDispatchBuilder::PHADDS(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
