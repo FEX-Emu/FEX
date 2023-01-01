@@ -470,6 +470,9 @@ public:
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VPERMILImmOp(OpcodeArgs);
+
   void VPHMINPOSUWOp(OpcodeArgs);
 
   template <size_t ElementSize>

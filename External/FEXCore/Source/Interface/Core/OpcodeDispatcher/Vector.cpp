@@ -3766,4 +3766,43 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   }
 }
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
+  const auto Selector = Op->Src[1].Data.Literal.Value & 0xFF;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Result = _VectorZero(DstSize);
+
+  if constexpr (ElementSize == 8) {
+    Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
+    Result = _VInsElement(DstSize, ElementSize, 1, (Selector & 0b0010) >> 1, Result, Src);
+
+    if (Is256Bit) {
+      Result = _VInsElement(DstSize, ElementSize, 2, ((Selector & 0b0100) >> 2) + 2, Result, Src);
+      Result = _VInsElement(DstSize, ElementSize, 3, ((Selector & 0b1000) >> 3) + 2, Result, Src);
+    }
+  } else {
+    Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b00000011, Result, Src);
+    Result = _VInsElement(DstSize, ElementSize, 1, (Selector & 0b00001100) >> 2, Result, Src);
+    Result = _VInsElement(DstSize, ElementSize, 2, (Selector & 0b00110000) >> 4, Result, Src);
+    Result = _VInsElement(DstSize, ElementSize, 3, (Selector & 0b11000000) >> 6, Result, Src);
+
+    if (Is256Bit) {
+      Result = _VInsElement(DstSize, ElementSize, 4, (Selector & 0b00000011) + 4, Result, Src);
+      Result = _VInsElement(DstSize, ElementSize, 5, ((Selector & 0b00001100) >> 2) + 4, Result, Src);
+      Result = _VInsElement(DstSize, ElementSize, 6, ((Selector & 0b00110000) >> 4) + 4, Result, Src);
+      Result = _VInsElement(DstSize, ElementSize, 7, ((Selector & 0b11000000) >> 6) + 4, Result, Src);
+    }
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPERMILImmOp<8>(OpcodeArgs);
+
 }

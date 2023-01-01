@@ -6068,6 +6068,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
+    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::VPERMILImmOp<8>},
     {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVXVectorRound<4, false>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVXVectorRound<8, false>},
