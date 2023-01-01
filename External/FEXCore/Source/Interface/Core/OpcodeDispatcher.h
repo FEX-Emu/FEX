@@ -773,6 +773,9 @@ private:
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
 
+  OrderedNode* PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                           const X86Tables::DecodedOperand& Src2, size_t ElementSize);
+
   OrderedNode* PMULHRSWOpImpl(OpcodeArgs, OrderedNode *Src1, OrderedNode *Src2);
 
   OrderedNode* PMULHWOpImpl(OpcodeArgs, bool Signed,
