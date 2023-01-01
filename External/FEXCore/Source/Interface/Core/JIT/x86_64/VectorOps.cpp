@@ -1750,7 +1750,36 @@ DEF_OP(VUnZip) {
   const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   if (OpSize == 8) {
-    LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip");
+    switch (ElementSize) {
+      case 1: {
+        mov(rax, 0x80'80'80'80'06'04'02'00); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, VectorLower, xmm15);
+        vpshufb(xmm13, VectorUpper, xmm15);
+        vpunpckldq(Dst, xmm14, xmm13);
+        break;
+      }
+      case 2: {
+        mov(rax, 0x80'80'80'80'05'04'01'00); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, VectorLower, xmm15);
+        vpshufb(xmm13, VectorUpper, xmm15);
+        vpunpckldq(Dst, xmm14, xmm13);
+        break;
+      }
+      case 4: {
+        vshufps(Dst, VectorLower, VectorUpper, 0b10'00'10'00);
+        vmovq(Dst, Dst);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
   else {
     switch (ElementSize) {
@@ -1827,7 +1856,36 @@ DEF_OP(VUnZip2) {
   const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
 
   if (OpSize == 8) {
-    LOGMAN_MSG_A_FMT("Unsupported register size on VUnZip2");
+    switch (ElementSize) {
+      case 1: {
+        mov(rax, 0x80'80'80'80'07'05'03'01); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, VectorLower, xmm15);
+        vpshufb(xmm13, VectorUpper, xmm15);
+        vpunpckldq(Dst, xmm14, xmm13);
+        break;
+      }
+      case 2: {
+        mov(rax, 0x80'80'80'80'07'06'03'02); // Lower
+        mov(rcx, 0x80'80'80'80'80'80'80'80); // Upper
+        vmovq(xmm15, rax);
+        pinsrq(xmm15, rcx, 1);
+        vpshufb(xmm14, VectorLower, xmm15);
+        vpshufb(xmm13, VectorUpper, xmm15);
+        vpunpckldq(Dst, xmm14, xmm13);
+        break;
+      }
+      case 4: {
+        vshufps(Dst, VectorLower, VectorUpper, 0b11'01'11'01);
+        vmovq(Dst, Dst);
+        break;
+      }
+      default:
+        LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+        break;
+    }
   }
   else {
     switch (ElementSize) {
