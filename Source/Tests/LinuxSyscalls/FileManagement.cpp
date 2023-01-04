@@ -317,11 +317,12 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
             (DBDepend->second.Enabled == false || AlreadyEnabled)) {
 
           auto ThunkPath = ThunkGuestPath / DBDepend->second.LibraryName;
-          if (std::filesystem::exists(ThunkPath)) {
-            for (const auto& Overlay : DBDepend->second.Overlays) {
-              // Direct full path in guest RootFS to our overlay file
-              ThunkOverlays.emplace(Overlay, ThunkPath);
-            }
+          if (!std::filesystem::exists(ThunkPath)) {
+              ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
+          }
+          for (const auto& Overlay : DBDepend->second.Overlays) {
+            // Direct full path in guest RootFS to our overlay file
+            ThunkOverlays.emplace(Overlay, ThunkPath);
           }
 
           // Enabled, now walk this dependencies

@@ -54,7 +54,7 @@
       ]
     },
     "xcb-dri2": {
-      "Library": "libxcb_dri2-guest.so",
+      "Library": "libxcb-dri2-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-dri2.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-dri2.so.0",
@@ -62,7 +62,7 @@
       ]
     },
     "xcb-dri3": {
-      "Library": "libxcb_dri3-guest.so",
+      "Library": "libxcb-dri3-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-dri3.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-dri3.so.0",
@@ -70,7 +70,7 @@
       ]
     },
     "xcb-xfixes": {
-      "Library": "libxcb_xfixes-guest.so",
+      "Library": "libxcb-xfixes-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-xfixes.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-xfixes.so.0",
@@ -78,7 +78,7 @@
       ]
     },
     "xcb-shm": {
-      "Library": "libxcb_shm-guest.so",
+      "Library": "libxcb-shm-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-shm.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-shm.so.0",
@@ -86,7 +86,7 @@
       ]
     },
     "xcb-sync": {
-      "Library": "libxcb_sync-guest.so",
+      "Library": "libxcb-sync-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-sync.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-sync.so.1",
@@ -94,7 +94,7 @@
       ]
     },
     "xcb-randr": {
-      "Library": "libxcb_randr-guest.so",
+      "Library": "libxcb-randr-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-randr.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-randr.so.0",
@@ -102,7 +102,7 @@
       ]
     },
     "xcb-present": {
-      "Library": "libxcb_present-guest.so",
+      "Library": "libxcb-present-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-present.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-present.so.0",
@@ -110,7 +110,7 @@
       ]
     },
     "xcb-glx": {
-      "Library": "libxcb_glx-guest.so",
+      "Library": "libxcb-glx-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-glx.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxcb-glx.so.0",
@@ -118,7 +118,7 @@
       ]
     },
     "xshmfence": {
-      "Library": "libshmfence-guest.so",
+      "Library": "libxshmfence-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxshmfence.so",
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libxshmfence.so.1",
