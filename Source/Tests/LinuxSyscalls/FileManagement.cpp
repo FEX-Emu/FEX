@@ -98,7 +98,14 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
   return true;
 }
 
-void FileManager::LoadThunkDatabase(bool Global) {
+struct ThunkDBObject {
+  std::string LibraryName;
+  std::unordered_set<std::string> Depends;
+  std::vector<std::string> Overlays;
+  bool Enabled{};
+};
+
+static void LoadThunkDatabase(std::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   std::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
@@ -127,13 +134,13 @@ void FileManager::LoadThunkDatabase(bool Global) {
 
       // Walk the libraries items to get the data
       for (json_t const* LibraryItem = json_getChild(Library); LibraryItem != nullptr; LibraryItem = json_getSibling(LibraryItem)) {
-        const char* ItemName = json_getName(LibraryItem);
+        std::string_view ItemName = json_getName(LibraryItem);
 
-        if (strcmp(ItemName, "Library") == 0) {
+        if (ItemName == "Library") {
           // "Library": "libGL-guest.so"
           DBObject->second.LibraryName = json_getValue(LibraryItem);
         }
-        else if (strcmp(ItemName, "Depends") == 0) {
+        else if (ItemName == "Depends") {
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
             DBObject->second.Depends.insert(json_getValue(LibraryItem));
@@ -144,9 +151,8 @@ void FileManager::LoadThunkDatabase(bool Global) {
             }
           }
         }
-        else if (strcmp(ItemName, "Overlay") == 0) {
-
-          auto AddWithReplacement = [this, DBObject, HomeDirectory](json_t const* Value) {
+        else if (ItemName == "Overlay") {
+          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, std::string LibraryItem) {
             constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
@@ -159,59 +165,48 @@ void FileManager::LoadThunkDatabase(bool Global) {
               "x86_64",
             };
 
-            auto FindAndReplacePrefixes = [DBObject](std::string_view String, std::string_view Prefix, auto NewPrefixes) -> bool {
-              auto it = String.find(Prefix);
-              if (it != String.npos) {
-                size_t SizeOfOldPrefix = Prefix.size();
+            // Walk through template string and fill in prefixes from right to left
 
-                for (auto& prefix : NewPrefixes) {
-                  std::string Replacement {String};
-                  Replacement.replace(it, SizeOfOldPrefix, prefix);
-                  DBObject->second.Overlays.emplace_back(std::move(Replacement));
+            using namespace std::string_view_literals;
+            const std::pair PrefixArch { "@PREFIX_ARCH@"sv, LibraryItem.find("@PREFIX_ARCH@") };
+            const std::pair PrefixHome { "@HOME@"sv, LibraryItem.find("@HOME@") };
+            const std::pair PrefixLib { "@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@") };
+
+            std::string::size_type PrefixPositions[] = {
+              PrefixArch.second, PrefixHome.second, PrefixLib.second,
+            };
+            // Sort offsets in descending order to enable safe in-place replacement
+            std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<>{});
+
+            for (auto& LibPrefix : LibPrefixes) {
+              std::string Replacement = LibraryItem;
+              for (auto PrefixPos : PrefixPositions) {
+                if (PrefixPos == std::string::npos) {
+                  continue;
+                } else if (PrefixPos == PrefixArch.second) {
+                  Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode]);
+                } else if (PrefixPos == PrefixHome.second) {
+                  Replacement.replace(PrefixPos, PrefixHome.first.size(), HomeDirectory);
+                } else if (PrefixPos == PrefixLib.second) {
+                  Replacement.replace(PrefixPos, PrefixLib.first.size(), LibPrefix);
                 }
-                return true;
               }
-              else {
-                return false;
+              DBObject.Overlays.emplace_back(std::move(Replacement));
+
+              if (PrefixLib.second == std::string::npos) {
+                // Don't repeat for other LibPrefixes entries if the prefix wasn't used
+                break;
               }
-            };
-
-            auto FindAndReplaceSingleNewPrefix = [](std::string &String, std::string_view Prefix, auto NewPrefix) {
-              auto it = String.find(Prefix);
-              if (it != String.npos) {
-                size_t SizeOfOldPrefix = Prefix.size();
-
-                String.replace(it, SizeOfOldPrefix, NewPrefix);
-              }
-            };
-
-            std::string LibraryItem {static_cast<const char*>(json_getValue(Value))};
-
-            // Prefixes are mutually exclusive currently.
-            // Walk through each individual library item and attempt to change prefixes before inserting this in to our overlay system.
-
-            // Attempt to replace @ARCH_PREFIX@ first
-            FindAndReplaceSingleNewPrefix(LibraryItem, "@PREFIX_ARCH@", ArchPrefixes[Is64BitMode()]);
-
-            // Attempt to replace @HOME@ second
-            FindAndReplaceSingleNewPrefix(LibraryItem, "@HOME@", HomeDirectory);
-
-            // Attempt to replace @PREFIX_LIB@ third
-            bool Inserted = FindAndReplacePrefixes(LibraryItem, "@PREFIX_LIB@", LibPrefixes);
-
-            // Insert any items that didn't get replacements.
-            if (!Inserted) {
-              DBObject->second.Overlays.emplace_back(std::move(LibraryItem));
             }
           };
 
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
-            AddWithReplacement(LibraryItem);
+            AddWithReplacement(DBObject->second, json_getValue(LibraryItem));
           }
           else if (PropertyType == JSON_ARRAY) {
             for (json_t const* Overlay = json_getChild(LibraryItem); Overlay != nullptr; Overlay = json_getSibling(Overlay)) {
-              AddWithReplacement(Overlay);
+              AddWithReplacement(DBObject->second, json_getValue(Overlay));
             }
           }
         }
@@ -223,31 +218,7 @@ void FileManager::LoadThunkDatabase(bool Global) {
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
 
-  bool LoadedThunkDatabase{};
   auto ThunkConfigFile = ThunkConfig();
-  auto ThunkGuestPath =  std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
-
-  auto LoadThunksDB = [this, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
-    // If a thunks DB property exists then we pull in data from the thunks database
-    // Load the initial thunks database
-    if (!*LoadedThunkDatabase) {
-      LoadThunkDatabase(true);
-      LoadThunkDatabase(false);
-      *LoadedThunkDatabase = true;
-    }
-
-    // Now load this property
-    for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
-      const char *LibraryName = json_getName(Item);
-      bool LibraryEnabled = json_getInteger(Item) != 0;
-      // If the library is enabled then find it in the DB
-      // Enable the overlay and all the dependencies in one go
-      auto DBObject = ThunkDB.find(LibraryName);
-      if (DBObject != ThunkDB.end()) {
-        DBObject->second.Enabled = LibraryEnabled;
-      }
-    }
-  };
 
   // We try to load ThunksDB from:
   // - FEX global config
@@ -283,6 +254,10 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
+  std::unordered_map<std::string, ThunkDBObject> ThunkDB;
+  LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
+  LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
+
   for (const auto &Path : ConfigPaths) {
     std::vector<char> FileData;
     if (LoadFile(FileData, Path)) {
@@ -293,51 +268,75 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
         },
       };
 
+      // If a thunks DB property exists then we pull in data from the thunks database
       json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
       json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
-      if (ThunksDB) {
-        LoadThunksDB(&LoadedThunkDatabase, ThunksDB);
+      if (!ThunksDB) {
+        continue;
+      }
+
+      for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+        const char *LibraryName = json_getName(Item);
+        bool LibraryEnabled = json_getInteger(Item) != 0;
+        // If the library is enabled then find it in the DB
+        auto DBObject = ThunkDB.find(LibraryName);
+        if (DBObject != ThunkDB.end()) {
+          DBObject->second.Enabled = LibraryEnabled;
+        }
       }
     }
   }
 
-  // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well.
+  // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
+  auto ThunkGuestPath = std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
   for (auto const &DBObject : ThunkDB) {
     if (!DBObject.second.Enabled) {
       continue;
     }
 
-    // Now walk the dependencies and set them up as well
-    // Make sure to enable each one as we go to remove circular dependencies
-    std::function<void(const std::unordered_set<std::string> &Depends, bool AlreadyEnabled)> InsertDependencies
-      = [this, &ThunkGuestPath, &InsertDependencies](const std::unordered_set<std::string> &Depends, bool AlreadyEnabled) -> void {
-      for (auto const &Depend : Depends) {
-        auto DBDepend = ThunkDB.find(Depend);
-        if (DBDepend != ThunkDB.end() &&
-            (DBDepend->second.Enabled == false || AlreadyEnabled)) {
+    // Recursively add paths for this thunk library and its dependencies to ThunkOverlays.
+    // Using a local struct for this is slightly less ugly than using self-capturing lambdas
+    struct {
+      decltype(FileManager::ThunkOverlays)& ThunkOverlays;
+      decltype(ThunkDB)& ThunkDB;
+      const std::filesystem::path& ThunkGuestPath;
+      bool Is64BitMode;
 
-          auto ThunkPath = ThunkGuestPath / DBDepend->second.LibraryName;
+      void SetupOverlay(const ThunkDBObject& DBDepend) {
+          auto ThunkPath = ThunkGuestPath / DBDepend.LibraryName;
           if (!std::filesystem::exists(ThunkPath)) {
-              ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
+            if (!Is64BitMode) {
+              // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
+              return;
+            }
+            ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
           }
-          for (const auto& Overlay : DBDepend->second.Overlays) {
+
+          for (const auto& Overlay : DBDepend.Overlays) {
             // Direct full path in guest RootFS to our overlay file
             ThunkOverlays.emplace(Overlay, ThunkPath);
           }
+      };
 
-          // Enabled, now walk this dependencies
-          DBDepend->second.Enabled = true;
-          InsertDependencies(DBDepend->second.Depends, false);
+      void InsertDependencies(const std::unordered_set<std::string> &Depends) {
+        for (auto const &Depend : Depends) {
+          auto& DBDepend = ThunkDB.at(Depend);
+          if (DBDepend.Enabled) {
+            continue;
+          }
+
+          SetupOverlay(DBDepend);
+
+          // Mark enabled and recurse into dependencies
+          DBDepend.Enabled = true;
+          InsertDependencies(DBDepend.Depends);
         }
-      }
-    };
+      };
+    } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath, Is64BitMode() };
 
-    InsertDependencies({DBObject.first}, true);
-    InsertDependencies(DBObject.second.Depends, false);
+    DBObjectHandler.SetupOverlay(DBObject.second);
+    DBObjectHandler.InsertDependencies(DBObject.second.Depends);
   }
-
-  // Now clear the thunk database since we're loaded
-  ThunkDB.clear();
 
   if (false) {
     // Useful for debugging
