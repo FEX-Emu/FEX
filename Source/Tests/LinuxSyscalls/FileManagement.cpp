@@ -219,7 +219,6 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
 
   auto ThunkConfigFile = ThunkConfig();
-  auto ThunkGuestPath =  std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
 
   // We try to load ThunksDB from:
   // - FEX global config
@@ -280,7 +279,6 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
         const char *LibraryName = json_getName(Item);
         bool LibraryEnabled = json_getInteger(Item) != 0;
         // If the library is enabled then find it in the DB
-        // Enable the overlay and all the dependencies in one go
         auto DBObject = ThunkDB.find(LibraryName);
         if (DBObject != ThunkDB.end()) {
           DBObject->second.Enabled = LibraryEnabled;
@@ -289,39 +287,50 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     }
   }
 
-  // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well.
+  // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
+  auto ThunkGuestPath = std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
   for (auto const &DBObject : ThunkDB) {
     if (!DBObject.second.Enabled) {
       continue;
     }
 
-    // Now walk the dependencies and set them up as well
-    // Make sure to enable each one as we go to remove circular dependencies
-    std::function<void(const std::unordered_set<std::string> &Depends, bool AlreadyEnabled)> InsertDependencies
-      = [this, &ThunkDB, &ThunkGuestPath, &InsertDependencies](const std::unordered_set<std::string> &Depends, bool AlreadyEnabled) -> void {
-      for (auto const &Depend : Depends) {
-        auto DBDepend = ThunkDB.find(Depend);
-        if (DBDepend != ThunkDB.end() &&
-            (DBDepend->second.Enabled == false || AlreadyEnabled)) {
+    // Recursively add paths for this thunk library and its dependencies to ThunkOverlays.
+    // Using a local struct for this is slightly less ugly than using self-capturing lambdas
+    struct {
+      decltype(FileManager::ThunkOverlays)& ThunkOverlays;
+      decltype(ThunkDB)& ThunkDB;
+      const std::filesystem::path& ThunkGuestPath;
 
-          auto ThunkPath = ThunkGuestPath / DBDepend->second.LibraryName;
+      void SetupOverlay(const ThunkDBObject& DBDepend) {
+          auto ThunkPath = ThunkGuestPath / DBDepend.LibraryName;
           if (!std::filesystem::exists(ThunkPath)) {
-              ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
+            ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
           }
-          for (const auto& Overlay : DBDepend->second.Overlays) {
+
+          for (const auto& Overlay : DBDepend.Overlays) {
             // Direct full path in guest RootFS to our overlay file
             ThunkOverlays.emplace(Overlay, ThunkPath);
           }
+      };
 
-          // Enabled, now walk this dependencies
-          DBDepend->second.Enabled = true;
-          InsertDependencies(DBDepend->second.Depends, false);
+      void InsertDependencies(const std::unordered_set<std::string> &Depends) {
+        for (auto const &Depend : Depends) {
+          auto& DBDepend = ThunkDB.at(Depend);
+          if (DBDepend.Enabled) {
+            continue;
+          }
+
+          SetupOverlay(DBDepend);
+
+          // Mark enabled and recurse into dependencies
+          DBDepend.Enabled = true;
+          InsertDependencies(DBDepend.Depends);
         }
-      }
-    };
+      };
+    } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath };
 
-    InsertDependencies({DBObject.first}, true);
-    InsertDependencies(DBObject.second.Depends, false);
+    DBObjectHandler.SetupOverlay(DBObject.second);
+    DBObjectHandler.InsertDependencies(DBObject.second.Depends);
   }
 
   if (false) {
