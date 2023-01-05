@@ -127,13 +127,13 @@ void FileManager::LoadThunkDatabase(bool Global) {
 
       // Walk the libraries items to get the data
       for (json_t const* LibraryItem = json_getChild(Library); LibraryItem != nullptr; LibraryItem = json_getSibling(LibraryItem)) {
-        const char* ItemName = json_getName(LibraryItem);
+        std::string_view ItemName = json_getName(LibraryItem);
 
-        if (strcmp(ItemName, "Library") == 0) {
+        if (ItemName == "Library") {
           // "Library": "libGL-guest.so"
           DBObject->second.LibraryName = json_getValue(LibraryItem);
         }
-        else if (strcmp(ItemName, "Depends") == 0) {
+        else if (ItemName == "Depends") {
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
             DBObject->second.Depends.insert(json_getValue(LibraryItem));
@@ -144,9 +144,8 @@ void FileManager::LoadThunkDatabase(bool Global) {
             }
           }
         }
-        else if (strcmp(ItemName, "Overlay") == 0) {
-
-          auto AddWithReplacement = [this, DBObject, HomeDirectory](json_t const* Value) {
+        else if (ItemName == "Overlay") {
+          auto AddWithReplacement = [this, HomeDirectory](ThunkDBObject& DBObject, std::string LibraryItem) {
             constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
@@ -159,59 +158,48 @@ void FileManager::LoadThunkDatabase(bool Global) {
               "x86_64",
             };
 
-            auto FindAndReplacePrefixes = [DBObject](std::string_view String, std::string_view Prefix, auto NewPrefixes) -> bool {
-              auto it = String.find(Prefix);
-              if (it != String.npos) {
-                size_t SizeOfOldPrefix = Prefix.size();
+            // Walk through template string and fill in prefixes from right to left
 
-                for (auto& prefix : NewPrefixes) {
-                  std::string Replacement {String};
-                  Replacement.replace(it, SizeOfOldPrefix, prefix);
-                  DBObject->second.Overlays.emplace_back(std::move(Replacement));
+            using namespace std::string_view_literals;
+            const std::pair PrefixArch { "@PREFIX_ARCH@"sv, LibraryItem.find("@PREFIX_ARCH@") };
+            const std::pair PrefixHome { "@HOME@"sv, LibraryItem.find("@HOME@") };
+            const std::pair PrefixLib { "@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@") };
+
+            std::string::size_type PrefixPositions[] = {
+              PrefixArch.second, PrefixHome.second, PrefixLib.second,
+            };
+            // Sort offsets in descending order to enable safe in-place replacement
+            std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<>{});
+
+            for (auto& LibPrefix : LibPrefixes) {
+              std::string Replacement = LibraryItem;
+              for (auto PrefixPos : PrefixPositions) {
+                if (PrefixPos == std::string::npos) {
+                  continue;
+                } else if (PrefixPos == PrefixArch.second) {
+                  Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode()]);
+                } else if (PrefixPos == PrefixHome.second) {
+                  Replacement.replace(PrefixPos, PrefixHome.first.size(), HomeDirectory);
+                } else if (PrefixPos == PrefixLib.second) {
+                  Replacement.replace(PrefixPos, PrefixLib.first.size(), LibPrefix);
                 }
-                return true;
               }
-              else {
-                return false;
+              DBObject.Overlays.emplace_back(std::move(Replacement));
+
+              if (PrefixLib.second == std::string::npos) {
+                // Don't repeat for other LibPrefixes entries if the prefix wasn't used
+                break;
               }
-            };
-
-            auto FindAndReplaceSingleNewPrefix = [](std::string &String, std::string_view Prefix, auto NewPrefix) {
-              auto it = String.find(Prefix);
-              if (it != String.npos) {
-                size_t SizeOfOldPrefix = Prefix.size();
-
-                String.replace(it, SizeOfOldPrefix, NewPrefix);
-              }
-            };
-
-            std::string LibraryItem {static_cast<const char*>(json_getValue(Value))};
-
-            // Prefixes are mutually exclusive currently.
-            // Walk through each individual library item and attempt to change prefixes before inserting this in to our overlay system.
-
-            // Attempt to replace @ARCH_PREFIX@ first
-            FindAndReplaceSingleNewPrefix(LibraryItem, "@PREFIX_ARCH@", ArchPrefixes[Is64BitMode()]);
-
-            // Attempt to replace @HOME@ second
-            FindAndReplaceSingleNewPrefix(LibraryItem, "@HOME@", HomeDirectory);
-
-            // Attempt to replace @PREFIX_LIB@ third
-            bool Inserted = FindAndReplacePrefixes(LibraryItem, "@PREFIX_LIB@", LibPrefixes);
-
-            // Insert any items that didn't get replacements.
-            if (!Inserted) {
-              DBObject->second.Overlays.emplace_back(std::move(LibraryItem));
             }
           };
 
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
-            AddWithReplacement(LibraryItem);
+            AddWithReplacement(DBObject->second, json_getValue(LibraryItem));
           }
           else if (PropertyType == JSON_ARRAY) {
             for (json_t const* Overlay = json_getChild(LibraryItem); Overlay != nullptr; Overlay = json_getSibling(Overlay)) {
-              AddWithReplacement(Overlay);
+              AddWithReplacement(DBObject->second, json_getValue(Overlay));
             }
           }
         }
