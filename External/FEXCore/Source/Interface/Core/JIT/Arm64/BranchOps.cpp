@@ -6,6 +6,7 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "FEXCore/IR/IR.h"
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
@@ -17,8 +18,6 @@ $end_info$
 #include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
-using namespace vixl;
-using namespace vixl::aarch64;
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
 DEF_OP(SignalReturn) {
@@ -27,12 +26,11 @@ DEF_OP(SignalReturn) {
 
   // Now branch to our signal return helper
   // This can't be a direct branch since the code needs to live at a constant location
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)));
-  br(x0);
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler));
+  br(ARMEmitter::Reg::r0);
 }
 
 DEF_OP(CallbackReturn) {
-
   // spill back to CTX
   SpillStaticRegs();
 
@@ -41,14 +39,14 @@ DEF_OP(CallbackReturn) {
 
   // We can now lower the ref counter again
 
-  ldr(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
-  sub(w2, w2, 1);
-  str(w2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter)));
+  ldr(ARMEmitter::WReg::w2, STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter));
+  sub(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, 1);
+  str(ARMEmitter::WReg::w2, STATE, offsetof(FEXCore::Core::CpuStateFrame, SignalHandlerRefCounter));
 
   // We need to adjust an additional 8 bytes to get back to the original "misaligned" RSP state
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
-  add(x2, x2, 8);
-  str(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP])));
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP]));
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r2, 8);
+  str(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP]));
 
   PopCalleeSavedRegisters();
 
@@ -59,39 +57,41 @@ DEF_OP(CallbackReturn) {
 DEF_OP(ExitFunction) {
   auto Op = IROp->C<IR::IROp_ExitFunction>();
 
-  Label FullLookup;
-
   ResetStack();
 
-  aarch64::Register RipReg;
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
-    Literal l_BranchHost{ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker};
-    Literal l_BranchGuest{NewRIP};
+    ARMEmitter::ForwardLabel l_BranchHost;
+    ARMEmitter::ForwardLabel l_BranchGuest;
 
-    ldr(x0, &l_BranchHost);
-    blr(x0);
+    ldr(ARMEmitter::XReg::x0, &l_BranchHost);
+    blr(ARMEmitter::Reg::r0);
 
-    place(&l_BranchHost);
-    place(&l_BranchGuest);
+    Bind(&l_BranchHost);
+    dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
+    Bind(&l_BranchGuest);
+    dc64(NewRIP);
+
   } else {
-    RipReg = GetReg<RA_64>(Op->NewRIP.ID());
+
+    ARMEmitter::ForwardLabel FullLookup;
+    auto RipReg = GetReg(Op->NewRIP.ID());
 
     // L1 Cache
-    ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer)));
+    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer));
 
-    and_(x3, RipReg, LookupCache::L1_ENTRIES_MASK);
-    add(x0, x0, Operand(x3, Shift::LSL, 4));
+    and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg, LookupCache::L1_ENTRIES_MASK);
+    add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x3, ARMEmitter::ShiftType::LSL, 4);
 
-    ldp(x1, x0, MemOperand(x0));
-    cmp(x0, RipReg);
-    b(&FullLookup, Condition::ne);
-    br(x1);
+    ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x1, ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, 0);
+    cmp(ARMEmitter::XReg::x0, RipReg.X());
+    b(ARMEmitter::Condition::CC_NE, &FullLookup);
+    br(ARMEmitter::Reg::r1);
 
-    bind(&FullLookup);
-    ldr(TMP1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop)));
-    str(RipReg, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip)));
+    Bind(&FullLookup);
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+    str(RipReg.X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
     br(TMP1);
   }
 }
@@ -103,66 +103,65 @@ DEF_OP(Jump) {
   PendingTargetLabel = &JumpTargets.try_emplace(Target).first->second;
 }
 
-#define GRCMP(Node) (Op->CompareSize == 4 ? GetReg<RA_32>(Node) : GetReg<RA_64>(Node))
-#define GRFCMP(Node) (Op->CompareSize == 4 ? GetVReg(Node).S() : GetVReg(Node).D())
-
-static Condition MapBranchCC(IR::CondClassType Cond) {
+static ARMEmitter::Condition MapBranchCC(IR::CondClassType Cond) {
   switch (Cond.Val) {
-  case FEXCore::IR::COND_EQ: return Condition::eq;
-  case FEXCore::IR::COND_NEQ: return Condition::ne;
-  case FEXCore::IR::COND_SGE: return Condition::ge;
-  case FEXCore::IR::COND_SLT: return Condition::lt;
-  case FEXCore::IR::COND_SGT: return Condition::gt;
-  case FEXCore::IR::COND_SLE: return Condition::le;
-  case FEXCore::IR::COND_UGE: return Condition::cs;
-  case FEXCore::IR::COND_ULT: return Condition::cc;
-  case FEXCore::IR::COND_UGT: return Condition::hi;
-  case FEXCore::IR::COND_ULE: return Condition::ls;
-  case FEXCore::IR::COND_FLU: return Condition::lt;
-  case FEXCore::IR::COND_FGE: return Condition::ge;
-  case FEXCore::IR::COND_FLEU:return Condition::le;
-  case FEXCore::IR::COND_FGT: return Condition::gt;
-  case FEXCore::IR::COND_FU:  return Condition::vs;
-  case FEXCore::IR::COND_FNU: return Condition::vc;
+  case FEXCore::IR::COND_EQ:  return ARMEmitter::Condition::CC_EQ;
+  case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
+  case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
+  case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
+  case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
+  case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
+  case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
+  case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
+  case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
+  case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
+  case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
+  case FEXCore::IR::COND_FLEU:return ARMEmitter::Condition::CC_LE;
+  case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
+  case FEXCore::IR::COND_FU:  return ARMEmitter::Condition::CC_VS;
+  case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
   case FEXCore::IR::COND_VS:
   case FEXCore::IR::COND_VC:
   case FEXCore::IR::COND_MI:
   case FEXCore::IR::COND_PL:
   default:
   LOGMAN_MSG_A_FMT("Unsupported compare type");
-  return Condition::nv;
+  return ARMEmitter::Condition::CC_NV;
   }
 }
-
 
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
 
-  Label *TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
+  auto TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
 
   uint64_t Const;
   const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
+  const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
+  const auto SubSize = ARMEmitter::ToVectorSizePair(Op->CompareSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i64Bit);
+
   if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_EQ) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
-    cbz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
+    cbz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
   } else if (isConst && Const == 0 && Op->Cond.Val == FEXCore::IR::COND_NEQ) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
-    cbnz(GRCMP(Op->Cmp1.ID()), TrueTargetLabel);
+    cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
   } else {
     if (IsGPR(Op->Cmp1.ID())) {
       if (isConst) {
-        cmp(GRCMP(Op->Cmp1.ID()), Const);
+        cmp(Size, GetReg(Op->Cmp1.ID()), Const);
       } else {
-        cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
+        cmp(Size, GetReg(Op->Cmp1.ID()), GetReg(Op->Cmp2.ID()));
       }
     } else if (IsFPR(Op->Cmp1.ID())) {
-      fcmp(GRFCMP(Op->Cmp1.ID()), GRFCMP(Op->Cmp2.ID()));
+      fcmp(SubSize.Scalar, GetVReg(Op->Cmp1.ID()), GetVReg(Op->Cmp2.ID()));
     } else {
       LOGMAN_MSG_A_FMT("CondJump: Expected GPR or FPR");
     }
 
-    b(TrueTargetLabel, MapBranchCC(Op->Cond));
+    b(MapBranchCC(Op->Cond), TrueTargetLabel);
   }
 
   PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
@@ -187,23 +186,25 @@ DEF_OP(Syscall) {
   }
 
   uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
-  sub(sp, sp, SPOffset);
+  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
   for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++i) {
     if (Op->Header.Args[i].IsInvalid()) continue;
-    str(GetReg<RA_64>(Op->Header.Args[i].ID()), MemOperand(sp, i * 8));
+    str(GetReg(Op->Header.Args[i].ID()).X(), ARMEmitter::Reg::rsp, i * 8);
   }
 
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerObj)));
-  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerFunc)));
-  mov(x1, STATE);
-  mov(x2, sp);
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerObj));
+  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerFunc));
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, STATE.R());
+
+  // SP supporting move
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
 #ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(x3);
+  GenerateIndirectRuntimeCall<uint64_t, void*, void*, void*>(ARMEmitter::Reg::r3);
 #else
-  blr(x3);
+  blr(ARMEmitter::Reg::r3);
 #endif
 
-  add(sp, sp, SPOffset);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
   if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY &&
       (Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
@@ -219,7 +220,7 @@ DEF_OP(Syscall) {
 
   if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     // Move result to its destination register
-    mov(GetReg<RA_64>(Node), x0);
+    mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
   }
 }
 
@@ -236,8 +237,8 @@ DEF_OP(InlineSyscall) {
   // X6: Arg6 - Doesn't exist in x86-64 land. RA INTERSECT
 
   // One argument is removed from the SyscallArguments::MAX_ARGS since the first argument was syscall number
-  const static std::array<vixl::aarch64::Register, FEXCore::HLE::SyscallArguments::MAX_ARGS-1> RegArgs = {{
-    x0, x1, x2, x3, x4, x5
+  const static std::array<ARMEmitter::XRegister, FEXCore::HLE::SyscallArguments::MAX_ARGS-1> RegArgs = {{
+    ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::XReg::x2, ARMEmitter::XReg::x3, ARMEmitter::XReg::x4, ARMEmitter::XReg::x5
   }};
 
   bool Intersects{};
@@ -246,12 +247,12 @@ DEF_OP(InlineSyscall) {
   for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
     if (Op->Header.Args[i].IsInvalid()) break;
 
-    auto Reg = GetReg<RA_64>(Op->Header.Args[i].ID());
-    if (Reg.GetCode() == x8.GetCode() ||
-        Reg.GetCode() == x4.GetCode() ||
-        Reg.GetCode() == x5.GetCode()) {
+    auto Reg = GetReg(Op->Header.Args[i].ID());
+    if (Reg.Idx() == ARMEmitter::Reg::r8.Idx() ||
+        Reg.Idx() == ARMEmitter::Reg::r4.Idx() ||
+        Reg.Idx() == ARMEmitter::Reg::r5.Idx()) {
 
-      SpillMask |= (1U << Reg.GetCode());
+      SpillMask |= (1U << Reg.Idx());
       Intersects = true;
     }
   }
@@ -266,66 +267,31 @@ DEF_OP(InlineSyscall) {
   // 16bit LoadConstant to be a single instruction
   // We must always spill at least one register (x8) so this value always has a bit set
   // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(x0, SpillMask & 0xFFFF);
-  str(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SpillMask & 0xFFFF);
+  str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   // Now that we have claimed to be a syscall we can set up the arguments
+  const auto EmitSize = CTX->Config.Is64BitMode() ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSubSize = CTX->Config.Is64BitMode() ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i32Bit;
   if (Intersects) {
     for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
       if (Op->Header.Args[i].IsInvalid()) break;
 
-      if (CTX->Config.Is64BitMode()) {
-        auto Reg = GetReg<RA_64>(Op->Header.Args[i].ID());
-        // In the case of intersection with x4, x5, or x8 then these are currently SRA
-        // for registers RAX, RBX, and RSI. Which have just been spilled
-        // Just load back from the context. Could be slightly smarter but this is fairly uncommon
-        if (Reg.GetCode() == x8.GetCode()) {
-          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI])));
-        }
-        else if (Reg.GetCode() == x4.GetCode()) {
-          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX])));
-        }
-        else if (Reg.GetCode() == x5.GetCode()) {
-          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
-        }
+      auto Reg = GetReg(Op->Header.Args[i].ID());
+      // In the case of intersection with x4, x5, or x8 then these are currently SRA
+      // for registers RAX, RBX, and RSI. Which have just been spilled
+      // Just load back from the context. Could be slightly smarter but this is fairly uncommon
+      if (Reg.Idx() == FEXCore::ARMEmitter::Reg::r8.Idx()) {
+        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI]));
       }
-    }
-
-    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
-      if (Op->Header.Args[i].IsInvalid()) break;
-
-      if (CTX->Config.Is64BitMode()) {
-        auto Reg = GetReg<RA_64>(Op->Header.Args[i].ID());
-        // In the case of intersection with x4, x5, or x8 then these are currently SRA
-        // for registers RAX, RBX, and RSI. Which have just been spilled
-        // Just load back from the context. Could be slightly smarter but this is fairly uncommon
-        if (Reg.GetCode() == x8.GetCode()) {
-          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI])));
-        }
-        else if (Reg.GetCode() == x4.GetCode()) {
-          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX])));
-        }
-        else if (Reg.GetCode() == x5.GetCode()) {
-          ldr(RegArgs[i], MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
-        }
-        else {
-          mov(RegArgs[i], Reg);
-        }
+      else if (Reg.Idx() == FEXCore::ARMEmitter::Reg::r4.Idx()) {
+        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX]));
+      }
+      else if (Reg.Idx() == FEXCore::ARMEmitter::Reg::r5.Idx()) {
+        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX]));
       }
       else {
-        auto Reg = GetReg<RA_32>(Op->Header.Args[i].ID());
-        if (Reg.GetCode() == w8.GetCode()) {
-          ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI])));
-        }
-        else if (Reg.GetCode() == w4.GetCode()) {
-          ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX])));
-        }
-        else if (Reg.GetCode() == w5.GetCode()) {
-          ldr(RegArgs[i].W(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX])));
-        }
-        else {
-          uxtw(RegArgs[i].W(), Reg);
-        }
+        mov(EmitSize, RegArgs[i].R(), Reg);
       }
     }
   }
@@ -333,16 +299,11 @@ DEF_OP(InlineSyscall) {
     for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS-1; ++i) {
       if (Op->Header.Args[i].IsInvalid()) break;
 
-      if (CTX->Config.Is64BitMode()) {
-        mov(RegArgs[i], GetReg<RA_64>(Op->Header.Args[i].ID()));
-      }
-      else {
-        uxtw(RegArgs[i], GetReg<RA_64>(Op->Header.Args[i].ID()));
-      }
+      mov(EmitSize, RegArgs[i].R(), GetReg(Op->Header.Args[i].ID()));
     }
   }
 
-  LoadConstant(x8, Op->HostSyscallNumber);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, Op->HostSyscallNumber);
   svc(0);
   // On updated signal mask we can receive a signal RIGHT HERE
 
@@ -353,16 +314,11 @@ DEF_OP(InlineSyscall) {
 
     // Now the registers we've spilled are back in their original host registers
     // We can safely claim we are no longer in a syscall
-    str(xzr, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo)));
+    str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
     // Result is now in x0
     // Move result to its destination register
-    if (CTX->Config.Is64BitMode()) {
-      mov(GetReg<RA_64>(Node), x0);
-    }
-    else {
-      uxtw(GetReg<RA_64>(Node), x0);
-    }
+    mov(EmitSize, GetReg(Node), ARMEmitter::Reg::r0);
   }
 }
 
@@ -376,14 +332,14 @@ DEF_OP(Thunk) {
 
   PushDynamicRegsAndLR(TMP1);
 
-  mov(x0, GetReg<RA_64>(Op->ArgPtr.ID()));
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr.ID()));
 
   auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
-  LoadConstant(x2, (uintptr_t)thunkFn);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
 #ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<void, void*, void*>(x2);
+  GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
 #else
-  blr(x2);
+  blr(ARMEmitter::Reg::r2);
 #endif
 
   PopDynamicRegsAndLR();
@@ -397,43 +353,45 @@ DEF_OP(ValidateCode) {
   int len = Op->CodeLength;
   int idx = 0;
 
-  LoadConstant(GetReg<RA_64>(Node), 0);
-  LoadConstant(x0, Entry + Op->Offset);
-  LoadConstant(x1, 1);
+  LoadConstant(ARMEmitter::Size::i64Bit, GetReg(Node), 0);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, Entry + Op->Offset);
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 1);
+
+  const auto Dst = GetReg(Node);
 
   while (len >= 8)
   {
-    ldr(x2, MemOperand(x0, idx));
-    LoadConstant(x3, *(const uint32_t *)(OldCode + idx));
-    cmp(x2, x3);
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    ldr(ARMEmitter::XReg::x2, ARMEmitter::Reg::r0, idx);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, *(const uint32_t *)(OldCode + idx));
+    cmp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r3);
+    csel(ARMEmitter::Size::i64Bit, Dst, Dst, ARMEmitter::Reg::r1, ARMEmitter::Condition::CC_EQ);
     len -= 8;
     idx += 8;
   }
   while (len >= 4)
   {
-    ldr(w2, MemOperand(x0, idx));
-    LoadConstant(w3, *(const uint32_t *)(OldCode + idx));
-    cmp(w2, w3);
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    ldr(ARMEmitter::WReg::w2, ARMEmitter::Reg::r0, idx);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, *(const uint32_t *)(OldCode + idx));
+    cmp(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r3);
+    csel(ARMEmitter::Size::i64Bit, Dst, Dst, ARMEmitter::Reg::r1, ARMEmitter::Condition::CC_EQ);
     len -= 4;
     idx += 4;
   }
   while (len >= 2)
   {
-    ldrh(w2, MemOperand(x0, idx));
-    LoadConstant(w3, *(const uint16_t *)(OldCode + idx));
-    cmp(w2, w3);
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    ldrh(ARMEmitter::Reg::r2, ARMEmitter::Reg::r0, idx);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, *(const uint16_t *)(OldCode + idx));
+    cmp(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r3);
+    csel(ARMEmitter::Size::i64Bit, Dst, Dst, ARMEmitter::Reg::r1, ARMEmitter::Condition::CC_EQ);
     len -= 2;
     idx += 2;
   }
   while (len >= 1)
   {
-    ldrb(w2, MemOperand(x0, idx));
-    LoadConstant(w3, *(const uint8_t *)(OldCode + idx));
-    cmp(w2, w3);
-    csel(GetReg<RA_64>(Node), GetReg<RA_64>(Node), x1, Condition::eq);
+    ldrb(ARMEmitter::Reg::r2, ARMEmitter::Reg::r0, idx);
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, *(const uint8_t *)(OldCode + idx));
+    cmp(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::r3);
+    csel(ARMEmitter::Size::i64Bit, Dst, Dst, ARMEmitter::Reg::r1, ARMEmitter::Condition::CC_EQ);
     len -= 1;
     idx += 1;
   }
@@ -446,15 +404,15 @@ DEF_OP(ThreadRemoveCodeEntry) {
 
   PushDynamicRegsAndLR(TMP1);
 
-  mov(x0, STATE);
-  LoadConstant(x1, Entry);
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, STATE.R());
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry);
 
-  ldr(x2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT)));
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
   SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<void, void*, void*>(x2);
+  GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
 #else
-  blr(x2);
+  blr(ARMEmitter::Reg::r2);
 #endif
   FillStaticRegs();
 
@@ -471,24 +429,25 @@ DEF_OP(CPUID) {
   // x0 = CPUID Handler
   // x1 = CPUID Function
   // x2 = CPUID Leaf
-  ldr(x0, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj)));
-  ldr(x3, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction)));
-  mov(x1, GetReg<RA_64>(Op->Function.ID()));
-  mov(x2, GetReg<RA_64>(Op->Leaf.ID()));
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj));
+  ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDFunction));
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, GetReg(Op->Leaf.ID()));
 #ifdef VIXL_SIMULATOR
-  GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(x3);
+  GenerateIndirectRuntimeCall<__uint128_t, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
 #else
-  blr(x3);
+  blr(ARMEmitter::Reg::r3);
 #endif
 
   FillStaticRegs();
+
   PopDynamicRegsAndLR();
 
   // Results are in x0, x1
   // Results want to be in a i64v2 vector
-  auto Dst = GetRegPair<RA_64>(Node);
-  mov(Dst.first,  x0);
-  mov(Dst.second, x1);
+  auto Dst = GetRegPair(Node);
+  mov(ARMEmitter::Size::i64Bit, Dst.first,  ARMEmitter::Reg::r0);
+  mov(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Reg::r1);
 }
 
 #undef DEF_OP

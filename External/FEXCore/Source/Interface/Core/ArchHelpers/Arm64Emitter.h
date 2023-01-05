@@ -1,5 +1,9 @@
 #pragma once
 
+#include "FEXCore/Utils/EnumUtils.h"
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
+#include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
+
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
 
@@ -24,72 +28,70 @@
 #include <utility>
 
 namespace FEXCore::CPU {
-using namespace vixl;
-using namespace vixl::aarch64;
-
 // All but x29 are caller saved
-const std::array<aarch64::Register, 16> SRA64 = {
-  x4, x5, x6, x7, x8, x9, x10, x11,
-  x12, x18, x17, x16, x15, x14, x13, x29
+constexpr std::array<FEXCore::ARMEmitter::Register, 16> SRA64 = {
+  FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5, FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7, FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9, FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
+  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r18, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r15, FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r13, FEXCore::ARMEmitter::Reg::r29
 };
 
 // All are callee saved
-const std::array<aarch64::Register, 9> RA64 = {
-  x20, x21, x22, x23, x24, x25, x26, x27,
-  x19
+constexpr std::array<FEXCore::ARMEmitter::Register, 9> RA64 = {
+  FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21, FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23, FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
+  FEXCore::ARMEmitter::Reg::r19
 };
 
-const std::array<std::pair<aarch64::Register, aarch64::Register>, 4>  RA64Pair = {{
-  {x20, x21},
-  {x22, x23},
-  {x24, x25},
-  {x26, x27},
+constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 4>  RA64Pair = {{
+  {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
+  {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
+  {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
+  {FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27},
 }};
 
 // All are caller saved
-const std::array<aarch64::VRegister, 16> SRAFPR = {
-  v16, v17, v18, v19, v20, v21, v22, v23,
-  v24, v25, v26, v27, v28, v29, v30, v31
+constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
+  FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17, FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19, FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21, FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+  FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27, FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
 };
 
 //  v8..v15 = (lower 64bits) Callee saved
-const std::array<aarch64::VRegister, 12> RAFPR = {
-/*v0,  v1,  v2,  v3,*/v4,  v5,  v6,  v7,  // v0 ~ v3 are used as temps
-  v8,  v9,  v10, v11, v12, v13, v14, v15
+constexpr std::array<FEXCore::ARMEmitter::VRegister, 12> RAFPR = {
+/*FEXCore::ARMEmitter::VReg::v0,  FEXCore::ARMEmitter::VReg::v1,  FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,*/FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,  FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  // FEXCore::ARMEmitter::VReg::v0 ~ FEXCore::ARMEmitter::VReg::v3 are used as temps
+  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,  FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13, FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15
 };
 
 // Contains the address to the currently available CPU state
-#define STATE x28
+constexpr auto STATE = FEXCore::ARMEmitter::XReg::x28;
 
 // GPR temporaries. Only x3 can be used across spill boundaries
 // so if these ever need to change, be very careful about that.
-#define TMP1 x0
-#define TMP2 x1
-#define TMP3 x2
-#define TMP4 x3
+constexpr auto TMP1 = FEXCore::ARMEmitter::XReg::x0;
+constexpr auto TMP2 = FEXCore::ARMEmitter::XReg::x1;
+constexpr auto TMP3 = FEXCore::ARMEmitter::XReg::x2;
+constexpr auto TMP4 = FEXCore::ARMEmitter::XReg::x3;
 
 // Vector temporaries
-#define VTMP1 v0
-#define VTMP2 v1
-#define VTMP3 v2
-#define VTMP4 v3
+constexpr auto VTMP1 = FEXCore::ARMEmitter::VReg::v0;
+constexpr auto VTMP2 = FEXCore::ARMEmitter::VReg::v1;
+constexpr auto VTMP3 = FEXCore::ARMEmitter::VReg::v2;
+constexpr auto VTMP4 = FEXCore::ARMEmitter::VReg::v3;
 
 // Predicate register temporaries (used when AVX support is enabled)
 // PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
 // PRED_TMP_32B indicates a predicate register that indicates the first 32 bytes set to 1.
-#define PRED_TMP_16B p6
-#define PRED_TMP_32B p7
+constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_16B = FEXCore::ARMEmitter::PReg::p6;
+constexpr FEXCore::ARMEmitter::PRegister PRED_TMP_32B = FEXCore::ARMEmitter::PReg::p7;
 
 // This class contains common emitter utility functions that can
 // be used by both Arm64 JIT and ARM64 Dispatcher
-class Arm64Emitter : public vixl::aarch64::Assembler {
+class Arm64Emitter : public FEXCore::ARMEmitter::Emitter {
 protected:
   Arm64Emitter(FEXCore::Context::Context *ctx, size_t size);
   ~Arm64Emitter();
 
   FEXCore::Context::Context *EmitterCTX;
   vixl::aarch64::CPU CPU;
-  void LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad = false);
+  void LoadConstant(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
+
 
   // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
   //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then
@@ -103,13 +105,14 @@ protected:
   // We can't guarantee only the lower 64bits are used so flush everything
   static constexpr uint32_t CALLER_FPR_MASK = ~0U;
 
-  void PushDynamicRegsAndLR(aarch64::Register TmpReg);
+  void PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg);
   void PopDynamicRegsAndLR();
 
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
 
   void Align16B();
+
 #ifdef VIXL_SIMULATOR
   // Generates a vixl simulator runtime call.
   //
@@ -121,57 +124,58 @@ protected:
   // 2) Simulator wrapper handler
   // 3) Function to call
   // 4) Style of the function call (Call versus tail-call)
+
   template<typename R, typename... P>
   void GenerateRuntimeCall(R (*Function)(P...)) {
     uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
-      &(Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
+      &(vixl::aarch64::Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
 
     uintptr_t FunctionAddress = reinterpret_cast<uintptr_t>(Function);
 
-    hlt(kRuntimeCallOpcode);
+    hlt(vixl::aarch64::kRuntimeCallOpcode);
 
     // Simulator wrapper address pointer.
-    dc(SimulatorWrapperAddress);
+    dc64(SimulatorWrapperAddress);
 
     // Runtime function address to call
-    dc(FunctionAddress);
+    dc64(FunctionAddress);
 
     // Call type
-    dc32(kCallRuntime);
+    dc32(vixl::aarch64::kCallRuntime);
   }
 
   template<typename R, typename... P>
-  void GenerateIndirectRuntimeCall(vixl::aarch64::Register Reg) {
+  void GenerateIndirectRuntimeCall(ARMEmitter::Register Reg) {
     uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
-      &(Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
+      &(vixl::aarch64::Simulator::RuntimeCallStructHelper<R, P...>::Wrapper));
 
-    hlt(kIndirectRuntimeCallOpcode);
+    hlt(vixl::aarch64::kIndirectRuntimeCallOpcode);
 
     // Simulator wrapper address pointer.
-    dc(SimulatorWrapperAddress);
+    dc64(SimulatorWrapperAddress);
 
     // Register that contains the function to call
-    dc(Reg.GetCode());
+    dc32(Reg.Idx());
 
     // Call type
-    dc32(kCallRuntime);
+    dc32(vixl::aarch64::kCallRuntime);
   }
 
   template<>
-  void GenerateIndirectRuntimeCall<float, __uint128_t>(vixl::aarch64::Register Reg) {
+  void GenerateIndirectRuntimeCall<float, __uint128_t>(ARMEmitter::Register Reg) {
     uintptr_t SimulatorWrapperAddress = reinterpret_cast<uintptr_t>(
-      &(Simulator::RuntimeCallStructHelper<float, __uint128_t>::Wrapper));
+      &(vixl::aarch64::Simulator::RuntimeCallStructHelper<float, __uint128_t>::Wrapper));
 
-    hlt(kIndirectRuntimeCallOpcode);
+    hlt(vixl::aarch64::kIndirectRuntimeCallOpcode);
 
     // Simulator wrapper address pointer.
-    dc(SimulatorWrapperAddress);
+    dc64(SimulatorWrapperAddress);
 
     // Register that contains the function to call
-    dc(Reg.GetCode());
+    dc32(Reg.Idx());
 
     // Call type
-    dc32(kCallRuntime);
+    dc32(vixl::aarch64::kCallRuntime);
   }
 
 #endif

@@ -1,7 +1,6 @@
 #include "Interface/Core/ArchHelpers/Arm64.h"
 #include "Interface/Core/ArchHelpers/MContext.h"
-
-#include <aarch64/cpu-aarch64.h>
+#include "Interface/Core/ArchHelpers/CodeEmitter/Buffer.h"
 
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -572,7 +571,7 @@ bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr) {
       PC[1] = STP;
       PC[2] = DMB;
       // Back up one instruction and have another go
-      vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[0], 16);
+      FEXCore::ARMEmitter::Buffer::ClearICache(&PC[0], 16);
       return true;
     }
   }
@@ -2311,7 +2310,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
       return false;
     }
 
-    vixl::aarch64::CPU::EnsureIAndDCacheCoherency(&PC[-1], 16);
+    FEXCore::ARMEmitter::Buffer::ClearICache(&PC[-1], 16);
     return true;
   }
   return false;

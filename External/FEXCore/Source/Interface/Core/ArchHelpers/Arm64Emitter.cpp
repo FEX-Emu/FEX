@@ -1,4 +1,5 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Context/Context.h"
 #include "Interface/HLE/Thunks/Thunks.h"
@@ -20,38 +21,24 @@ namespace FEXCore::CPU {
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
 Arm64Emitter::Arm64Emitter(FEXCore::Context::Context *ctx, size_t size)
-  : vixl::aarch64::Assembler(size ? (byte*)FEXCore::Allocator::mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) : reinterpret_cast<byte*>(~0ULL),
-                             size,
-                             vixl::aarch64::PositionDependentCode)
+  : Emitter(size ? (uint8_t*)FEXCore::Allocator::mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) : nullptr, size)
   , EmitterCTX {ctx} {
   CPU.SetUp();
-
-#ifdef VIXL_SIMULATOR
-  auto Features = vixl::CPUFeatures::All();
-#else
-  auto Features = vixl::CPUFeatures::InferFromOS();
-  if (ctx->HostFeatures.SupportsAtomics) {
-    // Hypervisor can hide this on the c630?
-    Features.Combine(vixl::CPUFeatures::Feature::kLORegions);
-  }
-#endif
-
-  SetCPUFeatures(Features);
 }
 
 Arm64Emitter::~Arm64Emitter() {
-  auto CodeBuffer = GetBuffer();
-  if (CodeBuffer->GetCapacity()) {
-    FEXCore::Allocator::munmap(CodeBuffer->GetStartAddress<void*>(), CodeBuffer->GetCapacity());
+  auto BufferSize = GetBufferSize();
+  if (BufferSize) {
+    FEXCore::Allocator::munmap(GetBufferBase(), BufferSize);
   }
 }
 
-void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, bool NOPPad) {
-  bool Is64Bit = Reg.IsX();
+void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad) {
+  bool Is64Bit = s == ARMEmitter::Size::i64Bit;
   int Segments = Is64Bit ? 4 : 2;
 
   if (Is64Bit && ((~Constant)>> 16) == 0) {
-    movn(Reg, (~Constant) & 0xFFFF);
+    movn(s, Reg, (~Constant) & 0xFFFF);
 
     if (NOPPad) {
       nop(); nop(); nop();
@@ -98,17 +85,17 @@ void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, 
       else {
         // Need to use ADRP + ADD
         adrp(Reg, AlignedOffset >> 12);
-        add(Reg, Reg, Constant & 0xFFF);
+        add(s, Reg, Reg, Constant & 0xFFF);
         NumMoves = 2;
       }
     }
   }
   else {
-    movz(Reg, (Constant) & 0xFFFF, 0);
+    movz(s, Reg, (Constant) & 0xFFFF, 0);
     for (int i = 1; i < Segments; ++i) {
       uint16_t Part = (Constant >> (i * 16)) & 0xFFFF;
       if (Part) {
-        movk(Reg, Part, i * 16);
+        movk(s, Reg, Part, i * 16);
         ++NumMoves;
       }
     }
@@ -124,140 +111,143 @@ void Arm64Emitter::LoadConstant(vixl::aarch64::Register Reg, uint64_t Constant, 
 void Arm64Emitter::PushCalleeSavedRegisters() {
   // We need to save pairs of registers
   // We save r19-r30
-  MemOperand PairOffset(sp, -16, PreIndex);
-  const std::array<std::pair<vixl::aarch64::Register, vixl::aarch64::Register>, 6> CalleeSaved = {{
-    {x19, x20},
-    {x21, x22},
-    {x23, x24},
-    {x25, x26},
-    {x27, x28},
-    {x29, x30},
+  const std::array<std::pair<ARMEmitter::XRegister, ARMEmitter::XRegister>, 6> CalleeSaved = {{
+    {ARMEmitter::XReg::x19, ARMEmitter::XReg::x20},
+    {ARMEmitter::XReg::x21, ARMEmitter::XReg::x22},
+    {ARMEmitter::XReg::x23, ARMEmitter::XReg::x24},
+    {ARMEmitter::XReg::x25, ARMEmitter::XReg::x26},
+    {ARMEmitter::XReg::x27, ARMEmitter::XReg::x28},
+    {ARMEmitter::XReg::x29, ARMEmitter::XReg::x30},
   }};
 
   for (auto &RegPair : CalleeSaved) {
-    stp(RegPair.first, RegPair.second, PairOffset);
+    stp<ARMEmitter::IndexType::PRE>(RegPair.first, RegPair.second, ARMEmitter::Reg::rsp, -16);
   }
 
   // Additionally we need to store the lower 64bits of v8-v15
   // Here's a fun thing, we can use two ST4 instructions to store everything
   // We just need a single sub to sp before that
   const std::array<
-    std::tuple<vixl::aarch64::VRegister,
-               vixl::aarch64::VRegister,
-               vixl::aarch64::VRegister,
-               vixl::aarch64::VRegister>, 2> FPRs = {{
-    {v8, v9, v10, v11},
-    {v12, v13, v14, v15},
+    std::tuple<ARMEmitter::DRegister,
+               ARMEmitter::DRegister,
+               ARMEmitter::DRegister,
+               ARMEmitter::DRegister>, 2> FPRs = {{
+    {ARMEmitter::DReg::d8, ARMEmitter::DReg::d9, ARMEmitter::DReg::d10, ARMEmitter::DReg::d11},
+    {ARMEmitter::DReg::d12, ARMEmitter::DReg::d13, ARMEmitter::DReg::d14, ARMEmitter::DReg::d15},
   }};
 
   uint32_t VectorSaveSize = sizeof(uint64_t) * 8;
-  sub(sp, sp, VectorSaveSize);
+  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, VectorSaveSize);
   // SP supporting move
   // We just saved x19 so it is safe
-  add(x19, sp, 0);
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r19, ARMEmitter::Reg::rsp, 0);
 
-  MemOperand QuadOffset(x19, 32, PostIndex);
   for (auto &RegQuad : FPRs) {
-    st4(std::get<0>(RegQuad).D(),
-        std::get<1>(RegQuad).D(),
-        std::get<2>(RegQuad).D(),
-        std::get<3>(RegQuad).D(),
+    st4(ARMEmitter::SubRegSize::i64Bit,
+        std::get<0>(RegQuad),
+        std::get<1>(RegQuad),
+        std::get<2>(RegQuad),
+        std::get<3>(RegQuad),
         0,
-        QuadOffset);
+        ARMEmitter::Reg::r19,
+        32);
   }
 }
 
 void Arm64Emitter::PopCalleeSavedRegisters() {
   const std::array<
-    std::tuple<vixl::aarch64::VRegister,
-               vixl::aarch64::VRegister,
-               vixl::aarch64::VRegister,
-               vixl::aarch64::VRegister>, 2> FPRs = {{
-    {v12, v13, v14, v15},
-    {v8, v9, v10, v11},
+    std::tuple<ARMEmitter::DRegister,
+               ARMEmitter::DRegister,
+               ARMEmitter::DRegister,
+               ARMEmitter::DRegister>, 2> FPRs = {{
+    {ARMEmitter::DReg::d12, ARMEmitter::DReg::d13, ARMEmitter::DReg::d14, ARMEmitter::DReg::d15},
+    {ARMEmitter::DReg::d8, ARMEmitter::DReg::d9, ARMEmitter::DReg::d10, ARMEmitter::DReg::d11},
   }};
 
-  MemOperand QuadOffset(sp, 32, PostIndex);
   for (auto &RegQuad : FPRs) {
-    ld4(std::get<0>(RegQuad).D(),
-        std::get<1>(RegQuad).D(),
-        std::get<2>(RegQuad).D(),
-        std::get<3>(RegQuad).D(),
+    ld4(ARMEmitter::SubRegSize::i64Bit,
+        std::get<0>(RegQuad),
+        std::get<1>(RegQuad),
+        std::get<2>(RegQuad),
+        std::get<3>(RegQuad),
         0,
-        QuadOffset);
+        ARMEmitter::Reg::rsp,
+        32);
   }
 
-  MemOperand PairOffset(sp, 16, PostIndex);
-  const std::array<std::pair<vixl::aarch64::Register, vixl::aarch64::Register>, 6> CalleeSaved = {{
-    {x29, x30},
-    {x27, x28},
-    {x25, x26},
-    {x23, x24},
-    {x21, x22},
-    {x19, x20},
+  const std::array<std::pair<ARMEmitter::XRegister, ARMEmitter::XRegister>, 6> CalleeSaved = {{
+    {ARMEmitter::XReg::x29, ARMEmitter::XReg::x30},
+    {ARMEmitter::XReg::x27, ARMEmitter::XReg::x28},
+    {ARMEmitter::XReg::x25, ARMEmitter::XReg::x26},
+    {ARMEmitter::XReg::x23, ARMEmitter::XReg::x24},
+    {ARMEmitter::XReg::x21, ARMEmitter::XReg::x22},
+    {ARMEmitter::XReg::x19, ARMEmitter::XReg::x20},
   }};
 
   for (auto &RegPair : CalleeSaved) {
-    ldp(RegPair.first, RegPair.second, PairOffset);
+    ldp<ARMEmitter::IndexType::POST>(RegPair.first, RegPair.second, ARMEmitter::Reg::rsp, 16);
   }
 }
 
 void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
-  if (StaticRegisterAllocation()) {
-    for (size_t i = 0; i < SRA64.size(); i+=2) {
-      auto Reg1 = SRA64[i];
-      auto Reg2 = SRA64[i+1];
-      if (((1U << Reg1.GetCode()) & GPRSpillMask) &&
-          ((1U << Reg2.GetCode()) & GPRSpillMask)) {
-        stp(Reg1, Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
-      }
-      else if (((1U << Reg1.GetCode()) & GPRSpillMask)) {
-        str(Reg1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
-      }
-      else if (((1U << Reg2.GetCode()) & GPRSpillMask)) {
-        str(Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1])));
-      }
+  if (!StaticRegisterAllocation()) {
+    return;
+  }
+
+  for (size_t i = 0; i < SRA64.size(); i+=2) {
+    auto Reg1 = SRA64[i];
+    auto Reg2 = SRA64[i+1];
+    if (((1U << Reg1.Idx()) & GPRSpillMask) &&
+        ((1U << Reg2.Idx()) & GPRSpillMask)) {
+      stp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
     }
+    else if (((1U << Reg1.Idx()) & GPRSpillMask)) {
+      str(Reg1.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+    }
+    else if (((1U << Reg2.Idx()) & GPRSpillMask)) {
+      str(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1]));
+    }
+  }
 
-    if (FPRs) {
-      if (EmitterCTX->HostFeatures.SupportsAVX) {
-        for (size_t i = 0; i < SRAFPR.size(); i++) {
-          const auto Reg = SRAFPR[i];
+  if (FPRs) {
+    if (EmitterCTX->HostFeatures.SupportsAVX) {
+      for (size_t i = 0; i < SRAFPR.size(); i++) {
+        const auto Reg = SRAFPR[i];
 
-          if (((1U << Reg.GetCode()) & FPRSpillMask) != 0) {
-            mov(TMP4, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
-            st1b(Reg.Z().VnB(), PRED_TMP_32B, SVEMemOperand(STATE, TMP4));
-          }
+        if (((1U << Reg.Idx()) & FPRSpillMask) != 0) {
+          mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+          st1b<ARMEmitter::SubRegSize::i8Bit>(Reg, PRED_TMP_32B, STATE.R(), TMP4.R());
         }
-      } else {
-        if (GPRSpillMask && FPRSpillMask == ~0U) {
-          // Optimize the common case where we can spill four registers per instruction
-          auto TmpReg = SRA64[__builtin_ffs(GPRSpillMask)];
-          // Load the sse offset in to the temporary register
-          add(TmpReg, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
-          for (size_t i = 0; i < SRAFPR.size(); i += 4) {
-            const auto Reg1 = SRAFPR[i];
-            const auto Reg2 = SRAFPR[i + 1];
-            const auto Reg3 = SRAFPR[i + 2];
-            const auto Reg4 = SRAFPR[i + 3];
-            st1(Reg1.V2D(), Reg2.V2D(), Reg3.V2D(), Reg4.V2D(), MemOperand(TmpReg, 64, PostIndex));
-          }
-        }
-        else {
-          for (size_t i = 0; i < SRAFPR.size(); i += 2) {
-            const auto Reg1 = SRAFPR[i];
-            const auto Reg2 = SRAFPR[i + 1];
+      }
+    } else {
+      if (GPRSpillMask && FPRSpillMask == ~0U) {
+        // Optimize the common case where we can spill four registers per instruction
+        auto TmpReg = SRA64[__builtin_ffs(GPRSpillMask)];
 
-            if (((1U << Reg1.GetCode()) & FPRSpillMask) &&
-                ((1U << Reg2.GetCode()) & FPRSpillMask)) {
-              stp(Reg1.Q(), Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
-            }
-            else if (((1U << Reg1.GetCode()) & FPRSpillMask)) {
-              str(Reg1.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
-            }
-            else if (((1U << Reg2.GetCode()) & FPRSpillMask)) {
-              str(Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i+1][0])));
-            }
+        // Load the sse offset in to the temporary register
+        add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
+        for (size_t i = 0; i < SRAFPR.size(); i += 4) {
+          const auto Reg1 = SRAFPR[i];
+          const auto Reg2 = SRAFPR[i + 1];
+          const auto Reg3 = SRAFPR[i + 2];
+          const auto Reg4 = SRAFPR[i + 3];
+          st1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
+        }
+      }
+      else {
+        for (size_t i = 0; i < SRAFPR.size(); i += 2) {
+          const auto Reg1 = SRAFPR[i];
+          const auto Reg2 = SRAFPR[i + 1];
+
+          if (((1U << Reg1.Idx()) & FPRSpillMask) &&
+              ((1U << Reg2.Idx()) & FPRSpillMask)) {
+            stp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+          }
+          else if (((1U << Reg1.Idx()) & FPRSpillMask)) {
+            str(Reg1.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+          }
+          else if (((1U << Reg2.Idx()) & FPRSpillMask)) {
+            str(Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i+1][0]));
           }
         }
       }
@@ -266,77 +256,79 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
 }
 
 void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
-  if (StaticRegisterAllocation()) {
-    if (FPRs) {
-      if (EmitterCTX->HostFeatures.SupportsAVX) {
-        // Set up predicate registers.
-        // We don't bother spilling these in SpillStaticRegs,
-        // since all that matters is we restore them on a fill.
-        // It's not a concern if they get trounced by something else.
-        ptrue(PRED_TMP_16B.VnB(), SVE_VL16);
-        ptrue(PRED_TMP_32B.VnB(), SVE_VL32);
+  if (!StaticRegisterAllocation()) {
+    return;
+  }
 
-        for (size_t i = 0; i < SRAFPR.size(); i++) {
-          const auto Reg = SRAFPR[i];
+  if (FPRs) {
+    if (EmitterCTX->HostFeatures.SupportsAVX) {
+      // Set up predicate registers.
+      // We don't bother spilling these in SpillStaticRegs,
+      // since all that matters is we restore them on a fill.
+      // It's not a concern if they get trounced by something else.
+      ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
+      ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
 
-          if (((1U << Reg.GetCode()) & FPRFillMask) != 0) {
-            mov(TMP4, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
-            ld1b(Reg.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(STATE, TMP4));
-          }
+      for (size_t i = 0; i < SRAFPR.size(); i++) {
+        const auto Reg = SRAFPR[i];
+        if (((1U << Reg.Idx()) & FPRFillMask) != 0) {
+          mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+          ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg, PRED_TMP_32B, STATE.R(), TMP4.R());
         }
-      } else {
-        if (GPRFillMask && FPRFillMask == ~0U) {
-          // Optimize the common case where we can fill four registers per instruction.
-          // Use one of the filling static registers before we fill it.
-          auto TmpReg = SRA64[__builtin_ffs(GPRFillMask)];
-          // Load the sse offset in to the temporary register
-          add(TmpReg, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
-          for (size_t i = 0; i < SRAFPR.size(); i += 4) {
-            const auto Reg1 = SRAFPR[i];
-            const auto Reg2 = SRAFPR[i + 1];
-            const auto Reg3 = SRAFPR[i + 2];
-            const auto Reg4 = SRAFPR[i + 3];
-            ld1(Reg1.V2D(), Reg2.V2D(), Reg3.V2D(), Reg4.V2D(), MemOperand(TmpReg, 64, PostIndex));
-          }
-        }
-        else {
-          for (size_t i = 0; i < SRAFPR.size(); i += 2) {
-            const auto Reg1 = SRAFPR[i];
-            const auto Reg2 = SRAFPR[i + 1];
+      }
+    } else {
+      if (GPRFillMask && FPRFillMask == ~0U) {
+        // Optimize the common case where we can fill four registers per instruction.
+        // Use one of the filling static registers before we fill it.
+        auto TmpReg = SRA64[__builtin_ffs(GPRFillMask)];
 
-            if (((1U << Reg1.GetCode()) & FPRFillMask) &&
-                ((1U << Reg2.GetCode()) & FPRFillMask)) {
-              ldp(Reg1.Q(), Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
-            }
-            else if (((1U << Reg1.GetCode()) & FPRFillMask)) {
-              ldr(Reg1.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0])));
-            }
-            else if (((1U << Reg2.GetCode()) & FPRFillMask)) {
-              ldr(Reg2.Q(), MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i+1][0])));
-            }
+        // Load the sse offset in to the temporary register
+        add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
+        for (size_t i = 0; i < SRAFPR.size(); i += 4) {
+          const auto Reg1 = SRAFPR[i];
+          const auto Reg2 = SRAFPR[i + 1];
+          const auto Reg3 = SRAFPR[i + 2];
+          const auto Reg4 = SRAFPR[i + 3];
+          ld1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
+        }
+      }
+      else {
+        for (size_t i = 0; i < SRAFPR.size(); i += 2) {
+          const auto Reg1 = SRAFPR[i];
+          const auto Reg2 = SRAFPR[i + 1];
+
+          if (((1U << Reg1.Idx()) & FPRFillMask) &&
+              ((1U << Reg2.Idx()) & FPRFillMask)) {
+            ldp<ARMEmitter::IndexType::OFFSET>(Reg1.Q(), Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+          }
+          else if (((1U << Reg1.Idx()) & FPRFillMask)) {
+            ldr(Reg1.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i][0]));
+          }
+          else if (((1U << Reg2.Idx()) & FPRFillMask)) {
+            ldr(Reg2.Q(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[i+1][0]));
           }
         }
       }
     }
+  }
 
-    for (size_t i = 0; i < SRA64.size(); i+=2) {
-      auto Reg1 = SRA64[i];
-      auto Reg2 = SRA64[i+1];
-      if (((1U << Reg1.GetCode()) & GPRFillMask) &&
-          ((1U << Reg2.GetCode()) & GPRFillMask)) {
-        ldp(Reg1, Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
-      }
-      else if (((1U << Reg1.GetCode()) & GPRFillMask)) {
-        ldr(Reg1, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i])));
-      }
-      else if (((1U << Reg2.GetCode()) & GPRFillMask)) {
-        ldr(Reg2, MemOperand(STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1])));
-      }
+  for (size_t i = 0; i < SRA64.size(); i+=2) {
+    auto Reg1 = SRA64[i];
+    auto Reg2 = SRA64[i+1];
+    if (((1U << Reg1.Idx()) & GPRFillMask) &&
+        ((1U << Reg2.Idx()) & GPRFillMask)) {
+      ldp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+    }
+    else if ((1U << Reg1.Idx()) & GPRFillMask) {
+      ldr(Reg1.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
+    }
+    else if ((1U << Reg2.Idx()) & GPRFillMask) {
+      ldr(Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i+1]));
     }
   }
 }
 
-void Arm64Emitter::PushDynamicRegsAndLR(aarch64::Register TmpReg) {
+void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
   const auto GPRSize = 1 * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
@@ -344,10 +336,10 @@ void Arm64Emitter::PushDynamicRegsAndLR(aarch64::Register TmpReg) {
   const auto FPRSize = RAFPR.size() * FPRRegSize;
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
-  sub(sp, sp, SPOffset);
+  sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
   // rsp capable move
-  add(TmpReg, aarch64::sp, 0);
+  add(ARMEmitter::Size::i64Bit, TmpReg, ARMEmitter::Reg::rsp, 0);
 
   if (CanUseSVE) {
     for (size_t i = 0; i < RAFPR.size(); i += 4) {
@@ -355,20 +347,21 @@ void Arm64Emitter::PushDynamicRegsAndLR(aarch64::Register TmpReg) {
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
-      st4b(Reg1.Z().VnB(), Reg2.Z().VnB(), Reg3.Z().VnB(), Reg4.Z().VnB(), PRED_TMP_32B, SVEMemOperand(TmpReg));
-      add(TmpReg, TmpReg, 32 * 4);
+      st4b(Reg1, Reg2, Reg3, Reg4, PRED_TMP_32B, TmpReg, 0);
+      add(ARMEmitter::Size::i64Bit, TmpReg, TmpReg, 32 * 4);
     }
   } else {
+    static_assert(RAFPR.size() % 4 == 0, "Needs to have multiple of 4 FPRs for RA");
     for (size_t i = 0; i < RAFPR.size(); i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
-      st1(Reg1.V2D(), Reg2.V2D(), Reg3.V2D(), Reg4.V2D(), MemOperand(TmpReg, 64, PostIndex));
+      st1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
     }
   }
 
-  str(aarch64::lr, MemOperand(TmpReg, 0));
+  str(ARMEmitter::XReg::lr, TmpReg, 0);
 }
 
 void Arm64Emitter::PopDynamicRegsAndLR() {
@@ -380,8 +373,8 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
-      ld4b(Reg1.Z().VnB(), Reg2.Z().VnB(), Reg3.Z().VnB(), Reg4.Z().VnB(), PRED_TMP_32B.Zeroing(), SVEMemOperand(aarch64::sp));
-      add(aarch64::sp, aarch64::sp, 32 * 4);
+      ld4b(Reg1, Reg2, Reg3, Reg4, PRED_TMP_32B, ARMEmitter::Reg::rsp);
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 32 * 4);
     }
   } else {
     for (size_t i = 0; i < RAFPR.size(); i += 4) {
@@ -389,11 +382,11 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
-      ld1(Reg1.V2D(), Reg2.V2D(), Reg3.V2D(), Reg4.V2D(), MemOperand(aarch64::sp, 64, PostIndex));
+      ld1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), ARMEmitter::Reg::rsp, 64);
     }
   }
 
-  ldr(aarch64::lr, MemOperand(aarch64::sp, 16, PostIndex));
+  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
 }
 
 void Arm64Emitter::Align16B() {

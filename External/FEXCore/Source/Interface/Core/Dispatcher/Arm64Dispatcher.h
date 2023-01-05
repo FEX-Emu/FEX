@@ -15,6 +15,9 @@ namespace FEXCore::Core {
 struct InternalThreadState;
 }
 
+#define STATE_PTR(STATE_TYPE, FIELD) \
+  STATE.R(), offsetof(FEXCore::Core::STATE_TYPE, FIELD)
+
 namespace FEXCore::CPU {
 
 class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
@@ -28,6 +31,8 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
   void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) override;
   void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) override;
 #endif
+
+  void EmitDispatcher();
 
   protected:
     void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) override;

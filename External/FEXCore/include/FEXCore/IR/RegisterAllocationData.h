@@ -77,7 +77,9 @@ struct RegisterAllocationDataDeleter {
 inline auto RegisterAllocationData::Create(uint32_t NodeCount) -> UniquePtr {
   auto Ret = (RegisterAllocationData*)FEXCore::Allocator::malloc(Size(NodeCount));
   memset(&Ret->Map[0], PhysicalRegister::Invalid().Raw, NodeCount);
+  Ret->SpillSlotCount = 0;
   Ret->MapCount = NodeCount;
+  Ret->IsShared = false;
   return UniquePtr { Ret };
 }
 
