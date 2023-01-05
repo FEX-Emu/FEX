@@ -221,30 +221,6 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   auto ThunkConfigFile = ThunkConfig();
   auto ThunkGuestPath =  std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
 
-  std::unordered_map<std::string, ThunkDBObject> ThunkDB;
-
-  auto LoadThunksDB = [this, &ThunkDB, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
-    // If a thunks DB property exists then we pull in data from the thunks database
-    // Load the initial thunks database
-    if (!*LoadedThunkDatabase) {
-      LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
-      LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
-      *LoadedThunkDatabase = true;
-    }
-
-    // Now load this property
-    for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
-      const char *LibraryName = json_getName(Item);
-      bool LibraryEnabled = json_getInteger(Item) != 0;
-      // If the library is enabled then find it in the DB
-      // Enable the overlay and all the dependencies in one go
-      auto DBObject = ThunkDB.find(LibraryName);
-      if (DBObject != ThunkDB.end()) {
-        DBObject->second.Enabled = LibraryEnabled;
-      }
-    }
-  };
-
   // We try to load ThunksDB from:
   // - FEX global config
   // - FEX user config
@@ -279,7 +255,10 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
-  bool LoadedThunkDatabase{};
+  std::unordered_map<std::string, ThunkDBObject> ThunkDB;
+  LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
+  LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
+
   for (const auto &Path : ConfigPaths) {
     std::vector<char> FileData;
     if (LoadFile(FileData, Path)) {
@@ -290,10 +269,22 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
         },
       };
 
+      // If a thunks DB property exists then we pull in data from the thunks database
       json_t const *json = json_createWithPool(&FileData.at(0), &Pool.PoolObject);
       json_t const* ThunksDB = json_getProperty( json, "ThunksDB" );
-      if (ThunksDB) {
-        LoadThunksDB(&LoadedThunkDatabase, ThunksDB);
+      if (!ThunksDB) {
+        continue;
+      }
+
+      for (json_t const* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+        const char *LibraryName = json_getName(Item);
+        bool LibraryEnabled = json_getInteger(Item) != 0;
+        // If the library is enabled then find it in the DB
+        // Enable the overlay and all the dependencies in one go
+        auto DBObject = ThunkDB.find(LibraryName);
+        if (DBObject != ThunkDB.end()) {
+          DBObject->second.Enabled = LibraryEnabled;
+        }
       }
     }
   }
