@@ -98,7 +98,14 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
   return true;
 }
 
-void FileManager::LoadThunkDatabase(bool Global) {
+struct ThunkDBObject {
+  std::string LibraryName;
+  std::unordered_set<std::string> Depends;
+  std::vector<std::string> Overlays;
+  bool Enabled{};
+};
+
+static void LoadThunkDatabase(std::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   std::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
@@ -145,7 +152,7 @@ void FileManager::LoadThunkDatabase(bool Global) {
           }
         }
         else if (ItemName == "Overlay") {
-          auto AddWithReplacement = [this, HomeDirectory](ThunkDBObject& DBObject, std::string LibraryItem) {
+          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, std::string LibraryItem) {
             constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
@@ -177,7 +184,7 @@ void FileManager::LoadThunkDatabase(bool Global) {
                 if (PrefixPos == std::string::npos) {
                   continue;
                 } else if (PrefixPos == PrefixArch.second) {
-                  Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode()]);
+                  Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode]);
                 } else if (PrefixPos == PrefixHome.second) {
                   Replacement.replace(PrefixPos, PrefixHome.first.size(), HomeDirectory);
                 } else if (PrefixPos == PrefixLib.second) {
@@ -211,16 +218,17 @@ void FileManager::LoadThunkDatabase(bool Global) {
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
 
-  bool LoadedThunkDatabase{};
   auto ThunkConfigFile = ThunkConfig();
   auto ThunkGuestPath =  std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
 
-  auto LoadThunksDB = [this, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
+  std::unordered_map<std::string, ThunkDBObject> ThunkDB;
+
+  auto LoadThunksDB = [this, &ThunkDB, ThunkGuestPath](bool *LoadedThunkDatabase, json_t const* ThunksDB) {
     // If a thunks DB property exists then we pull in data from the thunks database
     // Load the initial thunks database
     if (!*LoadedThunkDatabase) {
-      LoadThunkDatabase(true);
-      LoadThunkDatabase(false);
+      LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
+      LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
       *LoadedThunkDatabase = true;
     }
 
@@ -271,6 +279,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
+  bool LoadedThunkDatabase{};
   for (const auto &Path : ConfigPaths) {
     std::vector<char> FileData;
     if (LoadFile(FileData, Path)) {
@@ -298,7 +307,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     // Now walk the dependencies and set them up as well
     // Make sure to enable each one as we go to remove circular dependencies
     std::function<void(const std::unordered_set<std::string> &Depends, bool AlreadyEnabled)> InsertDependencies
-      = [this, &ThunkGuestPath, &InsertDependencies](const std::unordered_set<std::string> &Depends, bool AlreadyEnabled) -> void {
+      = [this, &ThunkDB, &ThunkGuestPath, &InsertDependencies](const std::unordered_set<std::string> &Depends, bool AlreadyEnabled) -> void {
       for (auto const &Depend : Depends) {
         auto DBDepend = ThunkDB.find(Depend);
         if (DBDepend != ThunkDB.end() &&
@@ -323,9 +332,6 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     InsertDependencies({DBObject.first}, true);
     InsertDependencies(DBObject.second.Depends, false);
   }
-
-  // Now clear the thunk database since we're loaded
-  ThunkDB.clear();
 
   if (false) {
     // Useful for debugging

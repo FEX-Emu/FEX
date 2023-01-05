@@ -96,14 +96,5 @@ private:
   FEX_CONFIG_OPT(AppConfigName, APP_CONFIG_NAME);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   uint32_t CurrentPID{};
-
-  void LoadThunkDatabase(bool Global);
-  struct ThunkDBObject {
-    std::string LibraryName;
-    std::unordered_set<std::string> Depends;
-    std::vector<std::string> Overlays;
-    bool Enabled{};
-  };
-  std::unordered_map<std::string, ThunkDBObject> ThunkDB{};
 };
 }
