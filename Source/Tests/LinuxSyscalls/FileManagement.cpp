@@ -300,10 +300,15 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
       decltype(FileManager::ThunkOverlays)& ThunkOverlays;
       decltype(ThunkDB)& ThunkDB;
       const std::filesystem::path& ThunkGuestPath;
+      bool Is64BitMode;
 
       void SetupOverlay(const ThunkDBObject& DBDepend) {
           auto ThunkPath = ThunkGuestPath / DBDepend.LibraryName;
           if (!std::filesystem::exists(ThunkPath)) {
+            if (!Is64BitMode) {
+              // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
+              return;
+            }
             ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
           }
 
@@ -327,7 +332,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
           InsertDependencies(DBDepend.Depends);
         }
       };
-    } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath };
+    } DBObjectHandler { ThunkOverlays, ThunkDB, ThunkGuestPath, Is64BitMode() };
 
     DBObjectHandler.SetupOverlay(DBObject.second);
     DBObjectHandler.InsertDependencies(DBObject.second.Depends);
