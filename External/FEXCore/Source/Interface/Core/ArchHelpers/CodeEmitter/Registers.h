@@ -1,6 +1,5 @@
 #pragma once
 #include <FEXCore/Utils/EnumUtils.h>
-#include <compare>
 #include <cstdint>
 
 namespace FEXCore::ARMEmitter {
