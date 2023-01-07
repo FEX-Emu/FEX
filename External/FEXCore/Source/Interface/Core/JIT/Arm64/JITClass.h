@@ -235,18 +235,6 @@ private:
   */
   uint8_t *GuestEntry{};
 
-  using OpHandler = void (Arm64JITCore::*)(IR::IROp_Header const *IROp, IR::NodeID Node);
-  std::array<OpHandler, IR::IROps::OP_LAST + 1> OpHandlers {};
-  void RegisterALUHandlers();
-  void RegisterAtomicHandlers();
-  void RegisterBranchHandlers();
-  void RegisterConversionHandlers();
-  void RegisterFlagHandlers();
-  void RegisterMemoryHandlers();
-  void RegisterMiscHandlers();
-  void RegisterMoveHandlers();
-  void RegisterVectorHandlers();
-  void RegisterEncryptionHandlers();
 #define DEF_OP(x) void Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
   ///< Unhandled handler

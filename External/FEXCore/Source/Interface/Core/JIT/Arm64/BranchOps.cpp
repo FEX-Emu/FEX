@@ -451,20 +451,5 @@ DEF_OP(CPUID) {
 }
 
 #undef DEF_OP
-void Arm64JITCore::RegisterBranchHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(SIGNALRETURN,      SignalReturn);
-  REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
-  REGISTER_OP(EXITFUNCTION,      ExitFunction);
-  REGISTER_OP(JUMP,              Jump);
-  REGISTER_OP(CONDJUMP,          CondJump);
-  REGISTER_OP(SYSCALL,           Syscall);
-  REGISTER_OP(INLINESYSCALL,     InlineSyscall);
-  REGISTER_OP(THUNK,             Thunk);
-  REGISTER_OP(VALIDATECODE,      ValidateCode);
-  REGISTER_OP(THREADREMOVECODEENTRY,   ThreadRemoveCodeEntry);
-  REGISTER_OP(CPUID,             CPUID);
-#undef REGISTER_OP
-}
 }
 

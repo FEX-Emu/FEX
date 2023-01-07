@@ -14,10 +14,5 @@ DEF_OP(GetHostFlag) {
 }
 
 #undef DEF_OP
-void Arm64JITCore::RegisterFlagHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(GETHOSTFLAG, GetHostFlag);
-#undef REGISTER_OP
-}
 }
 

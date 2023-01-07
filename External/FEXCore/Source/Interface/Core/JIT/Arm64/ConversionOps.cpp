@@ -365,18 +365,5 @@ DEF_OP(Vector_FToI) {
 }
 
 #undef DEF_OP
-void Arm64JITCore::RegisterConversionHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(VINSGPR,         VInsGPR);
-  REGISTER_OP(VCASTFROMGPR,    VCastFromGPR);
-  REGISTER_OP(FLOAT_FROMGPR_S, Float_FromGPR_S);
-  REGISTER_OP(FLOAT_FTOF,      Float_FToF);
-  REGISTER_OP(VECTOR_STOF,     Vector_SToF);
-  REGISTER_OP(VECTOR_FTOZS,    Vector_FToZS);
-  REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
-  REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
-  REGISTER_OP(VECTOR_FTOI,     Vector_FToI);
-#undef REGISTER_OP
-}
 }
 
