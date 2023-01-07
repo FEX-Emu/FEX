@@ -123,7 +123,7 @@ namespace FEXCore::Context {
     FEXCore::HostFeatures HostFeatures;
 
     std::mutex ThreadCreationMutex;
-    FEXCore::Core::InternalThreadState* ParentThread;
+    FEXCore::Core::InternalThreadState* ParentThread{};
     std::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
     bool NeedToCheckXID{true};
