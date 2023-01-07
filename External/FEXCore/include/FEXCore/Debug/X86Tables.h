@@ -144,8 +144,8 @@ struct DecodedOperand {
     } GPR;
 
     struct {
-      uint8_t GPR;
       int32_t Displacement;
+      uint8_t GPR;
     } GPRIndirect;
 
     struct {
@@ -156,27 +156,33 @@ struct DecodedOperand {
     } RIPLiteral;
 
     struct {
-      uint8_t Size;
       uint64_t Value;
+      uint8_t Size;
     } Literal;
 
     struct {
+      int32_t Offset;
+      uint8_t Scale;
       uint8_t Index; // ~0 invalid
       uint8_t Base; // ~0 invalid
-      uint32_t Scale  : 8;
-      int32_t Offset;
     } SIB;
   };
 
-  OpType Type;
   TypeUnion Data;
+  OpType Type;
 };
 
 struct DecodedInst {
   uint64_t PC;
 
-  uint16_t OP;
+  DecodedOperand Dest;
+  DecodedOperand Src[3];
+
+  // Constains the dispatcher handler pointer
+  X86InstInfo const* TableInfo;
+
   uint32_t Flags;
+  uint16_t OP;
 
   uint8_t ModRM;
   uint8_t SIB;
@@ -184,12 +190,6 @@ struct DecodedInst {
   uint8_t LastEscapePrefix;
   bool DecodedModRM;
   bool DecodedSIB;
-
-  DecodedOperand Dest;
-  DecodedOperand Src[3];
-
-  // Constains the dispatcher handler pointer
-  X86InstInfo const* TableInfo;
 };
 
 union ModRMDecoded {
