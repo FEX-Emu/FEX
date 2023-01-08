@@ -703,19 +703,43 @@ DEF_OP(SpillRegister) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
     case 1: {
-      strb(Src, ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 4095) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        strb(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        strb(Src, ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 2: {
-      strh(Src, ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 8190) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        strh(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        strh(Src, ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 4: {
-      str(Src.W(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 16380) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        str(Src.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        str(Src.W(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 8: {
-      str(Src.X(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 32760) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        str(Src.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        str(Src.W(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     default:
@@ -727,15 +751,33 @@ DEF_OP(SpillRegister) {
 
     switch (OpSize) {
     case 4: {
-      str(Src.S(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 16380) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        str(Src.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        str(Src.S(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 8: {
-      str(Src.D(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 32760) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        str(Src.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        str(Src.D(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 16: {
-      str(Src.Q(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 65520) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        str(Src.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        str(Src.D(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 32: {
@@ -761,19 +803,43 @@ DEF_OP(FillRegister) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
     case 1: {
-      ldrb(Dst, ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 4095) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldrb(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldrb(Dst, ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 2: {
-      ldrh(Dst, ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 8190) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldrh(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldrh(Dst, ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 4: {
-      ldr(Dst.W(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 16380) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldr(Dst.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldr(Dst.W(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 8: {
-      ldr(Dst.X(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 32760) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldr(Dst.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldr(Dst.X(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     default:
@@ -785,15 +851,33 @@ DEF_OP(FillRegister) {
 
     switch (OpSize) {
     case 4: {
-      ldr(Dst.S(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 16380) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldr(Dst.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldr(Dst.S(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 8: {
-      ldr(Dst.D(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 32760) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldr(Dst.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldr(Dst.D(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 16: {
-      ldr(Dst.Q(), ARMEmitter::Reg::rsp, SlotOffset);
+      if (SlotOffset > 65520) {
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
+        ldr(Dst.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+      }
+      else {
+        ldr(Dst.Q(), ARMEmitter::Reg::rsp, SlotOffset);
+      }
       break;
     }
     case 32: {
