@@ -39,7 +39,7 @@ class OrderedNode;
 //FST(register to register)
 
 // State loading duplicated from X87.cpp, setting host rounding mode
-// See issue 
+// See issue
 void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
@@ -76,7 +76,7 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   roundingMode = _And(roundingMode, roundMask);
   _SetRoundingMode(roundingMode);
   _F80LoadFCW(NewFCW);
-  
+
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   OrderedNode *MemLocation = _Add(Mem, _Constant(Size * 1));
@@ -184,7 +184,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  
+
   OrderedNode *converted = _F80CVTTo(data, 8);
   converted = _F80BCDStore(converted);
 
@@ -256,7 +256,7 @@ void OpDispatchBuilder::FSTF64(OpcodeArgs) {
     //Convert to 80-bit float
     auto result = _F80CVTTo(data, 8);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, 10, 1);
-  } 
+  }
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     // if we are popping then we must first mark this location as empty
@@ -688,7 +688,10 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, 8, arg);
+      if(width == 16) {
+        arg = _Sext(16, arg);
+      }
+      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -712,7 +715,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
   OrderedNode *HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
   OrderedNode *HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
   OrderedNode *HostFlag_Unordered  = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
-  
+
   HostFlag_CF = _Or(HostFlag_CF, HostFlag_Unordered);
   HostFlag_ZF = _Or(HostFlag_ZF, HostFlag_Unordered);
 
