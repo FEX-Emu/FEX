@@ -315,7 +315,10 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, 8, arg);
+      if(width == 16) {
+        arg = _Sext(16, arg);
+      }
+      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -373,7 +376,10 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, 8, arg);
+      if(width == 16) {
+        arg = _Sext(16, arg);
+      }
+      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -434,7 +440,10 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, 8, arg);
+      if(width == 16) {
+        arg = _Sext(16, arg);
+      }
+      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
@@ -517,7 +526,10 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
     // Memory arg
     if constexpr (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      b = _Float_FromGPR_S(8, 8, arg);
+      if(width == 16) {
+        arg = _Sext(16, arg);
+      }
+      b = _Float_FromGPR_S(8, width == 64 ? 8 : 4, arg);
     } else if constexpr (width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
       b = _Float_FToF(8, 4, arg);
