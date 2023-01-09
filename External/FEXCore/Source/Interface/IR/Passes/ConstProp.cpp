@@ -29,6 +29,7 @@ $end_info$
 #include <string.h>
 #include <tuple>
 #include <unordered_map>
+#include <tsl/robin_map.h>
 #include <utility>
 
 namespace FEXCore::IR {
@@ -198,6 +199,17 @@ private:
 
   std::unordered_map<uint64_t, OrderedNode*> ConstPool;
   std::map<OrderedNode*, uint64_t> AddressgenConsts;
+
+  // Pool inline constant generation. These are typically very small and pool efficiently.
+  tsl::robin_map<uint64_t, OrderedNode*> InlineConstantGen;
+  OrderedNode *CreateInlineConstant(IREmitter *IREmit, uint64_t Constant) {
+    const auto it = InlineConstantGen.find(Constant);
+    if (it != InlineConstantGen.end()) {
+      return it->second;
+    }
+    auto Result = InlineConstantGen.insert_or_assign(Constant, IREmit->_InlineConstant(Constant));
+    return Result.first->second;
+  }
   bool SupportsTSOImm9{};
 };
 
@@ -820,6 +832,7 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 }
 
 bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR) {
+  InlineConstantGen.clear();
   bool Changed = false;
 
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
@@ -841,7 +854,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           else
             Constant2 &= 63;
 
-          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
           Changed = true;
         }
@@ -857,7 +870,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           if (IsImmAddSub(Constant2)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
             Changed = true;
           }
@@ -873,7 +886,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           if (IsImmAddSub(Constant1)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
+            IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
 
             Changed = true;
           }
@@ -888,8 +901,8 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         {
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[2]));
 
-          IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
-          IREmit->ReplaceNodeArgument(CodeNode, 3, IREmit->_InlineConstant(Constant3));
+          IREmit->ReplaceNodeArgument(CodeNode, 2, CreateInlineConstant(IREmit, Constant2));
+          IREmit->ReplaceNodeArgument(CodeNode, 3, CreateInlineConstant(IREmit, Constant3));
         }
 
         break;
@@ -903,7 +916,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           if (IsImmAddSub(Constant2)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
             Changed = true;
           }
@@ -919,7 +932,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
 
           IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
 
-          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Constant));
+          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant));
 
           Changed = true;
         } else {
@@ -945,7 +958,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           if (IsImmLogical(Constant2, IROp->Size * 8)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[1]));
 
-            IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
 
             Changed = true;
           }
@@ -961,7 +974,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           if (IsImmMemory(Constant2, IROp->Size)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
 
-            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
 
             Changed = true;
           }
@@ -977,7 +990,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
           if (IsImmMemory(Constant2, IROp->Size)) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
 
-            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
+            IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
 
             Changed = true;
           }
@@ -994,7 +1007,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
             if (IsTSOImm9(Constant2)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
 
-              IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
+              IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
 
               Changed = true;
             }
@@ -1012,7 +1025,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
             if (IsTSOImm9(Constant2)) {
               IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Offset));
 
-              IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, IREmit->_InlineConstant(Constant2));
+              IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, CreateInlineConstant(IREmit, Constant2));
 
               Changed = true;
             }
