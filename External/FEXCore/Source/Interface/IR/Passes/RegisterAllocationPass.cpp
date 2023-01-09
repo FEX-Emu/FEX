@@ -257,7 +257,7 @@ namespace {
   void FindNodeClasses(RegisterGraph *Graph, FEXCore::IR::IRListView *IR) {
     for (auto [CodeNode, IROp] : IR->GetAllCode()) {
       // If the destination hasn't yet been set then set it now
-      if (IROp->HasDest) {
+      if (GetHasDest(IROp->Op)) {
         const auto ID = IR->GetID(CodeNode);
         Graph->AllocData->Map[ID.Value] = PhysicalRegister(GetRegClassFromNode(IR, IROp), INVALID_REG);
       } else {
@@ -455,7 +455,7 @@ namespace {
         auto& NodeLiveRange = LiveRanges[Node.Value];
 
         // If the destination hasn't yet been set then set it now
-        if (IROp->HasDest) {
+        if (GetHasDest(IROp->Op)) {
           LOGMAN_THROW_AA_FMT(NodeLiveRange.Begin.Value == UINT32_MAX,
                              "Node begin already defined?");
           NodeLiveRange.Begin = Node;
@@ -709,7 +709,7 @@ namespace {
         }
 
         // This op defines a span
-        if (IROp->HasDest) {
+        if (GetHasDest(IROp->Op)) {
           // If this is a pre-write, update the StaticMap so we track writes
           if (!NodeLiveRange.PrefferedRegister.IsInvalid()) {
             SRA_DEBUG("ssa{} is a pre-write\n", Node);
@@ -1370,7 +1370,7 @@ namespace {
     auto LastCursor = IREmit->GetWriteCursor();
     auto [CodeNode, IROp] = IR.at(SpillPointId)();
 
-    LOGMAN_THROW_AA_FMT(IROp->HasDest, "Can't spill with no dest");
+    LOGMAN_THROW_AA_FMT(GetHasDest(IROp->Op), "Can't spill with no dest");
 
     const auto Node = IR.GetID(CodeNode);
     RegisterNode *CurrentNode = &Graph->Nodes[Node.Value];

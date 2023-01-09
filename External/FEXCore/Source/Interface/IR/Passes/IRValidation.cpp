@@ -79,7 +79,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
       const auto ID = CurrentIR.GetID(CodeNode);
       const uint8_t OpSize = IROp->Size;
 
-      if (IROp->HasDest) {
+      if (GetHasDest(IROp->Op)) {
         HadError |= OpSize == 0;
         // Does the op have a destination of size 0?
         if (OpSize == 0) {
