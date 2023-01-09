@@ -112,7 +112,7 @@ void IREmitter::ReplaceAllUsesWithRange(OrderedNode *Node, OrderedNode *NewNode,
   while (Begin != End) {
     auto [RealNode, IROp] = Begin();
 
-    uint8_t NumArgs = IR::GetArgs(IROp->Op);
+    const uint8_t NumArgs = IR::GetArgs(IROp->Op);
     for (uint8_t i = 0; i < NumArgs; ++i) {
       if (IROp->Args[i].ID() == NodeId) {
         Node->RemoveUse();
@@ -148,7 +148,7 @@ void IREmitter::RemoveArgUses(OrderedNode *Node) {
 
   FEXCore::IR::IROp_Header *IROp = Node->Op(DataBegin);
 
-  uint8_t NumArgs = IR::GetArgs(IROp->Op);
+  const uint8_t NumArgs = IR::GetArgs(IROp->Op);
   for (uint8_t i = 0; i < NumArgs; ++i) {
     auto ArgNode = IROp->Args[i].GetNode(ListBegin);
     ArgNode->RemoveUse();
@@ -201,7 +201,6 @@ void IREmitter::ReplaceWithConstant(OrderedNode *Node, uint64_t Value) {
 
       // Overwrite data with the new constant op
       Header->Op = OP_CONSTANT;
-      Header->NumArgs = 0;
       auto Const = Header->CW<IROp_Constant>();
       Const->Constant = Value;
     } else {

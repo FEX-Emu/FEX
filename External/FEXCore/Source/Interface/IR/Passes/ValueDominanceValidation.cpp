@@ -94,7 +94,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       const auto CodeID = CurrentIR.GetID(CodeNode);
 
-      const uint8_t NumArgs = IR::GetArgs(IROp->Op);
+      const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
       for (uint32_t i = 0; i < NumArgs; ++i) {
         if (IROp->Args[i].IsInvalid()) continue;
         if (CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;

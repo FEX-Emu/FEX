@@ -281,7 +281,6 @@ def print_ir_structs(defines):
     output_file.write("\tvoid* Data[0];\n")
     output_file.write("\tIROps Op;\n\n")
     output_file.write("\tuint8_t Size;\n")
-    output_file.write("\tuint8_t NumArgs;\n")
     output_file.write("\tuint8_t ElementSize;\n")
 
     output_file.write("\ttemplate<typename T>\n")
@@ -357,6 +356,7 @@ def print_ir_sizes():
 
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] std::string_view const& GetName(IROps Op);\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetArgs(IROps Op);\n")
+    output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] uint8_t GetRAArgs(IROps Op);\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool HasSideEffects(IROps Op);\n")
     output_file.write("[[nodiscard, gnu::const, gnu::visibility(\"default\")]] bool GetHasDest(IROps Op);\n")
@@ -417,7 +417,7 @@ def print_ir_getname():
 def print_ir_getraargs():
     output_file.write("#ifdef IROP_GETRAARGS_IMPL\n")
 
-    output_file.write("constexpr std::array<uint8_t, OP_LAST + 1> IRArgs = {\n")
+    output_file.write("constexpr std::array<uint8_t, OP_LAST + 1> IRRAArgs = {\n")
     for op in IROps:
         SSAArgs = op.SSAArgNum
 
@@ -429,6 +429,18 @@ def print_ir_getraargs():
         output_file.write("\t{},\n".format(SSAArgs))
 
     output_file.write("};\n\n")
+
+
+    output_file.write("constexpr std::array<uint8_t, OP_LAST + 1> IRArgs = {\n")
+    for op in IROps:
+        SSAArgs = op.SSAArgNum
+        output_file.write("\t{},\n".format(SSAArgs))
+
+    output_file.write("};\n\n")
+
+    output_file.write("uint8_t GetRAArgs(IROps Op) {\n")
+    output_file.write("  return IRRAArgs[Op];\n")
+    output_file.write("}\n")
 
     output_file.write("uint8_t GetArgs(IROps Op) {\n")
     output_file.write("  return IRArgs[Op];\n")
@@ -649,8 +661,6 @@ def print_ir_allocator_helpers():
                                 output_file.write("\t\tInferSize = std::max(InferSize, Size{});\n".format(arg.Name))
 
                     output_file.write("\t\tOp.first->Header.Size = InferSize;\n")
-
-            output_file.write("\t\tOp.first->Header.NumArgs = {};\n".format(op.SSAArgNum))
 
             # Some ops without a destination still need an operating size
             # Effectively reusing the destination size value for operation size
