@@ -4959,12 +4959,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
         Core::CPUState::XMM_AVX_REG_SIZE :
         Core::CPUState::XMM_SSE_REG_SIZE;
 
-      const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
-        offsetof(Core::CPUState, xmm.avx.data[gprIndex][0]) :
-        offsetof(Core::CPUState, xmm.sse.data[gprIndex][0]);
-
       // Load the full register size if it is a XMM register source.
-      Src = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, regSize);
+      Src = LoadXMMRegister(gprIndex);
 
       // If we are wanting a high-index then we need to extract an element from the upper half of the reg.
       // We can only extract an element size here.
@@ -5178,35 +5174,29 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
       const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
-      const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
-        offsetof(Core::CPUState, xmm.avx.data[gprIndex][highIndex]) :
-        offsetof(Core::CPUState, xmm.sse.data[gprIndex][highIndex]);
 
+      auto Result = Src;
       if (highIndex || OpSize != VectorSize) {
-        auto InsertResult = Src;
         // Partial writes can come from GPR or FPR.
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
-        auto SrcVector = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, OpSize);
+        auto SrcVector = LoadXMMRegister(gprIndex);
 
         if (Class == IR::GPRClass) {
-          InsertResult = _VInsGPR(VectorSize, OpSize, highIndex, SrcVector, Src);
+          Result = _VInsGPR(VectorSize, OpSize, highIndex, SrcVector, Src);
         }
         else {
           // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
           // TODO: Longer term we should enforce the difference between zero and insert.
           if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
-            InsertResult = _VMov(OpSize, Src);
+            Result = _VMov(OpSize, Src);
           }
           else {
-            InsertResult = _VInsElement(VectorSize, OpSize, highIndex, 0, SrcVector, Src);
+            Result = _VInsElement(VectorSize, OpSize, highIndex, 0, SrcVector, Src);
           }
         }
+      }
 
-        _StoreRegister(InsertResult, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
-      }
-      else {
-        _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
-      }
+      StoreXMMRegister(gprIndex, Result);
     }
     else {
       if (GPRSize == 8 && OpSize == 4) {
