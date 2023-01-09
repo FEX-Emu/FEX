@@ -822,8 +822,8 @@ void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
   // Overwrite the op
   result.first->Header.Op = IROp;
 
-  if constexpr (IROp == IR::OP_F80FPREM ||
-    IROp == IR::OP_F80FPREM1) {
+  if constexpr (IROp == IR::OP_F64FPREM ||
+    IROp == IR::OP_F64FPREM1) {
     //TODO: Set C0 to Q2, C3 to Q1, C1 to Q0
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
   }
