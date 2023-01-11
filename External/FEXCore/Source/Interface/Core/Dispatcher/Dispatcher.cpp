@@ -421,6 +421,11 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
 
   // Backup where we think the RIP currently is
   ContextBackup->OriginalRIP = Frame->State.rip;
+  // Calculate eflags upfront.
+  uint32_t eflags = 0;
+  for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
+    eflags |= Frame->State.flags[i] << i;
+  }
 
   if (GuestAction->sa_flags & SA_SIGINFO) {
     // Setup ucontext a bit
@@ -458,7 +463,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       SetXStateInfo(xstate, IsAVXEnabled);
 
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = eflags;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] = 0;
 
       // aarch64 and x86_64 siginfo_t matches. We can just copy this over
@@ -591,7 +596,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
         guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(ucontext, Signal, HostSigInfo);
       }
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
-      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = 0;
+      guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = eflags;
       guest_uctx->uc_mcontext.gregs[FEXCore::x86::FEX_REG_UESP] = 0;
 
 #define COPY_REG(x) \
