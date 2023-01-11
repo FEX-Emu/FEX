@@ -19,7 +19,7 @@ namespace SquashFS {
 
   void ShutdownImagePID() {
     if (FuseMountPID) {
-      tgkill(FuseMountPID, FuseMountPID, SIGINT);
+      FHU::Syscalls::tgkill(FuseMountPID, FuseMountPID, SIGINT);
     }
   }
 
