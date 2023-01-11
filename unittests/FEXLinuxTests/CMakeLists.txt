@@ -27,7 +27,7 @@ ExternalProject_Add(FEXLinuxTests_32
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS tests/*.cpp)
 file(GLOB_RECURSE TESTS_32_ONLY CONFIGURE_DEPENDS tests/*.32.cpp)
 
-set(TESTS_32 ${TESTS})
+set(TESTS_32 ${TESTS_32_ONLY})
 
 # Apply bitness-specific exclude lists
 list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})

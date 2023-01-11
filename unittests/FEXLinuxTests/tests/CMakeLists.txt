@@ -14,6 +14,11 @@ if(BITNESS EQUAL 64)
   list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})
 endif()
 
+if(BITNESS EQUAL 32)
+  file(GLOB_RECURSE TESTS_64_ONLY CONFIGURE_DEPENDS *.64.cpp)
+  list(REMOVE_ITEM TESTS ${TESTS_64_ONLY})
+endif()
+
 option(CATCH_BUILD_STATIC_LIBRARY "" ON)
 set(CATCH_BUILD_STATIC_LIBRARY ON)
 add_subdirectory(../../../External/Catch2/ Catch2)
