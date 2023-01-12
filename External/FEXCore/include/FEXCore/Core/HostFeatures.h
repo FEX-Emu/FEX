@@ -27,6 +27,7 @@ class HostFeatures final {
     bool SupportsSHA{};
     bool SupportsBMI1{};
     bool SupportsBMI2{};
+    bool SupportsCLWB{};
     bool SupportsPMULL_128Bit{};
 
     // Float exception behaviour

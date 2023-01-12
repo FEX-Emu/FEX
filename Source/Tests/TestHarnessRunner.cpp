@@ -178,7 +178,8 @@ int main(int argc, char **argv, char **const envp) {
     (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) ||
     (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
     (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) ||
-    (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2());
+    (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
+    (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
 
   if (TestUnsupported) {
     FEXCore::Context::DestroyContext(CTX);

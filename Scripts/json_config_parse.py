@@ -72,6 +72,7 @@ class HostFeatures(Flag) :
     FEATURE_CLZERO = (1 << 5)
     FEATURE_BMI1   = (1 << 6)
     FEATURE_BMI2   = (1 << 7)
+    FEATURE_CLWB   = (1 << 8)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -143,6 +144,7 @@ HostFeaturesLookup = {
     "CLZERO" : HostFeatures.FEATURE_CLZERO,
     "BMI1"   : HostFeatures.FEATURE_BMI1,
     "BMI2"   : HostFeatures.FEATURE_BMI2,
+    "CLWB"   : HostFeatures.FEATURE_CLWB,
 }
 
 def parse_hexstring(s):
