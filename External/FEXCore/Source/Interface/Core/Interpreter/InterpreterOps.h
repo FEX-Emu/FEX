@@ -182,6 +182,7 @@ namespace FEXCore::CPU {
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
   DEF_OP(CacheLineClear);
+  DEF_OP(CacheLineClean);
   DEF_OP(CacheLineZero);
 
   ///< Misc ops

@@ -888,6 +888,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
           }
           break;
         REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
+        REGISTER_OP(CACHELINECLEAN,      CacheLineClean);
         REGISTER_OP(CACHELINEZERO,       CacheLineZero);
 
         // Misc ops

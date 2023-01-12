@@ -5627,7 +5627,7 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
     // This is a CLFlush
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    _CacheLineClear(DestMem);
+    _CacheLineClear(DestMem, true);
   }
 }
 
