@@ -689,6 +689,9 @@ public:
   template<uint8_t FenceType>
   void FenceOp(OpcodeArgs);
 
+  void CLWB(OpcodeArgs);
+  void CLFLUSHOPT(OpcodeArgs);
+  void MemFenceOrXSAVEOPT(OpcodeArgs);
   void StoreFenceOrCLFlush(OpcodeArgs);
   void CLZeroOp(OpcodeArgs);
   void RDTSCPOp(OpcodeArgs);
