@@ -335,6 +335,59 @@ public:
     ASIMDScalarCopy(Op, Q, imm5, 0b0000, rd.V(), rn.V());
   }
 
+  // Advanced SIMD three same (FP16)
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void ASIMDThreeSameFP16(uint32_t U, uint32_t a, uint32_t opcode, T rm, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+    constexpr uint32_t Op = 0b0000'1110'0100'0000'0000'01 << 10;
+
+    uint32_t Instr = Op;
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= a << 23;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  // Advanced SIMD two-register miscellaneous (FP16)
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void ASIMDTwoRegMiscFP16(uint32_t U, uint32_t a, uint32_t opcode, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+    constexpr uint32_t Op = 0b0000'1110'0111'1000'0000'10 << 10;
+
+    uint32_t Instr = Op;
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= a << 23;
+    Instr |= opcode << 12;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  // Advanced SIMD three-register extension
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void ASIMDThreeRegisterExt(uint32_t U, uint32_t opcode, FEXCore::ARMEmitter::SubRegSize size, T rm, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+    constexpr uint32_t Op = 0b0000'1110'0000'0000'1000'01 << 10;
+
+    uint32_t Instr = Op;
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
   template<typename T>
   requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
   void dup(FEXCore::ARMEmitter::SubRegSize size, T rd, FEXCore::ARMEmitter::Register rn) {
@@ -532,11 +585,420 @@ public:
 
 
   // Advanced SIMD three same (FP16)
-  // TODO
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmaxnm(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b000, rm, rn, rd);
+  }
+
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmla(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b001, rm, rn, rd);
+  }
+
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fadd(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b010, rm, rn, rd);
+  }
+
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmulx(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b011, rm, rn, rd);
+  }
+
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmeq(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b100, rm, rn, rd);
+  }
+
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmax(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b110, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frecps(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 0, 0b111, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fminnm(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 1, 0b000, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmls(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 1, 0b001, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fsub(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 1, 0b010, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmin(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 1, 0b110, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frsqrts(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(0, 1, 0b111, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmaxnmp(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b000, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void faddp(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b010, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmul(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b011, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmge(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b100, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void facge(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b101, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fmaxp(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b110, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fdiv(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 0, 0b111, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fminnmp(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 1, 0b000, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fabd(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 1, 0b010, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmgt(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 1, 0b100, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void facgt(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 1, 0b101, rm, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fminp(T rd, T rn, T rm) {
+    ASIMDThreeSameFP16(1, 1, 0b110, rm, rn, rd);
+  }
+
   // Advanced SIMD two-register miscellaneous (FP16)
-  // TODO
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frintn(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 0, 0b11000, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frintm(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 0, 0b11001, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtns(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 0, 0b11010, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtms(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 0, 0b11011, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtas(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 0, 0b11100, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void scvtf(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 0, 0b11101, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmgt(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b01100, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmeq(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b01101, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmlt(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b01110, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fabs(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b01111, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frintp(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b11000, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frintz(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b11001, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtps(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b11010, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtzs(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b11011, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frecpe(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(0, 1, 0b11101, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frinta(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 0, 0b11000, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frintx(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 0, 0b11001, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtnu(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 0, 0b11010, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtmu(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 0, 0b11011, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtau(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 0, 0b11100, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void ucvtf(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 0, 0b11101, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmge(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b01100, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcmle(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b01101, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fneg(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b01111, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frinti(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b11001, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtpu(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b11010, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fcvtzu(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b11011, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void frsqrte(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b11101, rn, rd);
+  }
+  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
+  requires(size == FEXCore::ARMEmitter::SubRegSize::i16Bit &&
+           (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>))
+  void fsqrt(T rd, T rn) {
+    ASIMDTwoRegMiscFP16(1, 1, 0b11111, rn, rd);
+  }
+
   // Advanced SIMD three-register extension
-  // TODO
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sdot(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    ASIMDThreeRegisterExt(0, 0b0010, size, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void usdot(T rd, T rn, T rm) {
+    ASIMDThreeRegisterExt(0, 0b0011, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sqrdmlah(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    ASIMDThreeRegisterExt(1, 0b0000, size, rm, rn, rd);
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sqrdmlsh(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    ASIMDThreeRegisterExt(1, 0b0001, size, rm, rn, rd);
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void udot(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    ASIMDThreeRegisterExt(1, 0b0010, size, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fcmla(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, FEXCore::ARMEmitter::Rotation Rot) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "8-bit subregsize not supported");
+
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    ASIMDThreeRegisterExt(1, 0b1000 | FEXCore::ToUnderlying(Rot), size, rm, rn, rd);
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fcadd(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, FEXCore::ARMEmitter::Rotation Rot) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "8-bit subregsize not supported");
+
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    LOGMAN_THROW_A_FMT(Rot == FEXCore::ARMEmitter::Rotation::ROTATE_90 || Rot == FEXCore::ARMEmitter::Rotation::ROTATE_270, "Invalid rotation");
+    const uint32_t ConvertedRotation =
+      Rot == FEXCore::ARMEmitter::Rotation::ROTATE_90 ? 0b00 : 0b10;
+    ASIMDThreeRegisterExt(1, 0b1100 | ConvertedRotation, size, rm, rn, rd);
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void bfdot(T rd, T rn, T rm) {
+    ASIMDThreeRegisterExt(1, 0b1111, FEXCore::ARMEmitter::SubRegSize::i16Bit, rm, rn, rd);
+  }
+  void bfmlalb(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
+    ASIMDThreeRegisterExt(1, 0b1111, FEXCore::ARMEmitter::SubRegSize::i64Bit, rm.D(), rn.D(), rd.D());
+  }
+  void bfmlalt(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
+    ASIMDThreeRegisterExt(1, 0b1111, FEXCore::ARMEmitter::SubRegSize::i64Bit, rm.Q(), rn.Q(), rd.Q());
+  }
+  void smmla(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
+    ASIMDThreeRegisterExt(0, 0b0100, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm.Q(), rn.Q(), rd.Q());
+  }
+  void usmmla(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
+    ASIMDThreeRegisterExt(0, 0b0101, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm.Q(), rn.Q(), rd.Q());
+  }
+  void bfmmla(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
+    ASIMDThreeRegisterExt(1, 0b1101, FEXCore::ARMEmitter::SubRegSize::i16Bit, rm.Q(), rn.Q(), rd.Q());
+  }
+  void ummla(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
+    ASIMDThreeRegisterExt(1, 0b0100, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm.Q(), rn.Q(), rd.Q());
+  }
+
   // Advanced SIMD two-register miscellaneous
   template<typename T>
   requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
