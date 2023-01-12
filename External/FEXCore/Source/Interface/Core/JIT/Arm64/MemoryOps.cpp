@@ -1493,7 +1493,7 @@ DEF_OP(CacheLineClear) {
   // icache doesn't matter here since the guest application shouldn't be calling clflush on JIT code.
   mov(TMP1, MemReg.X());
   for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
-    dc(ARMEmitter::DataCacheOperation::CVAU, TMP1);
+    dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
     add(ARMEmitter::Size::i64Bit, TMP1, TMP1, CTX->HostFeatures.DCacheLineSize);
   }
   dsb(FEXCore::ARMEmitter::BarrierScope::ISH);
