@@ -146,7 +146,8 @@ int main(int argc, char **argv, char **const envp) {
   FEX::Config::LoadConfig(
     true,
     false,
-    argc, argv, envp
+    argc, argv, envp,
+    false, {}
   );
 
   // Reload the meta layer

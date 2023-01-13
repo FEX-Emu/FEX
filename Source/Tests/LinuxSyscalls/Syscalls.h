@@ -20,6 +20,7 @@ $end_info$
 #include <shared_mutex>
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <type_traits>
 #include <vector>
@@ -80,9 +81,15 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t 
 struct ExecveAtArgs {
   int dirfd;
   int flags;
+  static ExecveAtArgs Empty() {
+    return ExecveAtArgs {
+      .dirfd = AT_FDCWD,
+      .flags = 0,
+    };
+  }
 };
 
-uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args);
+uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver {
 public:

@@ -12,65 +12,83 @@ $end_info$
 #include <algorithm>
 #include <cstring>
 #include <elf.h>
+#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <system_error>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <vector>
 
 namespace ELFLoader {
-  ELFContainer::ELFType ELFContainer::GetELFType(std::string const &Filename) {
-  std::fstream ELFFile(Filename, std::fstream::in | std::fstream::binary);
 
-  if (!ELFFile.is_open()) {
-    return ELFType::TYPE_NONE;
-  }
-
-  ELFFile.seekg(0, ELFFile.end);
-  size_t FileSize = ELFFile.tellg();
-  ELFFile.seekg(0, ELFFile.beg);
-
-  size_t ELFHeaderSize = std::max(sizeof(Elf32_Ehdr), sizeof(Elf64_Ehdr));
-  if (FileSize < ELFHeaderSize) {
-    return ELFType::TYPE_NONE;
-  }
-
-  FileSize = ELFHeaderSize;
-
-  std::vector<char> RawFile(FileSize);
-  ELFFile.read(RawFile.data(), FileSize);
-  ELFFile.close();
-
-  uint8_t *Ident = reinterpret_cast<uint8_t*>(&RawFile.at(0));
-
-  if (Ident[EI_MAG0] != ELFMAG0 ||
-      Ident[EI_MAG1] != ELFMAG1 ||
-      Ident[EI_MAG2] != ELFMAG2 ||
-      Ident[EI_MAG3] != ELFMAG3) {
-    return ELFType::TYPE_NONE;
-  }
-
-  union {
-    Elf32_Ehdr _32;
-    Elf64_Ehdr _64;
-  } Header;
-
-  if (Ident[EI_CLASS] == ELFCLASS32) {
-    memcpy(&Header, reinterpret_cast<Elf32_Ehdr *>(&RawFile.at(0)),
-      sizeof(Elf32_Ehdr));
-    if (Header._32.e_machine == EM_386) {
-      return ELFType::TYPE_X86_32;
+  static ELFContainer::ELFType CheckELFType(uint8_t* Data) {
+    if (Data[EI_MAG0] != ELFMAG0 ||
+        Data[EI_MAG1] != ELFMAG1 ||
+        Data[EI_MAG2] != ELFMAG2 ||
+        Data[EI_MAG3] != ELFMAG3) {
+      return ELFContainer::ELFType::TYPE_NONE;
     }
-  }
-  else if (Ident[EI_CLASS] == ELFCLASS64) {
-    memcpy(&Header, reinterpret_cast<Elf64_Ehdr *>(&RawFile.at(0)),
-      sizeof(Elf64_Ehdr));
-    if (Header._64.e_machine == EM_X86_64) {
-      return ELFType::TYPE_X86_64;
+
+    if (Data[EI_CLASS] == ELFCLASS32) {
+      Elf32_Ehdr *Header = reinterpret_cast<Elf32_Ehdr *>(Data);
+      if (Header->e_machine == EM_386) {
+        return ELFContainer::ELFType::TYPE_X86_32;
+      }
     }
+    else if (Data[EI_CLASS] == ELFCLASS64) {
+      Elf64_Ehdr *Header = reinterpret_cast<Elf64_Ehdr *>(Data);
+      if (Header->e_machine == EM_X86_64) {
+        return ELFContainer::ELFType::TYPE_X86_64;
+      }
+    }
+
+    return ELFContainer::ELFType::TYPE_OTHER_ELF;
   }
 
-  return ELFType::TYPE_OTHER_ELF;
+ELFContainer::ELFType ELFContainer::GetELFType(std::string const &Filename) {
+  // Open the Filename to determine if it is a shebang file.
+  int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
+  if (FD == -1) {
+    return ELFType::TYPE_NONE;
+  }
+
+  auto ELFType = GetELFType(FD);
+  close(FD);
+  return ELFType;
+}
+
+ELFContainer::ELFType ELFContainer::GetELFType(int FD) {
+  // We don't know the state of the FD coming in since this might be a guest tracked FD.
+  // Need to be extra careful here not to adjust file offsets and status flags.
+  //
+  // We can't use dup since that makes the FD have the same underlying state backing both FDs.
+
+  // We need to first determine the file size through fstat.
+  struct stat buf{};
+  if (fstat(FD, &buf) == -1) {
+    // Couldn't get size.
+    return ELFType::TYPE_NONE;
+  }
+
+  constexpr size_t ELFHeaderSize = std::max(sizeof(Elf32_Ehdr), sizeof(Elf64_Ehdr));
+  if (buf.st_size < ELFHeaderSize) {
+    // Is not a valid ELF.
+    return ELFType::TYPE_NONE;
+  }
+
+  std::array<char, ELFHeaderSize> RawFile;
+
+  // Read the header so we can tell if it is a supported ELF file.
+  // Can't adjust file offset, so use pread.
+  if (pread(FD, &RawFile.at(0), RawFile.size(), 0) != RawFile.size()) {
+    // Couldn't read
+    LogMan::Msg::EFmt("Couldn't read potential ELF FD");
+    return ELFType::TYPE_NONE;
+  }
+
+  return CheckELFType(reinterpret_cast<uint8_t*>(&RawFile.at(0)));
 }
 
 ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter) {

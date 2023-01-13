@@ -117,6 +117,7 @@ public:
     TYPE_OTHER_ELF,
   };
   static ELFType GetELFType(std::string const &Filename);
+  static ELFType GetELFType(int FD);
   static bool IsSupportedELF(std::string const &Filename) {
     ELFType Type = GetELFType(Filename);
     return Type == TYPE_X86_64 || Type == TYPE_X86_32;
