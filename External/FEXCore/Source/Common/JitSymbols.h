@@ -19,8 +19,6 @@ public:
   void RegisterJITSpace(const void *HostAddr, uint32_t CodeSize);
 
 private:
-  using FILEPtr = std::unique_ptr<FILE, decltype(&std::fclose)>;
-
-  FILEPtr fp;
+  int fd{-1};
 };
 }
