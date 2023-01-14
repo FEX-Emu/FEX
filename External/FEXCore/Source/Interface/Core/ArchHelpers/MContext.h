@@ -18,8 +18,19 @@ enum ContextFlags : uint32_t {
   CONTEXT_FLAG_32BIT = (1U << 1),
 };
 
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+constexpr uint64_t STACK_COOKIE_MAGIC = 0x4142434445464748ULL;
+#endif
+
 struct X86ContextBackup {
   // Host State
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  // During debug builds, insert a cookie on the stack.
+  // This is useful for validation that the stack is trying to be restored from the correct location.
+  // During stack restore, we ensure this is set to the value we expect.
+  // If given an incorrect stack location, or corrupted stack then this cookie will be wrong.
+  uint64_t StackCookie;
+#endif
   // RIP and RSP is stored in GPRs here
   uint64_t GPRs[23];
   FEXCore::x86_64::_libc_fpstate FPRState;
@@ -39,6 +50,9 @@ struct X86ContextBackup {
 
 struct ArmContextBackup {
   // Host State
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  uint64_t StackCookie;
+#endif
   uint64_t GPRs[31];
   uint64_t PrevSP;
   uint64_t PrevPC;
@@ -211,6 +225,10 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
     // Save the signal mask so we can restore it
     memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    Backup->StackCookie = STACK_COOKIE_MAGIC;
+#endif
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -237,6 +255,8 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
+
+    LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -302,6 +322,10 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 
     // Save the signal mask so we can restore it
     memcpy(&Backup->sa_mask, &_ucontext->uc_sigmask, sizeof(uint64_t));
+
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    Backup->StackCookie = STACK_COOKIE_MAGIC;
+#endif
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -321,6 +345,8 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
+
+    LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
