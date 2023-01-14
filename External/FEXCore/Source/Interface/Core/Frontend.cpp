@@ -436,8 +436,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     CurrentDest->Data.GPR.GPR = HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ? FEXCore::X86State::REG_RAX : FEXCore::X86State::REG_RDX;
     CurrentDest = &DecodeInst->Src[0];
   }
-
-  if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
+  else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
     LOGMAN_THROW_AA_FMT(!HasMODRM, "This instruction shouldn't have ModRM!");
 
     // If the REX is in the byte that means the lower nibble of the OP contains the destination GPR
