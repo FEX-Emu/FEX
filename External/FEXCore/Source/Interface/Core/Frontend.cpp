@@ -1130,19 +1130,14 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
       auto OpMinPage = OpMinAddress & FHU::FEX_PAGE_MASK;
       auto OpMaxPage = OpMaxAddress & FHU::FEX_PAGE_MASK;
 
-
       if (OpMinPage != CurrentCodePage) {
         CurrentCodePage = OpMinPage;
-        if (CodePages.insert(CurrentCodePage).second) {
-          AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
-        }
+        CodePages.insert(CurrentCodePage);
       }
 
       if (OpMaxPage != CurrentCodePage) {
         CurrentCodePage = OpMaxPage;
-        if (CodePages.insert(CurrentCodePage).second) {
-          AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
-        }
+        CodePages.insert(CurrentCodePage);
       }
 
       bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
@@ -1204,6 +1199,9 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
     CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer[BlockStartOffset];
   }
 
+  for (auto CodePage : CodePages) {
+    AddContainedCodePage(PC, CodePage, FHU::FEX_PAGE_SIZE);
+  }
 
   // sort for better branching
   std::sort(Blocks.begin(), Blocks.end(), [](const FEXCore::Frontend::Decoder::DecodedBlocks& a, const FEXCore::Frontend::Decoder::DecodedBlocks& b) {
