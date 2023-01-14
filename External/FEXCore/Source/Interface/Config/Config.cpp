@@ -5,12 +5,12 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
 #include <assert.h>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <map>
 #include <memory>
@@ -144,7 +144,7 @@ namespace JSON {
 
       // Ensure the folder structure is created for our configuration
       std::error_code ec{};
-      if (!std::filesystem::exists(ConfigDir, ec) &&
+      if (!FHU::Filesystem::Exists(ConfigDir) &&
           !std::filesystem::create_directories(ConfigDir, ec)) {
         // Let's go local in this case
         return "./";
@@ -177,7 +177,7 @@ namespace JSON {
 
     std::error_code ec{};
     if (!Global &&
-        !std::filesystem::exists(ConfigFile, ec) &&
+        !FHU::Filesystem::Exists(ConfigFile) &&
         !std::filesystem::create_directories(ConfigFile, ec)) {
       LogMan::Msg::DFmt("Couldn't create config directory: '{}'", ConfigFile);
       // Let's go local in this case
@@ -188,7 +188,7 @@ namespace JSON {
 
     // Attempt to create the local folder if it doesn't exist
     if (!Global &&
-        !std::filesystem::exists(ConfigFile, ec) &&
+        !FHU::Filesystem::Exists(ConfigFile) &&
         !std::filesystem::create_directories(ConfigFile, ec)) {
       // Let's go local in this case
       return "./" + Filename + ".json";
@@ -350,8 +350,7 @@ namespace JSON {
       Path = std::filesystem::absolute(Path);
 
       // Only return if it exists
-      std::error_code ec{};
-      if (std::filesystem::exists(Path, ec)) {
+      if (FHU::Filesystem::Exists(Path)) {
         return Path;
       }
     }
@@ -368,9 +367,9 @@ namespace JSON {
       // HostThunks: $CMAKE_INSTALL_PREFIX/lib/fex-emu/HostThunks/
       // GuestThunks: $CMAKE_INSTALL_PREFIX/share/fex-emu/GuestThunks/
       if (!ContainerPrefix.empty() && !PathName.empty()) {
-        if (!std::filesystem::exists(PathName)) {
+        if (!FHU::Filesystem::Exists(PathName.c_str())) {
           auto ContainerPath = ContainerPrefix + PathName;
-          if (std::filesystem::exists(ContainerPath)) {
+          if (FHU::Filesystem::Exists(ContainerPath)) {
             return ContainerPath;
           }
         }
@@ -383,7 +382,7 @@ namespace JSON {
   std::string FindContainer() {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
-    if (std::filesystem::exists(ContainerManager)) {
+    if (FHU::Filesystem::Exists(ContainerManager)) {
       std::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -398,7 +397,7 @@ namespace JSON {
   std::string FindContainerPrefix() {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
-    if (std::filesystem::exists(ContainerManager)) {
+    if (FHU::Filesystem::Exists(ContainerManager)) {
       std::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -476,7 +475,7 @@ namespace JSON {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         std::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
         std::error_code ec{};
-        if (std::filesystem::exists(NamedRootFS, ec)) {
+        if (FHU::Filesystem::Exists(NamedRootFS)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
         }
       }
@@ -499,8 +498,7 @@ namespace JSON {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         std::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + PathName();
-        std::error_code ec{};
-        if (std::filesystem::exists(NamedConfig, ec)) {
+        if (FHU::Filesystem::Exists(NamedConfig)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
         }
       }
