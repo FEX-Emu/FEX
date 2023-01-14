@@ -3,6 +3,7 @@
 #include <vector>
 #include <filesystem>
 #include <fstream>
+#include <span>
 
 namespace FEXCore::FileLoading {
   /**
@@ -14,5 +15,15 @@ namespace FEXCore::FileLoading {
    * @return true on file loaded, false on failure
    */
   bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t FixedSize = 0);
+
+  /**
+   * @brief Loads a filepath in to a buffer of data with a fixed size
+   *
+   * @param Filepath The filepath to load
+   * @param Buffer The buffer to load the data in to. Attempting to read the full size of the span
+   *
+   * @return The amount of data read or -1 on error.
+   */
+  ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer);
 }
 

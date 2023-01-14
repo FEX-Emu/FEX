@@ -2,6 +2,9 @@
 #include <vector>
 #include <filesystem>
 #include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
+#include <span>
 
 namespace FEXCore::FileLoading {
 bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t FixedSize) {
@@ -47,5 +50,16 @@ bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t Fixed
   return true;
 }
 
+ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer) {
+  int FD = open(Filepath.c_str(), O_RDONLY);
+
+  if (FD == -1) {
+    return -1;
+  }
+
+  ssize_t Read = pread(FD, Buffer.data(), Buffer.size(), 0);
+  close(FD);
+  return Read;
+}
 
 }

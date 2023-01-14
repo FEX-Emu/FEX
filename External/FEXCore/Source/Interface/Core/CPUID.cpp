@@ -88,7 +88,6 @@ static uint32_t CalculateNumberOfCPUs() {
 //       when AVX implementations are further along.
 constexpr uint32_t SUPPORTS_AVX = 0;
 
-// #define CPUID_AMD
 #ifdef CPUID_AMD
 constexpr uint32_t FAMILY_IDENTIFIER =
   0 |          // Stepping
@@ -122,25 +121,24 @@ void CPUIDEmu::SetupHostHybridFlag() {
   uint64_t MIDR{};
   for (size_t i = 0; i < CPUs; ++i) {
     std::error_code ec{};
-    std::string MIDRPath = "/sys/devices/system/cpu/cpu" + std::to_string(i) + "/regs/identification/midr_el1";
-    if (std::filesystem::exists(MIDRPath, ec)) {
-      std::vector<char> Data{};
-      // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
-      // Only read 18 bytes for a 64bit value prefixed with 0x
-      if (FEXCore::FileLoading::LoadFile(Data, MIDRPath, 18)) {
-        uint64_t NewMIDR{};
-        std::string_view MIDRView(&Data.at(0), 18);
-        if (FEXCore::StrConv::Conv(MIDRView, &NewMIDR)) {
-          if (MIDR != 0 && MIDR != NewMIDR) {
-            // CPU mismatch, claim hybrid
-            Hybrid = true;
-          }
+    std::string MIDRPath = fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i);
 
-          // Truncate to 32-bits, top 32-bits are all reserved in MIDR
-          PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
-          PerCPUData[i].MIDR = NewMIDR;
-          MIDR = NewMIDR;
+    std::array<char, 18> Data;
+    // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
+    // Only read 18 bytes for a 64bit value prefixed with 0x
+    if (FEXCore::FileLoading::LoadFileToBuffer(MIDRPath, Data) == sizeof(Data)) {
+      uint64_t NewMIDR{};
+      std::string_view MIDRView(Data.data(), sizeof(Data));
+      if (FEXCore::StrConv::Conv(MIDRView, &NewMIDR)) {
+        if (MIDR != 0 && MIDR != NewMIDR) {
+          // CPU mismatch, claim hybrid
+          Hybrid = true;
         }
+
+        // Truncate to 32-bits, top 32-bits are all reserved in MIDR
+        PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
+        PerCPUData[i].MIDR = NewMIDR;
+        MIDR = NewMIDR;
       }
     }
   }
@@ -1214,84 +1212,6 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) {
 
 void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
   CTX = ctx;
-
-  RegisterFunction(0, &CPUIDEmu::Function_0h);
-  RegisterFunction(1, &CPUIDEmu::Function_01h);
-  RegisterFunction(2, &CPUIDEmu::Function_02h);
-  // 3: Serial Number(previously), now reserved
-#ifndef CPUID_AMD
-  // Deterministic cache parameters for each level
-  RegisterFunction(0x4, &CPUIDEmu::Function_04h);
-#endif
-  // 5: Monitor/mwait
-  // Thermal and power management
-  RegisterFunction(6, &CPUIDEmu::Function_06h);
-  // Extended feature flags
-  RegisterFunction(7, &CPUIDEmu::Function_07h);
-  // 9: Direct Cache Access information
-  // 0x0A: Architectural performance monitoring
-  // 0x0B: Extended topology enumeration
-  // 0x0D: Processor extended state enumeration
-  RegisterFunction(0x0D, &CPUIDEmu::Function_0Dh);
-  // 0x0F: Intel RDT monitoring
-  // 0x10: Intel RDT allocation enumeration
-  // 0x12: Intel SGX capability enumeration
-  // 0x13: Reserved
-  // 0x14: Intel Processor trace
-#ifndef CPUID_AMD
-  // Timestamp counter information
-  // Doesn't exist on AMD hardware
-  RegisterFunction(0x15, &CPUIDEmu::Function_15h);
-#endif
-  // 0x16: Processor frequency information
-  // 0x17: SoC vendor attribute enumeration
-
-  // 0x1A: Hybrid Information Sub-leaf
-#ifndef CPUID_AMD
-  RegisterFunction(0x1A, &CPUIDEmu::Function_1Ah);
-#endif
-  // Hypervisor CPUID information leaf
-  RegisterFunction(0x4000'0000, &CPUIDEmu::Function_4000_0000h);
-  RegisterFunction(0x4000'0001, &CPUIDEmu::Function_4000_0001h);
-
-  // Largest extended function number
-  RegisterFunction(0x8000'0000, &CPUIDEmu::Function_8000_0000h);
-  // Processor vendor
-  RegisterFunction(0x8000'0001, &CPUIDEmu::Function_8000_0001h);
-  // Processor brand string
-  RegisterFunction(0x8000'0002, &CPUIDEmu::Function_8000_0002h);
-  // Processor brand string continued
-  RegisterFunction(0x8000'0003, &CPUIDEmu::Function_8000_0003h);
-  // Processor brand string continued
-  RegisterFunction(0x8000'0004, &CPUIDEmu::Function_8000_0004h);
-  // 0x8000'0005: L1 Cache and TLB identifiers
-#ifdef CPUID_AMD
-  RegisterFunction(0x8000'0005, &CPUIDEmu::Function_8000_0005h);
-#else
-  // This is full reserved on Intel platforms
-  RegisterFunction(0x8000'0005, &CPUIDEmu::Function_Reserved);
-#endif
-  // 0x8000'0006: L2 Cache identifiers
-  RegisterFunction(0x8000'0006, &CPUIDEmu::Function_8000_0006h);
-  // Advanced power management information
-  RegisterFunction(0x8000'0007, &CPUIDEmu::Function_8000_0007h);
-  // Virtual and physical address sizes
-  RegisterFunction(0x8000'0008, &CPUIDEmu::Function_8000_0008h);
-
-  // 0x8000'000A: SVM Revision
-  // TLB 1GB page identifiers
-  RegisterFunction(0x8000'0019, &CPUIDEmu::Function_8000_0019h);
-
-  // 0x8000'001A: Performance optimization identifiers
-  // 0x8000'001B: Instruction based sampling identifiers
-  // 0x8000'001C: Lightweight profiling capabilities
-  // 0x8000'001D: Cache properties
-#ifdef CPUID_AMD
-  // Deterministic cache parameters for each level
-  RegisterFunction(0x8000'001D, &CPUIDEmu::Function_8000_001Dh);
-#endif
-  // 0x8000'001E: Extended APIC ID
-  // 0x8000'001F: AMD Secure Encryption
 
   // Setup some state tracking
   SetupHostHybridFlag();
