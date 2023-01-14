@@ -108,7 +108,7 @@ uint64_t Decoder::ReadData(uint8_t Size) {
   uint64_t Res = 0;
   std::memcpy(&Res, &InstStream[InstructionSize], Size);
 
-#ifndef NDEBUG
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   for(size_t i = 0; i < Size; ++i) {
     ReadByte();
   }
