@@ -34,6 +34,7 @@
 #include <sys/auxv.h>
 #include <sys/mman.h>
 #include <sys/personality.h>
+#include <sys/random.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
 #define PAGE_OFFSET(x) ((x) & 4095)
@@ -174,6 +175,17 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
 
     return LoadBase;
+  }
+
+  static bool GetRandom(void *Data, size_t DataSize) {
+    ssize_t Result{};
+    do {
+      // This is guaranteed to not be interrupted by a signal,
+      // since fewer than 256 bytes of RNG data are requested
+      Result = getrandom(Data, DataSize, 0);
+    } while (Result != -1 && Result != DataSize);
+
+    return Result != -1;
   }
 
   public:
@@ -472,9 +484,12 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       if (!NoRandomize) {
         constexpr uint64_t ASLR_BITS_64 = 28;
         constexpr uint64_t ASLR_BITS_32 = 8;
-        std::random_device rd;
-        std::uniform_int_distribution<uint64_t> d(0);
-        uint64_t ASLR_Offset = d(rd);
+        uint64_t ASLR_Offset{};
+        if (!GetRandom(&ASLR_Offset, sizeof(ASLR_Offset))) {
+          // getrandom failed for some reason.
+          ASLR_Offset = 0;
+          LogMan::Msg::EFmt("RNG failed. ASLR will not work.");
+        }
 
         if (Is64BitMode()) {
           ASLR_Offset &= (1ULL << ASLR_BITS_64) - 1;
@@ -720,11 +735,12 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     }
     else {
       // Nothing provided from the kernel, generate our own random values.
-      std::random_device rd;
-      std::uniform_int_distribution<uint64_t> d(0);
-
-      RandomLoc[0] = d(rd);
-      RandomLoc[1] = d(rd);
+      if (!GetRandom(&RandomLoc[0], sizeof(uint64_t) * 2)) {
+        // getrandom failed for some reason.
+        RandomLoc[0] = 0;
+        RandomLoc[1] = 0;
+        LogMan::Msg::EFmt("RNG failed. AT_RANDOM will not be random.");
+      }
     }
 
     // Stack setup
