@@ -325,6 +325,14 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
     DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
+  // This is used for ModRM register modification
+  // For both modrm.reg and modrm.rm(when mod == 0b11) when value is >= 0b100
+  // then it changes from expected registers to the high 8bits of the lower registers
+  // Bit annoying to support
+  // In the case of no modrm (REX in byte situation) then it is unaffected
+  bool Is8BitSrc{};
+  bool Is8BitDest{};
+
   // If we require ModRM and haven't decoded it yet, do it now
   // Some instructions have to read modrm upfront, others do it later
   if (HasMODRM && !DecodeInst->DecodedModRM) {
@@ -341,6 +349,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_8BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_8BIT);
       DestSize = 1;
+      Is8BitDest = true;
     }
     else if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_16BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
@@ -383,6 +392,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     // Decode sources
     if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_8BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_8BIT);
+      Is8BitSrc = true;
     }
     else if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_16BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
@@ -415,14 +425,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_32BIT);
     }
   }
-
-  // This is used for ModRM register modification
-  // For both modrm.reg and modrm.rm(when mod == 0b11) when value is >= 0b100
-  // then it changes from expected registers to the high 8bits of the lower registers
-  // Bit annoying to support
-  // In the case of no modrm (REX in byte situation) then it is unaffected
-  const bool Is8BitSrc = (DecodeFlags::GetSizeSrcFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
-  const bool Is8BitDest = (DecodeFlags::GetSizeDstFlags(DecodeInst->Flags) == DecodeFlags::SIZE_8BIT);
 
   auto *CurrentDest = &DecodeInst->Dest;
 
