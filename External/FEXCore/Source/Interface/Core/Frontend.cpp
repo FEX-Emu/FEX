@@ -32,26 +32,6 @@ using namespace FEXCore::X86Tables;
 static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool HasREX, bool HasXMM, bool HasMM, uint8_t InvalidOffset = 16) {
   using GPRArray = std::array<uint32_t, 16>;
 
-  static constexpr GPRArray GPRIndexes = {
-    // Classical ordering?
-    FEXCore::X86State::REG_RAX,
-    FEXCore::X86State::REG_RCX,
-    FEXCore::X86State::REG_RDX,
-    FEXCore::X86State::REG_RBX,
-    FEXCore::X86State::REG_RSP,
-    FEXCore::X86State::REG_RBP,
-    FEXCore::X86State::REG_RSI,
-    FEXCore::X86State::REG_RDI,
-    FEXCore::X86State::REG_R8,
-    FEXCore::X86State::REG_R9,
-    FEXCore::X86State::REG_R10,
-    FEXCore::X86State::REG_R11,
-    FEXCore::X86State::REG_R12,
-    FEXCore::X86State::REG_R13,
-    FEXCore::X86State::REG_R14,
-    FEXCore::X86State::REG_R15,
-  };
-
   static constexpr GPRArray GPR8BitHighIndexes = {
     // Classical ordering?
     FEXCore::X86State::REG_RAX,
@@ -72,108 +52,30 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
     FEXCore::X86State::REG_R15,
   };
 
-  static constexpr GPRArray XMMIndexes = {
-    FEXCore::X86State::REG_XMM_0,
-    FEXCore::X86State::REG_XMM_1,
-    FEXCore::X86State::REG_XMM_2,
-    FEXCore::X86State::REG_XMM_3,
-    FEXCore::X86State::REG_XMM_4,
-    FEXCore::X86State::REG_XMM_5,
-    FEXCore::X86State::REG_XMM_6,
-    FEXCore::X86State::REG_XMM_7,
-    FEXCore::X86State::REG_XMM_8,
-    FEXCore::X86State::REG_XMM_9,
-    FEXCore::X86State::REG_XMM_10,
-    FEXCore::X86State::REG_XMM_11,
-    FEXCore::X86State::REG_XMM_12,
-    FEXCore::X86State::REG_XMM_13,
-    FEXCore::X86State::REG_XMM_14,
-    FEXCore::X86State::REG_XMM_15,
-  };
-
-  static constexpr GPRArray MMIndexes = {
-    FEXCore::X86State::REG_MM_0,
-    FEXCore::X86State::REG_MM_1,
-    FEXCore::X86State::REG_MM_2,
-    FEXCore::X86State::REG_MM_3,
-    FEXCore::X86State::REG_MM_4,
-    FEXCore::X86State::REG_MM_5,
-    FEXCore::X86State::REG_MM_6,
-    FEXCore::X86State::REG_MM_7,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID,
-    FEXCore::X86State::REG_INVALID
-  };
-
-  const GPRArray *GPRs = &GPRIndexes;
-  if (HasXMM) {
-    GPRs = &XMMIndexes;
-  }
-  else if (HasMM) {
-    GPRs = &MMIndexes;
-  }
-  else if (HighBits && !HasREX) {
-    GPRs = &GPR8BitHighIndexes;
-  }
-
   uint8_t Offset = (REX << 3) | bits;
 
   if (Offset == InvalidOffset) {
     return FEXCore::X86State::REG_INVALID;
   }
-  return (*GPRs)[(REX << 3) | bits];
+
+  if (HasXMM) {
+    return FEXCore::X86State::REG_XMM_0 + Offset;
+  }
+  else if (HasMM) {
+    return FEXCore::X86State::REG_MM_0 + Offset;
+  }
+  else if (!(HighBits && !HasREX)) {
+    return FEXCore::X86State::REG_RAX + Offset;
+  }
+
+  return GPR8BitHighIndexes[Offset];
 }
 
 static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
-  using GPRArray = std::array<uint32_t, 16>;
-
-  static constexpr GPRArray GPRIndexes = {
-    FEXCore::X86State::REG_RAX,
-    FEXCore::X86State::REG_RCX,
-    FEXCore::X86State::REG_RDX,
-    FEXCore::X86State::REG_RBX,
-    FEXCore::X86State::REG_RSP,
-    FEXCore::X86State::REG_RBP,
-    FEXCore::X86State::REG_RSI,
-    FEXCore::X86State::REG_RDI,
-    FEXCore::X86State::REG_R8,
-    FEXCore::X86State::REG_R9,
-    FEXCore::X86State::REG_R10,
-    FEXCore::X86State::REG_R11,
-    FEXCore::X86State::REG_R12,
-    FEXCore::X86State::REG_R13,
-    FEXCore::X86State::REG_R14,
-    FEXCore::X86State::REG_R15,
-  };
-
-  static constexpr GPRArray XMMIndexes = {
-    FEXCore::X86State::REG_XMM_0,
-    FEXCore::X86State::REG_XMM_1,
-    FEXCore::X86State::REG_XMM_2,
-    FEXCore::X86State::REG_XMM_3,
-    FEXCore::X86State::REG_XMM_4,
-    FEXCore::X86State::REG_XMM_5,
-    FEXCore::X86State::REG_XMM_6,
-    FEXCore::X86State::REG_XMM_7,
-    FEXCore::X86State::REG_XMM_8,
-    FEXCore::X86State::REG_XMM_9,
-    FEXCore::X86State::REG_XMM_10,
-    FEXCore::X86State::REG_XMM_11,
-    FEXCore::X86State::REG_XMM_12,
-    FEXCore::X86State::REG_XMM_13,
-    FEXCore::X86State::REG_XMM_14,
-    FEXCore::X86State::REG_XMM_15,
-  };
-
   if (HasXMM) {
-    return XMMIndexes[vvvv];
+    return FEXCore::X86State::REG_XMM_0 + vvvv;
   } else {
-    return GPRIndexes[vvvv];
+    return FEXCore::X86State::REG_RAX + vvvv;
   }
 }
 
