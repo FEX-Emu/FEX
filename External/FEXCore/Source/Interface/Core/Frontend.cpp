@@ -593,7 +593,11 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
   LOGMAN_THROW_AA_FMT(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX,
                      "REX PREFIX should have been decoded before this!");
 
-  if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 &&
+  // A normal instruction is the most likely.
+  if (Info->Type == FEXCore::X86Tables::TYPE_INST) [[likely]] {
+    return NormalOp(Info, Op);
+  }
+  else if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 &&
       Info->Type <= FEXCore::X86Tables::TYPE_GROUP_11) {
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
@@ -741,7 +745,8 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     return NormalOp(&EVEXTableOps[EVEXOp], EVEXOp);
   }
 
-  return NormalOp(Info, Op);
+  LOGMAN_MSG_A_FMT("Invalid instruction decoding type");
+  FEX_UNREACHABLE;
 }
 
 bool Decoder::DecodeInstruction(uint64_t PC) {
