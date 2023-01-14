@@ -243,9 +243,9 @@ namespace FEX::VDSO {
     FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
     FEX_CONFIG_OPT(ThunkGuestLibs32, THUNKGUESTLIBS32);
 
-    std::filesystem::path ThunkGuestPath{};
+    std::string ThunkGuestPath{};
     if (Is64Bit) {
-      ThunkGuestPath = std::filesystem::path(ThunkGuestLibs()) / "libVDSO-guest.so";
+      ThunkGuestPath = ThunkGuestLibs() + "libVDSO-guest.so";
 
       // Set the Thunk definition pointers for x86-64
       VDSODefinitions[0].ThunkFunction = &FEX::VDSO::time;
@@ -256,7 +256,7 @@ namespace FEX::VDSO {
       VDSODefinitions[5].ThunkFunction = &FEX::VDSO::getcpu;
     }
     else {
-      ThunkGuestPath = std::filesystem::path(ThunkGuestLibs32()) / "libVDSO-guest.so";
+      ThunkGuestPath = ThunkGuestLibs32() + "libVDSO-guest.so";
 
       // Set the Thunk definition pointers for x86
       VDSODefinitions[0].ThunkFunction = &FEX::VDSO::x32::time;
@@ -268,15 +268,17 @@ namespace FEX::VDSO {
     }
 
     // Load VDSO if we can
-    int VDSOFD = ::open(ThunkGuestPath.string().c_str(), O_RDONLY);
+    int VDSOFD = ::open(ThunkGuestPath.c_str(), O_RDONLY);
 
     if (VDSOFD != -1) {
       // Get file size
-      size_t VDSOSize = lseek(VDSOFD, 0, SEEK_END);
+      size_t VDSOSize{};
+      struct stat buf;
+      if (fstat(VDSOFD, &buf) == 0) {
+        VDSOSize = buf.st_size;
+      }
 
       if (VDSOSize >= 4) {
-        // Reset to beginning
-        lseek(VDSOFD, 0, SEEK_SET);
         VDSOSize = FEXCore::AlignUp(VDSOSize, 4096);
 
         // Map the VDSO file to memory
