@@ -286,12 +286,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
 
-  // XXX: Once we support 32bit x86 then this will be necessary to support
-  if (Info->Type == FEXCore::X86Tables::TYPE_LEGACY_PREFIX) {
-    LogMan::Msg::DFmt("Legacy Prefix");
-    return false;
-  }
-
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
     LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
@@ -585,12 +579,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
 bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op) {
   DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
-
-  // XXX: Once we support 32bit x86 then this will be necessary to support
-  if (Info->Type == FEXCore::X86Tables::TYPE_LEGACY_PREFIX) {
-    LogMan::Msg::DFmt("Legacy Prefix");
-    return false;
-  }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
     LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
