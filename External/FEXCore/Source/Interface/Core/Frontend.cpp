@@ -766,105 +766,106 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
     case 0x0F: {// Escape Op
       uint8_t EscapeOp = ReadByte();
       switch (EscapeOp) {
-      case 0x0F: [[unlikely]] { // 3DNow!
-        // 3DNow! Instruction Encoding: 0F 0F [ModRM] [SIB] [Displacement] [Opcode]
-        // Decode ModRM
-        uint8_t ModRMByte = ReadByte();
-        DecodeInst->ModRM = ModRMByte;
-        DecodeInst->DecodedModRM = true;
+        case 0x0F: [[unlikely]] { // 3DNow!
+          // 3DNow! Instruction Encoding: 0F 0F [ModRM] [SIB] [Displacement] [Opcode]
+          // Decode ModRM
+          uint8_t ModRMByte = ReadByte();
+          DecodeInst->ModRM = ModRMByte;
+          DecodeInst->DecodedModRM = true;
 
-        FEXCore::X86Tables::ModRMDecoded ModRM;
-        ModRM.Hex = DecodeInst->ModRM;
+          FEXCore::X86Tables::ModRMDecoded ModRM;
+          ModRM.Hex = DecodeInst->ModRM;
 
-        const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
-          DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
+          const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
+            DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
-        // All 3DNow! instructions have the second argument as the rm handler
-        // We need to decode it upfront to get the displacement out of the way
-        if (ModRM.mod != 0b11) {
-          auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
-          (this->*Disp)(&DecodeInst->Src[0], ModRM);
+          // All 3DNow! instructions have the second argument as the rm handler
+          // We need to decode it upfront to get the displacement out of the way
+          if (ModRM.mod != 0b11) {
+            auto Disp = DecodeModRMs_Disp[Has16BitAddressing];
+            (this->*Disp)(&DecodeInst->Src[0], ModRM);
+          }
+
+          // Take a peek at the op just past the displacement
+          uint8_t LocalOp = ReadByte();
+          return NormalOpHeader(&FEXCore::X86Tables::DDDNowOps[LocalOp], LocalOp);
+        break;
         }
+        case 0x38: { // F38 Table!
+          constexpr uint16_t PF_38_NONE = 0;
+          constexpr uint16_t PF_38_66   = (1U << 0);
+          constexpr uint16_t PF_38_F2   = (1U << 1);
+          constexpr uint16_t PF_38_F3   = (1U << 2);
 
-        // Take a peek at the op just past the displacement
-        uint8_t LocalOp = ReadByte();
-        return NormalOpHeader(&FEXCore::X86Tables::DDDNowOps[LocalOp], LocalOp);
-      break;
-      }
-      case 0x38: { // F38 Table!
-        constexpr uint16_t PF_38_NONE = 0;
-        constexpr uint16_t PF_38_66   = (1U << 0);
-        constexpr uint16_t PF_38_F2   = (1U << 1);
-        constexpr uint16_t PF_38_F3   = (1U << 2);
+          uint16_t Prefix = PF_38_NONE;
+          if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE) {
+            Prefix |= PF_38_66;
+          }
+          if (DecodeInst->Flags & DecodeFlags::FLAG_REPNE_PREFIX) {
+            Prefix |= PF_38_F2;
+          }
+          if (DecodeInst->Flags & DecodeFlags::FLAG_REP_PREFIX) {
+            Prefix |= PF_38_F3;
+          }
 
-        uint16_t Prefix = PF_38_NONE;
-        if (DecodeInst->Flags & DecodeFlags::FLAG_OPERAND_SIZE) {
-          Prefix |= PF_38_66;
+          uint16_t LocalOp = (Prefix << 8) | ReadByte();
+          return NormalOpHeader(&FEXCore::X86Tables::H0F38TableOps[LocalOp], LocalOp);
+        break;
         }
-        if (DecodeInst->Flags & DecodeFlags::FLAG_REPNE_PREFIX) {
-          Prefix |= PF_38_F2;
-        }
-        if (DecodeInst->Flags & DecodeFlags::FLAG_REP_PREFIX) {
-          Prefix |= PF_38_F3;
-        }
+        case 0x3A: { // F3A Table!
+          constexpr uint16_t PF_3A_NONE = 0;
+          constexpr uint16_t PF_3A_66   = (1 << 0);
+          constexpr uint16_t PF_3A_REX  = (1 << 1);
 
-        uint16_t LocalOp = (Prefix << 8) | ReadByte();
-        return NormalOpHeader(&FEXCore::X86Tables::H0F38TableOps[LocalOp], LocalOp);
-      break;
-      }
-      case 0x3A: { // F3A Table!
-        constexpr uint16_t PF_3A_NONE = 0;
-        constexpr uint16_t PF_3A_66   = (1 << 0);
-        constexpr uint16_t PF_3A_REX  = (1 << 1);
+          uint16_t Prefix = PF_3A_NONE;
+          if (DecodeInst->LastEscapePrefix == 0x66) // Operand Size
+            Prefix = PF_3A_66;
 
-        uint16_t Prefix = PF_3A_NONE;
-        if (DecodeInst->LastEscapePrefix == 0x66) // Operand Size
-          Prefix = PF_3A_66;
+          if (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING)
+            Prefix |= PF_3A_REX;
 
-        if (DecodeInst->Flags & DecodeFlags::FLAG_REX_WIDENING)
-          Prefix |= PF_3A_REX;
+          uint16_t LocalOp = (Prefix << 8) | ReadByte();
+          return NormalOpHeader(&FEXCore::X86Tables::H0F3ATableOps[LocalOp], LocalOp);
+        break;
+        }
+        default: [[likely]] { // Two byte table!
+          // x86-64 abuses three legacy prefixes to extend the table encodings
+          // 0x66 - Operand Size prefix
+          // 0xF2 - REPNE prefix
+          // 0xF3 - REP prefix
+          // If any of these three prefixes are used then it falls down the subtable
+          // Additionally: If you hit repeat of differnt prefixes then only the LAST one before this one works for subtable selection
 
-        uint16_t LocalOp = (Prefix << 8) | ReadByte();
-        return NormalOpHeader(&FEXCore::X86Tables::H0F3ATableOps[LocalOp], LocalOp);
-      break;
-      }
-      default: // Two byte table!
-        // x86-64 abuses three legacy prefixes to extend the table encodings
-        // 0x66 - Operand Size prefix
-        // 0xF2 - REPNE prefix
-        // 0xF3 - REP prefix
-        // If any of these three prefixes are used then it falls down the subtable
-        // Additionally: If you hit repeat of differnt prefixes then only the LAST one before this one works for subtable selection
+          bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
+          bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
 
-        bool NoOverlay = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY) != 0;
-        bool NoOverlay66 = (FEXCore::X86Tables::SecondBaseOps[EscapeOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
-
-        if (NoOverlay) { // This section of the table ignores prefix extention
-          return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
+          if (NoOverlay) { // This section of the table ignores prefix extention
+            return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
+          }
+          else if (DecodeInst->LastEscapePrefix == 0xF3) { // REP
+            // Remove prefix so it doesn't effect calculations.
+            // This is only an escape prefix rather tan modifier now
+            DecodeInst->Flags &= ~DecodeFlags::FLAG_REP_PREFIX;
+            return NormalOpHeader(&FEXCore::X86Tables::RepModOps[EscapeOp], EscapeOp);
+          }
+          else if (DecodeInst->LastEscapePrefix == 0xF2) { // REPNE
+            // Remove prefix so it doesn't effect calculations.
+            // This is only an escape prefix rather tan modifier now
+            DecodeInst->Flags &= ~DecodeFlags::FLAG_REPNE_PREFIX;
+            return NormalOpHeader(&FEXCore::X86Tables::RepNEModOps[EscapeOp], EscapeOp);
+          }
+          else if (DecodeInst->LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
+            // Remove prefix so it doesn't effect calculations.
+            // This is only an escape prefix rather tan modifier now
+            DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
+            DecodeFlags::PopOpAddrIf(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
+            return NormalOpHeader(&FEXCore::X86Tables::OpSizeModOps[EscapeOp], EscapeOp);
+          }
+          else {
+            return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
+          }
+        break;
         }
-        else if (DecodeInst->LastEscapePrefix == 0xF3) { // REP
-          // Remove prefix so it doesn't effect calculations.
-          // This is only an escape prefix rather tan modifier now
-          DecodeInst->Flags &= ~DecodeFlags::FLAG_REP_PREFIX;
-          return NormalOpHeader(&FEXCore::X86Tables::RepModOps[EscapeOp], EscapeOp);
-        }
-        else if (DecodeInst->LastEscapePrefix == 0xF2) { // REPNE
-          // Remove prefix so it doesn't effect calculations.
-          // This is only an escape prefix rather tan modifier now
-          DecodeInst->Flags &= ~DecodeFlags::FLAG_REPNE_PREFIX;
-          return NormalOpHeader(&FEXCore::X86Tables::RepNEModOps[EscapeOp], EscapeOp);
-        }
-        else if (DecodeInst->LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
-          // Remove prefix so it doesn't effect calculations.
-          // This is only an escape prefix rather tan modifier now
-          DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
-          DecodeFlags::PopOpAddrIf(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
-          return NormalOpHeader(&FEXCore::X86Tables::OpSizeModOps[EscapeOp], EscapeOp);
-        }
-        else {
-          return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
-        }
-      break;
       }
     break;
     }
@@ -917,7 +918,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
     case 0x65: // GS prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_GS_PREFIX;
     break;
-    default: { // Default base table
+    default: [[likely]] { // Default base table
       auto Info = &FEXCore::X86Tables::BaseOps[Op];
 
       if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
@@ -1148,7 +1149,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
 
       bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
 
-      if (ErrorDuringDecoding) {
+      if (ErrorDuringDecoding) [[unlikely]] {
         LogMan::Msg::DFmt("Couldn't Decode something at 0x{:x}, Started at 0x{:x}", RIPToDecode + PCOffset, PC);
         // Put an invalid instruction in the stream so the core can raise SIGILL if hit
         CurrentBlockDecoding.HasInvalidInstruction = true;
