@@ -184,7 +184,7 @@ void RootFSRedirect(std::string *Filename, std::string const &RootFS) {
 }
 
 bool RanAsInterpreter(const char *Program) {
-  return ExecutedWithFD || strstr(Program, "FEXInterpreter") != nullptr;
+  return ExecutedWithFD || FEXLOADER_AS_INTERPRETER;
 }
 
 bool IsInterpreterInstalled() {

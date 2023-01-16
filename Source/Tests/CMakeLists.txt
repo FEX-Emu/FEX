@@ -7,78 +7,47 @@ if (TERMUX_BUILD)
   list(APPEND LIBS android-shmem)
 endif()
 
-add_executable(FEXLoader
-  FEXLoader.cpp
-  VDSO_Emulation.cpp
-  AOT/AOTGenerator.cpp)
+function(GenerateInterpreter NAME AsInterpreter)
+  add_executable(${NAME}
+    FEXLoader.cpp
+    VDSO_Emulation.cpp
+    AOT/AOTGenerator.cpp)
 
 # Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
-set_target_properties(FEXLoader PROPERTIES ENABLE_EXPORTS 1)
+  set_target_properties(${NAME} PROPERTIES ENABLE_EXPORTS 1)
 
-target_include_directories(FEXLoader
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Source/
-    ${CMAKE_BINARY_DIR}/generated
-)
-target_link_libraries(FEXLoader
-  PRIVATE
-    ${LIBS}
-    LinuxEmulation
-    ${PTHREAD_LIB}
-    fmt::fmt
-)
-
-if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(FEXLoader
+  target_include_directories(${NAME}
     PRIVATE
-      "LINKER:--gc-sections"
-      "LINKER:--strip-all"
-      "LINKER:--as-needed"
+      ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+      ${CMAKE_BINARY_DIR}/generated
   )
-endif()
-
-install(TARGETS FEXLoader
-  RUNTIME
-    DESTINATION bin
-    COMPONENT runtime
-)
-
-if(TERMUX_BUILD)
-  # Termux doesn't support hard links, just copy FEXLoader
-  add_custom_target(FEXInterpreter ALL
-    COMMAND "cp" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
-    DEPENDS FEXLoader
+  target_link_libraries(${NAME}
+    PRIVATE
+      ${LIBS}
+      LinuxEmulation
+      ${PTHREAD_LIB}
+      fmt::fmt
   )
+  target_compile_definitions(${NAME} PRIVATE -DFEXLOADER_AS_INTERPRETER=${AsInterpreter})
 
-  install(
-    CODE "MESSAGE(\"-- Installing: $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
-    CODE "
-    EXECUTE_PROCESS(COMMAND cp FEXLoader FEXInterpreter
-      WORKING_DIRECTORY $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
-    )"
-  )
-else()
-  add_custom_target(FEXInterpreter ALL
-    COMMAND "ln" "-f" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXLoader" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEXInterpreter"
-    DEPENDS FEXLoader
-  )
-
-  install(
-    CODE "MESSAGE(\"-- Installing: $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter\")"
-    CODE "
-    EXECUTE_PROCESS(COMMAND ln -f FEXLoader FEXInterpreter
-      WORKING_DIRECTORY $ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/
-    )"
-  )
-
-  if(TARGET uninstall)
-    add_custom_target(uninstall_FEXInterpreter
-      COMMAND "rm" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter"
+  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+    target_link_options(${NAME}
+      PRIVATE
+        "LINKER:--gc-sections"
+        "LINKER:--strip-all"
+        "LINKER:--as-needed"
     )
-
-    add_dependencies(uninstall uninstall_FEXInterpreter)
   endif()
-endif()
+
+  install(TARGETS ${NAME}
+    RUNTIME
+      DESTINATION bin
+      COMPONENT runtime
+  )
+endfunction()
+
+GenerateInterpreter(FEXLoader 0)
+GenerateInterpreter(FEXInterpreter 1)
 
 install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
 
