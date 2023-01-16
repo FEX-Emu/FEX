@@ -3220,7 +3220,46 @@ public:
     sshll2(size, rd, rn, 0);
   }
 
-  // TODO: SCVTF, FCVTZS
+  template<typename T>
+  void scvtf(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 0, immh, immb, 0b11100, rn, rd);
+  }
+
+  template<typename T>
+  void fcvtzs(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 0, immh, immb, 0b11111, rn, rd);
+  }
+
   template<typename T>
   void ushr(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
@@ -3493,7 +3532,45 @@ public:
   void uxtl2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn) {
     ushll2(size, rd, rn, 0);
   }
-  // XXX: UCVTF/FCVTZU
+  template<typename T>
+  void ucvtf(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 1, immh, immb, 0b11100, rn, rd);
+  }
+
+  template<typename T>
+  void fcvtzu(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 1, immh, immb, 0b11111, rn, rd);
+  }
 
   // Advanced SIMD vector x indexed element
   // TODO
