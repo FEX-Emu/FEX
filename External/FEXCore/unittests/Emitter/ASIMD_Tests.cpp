@@ -2265,7 +2265,41 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(sxtl2(SubRegSize::i32Bit, DReg::d30, DReg::d29),  "sxtl2 v30.4s, v29.8h");
   TEST_SINGLE(sxtl2(SubRegSize::i64Bit, DReg::d30, DReg::d29),  "sxtl2 v30.2d, v29.4s");
 
-  //// TODO: SCVTF, FCVTZS
+  //TEST_SINGLE(scvtf(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "scvtf v30.16b, v29.16b, #1");
+  //TEST_SINGLE(scvtf(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "scvtf v30.16b, v29.16b, #7");
+  TEST_SINGLE(scvtf(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "scvtf v30.8h, v29.8h, #1");
+  TEST_SINGLE(scvtf(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "scvtf v30.8h, v29.8h, #15");
+  TEST_SINGLE(scvtf(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "scvtf v30.4s, v29.4s, #1");
+  TEST_SINGLE(scvtf(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "scvtf v30.4s, v29.4s, #31");
+  TEST_SINGLE(scvtf(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "scvtf v30.2d, v29.2d, #1");
+  TEST_SINGLE(scvtf(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "scvtf v30.2d, v29.2d, #63");
+
+  //TEST_SINGLE(scvtf(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "scvtf v30.8b, v29.8b, #1");
+  //TEST_SINGLE(scvtf(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "scvtf v30.8b, v29.8b, #7");
+  TEST_SINGLE(scvtf(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "scvtf v30.4h, v29.4h, #1");
+  TEST_SINGLE(scvtf(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "scvtf v30.4h, v29.4h, #15");
+  TEST_SINGLE(scvtf(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "scvtf v30.2s, v29.2s, #1");
+  TEST_SINGLE(scvtf(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "scvtf v30.2s, v29.2s, #31");
+  //TEST_SINGLE(scvtf(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "scvtf v30.1d, v29.1d, #1");
+  //TEST_SINGLE(scvtf(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "scvtf v30.1d, v29.1d, #63");
+
+  //TEST_SINGLE(fcvtzs(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "fcvtzs v30.16b, v29.16b, #1");
+  //TEST_SINGLE(fcvtzs(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "fcvtzs v30.16b, v29.16b, #7");
+  TEST_SINGLE(fcvtzs(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "fcvtzs v30.8h, v29.8h, #1");
+  TEST_SINGLE(fcvtzs(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "fcvtzs v30.8h, v29.8h, #15");
+  TEST_SINGLE(fcvtzs(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "fcvtzs v30.4s, v29.4s, #1");
+  TEST_SINGLE(fcvtzs(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "fcvtzs v30.4s, v29.4s, #31");
+  TEST_SINGLE(fcvtzs(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "fcvtzs v30.2d, v29.2d, #1");
+  TEST_SINGLE(fcvtzs(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "fcvtzs v30.2d, v29.2d, #63");
+
+  //TEST_SINGLE(fcvtzs(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "fcvtzs v30.8b, v29.8b, #1");
+  //TEST_SINGLE(fcvtzs(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "fcvtzs v30.8b, v29.8b, #7");
+  TEST_SINGLE(fcvtzs(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "fcvtzs v30.4h, v29.4h, #1");
+  TEST_SINGLE(fcvtzs(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "fcvtzs v30.4h, v29.4h, #15");
+  TEST_SINGLE(fcvtzs(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "fcvtzs v30.2s, v29.2s, #1");
+  TEST_SINGLE(fcvtzs(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "fcvtzs v30.2s, v29.2s, #31");
+  //TEST_SINGLE(fcvtzs(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "fcvtzs v30.1d, v29.1d, #1");
+  //TEST_SINGLE(fcvtzs(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "fcvtzs v30.1d, v29.1d, #63");
 
   TEST_SINGLE(ushr(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "ushr v30.16b, v29.16b, #1");
   TEST_SINGLE(ushr(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "ushr v30.16b, v29.16b, #7");
@@ -2611,7 +2645,41 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(uxtl2(SubRegSize::i32Bit, DReg::d30, DReg::d29),  "uxtl2 v30.4s, v29.8h");
   TEST_SINGLE(uxtl2(SubRegSize::i64Bit, DReg::d30, DReg::d29),  "uxtl2 v30.2d, v29.4s");
 
-  //// XXX: UCVTF/FCVTZU
+  //TEST_SINGLE(ucvtf(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "ucvtf v30.16b, v29.16b, #1");
+  //TEST_SINGLE(ucvtf(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "ucvtf v30.16b, v29.16b, #7");
+  TEST_SINGLE(ucvtf(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "ucvtf v30.8h, v29.8h, #1");
+  TEST_SINGLE(ucvtf(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "ucvtf v30.8h, v29.8h, #15");
+  TEST_SINGLE(ucvtf(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "ucvtf v30.4s, v29.4s, #1");
+  TEST_SINGLE(ucvtf(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "ucvtf v30.4s, v29.4s, #31");
+  TEST_SINGLE(ucvtf(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "ucvtf v30.2d, v29.2d, #1");
+  TEST_SINGLE(ucvtf(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "ucvtf v30.2d, v29.2d, #63");
+
+  //TEST_SINGLE(ucvtf(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "ucvtf v30.8b, v29.8b, #1");
+  //TEST_SINGLE(ucvtf(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "ucvtf v30.8b, v29.8b, #7");
+  TEST_SINGLE(ucvtf(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "ucvtf v30.4h, v29.4h, #1");
+  TEST_SINGLE(ucvtf(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "ucvtf v30.4h, v29.4h, #15");
+  TEST_SINGLE(ucvtf(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "ucvtf v30.2s, v29.2s, #1");
+  TEST_SINGLE(ucvtf(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "ucvtf v30.2s, v29.2s, #31");
+  //TEST_SINGLE(ucvtf(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "ucvtf v30.1d, v29.1d, #1");
+  //TEST_SINGLE(ucvtf(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "ucvtf v30.1d, v29.1d, #63");
+
+  //TEST_SINGLE(fcvtzu(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "fcvtzu v30.16b, v29.16b, #1");
+  //TEST_SINGLE(fcvtzu(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "fcvtzu v30.16b, v29.16b, #7");
+  TEST_SINGLE(fcvtzu(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "fcvtzu v30.8h, v29.8h, #1");
+  TEST_SINGLE(fcvtzu(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "fcvtzu v30.8h, v29.8h, #15");
+  TEST_SINGLE(fcvtzu(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "fcvtzu v30.4s, v29.4s, #1");
+  TEST_SINGLE(fcvtzu(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "fcvtzu v30.4s, v29.4s, #31");
+  TEST_SINGLE(fcvtzu(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "fcvtzu v30.2d, v29.2d, #1");
+  TEST_SINGLE(fcvtzu(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "fcvtzu v30.2d, v29.2d, #63");
+
+  //TEST_SINGLE(fcvtzu(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "fcvtzu v30.8b, v29.8b, #1");
+  //TEST_SINGLE(fcvtzu(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "fcvtzu v30.8b, v29.8b, #7");
+  TEST_SINGLE(fcvtzu(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "fcvtzu v30.4h, v29.4h, #1");
+  TEST_SINGLE(fcvtzu(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "fcvtzu v30.4h, v29.4h, #15");
+  TEST_SINGLE(fcvtzu(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "fcvtzu v30.2s, v29.2s, #1");
+  TEST_SINGLE(fcvtzu(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "fcvtzu v30.2s, v29.2s, #31");
+  //TEST_SINGLE(fcvtzu(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "fcvtzu v30.1d, v29.1d, #1");
+  //TEST_SINGLE(fcvtzu(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "fcvtzu v30.1d, v29.1d, #63");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x indexed element") {
