@@ -20,23 +20,6 @@ $end_info$
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
-DEF_OP(SignalReturn) {
-  auto Op = IROp->C<IR::IROp_SignalReturn>();
-
-  // First we must reset the stack
-  ResetStack();
-
-  // Now branch to our signal return helper
-  // This can't be a direct branch since the code needs to live at a constant location
-  if (Op->IsRT) {
-    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandlerRT));
-  }
-  else {
-    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler));
-  }
-  br(ARMEmitter::Reg::r0);
-}
-
 DEF_OP(CallbackReturn) {
   // spill back to CTX
   SpillStaticRegs();
