@@ -735,10 +735,10 @@ DEF_OP(SpillRegister) {
     case 8: {
       if (SlotOffset > 32760) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
-        str(Src.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+        str(Src.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
       else {
-        str(Src.W(), ARMEmitter::Reg::rsp, SlotOffset);
+        str(Src.X(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
     }
@@ -773,10 +773,10 @@ DEF_OP(SpillRegister) {
     case 16: {
       if (SlotOffset > 65520) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
-        str(Src.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
+        str(Src.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
       else {
-        str(Src.D(), ARMEmitter::Reg::rsp, SlotOffset);
+        str(Src.Q(), ARMEmitter::Reg::rsp, SlotOffset);
       }
       break;
     }
