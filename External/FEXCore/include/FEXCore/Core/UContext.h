@@ -372,5 +372,33 @@ namespace FEXCore {
     };
     static_assert(sizeof(FEXCore::x86::ucontext_t) == 236, "This needs to be the right size");
 
+    ///< Non-rt signal context.
+    //
+    // Needs to match the format expected from signal handlers without SA_SIGINFO set.
+    struct sigcontext {
+      uint32_t gs;
+      uint32_t fs;
+      uint32_t es;
+      uint32_t ds;
+      uint32_t di;
+      uint32_t si;
+      uint32_t bp;
+      uint32_t sp;
+      uint32_t bx;
+      uint32_t dx;
+      uint32_t cx;
+      uint32_t ax;
+      uint32_t trapno;
+      uint32_t err;
+      uint32_t ip;
+      uint32_t cs;
+      uint32_t flags;
+      uint32_t sp_at_signal;
+      uint32_t ss;
+
+      uint32_t fpstate;
+      uint32_t oldmask;
+      uint32_t cr2;
+    };
   }
 }

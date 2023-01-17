@@ -68,6 +68,7 @@ namespace FEXCore::Core {
     Pause,
     Stop,
     Return,
+    ReturnRT,
   };
 
   struct LocalIREntry {

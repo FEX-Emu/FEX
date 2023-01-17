@@ -345,6 +345,12 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherCon
   }
 
   {
+    // RT Signal return handler
+    SignalHandlerReturnAddressRT = getCurr<uint64_t>();
+    ud2();
+  }
+
+  {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
     GuestSignal_SIGILL = getCurr<uint64_t>();
@@ -486,6 +492,7 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
     Common.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
     Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
 
     auto &Interpreter = Thread->CurrentFrame->Pointers.Interpreter;
     (uintptr_t&)Interpreter.CallbackReturn = IntCallbackReturnAddress;

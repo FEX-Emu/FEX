@@ -18,8 +18,8 @@ $end_info$
 
 namespace FEXCore::CPU {
 [[noreturn]]
-static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
-  Thread->CTX->SignalThread(Thread, FEXCore::Core::SignalEvent::Return);
+static void SignalReturn(FEXCore::Core::InternalThreadState *Thread, bool RT) {
+  Thread->CTX->SignalThread(Thread, RT ? FEXCore::Core::SignalEvent::ReturnRT : FEXCore::Core::SignalEvent::Return);
 
   LOGMAN_MSG_A_FMT("unreachable");
   FEX_UNREACHABLE;
@@ -28,7 +28,9 @@ static void SignalReturn(FEXCore::Core::InternalThreadState *Thread) {
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 
 DEF_OP(SignalReturn) {
-  SignalReturn(Data->State);
+  auto Op = IROp->C<IR::IROp_SignalReturn>();
+
+  SignalReturn(Data->State, Op->IsRT);
 }
 
 DEF_OP(CallbackReturn) {

@@ -44,6 +44,7 @@ public:
   uint64_t ThreadPauseHandlerAddressSpillSRA{};
   uint64_t ExitFunctionLinkerAddress{};
   uint64_t SignalHandlerReturnAddress{};
+  uint64_t SignalHandlerReturnAddressRT{};
   uint64_t GuestSignal_SIGILL{};
   uint64_t GuestSignal_SIGTRAP{};
   uint64_t GuestSignal_SIGSEGV{};
@@ -91,6 +92,8 @@ protected:
     {}
 
   void RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
+  void RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
+  void RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
 
   const bool incomplete_guest_restorer_support = false;
 
@@ -100,8 +103,59 @@ protected:
     GuestSigAction *GuestAction, stack_t *GuestStack,
     uint64_t NewGuestSP, const uint32_t eflags);
 
+  ///< Setup the signal frame for a 32-bit signal without SA_SIGINFO.
+  uint64_t SetupFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
+    int Signal, siginfo_t *HostSigInfo, void *ucontext,
+    GuestSigAction *GuestAction, stack_t *GuestStack,
+    uint64_t NewGuestSP, const uint32_t eflags);
+
+  ///< Setup the signal frame for a 32-bit signal with SA_SIGINFO.
+  uint64_t SetupRTFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
+    int Signal, siginfo_t *HostSigInfo, void *ucontext,
+    GuestSigAction *GuestAction, stack_t *GuestStack,
+    uint64_t NewGuestSP, const uint32_t eflags);
+
   ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
-  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext);
+  enum class RestoreType {
+    TYPE_REALTIME, ///< Signal restore type is from a `realtime` signal.
+    TYPE_NONREALTIME, ///< Signal restore type is from a `non-realtime` signal.
+    TYPE_PAUSE, ///< Signal restore type is from a GDB pause event.
+  };
+
+  /*
+   * Signal frames on 32-bit architecture needs to match exactly how the kernel generates the frame.
+   * This is because large parts of the signal frame definition is part of the UAPI.
+   * This means that when FEX sets up the signal frame, it needs to match the UAPI stack setup.
+   *
+   * The two signal stack frame types below describe the two different 32-bit frame types.
+   */
+
+  // The 32-bit non-realtime signal frame.
+  // This frame type is used when the guest signal is used without the `SA_SIGINFO` flag.
+  struct SigFrame_i32 {
+    uint32_t pretcode; ///< sigreturn return branch point.
+    int32_t Signal; ///< The signal hit.
+    FEXCore::x86::sigcontext sc; ///< The signal context.
+    x86::_libc_fpstate fpstate_unused; ///< Unused fpstate. Retained for backwards compatibility.
+    uint32_t extramask[1]; ///< Upper 32-bits of the signal mask. Lower 32-bits is in the sigcontext.
+    char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
+    ///< FP state now follows after this.
+  };
+
+  // The 32-bit realtime signal frame.
+  // This frame type is used when the guest signal is used with the `SA_SIGINFO` flag.
+  struct RTSigFrame_i32 {
+    uint32_t pretcode; ///< sigreturn return branch point.
+    int32_t Signal; ///< The signal hit.
+    uint32_t pinfo; ///< Pointer to siginfo_t
+    uint32_t puc; ///< Pointer to ucontext_t
+    FEXCore::x86::siginfo_t info;
+    FEXCore::x86::ucontext_t uc;
+    char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
+    ///< FP state now follows after this.
+  };
+
+  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
   std::stack<uint64_t, std::vector<uint64_t>> SignalFrames;
 
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}

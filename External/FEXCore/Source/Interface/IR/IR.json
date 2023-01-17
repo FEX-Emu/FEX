@@ -264,7 +264,7 @@
       "Break BreakDefinition:$Reason": {
         "HasSideEffects": true
       },
-      "SignalReturn": {
+      "SignalReturn i8:$IsRT": {
         "HasSideEffects": true
       },
       "CallbackReturn": {

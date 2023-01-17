@@ -278,9 +278,11 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
+  uint8_t Literal = Op->Src[0].Data.Literal.Value;
   const uint8_t GPRSize = CTX->GetGPRSize();
   // Store the new RIP
-  _SignalReturn();
+  bool IsRT = CTX->Config.Is64BitMode() || Literal;
+  _SignalReturn(IsRT);
   auto NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
   // This ExitFunction won't actually get hit but needs to exist
   _ExitFunction(NewRIP);
