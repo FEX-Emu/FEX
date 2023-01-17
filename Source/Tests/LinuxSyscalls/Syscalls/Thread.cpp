@@ -263,6 +263,11 @@ namespace FEX::HLE {
   void RegisterThread(FEX::HLE::SyscallHandler *Handler) {
     using namespace FEXCore::IR;
 
+    REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
+      FEXCore::Context::HandleSignalHandlerReturn(Frame->Thread->CTX, true);
+      FEX_UNREACHABLE;
+    });
+
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpid, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
       uint64_t Result = ::getpid();

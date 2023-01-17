@@ -117,7 +117,9 @@ namespace FEXCore::Context {
   void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
     CTX->HandleCallback(Thread, RIP);
   }
-
+  void HandleSignalHandlerReturn(FEXCore::Context::Context *CTX, bool RT) {
+    CTX->HandleSignalHandlerReturn(RT);
+  }
   void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required) {
       CTX->RegisterHostSignalHandler(Signal, std::move(Func), Required);
   }

@@ -23,10 +23,6 @@ namespace FEXCore::Core {
 namespace FEX::HLE {
   void RegisterStubs(FEX::HLE::SyscallHandler *Handler) {
 
-    REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      SYSCALL_STUB(rt_sigreturn);
-    });
-
     REGISTER_SYSCALL_IMPL(ptrace, [](FEXCore::Core::CpuStateFrame *Frame, int /*enum __ptrace_request*/ request, pid_t pid, void *addr, void *data) -> uint64_t {
       // We don't support this
       return -EPERM;
