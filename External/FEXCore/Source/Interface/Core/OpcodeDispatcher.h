@@ -176,7 +176,6 @@ public:
   void NOPOp(OpcodeArgs);
   void RETOp(OpcodeArgs);
   void IRETOp(OpcodeArgs);
-  void SIGRETOp(OpcodeArgs);
   void CallbackReturnOp(OpcodeArgs);
   void SecondaryALUOp(OpcodeArgs);
   template<uint32_t SrcIndex>
