@@ -15,8 +15,6 @@ public:
   X86GeneratedCode();
   ~X86GeneratedCode();
 
-  uint64_t SignalReturn{};
-  uint64_t SignalReturnRT{};
   uint64_t CallbackReturn{};
 
 private:
