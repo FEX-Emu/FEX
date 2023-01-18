@@ -535,21 +535,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
     RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
   }
 
-  for (uint32_t i = 0; i < FEXCore::IR::IROps::OP_LAST + 1; ++i) {
-    OpHandlers[i] = &Arm64JITCore::Op_Unhandled;
-  }
-
-  RegisterALUHandlers();
-  RegisterAtomicHandlers();
-  RegisterBranchHandlers();
-  RegisterConversionHandlers();
-  RegisterFlagHandlers();
-  RegisterMemoryHandlers();
-  RegisterMiscHandlers();
-  RegisterMoveHandlers();
-  RegisterVectorHandlers();
-  RegisterEncryptionHandlers();
-
   {
     // Set up pointers that the JIT needs to load
 
@@ -769,10 +754,256 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       const auto ID = IR->GetID(CodeNode);
+      switch (IROp->Op) {
+#define REGISTER_OP(op, x) case FEXCore::IR::IROps::OP_##op: Op_##x(IROp, ID); break
+        // ALU ops
+        REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
+        REGISTER_OP(CONSTANT,          Constant);
+        REGISTER_OP(ENTRYPOINTOFFSET,  EntrypointOffset);
+        REGISTER_OP(INLINECONSTANT,    InlineConstant);
+        REGISTER_OP(INLINEENTRYPOINTOFFSET,  InlineEntrypointOffset);
+        REGISTER_OP(CYCLECOUNTER,      CycleCounter);
+        REGISTER_OP(ADD,               Add);
+        REGISTER_OP(SUB,               Sub);
+        REGISTER_OP(NEG,               Neg);
+        REGISTER_OP(MUL,               Mul);
+        REGISTER_OP(UMUL,              UMul);
+        REGISTER_OP(DIV,               Div);
+        REGISTER_OP(UDIV,              UDiv);
+        REGISTER_OP(REM,               Rem);
+        REGISTER_OP(UREM,              URem);
+        REGISTER_OP(MULH,              MulH);
+        REGISTER_OP(UMULH,             UMulH);
+        REGISTER_OP(OR,                Or);
+        REGISTER_OP(AND,               And);
+        REGISTER_OP(ANDN,              Andn);
+        REGISTER_OP(XOR,               Xor);
+        REGISTER_OP(LSHL,              Lshl);
+        REGISTER_OP(LSHR,              Lshr);
+        REGISTER_OP(ASHR,              Ashr);
+        REGISTER_OP(ROR,               Ror);
+        REGISTER_OP(EXTR,              Extr);
+        REGISTER_OP(PDEP,              PDep);
+        REGISTER_OP(PEXT,              PExt);
+        REGISTER_OP(LDIV,              LDiv);
+        REGISTER_OP(LUDIV,             LUDiv);
+        REGISTER_OP(LREM,              LRem);
+        REGISTER_OP(LUREM,             LURem);
+        REGISTER_OP(NOT,               Not);
+        REGISTER_OP(POPCOUNT,          Popcount);
+        REGISTER_OP(FINDLSB,           FindLSB);
+        REGISTER_OP(FINDMSB,           FindMSB);
+        REGISTER_OP(FINDTRAILINGZEROS, FindTrailingZeros);
+        REGISTER_OP(COUNTLEADINGZEROES, CountLeadingZeroes);
+        REGISTER_OP(REV,               Rev);
+        REGISTER_OP(BFI,               Bfi);
+        REGISTER_OP(BFE,               Bfe);
+        REGISTER_OP(SBFE,              Sbfe);
+        REGISTER_OP(SELECT,            Select);
+        REGISTER_OP(VEXTRACTTOGPR,     VExtractToGPR);
+        REGISTER_OP(FLOAT_TOGPR_ZS,    Float_ToGPR_ZS);
+        REGISTER_OP(FLOAT_TOGPR_S,     Float_ToGPR_S);
+        REGISTER_OP(FCMP,              FCmp);
 
-      // Execute handler
-      OpHandler Handler = OpHandlers[IROp->Op];
-      (this->*Handler)(IROp, ID);
+        // Atomic ops
+        REGISTER_OP(CASPAIR,        CASPair);
+        REGISTER_OP(CAS,            CAS);
+        REGISTER_OP(ATOMICADD,      AtomicAdd);
+        REGISTER_OP(ATOMICSUB,      AtomicSub);
+        REGISTER_OP(ATOMICAND,      AtomicAnd);
+        REGISTER_OP(ATOMICOR,       AtomicOr);
+        REGISTER_OP(ATOMICXOR,      AtomicXor);
+        REGISTER_OP(ATOMICSWAP,     AtomicSwap);
+        REGISTER_OP(ATOMICFETCHADD, AtomicFetchAdd);
+        REGISTER_OP(ATOMICFETCHSUB, AtomicFetchSub);
+        REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
+        REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
+        REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
+        REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
+
+        // Branch ops
+        REGISTER_OP(SIGNALRETURN,      SignalReturn);
+        REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
+        REGISTER_OP(EXITFUNCTION,      ExitFunction);
+        REGISTER_OP(JUMP,              Jump);
+        REGISTER_OP(CONDJUMP,          CondJump);
+        REGISTER_OP(SYSCALL,           Syscall);
+        REGISTER_OP(INLINESYSCALL,     InlineSyscall);
+        REGISTER_OP(THUNK,             Thunk);
+        REGISTER_OP(VALIDATECODE,      ValidateCode);
+        REGISTER_OP(THREADREMOVECODEENTRY,   ThreadRemoveCodeEntry);
+        REGISTER_OP(CPUID,             CPUID);
+
+        // Conversion ops
+        REGISTER_OP(VINSGPR,         VInsGPR);
+        REGISTER_OP(VCASTFROMGPR,    VCastFromGPR);
+        REGISTER_OP(FLOAT_FROMGPR_S, Float_FromGPR_S);
+        REGISTER_OP(FLOAT_FTOF,      Float_FToF);
+        REGISTER_OP(VECTOR_STOF,     Vector_SToF);
+        REGISTER_OP(VECTOR_FTOZS,    Vector_FToZS);
+        REGISTER_OP(VECTOR_FTOS,     Vector_FToS);
+        REGISTER_OP(VECTOR_FTOF,     Vector_FToF);
+        REGISTER_OP(VECTOR_FTOI,     Vector_FToI);
+
+        // Encryption ops
+        REGISTER_OP(VAESIMC,           AESImc);
+        REGISTER_OP(VAESENC,           AESEnc);
+        REGISTER_OP(VAESENCLAST,       AESEncLast);
+        REGISTER_OP(VAESDEC,           AESDec);
+        REGISTER_OP(VAESDECLAST,       AESDecLast);
+        REGISTER_OP(VAESKEYGENASSIST,  AESKeyGenAssist);
+        REGISTER_OP(CRC32,             CRC32);
+        REGISTER_OP(PCLMUL,            PCLMUL);
+
+        // Flag ops
+        REGISTER_OP(GETHOSTFLAG, GetHostFlag);
+
+        // Memory ops
+        REGISTER_OP(LOADCONTEXT,         LoadContext);
+        REGISTER_OP(STORECONTEXT,        StoreContext);
+        REGISTER_OP(LOADREGISTER,        LoadRegister);
+        REGISTER_OP(STOREREGISTER,       StoreRegister);
+        REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
+        REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
+        REGISTER_OP(SPILLREGISTER,       SpillRegister);
+        REGISTER_OP(FILLREGISTER,        FillRegister);
+        REGISTER_OP(LOADFLAG,            LoadFlag);
+        REGISTER_OP(STOREFLAG,           StoreFlag);
+        REGISTER_OP(LOADMEM,             LoadMem);
+        REGISTER_OP(STOREMEM,            StoreMem);
+        case FEXCore::IR::IROps::OP_LOADMEMTSO:
+          if (ParanoidTSO()) {
+            Op_ParanoidLoadMemTSO(IROp, ID);
+          }
+          else {
+            Op_LoadMemTSO(IROp, ID);
+          }
+          break;
+        case FEXCore::IR::IROps::OP_STOREMEMTSO:
+          if (ParanoidTSO()) {
+            Op_ParanoidStoreMemTSO(IROp, ID);
+          }
+          else {
+            Op_StoreMemTSO(IROp, ID);
+          }
+          break;
+        REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
+        REGISTER_OP(CACHELINEZERO,       CacheLineZero);
+
+        // Misc ops
+        REGISTER_OP(DUMMY,      NoOp);
+        REGISTER_OP(IRHEADER,   NoOp);
+        REGISTER_OP(CODEBLOCK,  NoOp);
+        REGISTER_OP(BEGINBLOCK, NoOp);
+        REGISTER_OP(ENDBLOCK,   NoOp);
+        REGISTER_OP(GUESTOPCODE, GuestOpcode);
+        REGISTER_OP(FENCE,      Fence);
+        REGISTER_OP(BREAK,      Break);
+        REGISTER_OP(PHI,        NoOp);
+        REGISTER_OP(PHIVALUE,   NoOp);
+        REGISTER_OP(PRINT,      Print);
+        REGISTER_OP(GETROUNDINGMODE, GetRoundingMode);
+        REGISTER_OP(SETROUNDINGMODE, SetRoundingMode);
+        REGISTER_OP(INVALIDATEFLAGS,   NoOp);
+        REGISTER_OP(PROCESSORID,   ProcessorID);
+        REGISTER_OP(RDRAND, RDRAND);
+        REGISTER_OP(YIELD, Yield);
+
+        // Move ops
+        REGISTER_OP(EXTRACTELEMENTPAIR, ExtractElementPair);
+        REGISTER_OP(CREATEELEMENTPAIR,  CreateElementPair);
+
+        // Vector ops
+        REGISTER_OP(VECTORZERO,        VectorZero);
+        REGISTER_OP(VECTORIMM,         VectorImm);
+        REGISTER_OP(VMOV,              VMov);
+        REGISTER_OP(VAND,              VAnd);
+        REGISTER_OP(VBIC,              VBic);
+        REGISTER_OP(VOR,               VOr);
+        REGISTER_OP(VXOR,              VXor);
+        REGISTER_OP(VADD,              VAdd);
+        REGISTER_OP(VSUB,              VSub);
+        REGISTER_OP(VUQADD,            VUQAdd);
+        REGISTER_OP(VUQSUB,            VUQSub);
+        REGISTER_OP(VSQADD,            VSQAdd);
+        REGISTER_OP(VSQSUB,            VSQSub);
+        REGISTER_OP(VADDP,             VAddP);
+        REGISTER_OP(VADDV,             VAddV);
+        REGISTER_OP(VUMINV,            VUMinV);
+        REGISTER_OP(VURAVG,            VURAvg);
+        REGISTER_OP(VABS,              VAbs);
+        REGISTER_OP(VPOPCOUNT,         VPopcount);
+        REGISTER_OP(VFADD,             VFAdd);
+        REGISTER_OP(VFADDP,            VFAddP);
+        REGISTER_OP(VFSUB,             VFSub);
+        REGISTER_OP(VFMUL,             VFMul);
+        REGISTER_OP(VFDIV,             VFDiv);
+        REGISTER_OP(VFMIN,             VFMin);
+        REGISTER_OP(VFMAX,             VFMax);
+        REGISTER_OP(VFRECP,            VFRecp);
+        REGISTER_OP(VFSQRT,            VFSqrt);
+        REGISTER_OP(VFRSQRT,           VFRSqrt);
+        REGISTER_OP(VNEG,              VNeg);
+        REGISTER_OP(VFNEG,             VFNeg);
+        REGISTER_OP(VNOT,              VNot);
+        REGISTER_OP(VUMIN,             VUMin);
+        REGISTER_OP(VSMIN,             VSMin);
+        REGISTER_OP(VUMAX,             VUMax);
+        REGISTER_OP(VSMAX,             VSMax);
+        REGISTER_OP(VZIP,              VZip);
+        REGISTER_OP(VZIP2,             VZip2);
+        REGISTER_OP(VUNZIP,            VUnZip);
+        REGISTER_OP(VUNZIP2,           VUnZip2);
+        REGISTER_OP(VBSL,              VBSL);
+        REGISTER_OP(VCMPEQ,            VCMPEQ);
+        REGISTER_OP(VCMPEQZ,           VCMPEQZ);
+        REGISTER_OP(VCMPGT,            VCMPGT);
+        REGISTER_OP(VCMPGTZ,           VCMPGTZ);
+        REGISTER_OP(VCMPLTZ,           VCMPLTZ);
+        REGISTER_OP(VFCMPEQ,           VFCMPEQ);
+        REGISTER_OP(VFCMPNEQ,          VFCMPNEQ);
+        REGISTER_OP(VFCMPLT,           VFCMPLT);
+        REGISTER_OP(VFCMPGT,           VFCMPGT);
+        REGISTER_OP(VFCMPLE,           VFCMPLE);
+        REGISTER_OP(VFCMPORD,          VFCMPORD);
+        REGISTER_OP(VFCMPUNO,          VFCMPUNO);
+        REGISTER_OP(VUSHL,             VUShl);
+        REGISTER_OP(VUSHR,             VUShr);
+        REGISTER_OP(VSSHR,             VSShr);
+        REGISTER_OP(VUSHLS,            VUShlS);
+        REGISTER_OP(VUSHRS,            VUShrS);
+        REGISTER_OP(VSSHRS,            VSShrS);
+        REGISTER_OP(VINSELEMENT,       VInsElement);
+        REGISTER_OP(VDUPELEMENT,       VDupElement);
+        REGISTER_OP(VEXTR,             VExtr);
+        REGISTER_OP(VUSHRI,            VUShrI);
+        REGISTER_OP(VSSHRI,            VSShrI);
+        REGISTER_OP(VSHLI,             VShlI);
+        REGISTER_OP(VUSHRNI,           VUShrNI);
+        REGISTER_OP(VUSHRNI2,          VUShrNI2);
+        REGISTER_OP(VSXTL,             VSXTL);
+        REGISTER_OP(VSXTL2,            VSXTL2);
+        REGISTER_OP(VUXTL,             VUXTL);
+        REGISTER_OP(VUXTL2,            VUXTL2);
+        REGISTER_OP(VSQXTN,            VSQXTN);
+        REGISTER_OP(VSQXTN2,           VSQXTN2);
+        REGISTER_OP(VSQXTUN,           VSQXTUN);
+        REGISTER_OP(VSQXTUN2,          VSQXTUN2);
+        REGISTER_OP(VUMUL,             VMul);
+        REGISTER_OP(VSMUL,             VMul);
+        REGISTER_OP(VUMULL,            VUMull);
+        REGISTER_OP(VSMULL,            VSMull);
+        REGISTER_OP(VUMULL2,           VUMull2);
+        REGISTER_OP(VSMULL2,           VSMull2);
+        REGISTER_OP(VUABDL,            VUABDL);
+        REGISTER_OP(VTBL1,             VTBL1);
+        REGISTER_OP(VREV64,            VRev64);
+#undef REGISTER_OP
+
+        default:
+          Op_Unhandled(IROp, ID);
+          break;
+      }
     }
 
     if (DebugData) {

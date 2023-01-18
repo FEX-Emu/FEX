@@ -1522,31 +1522,5 @@ DEF_OP(CacheLineZero) {
 }
 
 #undef DEF_OP
-void Arm64JITCore::RegisterMemoryHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(LOADCONTEXT,         LoadContext);
-  REGISTER_OP(STORECONTEXT,        StoreContext);
-  REGISTER_OP(LOADREGISTER,        LoadRegister);
-  REGISTER_OP(STOREREGISTER,       StoreRegister);
-  REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
-  REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
-  REGISTER_OP(SPILLREGISTER,       SpillRegister);
-  REGISTER_OP(FILLREGISTER,        FillRegister);
-  REGISTER_OP(LOADFLAG,            LoadFlag);
-  REGISTER_OP(STOREFLAG,           StoreFlag);
-  REGISTER_OP(LOADMEM,             LoadMem);
-  REGISTER_OP(STOREMEM,            StoreMem);
-  if (ParanoidTSO()) {
-    REGISTER_OP(LOADMEMTSO,          ParanoidLoadMemTSO);
-    REGISTER_OP(STOREMEMTSO,         ParanoidStoreMemTSO);
-  }
-  else {
-    REGISTER_OP(LOADMEMTSO,          LoadMemTSO);
-    REGISTER_OP(STOREMEMTSO,         StoreMemTSO);
-  }
-  REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
-  REGISTER_OP(CACHELINEZERO,       CacheLineZero);
-#undef REGISTER_OP
-}
 }
 

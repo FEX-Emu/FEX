@@ -438,23 +438,5 @@ DEF_OP(AtomicFetchNeg) {
 }
 
 #undef DEF_OP
-void Arm64JITCore::RegisterAtomicHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(CASPAIR,        CASPair);
-  REGISTER_OP(CAS,            CAS);
-  REGISTER_OP(ATOMICADD,      AtomicAdd);
-  REGISTER_OP(ATOMICSUB,      AtomicSub);
-  REGISTER_OP(ATOMICAND,      AtomicAnd);
-  REGISTER_OP(ATOMICOR,       AtomicOr);
-  REGISTER_OP(ATOMICXOR,      AtomicXor);
-  REGISTER_OP(ATOMICSWAP,     AtomicSwap);
-  REGISTER_OP(ATOMICFETCHADD, AtomicFetchAdd);
-  REGISTER_OP(ATOMICFETCHSUB, AtomicFetchSub);
-  REGISTER_OP(ATOMICFETCHAND, AtomicFetchAnd);
-  REGISTER_OP(ATOMICFETCHOR,  AtomicFetchOr);
-  REGISTER_OP(ATOMICFETCHXOR, AtomicFetchXor);
-  REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
-#undef REGISTER_OP
-}
 }
 

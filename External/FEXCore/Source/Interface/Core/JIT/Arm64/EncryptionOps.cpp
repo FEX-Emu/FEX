@@ -136,16 +136,4 @@ DEF_OP(PCLMUL) {
 }
 
 #undef DEF_OP
-void Arm64JITCore::RegisterEncryptionHandlers() {
-#define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &Arm64JITCore::Op_##x
-  REGISTER_OP(VAESIMC,           AESImc);
-  REGISTER_OP(VAESENC,           AESEnc);
-  REGISTER_OP(VAESENCLAST,       AESEncLast);
-  REGISTER_OP(VAESDEC,           AESDec);
-  REGISTER_OP(VAESDECLAST,       AESDecLast);
-  REGISTER_OP(VAESKEYGENASSIST,  AESKeyGenAssist);
-  REGISTER_OP(CRC32,             CRC32);
-  REGISTER_OP(PCLMUL,            PCLMUL);
-#undef REGISTER_OP
-}
 }
