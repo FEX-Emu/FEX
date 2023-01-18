@@ -3682,7 +3682,46 @@ public:
     sshll2(size, rd, rn, 0);
   }
 
-  // TODO: SCVTF, FCVTZS
+  template<typename T>
+  void scvtf(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 0, immh, immb, 0b11100, rn, rd);
+  }
+
+  template<typename T>
+  void fcvtzs(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 0, immh, immb, 0b11111, rn, rd);
+  }
+
   template<typename T>
   void ushr(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
@@ -3955,10 +3994,960 @@ public:
   void uxtl2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn) {
     ushll2(size, rd, rn, 0);
   }
-  // XXX: UCVTF/FCVTZU
+  template<typename T>
+  void ucvtf(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 1, immh, immb, 0b11100, rn, rd);
+  }
+
+  template<typename T>
+  void fcvtzu(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+    }
+
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+    const size_t SubregSizeInBits = SubRegSizeInBits(size);
+    LOGMAN_THROW_AA_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
+
+    // fbits encoded a bit weirdly.
+    // fbits = (esize * 2) - immh:immb but immh is /also/ used for element size.
+    const uint32_t InvertedFractionalBits = (SubregSizeInBits * 2) - FractionalBits;
+    const uint32_t immh = InvertedFractionalBits >> 3;
+    const uint32_t immb = InvertedFractionalBits & 0b111;
+
+    ASIMDShiftByImm(Op, 1, immh, immb, 0b11111, rn, rd);
+  }
 
   // Advanced SIMD vector x indexed element
-  // TODO
+  ///< size is destination size
+  void smlal(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0010, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void smlal2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0010, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+  ///< size is destination size
+  void sqdmlal(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0011, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void sqdmlal2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0011, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+  ///< size is destination size
+  void smlsl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0110, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void smlsl2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0110, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+  ///< size is destination size
+  void sqdmlsl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0111, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void sqdmlsl2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0111, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void mul(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1000, H, size, rm, rn, rd);
+  }
+  ///< size is destination size
+  void smull(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1010, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void smull2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1010, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+  ///< size is destination size
+  void sqdmull(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1011, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void sqdmull2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1011, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sqdmulh(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1100, H, size, rm, rn, rd);
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sqrdmulh(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1101, H, size, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sdot(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 1) & 1;
+    L = (Index >> 0) & 1;
+    M = 0;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1110, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sudot(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 1) & 1;
+    L = (Index >> 0) & 1;
+    M = 0;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, FEXCore::ARMEmitter::SubRegSize::i8Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void bfdot(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 1) & 1;
+    L = (Index >> 0) & 1;
+    M = 0;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, FEXCore::ARMEmitter::SubRegSize::i16Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmla(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
+                        size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
+                        size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    auto EncodedSubRegSize = size;
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+      // ARM in their infinite wisdom decided to encode 16-bit as an 8-bit operation even though 16-bit was unallocated.
+      EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    }
+    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    else {
+      LOGMAN_THROW_A_FMT(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>, "Can't encode DRegister with i64Bit");
+      // Index encoded in H
+      H = Index;
+      L = 0;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0001, H, EncodedSubRegSize, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmls(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
+                        size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
+                        size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    auto EncodedSubRegSize = size;
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+      // ARM in their infinite wisdom decided to encode 16-bit as an 8-bit operation even though 16-bit was unallocated.
+      EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    }
+    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    else {
+      LOGMAN_THROW_A_FMT(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>, "Can't encode DRegister with i64Bit");
+      // Index encoded in H
+      H = Index;
+      L = 0;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0101, H, EncodedSubRegSize, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmul(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
+                        size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
+                        size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    auto EncodedSubRegSize = size;
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+      // ARM in their infinite wisdom decided to encode 16-bit as an 8-bit operation even though 16-bit was unallocated.
+      EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    }
+    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    else {
+      LOGMAN_THROW_A_FMT(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>, "Can't encode DRegister with i64Bit");
+      // Index encoded in H
+      H = Index;
+      L = 0;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1001, H, EncodedSubRegSize, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmlal(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 2) & 1;
+    L = (Index >> 1) & 1;
+    M = (Index >> 0) & 1;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0000, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmlal2(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 2) & 1;
+    L = (Index >> 1) & 1;
+    M = (Index >> 0) & 1;
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1000, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmlsl(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 2) & 1;
+    L = (Index >> 1) & 1;
+    M = (Index >> 0) & 1;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b0100, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void fmlsl2(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 2) & 1;
+    L = (Index >> 1) & 1;
+    M = (Index >> 0) & 1;
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1100, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void usdot(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 1) & 1;
+    L = (Index >> 0) & 1;
+    M = 0;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  void bfmlalb(FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 2) & 1;
+    L = (Index >> 1) & 1;
+    M = (Index >> 0) & 1;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, FEXCore::ARMEmitter::SubRegSize::i64Bit, rm.D(), rn.D(), rd.D());
+  }
+  void bfmlalt(FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 2) & 1;
+    L = (Index >> 1) & 1;
+    M = (Index >> 0) & 1;
+    ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, FEXCore::ARMEmitter::SubRegSize::i64Bit, rm.Q(), rn.Q(), rd.Q());
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void mla(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b0000, H, size, rm, rn, rd);
+  }
+
+  ///< size is destination size
+  void umlal(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b0010, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void umlal2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b0010, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void mls(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b0100, H, size, rm, rn, rd);
+  }
+
+  ///< size is destination size
+  void umlsl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b0110, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void umlsl2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b0110, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+
+  ///< size is destination size
+  void umull(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1010, H, EncodedSubRegSize, rm.D(), rn.D(), rd.D());
+  }
+  ///< size is destination size
+  void umull2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1010, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sqrdmlah(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1101, H, size, rm, rn, rd);
+  }
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void udot(T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    // Index encoded in H:L
+    // M overlaps rm register.
+    H = (Index >> 1) & 1;
+    L = (Index >> 0) & 1;
+    M = 0;
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1110, H, FEXCore::ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
+  }
+
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void sqrdmlsh(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
+
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    }
+    LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
+
+    uint32_t H, L, M;
+    if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+      // Index encoded in H:L:M
+      H = (Index >> 2) & 1;
+      L = (Index >> 1) & 1;
+      M = (Index >> 0) & 1;
+    }
+    else {
+      // Index encoded in H:L
+      // M overlaps rm register.
+      H = (Index >> 1) & 1;
+      L = (Index >> 0) & 1;
+      M = 0;
+    }
+    ASIMDVectorXIndexedElement(0b1, L, M, 0b1111, H, size, rm, rn, rd);
+  }
+
   // Cryptographic three-register, imm2
   // TODO
   // Cryptographic three-register SHA 512
@@ -3968,7 +4957,54 @@ public:
   // Cryptographic two-register SHA 512
   // TODO
   // Conversion between floating-point and fixed-point
-  // TODO
+  void scvtf(FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+
+    uint32_t Scale = 64 - FractionalBits;
+    const auto ConvertedSize =
+      ScalarSize == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 : 0;
+
+    ScalarConvertBetweenFPAndFixed(0, 0b00, 0b010, Scale, GPRSize, ConvertedSize, rn, rd);
+  }
+
+  void ucvtf(FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+
+    uint32_t Scale = 64 - FractionalBits;
+    const auto ConvertedSize =
+      ScalarSize == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 : 0;
+
+    ScalarConvertBetweenFPAndFixed(0, 0b00, 0b011, Scale, GPRSize, ConvertedSize, rn, rd);
+  }
+
+  void fcvtzs(FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+
+    uint32_t Scale = 64 - FractionalBits;
+    const auto ConvertedSize =
+      ScalarSize == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 : 0;
+
+    ScalarConvertBetweenFPAndFixed(0, 0b11, 0b000, Scale, GPRSize, ConvertedSize, rn, rd);
+  }
+
+  void fcvtzu(FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+
+    uint32_t Scale = 64 - FractionalBits;
+    const auto ConvertedSize =
+      ScalarSize == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
+      ScalarSize == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 : 0;
+
+    ScalarConvertBetweenFPAndFixed(0, 0b11, 0b001, Scale, GPRSize, ConvertedSize, rn, rd);
+  }
+
   // Conversion between floating-point and integer
   void fcvtns(FEXCore::ARMEmitter::Size size, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::HRegister rn) {
     constexpr uint32_t Op = 0b0001'1110'001 << 21;
@@ -4339,6 +5375,50 @@ private:
     Instr |= opcode << 11;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
+    dc32(Instr);
+  }
+
+  // Advanced SIMD vector x indexed element
+  template<typename T>
+  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
+  void ASIMDVectorXIndexedElement(uint32_t U, uint32_t L, uint32_t M, uint32_t opcode, uint32_t H, FEXCore::ARMEmitter::SubRegSize size, T rm, T rn, T rd) {
+    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'00 << 10;
+    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+
+    uint32_t Instr = Op;
+
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= L << 21;
+
+    // M and Rm might overlap. It's up to the instruction emitter itself to ensure there is no conflict.
+    Instr |= M << 20;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 12;
+    Instr |= H << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  // Conversion between floating-point and fixed-point
+  template<typename T, typename T2>
+  void ScalarConvertBetweenFPAndFixed(uint32_t S, uint32_t rmode, uint32_t opcode, uint32_t scale,
+                                      FEXCore::ARMEmitter::Size GPRSize, uint32_t ScalarSize,
+                                      T rn, T2 rd) {
+    constexpr uint32_t Op = 0b0001'1110'000 << 21;
+    const uint32_t SF = GPRSize == FEXCore::ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
+
+    uint32_t Instr = Op;
+    Instr |= SF;
+    Instr |= S << 29;
+    Instr |= ScalarSize << 22;
+    Instr |= rmode << 19;
+    Instr |= opcode << 16;
+    Instr |= scale << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
     dc32(Instr);
   }
 
