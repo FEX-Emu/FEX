@@ -15,7 +15,6 @@ namespace FEXCore::ArchHelpers::Context {
 
 enum ContextFlags : uint32_t {
   CONTEXT_FLAG_INJIT = (1U << 0),
-  CONTEXT_FLAG_32BIT = (1U << 1),
 };
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
