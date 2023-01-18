@@ -249,13 +249,169 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD copy") {
   TEST_SINGLE(ins(SubRegSize::i64Bit, VReg::v30, 1, VReg::v29, 0), "mov v30.d[1], v29.d[0]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD three same (FP16)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fmaxnm<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmaxnm v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmla<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmla v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fadd<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fadd v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmulx<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmulx v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fcmeq<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fcmeq v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmax<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmax v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(frecps<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "frecps v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fminnm<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fminnm v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmls<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmls v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fsub<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fsub v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmin<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmin v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(frsqrts<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "frsqrts v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmaxnmp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmaxnmp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(faddp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "faddp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmul<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmul v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fcmge<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fcmge v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(facge<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "facge v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmaxp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmaxp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fdiv<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fdiv v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fminnmp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fminnmp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fabd<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fabd v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fcmgt<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fcmgt v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(facgt<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "facgt v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fminp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fminp v30.8h, v29.8h, v28.8h");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD two-register miscellaneous (FP16)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(frintn<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frintn v30.8h, v29.8h");
+  TEST_SINGLE(frintm<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frintm v30.8h, v29.8h");
+  TEST_SINGLE(fcvtns<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtns v30.8h, v29.8h");
+  TEST_SINGLE(fcvtms<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtms v30.8h, v29.8h");
+  TEST_SINGLE(fcvtas<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtas v30.8h, v29.8h");
+  TEST_SINGLE(scvtf<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "scvtf v30.8h, v29.8h");
+  TEST_SINGLE(fcmgt<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcmgt v30.8h, v29.8h, #0.0");
+  TEST_SINGLE(fcmeq<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcmeq v30.8h, v29.8h, #0.0");
+  TEST_SINGLE(fcmlt<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcmlt v30.8h, v29.8h, #0.0");
+  TEST_SINGLE(fabs<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fabs v30.8h, v29.8h");
+  TEST_SINGLE(frintp<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frintp v30.8h, v29.8h");
+  TEST_SINGLE(frintz<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frintz v30.8h, v29.8h");
+  TEST_SINGLE(fcvtps<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtps v30.8h, v29.8h");
+  TEST_SINGLE(fcvtzs<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtzs v30.8h, v29.8h");
+  TEST_SINGLE(frecpe<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frecpe v30.8h, v29.8h");
+  TEST_SINGLE(frinta<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frinta v30.8h, v29.8h");
+  TEST_SINGLE(frintx<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frintx v30.8h, v29.8h");
+  TEST_SINGLE(fcvtnu<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtnu v30.8h, v29.8h");
+  TEST_SINGLE(fcvtmu<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtmu v30.8h, v29.8h");
+  TEST_SINGLE(fcvtau<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtau v30.8h, v29.8h");
+  TEST_SINGLE(ucvtf<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "ucvtf v30.8h, v29.8h");
+  TEST_SINGLE(fcmge<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcmge v30.8h, v29.8h, #0.0");
+  TEST_SINGLE(fcmle<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcmle v30.8h, v29.8h, #0.0");
+  TEST_SINGLE(fneg<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fneg v30.8h, v29.8h");
+  TEST_SINGLE(frinti<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frinti v30.8h, v29.8h");
+  TEST_SINGLE(fcvtpu<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtpu v30.8h, v29.8h");
+  TEST_SINGLE(fcvtzu<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fcvtzu v30.8h, v29.8h");
+  TEST_SINGLE(frsqrte<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "frsqrte v30.8h, v29.8h");
+  TEST_SINGLE(fsqrt<SubRegSize::i16Bit>(QReg::q30, QReg::q29), "fsqrt v30.8h, v29.8h");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD three-register extension") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sdot(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28), "sdot v30.16b, v29.16b, v28.16b");
+  TEST_SINGLE(sdot(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "sdot v30.8h, v29.16b, v28.16b");
+  TEST_SINGLE(sdot(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "sdot v30.4s, v29.16b, v28.16b");
+  TEST_SINGLE(sdot(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28), "sdot v30.2d, v29.16b, v28.16b");
+  TEST_SINGLE(sdot(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "sdot v30.8b, v29.8b, v28.8b");
+  TEST_SINGLE(sdot(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "sdot v30.4h, v29.8b, v28.8b");
+  TEST_SINGLE(sdot(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "sdot v30.2s, v29.8b, v28.8b");
+  //TEST_SINGLE(sdot(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28), "sdot v30.1d, v29.8b, v28.8b");
+
+  TEST_SINGLE(usdot(QReg::q30, QReg::q29, QReg::q28), "usdot v30.4s, v29.16b, v28.16b");
+  TEST_SINGLE(usdot(DReg::d30, DReg::d29, DReg::d28), "usdot v30.2s, v29.8b, v28.8b");
+
+  TEST_SINGLE(sqrdmlah(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlah v30.16b, v29.16b, v28.16b");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlah v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlah v30.4s, v29.4s, v28.4s");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlah v30.2d, v29.2d, v28.2d");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlah v30.8b, v29.8b, v28.8b");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlah v30.4h, v29.4h, v28.4h");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlah v30.2s, v29.2s, v28.2s");
+  //TEST_SINGLE(sqrdmlah(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlah v30.1d, v29.1d, v28.1d");
+
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlsh v30.16b, v29.16b, v28.16b");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlsh v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlsh v30.4s, v29.4s, v28.4s");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28), "sqrdmlsh v30.2d, v29.2d, v28.2d");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlsh v30.8b, v29.8b, v28.8b");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlsh v30.4h, v29.4h, v28.4h");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlsh v30.2s, v29.2s, v28.2s");
+  //TEST_SINGLE(sqrdmlsh(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28), "sqrdmlsh v30.1d, v29.1d, v28.1d");
+
+  TEST_SINGLE(udot(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28), "udot v30.16b, v29.16b, v28.16b");
+  TEST_SINGLE(udot(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "udot v30.8h, v29.16b, v28.16b");
+  TEST_SINGLE(udot(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "udot v30.4s, v29.16b, v28.16b");
+  TEST_SINGLE(udot(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28), "udot v30.2d, v29.16b, v28.16b");
+  TEST_SINGLE(udot(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "udot v30.8b, v29.8b, v28.8b");
+  TEST_SINGLE(udot(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "udot v30.4h, v29.8b, v28.8b");
+  TEST_SINGLE(udot(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "udot v30.2s, v29.8b, v28.8b");
+  //TEST_SINGLE(udot(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28), "udot v30.1d, v29.8b, v28.8b");
+
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_0), "fcmla v30.16b, v29.16b, v28.16b, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_0), "fcmla v30.8h, v29.8h, v28.8h, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_0), "fcmla v30.4s, v29.4s, v28.4s, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_0), "fcmla v30.2d, v29.2d, v28.2d, #0");
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_0), "fcmla v30.8b, v29.8b, v28.8b, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_0), "fcmla v30.4h, v29.4h, v28.4h, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_0), "fcmla v30.2s, v29.2s, v28.2s, #0");
+  //TEST_SINGLE(fcmla(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_0), "fcmla v30.1d, v29.1d, v28.1d, #0");
+
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcmla v30.16b, v29.16b, v28.16b, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcmla v30.8h, v29.8h, v28.8h, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcmla v30.4s, v29.4s, v28.4s, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcmla v30.2d, v29.2d, v28.2d, #90");
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcmla v30.8b, v29.8b, v28.8b, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcmla v30.4h, v29.4h, v28.4h, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcmla v30.2s, v29.2s, v28.2s, #90");
+  //TEST_SINGLE(fcmla(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcmla v30.1d, v29.1d, v28.1d, #90");
+
+  // Vixl disassembler has a bug that claims 8-bit fcmla exists
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_180), "fcmla v30.16b, v29.16b, v28.16b, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_180), "fcmla v30.8h, v29.8h, v28.8h, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_180), "fcmla v30.4s, v29.4s, v28.4s, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_180), "fcmla v30.2d, v29.2d, v28.2d, #180");
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_180), "fcmla v30.8b, v29.8b, v28.8b, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_180), "fcmla v30.4h, v29.4h, v28.4h, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_180), "fcmla v30.2s, v29.2s, v28.2s, #180");
+  //TEST_SINGLE(fcmla(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_180), "fcmla v30.1d, v29.1d, v28.1d, #180");
+
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcmla v30.16b, v29.16b, v28.16b, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcmla v30.8h, v29.8h, v28.8h, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcmla v30.4s, v29.4s, v28.4s, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcmla v30.2d, v29.2d, v28.2d, #270");
+  //TEST_SINGLE(fcmla(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcmla v30.8b, v29.8b, v28.8b, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcmla v30.4h, v29.4h, v28.4h, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcmla v30.2s, v29.2s, v28.2s, #270");
+  //TEST_SINGLE(fcmla(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcmla v30.1d, v29.1d, v28.1d, #270");
+
+  // Vixl disassembler has a bug that claims 8-bit fcadd exists
+  //TEST_SINGLE(fcadd(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcadd v30.16b, v29.16b, v28.16b, #90");
+  TEST_SINGLE(fcadd(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcadd v30.8h, v29.8h, v28.8h, #90");
+  TEST_SINGLE(fcadd(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcadd v30.4s, v29.4s, v28.4s, #90");
+  TEST_SINGLE(fcadd(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_90), "fcadd v30.2d, v29.2d, v28.2d, #90");
+  //TEST_SINGLE(fcadd(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcadd v30.8b, v29.8b, v28.8b, #90");
+  TEST_SINGLE(fcadd(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcadd v30.4h, v29.4h, v28.4h, #90");
+  TEST_SINGLE(fcadd(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcadd v30.2s, v29.2s, v28.2s, #90");
+  //TEST_SINGLE(fcadd(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_90), "fcadd v30.1d, v29.1d, v28.1d, #90");
+
+  //TEST_SINGLE(fcadd(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcadd v30.16b, v29.16b, v28.16b, #270");
+  TEST_SINGLE(fcadd(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcadd v30.8h, v29.8h, v28.8h, #270");
+  TEST_SINGLE(fcadd(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcadd v30.4s, v29.4s, v28.4s, #270");
+  TEST_SINGLE(fcadd(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28, Rotation::ROTATE_270), "fcadd v30.2d, v29.2d, v28.2d, #270");
+  //TEST_SINGLE(fcadd(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcadd v30.8b, v29.8b, v28.8b, #270");
+  TEST_SINGLE(fcadd(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcadd v30.4h, v29.4h, v28.4h, #270");
+  TEST_SINGLE(fcadd(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcadd v30.2s, v29.2s, v28.2s, #270");
+  //TEST_SINGLE(fcadd(SubRegSize::i64Bit, DReg::d30, DReg::d29, DReg::d28, Rotation::ROTATE_270), "fcadd v30.1d, v29.1d, v28.1d, #270");
+
+  // TODO: Enable once vixl disassembler supports these instructions
+  // TEST_SINGLE(bfdot(QReg::q30, QReg::q29, QReg::q28), "bfdot v30.4s, v29.8h, v28.8h");
+  // TEST_SINGLE(bfdot(DReg::d30, DReg::d29, DReg::d28), "bfdot v30.2s, v29.4h, v28.4h");
+  // TEST_SINGLE(bfmlalb(VReg::v30, VReg::v29, VReg::v28), "bfmlalb v30.4s, v29.8h, v28.8h");
+  // TEST_SINGLE(bfmlalt(VReg::v30, VReg::v29, VReg::v28), "bfmlalt v30.4s, v29.8h, v28.8h");
+
+  TEST_SINGLE(smmla(VReg::v30, VReg::v29, VReg::v28), "smmla v30.4s, v29.16b, v28.16b");
+  TEST_SINGLE(usmmla(VReg::v30, VReg::v29, VReg::v28), "usmmla v30.4s, v29.16b, v28.16b");
+  // TODO: Enable once vixl disassembler supports these instructions
+  //TEST_SINGLE(bfmmla(VReg::v30, VReg::v29, VReg::v28), "bfmmla v30.4s, v29.8h, v28.8h");
+  TEST_SINGLE(ummla(VReg::v30, VReg::v29, VReg::v28), "ummla v30.4s, v29.16b, v28.16b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD two-register miscellaneous") {
   // Commented out lines showcase unallocated encodings.

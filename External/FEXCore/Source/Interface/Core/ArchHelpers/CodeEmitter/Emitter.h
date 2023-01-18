@@ -535,6 +535,14 @@ namespace FEXCore::ARMEmitter {
     ForwardLabel Forward;
   };
 
+  // Some FCMA ASIMD instructions support a rotation argument.
+  enum class Rotation : uint32_t {
+    ROTATE_0   = 0b00,
+    ROTATE_90  = 0b01,
+    ROTATE_180 = 0b10,
+    ROTATE_270 = 0b11,
+  };
+
   // This is an emitter that is designed around the smallest code bloat as possible.
   // Eschewing most developer convenience in order to keep code as small as possible.
 
