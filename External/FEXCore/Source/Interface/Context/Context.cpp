@@ -207,6 +207,9 @@ namespace FEXCore::Context {
   void AppendThunkDefinitions(FEXCore::Context::Context *CTX, std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
     CTX->AppendThunkDefinitions(Definitions);
   }
+  void SetVDSOSigReturn(FEXCore::Context::Context *CTX, const VDSOSigReturn &Pointers) {
+    CTX->SetVDSOSigReturn(Pointers);
+  }
 
 namespace Debug {
   void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {

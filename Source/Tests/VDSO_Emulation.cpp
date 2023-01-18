@@ -3,6 +3,7 @@
 #include "Tests/LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -28,6 +29,7 @@ namespace FEX::VDSO {
   ClockGetResType ClockGetResPtr = ::clock_getres;
   GetCPUType GetCPUPtr = FHU::Syscalls::getcpu;
 
+  FEXCore::Context::VDSOSigReturn VDSOPointers{};
   static void time(void* ArgsRV) {
     struct ArgsRV_t {
       time_t *a_0;
@@ -238,6 +240,62 @@ namespace FEX::VDSO {
     },
   };
 
+  void LoadGuestVDSOSymbols(bool Is64Bit, char *VDSOBase) {
+    // We need to load symbols we care about.
+    if (Is64Bit) {
+      // We don't care about any 64-bit symbols right now.
+      return;
+    }
+
+    // 32-bit symbol loading.
+    const Elf32_Ehdr *Header = reinterpret_cast<const Elf32_Ehdr*>(VDSOBase);
+
+    // First walk the section headers to find the symbol table.
+    const Elf32_Shdr *RawShdrs =
+      reinterpret_cast<const Elf32_Shdr *>(VDSOBase + Header->e_shoff);
+
+    const Elf32_Shdr *StrHeader = &RawShdrs[Header->e_shstrndx];
+    char const *SHStrings = VDSOBase + StrHeader->sh_offset;
+
+    const Elf32_Shdr *SymTableHeader{};
+    const Elf32_Shdr *StringTableHeader{};
+
+    for (size_t i = 0; i < Header->e_shnum; ++i) {
+      const auto &Header = RawShdrs[i];
+      if (Header.sh_type == SHT_SYMTAB && strcmp(&SHStrings[Header.sh_name], ".symtab") == 0) {
+        SymTableHeader = &Header;
+        StringTableHeader = &RawShdrs[SymTableHeader->sh_link];
+        break;
+      }
+    }
+
+    if (!SymTableHeader) {
+      // Couldn't find symbol table
+      return;
+    }
+
+    char const *StrTab = VDSOBase + StringTableHeader->sh_offset;
+    size_t NumSymbols = SymTableHeader->sh_size / SymTableHeader->sh_entsize;
+
+    for (size_t i = 0; i < NumSymbols; ++i) {
+      uint64_t offset = SymTableHeader->sh_offset + i * SymTableHeader->sh_entsize;
+      Elf32_Sym const *Symbol =
+          reinterpret_cast<Elf32_Sym const *>(VDSOBase + offset);
+      if (ELF32_ST_VISIBILITY(Symbol->st_other) != STV_HIDDEN &&
+          Symbol->st_value != 0) {
+        char const * Name = &StrTab[Symbol->st_name];
+        if (Name[0] != '\0') {
+          if (strcmp(Name, "__kernel_sigreturn") == 0) {
+            VDSOPointers.VDSO_kernel_sigreturn = VDSOBase + Symbol->st_value;
+          }
+          else if (strcmp(Name, "__kernel_rt_sigreturn") == 0) {
+            VDSOPointers.VDSO_kernel_rt_sigreturn = VDSOBase + Symbol->st_value;
+          }
+        }
+      }
+    }
+  }
+
   void* LoadVDSOThunks(bool Is64Bit, MapperFn Mapper) {
     void* VDSOBase{};
     FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
@@ -287,6 +345,7 @@ namespace FEX::VDSO {
 
       }
       close(VDSOFD);
+      LoadGuestVDSOSymbols(Is64Bit, reinterpret_cast<char*>(VDSOBase));
     }
 
     return VDSOBase;
@@ -309,5 +368,9 @@ namespace FEX::VDSO {
 
   std::vector<FEXCore::IR::ThunkDefinition> const& GetVDSOThunkDefinitions() {
     return VDSODefinitions;
+  }
+
+  FEXCore::Context::VDSOSigReturn const& GetVDSOSymbols() {
+    return VDSOPointers;
   }
 }

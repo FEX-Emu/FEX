@@ -69,6 +69,11 @@ namespace FEXCore::Context {
       std::unique_lock<std::shared_mutex> lock;
   };
 
+  struct VDSOSigReturn {
+    void *VDSO_kernel_sigreturn;
+    void *VDSO_kernel_rt_sigreturn;
+  };
+
   using CustomCPUFactoryType = std::function<std::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
 
   using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
@@ -290,4 +295,7 @@ namespace FEXCore::Context {
    * @param Definitions A vector of thunk definitions that the frontend controls
    */
   FEX_DEFAULT_VISIBILITY void AppendThunkDefinitions(FEXCore::Context::Context *CTX, std::vector<FEXCore::IR::ThunkDefinition> const& Definitions);
+
+  FEX_DEFAULT_VISIBILITY void SetVDSOSigReturn(FEXCore::Context::Context *CTX, const VDSOSigReturn &Pointers);
+
 }

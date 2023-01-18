@@ -152,6 +152,7 @@ namespace FEXCore::Context {
 
     SignalDelegator *SignalDelegation{};
     X86GeneratedCode X86CodeGen;
+    VDSOSigReturn VDSOPointers{};
 
     Context();
     ~Context();
@@ -326,6 +327,10 @@ namespace FEXCore::Context {
     }
 
     void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions);
+
+    void SetVDSOSigReturn(const VDSOSigReturn &Pointers) {
+      VDSOPointers = Pointers;
+    }
 
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
