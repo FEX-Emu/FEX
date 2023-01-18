@@ -163,7 +163,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
         const auto Src1 = GetReg(IROp->Args[0].ID());
         if (Info.ABI == FABI_F80_I16) {
-          uxth(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, Src1);
+          sxth(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, Src1);
         }
         else {
           mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, Src1);
@@ -310,7 +310,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         FillStaticRegs();
 
         const auto Dst = GetReg(Node);
-        uxth(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
+        sxth(ARMEmitter::Size::i64Bit, Dst, ARMEmitter::Reg::r0);
       }
       break;
       case FABI_I32_F80:{
