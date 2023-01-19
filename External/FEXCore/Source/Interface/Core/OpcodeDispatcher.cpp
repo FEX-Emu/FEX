@@ -4959,12 +4959,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
         Core::CPUState::XMM_AVX_REG_SIZE :
         Core::CPUState::XMM_SSE_REG_SIZE;
 
-      const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
-        offsetof(Core::CPUState, xmm.avx.data[gprIndex][0]) :
-        offsetof(Core::CPUState, xmm.sse.data[gprIndex][0]);
-
       // Load the full register size if it is a XMM register source.
-      Src = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, regSize);
+      Src = LoadXMMRegister(gprIndex);
 
       // If we are wanting a high-index then we need to extract an element from the upper half of the reg.
       // We can only extract an element size here.
@@ -4982,11 +4978,11 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
       }
     }
     else {
-      Src = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[gpr]) + (highIndex ? 1 : 0), GPRClass, GPRFixedClass, OpSize);
+      Src = LoadGPRRegister(gpr, OpSize, highIndex ? 8 : 0);
     }
   }
   else if (Operand.IsGPRDirect()) {
-    Src = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]), GPRClass, GPRFixedClass, GPRSize);
+    Src = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
 
     LoadableType = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
@@ -4994,7 +4990,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     }
   }
   else if (Operand.IsGPRIndirect()) {
-    auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]), GPRClass, GPRFixedClass, GPRSize);
+    auto GPR = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
 
     auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
@@ -5019,7 +5015,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
   else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
     if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]), GPRClass, GPRFixedClass, GPRSize);
+      Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
@@ -5031,7 +5027,7 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     }
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]), GPRClass, GPRFixedClass, GPRSize);
+      auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
@@ -5096,9 +5092,12 @@ OrderedNode *OpDispatchBuilder::GetRelocatedPC(FEXCore::X86Tables::DecodedOp con
 
 OrderedNode *OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
+  if (Size == -1) {
+    Size = GPRSize;
+  }
   OrderedNode *Reg = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
 
-  if (Size != -1 || Offset != 0) {
+  if (Size != GPRSize || Offset != 0) {
     // Extract the subregister if requested.
     Reg = _Bfe(Size, Size * 8, Offset, Reg);
   }
@@ -5117,15 +5116,18 @@ OrderedNode *OpDispatchBuilder::LoadXMMRegister(uint32_t XMM) {
 
 void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, OrderedNode *const Src, int8_t Size, uint8_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  if (Size != -1 || Offset != 0) {
+  if (Size == -1) {
+    Size = GPRSize;
+  }
+
+  OrderedNode *Reg = Src;
+  if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
-    OrderedNode *Reg = LoadGPRRegister(GPR);
+    Reg = LoadGPRRegister(GPR);
     Reg = _Bfi(GPRSize, Size * 8, Offset, Reg, Src);
-    _StoreRegister(Reg, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
   }
-  else {
-    _StoreRegister(Src, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
-  }
+
+  _StoreRegister(Reg, false, offsetof(FEXCore::Core::CPUState, gregs[GPR]), GPRClass, GPRFixedClass, GPRSize);
 }
 
 void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, OrderedNode *const Src) {
@@ -5172,42 +5174,36 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
       const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
-      const auto VectorOffset = CTX->HostFeatures.SupportsAVX ?
-        offsetof(Core::CPUState, xmm.avx.data[gprIndex][highIndex]) :
-        offsetof(Core::CPUState, xmm.sse.data[gprIndex][highIndex]);
 
+      auto Result = Src;
       if (highIndex || OpSize != VectorSize) {
-        auto InsertResult = Src;
         // Partial writes can come from GPR or FPR.
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
-        auto SrcVector = _LoadRegister(false, VectorOffset, FPRClass, FPRFixedClass, OpSize);
+        auto SrcVector = LoadXMMRegister(gprIndex);
 
         if (Class == IR::GPRClass) {
-          InsertResult = _VInsGPR(VectorSize, OpSize, highIndex, SrcVector, Src);
+          Result = _VInsGPR(VectorSize, OpSize, highIndex, SrcVector, Src);
         }
         else {
           // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
           // TODO: Longer term we should enforce the difference between zero and insert.
           if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
-            InsertResult = _VMov(OpSize, Src);
+            Result = _VMov(OpSize, Src);
           }
           else {
-            InsertResult = _VInsElement(VectorSize, OpSize, highIndex, 0, SrcVector, Src);
+            Result = _VInsElement(VectorSize, OpSize, highIndex, 0, SrcVector, Src);
           }
         }
+      }
 
-        _StoreRegister(InsertResult, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
-      }
-      else {
-        _StoreRegister(Src, false, VectorOffset, FPRClass, FPRFixedClass, VectorSize);
-      }
+      StoreXMMRegister(gprIndex, Result);
     }
     else {
       if (GPRSize == 8 && OpSize == 4) {
         // If the Source IR op is 64 bits, we need to zext the upper bits
         // For all other sizes, the upper bits are guaranteed to already be zero
         OrderedNode *Value = GetOpSize(Src) == 8 ? _Bfe(4, 32, 0, Src) : Src;
-        _StoreRegister(Value, false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, GPRSize);
+        StoreGPRRegister(gpr, Value, GPRSize);
 
         LOGMAN_THROW_AA_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
       }
@@ -5220,25 +5216,24 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
           // mov al, 2 ; Move in to lower 8-bits.
           // mov ah, 2 ; Move in to upper 8-bits of 16-bit reg.
           // mov ax, 2 ; Move in to lower 16-bits of reg.
-          auto RegDest = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, GPRSize);
-          auto Result = _Bfi(GPRSize, OpSize * 8, Operand.Data.GPR.HighBits * 8, RegDest, Src);
-          _StoreRegister(Result, false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, GPRSize);
+          StoreGPRRegister(gpr, Src, OpSize, Operand.Data.GPR.HighBits * 8);
         }
         else {
-          _StoreRegister(Src, false, offsetof(FEXCore::Core::CPUState, gregs[gpr]), GPRClass, GPRFixedClass, std::min(GPRSize, OpSize));
+          StoreGPRRegister(gpr, Src, std::min(GPRSize, OpSize));
         }
       }
     }
   }
   else if (Operand.IsGPRDirect()) {
-    MemStoreDst = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPR.GPR]), GPRClass, GPRFixedClass, GPRSize);
+    MemStoreDst = LoadGPRRegister(Operand.Data.GPR.GPR, GPRSize);
+
     MemStore = true;
     if (Operand.Data.GPR.GPR == FEXCore::X86State::REG_RSP && AccessType == MemoryAccessType::ACCESS_DEFAULT) {
       AccessType = MemoryAccessType::ACCESS_NONTSO;
     }
   }
   else if (Operand.IsGPRIndirect()) {
-    auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.GPRIndirect.GPR]), GPRClass, GPRFixedClass, GPRSize);
+    auto GPR = LoadGPRRegister(Operand.Data.GPRIndirect.GPR, GPRSize);
     auto Constant = _Constant(GPRSize * 8, Operand.Data.GPRIndirect.Displacement);
 
     MemStoreDst = _Add(GPR, Constant);
@@ -5260,7 +5255,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   else if (Operand.IsSIB()) {
     OrderedNode *Tmp {};
     if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
-      Tmp = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Index]), GPRClass, GPRFixedClass, GPRSize);
+      Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
 
       if (Operand.Data.SIB.Scale != 1) {
         auto Constant = _Constant(GPRSize * 8, Operand.Data.SIB.Scale);
@@ -5269,7 +5264,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     }
 
     if (Operand.Data.SIB.Base != FEXCore::X86State::REG_INVALID) {
-      auto GPR = _LoadRegister(false, offsetof(FEXCore::Core::CPUState, gregs[Operand.Data.SIB.Base]), GPRClass, GPRFixedClass, GPRSize);
+      auto GPR = LoadGPRRegister(Operand.Data.SIB.Base, GPRSize);
 
       if (Tmp != nullptr) {
         Tmp = _Add(Tmp, GPR);
