@@ -20,7 +20,7 @@ namespace FEXCore {
     // We can't use FILE here since we must be robust against forking processes closing our FD from under us.
     const auto PerfMap = fmt::format("/tmp/perf-{}.map", getpid());
 
-    fd = open(PerfMap.c_str(), O_CREAT | O_EXCL | O_WRONLY | O_DIRECT, 0644);
+    fd = open(PerfMap.c_str(), O_CREAT | O_TRUNC | O_WRONLY | O_APPEND, 0644);
   }
 
   void JITSymbols::Register(const void *HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
