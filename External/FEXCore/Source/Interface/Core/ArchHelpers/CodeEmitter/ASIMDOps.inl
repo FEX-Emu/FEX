@@ -4040,7 +4040,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4066,7 +4066,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4092,7 +4092,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4118,7 +4118,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4144,7 +4144,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4170,7 +4170,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4196,7 +4196,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4222,7 +4222,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4249,7 +4249,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4274,7 +4274,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4300,7 +4300,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4326,7 +4326,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4352,7 +4352,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4379,7 +4379,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4405,7 +4405,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4644,7 +4644,7 @@ public:
   }
 
   void bfmlalb(FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
-    LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
 
     uint32_t H, L, M;
@@ -4656,7 +4656,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, FEXCore::ARMEmitter::SubRegSize::i64Bit, rm.D(), rn.D(), rd.D());
   }
   void bfmlalt(FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, uint32_t Index) {
-    LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+    LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
 
     uint32_t H, L, M;
@@ -4674,7 +4674,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4700,7 +4700,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4726,7 +4726,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4754,7 +4754,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4780,7 +4780,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4806,7 +4806,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4833,7 +4833,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4859,7 +4859,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     const auto EncodedSubRegSize = FEXCore::ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(EncodedSubRegSize), "Index must be less than the source register size");
@@ -4887,7 +4887,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4927,7 +4927,7 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
     if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
+      LOGMAN_THROW_A_FMT(rm.Idx() < 16, "Rm can't be v16-v31 with half source size");
     }
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
@@ -4958,7 +4958,7 @@ public:
   // TODO
   // Conversion between floating-point and fixed-point
   void scvtf(FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+    LOGMAN_THROW_A_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
 
     uint32_t Scale = 64 - FractionalBits;
     const auto ConvertedSize =
@@ -4970,7 +4970,7 @@ public:
   }
 
   void ucvtf(FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+    LOGMAN_THROW_A_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
 
     uint32_t Scale = 64 - FractionalBits;
     const auto ConvertedSize =
@@ -4982,7 +4982,7 @@ public:
   }
 
   void fcvtzs(FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+    LOGMAN_THROW_A_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
 
     uint32_t Scale = 64 - FractionalBits;
     const auto ConvertedSize =
@@ -4994,7 +4994,7 @@ public:
   }
 
   void fcvtzu(FEXCore::ARMEmitter::Size GPRSize, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::ScalarRegSize ScalarSize, FEXCore::ARMEmitter::VRegister rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_AA_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
+    LOGMAN_THROW_A_FMT(FractionalBits >= 1 && FractionalBits <= FEXCore::ARMEmitter::RegSizeInBits(GPRSize), "Fractional bits out of range");
 
     uint32_t Scale = 64 - FractionalBits;
     const auto ConvertedSize =
