@@ -61,7 +61,7 @@ inline int32_t gettid() {
 }
 
 inline int32_t tgkill(pid_t tgid, pid_t tid, int sig) {
-#if defined(HAS_SYSCALL_GETTID) && HAS_SYSCALL_GETTID
+#if defined(HAS_SYSCALL_TGKILL) && HAS_SYSCALL_TGKILL
   return ::tgkill(tgid, tid, sig);
 #else
   return ::syscall(SYS_tgkill, tgid, tid, sig);
