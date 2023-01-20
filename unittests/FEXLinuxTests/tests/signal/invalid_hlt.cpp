@@ -9,15 +9,19 @@
 #include <stdio.h>
 #include <cstdlib>
 
+extern "C" {
+  extern void IntInstruction();
+}
 __attribute__((naked, nocf_check))
   static void InvalidINT() {
   __asm volatile(R"(
+    IntInstruction:
     hlt;
     ret;
     )");
   }
 
-unsigned long EXPECTED_RIP = reinterpret_cast<unsigned long>(&InvalidINT);
+unsigned long EXPECTED_RIP = reinterpret_cast<unsigned long>(&IntInstruction);
 constexpr int EXPECTED_TRAPNO = 0xD;
 constexpr int EXPECTED_ERR = 0;
 constexpr int EXPECTED_SI_CODE = 128;

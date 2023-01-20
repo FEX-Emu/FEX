@@ -8,15 +8,19 @@
 #include <unistd.h>
 #include <cstdint>
 
+extern "C" {
+  extern void IntInstruction();
+}
 __attribute__((naked, nocf_check))
 static void CauseInt() {
   __asm volatile(R"(
+  IntInstruction:
   int $1;
   ret; # For RIP modification
   )");
 }
 
-static uint64_t EXPECTED_RIP = reinterpret_cast<uint64_t>(&CauseInt);
+static uint64_t EXPECTED_RIP = reinterpret_cast<uint64_t>(&IntInstruction);
 constexpr int EXPECTED_TRAPNO = 13;
 constexpr int EXPECTED_ERR = 10;
 constexpr int EXPECTED_SI_CODE = 128;

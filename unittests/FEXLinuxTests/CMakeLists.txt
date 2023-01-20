@@ -2,7 +2,7 @@ include(ExternalProject)
 ExternalProject_Add(FEXLinuxTests
   PREFIX FEXLinuxTests
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests"
-  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests"
+  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/FEXLinuxTests_64"
   CMAKE_ARGS
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_TOOLCHAIN_FILE:FILEPATH=${X86_64_TOOLCHAIN_FILE}"
@@ -25,11 +25,11 @@ ExternalProject_Add(FEXLinuxTests_32
 
 # this kind of sucks, but reglob
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS tests/*.cpp)
+file(GLOB_RECURSE TESTS_64_ONLY CONFIGURE_DEPENDS tests/*.64.cpp)
 file(GLOB_RECURSE TESTS_32_ONLY CONFIGURE_DEPENDS tests/*.32.cpp)
 
-set(TESTS_32 ${TESTS_32_ONLY})
-
 # Apply bitness-specific exclude lists
+list(REMOVE_ITEM TESTS ${TESTS_64_ONLY})
 list(REMOVE_ITEM TESTS ${TESTS_32_ONLY})
 
 function(AddTests Tests BinDirectory Bitness)
@@ -71,8 +71,13 @@ function(AddTests Tests BinDirectory Bitness)
   endforeach()
 endfunction()
 
-AddTests("${TESTS}" "FEXLinuxTests" 64)
-AddTests("${TESTS_32}" "FEXLinuxTests_32" 32)
+# Execute combined 32-bit and 64-bit tests.
+AddTests("${TESTS}" "FEXLinuxTests_64" 64)
+AddTests("${TESTS}" "FEXLinuxTests_32" 32)
+# Execute tests that are only 64-bit.
+AddTests("${TESTS_64_ONLY}" "FEXLinuxTests_64" 64)
+# Execute tests that are only 32-bit.
+AddTests("${TESTS_32_ONLY}" "FEXLinuxTests_32" 32)
 
 execute_process(COMMAND "nproc" OUTPUT_VARIABLE CORES)
 string(STRIP ${CORES} CORES)
