@@ -17,152 +17,346 @@
 #include <unistd.h>
 
 namespace FEX::VDSO {
-  using TimeType = decltype(::time)*;
-  using GetTimeOfDayType = decltype(::gettimeofday)*;
-  using ClockGetTimeType = decltype(::clock_gettime)*;
-  using ClockGetResType = decltype(::clock_getres)*;
-  using GetCPUType = decltype(FHU::Syscalls::getcpu)*;
-
-  TimeType TimePtr = ::time;
-  GetTimeOfDayType GetTimeOfDayPtr = ::gettimeofday;
-  ClockGetTimeType ClockGetTimePtr = ::clock_gettime;
-  ClockGetResType ClockGetResPtr = ::clock_getres;
-  GetCPUType GetCPUPtr = FHU::Syscalls::getcpu;
-
   FEXCore::Context::VDSOSigReturn VDSOPointers{};
-  static void time(void* ArgsRV) {
-    struct ArgsRV_t {
-      time_t *a_0;
-      uint64_t rv;
-    } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+  namespace VDSOHandlers {
+    using TimeType = decltype(::time)*;
+    using GetTimeOfDayType = decltype(::gettimeofday)*;
+    using ClockGetTimeType = decltype(::clock_gettime)*;
+    using ClockGetResType = decltype(::clock_getres)*;
+    using GetCPUType = decltype(FHU::Syscalls::getcpu)*;
 
-    args->rv = TimePtr(args->a_0);
+    TimeType TimePtr;
+    GetTimeOfDayType GetTimeOfDayPtr;
+    ClockGetTimeType ClockGetTimePtr;
+    ClockGetResType ClockGetResPtr;
+    GetCPUType GetCPUPtr;
   }
 
-  static void gettimeofday(void* ArgsRV) {
-    struct ArgsRV_t {
-      struct timeval *tv;
-      struct timezone *tz;
-      uint64_t rv;
-    } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+  using HandlerPtr = void(*)(void*);
+  namespace x64 {
+    static uint64_t SyscallRet(int Result) {
+      if (Result == -1) {
+        return -errno;
+      }
+      return Result;
+    }
+    // glibc handlers
+    namespace glibc {
+      static void time(void* ArgsRV) {
+        struct ArgsRV_t {
+          time_t *a_0;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-    args->rv = GetTimeOfDayPtr(args->tv, args->tz);
+        int Result = ::time(args->a_0);
+        args->rv = SyscallRet(Result);
+      }
+
+      static void gettimeofday(void* ArgsRV) {
+        struct ArgsRV_t {
+          struct timeval *tv;
+          struct timezone *tz;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        int Result = ::gettimeofday(args->tv, args->tz);
+        args->rv = SyscallRet(Result);
+      }
+
+      static void clock_gettime(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          struct timespec *tp;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        int Result = ::clock_gettime(args->clk_id, args->tp);
+        args->rv = SyscallRet(Result);
+      }
+
+      static void clock_getres(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          struct timespec *tp;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        int Result = ::clock_getres(args->clk_id, args->tp);
+        args->rv = SyscallRet(Result);
+      }
+
+      static void getcpu(void* ArgsRV) {
+        struct ArgsRV_t {
+          uint32_t *cpu;
+          uint32_t *node;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        int Result = FHU::Syscalls::getcpu(args->cpu, args->node);
+        args->rv = SyscallRet(Result);
+      }
+    }
+
+    namespace VDSO {
+      // VDSO handlers
+      static void time(void* ArgsRV) {
+        struct ArgsRV_t {
+          time_t *a_0;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::TimePtr(args->a_0);
+      }
+
+      static void gettimeofday(void* ArgsRV) {
+        struct ArgsRV_t {
+          struct timeval *tv;
+          struct timezone *tz;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::GetTimeOfDayPtr(args->tv, args->tz);
+      }
+
+      static void clock_gettime(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          struct timespec *tp;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::ClockGetTimePtr(args->clk_id, args->tp);
+      }
+
+      static void clock_getres(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          struct timespec *tp;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::ClockGetResPtr(args->clk_id, args->tp);
+      }
+
+      static void getcpu(void* ArgsRV) {
+        struct ArgsRV_t {
+          uint32_t *cpu;
+          uint32_t *node;
+          uint64_t rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::GetCPUPtr(args->cpu, args->node);
+      }
+    }
+
+    HandlerPtr Handler_time = FEX::VDSO::x64::glibc::time;
+    HandlerPtr Handler_gettimeofday = FEX::VDSO::x64::glibc::gettimeofday;
+    HandlerPtr Handler_clock_gettime = FEX::VDSO::x64::glibc::clock_gettime;
+    HandlerPtr Handler_clock_getres = FEX::VDSO::x64::glibc::clock_getres;
+    HandlerPtr Handler_getcpu = FEX::VDSO::x64::glibc::getcpu;
   }
-
-  static void clock_gettime(void* ArgsRV) {
-    struct ArgsRV_t {
-      clockid_t clk_id;
-      struct timespec *tp;
-      uint64_t rv;
-    } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-    args->rv = ClockGetTimePtr(args->clk_id, args->tp);
-  }
-
-  static void clock_getres(void* ArgsRV) {
-    struct ArgsRV_t {
-      clockid_t clk_id;
-      struct timespec *tp;
-      uint64_t rv;
-    } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-    args->rv = ClockGetResPtr(args->clk_id, args->tp);
-  }
-
-  static void getcpu(void* ArgsRV) {
-    struct ArgsRV_t {
-      uint32_t *cpu;
-      uint32_t *node;
-      uint64_t rv;
-    } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-    args->rv = GetCPUPtr(args->cpu, args->node);
-  }
-
   namespace x32 {
-    static void time(void* ArgsRV) {
-      struct ArgsRV_t {
-        HLE::x32::compat_ptr<FEX::HLE::x32::old_time32_t> a_0;
-        int rv;
-      } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+    namespace glibc {
+      static int SyscallRet(int Result) {
+        if (Result == -1) {
+          return -errno;
+        }
+        return Result;
+      }
 
-      time_t Host{};
-      args->rv = TimePtr(&Host);
-      if (args->a_0) {
-        *args->a_0 = Host;
+      // glibc handlers
+      static void time(void* ArgsRV) {
+        struct ArgsRV_t {
+          HLE::x32::compat_ptr<FEX::HLE::x32::old_time32_t> a_0;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        time_t Host{};
+        int Result = ::time(&Host);
+        args->rv = SyscallRet(Result);
+        if (Result != -1 && args->a_0) {
+          *args->a_0 = Host;
+        }
+      }
+
+      static void gettimeofday(void* ArgsRV) {
+        struct ArgsRV_t {
+          HLE::x32::compat_ptr<FEX::HLE::x32::timeval32> tv;
+          HLE::x32::compat_ptr<struct timezone> tz;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        struct timeval tv64{};
+        struct timeval *tv_ptr{};
+        if (args->tv) {
+          tv_ptr = &tv64;
+        }
+
+        int Result = ::gettimeofday(tv_ptr, args->tz);
+        args->rv = SyscallRet(Result);
+
+        if (Result != -1 && args->tv) {
+          *args->tv = tv64;
+        }
+      }
+
+      static void clock_gettime(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        struct timespec tp64{};
+        int Result = ::clock_gettime(args->clk_id, &tp64);
+        args->rv = SyscallRet(Result);
+
+        if (Result != -1 && args->tp) {
+          *args->tp = tp64;
+        }
+      }
+
+      static void clock_gettime64(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          HLE::x32::compat_ptr<struct timespec> tp;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        int Result = ::clock_gettime(args->clk_id, args->tp);
+        args->rv = SyscallRet(Result);
+      }
+
+      static void clock_getres(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        struct timespec tp64{};
+
+        int Result = ::clock_getres(args->clk_id, &tp64);
+        args->rv = SyscallRet(Result);
+
+        if (Result != -1 && args->tp) {
+          *args->tp = tp64;
+        }
+      }
+
+      static void getcpu(void* ArgsRV) {
+        struct ArgsRV_t {
+          HLE::x32::compat_ptr<uint32_t> cpu;
+          HLE::x32::compat_ptr<uint32_t> node;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        int Result = ::getcpu(args->cpu, args->node);
+        args->rv = SyscallRet(Result);
       }
     }
 
-    static void gettimeofday(void* ArgsRV) {
-      struct ArgsRV_t {
-        HLE::x32::compat_ptr<FEX::HLE::x32::timeval32> tv;
-        HLE::x32::compat_ptr<struct timezone> tz;
-        int rv;
-      } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      struct timeval tv64{};
-      struct timeval *tv_ptr{};
-      if (args->tv) {
-        tv_ptr = &tv64;
+    namespace VDSO {
+      static bool SyscallErr(uint64_t Result) {
+        return Result >= -4095;
       }
 
-      args->rv = GetTimeOfDayPtr(tv_ptr, args->tz);
+      // VDSO handlers
+      static void time(void* ArgsRV) {
+        struct ArgsRV_t {
+          HLE::x32::compat_ptr<FEX::HLE::x32::old_time32_t> a_0;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-      if (args->tv) {
-        *args->tv = tv64;
+        time_t Host{};
+        uint64_t Result = VDSOHandlers::TimePtr(&Host);
+        args->rv = Result;
+        if (!SyscallErr(Result) && args->a_0) {
+          *args->a_0 = Host;
+        }
+      }
+
+      static void gettimeofday(void* ArgsRV) {
+        struct ArgsRV_t {
+          HLE::x32::compat_ptr<FEX::HLE::x32::timeval32> tv;
+          HLE::x32::compat_ptr<struct timezone> tz;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        struct timeval tv64{};
+        struct timeval *tv_ptr{};
+        if (args->tv) {
+          tv_ptr = &tv64;
+        }
+
+        uint64_t Result = VDSOHandlers::GetTimeOfDayPtr(tv_ptr, args->tz);
+        args->rv = Result;
+
+        if (!SyscallErr(Result) && args->tv) {
+          *args->tv = tv64;
+        }
+      }
+
+      static void clock_gettime(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        struct timespec tp64{};
+        uint64_t Result = VDSOHandlers::ClockGetTimePtr(args->clk_id, &tp64);
+        args->rv = Result;
+
+        if (!SyscallErr(Result) && args->tp) {
+          *args->tp = tp64;
+        }
+      }
+
+      static void clock_gettime64(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          HLE::x32::compat_ptr<struct timespec> tp;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::ClockGetTimePtr(args->clk_id, args->tp);
+      }
+
+      static void clock_getres(void* ArgsRV) {
+        struct ArgsRV_t {
+          clockid_t clk_id;
+          HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        struct timespec tp64{};
+
+        uint64_t Result = VDSOHandlers::ClockGetResPtr(args->clk_id, &tp64);
+        args->rv = Result;
+
+        if (!SyscallErr(Result) && args->tp) {
+          *args->tp = tp64;
+        }
+      }
+
+      static void getcpu(void* ArgsRV) {
+        struct ArgsRV_t {
+          HLE::x32::compat_ptr<uint32_t> cpu;
+          HLE::x32::compat_ptr<uint32_t> node;
+          int rv;
+        } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+        args->rv = VDSOHandlers::GetCPUPtr(args->cpu, args->node);
       }
     }
 
-    static void clock_gettime(void* ArgsRV) {
-      struct ArgsRV_t {
-        clockid_t clk_id;
-        HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
-        int rv;
-      } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      struct timespec tp64{};
-      args->rv = ClockGetTimePtr(args->clk_id, &tp64);
-
-      if (args->tp) {
-        *args->tp = tp64;
-      }
-    }
-
-    static void clock_gettime64(void* ArgsRV) {
-      struct ArgsRV_t {
-        clockid_t clk_id;
-        HLE::x32::compat_ptr<struct timespec> tp;
-        int rv;
-      } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      args->rv = ClockGetTimePtr(args->clk_id, args->tp);
-    }
-
-    static void clock_getres(void* ArgsRV) {
-      struct ArgsRV_t {
-        clockid_t clk_id;
-        HLE::x32::compat_ptr<HLE::x32::timespec32> tp;
-        int rv;
-      } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      struct timespec tp64{};
-
-      args->rv = ClockGetResPtr(args->clk_id, &tp64);
-
-      if (args->tp) {
-        *args->tp = tp64;
-      }
-    }
-
-    static void getcpu(void* ArgsRV) {
-      struct ArgsRV_t {
-        HLE::x32::compat_ptr<uint32_t> cpu;
-        HLE::x32::compat_ptr<uint32_t> node;
-        int rv;
-      } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      args->rv = GetCPUPtr(args->cpu, args->node);
-    }
+    HandlerPtr Handler_time = FEX::VDSO::x32::glibc::time;
+    HandlerPtr Handler_gettimeofday = FEX::VDSO::x32::glibc::gettimeofday;
+    HandlerPtr Handler_clock_gettime = FEX::VDSO::x32::glibc::clock_gettime;
+    HandlerPtr Handler_clock_gettime64 = FEX::VDSO::x32::glibc::clock_gettime64;
+    HandlerPtr Handler_clock_getres = FEX::VDSO::x32::glibc::clock_getres;
+    HandlerPtr Handler_getcpu = FEX::VDSO::x32::glibc::getcpu;
   }
 
   void LoadHostVDSO() {
@@ -180,27 +374,38 @@ namespace FEX::VDSO {
 
     auto SymbolPtr = dlsym(vdso, "__vdso_time");
     if (SymbolPtr) {
-      TimePtr = reinterpret_cast<TimeType>(SymbolPtr);
+      VDSOHandlers::TimePtr = reinterpret_cast<VDSOHandlers::TimeType>(SymbolPtr);
+      x64::Handler_time = x64::VDSO::time;
+      x32::Handler_time = x32::VDSO::time;
     }
 
     SymbolPtr = dlsym(vdso, "__vdso_gettimeofday");
     if (SymbolPtr) {
-      GetTimeOfDayPtr = reinterpret_cast<GetTimeOfDayType>(SymbolPtr);
+      VDSOHandlers::GetTimeOfDayPtr = reinterpret_cast<VDSOHandlers::GetTimeOfDayType>(SymbolPtr);
+      x64::Handler_gettimeofday = x64::VDSO::gettimeofday;
+      x32::Handler_gettimeofday = x32::VDSO::gettimeofday;
     }
 
     SymbolPtr = dlsym(vdso, "__vdso_clock_gettime");
     if (SymbolPtr) {
-      ClockGetTimePtr = reinterpret_cast<ClockGetTimeType>(SymbolPtr);
+      VDSOHandlers::ClockGetTimePtr = reinterpret_cast<VDSOHandlers::ClockGetTimeType>(SymbolPtr);
+      x64::Handler_clock_gettime = x64::VDSO::clock_gettime;
+      x32::Handler_clock_gettime = x32::VDSO::clock_gettime;
+      x32::Handler_clock_gettime64 = x32::VDSO::clock_gettime64;
     }
 
     SymbolPtr = dlsym(vdso, "__vdso_clock_getres");
     if (SymbolPtr) {
-      ClockGetResPtr = reinterpret_cast<ClockGetResType>(SymbolPtr);
+      VDSOHandlers::ClockGetResPtr = reinterpret_cast<VDSOHandlers::ClockGetResType>(SymbolPtr);
+      x64::Handler_clock_getres = x64::VDSO::clock_getres;
+      x32::Handler_clock_getres = x32::VDSO::clock_getres;
     }
 
     SymbolPtr = dlsym(vdso, "__vdso_getcpu");
     if (SymbolPtr) {
-      GetCPUPtr = reinterpret_cast<GetCPUType>(SymbolPtr);
+      VDSOHandlers::GetCPUPtr = reinterpret_cast<VDSOHandlers::GetCPUType>(SymbolPtr);
+      x64::Handler_getcpu = x64::VDSO::getcpu;
+      x32::Handler_getcpu = x32::VDSO::getcpu;
     }
     dlclose(vdso);
   }
@@ -306,23 +511,23 @@ namespace FEX::VDSO {
       ThunkGuestPath = std::filesystem::path(ThunkGuestLibs()) / "libVDSO-guest.so";
 
       // Set the Thunk definition pointers for x86-64
-      VDSODefinitions[0].ThunkFunction = &FEX::VDSO::time;
-      VDSODefinitions[1].ThunkFunction = &FEX::VDSO::gettimeofday;
-      VDSODefinitions[2].ThunkFunction = &FEX::VDSO::clock_gettime;
-      VDSODefinitions[3].ThunkFunction = &FEX::VDSO::clock_gettime;
-      VDSODefinitions[4].ThunkFunction = &FEX::VDSO::clock_getres;
-      VDSODefinitions[5].ThunkFunction = &FEX::VDSO::getcpu;
+      VDSODefinitions[0].ThunkFunction = FEX::VDSO::x64::Handler_time;
+      VDSODefinitions[1].ThunkFunction = FEX::VDSO::x64::Handler_gettimeofday;
+      VDSODefinitions[2].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
+      VDSODefinitions[3].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
+      VDSODefinitions[4].ThunkFunction = FEX::VDSO::x64::Handler_clock_getres;
+      VDSODefinitions[5].ThunkFunction = FEX::VDSO::x64::Handler_getcpu;
     }
     else {
       ThunkGuestPath = std::filesystem::path(ThunkGuestLibs32()) / "libVDSO-guest.so";
 
       // Set the Thunk definition pointers for x86
-      VDSODefinitions[0].ThunkFunction = &FEX::VDSO::x32::time;
-      VDSODefinitions[1].ThunkFunction = &FEX::VDSO::x32::gettimeofday;
-      VDSODefinitions[2].ThunkFunction = &FEX::VDSO::x32::clock_gettime;
-      VDSODefinitions[3].ThunkFunction = &FEX::VDSO::x32::clock_gettime64;
-      VDSODefinitions[4].ThunkFunction = &FEX::VDSO::x32::clock_getres;
-      VDSODefinitions[5].ThunkFunction = &FEX::VDSO::x32::getcpu;
+      VDSODefinitions[0].ThunkFunction = FEX::VDSO::x32::Handler_time;
+      VDSODefinitions[1].ThunkFunction = FEX::VDSO::x32::Handler_gettimeofday;
+      VDSODefinitions[2].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime;
+      VDSODefinitions[3].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime64;
+      VDSODefinitions[4].ThunkFunction = FEX::VDSO::x32::Handler_clock_getres;
+      VDSODefinitions[5].ThunkFunction = FEX::VDSO::x32::Handler_getcpu;
     }
 
     // Load VDSO if we can
