@@ -1,53 +1,40 @@
 #include <string>
 #include <vector>
-#include <filesystem>
-#include <fstream>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <span>
+#include <unistd.h>
 
 namespace FEXCore::FileLoading {
 bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t FixedSize) {
-  std::fstream ConfigFile;
-  ConfigFile.open(Filepath, std::ios::in);
+  int FD = open(Filepath.c_str(), O_RDONLY);
 
-  if (!ConfigFile.is_open()) {
+  if (FD == -1) {
     return false;
   }
 
   size_t FileSize{};
-
   if (FixedSize == 0) {
-    if (!ConfigFile.seekg(0, std::fstream::end)) {
+    struct stat buf;
+    if (fstat(FD, &buf) != 0) {
+      close(FD);
       return false;
     }
 
-    FileSize = ConfigFile.tellg();
-    if (ConfigFile.fail()) {
-      return false;
-    }
-
-    if (!ConfigFile.seekg(0, std::fstream::beg)) {
-      return false;
-    }
+    FileSize = buf.st_size;
   }
   else {
     FileSize = FixedSize;
   }
 
+  ssize_t Read = -1;
   if (FileSize > 0) {
     Data.resize(FileSize);
-    if (!ConfigFile.read(&Data.at(0), FileSize)) {
-      // Probably means permissions aren't set. Just early exit
-      return false;
-    }
-    ConfigFile.close();
+    Read = pread(FD, &Data.at(0), FileSize, 0);
   }
-  else {
-    return false;
-  }
-
-  return true;
+  close(FD);
+  return Read == FileSize;
 }
 
 ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer) {
