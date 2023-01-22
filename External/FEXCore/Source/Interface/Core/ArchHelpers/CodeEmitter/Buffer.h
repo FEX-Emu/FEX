@@ -87,6 +87,11 @@ namespace FEXCore::ARMEmitter {
         return Size;
       }
 
+      template<typename T>
+      size_t GetCursorOffsetFromAddress(const T* Address) const {
+        return static_cast<size_t>(reinterpret_cast<const uint8_t*>(Address) - BufferBase);
+      }
+
     protected:
 
       void ResetBuffer() {
