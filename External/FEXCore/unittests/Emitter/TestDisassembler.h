@@ -12,7 +12,9 @@ public:
   TestDisassembler() {
     fp = tmpfile();
     Disasm = std::make_unique<vixl::aarch64::PrintDisassembler>(fp);
-    SetBuffer(reinterpret_cast<uint8_t*>(mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)), 4096);
+    // 2MB code size.
+    const size_t CodeSize = 2 * 1024 * 1024;
+    SetBuffer(reinterpret_cast<uint8_t*>(mmap(nullptr, CodeSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)), CodeSize);
     BufferBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
   }
   ~TestDisassembler() {
