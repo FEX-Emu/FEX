@@ -200,6 +200,8 @@ int main(int argc, char **argv, char **const envp) {
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
+  const char* FEXFD = getenv("FEX_EXECVEFD");
+  const std::string_view FEXFDView = FEXFD ? std::string_view{FEXFD} : std::string_view{};
 
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -207,10 +209,11 @@ int main(int argc, char **argv, char **const envp) {
   auto Program = FEX::Config::LoadConfig(
     IsInterpreter,
     true,
-    argc, argv, envp
-  );
+    argc, argv, envp,
+    ExecutedWithFD,
+    FEXFDView);
 
-  if (Program.first.empty()) {
+  if (Program.ProgramPath.empty() && !FEXFD) {
     // Early exit if we weren't passed an argument
     return 0;
   }
@@ -286,14 +289,14 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
-  RootFSRedirect(&Program.first, LDPath());
-  InterpreterHandler(&Program.first, LDPath(), &Args);
+  RootFSRedirect(&Program.ProgramPath, LDPath());
+  InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
   std::error_code ec{};
-  if (!std::filesystem::exists(Program.first, ec)) {
+  if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    fmt::print(stderr, "{}: command not found\n", Program.first);
+    fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
     return -ENOEXEC;
   }
 
@@ -310,7 +313,7 @@ int main(int argc, char **argv, char **const envp) {
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader2 Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader2 Loader{Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
   //FEX::HarnessHelper::ELFCodeLoader Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
@@ -329,8 +332,20 @@ int main(int argc, char **argv, char **const envp) {
     return -ENOEXEC;
   }
 
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.first).string());
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.second);
+  if (ExecutedWithFD) {
+    // Don't need to canonicalize Program.ProgramPath, Config loader will have resolved this already.
+    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
+    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
+  }
+  else if (FEXFD) {
+    // Anonymous program.
+    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
+    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
+  }
+  else {
+    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.ProgramPath).string());
+    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
+  }
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
@@ -506,7 +521,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Allocator::ClearHooks();
   FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
   // Allocator is now original system allocator
-  FEXCore::Telemetry::Shutdown(Program.second);
+  FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;

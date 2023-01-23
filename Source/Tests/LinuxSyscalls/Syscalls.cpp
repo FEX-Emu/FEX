@@ -42,6 +42,7 @@ $end_info$
 #include <memory>
 #include <regex>
 #include <sched.h>
+#include <span>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -166,33 +167,17 @@ uint64_t GetDentsEmulation<false>(int, FEX::HLE::x64::linux_dirent*, uint32_t);
 template
 uint64_t GetDentsEmulation<true>(int, FEX::HLE::x32::linux_dirent_32*, uint32_t);
 
-static bool IsSupportedByInterpreter(std::string const &Filename) {
-  // If it is a supported ELF then we can
-  if (ELFLoader::ELFContainer::IsSupportedELF(Filename.c_str())) {
-    return true;
+static bool IsShebangFile(std::span<char> Data) {
+  // File isn't large enough to even contain a shebang.
+  if (Data.size() <= 2) {
+    return false;
   }
 
-  // If it is a shebang then we also can
-  std::fstream File;
-  size_t FileSize{0};
-  File.open(Filename, std::fstream::in | std::fstream::binary);
-
-  if (!File.is_open())
-    return false;
-
-  File.seekg(0, File.end);
-  FileSize = File.tellg();
-  File.seekg(0, File.beg);
-
-  // Is the file large enough for shebang
-  if (FileSize <= 2)
-    return false;
-
-  // Handle shebang files
-  if (File.get() == '#' &&
-      File.get() == '!') {
-    std::string InterpreterLine;
-    std::getline(File, InterpreterLine);
+  // Handle shebang files.
+  if (Data[0] == '#' &&
+      Data[1] == '!') {
+    std::string_view InterpreterView { Data.data(), Data.size() };
+    std::string InterpreterLine { Data.data(), InterpreterView.find('\n') };
     std::vector<std::string> ShebangArguments{};
 
     // Shebang line can have a single argument
@@ -226,42 +211,96 @@ static bool IsSupportedByInterpreter(std::string const &Filename) {
   return false;
 }
 
-uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs *Args) {
+static bool IsShebangFD(int FD) {
+  // We don't know the state of the FD coming in since this might be a guest tracked FD.
+  // Need to be extra careful here not to adjust file offsets and status flags.
+  //
+  // Can't use dup since that makes the FD have the same file description backing both FDs.
+
+  // The maximum length of the shebang line is `#!` + 255 chars
+  std::array<char, 257> Header;
+  const auto ChunkSize = 257l;
+  const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
+
+  return IsShebangFile(std::span<char>(Header.data(), ReadSize));
+}
+
+static bool IsShebangFilename(std::string const &Filename) {
+  // Open the Filename to determine if it is a shebang file.
+  int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
+  if (FD == -1) {
+    return false;
+  }
+
+  bool IsShebang = IsShebangFD(FD);
+  close(FD);
+  return IsShebang;
+}
+
+uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   std::string Filename{};
 
   std::error_code ec;
   std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+  ELFLoader::ELFContainer::ELFType Type{};
 
-  // Check the rootfs if it is available first
-  if (pathname[0] == '/') {
-    auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
-    if (!Path.empty() && std::filesystem::exists(Path, ec)) {
-      Filename = Path;
+  // AT_EMPTY_PATH is only used if the pathname is empty.
+  const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
+  std::string FDExecEnv;
+
+  bool IsShebang{};
+
+  if (IsFDExec) {
+    Type = ELFLoader::ELFContainer::GetELFType(Args.dirfd);
+
+    IsShebang = IsShebangFD(Args.dirfd);
+  }
+  else
+  {
+    // For absolute paths, check the rootfs first (if available)
+    if (pathname[0] == '/') {
+      auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
+      if (!Path.empty() && std::filesystem::exists(Path, ec)) {
+        Filename = Path;
+      }
+      else {
+        Filename = pathname;
+      }
     }
     else {
       Filename = pathname;
     }
+
+    bool exists = std::filesystem::exists(Filename, ec);
+    if (ec || !exists) {
+      return -ENOENT;
+    }
+
+    int pid = getpid();
+
+    char PidSelfPath[50];
+    snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+
+    if (strcmp(pathname, "/proc/self/exe") == 0 ||
+        strcmp(pathname, "/proc/thread-self/exe") == 0 ||
+        strcmp(pathname, PidSelfPath) == 0) {
+      // If the application is trying to execve `/proc/self/exe` or its variants,
+      // then we need to redirect this path to the true application path.
+      // This is because this path is a symlink to the executing application, which is always `FEXInterpreter` or `FEXLoader`.
+      // ex: JRE and shapez.io do this self-execution.
+      Filename = FEX::HLE::_SyscallHandler->Filename();
+    }
+
+    Type = ELFLoader::ELFContainer::GetELFType(Filename);
+
+    IsShebang = IsShebangFilename(Filename);
   }
-  else {
-    Filename = pathname;
-  }
 
-  bool exists = std::filesystem::exists(Filename, ec);
-  if (ec || !exists) {
-    return -ENOENT;
-  }
-
-  int pid = getpid();
-
-  char PidSelfPath[50];
-  snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
-
-  if (strcmp(pathname, "/proc/self/exe") == 0 ||
-      strcmp(pathname, "/proc/thread-self/exe") == 0 ||
-      strcmp(pathname, PidSelfPath) == 0) {
-    // If pointing to self then redirect to the application
-    // JRE and shapez.io does this
-    Filename = FEX::HLE::_SyscallHandler->Filename();
+  if (!IsShebang && Type == ELFLoader::ELFContainer::ELFType::TYPE_NONE) {
+    // If our interpeter doesn't support this file format AND ELF format is NONE then ENOEXEC
+    // binfmt_misc could end up handling this case but we can't know that without parsing binfmt_misc ourselves
+    // Return -ENOEXEC until proven otherwise
+    return -ENOEXEC;
   }
 
   // If we don't have the interpreter installed we need to be extra careful for ENOEXEC
@@ -269,7 +308,6 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
   // Kernel does its own checks for file format support for this
   // We can only call execve directly if we both have an interpreter installed AND were ran with the interpreter
   // If the user ran FEX through FEXLoader then we must go down the emulated path
-  ELFLoader::ELFContainer::ELFType Type = ELFLoader::ELFContainer::GetELFType(Filename);
   uint64_t Result{};
   if (FEX::HLE::_SyscallHandler->IsInterpreterInstalled() &&
       FEX::HLE::_SyscallHandler->IsInterpreter() &&
@@ -277,38 +315,24 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
        Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64)) {
     // If the FEX interpreter is installed then just execve the ELF file
     // This will stay inside of our emulated environment since binfmt_misc will capture it
-    if (Args) {
-      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), argv, envp, Args->flags);
-    }
-    else {
-      Result = execve(Filename.c_str(), argv, envp);
-    }
+    Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, envp, Args.flags);
     SYSCALL_ERRNO();
-  }
-
-  if (!IsSupportedByInterpreter(Filename) && Type == ELFLoader::ELFContainer::ELFType::TYPE_NONE) {
-    // If our interpeter doesn't support this file format AND ELF format is NONE then ENOEXEC
-    // binfmt_misc could end up handling this case but we can't know that without parsing binfmt_misc ourselves
-    // Return -ENOEXEC until proven otherwise
-    return -ENOEXEC;
   }
 
   if (Type == ELFLoader::ELFContainer::ELFType::TYPE_OTHER_ELF) {
     // We are trying to execute an ELF of a different architecture
     // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
     // Just execve it and let the kernel handle the process
-    if (Args) {
-      Result = ::syscall(SYS_execveat, Args->dirfd, Filename.c_str(), argv, envp, Args->flags);
-    }
-    else {
-      Result = execve(Filename.c_str(), argv, envp);
-    }
+    Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, envp, Args.flags);
     SYSCALL_ERRNO();
   }
 
   // We don't have an interpreter installed or we are executing a non-ELF executable
   // We now need to munge the arguments
   std::vector<const char *> ExecveArgs{};
+  std::vector<const char *> EnvpArgs{};
+  char *const *EnvpPtr = envp;
+  const char NullString[] = "";
   FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
   if (!FEX::HLE::_SyscallHandler->IsInterpreter()) {
     // If we were launched from FEXLoader then we need to make sure to split arguments from FEXLoader and guest
@@ -321,25 +345,61 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
     auto OldArgv = argv;
 
-    // Skip filename argument
-    ++OldArgv;
-    while (*OldArgv) {
-      // Append the arguments together
-      ExecveArgs.emplace_back(*OldArgv);
+    // It is valid to provide nullptr first argument.
+    if (*OldArgv) {
+      // Skip filename argument
       ++OldArgv;
+      while (*OldArgv) {
+        // Append the arguments together
+        ExecveArgs.emplace_back(*OldArgv);
+        ++OldArgv;
+      }
+    }
+    else {
+      // Linux kernel will stick an empty argument in to the argv list if none are provided.
+       ExecveArgs.emplace_back(NullString);
     }
 
     // Emplace nullptr at the end to stop
     ExecveArgs.emplace_back(nullptr);
   }
 
-  if (Args) {
-    Result = ::syscall(SYS_execveat, Args->dirfd, "/proc/self/exe",
-                       const_cast<char *const *>(ExecveArgs.data()), envp, Args->flags);
+  if (IsFDExec) {
+    if (envp) {
+      auto OldEnvp = envp;
+      while (*OldEnvp) {
+        EnvpArgs.emplace_back(*OldEnvp);
+        ++OldEnvp;
+      }
+    }
+
+    int Flags = fcntl(Args.dirfd, F_GETFD);
+    if (Flags & FD_CLOEXEC) {
+      // FEX needs the FD to live past execve when binfmt_misc isn't used,
+      // so duplicate the FD if FD_CLOEXEC is set
+      Args.dirfd = dup(Args.dirfd);
+    }
+
+    // Remove AT_EMPTY_PATH flag now.
+    // We need to emulate this flag with `FEX_EXECVEFD` environment variable.
+    // If we passed this flag through to the real `execveat` then the target FD wouldn't get emulated by FEX.
+    Args.flags &= ~AT_EMPTY_PATH;
+
+    // Create the environment variable to pass the FD to our FEX.
+    // Needs to stick around until execveat completes.
+    FDExecEnv = "FEX_EXECVEFD=" + std::to_string(Args.dirfd);
+
+    // Insert the FD for FEX to track.
+    EnvpArgs.emplace_back(FDExecEnv.data());
+
+    // Emplace nullptr at the end to stop
+    EnvpArgs.emplace_back(nullptr);
+
+    EnvpPtr = const_cast<char *const *>(EnvpArgs.data());
   }
-  else {
-    Result = execve("/proc/self/exe", const_cast<char *const *>(ExecveArgs.data()), envp);
-  }
+
+  Result = ::syscall(SYS_execveat, Args.dirfd, "/proc/self/exe",
+                     const_cast<char *const *>(ExecveArgs.data()), EnvpPtr, Args.flags);
 
   SYSCALL_ERRNO();
 }

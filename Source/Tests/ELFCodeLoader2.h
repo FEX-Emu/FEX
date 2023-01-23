@@ -27,6 +27,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
+#include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <elf.h>
 #include <fcntl.h>
@@ -203,10 +204,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
-      auto SymlinkSize = FEX::HLE::GetSymlink(RootFSLink, Filename, PATH_MAX - 1);
-      if (SymlinkSize > 0 && Filename[0] == '/') {
+      auto SymlinkPath = FHU::Symlinks::ResolveSymlink(RootFSLink, Filename);
+      if (SymlinkPath.starts_with('/')) {
         RootFSLink = RootFS;
-        RootFSLink += std::string_view(Filename, SymlinkSize);
+        RootFSLink += SymlinkPath;
       }
       else {
         break;
@@ -227,11 +228,23 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   std::vector<LoadedSection> Sections;
 
-  ELFCodeLoader2(std::string const &Filename, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
+  ELFCodeLoader2(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
     bool LoadedWithFD = false;
     int FD = getauxval(AT_EXECFD);
+
+    if (!FEXFDString.empty()) {
+      // If we passed the execve FD to us then use that.
+      const char *StartPtr = FEXFDString.data();
+      char *EndPtr{};
+      FD = ::strtol(StartPtr, &EndPtr, 10);
+      if (EndPtr == StartPtr) {
+        LogMan::Msg::AFmt("FEXInterpreter passed invalid FD to exececute: {}", FEXFDString);
+        return;
+      }
+      unsetenv("FEX_EXECVEFD");
+    }
 
     // If we are provided an EXECFD then attempt to execute that first
     // This happens in the case of binfmt_misc usage
