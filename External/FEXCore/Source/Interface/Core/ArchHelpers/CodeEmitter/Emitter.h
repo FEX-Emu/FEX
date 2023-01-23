@@ -519,6 +519,7 @@ namespace FEXCore::ARMEmitter {
         BC,
         TEST_BRANCH,
         RELATIVE_LOAD,
+        LONG_ADDRESS_GEN,
       };
       uint8_t *Location{};
       InstType Type;
@@ -579,7 +580,7 @@ namespace FEXCore::ARMEmitter {
           case ForwardLabel::Instructions::InstType::ADR: {
             uint32_t *Instruction = reinterpret_cast<uint32_t*>(Inst.Location);
             int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-            LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575, "Unscaled offset too large");
+            LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
             uint32_t InstMask = 0b11 << 29 | 0b1111'1111'1111'1111'111 << 5;
             uint32_t Offset = static_cast<uint32_t>(Imm) & 0x3F'FFFF;
             uint32_t Inst = *Instruction & ~InstMask;
@@ -591,7 +592,7 @@ namespace FEXCore::ARMEmitter {
           case ForwardLabel::Instructions::InstType::ADRP: {
             uint32_t *Instruction = reinterpret_cast<uint32_t*>(Inst.Location);
             int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
-            LOGMAN_THROW_A_FMT(Imm >= -4294967296 && Imm <= 4294963200 && (Imm & 0xFFF) == 0, "Unscaled offset too large");
+            LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
             Imm >>= 12;
             uint32_t InstMask = 0b11 << 29 | 0b1111'1111'1111'1111'111 << 5;
             uint32_t Offset = static_cast<uint32_t>(Imm) & 0x3F'FFFF;
@@ -640,6 +641,47 @@ namespace FEXCore::ARMEmitter {
             uint32_t Inst = *Instruction & ~(InstMask << 5);
             Inst |= Offset << 5;
             *Instruction = Inst;
+            break;
+          }
+          case ForwardLabel::Instructions::InstType::LONG_ADDRESS_GEN: {
+            uint32_t *Instructions = reinterpret_cast<uint32_t*>(Inst.Location);
+            int64_t ImmInstOne = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[0]);
+            int64_t ImmInstTwo = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[1]);
+            auto OriginalOffset = GetCursorOffset();
+
+            auto InstOffset = GetCursorOffsetFromAddress(Instructions);
+            SetCursorOffset(InstOffset);
+
+            // We encoded the destination register in to the first instruction space.
+            // Read it back.
+            ARMEmitter::Register DestReg(Instructions[0]);
+
+            if (IsADRRange(ImmInstTwo)) {
+              // If within ADR range from the second instruction, then we can emit NOP+ADR
+              nop();
+              adr(DestReg, static_cast<uint32_t>(ImmInstTwo) & 0x7FFF);
+            }
+            else if (IsADRPRange(ImmInstOne)) {
+
+              // If within ADRP range from the first instruction, then we are /definitely/ in range for the second instruction.
+              // First check if we are in non-offset range for second instruction.
+              if (IsADRPAligned(reinterpret_cast<uint64_t>(CurrentAddress))) {
+                // We can emit nop + adrp
+                nop();
+                adrp(DestReg, static_cast<uint32_t>(ImmInstTwo >> 12) & 0x7FFF);
+              }
+              else {
+                // Not aligned, need adrp + add
+                adrp(DestReg, static_cast<uint32_t>(ImmInstOne >> 12) & 0x7FFF);
+                add(ARMEmitter::Size::i64Bit, DestReg, DestReg, ImmInstOne & 0xFFF);
+              }
+            }
+            else {
+              LOGMAN_MSG_A_FMT("Unscaled offset is too large");
+              FEX_UNREACHABLE;
+            }
+
+            SetCursorOffset(OriginalOffset);
             break;
           }
           default: LOGMAN_MSG_A_FMT("Unexpected inst type in label fixup");

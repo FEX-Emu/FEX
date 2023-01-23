@@ -10,6 +10,16 @@
  * FEX-Emu ALU operations usually have a 32-bit or 64-bit operating size encoded in the IR operation,
  * This allows FEX to use a single helper function which decodes to both handlers.
  */
+private:
+  static bool IsADRRange(int64_t Imm) {
+    return Imm >= -1048576 && Imm <= 1048575;
+  }
+  static bool IsADRPRange(int64_t Imm) {
+    return Imm >= -4294967296 && Imm <= 4294963200;
+  }
+  static bool IsADRPAligned(int64_t Imm) {
+    return (Imm & 0xFFF) == 0;
+  }
 public:
   // PC relative
   void adr(FEXCore::ARMEmitter::Register rd, uint32_t Imm) {
@@ -19,7 +29,7 @@ public:
 
   void adr(FEXCore::ARMEmitter::Register rd, BackwardLabel const* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
-    LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575, "Unscaled offset too large");
+    LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, Imm);
@@ -46,7 +56,7 @@ public:
 
   void adrp(FEXCore::ARMEmitter::Register rd, BackwardLabel const* Label) {
     int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
-    LOGMAN_THROW_A_FMT(Imm >= -4294967296 && Imm <= 4294963200 && (Imm & 0xFFF) == 0, "Unscaled offset too large");
+    LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, Imm);
@@ -63,6 +73,49 @@ public:
     }
     else {
       adrp(rd, &Label->Forward);
+    }
+  }
+
+  void LongAddressGen(FEXCore::ARMEmitter::Register rd, BackwardLabel const* Label) {
+    int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>());
+    if (IsADRRange(Imm)) {
+      // If the range is in ADR range then we can just use ADR.
+      adr(rd, Label);
+    }
+    else if (IsADRPRange(Imm)) {
+      int64_t ADRPImm = (reinterpret_cast<int64_t>(Label->Location) & ~0xFFFLL)
+        - (GetCursorAddress<int64_t>() & ~0xFFFLL);
+
+      // If the range is in the ADRP range then we can use ADRP.
+      bool NeedsOffset = !IsADRPAligned(reinterpret_cast<uint64_t>(Label->Location));
+      uint64_t AlignedOffset = reinterpret_cast<uint64_t>(Label->Location) & 0xFFFULL;
+
+      // First emit ADRP
+      adrp(rd, ADRPImm >> 12);
+
+      if (NeedsOffset) {
+        // Now even an add
+        add(ARMEmitter::Size::i64Bit, rd, rd, AlignedOffset);
+      }
+    }
+    else {
+      LOGMAN_MSG_A_FMT("Unscaled offset too large");
+      FEX_UNREACHABLE;
+    }
+  }
+  void LongAddressGen(FEXCore::ARMEmitter::Register rd, ForwardLabel* Label) {
+    Label->Insts.emplace_back(ForwardLabel::Instructions{ .Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::Instructions::InstType::LONG_ADDRESS_GEN });
+    // Emit a register index and a nop. These will be backpatched.
+    dc32(rd.Idx());
+    nop();
+  }
+
+  void LongAddressGen(FEXCore::ARMEmitter::Register rd, BiDirectionalLabel *Label) {
+    if (Label->Backward.Location) {
+      LongAddressGen(rd, &Label->Backward);
+    }
+    else {
+      LongAddressGen(rd, &Label->Forward);
     }
   }
 

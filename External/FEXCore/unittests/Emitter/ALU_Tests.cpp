@@ -83,6 +83,150 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
 
     CHECK(DisassembleEncoding(0) == 0xb000001e);
   }
+
+  {
+    // Will generate adr.
+    BackwardLabel Label;
+    Bind(&Label);
+    dc32(0);
+
+    LongAddressGen(Reg::r30, &Label);
+    CHECK(DisassembleEncoding(1) == 0x10fffffe);
+  }
+  {
+    // Will generate nop + adr.
+    ForwardLabel Label;
+    LongAddressGen(Reg::r30, &Label);
+    Bind(&Label);
+    dc32(0);
+
+    CHECK(DisassembleEncoding(0) == 0xd503201f);
+    CHECK(DisassembleEncoding(1) == 0x1000003e);
+  }
+  {
+    // Will generate adr.
+    BiDirectionalLabel Label;
+    Bind(&Label);
+    dc32(0);
+    LongAddressGen(Reg::r30, &Label);
+
+    CHECK(DisassembleEncoding(1) == 0x10fffffe);
+  }
+
+  {
+    // Will generate nop + adr.
+    BiDirectionalLabel Label;
+    LongAddressGen(Reg::r30, &Label);
+    Bind(&Label);
+    dc32(0);
+
+    CHECK(DisassembleEncoding(0) == 0xd503201f);
+    CHECK(DisassembleEncoding(1) == 0x1000003e);
+  }
+
+  {
+    // Will generate adrp.
+    BackwardLabel Label;
+    Bind(&Label);
+    dc32(0);
+
+    // Move adrp 1MB away.
+    for (size_t i = 0; i < (1 * 1024 * 1024 / 4); ++i) {
+      nop();
+    }
+
+    LongAddressGen(Reg::r30, &Label);
+    nop();
+    CHECK(DisassembleEncoding(262145) == 0x90fff81e);
+    CHECK(DisassembleEncoding(262146) == 0xd503201f);
+  }
+
+  {
+    // Will generate nop + adrp.
+    ForwardLabel Label;
+    LongAddressGen(Reg::r30, &Label);
+
+    // Move label 1MB away, plus a page, and then aligned to a page.
+    for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 2); ++i) {
+      nop();
+    }
+
+    Bind(&Label);
+    dc32(0);
+
+    CHECK(DisassembleEncoding(0) == 0xd503201f);
+    CHECK(DisassembleEncoding(1) == 0x9000081e);
+  }
+
+  {
+    // Will generate adrp + add.
+    ForwardLabel Label;
+    LongAddressGen(Reg::r30, &Label);
+
+    // Move label 1MB away, plus a page, plus one instruction.
+    for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 1); ++i) {
+      nop();
+    }
+
+    Bind(&Label);
+    dc32(0);
+
+    CHECK(DisassembleEncoding(0) == 0xb000081e);
+    CHECK(DisassembleEncoding(1) == 0x910013de);
+  }
+
+
+  {
+    // Will generate adrp.
+    BiDirectionalLabel Label;
+    Bind(&Label);
+    dc32(0);
+
+    // Move adrp 1MB away.
+    for (size_t i = 0; i < (1 * 1024 * 1024 / 4); ++i) {
+      nop();
+    }
+
+    LongAddressGen(Reg::r30, &Label);
+    nop();
+    CHECK(DisassembleEncoding(262145) == 0x90fff81e);
+    CHECK(DisassembleEncoding(262146) == 0xd503201f);
+  }
+
+  {
+    // Will generate nop + adrp.
+    BiDirectionalLabel Label;
+    LongAddressGen(Reg::r30, &Label);
+
+    // Move label 1MB away, plus a page, and then aligned to a page.
+    for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 2); ++i) {
+      nop();
+    }
+
+    Bind(&Label);
+    dc32(0);
+
+    CHECK(DisassembleEncoding(0) == 0xd503201f);
+    CHECK(DisassembleEncoding(1) == 0x9000081e);
+  }
+
+  {
+    // Will generate adrp + add.
+    BiDirectionalLabel Label;
+    LongAddressGen(Reg::r30, &Label);
+
+    // Move label 1MB away, plus a page, plus one instruction.
+    for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 1); ++i) {
+      nop();
+    }
+
+    Bind(&Label);
+    dc32(0);
+
+    CHECK(DisassembleEncoding(0) == 0xb000081e);
+    CHECK(DisassembleEncoding(1) == 0x910013de);
+  }
+
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Add/subtract immediate") {
   TEST_SINGLE(add(Size::i32Bit, Reg::r29, Reg::r28, 0, false), "add w29, w28, #0x0 (0)");
