@@ -155,14 +155,16 @@ void Arm64Dispatcher::EmitDispatcher() {
     // Shift the offset by the size of the block cache entry
     add(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
 
-    // Load the guest address first to ensure it maps to the address we are currently at
+    // The the full LookupCacheEntry with a single LDP.
+    // Check the guest address first to ensure it maps to the address we are currently at.
     // This fixes aliasing problems
-    ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r0, offsetof(FEXCore::LookupCache::LookupCacheEntry, GuestCode));
+    ldp<ARMEmitter::IndexType::OFFSET>(ARMEmitter::XReg::x3, ARMEmitter::XReg::x1, ARMEmitter::Reg::r0, 0);
+
+    // If the guest address doesn't match, Compile the block.
     cmp(ARMEmitter::XReg::x1, RipReg);
     b(ARMEmitter::Condition::CC_NE, &NoBlock);
 
-    // Now load the actual host block to execute if we can
-    ldr(ARMEmitter::XReg::x3, ARMEmitter::Reg::r0, offsetof(FEXCore::LookupCache::LookupCacheEntry, HostCode));
+    // Check the host address to see if it matches, else compile the block.
     cbz(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, &NoBlock);
 
     // If we've made it here then we have a real compiled block
