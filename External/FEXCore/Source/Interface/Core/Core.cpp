@@ -159,6 +159,11 @@ namespace FEXCore::Context {
       HostFeatures.SupportsAVX = false;
     }
 
+    if (!Config.Is64BitMode()) {
+      // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
+      Config.VirtualMemSize = 1ULL << 32;
+    }
+
     if (Config.BlockJITNaming() ||
         Config.GlobalJITNaming() ||
         Config.LibraryJITNaming()) {
