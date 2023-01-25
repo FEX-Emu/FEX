@@ -1,4 +1,4 @@
-if (ENABLE_VIXL_DISASSEMBLER)
+if (COMPILE_VIXL_DISASSEMBLER)
   file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS *.cpp)
 
   set (LIBS fmt::fmt vixl Catch2::Catch2WithMain FEXCore_Base)
