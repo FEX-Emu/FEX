@@ -176,9 +176,10 @@ static bool IsShebangFile(std::span<char> Data) {
   // Handle shebang files.
   if (Data[0] == '#' &&
       Data[1] == '!') {
-    // Make sure to strip off the shebang prefix.
-    std::string_view InterpreterView { Data.data() + 2, Data.size() - 2};
-    std::string InterpreterLine { InterpreterView.data(), InterpreterView.find('\n') };
+    std::string InterpreterLine {
+        Data.begin() + 2, // strip off "#!" prefix
+        std::find(Data.begin(), Data.end(), '\n')
+    };
     std::vector<std::string> ShebangArguments{};
 
     // Shebang line can have a single argument
@@ -188,7 +189,7 @@ static bool IsShebangFile(std::span<char> Data) {
       if (Argument.empty()) {
         continue;
       }
-      ShebangArguments.emplace_back(Argument);
+      ShebangArguments.push_back(std::move(Argument));
     }
 
     // Executable argument
@@ -197,16 +198,12 @@ static bool IsShebangFile(std::span<char> Data) {
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
     if (ShebangProgram[0] == '/') {
-      std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
-      ShebangProgram = RootFS + ShebangProgram;
+      ShebangProgram = FEX::HLE::_SyscallHandler->RootFSPath() + ShebangProgram;
     }
 
     std::error_code ec;
     bool exists = std::filesystem::exists(ShebangProgram, ec);
-    if (ec || !exists) {
-      return false;
-    }
-    return true;
+    return !ec && exists;
   }
 
   return false;
