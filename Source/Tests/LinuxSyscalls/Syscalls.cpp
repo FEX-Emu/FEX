@@ -176,9 +176,10 @@ static bool IsShebangFile(std::span<char> Data) {
   // Handle shebang files.
   if (Data[0] == '#' &&
       Data[1] == '!') {
-    // Make sure to strip off the shebang prefix.
-    std::string_view InterpreterView { Data.data() + 2, Data.size() - 2};
-    std::string InterpreterLine { InterpreterView.data(), InterpreterView.find('\n') };
+    std::string InterpreterLine {
+        Data.begin() + 2, // strip off "#!" prefix
+        std::find(Data.begin(), Data.end(), '\n')
+    };
     std::vector<std::string> ShebangArguments{};
 
     // Shebang line can have a single argument
