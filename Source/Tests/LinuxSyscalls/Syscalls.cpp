@@ -189,7 +189,7 @@ static bool IsShebangFile(std::span<char> Data) {
       if (Argument.empty()) {
         continue;
       }
-      ShebangArguments.emplace_back(Argument);
+      ShebangArguments.push_back(std::move(Argument));
     }
 
     // Executable argument
@@ -198,16 +198,12 @@ static bool IsShebangFile(std::span<char> Data) {
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
     if (ShebangProgram[0] == '/') {
-      std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
-      ShebangProgram = RootFS + ShebangProgram;
+      ShebangProgram = FEX::HLE::_SyscallHandler->RootFSPath() + ShebangProgram;
     }
 
     std::error_code ec;
     bool exists = std::filesystem::exists(ShebangProgram, ec);
-    if (ec || !exists) {
-      return false;
-    }
-    return true;
+    return !ec && exists;
   }
 
   return false;
