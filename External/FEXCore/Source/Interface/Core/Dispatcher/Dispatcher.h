@@ -90,6 +90,16 @@ protected:
     , config {Config}
     {}
 
+  void RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
+
+  const bool incomplete_guest_restorer_support = false;
+
+  ///< Setup the signal frame for x64.
+  uint64_t SetupFrame_x64(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
+    int Signal, siginfo_t *HostSigInfo, void *ucontext,
+    GuestSigAction *GuestAction, stack_t *GuestStack,
+    uint64_t NewGuestSP, const uint32_t eflags);
+
   ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
   void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext);
   std::stack<uint64_t, std::vector<uint64_t>> SignalFrames;
