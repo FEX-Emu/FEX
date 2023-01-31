@@ -2549,7 +2549,22 @@ DEF_OP(VUShr) {
 }
 
 DEF_OP(VSShr) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
+  const auto Op = IROp->C<IR::IROp_VSShr>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto ElementSize = IROp->ElementSize;
+  LOGMAN_THROW_AA_FMT(ElementSize == 4, "VSShr only supports 32-bit elements");
+
+  const auto Dst = GetDst(Node);
+  const auto ShiftVector = GetSrc(Op->ShiftVector.ID());
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  if (Is256Bit) {
+    vpsravd(ToYMM(Dst), ToYMM(Vector), ToYMM(ShiftVector));
+  } else {
+    vpsravd(Dst, Vector, ShiftVector);
+  }
 }
 
 DEF_OP(VUShlS) {

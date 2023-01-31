@@ -2020,7 +2020,35 @@ DEF_OP(VUShr) {
 }
 
 DEF_OP(VSShr) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
+  const auto Op = IROp->C<IR::IROp_VSShr>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto ShiftVector = GetVReg(Op->ShiftVector.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    movprfx(VTMP1.Z(), Vector.Z());
+    asr(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), ShiftVector.Z());
+    mov(Dst.Z(), VTMP1.Z());
+  } else {
+    // Need to invert shift values to perform a right shift with SSHL
+    // (SSHR only has an immediate variant).
+    neg(SubRegSize, VTMP1.Q(), ShiftVector.Q());
+    sshl(SubRegSize, Dst.Q(), Vector.Q(), VTMP1.Q());
+  }
 }
 
 DEF_OP(VUShlS) {
