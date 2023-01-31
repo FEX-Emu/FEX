@@ -1613,17 +1613,17 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
     OrderedNode *Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags, -1);
 
     switch (Op->Dest.Data.GPR.GPR) {
-      case 0: // ES
+      case FEXCore::X86State::REG_RAX: // ES
       case FEXCore::X86State::REG_R8: // ES
         _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, es_idx));
         UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX);
         break;
-      case 1: // DS
+      case FEXCore::X86State::REG_RBX: // DS
       case FEXCore::X86State::REG_R11: // DS
         _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, ds_idx));
         UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
         break;
-      case 2: // CS
+      case FEXCore::X86State::REG_RCX: // CS
       case FEXCore::X86State::REG_R9: // CS
         // CPL3 can't write to this
         _Break(FEXCore::IR::BreakDefinition {
@@ -1633,12 +1633,12 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
             .si_code = 0,
         });
         break;
-      case 3: // SS
+      case FEXCore::X86State::REG_RDX: // SS
       case FEXCore::X86State::REG_R10: // SS
         _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, ss_idx));
         UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX);
         break;
-      case 6: // GS
+      case FEXCore::X86State::REG_RBP: // GS
       case FEXCore::X86State::REG_R13: // GS
         if (!CTX->Config.Is64BitMode) {
           _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, gs_idx));
@@ -1648,7 +1648,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
           DecodeFailure = true;
         }
         break;
-      case 7: // FS
+      case FEXCore::X86State::REG_RSP: // FS
       case FEXCore::X86State::REG_R12: // FS
         if (!CTX->Config.Is64BitMode) {
           _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_idx));
@@ -1668,23 +1668,23 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
     OrderedNode *Segment{};
 
     switch (Op->Src[0].Data.GPR.GPR) {
-      case 0: // ES
+      case FEXCore::X86State::REG_RAX: // ES
       case FEXCore::X86State::REG_R8: // ES
         Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, es_idx));
         break;
-      case 1: // DS
+      case FEXCore::X86State::REG_RBX: // DS
       case FEXCore::X86State::REG_R11: // DS
         Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, ds_idx));
         break;
-      case 2: // CS
+      case FEXCore::X86State::REG_RCX: // CS
       case FEXCore::X86State::REG_R9: // CS
         Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, cs_idx));
         break;
-      case 3: // SS
+      case FEXCore::X86State::REG_RDX: // SS
       case FEXCore::X86State::REG_R10: // SS
         Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, ss_idx));
         break;
-      case 6: // GS
+      case FEXCore::X86State::REG_RBP: // GS
       case FEXCore::X86State::REG_R13: // GS
         if (CTX->Config.Is64BitMode) {
           Segment = _Constant(0);
@@ -1693,7 +1693,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
           Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, gs_idx));
         }
         break;
-      case 7: // FS
+      case FEXCore::X86State::REG_RSP: // FS
       case FEXCore::X86State::REG_R12: // FS
         if (CTX->Config.Is64BitMode) {
           Segment = _Constant(0);
