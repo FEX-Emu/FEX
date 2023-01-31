@@ -120,23 +120,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
         }
       }
 
-      uint8_t NumArgs = IR::GetArgs(IROp->Op);
+      uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
 
-      if (NumArgs != IROp->NumArgs) {
-        switch (IROp->Op) {
-          case OP_BEGINBLOCK:
-          case OP_ENDBLOCK:
-          case OP_PHI:
-          case OP_PHIVALUE:
-          case OP_CONDJUMP:
-          case OP_JUMP:
-            // These override the number of args for RA, so ignore them.
-            break;
-          default:
-            HadError |= true;
-            Errors << "%ssa" << ID << ": Has wrong number of Args" << std::endl;
-        }
-      }
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         const auto ArgID = Arg.ID();

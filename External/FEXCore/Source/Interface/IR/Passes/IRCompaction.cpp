@@ -174,9 +174,9 @@ bool IRCompaction::Run(IREmitter *IREmit) {
       for (auto [LocalNode, LocalIROp] : LocalIR.GetCode(Block.NewNode)) {
 
         // Now that we have the op copied over, we need to modify SSA values to point to the new correct locations
-        // This doesn't use IR::GetArgs(Op) because we need to remap all SSA nodes
+        // This doesn't use IR::GetRAArgs(Op) because we need to remap all SSA nodes
         // Including ones that we don't RA
-        const uint8_t NumArgs = LocalIROp->NumArgs;
+        const uint8_t NumArgs = IR::GetArgs(LocalIROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           const auto OldArg = LocalIROp->Args[i].ID();
           const auto NewArg = OldToNewRemap[OldArg.Value].NodeID;

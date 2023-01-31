@@ -475,7 +475,7 @@ namespace {
           continue;
         }
 
-        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           const auto& Arg = IROp->Args[i];
 
@@ -679,7 +679,7 @@ namespace {
         auto& NodeLiveRange = LiveRanges[Node.Value];
 
         // Check for read-after-write and demote if it happens
-        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           const auto& Arg = IROp->Args[i];
 
@@ -1037,7 +1037,7 @@ namespace {
     while(1) {
       auto [RealNode, IROp] = Begin();
 
-      const uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
+      const uint8_t NumArgs = FEXCore::IR::GetRAArgs(IROp->Op);
       for (uint8_t i = 0; i < NumArgs; ++i) {
         const auto ArgNode = IROp->Args[i].ID();
         if (ArgNode == SearchID) {
@@ -1069,7 +1069,7 @@ namespace {
         return End;
       }
 
-      const uint8_t NumArgs = FEXCore::IR::GetArgs(IROp->Op);
+      const uint8_t NumArgs = FEXCore::IR::GetRAArgs(IROp->Op);
       for (uint8_t i = 0; i < NumArgs; ++i) {
         const auto ArgNode = IROp->Args[i].ID();
         if (ArgNode == SearchID) {
@@ -1297,7 +1297,7 @@ namespace {
 
           CurrentNodes.insert(NodeOpBegin.ID());
 
-          for (int i = 0; i < IROp->NumArgs; i++) {
+          for (int i = 0; i < IR::GetRAArgs(IROp->Op); i++) {
             CurrentNodes.insert(IROp->Args[i].ID());
           }
       }

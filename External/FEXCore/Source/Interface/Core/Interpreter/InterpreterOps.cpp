@@ -329,7 +329,6 @@ void InterpreterOps::InterpretIR(FEXCore::Core::CpuStateFrame *Frame, FEXCore::I
 
   const uintptr_t ListSize = CurrentIR->GetSSACount();
 
-  static_assert(sizeof(FEXCore::IR::IROp_Header) == 4);
   static_assert(sizeof(FEXCore::IR::OrderedNode) == 16);
 
   auto BlockEnd = CurrentIR->GetBlocks().end();
