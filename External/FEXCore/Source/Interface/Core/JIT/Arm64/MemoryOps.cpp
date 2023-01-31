@@ -1496,7 +1496,24 @@ DEF_OP(CacheLineClear) {
     dc(ARMEmitter::DataCacheOperation::CIVAC, TMP1);
     add(ARMEmitter::Size::i64Bit, TMP1, TMP1, CTX->HostFeatures.DCacheLineSize);
   }
-  dsb(FEXCore::ARMEmitter::BarrierScope::ISH);
+
+  if (Op->Serialize) {
+    // If requested, serialized all of the data cache operations.
+    dsb(FEXCore::ARMEmitter::BarrierScope::ISH);
+  }
+}
+
+DEF_OP(CacheLineClean) {
+  auto Op = IROp->C<IR::IROp_CacheLineClean>();
+
+  auto MemReg = GetReg(Op->Addr.ID());
+
+  // Clean dcache only
+  mov(TMP1, MemReg.X());
+  for (size_t i = 0; i < std::max(1U, CTX->HostFeatures.DCacheLineSize / 64U); ++i) {
+    dc(ARMEmitter::DataCacheOperation::CVAC, TMP1);
+    add(ARMEmitter::Size::i64Bit, TMP1, TMP1, CTX->HostFeatures.DCacheLineSize);
+  }
 }
 
 DEF_OP(CacheLineZero) {

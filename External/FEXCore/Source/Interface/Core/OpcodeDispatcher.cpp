@@ -5618,6 +5618,29 @@ void OpDispatchBuilder::FenceOp(OpcodeArgs) {
   _Fence({FenceType});
 }
 
+void OpDispatchBuilder::CLWB(OpcodeArgs) {
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+  _CacheLineClean(DestMem);
+}
+
+void OpDispatchBuilder::CLFLUSHOPT(OpcodeArgs) {
+  OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+  DestMem = AppendSegmentOffset(DestMem, Op->Flags);
+  _CacheLineClear(DestMem, false);
+}
+
+void OpDispatchBuilder::MemFenceOrXSAVEOPT(OpcodeArgs) {
+  if (Op->ModRM == 0xF0) {
+    // 0xF0 is MFENCE
+    _Fence(FEXCore::IR::Fence_LoadStore);
+  }
+  else {
+    LogMan::Msg::EFmt("Application tried using XSAVEOPT");
+    UnimplementedOp(Op);
+  }
+}
+
 void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
   if (Op->ModRM == 0xF8) {
     // 0xF8 is SFENCE
@@ -5627,7 +5650,7 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
     // This is a CLFlush
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    _CacheLineClear(DestMem);
+    _CacheLineClear(DestMem, true);
   }
 }
 
@@ -6765,11 +6788,14 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 2), 1, &OpDispatchBuilder::LDMXCSR},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 3), 1, &OpDispatchBuilder::STMXCSR},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_Load.Val>},      //LFENCE
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_LoadStore.Val>}, //MFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::MemFenceOrXSAVEOPT}, //MFENCE
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush},     //SFENCE
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
+
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 6), 1, &OpDispatchBuilder::CLWB},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 7), 1, &OpDispatchBuilder::CLFLUSHOPT},
 
     // GROUP 16
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 8, &OpDispatchBuilder::NOPOp},

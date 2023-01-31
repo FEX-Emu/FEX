@@ -87,7 +87,7 @@ public:
       Label Gate{};
       // Patch gate entry point
       // mov(dword[rip + Gate], edi)
-      jmpf(ptr[rip + Gate]);
+      jmp(qword [rip + Gate], LabelType::T_FAR);
 
       L(Gate);
       dd(0x1'0000); // This is a 32-bit offset from the start of the gate. We start at 0x1'0000 + 0

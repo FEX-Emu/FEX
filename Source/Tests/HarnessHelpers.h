@@ -385,6 +385,7 @@ namespace FEX::HarnessHelper {
       FEATURE_CLZERO = (1 << 5),
       FEATURE_BMI1   = (1 << 6),
       FEATURE_BMI2   = (1 << 7),
+      FEATURE_CLWB   = (1 << 8),
     };
 
     bool Requires3DNow()  const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_3DNOW; }
@@ -395,6 +396,7 @@ namespace FEX::HarnessHelper {
     bool RequiresCLZERO() const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_CLZERO; }
     bool RequiresBMI1()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_BMI1; }
     bool RequiresBMI2()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_BMI2; }
+    bool RequiresCLWB()   const { return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_CLWB; }
 
   private:
     FEX_CONFIG_OPT(ConfigDumpGPRs, DUMPGPRS);
@@ -534,6 +536,7 @@ namespace FEX::HarnessHelper {
     bool RequiresCLZERO() const { return Config.RequiresCLZERO(); }
     bool RequiresBMI1()   const { return Config.RequiresBMI1(); }
     bool RequiresBMI2()   const { return Config.RequiresBMI2(); }
+    bool RequiresCLWB()   const { return Config.RequiresCLWB(); }
 
   private:
     constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;

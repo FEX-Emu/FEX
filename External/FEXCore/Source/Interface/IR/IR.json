@@ -479,9 +479,17 @@
         ]
       },
 
-      "CacheLineClear GPR:$Addr": {
+      "CacheLineClear GPR:$Addr, i1:$Serialize": {
         "Desc": ["Does a 64 byte cacheline clear at the address specified",
-                 "Only clears the data cachelines. Doesn't do any zeroing"
+                 "Only clears the data cachelines. Doesn't do any zeroing",
+                 "Can skip serialization if requested."
+                ],
+        "HasSideEffects": true
+      },
+      "CacheLineClean GPR:$Addr": {
+        "Desc": ["Does a 64 byte cacheline cleanat the address specified",
+                 "Only cleans the data cachelines. Doesn't do any zeroing",
+                 "Skips the invalidation step of the CacheLineClear operation"
                 ],
         "HasSideEffects": true
       },

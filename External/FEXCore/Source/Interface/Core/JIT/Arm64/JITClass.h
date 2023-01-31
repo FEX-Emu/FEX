@@ -356,6 +356,7 @@ private:
   DEF_OP(ParanoidLoadMemTSO);
   DEF_OP(ParanoidStoreMemTSO);
   DEF_OP(CacheLineClear);
+  DEF_OP(CacheLineClean);
   DEF_OP(CacheLineZero);
 
   ///< Misc ops

@@ -771,7 +771,19 @@ DEF_OP(CacheLineClear) {
 
   Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
 
-  clflush(ptr [MemReg]);
+  if (Op->Serialize) {
+    clflush(ptr [MemReg]);
+  }
+  else {
+    clflushopt(ptr [MemReg]);
+  }
+}
+
+DEF_OP(CacheLineClean) {
+  auto Op = IROp->C<IR::IROp_CacheLineClean>();
+
+  Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+  clwb(ptr [MemReg]);
 }
 
 DEF_OP(CacheLineZero) {
@@ -809,6 +821,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(LOADMEMTSO,          LoadMem);
   REGISTER_OP(STOREMEMTSO,         StoreMem);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
+  REGISTER_OP(CACHELINECLEAN,      CacheLineClean);
   REGISTER_OP(CACHELINEZERO,       CacheLineZero);
 #undef REGISTER_OP
 }

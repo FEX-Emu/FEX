@@ -655,8 +655,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (0 << 20) | // SMAP Supervisor mode access prevention and CLAC/STAC instructions
       (0 << 21) | // Reserved
       (0 << 22) | // Reserved
-      (0 << 23) | // CLFLUSHOPT instruction
-      (0 << 24) | // CLWB instruction
+      (1 << 23) | // CLFLUSHOPT instruction
+      (CTX->HostFeatures.SupportsCLWB << 24) | // CLWB instruction
       (0 << 25) | // Intel processor trace
       (0 << 26) | // Reserved
       (0 << 27) | // Reserved

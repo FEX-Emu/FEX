@@ -23,6 +23,22 @@ static inline void CacheLineFlush(char *Addr) {
 #endif
 }
 
+static inline void CacheLineClean(char *Addr) {
+#ifdef _M_X86_64
+  __asm volatile (
+    "clwb (%[Addr]);"
+    :: [Addr] "r" (Addr)
+    : "memory");
+#elif _M_ARM_64
+  __asm volatile (
+    "dc cvac, %[Addr]"
+    :: [Addr] "r" (Addr)
+    : "memory");
+#else
+    LOGMAN_THROW_A_FMT("Unsupported architecture with cacheline clean");
+#endif
+}
+
 #define DEF_OP(x) void InterpreterOps::Op_##x(IR::IROp_Header *IROp, IROpData *Data, IR::NodeID Node)
 DEF_OP(LoadContext) {
   const auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -279,6 +295,15 @@ DEF_OP(CacheLineClear) {
 
   // 64-byte cache line clear
   CacheLineFlush(MemData);
+}
+
+DEF_OP(CacheLineClean) {
+  auto Op = IROp->C<IR::IROp_CacheLineClean>();
+
+  char *MemData = *GetSrc<char **>(Data->SSAData, Op->Addr);
+
+  // 64-byte cache line clear
+  CacheLineClean(MemData);
 }
 
 DEF_OP(CacheLineZero) {

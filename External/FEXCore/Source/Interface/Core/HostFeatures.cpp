@@ -79,6 +79,7 @@ HostFeatures::HostFeatures() {
   SupportsSHA = true;
   SupportsBMI1 = true;
   SupportsBMI2 = true;
+  SupportsCLWB = true;
 
   if (!SupportsAtomics) {
     WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
@@ -128,6 +129,7 @@ HostFeatures::HostFeatures() {
   SupportsSHA = Features.has(Xbyak::util::Cpu::tSHA);
   SupportsBMI1 = Features.has(Xbyak::util::Cpu::tBMI1);
   SupportsBMI2 = Features.has(Xbyak::util::Cpu::tBMI2);
+  SupportsBMI2 = Features.has(Xbyak::util::Cpu::tCLWB);
   SupportsPMULL_128Bit = Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
 
   // xbyak doesn't know how to check for CLZero
