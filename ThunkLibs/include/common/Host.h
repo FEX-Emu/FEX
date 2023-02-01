@@ -8,6 +8,7 @@ $end_info$
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <dlfcn.h>
 
 #include "PackedArguments.h"
 
@@ -191,4 +192,15 @@ void FinalizeHostTrampolineForGuestFunction(F* PreallocatedTrampolineForGuestFun
   FEXCore::FinalizeHostTrampolineForGuestFunction(
       (FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
       (void*)&CallbackUnpack<F>::CallGuestPtr);
+}
+
+// In the case of the thunk host_loader being the default, FEX need to use dlsym with RTLD_DEFAULT.
+// If FEX queried the symbol object directly then it wouldn't follow symbol overriding rules.
+//
+// Common usecase is LD_PRELOAD with a library that defines some symbols.
+// And then programs and libraries will pick up the preloaded symbols.
+// ex: MangoHud overrides GLX and EGL symbols.
+inline
+void *dlsym_default(void* handle, const char* symbol) {
+  return dlsym(RTLD_DEFAULT, symbol);
 }

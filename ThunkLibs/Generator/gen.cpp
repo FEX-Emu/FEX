@@ -442,7 +442,7 @@ void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
                 }
 
                 thunked_api.push_back(ThunkedAPIFunction { (const FunctionParams&)data, data.function_name, data.return_type,
-                                                            namespace_info.host_loader.empty() ? "dlsym" : namespace_info.host_loader,
+                                                            namespace_info.host_loader.empty() ? "dlsym_default" : namespace_info.host_loader,
                                                             data.is_variadic || annotations.custom_guest_entrypoint,
                                                             data.is_variadic,
                                                             std::nullopt });
@@ -761,7 +761,11 @@ void GenerateThunkLibsAction::EmitOutput() {
           version_suffix = '.' + std::to_string(*lib_version);
         }
         const std::string library_filename = libfilename + ".so" + version_suffix;
-        file << "  fexldr_ptr_" << libname << "_so = dlopen(\"" << library_filename << "\", RTLD_LOCAL | RTLD_LAZY);\n";
+
+        // Load the host library in the global symbol namespace.
+        // This follows how these libraries get loaded in a non-emulated environment,
+        // Either by directly linking to the library or a loader (In OpenGL or Vulkan) putting everything in the global namespace.
+        file << "  fexldr_ptr_" << libname << "_so = dlopen(\"" << library_filename << "\", RTLD_GLOBAL | RTLD_LAZY);\n";
 
         file << "  if (!fexldr_ptr_" << libname << "_so) { return false; }\n\n";
         for (auto& import : thunked_api) {

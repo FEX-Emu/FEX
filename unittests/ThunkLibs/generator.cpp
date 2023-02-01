@@ -332,7 +332,8 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "};\n"
         "template<typename F>\n"
         "void FinalizeHostTrampolineForGuestFunction(F*);\n"
-        "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n";
+        "struct ExportEntry { uint8_t* sha256; void(*fn)(void *); };\n"
+        "void *dlsym_default(void* handle, const char* symbol);\n";
 
     auto& filename = output_filenames.host;
     {
