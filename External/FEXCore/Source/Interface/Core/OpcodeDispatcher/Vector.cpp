@@ -3756,6 +3756,56 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
+  const auto Selector = Op->Src[2].Data.Literal.Value;
+
+  // Each bit in the selector chooses between Src1 and Src2.
+  // If a bit is set, then we select it's corresponding 32-bit element from Src2
+  // If a bit is not set, then we select it's corresponding 32-bit element from Src1
+
+  // Cases where we can exit out early, since the selector is indicating a copy
+  // of an entire input vector. Unlikely to occur, since it's slower than
+  // just an equivalent vector move instruction. but just in case something
+  // silly is happening, we have your back.
+
+  if (Selector == 0) {
+    OrderedNode *Result = Is256Bit ? Src1 : _VMov(16, Src1);
+    StoreResult(FPRClass, Op, Result, -1);
+    return;
+  }
+  if (Selector == 0xFF && Is256Bit) {
+    StoreResult(FPRClass, Op, Src2, -1);
+    return;
+  }
+  // The only bits we care about from the 8-bit immediate for 128-bit operations
+  // are the first four bits. We do a bitwise check here to catch cases where
+  // silliness is going on and the upper bits are being set even when they'll
+  // be ignored
+  if ((Selector & 0xF) == 0xF && !Is256Bit) {
+    StoreResult(FPRClass, Op, _VMov(16, Src2), -1);
+    return;
+  }
+
+  const std::array Sources{Src1, Src2};
+
+  OrderedNode *Result = _VectorZero(DstSize);
+  const int Num32BitElements = DstSize / 4;
+  for (int i = 0; i < Num32BitElements; i++) {
+    const auto SelectorIndex = (Selector >> i) & 1;
+
+    Result = _VInsElement(DstSize, 4, i, i, Result, Sources[SelectorIndex]);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto IsVZEROALL = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
