@@ -321,6 +321,14 @@ void Arm64Dispatcher::EmitDispatcher() {
   }
 
   {
+    SignalHandlerReturnAddressRT = GetCursorAddress<uint64_t>();
+
+    // Now to get back to our old location we need to do a fault dance
+    // We can't use SIGTRAP here since gdb catches it and never gives it to the application!
+    hlt(0);
+  }
+
+  {
     // Guest SIGILL handler
     // Needs to be distinct from the SignalHandlerReturnAddress
     GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
@@ -654,6 +662,7 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
     Common.GuestSignal_SIGTRAP = GuestSignal_SIGTRAP;
     Common.GuestSignal_SIGSEGV = GuestSignal_SIGSEGV;
     Common.SignalReturnHandler = SignalHandlerReturnAddress;
+    Common.SignalReturnHandlerRT = SignalHandlerReturnAddressRT;
 
     auto &AArch64 = Thread->CurrentFrame->Pointers.AArch64;
     AArch64.LUDIVHandler = LUDIVHandlerAddress;

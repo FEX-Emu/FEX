@@ -24,10 +24,12 @@ X86GeneratedCode::X86GeneratedCode() {
   CodePtr = AllocateGuestCodeSpace(CODE_SIZE);
 
   SignalReturn = reinterpret_cast<uint64_t>(CodePtr);
-  CallbackReturn = reinterpret_cast<uint64_t>(CodePtr) + 2;
+  SignalReturnRT = reinterpret_cast<uint64_t>(CodePtr) + 3;
+  CallbackReturn = reinterpret_cast<uint64_t>(CodePtr) + 6;
 
   const std::vector<uint8_t> SignalReturnCode = {
-    0x0F, 0x36, // SIGRET FEX instruction
+    0x0F, 0x36, 0x0, // SIGRET FEX instruction (Non-RT)
+    0x0F, 0x36, 0x1, // SIGRET FEX instruction (RT)
     0x0F, 0x37, // CALLBACKRET FEX Instruction
   };
 

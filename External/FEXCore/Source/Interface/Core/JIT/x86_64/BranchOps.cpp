@@ -31,12 +31,19 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void X86JITCore::Op_##x(IR::IROp_Header *IROp, IR::NodeID Node)
 
 DEF_OP(SignalReturn) {
+  auto Op = IROp->C<IR::IROp_SignalReturn>();
+
   // Adjust the stack first for a regular return
   if (SpillSlots) {
     add(rsp, SpillSlots * MaxSpillSlotSize); // + 8 to consume return address
   }
 
-  jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)]);
+  if (Op->IsRT) {
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandlerRT)]);
+  }
+  else {
+    jmp(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SignalReturnHandler)]);
+  }
 }
 
 DEF_OP(CallbackReturn) {

@@ -258,7 +258,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     // FEX reserved instructions
     // Unused x86 encoding instruction.
     // Used by FEX to know when to do a signal return
-    {0x36, 1, X86InstInfo{"SIGRET",       TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0, nullptr}},
+    {0x36, 1, X86InstInfo{"SIGRET",       TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            1, nullptr}},
 
     {0x37, 1, X86InstInfo{"CALLBACKRET",  TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                                          0, nullptr}},
 
