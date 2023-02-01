@@ -1,6 +1,8 @@
 #include "clang/Tooling/Tooling.h"
 #include "clang/Tooling/CompilationDatabase.h"
 
+#include "llvm/Support/Signals.h"
+
 #include <iostream>
 #include <string>
 
@@ -13,6 +15,8 @@ void print_usage(const char* program_name) {
 }
 
 int main(int argc, char* argv[]) {
+    llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
+
     if (argc < 6) {
         print_usage(argv[0]);
         return EXIT_FAILURE;

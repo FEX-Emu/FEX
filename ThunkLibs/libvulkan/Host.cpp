@@ -25,6 +25,7 @@ static std::mutex SetupMutex{};
 
 #define LDR_PTR(fn) fexldr_ptr_libvulkan_##fn
 
+#if 0
 static void DoSetupWithInstance(VkInstance instance) {
     std::unique_lock lk {SetupMutex};
 
@@ -134,5 +135,5 @@ static PFN_vkVoidFunction FEXFN_IMPL(vkGetInstanceProcAddr)(VkInstance a_0, cons
   auto ret = LDR_PTR(vkGetInstanceProcAddr)(a_0, a_1);
   return ret;
 }
-
+#endif
 EXPORTS(libvulkan)

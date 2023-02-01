@@ -141,6 +141,14 @@
         "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libasound.so.2.0.0"
       ]
     },
+    "fex_thunk_test": {
+      "Library": "libfex_thunk_test-guest.so",
+      "Overlay": [
+        "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libfex_thunk_test.so",
+        "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libfex_thunk_test.so.0",
+        "@PREFIX_LIB@/@PREFIX_ARCH@-linux-gnu/libfex_thunk_test.so.0.0.0"
+      ]
+    },
     "Xrender": {
       "Library": "libXrender-guest.so",
       "Overlay": [

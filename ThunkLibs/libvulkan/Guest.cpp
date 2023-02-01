@@ -22,6 +22,7 @@ $end_info$
 
 extern "C" {
 
+#if 0
 // Maps Vulkan API function names to the address of a guest function which is
 // linked to the corresponding host function pointer
 const std::unordered_map<std::string_view, uintptr_t /* guest function address */> HostPtrInvokers =
@@ -81,6 +82,6 @@ PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance a_0,const char* a_1){
     }
 }
 
+#endif
 }
-
 LOAD_LIB(libvulkan)
