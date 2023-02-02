@@ -88,7 +88,26 @@ public:
   }
 
   // TODO: FCMLA
-  // TODO: FCADD
+  
+  void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "fcadd can only use p0 to p7");
+    LOGMAN_THROW_AA_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
+                        "fcadd rotation may only be 90 or 270 degrees");
+    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "fcadd zd and zn must be the same register");
+
+    const uint32_t ConvertedRotation = rot == Rotation::ROTATE_90 ? 0 : 1;
+
+    uint32_t Op = 0b0110'0100'0000'0000'1000'0000'0000'0000;
+    Op |= FEXCore::ToUnderlying(size) << 22;
+    Op |= ConvertedRotation << 16;
+    Op |= pv.Idx() << 10;
+    Op |= zm.Idx() << 5;
+    Op |= zd.Idx();
+
+    dc32(Op);
+  }
 
   // SVE integer add/subtract vectors (unpredicated)
   void add(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
