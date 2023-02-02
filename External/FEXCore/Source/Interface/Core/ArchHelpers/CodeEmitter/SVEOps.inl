@@ -79,6 +79,14 @@ public:
     dc32(Op);
   }
 
+  void histseg(ZRegister zd, ZRegister zn, ZRegister zm) {
+    uint32_t Op = 0b0100'0101'0010'0000'1010'0000'0000'0000;
+    Op |= zm.Idx() << 16;
+    Op |= zn.Idx() << 5;
+    Op |= zd.Idx();
+    dc32(Op);
+  }
+
   // TODO: FCMLA
   // TODO: FCADD
 
