@@ -53,11 +53,18 @@ namespace FEX::Config {
       Program += ProgramFDFromEnv;
     }
 
+    // If we were provided a relative path then we need to canonicalize it to become absolute.
+    // If the program name isn't resolved to an absolute path then glibc breaks inside it's `_dl_get_origin` function.
+    // This is because we rewrite `/proc/self/exe` to the absolute program path calculated in here.
+    if (!Program.starts_with('/')) {
+      Program = std::filesystem::canonical(std::move(Program)).string();
+    }
+
     // If FEX was invoked through an FD path (either binfmt_misc or execveat) then we need to check the
     // Program to see if it is a symlink to find the real path.
     //
-    // binfmt_misc: Arg[0] is actually the full application path or `/dev/fd/<FD>` path
-    //   - Full application path with execve (See Side Note)
+    // binfmt_misc: Arg[0] is actually the execve `pathname` argument or `/dev/fd/<FD>` path
+    //   - `pathname` with execve (See Side Note)
     //   - FD path with execveat and FD doesn't have an existing file on the disk
     //
     // ProgramFDFromEnv: Arg[0] is Application provided data or `/dev/fd/<FD>` from above fix-up.
@@ -66,14 +73,14 @@ namespace FEX::Config {
     //
     // Side Note:
     //  The `execve` syscall doesn't take an FD but binfmt_misc will give FEX an FD to execute still.
-    //  Arg[0] will always contain a pathname to an application in this case and it won't be a symlink.
-    //  Kernel resolves the symlink before passing the application to the interpreter.
+    //  Arg[0] will always contain the `pathname` argument provided to execve.
+    //  It does not resolve symlinks, and it does not convert the path to absolute.
     //
     // Examples:
     //  - Regular execve. Application must exist on disk.
-    //    execve binfmt_misc args layout:   `FEXInterpreter <Full path> <user provided argv[0]> <user provided argv[n]>...`
+    //    execve binfmt_misc args layout:   `FEXInterpreter <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
     //  - Regular execveat with FD. FD is backed by application on disk.
-    //    execveat binfmt_misc args layout: `FEXInterpreter <Full path> <user provided argv[0]> <user provided argv[n]>...`
+    //    execveat binfmt_misc args layout: `FEXInterpreter <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
     //  - Regular execveat with FD. FD points to file on disk that has been deleted.
     //    execveat binfmt_misc args layout: `FEXInterpreter /dev/fd/<FD> <user provided argv[0]> <user provided argv[n]>...`
     if (ExecFDInterp || !ProgramFDFromEnv.empty()) {
