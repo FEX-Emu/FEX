@@ -245,6 +245,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 character match") {
               "match p8.b, p6/z, z30.b, z29.b");
   TEST_SINGLE(match(SubRegSize::i16Bit, PReg::p8, PReg::p6.Zeroing(), ZReg::z30, ZReg::z29),
               "match p8.h, p6/z, z30.h, z29.h");
+
+  TEST_SINGLE(nmatch(SubRegSize::i8Bit, PReg::p8, PReg::p6.Zeroing(), ZReg::z30, ZReg::z29),
+              "nmatch p8.b, p6/z, z30.b, z29.b");
+  TEST_SINGLE(nmatch(SubRegSize::i16Bit, PReg::p8, PReg::p6.Zeroing(), ZReg::z30, ZReg::z29),
+              "nmatch p8.h, p6/z, z30.h, z29.h");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert precision odd elements") {
   TEST_SINGLE(fcvtxnt(ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvtxnt z30.s, p6/m, z29.d");

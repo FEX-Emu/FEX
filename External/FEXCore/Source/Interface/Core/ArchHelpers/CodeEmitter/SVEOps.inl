@@ -397,9 +397,14 @@ public:
   // XXX:
   // SVE integer clamp
 
+  // SVE2 character match
   void match(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     constexpr uint32_t Op = 0b0100'0101'0010'0000'1000'0000'0000'0000;
     SVECharacterMatch(Op, 0, size, pd, pg, zn, zm);
+  }
+  void nmatch(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0100'0101'0010'0000'1000'0000'0000'0000;
+    SVECharacterMatch(Op, 1, size, pd, pg, zn, zm);
   }
 
   // SVE floating-point convert precision odd elements
