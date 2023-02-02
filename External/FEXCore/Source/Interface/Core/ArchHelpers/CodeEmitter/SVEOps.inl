@@ -66,7 +66,19 @@ public:
     SVESel(Op, size, zd, pv, zn, zd);
   }
 
-  // TODO: HISTCNT
+  void histcnt(SubRegSize size, ZRegister zd, PRegisterZero pv, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 32-bit or 64-bit");
+    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "histcnt can only use p0 to p7");
+
+    uint32_t Op = 0b0100'0101'0010'0000'1100'0000'0000'0000;
+    Op |= FEXCore::ToUnderlying(size) << 22;
+    Op |= zm.Idx() << 16;
+    Op |= pv.Idx() << 10;
+    Op |= zn.Idx() << 5;
+    Op |= zd.Idx();
+    dc32(Op);
+  }
+
   // TODO: FCMLA
   // TODO: FCADD
 

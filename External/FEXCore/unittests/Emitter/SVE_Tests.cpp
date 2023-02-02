@@ -40,7 +40,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Base Encodings") {
   TEST_SINGLE(mov(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29),  "mov z30.d, p6/m, z29.d");
   //TEST_SINGLE(mov(SubRegSize::i128Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "mov z30.q, p6/m, z29.q");
 
-  // TODO: HISTCNT
   // TODO: FCMLA
   // TODO: FCADD
 }
@@ -1682,6 +1681,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise shift right narro
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract narrow high part") {
   // TODO: Implement in emitter.
+}
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 Histogram Computation") {
+  TEST_SINGLE(histcnt(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29, ZReg::z28),  "histcnt z30.s, p6/z, z29.s, z28.s");
+  TEST_SINGLE(histcnt(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29, ZReg::z28),  "histcnt z30.d, p6/z, z29.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 Histogram Computation - Segment") {
   // TODO: Implement in emitter.
