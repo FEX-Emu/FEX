@@ -407,7 +407,7 @@ void InitializeVEXTables() {
     // VEX Map 3
     {OPD(3, 0b01, 0x00), 1, X86InstInfo{"VPERMQ", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x01), 1, X86InstInfo{"VPERMPD", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
-    {OPD(3, 0b01, 0x02), 1, X86InstInfo{"VPBLENDD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x02), 1, X86InstInfo{"VPBLENDD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x04), 1, X86InstInfo{"VPERMILPS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x05), 1, X86InstInfo{"VPERMILPD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x06), 1, X86InstInfo{"VPERM2F128", TYPE_INST, GenFlagsSameSize(SIZE_256BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
@@ -416,7 +416,7 @@ void InitializeVEXTables() {
     {OPD(3, 0b01, 0x09), 1, X86InstInfo{"VROUNDPD", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x0A), 1, X86InstInfo{"VROUNDSS", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x0B), 1, X86InstInfo{"VROUNDSD", TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
-    {OPD(3, 0b01, 0x0C), 1, X86InstInfo{"VBLENDPS", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
+    {OPD(3, 0b01, 0x0C), 1, X86InstInfo{"VBLENDPS", TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_VEX_1ST_SRC | FLAGS_XMM_FLAGS, 1, nullptr}},
     {OPD(3, 0b01, 0x0D), 1, X86InstInfo{"VBLENDPD", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x0E), 1, X86InstInfo{"VBLENDW", TYPE_UNDEC, FLAGS_NONE, 0, nullptr}},
     {OPD(3, 0b01, 0x0F), 1, X86InstInfo{"VPALIGNR", TYPE_INST, FLAGS_MODRM | FLAGS_XMM_FLAGS, 1, nullptr}},
