@@ -87,8 +87,47 @@ public:
     dc32(Op);
   }
 
-  // TODO: FCMLA
-  
+  void fcmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                        "SubRegSize must be 16-bit or 32-bit");
+
+    const auto IsHalfPrecision = size == SubRegSize::i16Bit;
+
+    if (IsHalfPrecision) {
+      LOGMAN_THROW_AA_FMT(index <= 3, "Index for half-precision fcmla must be within 0-3. Index={}", index);
+      LOGMAN_THROW_AA_FMT(zm.Idx() <= 7, "zm must be within z0-z7. zm=z{}", zm.Idx());
+    } else {
+      LOGMAN_THROW_AA_FMT(index <= 1, "Index for single-precision fcmla must be within 0-1. Index={}", index);
+      LOGMAN_THROW_AA_FMT(zm.Idx() <= 15, "zm must be within z0-z15. zm=z{}", zm.Idx());
+    }
+
+    uint32_t Op = 0b0110'0100'1010'0000'0001'0000'0000'0000;
+    Op |= (IsHalfPrecision ? 0 : 1) << 22;
+    Op |= index << (19 + int(!IsHalfPrecision));
+    Op |= zm.Idx() << 16;
+    Op |= FEXCore::ToUnderlying(rot) << 10;
+    Op |= zn.Idx() << 5;
+    Op |= zda.Idx();
+
+    dc32(Op);
+  }
+
+  void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "fcmla can only use p0 to p7");
+
+    uint32_t Op = 0b0110'0100'0000'0000'0000'0000'0000'0000;
+    Op |= FEXCore::ToUnderlying(size) << 22;
+    Op |= zm.Idx() << 16;
+    Op |= FEXCore::ToUnderlying(rot) << 13;
+    Op |= pv.Idx() << 10;
+    Op |= zn.Idx() << 5;
+    Op |= zda.Idx();
+
+    dc32(Op);
+  }
+
   void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");

@@ -39,8 +39,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Base Encodings") {
   TEST_SINGLE(mov(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29),  "mov z30.s, p6/m, z29.s");
   TEST_SINGLE(mov(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29),  "mov z30.d, p6/m, z29.d");
   //TEST_SINGLE(mov(SubRegSize::i128Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "mov z30.q, p6/m, z29.q");
-
-  // TODO: FCMLA
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract vectors (unpredicated)") {
   TEST_SINGLE(add(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),   "add z30.b, z29.b, z28.b");
@@ -310,11 +308,57 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point complex add
   TEST_SINGLE(fcadd(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28, Rotation::ROTATE_270),
               "fcadd z30.d, p6/m, z30.d, z28.d, #270");
 }
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-add (vector)") {
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_0),
+              "fcmla z30.h, p6/m, z10.h, z28.h, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_0),
+              "fcmla z30.s, p6/m, z10.s, z28.s, #0");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_0),
+              "fcmla z30.d, p6/m, z10.d, z28.d, #0");
+
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_90),
+              "fcmla z30.h, p6/m, z10.h, z28.h, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_90),
+              "fcmla z30.s, p6/m, z10.s, z28.s, #90");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_90),
+              "fcmla z30.d, p6/m, z10.d, z28.d, #90");
+
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_180),
+              "fcmla z30.h, p6/m, z10.h, z28.h, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_180),
+              "fcmla z30.s, p6/m, z10.s, z28.s, #180");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_180),
+              "fcmla z30.d, p6/m, z10.d, z28.d, #180");
+
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_270),
+              "fcmla z30.h, p6/m, z10.h, z28.h, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_270),
+              "fcmla z30.s, p6/m, z10.s, z28.s, #270");
+  TEST_SINGLE(fcmla(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z10, ZReg::z28, Rotation::ROTATE_270),
+              "fcmla z30.d, p6/m, z10.d, z28.d, #270");
+}
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-add (indexed)") {
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point complex multiply-add (indexed)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z10, ZReg::z7, 0, Rotation::ROTATE_0),
+              "fcmla z30.h, z10.h, z7.h[0], #0");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z10, ZReg::z15, 0, Rotation::ROTATE_0),
+              "fcmla z30.s, z10.s, z15.s[0], #0");
+
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z10, ZReg::z7, 1, Rotation::ROTATE_90),
+              "fcmla z30.h, z10.h, z7.h[1], #90");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z10, ZReg::z15, 1, Rotation::ROTATE_90),
+              "fcmla z30.s, z10.s, z15.s[1], #90");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z10, ZReg::z15, 1, Rotation::ROTATE_180),
+              "fcmla z30.s, z10.s, z15.s[1], #180");
+  TEST_SINGLE(fcmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z10, ZReg::z15, 1, Rotation::ROTATE_270),
+              "fcmla z30.s, z10.s, z15.s[1], #270");
+
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z10, ZReg::z7, 2, Rotation::ROTATE_180),
+              "fcmla z30.h, z10.h, z7.h[2], #180");
+  TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z10, ZReg::z7, 3, Rotation::ROTATE_270),
+              "fcmla z30.h, z10.h, z7.h[3], #270");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply (indexed)") {
   // TODO: Implement in emitter.
