@@ -66,9 +66,87 @@ public:
     SVESel(Op, size, zd, pv, zn, zd);
   }
 
-  // TODO: HISTCNT
-  // TODO: FCMLA
-  // TODO: FCADD
+  void histcnt(SubRegSize size, ZRegister zd, PRegisterZero pv, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 32-bit or 64-bit");
+    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "histcnt can only use p0 to p7");
+
+    uint32_t Op = 0b0100'0101'0010'0000'1100'0000'0000'0000;
+    Op |= FEXCore::ToUnderlying(size) << 22;
+    Op |= zm.Idx() << 16;
+    Op |= pv.Idx() << 10;
+    Op |= zn.Idx() << 5;
+    Op |= zd.Idx();
+    dc32(Op);
+  }
+
+  void histseg(ZRegister zd, ZRegister zn, ZRegister zm) {
+    uint32_t Op = 0b0100'0101'0010'0000'1010'0000'0000'0000;
+    Op |= zm.Idx() << 16;
+    Op |= zn.Idx() << 5;
+    Op |= zd.Idx();
+    dc32(Op);
+  }
+
+  void fcmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                        "SubRegSize must be 16-bit or 32-bit");
+
+    const auto IsHalfPrecision = size == SubRegSize::i16Bit;
+
+    if (IsHalfPrecision) {
+      LOGMAN_THROW_AA_FMT(index <= 3, "Index for half-precision fcmla must be within 0-3. Index={}", index);
+      LOGMAN_THROW_AA_FMT(zm.Idx() <= 7, "zm must be within z0-z7. zm=z{}", zm.Idx());
+    } else {
+      LOGMAN_THROW_AA_FMT(index <= 1, "Index for single-precision fcmla must be within 0-1. Index={}", index);
+      LOGMAN_THROW_AA_FMT(zm.Idx() <= 15, "zm must be within z0-z15. zm=z{}", zm.Idx());
+    }
+
+    uint32_t Op = 0b0110'0100'1010'0000'0001'0000'0000'0000;
+    Op |= (IsHalfPrecision ? 0 : 1) << 22;
+    Op |= index << (19 + int(!IsHalfPrecision));
+    Op |= zm.Idx() << 16;
+    Op |= FEXCore::ToUnderlying(rot) << 10;
+    Op |= zn.Idx() << 5;
+    Op |= zda.Idx();
+
+    dc32(Op);
+  }
+
+  void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "fcmla can only use p0 to p7");
+
+    uint32_t Op = 0b0110'0100'0000'0000'0000'0000'0000'0000;
+    Op |= FEXCore::ToUnderlying(size) << 22;
+    Op |= zm.Idx() << 16;
+    Op |= FEXCore::ToUnderlying(rot) << 13;
+    Op |= pv.Idx() << 10;
+    Op |= zn.Idx() << 5;
+    Op |= zda.Idx();
+
+    dc32(Op);
+  }
+
+  void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "fcadd can only use p0 to p7");
+    LOGMAN_THROW_AA_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
+                        "fcadd rotation may only be 90 or 270 degrees");
+    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "fcadd zd and zn must be the same register");
+
+    const uint32_t ConvertedRotation = rot == Rotation::ROTATE_90 ? 0 : 1;
+
+    uint32_t Op = 0b0110'0100'0000'0000'1000'0000'0000'0000;
+    Op |= FEXCore::ToUnderlying(size) << 22;
+    Op |= ConvertedRotation << 16;
+    Op |= pv.Idx() << 10;
+    Op |= zm.Idx() << 5;
+    Op |= zd.Idx();
+
+    dc32(Op);
+  }
 
   // SVE integer add/subtract vectors (unpredicated)
   void add(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
@@ -314,12 +392,21 @@ public:
     SVEPredicateLogical(Op, 1, 1, 1, 1, pm, pg, pn, pd);
   }
 
+  // XXX:
   // SVE broadcast predicate element
   // XXX:
   // SVE integer clamp
-  // XXX:
+
   // SVE2 character match
-  // XXX:
+  void match(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0100'0101'0010'0000'1000'0000'0000'0000;
+    SVECharacterMatch(Op, 0, size, pd, pg, zn, zm);
+  }
+  void nmatch(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0100'0101'0010'0000'1000'0000'0000'0000;
+    SVECharacterMatch(Op, 1, size, pd, pg, zn, zm);
+  }
+
   // SVE floating-point convert precision odd elements
   void fcvtxnt(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
     constexpr uint32_t Op = 0b0110'0100'0000'1000'101 << 13;
@@ -3824,6 +3911,21 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVECharacterMatch(uint32_t op, uint32_t opc, SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit,
+                        "match/nmatch can only use 8-bit or 16-bit element sizes");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "match/nmatch can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 4;
+    Instr |= zm.Idx() << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= pd.Idx();
     dc32(Instr);
   }
 
