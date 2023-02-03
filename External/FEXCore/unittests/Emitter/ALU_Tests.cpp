@@ -1504,7 +1504,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Rotate right into flags") {
   TEST_SINGLE(rmif(XReg::x30, 63, 0b1111), "rmif x30, #63, #NZCV");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Evaluate into flags") {
-  // TODO: Add support to emitter.
+  TEST_SINGLE(setf8(XReg::x30), "setf8 w30");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Conditional compare - register") {
   TEST_SINGLE(ccmn(Size::i32Bit, Reg::r29, Reg::r28, StatusFlags::None, Condition::CC_AL), "ccmn w29, w28, #nzcv, al");

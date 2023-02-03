@@ -652,7 +652,11 @@ public:
   }
 
   // Evaluate into flags
-  // TODO
+  void setf8(WRegister rn) {
+    constexpr uint32_t Op = 0b0011'1010'0000'0000'0000'1000'0000'1101;
+    EvaluateIntoFlags(Op, 0, rn);
+  }
+
   // Conditional compare - register
   void ccmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
     constexpr uint32_t Op = 0b0011'1010'010 << 21;
@@ -971,6 +975,13 @@ private:
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
 
+    dc32(Instr);
+  }
+
+  void EvaluateIntoFlags(uint32_t op, uint32_t size, WRegister rn) {
+    uint32_t Instr = op;
+    Instr |= size << 14;
+    Instr |= rn.Idx() << 5;
     dc32(Instr);
   }
 
