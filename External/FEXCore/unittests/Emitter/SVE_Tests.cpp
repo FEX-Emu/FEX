@@ -433,7 +433,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic 
   //TEST_SINGLE(frsqrts(SubRegSize::i128Bit, ZReg::z30, ZReg::z29, ZReg::z28), "frsqrts z30.q, z29.q, z28.q");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point recursive reduction") {
-  TEST_SINGLE(faddv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z28), "faddv v30.h, p7, z28.h");
+  TEST_SINGLE(faddv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z28), "faddv h30, p7, z28.h");
+  TEST_SINGLE(faddv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z28), "faddv s30, p7, z28.s");
+  TEST_SINGLE(faddv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z28), "faddv d30, p7, z28.d");
+
+  TEST_SINGLE(fmaxnmv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z28), "fmaxnmv h30, p7, z28.h");
+  TEST_SINGLE(fmaxnmv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z28), "fmaxnmv s30, p7, z28.s");
+  TEST_SINGLE(fmaxnmv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z28), "fmaxnmv d30, p7, z28.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-accumulate writing addend (predicated)") {
