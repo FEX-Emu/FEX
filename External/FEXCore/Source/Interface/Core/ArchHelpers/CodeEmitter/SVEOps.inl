@@ -573,7 +573,10 @@ public:
   }
 
   // SVE floating-point recursive reduction
-  // XXX:
+  void faddv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0110'0101'0000'0000'0010'0000'0000'0000;
+    SVEFPRecursiveReduction(Op, 0b000, size, vd, pg, zn);
+  }
 
   // SVE integer Multiply-Add - Predicated
   // SVE integer multiply-accumulate writing addend (predicated)
@@ -3926,6 +3929,20 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPRecursiveReduction(uint32_t op, uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "FP reduction operation can only use 16-bit, 32-bit, or 64-bit element sizes");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "FP reduction operation can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= vd.Idx();
     dc32(Instr);
   }
 
