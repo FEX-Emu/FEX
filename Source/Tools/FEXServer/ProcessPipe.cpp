@@ -474,7 +474,7 @@ namespace ProcessPipe {
                 // Add the new client to the temporary array
                 NewPollFDs.emplace_back(pollfd {
                   .fd = NewFD,
-                  .events = POLLIN | POLLPRI | POLLRDHUP | POLLREMOVE,
+                  .events = POLLIN | POLLPRI | POLLRDHUP,
                   .revents = 0,
                 });
               }
