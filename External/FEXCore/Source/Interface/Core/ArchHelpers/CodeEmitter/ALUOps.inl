@@ -637,8 +637,20 @@ public:
     constexpr uint32_t Op = 0b0111'1010'000U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, FEXCore::ARMEmitter::ExtendedType::UXTB, 0);
   }
+
   // Rotate right into flags
-  // TODO
+  void rmif(XRegister rn, uint32_t shift, uint32_t mask) {
+    LOGMAN_THROW_AA_FMT(shift <= 63, "Shift must be within 0-63. Shift: {}", shift);
+    LOGMAN_THROW_AA_FMT(mask <= 15, "Mask must be within 0-15. Mask: {}", mask);
+
+    uint32_t Op = 0b1011'1010'0000'0000'0000'0100'0000'0000;
+    Op |= rn.Idx() << 5;
+    Op |= shift << 15;
+    Op |= mask;
+
+    dc32(Op);
+  }
+
   // Evaluate into flags
   // TODO
   // Conditional compare - register

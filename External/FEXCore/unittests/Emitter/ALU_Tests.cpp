@@ -1496,7 +1496,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - with carry") {
   TEST_SINGLE(sbcs(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27), "sbcs x29, x28, x27");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Rotate right into flags") {
-  // TODO: Add support to emitter.
+  TEST_SINGLE(rmif(XReg::x30, 63, 0b0000), "rmif x30, #63, #nzcv");
+  TEST_SINGLE(rmif(XReg::x30, 63, 0b0001), "rmif x30, #63, #nzcV");
+  TEST_SINGLE(rmif(XReg::x30, 63, 0b0010), "rmif x30, #63, #nzCv");
+  TEST_SINGLE(rmif(XReg::x30, 63, 0b0100), "rmif x30, #63, #nZcv");
+  TEST_SINGLE(rmif(XReg::x30, 63, 0b1000), "rmif x30, #63, #Nzcv");
+  TEST_SINGLE(rmif(XReg::x30, 63, 0b1111), "rmif x30, #63, #NZCV");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Evaluate into flags") {
   // TODO: Add support to emitter.
