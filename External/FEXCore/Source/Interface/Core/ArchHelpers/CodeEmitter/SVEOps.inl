@@ -589,6 +589,10 @@ public:
     constexpr uint32_t Op = 0b0110'0101'0000'0000'0010'0000'0000'0000;
     SVEFPRecursiveReduction(Op, 0b110, size, vd, pg, zn);
   }
+  void fminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0110'0101'0000'0000'0010'0000'0000'0000;
+    SVEFPRecursiveReduction(Op, 0b111, size, vd, pg, zn);
+  }
 
   // SVE integer Multiply-Add - Predicated
   // SVE integer multiply-accumulate writing addend (predicated)
