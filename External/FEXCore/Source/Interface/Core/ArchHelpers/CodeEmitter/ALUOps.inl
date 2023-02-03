@@ -637,10 +637,30 @@ public:
     constexpr uint32_t Op = 0b0111'1010'000U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, FEXCore::ARMEmitter::ExtendedType::UXTB, 0);
   }
+
   // Rotate right into flags
-  // TODO
+  void rmif(XRegister rn, uint32_t shift, uint32_t mask) {
+    LOGMAN_THROW_AA_FMT(shift <= 63, "Shift must be within 0-63. Shift: {}", shift);
+    LOGMAN_THROW_AA_FMT(mask <= 15, "Mask must be within 0-15. Mask: {}", mask);
+
+    uint32_t Op = 0b1011'1010'0000'0000'0000'0100'0000'0000;
+    Op |= rn.Idx() << 5;
+    Op |= shift << 15;
+    Op |= mask;
+
+    dc32(Op);
+  }
+
   // Evaluate into flags
-  // TODO
+  void setf8(WRegister rn) {
+    constexpr uint32_t Op = 0b0011'1010'0000'0000'0000'1000'0000'1101;
+    EvaluateIntoFlags(Op, 0, rn);
+  }
+  void setf16(WRegister rn) {
+    constexpr uint32_t Op = 0b0011'1010'0000'0000'0000'1000'0000'1101;
+    EvaluateIntoFlags(Op, 1, rn);
+  }
+
   // Conditional compare - register
   void ccmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
     constexpr uint32_t Op = 0b0011'1010'010 << 21;
@@ -959,6 +979,13 @@ private:
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
 
+    dc32(Instr);
+  }
+
+  void EvaluateIntoFlags(uint32_t op, uint32_t size, WRegister rn) {
+    uint32_t Instr = op;
+    Instr |= size << 14;
+    Instr |= rn.Idx() << 5;
     dc32(Instr);
   }
 
