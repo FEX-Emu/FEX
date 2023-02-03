@@ -19,13 +19,20 @@
 
 namespace ArgOptions {
   bool AssumeYes = false;
-  enum CompressedImageOption {
+  enum class CompressedImageOption {
     OPTION_ASK,
     OPTION_EXTRACT,
     OPTION_ASIS,
   };
 
-  CompressedImageOption CompressedUsageOption {OPTION_ASK};
+  CompressedImageOption CompressedUsageOption {CompressedImageOption::OPTION_ASK};
+
+  enum class ListQueryOption {
+    OPTION_ASK,
+    OPTION_FIRST,
+  };
+
+  ListQueryOption DistroListOption {ListQueryOption::OPTION_ASK};
 
   std::vector<std::string> RemainingArgs;
 
@@ -55,6 +62,9 @@ namespace ArgOptions {
     Parser.add_option("--distro-version")
       .help("Which distro version to select");
 
+    Parser.add_option("--distro-list-first")
+      .action("store_true")
+      .help("When presented the distro-list option, automatically select the first distro if there isn't an exact match.");
 
     optparse::Values Options = Parser.parse_args(argc, argv);
 
@@ -63,11 +73,15 @@ namespace ArgOptions {
     }
 
     if (Options.is_set_by_user("extract")) {
-      CompressedUsageOption = OPTION_EXTRACT;
+      CompressedUsageOption = CompressedImageOption::OPTION_EXTRACT;
     }
 
     if (Options.is_set_by_user("as_is")) {
-      CompressedUsageOption = OPTION_ASIS;
+      CompressedUsageOption = CompressedImageOption::OPTION_ASIS;
+    }
+
+    if (Options.is_set_by_user("distro_list_first")) {
+      DistroListOption = ListQueryOption::OPTION_FIRST;
     }
 
     if (Options.is_set_by_user("distro_name")) {
@@ -703,6 +717,11 @@ namespace Zenity {
       return DistroIndex;
     }
 
+    if (ArgOptions::DistroListOption == ArgOptions::ListQueryOption::OPTION_FIRST) {
+      // Return the first option if not an exact match.
+      return 0;
+    }
+
     std::vector<std::string> Args;
 
     Args.emplace_back("--column=Index");
@@ -874,6 +893,11 @@ namespace TTY {
 
     if (DistroIndex != -1) {
       return DistroIndex;
+    }
+
+    if (ArgOptions::DistroListOption == ArgOptions::ListQueryOption::OPTION_FIRST) {
+      // Return the first option if not an exact match.
+      return 0;
     }
 
     std::vector<std::string> Args;
