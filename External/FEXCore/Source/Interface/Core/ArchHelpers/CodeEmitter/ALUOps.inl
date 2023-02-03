@@ -656,6 +656,10 @@ public:
     constexpr uint32_t Op = 0b0011'1010'0000'0000'0000'1000'0000'1101;
     EvaluateIntoFlags(Op, 0, rn);
   }
+  void setf16(WRegister rn) {
+    constexpr uint32_t Op = 0b0011'1010'0000'0000'0000'1000'0000'1101;
+    EvaluateIntoFlags(Op, 1, rn);
+  }
 
   // Conditional compare - register
   void ccmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
