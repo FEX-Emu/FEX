@@ -440,6 +440,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point recursive r
   TEST_SINGLE(fmaxnmv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z28), "fmaxnmv h30, p7, z28.h");
   TEST_SINGLE(fmaxnmv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z28), "fmaxnmv s30, p7, z28.s");
   TEST_SINGLE(fmaxnmv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z28), "fmaxnmv d30, p7, z28.d");
+
+  TEST_SINGLE(fminnmv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z28), "fminnmv h30, p7, z28.h");
+  TEST_SINGLE(fminnmv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z28), "fminnmv s30, p7, z28.s");
+  TEST_SINGLE(fminnmv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z28), "fminnmv d30, p7, z28.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-accumulate writing addend (predicated)") {
