@@ -610,6 +610,10 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0000'0000'0000'0000;
     SVEAddSubVectorsPredicated(Op, 0b001, size, zd, pg, zn, zm);
   }
+  void subr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0000'0000'0000'0000;
+    SVEAddSubVectorsPredicated(Op, 0b011, size, zd, pg, zn, zm);
+  }
 
   // SVE integer min/max/difference (predicated)
   void smax(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {

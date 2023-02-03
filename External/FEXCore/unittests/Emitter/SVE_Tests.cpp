@@ -472,6 +472,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract vecto
   TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "sub z30.h, p7/m, z30.h, z28.h");
   TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "sub z30.s, p7/m, z30.s, z28.s");
   TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "sub z30.d, p7/m, z30.d, z28.d");
+
+  TEST_SINGLE(subr(SubRegSize::i8Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28),  "subr z30.b, p7/m, z30.b, z28.b");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "subr z30.h, p7/m, z30.h, z28.h");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "subr z30.s, p7/m, z30.s, z28.s");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "subr z30.d, p7/m, z30.d, z28.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max/difference (predicated)") {
