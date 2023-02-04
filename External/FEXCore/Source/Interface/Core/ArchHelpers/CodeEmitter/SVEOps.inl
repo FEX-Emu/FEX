@@ -734,6 +734,12 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
     SVEIntegerAddReductionPredicated(Op, 0b00, size, vd, pg, zn);
   }
+  void uaddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                       "uaddv may only use 8-bit, 16-bit, or 32-bit elements.");
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
+    SVEIntegerAddReductionPredicated(Op, 0b01, size, vd, pg, zn);
+  }
 
   // SVE integer min/max reduction (predicated)
   void smaxv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
