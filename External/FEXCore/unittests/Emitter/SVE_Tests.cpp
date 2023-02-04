@@ -555,6 +555,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer divide vectors (pr
               "sdivr z30.s, p7/m, z30.s, z29.s");
   TEST_SINGLE(sdivr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
               "sdivr z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(udivr(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "udivr z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(udivr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "udivr z30.d, p7/m, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical operations (predicated)") {
