@@ -743,22 +743,18 @@ public:
 
   // SVE integer min/max reduction (predicated)
   void smaxv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
     SVEReductionOperation(Op, 0b00, size, vd, pg, zn);
   }
   void umaxv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
     SVEReductionOperation(Op, 0b01, size, vd, pg, zn);
   }
   void sminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
     SVEReductionOperation(Op, 0b10, size, vd, pg, zn);
   }
   void uminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
     SVEReductionOperation(Op, 0b11, size, vd, pg, zn);
   }
