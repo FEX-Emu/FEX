@@ -782,6 +782,10 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0001'1000'0010'0000'0000'0000;
     SVEReductionOperation(Op, 0b01, size, vd, pg, zn);
   }
+  void andv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0000'0100'0001'1000'0010'0000'0000'0000;
+    SVEReductionOperation(Op, 0b10, size, vd, pg, zn);
+  }
 
   // SVE Bitwise Shift - Predicated
   // SVE bitwise shift by immediate (predicated)

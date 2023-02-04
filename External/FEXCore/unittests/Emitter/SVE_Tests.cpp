@@ -644,6 +644,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical reduction 
   TEST_SINGLE(eorv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z29), "eorv h30, p7, z29.h");
   TEST_SINGLE(eorv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z29), "eorv s30, p7, z29.s");
   TEST_SINGLE(eorv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z29), "eorv d30, p7, z29.d");
+
+  TEST_SINGLE(andv(SubRegSize::i8Bit, VReg::v30, PReg::p7, ZReg::z29),  "andv b30, p7, z29.b");
+  TEST_SINGLE(andv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z29), "andv h30, p7, z29.h");
+  TEST_SINGLE(andv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z29), "andv s30, p7, z29.s");
+  TEST_SINGLE(andv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z29), "andv d30, p7, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by immediate (predicated)") {
   TEST_SINGLE(asr(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, 1), "asr z30.b, p6/m, z30.b, #1");
