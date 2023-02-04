@@ -681,6 +681,12 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
     SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
   }
+  void udiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Predicated divide only handles 32-bit or 64-bit elements");
+    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b01, size, zd, pg, zn, zm);
+  }
 
   // SVE bitwise logical operations (predicated)
   void orr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
