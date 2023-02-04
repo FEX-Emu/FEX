@@ -1347,7 +1347,10 @@ public:
 
   // SVE Stack Allocation
   // SVE stack frame adjustment
-  // XXX:
+  void addvl(XRegister rd, XRegister rn, int32_t imm) {
+    SVEStackFrameOperation(0b00, rd, rn, imm);
+  }
+
   // Streaming SVE stack frame adjustment
   // XXX:
   // SVE stack frame size
@@ -4081,6 +4084,18 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEStackFrameOperation(uint32_t opc, XRegister rd, XRegister rn, int32_t imm) {
+    LOGMAN_THROW_AA_FMT(imm >= -32 && imm <= 31,
+                        "Stack frame operation immediate must be within -32 to 31");
+
+    uint32_t Instr = 0b0000'0100'0010'0000'0101'0000'0000'0000;
+    Instr |= opc << 22;
+    Instr |= rn.Idx() << 16;
+    Instr |= (static_cast<uint32_t>(imm) & 0b111111) << 5;
+    Instr |= rd.Idx();
     dc32(Instr);
   }
 

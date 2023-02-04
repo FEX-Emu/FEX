@@ -889,7 +889,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Index Generation") {
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE stack frame adjustment") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(addvl(XReg::rsp, XReg::rsp, -32), "addvl sp, sp, #-32");
+  TEST_SINGLE(addvl(XReg::rsp, XReg::rsp, 31), "addvl sp, sp, #31");
+  TEST_SINGLE(addvl(XReg::x30, XReg::x29, 15), "addvl x30, x29, #15");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Streaming SVE stack frame adjustment") {
   // TODO: Implement in emitter.
