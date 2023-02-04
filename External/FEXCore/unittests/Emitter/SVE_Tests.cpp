@@ -459,6 +459,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-accumulat
   TEST_SINGLE(mla(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mla z30.h, p7/m, z28.h, z29.h");
   TEST_SINGLE(mla(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mla z30.s, p7/m, z28.s, z29.s");
   TEST_SINGLE(mla(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mla z30.d, p7/m, z28.d, z29.d");
+
+  TEST_SINGLE(mls(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29),  "mls z30.b, p7/m, z28.b, z29.b");
+  TEST_SINGLE(mls(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mls z30.h, p7/m, z28.h, z29.h");
+  TEST_SINGLE(mls(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mls z30.s, p7/m, z28.s, z29.s");
+  TEST_SINGLE(mls(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mls z30.d, p7/m, z28.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-add writing multiplicand (predicated)") {

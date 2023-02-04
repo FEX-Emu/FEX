@@ -600,6 +600,10 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0100'0000'0000'0000;
     SVEIntegerMultiplyAddSubPredicated(Op, 0b0, size, zda, pg, zn, zm);
   }
+  void mls(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0100'0000'0000'0000;
+    SVEIntegerMultiplyAddSubPredicated(Op, 0b1, size, zda, pg, zn, zm);
+  }
 
   // SVE integer multiply-add writing multiplicand (predicated)
   // XXX:
