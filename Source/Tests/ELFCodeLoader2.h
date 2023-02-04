@@ -316,6 +316,10 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
       }
     }
 
+    if (InjectLibSegFault()) {
+      EnvironmentVariables.emplace_back("LD_PRELOAD=libSegFault.so");
+    }
+
     // Calculate argument and envp backing sizes
     for (unsigned i = 0; i < Args.size(); ++i) {
       ArgumentBackingSize += Args[i].size() + 1;
@@ -922,4 +926,6 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   static constexpr size_t platform_string_max_size = std::max(platform_name_x86_64.size(), platform_name_i686.size()) + 1;
 
   FEX_CONFIG_OPT(AdditionalArguments, ADDITIONALARGUMENTS);
+  FEX_CONFIG_OPT(InjectLibSegFault, INJECTLIBSEGFAULT);
+
 };
