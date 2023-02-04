@@ -1350,6 +1350,9 @@ public:
   void addvl(XRegister rd, XRegister rn, int32_t imm) {
     SVEStackFrameOperation(0b00, rd, rn, imm);
   }
+  void addpl(XRegister rd, XRegister rn, int32_t imm) {
+    SVEStackFrameOperation(0b01, rd, rn, imm);
+  }
 
   // Streaming SVE stack frame adjustment
   // XXX:
