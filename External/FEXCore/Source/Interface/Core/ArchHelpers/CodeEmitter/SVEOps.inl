@@ -1354,11 +1354,17 @@ public:
     SVEStackFrameOperation(0b01, rd, rn, imm);
   }
 
-  // Streaming SVE stack frame adjustment
+  // Streaming SVE stack frame adjustment (SME)
   // XXX:
+
   // SVE stack frame size
-  // XXX:
-  // Streaming SVE stack frame size
+  void rdvl(XRegister rd, int32_t imm) {
+    // Would-be Rn field is just set to all 1's, which is the same
+    // as writing the encoding for the SP into it.
+    SVEStackFrameOperation(0b10, rd, XReg::rsp, imm);
+  }
+
+  // Streaming SVE stack frame size (SME)
   // XXX:
 
   // SVE2 Integer Multiply - Unpredicated

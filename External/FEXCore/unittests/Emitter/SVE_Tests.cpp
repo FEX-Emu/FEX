@@ -901,7 +901,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Streaming SVE stack frame adju
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE stack frame size") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(rdvl(XReg::x30, -32), "rdvl x30, #-32");
+  TEST_SINGLE(rdvl(XReg::x30, 31),  "rdvl x30, #31");
+  TEST_SINGLE(rdvl(XReg::x30, 15),  "rdvl x30, #15");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Streaming SVE stack frame size") {
   // TODO: Implement in emitter.
