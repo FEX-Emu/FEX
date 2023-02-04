@@ -596,7 +596,11 @@ public:
 
   // SVE integer Multiply-Add - Predicated
   // SVE integer multiply-accumulate writing addend (predicated)
-  // XXX:
+  void mla(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0100'0000'0000'0000;
+    SVEIntegerMultiplyAddSubPredicated(Op, 0b0, size, zda, pg, zn, zm);
+  }
+
   // SVE integer multiply-add writing multiplicand (predicated)
   // XXX:
 
@@ -4052,6 +4056,20 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= vd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerMultiplyAddSubPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 13;
+    Instr |= zm.Idx() << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
