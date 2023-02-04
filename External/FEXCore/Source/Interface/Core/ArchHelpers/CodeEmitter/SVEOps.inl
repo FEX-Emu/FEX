@@ -1403,6 +1403,9 @@ public:
   void sqdmulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVE2IntegerMultiplyVectors(0b100, size, zm, zn, zd);
   }
+  void sqrdmulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMultiplyVectors(0b101, size, zm, zn, zd);
+  }
 
   // SVE Bitwise Shift - Unpredicated
   // SVE bitwise shift by wide elements (unpredicated)
