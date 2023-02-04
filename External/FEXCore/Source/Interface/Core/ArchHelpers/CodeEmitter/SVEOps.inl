@@ -1369,25 +1369,24 @@ public:
 
   // SVE2 Integer Multiply - Unpredicated
   // SVE2 integer multiply vectors (unpredicated)
-  void mul(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+  void mul(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVE2IntegerMultiplyVectors(0b00, size, zm, zn, zd);
   }
-  void smulh(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+  void smulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVE2IntegerMultiplyVectors(0b10, size, zm, zn, zd);
   }
 
-  void umulh(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+  void umulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVE2IntegerMultiplyVectors(0b11, size, zm, zn, zd);
   }
 
-  void pmul(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    SVE2IntegerMultiplyVectors(0b01, FEXCore::ARMEmitter::SubRegSize::i8Bit, zm, zn, zd);
+  void pmul(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMultiplyVectors(0b01, SubRegSize::i8Bit, zm, zn, zd);
   }
 
-  void SVE2IntegerMultiplyVectors(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
+  void SVE2IntegerMultiplyVectors(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+
     constexpr uint32_t Op = 0b0000'0100'0010'0000'0110 << 12;
     uint32_t Instr = Op;
 
@@ -1399,9 +1398,13 @@ public:
     dc32(Instr);
   }
 
-  // XXX:
   // SVE2 signed saturating doubling multiply high (unpredicated)
-  // XXX:
+  void sqdmulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMultiplyVectors(0b100, size, zm, zn, zd);
+  }
+  void sqrdmulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMultiplyVectors(0b101, size, zm, zn, zd);
+  }
 
   // SVE Bitwise Shift - Unpredicated
   // SVE bitwise shift by wide elements (unpredicated)
