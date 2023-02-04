@@ -455,11 +455,27 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point recursive r
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-accumulate writing addend (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(mla(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29),  "mla z30.b, p7/m, z28.b, z29.b");
+  TEST_SINGLE(mla(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mla z30.h, p7/m, z28.h, z29.h");
+  TEST_SINGLE(mla(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mla z30.s, p7/m, z28.s, z29.s");
+  TEST_SINGLE(mla(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mla z30.d, p7/m, z28.d, z29.d");
+
+  TEST_SINGLE(mls(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29),  "mls z30.b, p7/m, z28.b, z29.b");
+  TEST_SINGLE(mls(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mls z30.h, p7/m, z28.h, z29.h");
+  TEST_SINGLE(mls(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mls z30.s, p7/m, z28.s, z29.s");
+  TEST_SINGLE(mls(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mls z30.d, p7/m, z28.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-add writing multiplicand (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(mad(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29),  "mad z30.b, p7/m, z28.b, z29.b");
+  TEST_SINGLE(mad(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mad z30.h, p7/m, z28.h, z29.h");
+  TEST_SINGLE(mad(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mad z30.s, p7/m, z28.s, z29.s");
+  TEST_SINGLE(mad(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "mad z30.d, p7/m, z28.d, z29.d");
+
+  TEST_SINGLE(msb(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29),  "msb z30.b, p7/m, z28.b, z29.b");
+  TEST_SINGLE(msb(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "msb z30.h, p7/m, z28.h, z29.h");
+  TEST_SINGLE(msb(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "msb z30.s, p7/m, z28.s, z29.s");
+  TEST_SINGLE(msb(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z28, ZReg::z29), "msb z30.d, p7/m, z28.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract vectors (predicated)") {
