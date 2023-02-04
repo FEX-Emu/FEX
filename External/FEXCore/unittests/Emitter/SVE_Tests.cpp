@@ -512,7 +512,14 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max/difference
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply vectors (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(mul(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.b, p7/m, z30.b, z29.b");
+  TEST_SINGLE(mul(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.h, p7/m, z30.h, z29.h");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(mul(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.d, p7/m, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer divide vectors (predicated)") {

@@ -661,7 +661,11 @@ public:
   }
 
   // SVE integer multiply vectors (predicated)
-  // XXX:
+  void mul(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
+    SVEIntegerMulVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+  }
+
   // SVE integer divide vectors (predicated)
   // XXX:
   // SVE bitwise logical operations (predicated)
@@ -3975,6 +3979,19 @@ private:
   }
 
   void SVEAddSubVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Add/Sub operation can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerMulVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
     LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Add/Sub operation can only use p0-p7 as a governing predicate");
 
