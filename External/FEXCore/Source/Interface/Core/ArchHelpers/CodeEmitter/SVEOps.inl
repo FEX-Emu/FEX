@@ -728,7 +728,13 @@ public:
 
   // SVE Integer Reduction
   // SVE integer add reduction (predicated)
-  // XXX:
+  void saddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                       "saddv may only use 8-bit, 16-bit, or 32-bit elements.");
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
+    SVEIntegerAddReductionPredicated(Op, 0b00, size, vd, pg, zn);
+  }
+
   // SVE integer min/max reduction (predicated)
   void smaxv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
     LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
@@ -4033,6 +4039,18 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerAddReductionPredicated(uint32_t op, uint32_t opc, SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Integer reduction operation can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= vd.Idx();
     dc32(Instr);
   }
 

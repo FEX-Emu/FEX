@@ -589,7 +589,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical operations
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add reduction (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(saddv(SubRegSize::i8Bit, DReg::d30, PReg::p7, ZReg::z29),  "saddv d30, p7, z29.b");
+  TEST_SINGLE(saddv(SubRegSize::i16Bit, DReg::d30, PReg::p7, ZReg::z29), "saddv d30, p7, z29.h");
+  TEST_SINGLE(saddv(SubRegSize::i32Bit, DReg::d30, PReg::p7, ZReg::z29), "saddv d30, p7, z29.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max reduction (predicated)") {
   TEST_SINGLE(smaxv(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29),   "smaxv b30, p6, z29.b");
