@@ -635,7 +635,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE constructive prefix (predi
   //TEST_SINGLE(movprfx(SubRegSize::i128Bit, ZReg::z30, PReg::p6.Zeroing(), ZReg::z29), "movprfx z30.q, p6/z, z29.q");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical reduction (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(orv(SubRegSize::i8Bit, VReg::v30, PReg::p7, ZReg::z29),  "orv b30, p7, z29.b");
+  TEST_SINGLE(orv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z29), "orv h30, p7, z29.h");
+  TEST_SINGLE(orv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z29), "orv s30, p7, z29.s");
+  TEST_SINGLE(orv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z29), "orv d30, p7, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by immediate (predicated)") {
   TEST_SINGLE(asr(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, 1), "asr z30.b, p6/m, z30.b, #1");

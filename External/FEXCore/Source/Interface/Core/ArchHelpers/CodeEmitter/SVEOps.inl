@@ -732,13 +732,13 @@ public:
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
                        "saddv may only use 8-bit, 16-bit, or 32-bit elements.");
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
-    SVEIntegerAddReductionPredicated(Op, 0b00, size, vd, pg, zn);
+    SVEReductionOperation(Op, 0b00, size, vd, pg, zn);
   }
   void uaddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
                        "uaddv may only use 8-bit, 16-bit, or 32-bit elements.");
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
-    SVEIntegerAddReductionPredicated(Op, 0b01, size, vd, pg, zn);
+    SVEReductionOperation(Op, 0b01, size, vd, pg, zn);
   }
 
   // SVE integer min/max reduction (predicated)
@@ -774,7 +774,10 @@ public:
   }
 
   // SVE bitwise logical reduction (predicated)
-  // XXX
+  void orv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0000'0100'0001'1000'0010'0000'0000'0000;
+    SVEReductionOperation(Op, 0b00, size, vd, pg, zn);
+  }
 
   // SVE Bitwise Shift - Predicated
   // SVE bitwise shift by immediate (predicated)
@@ -4048,7 +4051,8 @@ private:
     dc32(Instr);
   }
 
-  void SVEIntegerAddReductionPredicated(uint32_t op, uint32_t opc, SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
+  void SVEReductionOperation(uint32_t op, uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size for reduction operation");
     LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Integer reduction operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
