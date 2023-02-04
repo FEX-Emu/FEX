@@ -610,6 +610,10 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0000'0000'1100'0000'0000'0000;
     SVEIntegerMultiplyAddSubPredicated(Op, 0b0, size, zdn, pg, za, zm);
   }
+  void msb(SubRegSize size, ZRegister zdn, PRegisterMerge pg, ZRegister zm, ZRegister za) {
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'1100'0000'0000'0000;
+    SVEIntegerMultiplyAddSubPredicated(Op, 0b1, size, zdn, pg, za, zm);
+  }
 
   // SVE Integer Binary Arithmetic - Predicated
   // SVE integer add/subtract vectors (predicated)
