@@ -665,6 +665,10 @@ public:
     constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
     SVEIntegerMulVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
   }
+  void smulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
+    SVEIntegerMulVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
+  }
 
   // SVE integer divide vectors (predicated)
   // XXX:
