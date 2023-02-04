@@ -742,25 +742,25 @@ public:
   }
 
   // SVE integer min/max reduction (predicated)
-  void smaxv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void smaxv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 0, 0, size, pg, zn, zd);
+    SVEReductionOperation(Op, 0b00, size, vd, pg, zn);
   }
-  void umaxv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void umaxv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 0, 1, size, pg, zn, zd);
+    SVEReductionOperation(Op, 0b01, size, vd, pg, zn);
   }
-  void sminv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void sminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 1, 0, size, pg, zn, zd);
+    SVEReductionOperation(Op, 0b10, size, vd, pg, zn);
   }
-  void uminv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void uminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Invalid subregsize size");
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 1, 1, size, pg, zn, zd);
+    SVEReductionOperation(Op, 0b11, size, vd, pg, zn);
   }
 
   // SVE constructive prefix (predicated)
@@ -3865,19 +3865,6 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
     Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
-  // SVE integer min/max reduction (predicated)
-  void SVEIntegerMinMaxReduction(uint32_t Op, uint32_t op, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= op << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= Encode_rn(zn);
-    Instr |= Encode_rd(zd);
     dc32(Instr);
   }
 
