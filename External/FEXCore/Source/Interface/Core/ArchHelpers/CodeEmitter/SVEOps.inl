@@ -1399,9 +1399,10 @@ public:
     dc32(Instr);
   }
 
-  // XXX:
   // SVE2 signed saturating doubling multiply high (unpredicated)
-  // XXX:
+  void sqdmulh(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMultiplyVectors(0b100, size, zm, zn, zd);
+  }
 
   // SVE Bitwise Shift - Unpredicated
   // SVE bitwise shift by wide elements (unpredicated)
