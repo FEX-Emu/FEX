@@ -512,11 +512,54 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max/difference
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply vectors (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(mul(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.b, p7/m, z30.b, z29.b");
+  TEST_SINGLE(mul(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.h, p7/m, z30.h, z29.h");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(mul(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "mul z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(smulh(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "smulh z30.b, p7/m, z30.b, z29.b");
+  TEST_SINGLE(smulh(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "smulh z30.h, p7/m, z30.h, z29.h");
+  TEST_SINGLE(smulh(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "smulh z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(smulh(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "smulh z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(umulh(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.b, p7/m, z30.b, z29.b");
+  TEST_SINGLE(umulh(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.h, p7/m, z30.h, z29.h");
+  TEST_SINGLE(umulh(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(umulh(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.d, p7/m, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer divide vectors (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sdiv(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "sdiv z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(sdiv(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "sdiv z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(udiv(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "udiv z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(udiv(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "udiv z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(sdivr(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "sdivr z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(sdivr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "sdivr z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(udivr(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "udivr z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(udivr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "udivr z30.d, p7/m, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical operations (predicated)") {
@@ -546,32 +589,34 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical operations
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add reduction (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(saddv(SubRegSize::i8Bit, DReg::d30, PReg::p7, ZReg::z29),  "saddv d30, p7, z29.b");
+  TEST_SINGLE(saddv(SubRegSize::i16Bit, DReg::d30, PReg::p7, ZReg::z29), "saddv d30, p7, z29.h");
+  TEST_SINGLE(saddv(SubRegSize::i32Bit, DReg::d30, PReg::p7, ZReg::z29), "saddv d30, p7, z29.s");
+
+  TEST_SINGLE(uaddv(SubRegSize::i8Bit, DReg::d30, PReg::p7, ZReg::z29),  "uaddv d30, p7, z29.b");
+  TEST_SINGLE(uaddv(SubRegSize::i16Bit, DReg::d30, PReg::p7, ZReg::z29), "uaddv d30, p7, z29.h");
+  TEST_SINGLE(uaddv(SubRegSize::i32Bit, DReg::d30, PReg::p7, ZReg::z29), "uaddv d30, p7, z29.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max reduction (predicated)") {
-  TEST_SINGLE(smaxv(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29),   "smaxv b30, p6, z29.b");
-  TEST_SINGLE(smaxv(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z29),  "smaxv h30, p6, z29.h");
-  TEST_SINGLE(smaxv(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z29),  "smaxv s30, p6, z29.s");
-  //TEST_SINGLE(smaxv(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z29),  "smaxv d30, p6, z29.d");
-  //TEST_SINGLE(smaxv(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z29), "smaxv q30, p6, z29.q");
+  TEST_SINGLE(smaxv(SubRegSize::i8Bit, VReg::v30, PReg::p6, ZReg::z29),   "smaxv b30, p6, z29.b");
+  TEST_SINGLE(smaxv(SubRegSize::i16Bit, VReg::v30, PReg::p6, ZReg::z29),  "smaxv h30, p6, z29.h");
+  TEST_SINGLE(smaxv(SubRegSize::i32Bit, VReg::v30, PReg::p6, ZReg::z29),  "smaxv s30, p6, z29.s");
+  TEST_SINGLE(smaxv(SubRegSize::i64Bit, VReg::v30, PReg::p6, ZReg::z29),  "smaxv d30, p6, z29.d");
 
-  TEST_SINGLE(umaxv(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29),   "umaxv b30, p6, z29.b");
-  TEST_SINGLE(umaxv(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z29),  "umaxv h30, p6, z29.h");
-  TEST_SINGLE(umaxv(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z29),  "umaxv s30, p6, z29.s");
-  //TEST_SINGLE(umaxv(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z29),  "umaxv d30, p6, z29.d");
-  //TEST_SINGLE(umaxv(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z29), "umaxv q30, p6, z29.q");
+  TEST_SINGLE(umaxv(SubRegSize::i8Bit, VReg::v30, PReg::p6, ZReg::z29),   "umaxv b30, p6, z29.b");
+  TEST_SINGLE(umaxv(SubRegSize::i16Bit, VReg::v30, PReg::p6, ZReg::z29),  "umaxv h30, p6, z29.h");
+  TEST_SINGLE(umaxv(SubRegSize::i32Bit, VReg::v30, PReg::p6, ZReg::z29),  "umaxv s30, p6, z29.s");
+  TEST_SINGLE(umaxv(SubRegSize::i64Bit, VReg::v30, PReg::p6, ZReg::z29),  "umaxv d30, p6, z29.d");
 
-  TEST_SINGLE(sminv(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29),   "sminv b30, p6, z29.b");
-  TEST_SINGLE(sminv(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z29),  "sminv h30, p6, z29.h");
-  TEST_SINGLE(sminv(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z29),  "sminv s30, p6, z29.s");
-  //TEST_SINGLE(sminv(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z29),  "sminv d30, p6, z29.d");
-  //TEST_SINGLE(sminv(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z29), "sminv q30, p6, z29.q");
+  TEST_SINGLE(sminv(SubRegSize::i8Bit, VReg::v30, PReg::p6, ZReg::z29),   "sminv b30, p6, z29.b");
+  TEST_SINGLE(sminv(SubRegSize::i16Bit, VReg::v30, PReg::p6, ZReg::z29),  "sminv h30, p6, z29.h");
+  TEST_SINGLE(sminv(SubRegSize::i32Bit, VReg::v30, PReg::p6, ZReg::z29),  "sminv s30, p6, z29.s");
+  TEST_SINGLE(sminv(SubRegSize::i64Bit, VReg::v30, PReg::p6, ZReg::z29),  "sminv d30, p6, z29.d");
 
-  TEST_SINGLE(uminv(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29),   "uminv b30, p6, z29.b");
-  TEST_SINGLE(uminv(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z29),  "uminv h30, p6, z29.h");
-  TEST_SINGLE(uminv(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z29),  "uminv s30, p6, z29.s");
-  //TEST_SINGLE(uminv(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z29),  "uminv d30, p6, z29.d");
-  //TEST_SINGLE(uminv(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z29), "uminv q30, p6, z29.q");
+  TEST_SINGLE(uminv(SubRegSize::i8Bit, VReg::v30, PReg::p6, ZReg::z29),   "uminv b30, p6, z29.b");
+  TEST_SINGLE(uminv(SubRegSize::i16Bit, VReg::v30, PReg::p6, ZReg::z29),  "uminv h30, p6, z29.h");
+  TEST_SINGLE(uminv(SubRegSize::i32Bit, VReg::v30, PReg::p6, ZReg::z29),  "uminv s30, p6, z29.s");
+  TEST_SINGLE(uminv(SubRegSize::i64Bit, VReg::v30, PReg::p6, ZReg::z29),  "uminv d30, p6, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE constructive prefix (predicated)") {
   TEST_SINGLE(movprfx(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29),   "movprfx z30.b, p6/m, z29.b");
@@ -586,7 +631,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE constructive prefix (predi
   //TEST_SINGLE(movprfx(SubRegSize::i128Bit, ZReg::z30, PReg::p6.Zeroing(), ZReg::z29), "movprfx z30.q, p6/z, z29.q");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical reduction (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(orv(SubRegSize::i8Bit, VReg::v30, PReg::p7, ZReg::z29),  "orv b30, p7, z29.b");
+  TEST_SINGLE(orv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z29), "orv h30, p7, z29.h");
+  TEST_SINGLE(orv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z29), "orv s30, p7, z29.s");
+  TEST_SINGLE(orv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z29), "orv d30, p7, z29.d");
+
+  TEST_SINGLE(eorv(SubRegSize::i8Bit, VReg::v30, PReg::p7, ZReg::z29),  "eorv b30, p7, z29.b");
+  TEST_SINGLE(eorv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z29), "eorv h30, p7, z29.h");
+  TEST_SINGLE(eorv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z29), "eorv s30, p7, z29.s");
+  TEST_SINGLE(eorv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z29), "eorv d30, p7, z29.d");
+
+  TEST_SINGLE(andv(SubRegSize::i8Bit, VReg::v30, PReg::p7, ZReg::z29),  "andv b30, p7, z29.b");
+  TEST_SINGLE(andv(SubRegSize::i16Bit, VReg::v30, PReg::p7, ZReg::z29), "andv h30, p7, z29.h");
+  TEST_SINGLE(andv(SubRegSize::i32Bit, VReg::v30, PReg::p7, ZReg::z29), "andv s30, p7, z29.s");
+  TEST_SINGLE(andv(SubRegSize::i64Bit, VReg::v30, PReg::p7, ZReg::z29), "andv d30, p7, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by immediate (predicated)") {
   TEST_SINGLE(asr(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, 1), "asr z30.b, p6/m, z30.b, #1");

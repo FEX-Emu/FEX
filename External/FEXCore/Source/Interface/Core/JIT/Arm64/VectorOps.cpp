@@ -423,7 +423,7 @@ DEF_OP(VUMinV) {
     const auto Pred = OpSize == 16 ? PRED_TMP_16B
                                    : PRED_TMP_32B;
 
-    uminv(SubRegSize, Dst.Z(), Pred, Vector.Z());
+    uminv(SubRegSize, Dst, Pred, Vector.Z());
   } else {
     // Vector
     uminv(SubRegSize, Dst.Q(), Vector.Q());

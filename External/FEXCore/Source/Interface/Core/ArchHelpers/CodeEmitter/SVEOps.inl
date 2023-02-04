@@ -661,9 +661,45 @@ public:
   }
 
   // SVE integer multiply vectors (predicated)
-  // XXX:
+  void mul(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+  }
+  void smulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
+  }
+  void umulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b11, size, zd, pg, zn, zm);
+  }
+
   // SVE integer divide vectors (predicated)
-  // XXX:
+  void sdiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Predicated divide only handles 32-bit or 64-bit elements");
+    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+  }
+  void udiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Predicated divide only handles 32-bit or 64-bit elements");
+    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b01, size, zd, pg, zn, zm);
+  }
+  void sdivr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Predicated divide only handles 32-bit or 64-bit elements");
+    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
+  }
+  void udivr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Predicated divide only handles 32-bit or 64-bit elements");
+    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b11, size, zd, pg, zn, zm);
+  }
+
   // SVE bitwise logical operations (predicated)
   void orr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -692,27 +728,35 @@ public:
 
   // SVE Integer Reduction
   // SVE integer add reduction (predicated)
-  // XXX:
+  void saddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                       "saddv may only use 8-bit, 16-bit, or 32-bit elements.");
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
+    SVEIntegerReductionOperation(Op, 0b00, size, vd, pg, zn);
+  }
+  void uaddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                       "uaddv may only use 8-bit, 16-bit, or 32-bit elements.");
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
+    SVEIntegerReductionOperation(Op, 0b01, size, vd, pg, zn);
+  }
+
   // SVE integer min/max reduction (predicated)
-  void smaxv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void smaxv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 0, 0, size, pg, zn, zd);
+    SVEIntegerReductionOperation(Op, 0b00, size, vd, pg, zn);
   }
-  void umaxv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void umaxv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 0, 1, size, pg, zn, zd);
+    SVEIntegerReductionOperation(Op, 0b01, size, vd, pg, zn);
   }
-  void sminv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void sminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 1, 0, size, pg, zn, zd);
+    SVEIntegerReductionOperation(Op, 0b10, size, vd, pg, zn);
   }
-  void uminv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid subregsize size");
+  void uminv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
     constexpr uint32_t Op = 0b0000'0100'0000'1000'001 << 13;
-    SVEIntegerMinMaxReduction(Op, 1, 1, size, pg, zn, zd);
+    SVEIntegerReductionOperation(Op, 0b11, size, vd, pg, zn);
   }
 
   // SVE constructive prefix (predicated)
@@ -726,7 +770,18 @@ public:
   }
 
   // SVE bitwise logical reduction (predicated)
-  // XXX
+  void orv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0000'0100'0001'1000'0010'0000'0000'0000;
+    SVEIntegerReductionOperation(Op, 0b00, size, vd, pg, zn);
+  }
+  void eorv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0000'0100'0001'1000'0010'0000'0000'0000;
+    SVEIntegerReductionOperation(Op, 0b01, size, vd, pg, zn);
+  }
+  void andv(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    constexpr uint32_t Op = 0b0000'0100'0001'1000'0010'0000'0000'0000;
+    SVEIntegerReductionOperation(Op, 0b10, size, vd, pg, zn);
+  }
 
   // SVE Bitwise Shift - Predicated
   // SVE bitwise shift by immediate (predicated)
@@ -3809,19 +3864,6 @@ private:
     dc32(Instr);
   }
 
-  // SVE integer min/max reduction (predicated)
-  void SVEIntegerMinMaxReduction(uint32_t Op, uint32_t op, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= op << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= Encode_rn(zn);
-    Instr |= Encode_rd(zd);
-    dc32(Instr);
-  }
-
   // SVE constructive prefix (predicated)
   void SVEConstructivePrefixPredicated(uint32_t Op, uint32_t opc, uint32_t M, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
     uint32_t Instr = Op;
@@ -3984,6 +4026,32 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerMulDivVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Mul/Div operation can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerReductionOperation(uint32_t op, uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size for reduction operation");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Integer reduction operation can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = op;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= vd.Idx();
     dc32(Instr);
   }
 
