@@ -529,6 +529,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply vectors (
               "smulh z30.s, p7/m, z30.s, z29.s");
   TEST_SINGLE(smulh(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
               "smulh z30.d, p7/m, z30.d, z29.d");
+
+  TEST_SINGLE(umulh(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.b, p7/m, z30.b, z29.b");
+  TEST_SINGLE(umulh(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.h, p7/m, z30.h, z29.h");
+  TEST_SINGLE(umulh(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.s, p7/m, z30.s, z29.s");
+  TEST_SINGLE(umulh(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z29),
+              "umulh z30.d, p7/m, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer divide vectors (predicated)") {
