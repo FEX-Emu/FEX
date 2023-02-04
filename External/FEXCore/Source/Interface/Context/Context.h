@@ -330,6 +330,13 @@ namespace FEXCore::Context {
 
     void SetVDSOSigReturn(const VDSOSigReturn &Pointers) {
       VDSOPointers = Pointers;
+      if (VDSOPointers.VDSO_kernel_sigreturn == nullptr) {
+        VDSOPointers.VDSO_kernel_sigreturn = reinterpret_cast<void*>(X86CodeGen.sigreturn_32);
+      }
+
+      if (VDSOPointers.VDSO_kernel_rt_sigreturn == nullptr) {
+        VDSOPointers.VDSO_kernel_rt_sigreturn = reinterpret_cast<void*>(X86CodeGen.rt_sigreturn_32);
+      }
     }
 
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
