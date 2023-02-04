@@ -663,19 +663,25 @@ public:
   // SVE integer multiply vectors (predicated)
   void mul(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
-    SVEIntegerMulVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
   }
   void smulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
-    SVEIntegerMulVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
   }
   void umulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
-    SVEIntegerMulVectorsPredicated(Op, 0b11, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(Op, 0b11, size, zd, pg, zn, zm);
   }
 
   // SVE integer divide vectors (predicated)
-  // XXX:
+  void sdiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Predicated divide only handles 32-bit or 64-bit elements");
+    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
+    SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+  }
+
   // SVE bitwise logical operations (predicated)
   void orr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -3999,9 +4005,9 @@ private:
     dc32(Instr);
   }
 
-  void SVEIntegerMulVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+  void SVEIntegerMulDivVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Add/Sub operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Mul/Div operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
