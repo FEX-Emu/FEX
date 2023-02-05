@@ -876,7 +876,7 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
     case 0x7: { // JA - Jump if CF == 0 && ZF == 0
       auto Flag1 = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
       auto Flag2 = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-      auto Check = _Or(Flag1, _Lshl(Flag2, _Constant(1)));
+      auto Check = _Or(Flag1, Flag2);
       SrcCond = _Select(FEXCore::IR::COND_EQ,
           Check, ZeroConst, TrueValue, FalseValue);
       break;
