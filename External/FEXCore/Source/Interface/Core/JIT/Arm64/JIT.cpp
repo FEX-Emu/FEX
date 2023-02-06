@@ -679,6 +679,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
+  // Put the code header at the start of the data block.
+  ARMEmitter::BackwardLabel JITCodeHeaderLabel{};
+  Bind(&JITCodeHeaderLabel);
+  JITCodeHeader *CodeHeader = GetCursorAddress<JITCodeHeader *>();
+  CursorIncrement(sizeof(JITCodeHeader));
+
 #ifdef VIXL_DISASSEMBLER
   const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
 #endif
@@ -708,6 +714,11 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   // X4-r18 = RA
 
   CodeData.BlockEntry = GetCursorAddress<uint8_t*>();
+
+  // Get the address of the JITCodeHeader and store in to the core state.
+  // Two instruction cost, each 1 cycle.
+  adr(TMP1, &JITCodeHeaderLabel);
+  str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
 
   if (GDBEnabled) {
     auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(CodeData.BlockEntry, Entry);
@@ -1022,6 +1033,19 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
     b(PendingTargetLabel);
   }
   PendingTargetLabel = nullptr;
+
+  // Add the JitCodeTail
+  auto JITBlockTailLocation = GetCursorAddress<uint8_t *>();
+  auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
+  CursorIncrement(sizeof(JITCodeTail));
+
+  // Put the block's RIP entry in the tail.
+  // This will be used for RIP reconstruction in the future.
+  // TODO: This needs to be a data RIP relocation once code caching works.
+  //   Current relocation code doesn't support this feature yet.
+  JITBlockTail->RIP = Entry;
+
+  CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
   CodeData.Size = GetCursorAddress<uint8_t *>() - CodeData.BlockBegin;
   ClearICache(CodeData.BlockBegin, CodeData.Size);

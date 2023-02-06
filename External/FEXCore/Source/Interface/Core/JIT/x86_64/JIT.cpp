@@ -603,7 +603,21 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
     CTX->ClearCodeCache(ThreadState);
   }
 
-  CodeData.BlockBegin = CodeData.BlockEntry = getCurr<uint8_t*>();
+  CodeData.BlockBegin = getCurr<uint8_t*>();
+
+  // Put the code header at the start of the data block.
+  Label JITCodeHeaderLabel{};
+  L(JITCodeHeaderLabel);
+
+  JITCodeHeader *CodeHeader = getCurr<JITCodeHeader *>();
+  setSize(getSize() + sizeof(JITCodeHeader));
+
+  CodeData.BlockEntry = getCurr<uint8_t*>();
+
+  // Get the address of the JITCodeHeader and store in to the core state.
+  // Only two instructions, so very low overhead.
+  lea(TMP1, ptr [rip + JITCodeHeaderLabel]);
+  mov(qword [STATE + offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader)], TMP1);
 
   CursorEntry = getSize();
   this->IR = IR;
@@ -744,6 +758,19 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
     jmp(*PendingTargetLabel, T_NEAR);
   }
   PendingTargetLabel = nullptr;
+
+  // Add the JitCodeTail
+  auto JITBlockTailLocation = getCurr<uint8_t *>();
+  auto JITBlockTail = getCurr<JITCodeTail*>();
+  setSize(getSize() + sizeof(JITCodeTail));
+
+  // Put the block's RIP entry in the tail.
+  // This will be used for RIP reconstruction in the future.
+  // TODO: This needs to be a data RIP relocation once code caching works.
+  //   Current relocation code doesn't support this feature yet.
+  JITBlockTail->RIP = Entry;
+
+  CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
   CodeData.Size = CodeData.BlockBegin - getCurr<uint8_t*>();
 

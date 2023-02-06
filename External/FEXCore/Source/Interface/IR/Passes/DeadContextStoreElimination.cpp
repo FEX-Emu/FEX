@@ -219,8 +219,8 @@ namespace {
 
     ContextClassification->emplace_back(ContextMemberInfo{
       ContextMemberClassification {
-        offsetof(FEXCore::Core::CPUState, _pad2),
-        sizeof(FEXCore::Core::CPUState::_pad2),
+        offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader),
+        sizeof(FEXCore::Core::CPUState::InlineJITBlockHeader),
       },
       ACCESS_INVALID,
       FEXCore::IR::InvalidClass,
