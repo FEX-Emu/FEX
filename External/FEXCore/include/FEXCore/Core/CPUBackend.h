@@ -36,7 +36,7 @@ namespace CPU {
   struct CPUBackendFeatures {
     bool SupportsStaticRegisterAllocation = false;
   };
-  
+
   class CPUBackend {
   public:
     struct CodeBuffer {
@@ -55,6 +55,23 @@ namespace CPU {
      * @return The name of this backend
      */
     [[nodiscard]] virtual std::string GetName() = 0;
+
+    struct CompiledCode {
+      // Where this code block begins.
+      uint8_t* BlockBegin;
+      /**
+       * The function entrypoint to this codeblock.
+       *
+       * This may or may not equal `BlockBegin` above. Depending on the CPU backend, it may stick data
+       * prior to the BlockEntry.
+       *
+       * Is actually a function pointer of type `void (FEXCore::Core::ThreadState *Thread)`
+       */
+      uint8_t* BlockEntry;
+      // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
+      size_t Size;
+    };
+
     /**
      * @brief Tells this CPUBackend to compile code for the provided IR and DebugData
      *
@@ -69,10 +86,9 @@ namespace CPU {
      * @param IR -  IR that maps to the IR for this RIP
      * @param DebugData - Debug data that is available for this IR indirectly
      *
-     * @return An executable function pointer that is theoretically compiled from this point.
-     * Is actually a function pointer of type `void (FEXCore::Core::ThreadState *Thread)
+     * @return Information about the compiled code block.
      */
-    [[nodiscard]] virtual void *CompileCode(uint64_t Entry,
+    [[nodiscard]] virtual CompiledCode CompileCode(uint64_t Entry,
                                             FEXCore::IR::IRListView const *IR,
                                             FEXCore::Core::DebugData *DebugData,
                                             FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) = 0;

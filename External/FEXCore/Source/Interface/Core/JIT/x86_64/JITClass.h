@@ -57,7 +57,7 @@ public:
 
   [[nodiscard]] std::string GetName() override { return "JIT"; }
 
-  [[nodiscard]] void *CompileCode(uint64_t Entry,
+  [[nodiscard]] CPUBackend::CompiledCode CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,
                                   FEXCore::Core::DebugData *DebugData,
                                   FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
@@ -138,6 +138,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
+  CPUBackend::CompiledCode CodeData{};
 
   std::unordered_map<IR::NodeID, Label> JumpTargets;
   Xbyak::util::Cpu Features{};
@@ -205,10 +206,6 @@ private:
   void EmitDetectionString();
 
   uint32_t SpillSlots{};
-  /**
-  * @brief Current guest RIP entrypoint
-  */
-  uint8_t *GuestEntry{};
 
   using SetCC = void (X86JITCore::*)(const Operand& op);
   using CMovCC = void (X86JITCore::*)(const Reg& reg, const Operand& op);

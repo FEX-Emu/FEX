@@ -15,7 +15,7 @@ namespace FEXCore::CPU {
 DEF_OP(GuestOpcode) {
   auto Op = IROp->C<IR::IROp_GuestOpcode>();
   // metadata
-  DebugData->GuestOpcodes.push_back({Op->GuestEntryOffset, GetCursorAddress<uint8_t*>() - GuestEntry});
+  DebugData->GuestOpcodes.push_back({Op->GuestEntryOffset, GetCursorAddress<uint8_t*>() - CodeData.BlockBegin});
 }
 
 DEF_OP(Fence) {

@@ -656,7 +656,7 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
-void *Arm64JITCore::CompileCode(uint64_t Entry,
+CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
                                 FEXCore::IR::IRListView const *IR,
                                 FEXCore::Core::DebugData *DebugData,
                                 FEXCore::IR::RegisterAllocationData *RAData,
@@ -669,6 +669,15 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   this->Entry = Entry;
   this->RAData = RAData;
   this->DebugData = DebugData;
+  this->IR = IR;
+
+  // Fairly excessive buffer range to make sure we don't overflow
+  uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
+  if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
+    CTX->ClearCodeCache(ThreadState);
+  }
+
+  CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
 #ifdef VIXL_DISASSEMBLER
   const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
@@ -677,14 +686,6 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 #ifndef NDEBUG
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, Entry);
 #endif
-
-  this->IR = IR;
-
-  // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = SSACount * 16 + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
-  if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
-    CTX->ClearCodeCache(ThreadState);
-  }
 
   // AAPCS64
   // r30      = LR
@@ -706,10 +707,10 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   // X1-X3 = Temp
   // X4-r18 = RA
 
-  GuestEntry = GetCursorAddress<uint8_t *>();
+  CodeData.BlockEntry = GetCursorAddress<uint8_t*>();
 
   if (GDBEnabled) {
-    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);
+    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(CodeData.BlockEntry, Entry);
     CursorIncrement(GDBSize);
   }
 
@@ -1009,7 +1010,7 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 
     if (DebugData) {
       DebugData->Subblocks.push_back({
-        static_cast<uint32_t>(BlockStartHostCode - GuestEntry),
+        static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockEntry),
         static_cast<uint32_t>(GetCursorAddress<uint8_t *>() - BlockStartHostCode)
       });
     }
@@ -1022,8 +1023,8 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
   }
   PendingTargetLabel = nullptr;
 
-  auto CodeEnd = GetCursorAddress<uint8_t *>();
-  ClearICache(GuestEntry, CodeEnd - GuestEntry);
+  CodeData.Size = GetCursorAddress<uint8_t *>() - CodeData.BlockBegin;
+  ClearICache(CodeData.BlockBegin, CodeData.Size);
 
 #ifdef VIXL_DISASSEMBLER
   const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
@@ -1031,13 +1032,13 @@ void *Arm64JITCore::CompileCode(uint64_t Entry,
 #endif
 
   if (DebugData) {
-    DebugData->HostCodeSize = CodeEnd - GuestEntry;
+    DebugData->HostCodeSize = CodeData.Size;
     DebugData->Relocations = &Relocations;
   }
 
   this->IR = nullptr;
 
-  return GuestEntry;
+  return CodeData;
 }
 
 void Arm64JITCore::ResetStack() {

@@ -37,7 +37,7 @@ public:
 
   [[nodiscard]] std::string GetName() override { return "JIT"; }
 
-  [[nodiscard]] void *CompileCode(uint64_t Entry,
+  [[nodiscard]] CPUBackend::CompiledCode CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,
                                   FEXCore::Core::DebugData *DebugData,
                                   FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) override;
@@ -60,6 +60,7 @@ private:
   FEXCore::Context::Context *CTX;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
+  CPUBackend::CompiledCode CodeData{};
 
   std::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
@@ -230,11 +231,6 @@ private:
   /**  @} */
 
   uint32_t SpillSlots{};
-  /**
-  * @brief Current guest RIP entrypoint
-  */
-  uint8_t *GuestEntry{};
-
 #define DEF_OP(x) void Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
   ///< Unhandled handler
