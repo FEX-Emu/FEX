@@ -37,7 +37,7 @@ namespace FEXCore::Core {
     uint32_t es_cached, cs_cached, ss_cached, ds_cached;
     uint64_t gs_cached;
     uint64_t fs_cached;
-    uint64_t _pad2[1];
+    uint64_t InlineJITBlockHeader;
     XMMRegs xmm;
     uint8_t flags[48];
     uint64_t mm[8][2];

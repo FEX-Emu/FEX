@@ -72,6 +72,23 @@ namespace CPU {
       size_t Size;
     };
 
+    // Header that can live at the start of a JIT block.
+    // We want the header to be quite small, with most data living in the tail object.
+    struct JITCodeHeader {
+      // Offset from the start of this header to where the tail lives.
+      // Only 32-bit since the tail block won't ever be more than 4GB away.
+      uint32_t OffsetToBlockTail;
+    };
+
+    // Header that can live at the end of the JIT block.
+    // For any state reconstruction or other data, this is where it should live.
+    // Any data that is explicitly tied to the JIT code and needs to be cached with it
+    // should end up in this data structure.
+    struct JITCodeTail {
+      // RIP that the block's entry comes from.
+      uint64_t RIP;
+    };
+
     /**
      * @brief Tells this CPUBackend to compile code for the provided IR and DebugData
      *
