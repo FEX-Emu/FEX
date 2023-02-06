@@ -240,6 +240,17 @@
           "Also needs x86_64-linux-gnu-objdump in PATH.",
           "Can be very slow."
         ]
+      },
+      "InjectLibSegFault": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Sets the environment variable LD_PRELOAD=libSegFault.so",
+          "This allows the user to very easily enable libSegFault without dealing with environment variables",
+          "Very useful for applications that have launch scripts that set the variable to nothing at launch",
+          "Set this in an application configuration for injecting in to only specific applications.",
+          "\tNote: If x86/x86_64 libSegFault.so isn't installed then this option won't work."
+        ]
       }
     },
     "Logging": {
