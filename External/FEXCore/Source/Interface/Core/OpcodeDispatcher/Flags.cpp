@@ -271,10 +271,8 @@ void OpDispatchBuilder::CalculcateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, O
 
   // SF
   {
-    auto SignBitConst = _Constant(Size - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
   // PF
@@ -342,10 +340,8 @@ void OpDispatchBuilder::CalculcateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, O
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
   // PF
@@ -412,10 +408,8 @@ void OpDispatchBuilder::CalculcateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, O
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
   // PF
@@ -469,10 +463,8 @@ void OpDispatchBuilder::CalculcateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, O
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
   // PF
@@ -583,10 +575,8 @@ void OpDispatchBuilder::CalculcateFlags_Logical(uint8_t SrcSize, OrderedNode *Re
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
   // PF
@@ -750,10 +740,8 @@ void OpDispatchBuilder::CalculcateFlags_SignShiftRight(uint8_t SrcSize, OrderedN
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    COND_FLAG_SET(Src2, RFLAG_SF_LOC, LshrOp);
+    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    COND_FLAG_SET(Src2, RFLAG_SF_LOC, SignBitOp);
   }
 
   // OF
@@ -802,15 +790,14 @@ void OpDispatchBuilder::CalculcateFlags_ShiftLeftImmediate(uint8_t SrcSize, Orde
 
   // SF
   {
-    auto LshrOp = _Bfe(1, SrcSize * 8 - 1, Res);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
 
     // OF
     // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
     if (Shift == 1) {
       auto SourceBit = _Bfe(1, SrcSize * 8 - 1, Src1);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, LshrOp));
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, SignOp));
     }
   }
 }
@@ -851,10 +838,8 @@ void OpDispatchBuilder::CalculcateFlags_SignShiftRightImmediate(uint8_t SrcSize,
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignBitOp);
 
     // OF
     // Only defined when Shift is 1 else undefined
@@ -902,10 +887,8 @@ void OpDispatchBuilder::CalculcateFlags_ShiftRightImmediate(uint8_t SrcSize, Ord
 
   // SF
   {
-    auto SignBitConst = _Constant(SrcSize * 8 - 1);
-
-    auto LshrOp = _Lshr(Res, SignBitConst);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(LshrOp);
+    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignBitOp);
   }
 
   // OF
@@ -1115,10 +1098,8 @@ void OpDispatchBuilder::CalculcateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src) 
 
   // SF
   {
-    auto SignBit = _Constant(SrcSize * 8 - 1);
-    auto SFOp = _Lshr(Src, SignBit);
-
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Src);
+    SetRFLAG<X86State::RFLAG_SF_LOC>(SignOp);
   }
 }
 
@@ -1174,10 +1155,8 @@ void OpDispatchBuilder::CalculcateFlags_BLSR(uint8_t SrcSize, OrderedNode *Resul
 
   // SF
   {
-    auto SignBit = _Constant(SrcSize * 8 - 1);
-    auto SFOp = _Lshr(Result, SignBit);
-
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Result);
+    SetRFLAG<X86State::RFLAG_SF_LOC>(SignOp);
   }
 }
 
@@ -1230,9 +1209,8 @@ void OpDispatchBuilder::CalculcateFlags_BZHI(uint8_t SrcSize, OrderedNode *Resul
 
   // SF
   {
-    auto SFOp = _Lshr(Result, Bounds);
-
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SFOp);
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Result);
+    SetRFLAG<X86State::RFLAG_SF_LOC>(SignOp);
   }
 }
 
