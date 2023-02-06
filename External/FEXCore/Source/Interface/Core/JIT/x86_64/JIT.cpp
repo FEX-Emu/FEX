@@ -587,7 +587,7 @@ std::tuple<X86JITCore::SetCC, X86JITCore::CMovCC, X86JITCore::JCC> X86JITCore::G
   return { &CodeGenerator::sete , &CodeGenerator::cmove , &CodeGenerator::je  };
 }
 
-void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
+CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
 
   FEXCORE_PROFILE_SCOPED("x86::CompileCode");
   JumpTargets.clear();
@@ -603,12 +603,13 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
     CTX->ClearCodeCache(ThreadState);
   }
 
-	GuestEntry = getCurr<uint8_t*>();
+  CodeData.BlockBegin = CodeData.BlockEntry = getCurr<uint8_t*>();
+
   CursorEntry = getSize();
   this->IR = IR;
 
   if (GDBEnabled) {
-    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(GuestEntry, Entry);
+    auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(CodeData.BlockBegin, Entry);
     setSize(getSize() + GDBSize);
   }
 
@@ -731,7 +732,7 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
 
     if (DebugData) {
       DebugData->Subblocks.push_back({
-        static_cast<uint32_t>(BlockStartHostCode - GuestEntry),
+        static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockBegin),
         static_cast<uint32_t>(getCurr<uint8_t *>() - BlockStartHostCode)
       });
     }
@@ -744,17 +745,18 @@ void *X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRLi
   }
   PendingTargetLabel = nullptr;
 
-  void *GuestExit = getCurr<void*>();
+  CodeData.Size = CodeData.BlockBegin - getCurr<uint8_t*>();
+
   this->IR = nullptr;
 
   ready();
 
   if (DebugData) {
-    DebugData->HostCodeSize = reinterpret_cast<uintptr_t>(GuestExit) - reinterpret_cast<uintptr_t>(GuestEntry);
+    DebugData->HostCodeSize = CodeData.Size;
     DebugData->Relocations = &Relocations;
   }
 
-  return GuestEntry;
+  return CodeData;
 }
 
 std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {

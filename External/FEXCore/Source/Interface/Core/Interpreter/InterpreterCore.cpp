@@ -58,7 +58,7 @@ void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
 #endif
 }
 
-void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
+CPUBackend::CompiledCode InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
 
   const auto IRSize = AlignUp(IR->GetInlineSize(), 16);
   const auto MaxSize = IRSize + Dispatcher::MaxInterpreterTrampolineSize + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
@@ -67,9 +67,12 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
     ThreadState->CTX->ClearCodeCache(ThreadState);
   }
 
-  const auto BufferStart = CurrentCodeBuffer->Ptr + BufferUsed;
+  CPUBackend::CompiledCode CodeData{};
 
-  auto DestBuffer = BufferStart;
+  const auto BufferStartOffset = BufferUsed;
+  CodeData.BlockBegin = CodeData.BlockEntry = CurrentCodeBuffer->Ptr + BufferStartOffset;
+
+  auto DestBuffer = CodeData.BlockBegin;
 
   if (GDBEnabled) {
     const auto GDBSize = Dispatch->GenerateGDBPauseCheck(DestBuffer, Entry);
@@ -86,7 +89,9 @@ void *InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR:
   DestBuffer += IRSize;
   BufferUsed += IRSize;
 
-  return BufferStart;
+  CodeData.Size = BufferUsed - BufferStartOffset;
+
+  return CodeData;
 }
 
 void InterpreterCore::ClearCache() {
