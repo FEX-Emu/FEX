@@ -1934,6 +1934,9 @@ public:
   void uqadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     SVE2IntegerSaturatingAddSub(size, 0b001, zd, pg, zn, zm);
   }
+  void sqsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2IntegerSaturatingAddSub(size, 0b010, zd, pg, zn, zm);
+  }
 
   // SVE2 Widening Integer Arithmetic
   // SVE2 integer add/subtract long
