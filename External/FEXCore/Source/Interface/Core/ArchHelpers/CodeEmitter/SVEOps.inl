@@ -68,7 +68,7 @@ public:
 
   void histcnt(SubRegSize size, ZRegister zd, PRegisterZero pv, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 32-bit or 64-bit");
-    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "histcnt can only use p0 to p7");
+    LOGMAN_THROW_A_FMT(pv <= PReg::p7, "histcnt can only use p0 to p7");
 
     uint32_t Op = 0b0100'0101'0010'0000'1100'0000'0000'0000;
     Op |= FEXCore::ToUnderlying(size) << 22;
@@ -95,10 +95,10 @@ public:
 
     if (IsHalfPrecision) {
       LOGMAN_THROW_AA_FMT(index <= 3, "Index for half-precision fcmla must be within 0-3. Index={}", index);
-      LOGMAN_THROW_AA_FMT(zm.Idx() <= 7, "zm must be within z0-z7. zm=z{}", zm.Idx());
+      LOGMAN_THROW_A_FMT(zm.Idx() <= 7, "zm must be within z0-z7. zm=z{}", zm.Idx());
     } else {
       LOGMAN_THROW_AA_FMT(index <= 1, "Index for single-precision fcmla must be within 0-1. Index={}", index);
-      LOGMAN_THROW_AA_FMT(zm.Idx() <= 15, "zm must be within z0-z15. zm=z{}", zm.Idx());
+      LOGMAN_THROW_A_FMT(zm.Idx() <= 15, "zm must be within z0-z15. zm=z{}", zm.Idx());
     }
 
     uint32_t Op = 0b0110'0100'1010'0000'0001'0000'0000'0000;
@@ -115,7 +115,7 @@ public:
   void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
-    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "fcmla can only use p0 to p7");
+    LOGMAN_THROW_A_FMT(pv <= PReg::p7, "fcmla can only use p0 to p7");
 
     uint32_t Op = 0b0110'0100'0000'0000'0000'0000'0000'0000;
     Op |= FEXCore::ToUnderlying(size) << 22;
@@ -131,10 +131,10 @@ public:
   void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
-    LOGMAN_THROW_AA_FMT(pv <= PReg::p7, "fcadd can only use p0 to p7");
+    LOGMAN_THROW_A_FMT(pv <= PReg::p7, "fcadd can only use p0 to p7");
     LOGMAN_THROW_AA_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
                         "fcadd rotation may only be 90 or 270 degrees");
-    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "fcadd zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "fcadd zd and zn must be the same register");
 
     const uint32_t ConvertedRotation = rot == Rotation::ROTATE_90 ? 0 : 1;
 
@@ -4020,7 +4020,7 @@ private:
   void SVECharacterMatch(uint32_t op, uint32_t opc, SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit,
                         "match/nmatch can only use 8-bit or 16-bit element sizes");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "match/nmatch can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "match/nmatch can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4035,7 +4035,7 @@ private:
   void SVEFPRecursiveReduction(uint32_t op, uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "FP reduction operation can only use 16-bit, 32-bit, or 64-bit element sizes");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "FP reduction operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "FP reduction operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4047,8 +4047,8 @@ private:
   }
 
   void SVEAddSubVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Add/Sub operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Add/Sub operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4060,8 +4060,8 @@ private:
   }
 
   void SVEIntegerMulDivVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Mul/Div operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Mul/Div operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4074,7 +4074,7 @@ private:
 
   void SVEIntegerReductionOperation(uint32_t op, uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size for reduction operation");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Integer reduction operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Integer reduction operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4087,7 +4087,7 @@ private:
 
   void SVEIntegerMultiplyAddSubPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
-    LOGMAN_THROW_AA_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
     Instr |= FEXCore::ToUnderlying(size) << 22;
