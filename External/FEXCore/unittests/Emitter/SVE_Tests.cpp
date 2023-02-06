@@ -1616,6 +1616,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating add/subtract")
   TEST_SINGLE(sqsubr(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sqsubr z30.h, p7/m, z30.h, z28.h");
   TEST_SINGLE(sqsubr(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sqsubr z30.s, p7/m, z30.s, z28.s");
   TEST_SINGLE(sqsubr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sqsubr z30.d, p7/m, z30.d, z28.d");
+
+  TEST_SINGLE(uqsubr(SubRegSize::i8Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28),  "uqsubr z30.b, p7/m, z30.b, z28.b");
+  TEST_SINGLE(uqsubr(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "uqsubr z30.h, p7/m, z30.h, z28.h");
+  TEST_SINGLE(uqsubr(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "uqsubr z30.s, p7/m, z30.s, z28.s");
+  TEST_SINGLE(uqsubr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "uqsubr z30.d, p7/m, z30.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract long") {
   //TEST_SINGLE(saddlb(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddlb z30.b, z29.b, z28.b");

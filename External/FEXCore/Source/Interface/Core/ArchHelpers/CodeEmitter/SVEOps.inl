@@ -1949,6 +1949,9 @@ public:
   void sqsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     SVE2IntegerSaturatingAddSub(size, 0b110, zd, pg, zn, zm);
   }
+  void uqsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2IntegerSaturatingAddSub(size, 0b111, zd, pg, zn, zm);
+  }
 
   // SVE2 Widening Integer Arithmetic
   // SVE2 integer add/subtract long
