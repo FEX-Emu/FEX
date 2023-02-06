@@ -1928,8 +1928,10 @@ public:
   }
 
   // SVE2 saturating add/subtract
-  // XXX:
-  //
+  void sqadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2IntegerSaturatingAddSub(size, 0b000, zd, pg, zn, zm);
+  }
+
   // SVE2 Widening Integer Arithmetic
   // SVE2 integer add/subtract long
   void saddlb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
@@ -4108,6 +4110,20 @@ private:
     Instr |= rn.Idx() << 16;
     Instr |= (static_cast<uint32_t>(imm) & 0b111111) << 5;
     Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerSaturatingAddSub(SubRegSize size, uint32_t opc, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Saturing add/subtract can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0100'0100'0001'1000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
