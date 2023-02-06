@@ -453,7 +453,7 @@ enum Syscalls_x64 {
   SYSCALL_x64_statfs64 = ~0,
   SYSCALL_x64_fstatfs64 = ~0,
   SYSCALL_x64_fadvise64_64 = ~0,
-  SYSCALL_x64_fstatat64 = ~0,
+  SYSCALL_x64_fstatat_64 = ~0,
   SYSCALL_x64_clock_gettime64 = ~0,
   SYSCALL_x64_clock_settime64 = ~0,
   SYSCALL_x64_clock_adjtime64 = ~0,

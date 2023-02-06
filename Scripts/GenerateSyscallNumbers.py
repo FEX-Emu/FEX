@@ -66,6 +66,9 @@ DefinitionRenameDict = {
     "shmctl": "_shmctl",
     "shmat": "_shmat",
     "shmdt": "_shmdt",
+    # musl/Alpine Linux defines `fstatat64` as a define that points to `fstatat`.
+    # Rename it to avoid global define conflicts.
+    "fstatat64": "fstatat_64",
 }
 
 Definitions_x64 = []

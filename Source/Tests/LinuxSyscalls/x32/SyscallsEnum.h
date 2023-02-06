@@ -321,7 +321,7 @@ enum Syscalls_x86 {
   SYSCALL_x86_mknodat = 297,
   SYSCALL_x86_fchownat = 298,
   SYSCALL_x86_futimesat = 299,
-  SYSCALL_x86_fstatat64 = 300,
+  SYSCALL_x86_fstatat_64 = 300,
   SYSCALL_x86_unlinkat = 301,
   SYSCALL_x86_renameat = 302,
   SYSCALL_x86_linkat = 303,

@@ -454,7 +454,7 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_vserver = ~0,
   SYSCALL_Arm64_inotify_init = ~0,
   SYSCALL_Arm64_futimesat = ~0,
-  SYSCALL_Arm64_fstatat64 = ~0,
+  SYSCALL_Arm64_fstatat_64 = ~0,
   SYSCALL_Arm64_signalfd = ~0,
   SYSCALL_Arm64_eventfd = ~0,
   SYSCALL_Arm64_arch_prctl = ~0,
