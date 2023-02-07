@@ -2084,143 +2084,46 @@ public:
   //
   // SVE2 Narrowing
   // SVE2 saturating extract narrow
-  void sqxtnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
+  void sqxtnb(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b00, 0, zn, zd);
+  }
+  void sqxtnt(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b00, 1, zn, zd);
+  }
+  void uqxtnb(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b01, 0, zn, zd);
+  }
+  void uqxtnt(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b01, 1, zn, zd);
+  }
+  void sqxtunb(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b10, 0, zn, zd);
+  }
+  void sqxtunt(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b10, 1, zn, zd);
+  }
 
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
+  void SVE2SaturatingExtractNarrow(SubRegSize size, uint32_t opc, uint32_t T, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    if (size == SubRegSize::i8Bit) {
       tszh = 0;
       tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       tszh = 0;
       tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       tszh = 1;
       tszl = 0b00;
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
 
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b00, 0, zn, zd);
-  }
-  void sqxtnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b00, 1, zn, zd);
-  }
-  void uqxtnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b01, 0, zn, zd);
-  }
-  void uqxtnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b01, 1, zn, zd);
-  }
-  void sqxtunb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b10, 0, zn, zd);
-  }
-  void sqxtunt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b10, 1, zn, zd);
-  }
-
-  void SVE2SaturatingExtractNarrow(uint32_t tszh, uint32_t tszl, uint32_t opc, uint32_t T, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
     constexpr uint32_t Op = 0b0100'0101'0010'0000'010 << 13;
-    uint32_t Instr = Op;
 
+    uint32_t Instr = Op;
     Instr |= tszh << 22;
     Instr |= tszl << 19;
     Instr |= opc << 11;
