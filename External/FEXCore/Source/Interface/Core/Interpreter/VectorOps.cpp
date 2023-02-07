@@ -964,7 +964,9 @@ DEF_OP(VUnZip) {
 }
 
 DEF_OP(VBSL) {
-  auto Op = IROp->C<IR::IROp_VBSL>();
+  const auto Op = IROp->C<IR::IROp_VBSL>();
+  const auto OpSize = IROp->Size;
+
   const auto Src1 = *GetSrc<InterpVector256*>(Data->SSAData, Op->VectorMask);
   const auto Src2 = *GetSrc<InterpVector256*>(Data->SSAData, Op->VectorTrue);
   const auto Src3 = *GetSrc<InterpVector256*>(Data->SSAData, Op->VectorFalse);
@@ -974,7 +976,8 @@ DEF_OP(VBSL) {
     .Upper = (Src2.Upper & Src1.Upper) | (Src3.Upper & ~Src1.Upper),
   };
 
-  memcpy(GDP, &Tmp, sizeof(Tmp));
+  memset(GDP, 0, sizeof(InterpVector256));
+  memcpy(GDP, &Tmp, OpSize);
 }
 
 DEF_OP(VCMPEQ) {

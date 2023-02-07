@@ -3447,8 +3447,6 @@ void OpDispatchBuilder::VectorVariableBlend<8>(OpcodeArgs);
 template <size_t ElementSize>
 void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
   constexpr auto ElementSizeBits = ElementSize * 8;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
@@ -3462,9 +3460,6 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
 
   OrderedNode *Shifted = _VSShrI(SrcSize, ElementSize, Mask, ElementSizeBits - 1);
   OrderedNode *Result = _VBSL(SrcSize, Shifted, Src2, Src1);
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 template
