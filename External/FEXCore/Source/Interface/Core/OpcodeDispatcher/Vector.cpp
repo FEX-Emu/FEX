@@ -3433,7 +3433,7 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
   // Arithmetic shift right by the element size, then use BSL to select the registers
   Mask = _VSShrI(Size, ElementSize, Mask, (ElementSize * 8) - 1);
 
-  auto Result = _VBSL(Mask, Src, Dest);
+  auto Result = _VBSL(Size, Mask, Src, Dest);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3461,7 +3461,7 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   OrderedNode *Mask = LoadXMMRegister((Src3Selector >> 4) & 0b1111);
 
   OrderedNode *Shifted = _VSShrI(SrcSize, ElementSize, Mask, ElementSizeBits - 1);
-  OrderedNode *Result = _VBSL(Shifted, Src2, Src1);
+  OrderedNode *Result = _VBSL(SrcSize, Shifted, Src2, Src1);
   if (Is128Bit) {
     Result = _VMov(16, Result);
   }
