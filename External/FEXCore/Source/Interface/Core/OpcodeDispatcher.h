@@ -467,6 +467,7 @@ public:
   template <size_t ElementSize>
   void VPACKUSOp(OpcodeArgs);
 
+  void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
 
   void VPERM2Op(OpcodeArgs);
