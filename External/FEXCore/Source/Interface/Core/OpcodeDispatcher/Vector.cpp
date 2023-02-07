@@ -3469,6 +3469,8 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
 }
 template
 void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorVariableBlend<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   // Invalidate deferred flags early
