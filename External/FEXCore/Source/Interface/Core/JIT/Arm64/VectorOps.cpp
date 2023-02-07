@@ -1414,13 +1414,14 @@ DEF_OP(VUnZip2) {
 DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
   const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
   const auto VectorFalse = GetVReg(Op->VectorFalse.ID());
   const auto VectorTrue = GetVReg(Op->VectorTrue.ID());
   const auto VectorMask = GetVReg(Op->VectorMask.ID());
 
-  if (HostSupportsSVE) {
+  if (HostSupportsSVE && Is256Bit) {
     // NOTE: Slight parameter difference from ASIMD
     //       ASIMD -> BSL Mask, True, False
     //       SVE   -> BSL True, True, False, Mask
