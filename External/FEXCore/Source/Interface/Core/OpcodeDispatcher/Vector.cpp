@@ -3467,6 +3467,8 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
+template
+void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   // Invalidate deferred flags early
