@@ -1425,7 +1425,7 @@ DEF_OP(VBSL) {
     // NOTE: Slight parameter difference from ASIMD
     //       ASIMD -> BSL Mask, True, False
     //       SVE   -> BSL True, True, False, Mask
-    mov(VTMP1.Z(), VectorTrue.Z());
+    movprfx(VTMP1.Z(), VectorTrue.Z());
     bsl(VTMP1.Z(), VTMP1.Z(), VectorFalse.Z(), VectorMask.Z());
     mov(Dst.Z(), VTMP1.Z());
   } else {
