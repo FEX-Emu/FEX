@@ -3756,6 +3756,21 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+static OrderedNode* VBLENDOpImpl(IREmitter& IR, uint32_t VecSize, uint32_t ElementSize,
+                                 OrderedNode *Src1, OrderedNode *Src2, uint64_t Selector) {
+  const std::array Sources{Src1, Src2};
+
+  OrderedNode *Result = IR._VectorZero(VecSize);
+  const int NumElements = VecSize / ElementSize;
+  for (int i = 0; i < NumElements; i++) {
+    const auto SelectorIndex = (Selector >> i) & 1;
+
+    Result = IR._VInsElement(VecSize, ElementSize, i, i, Result, Sources[SelectorIndex]);
+  }
+
+  return Result;
+}
+
 void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
@@ -3793,16 +3808,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
     return;
   }
 
-  const std::array Sources{Src1, Src2};
-
-  OrderedNode *Result = _VectorZero(DstSize);
-  const int Num32BitElements = DstSize / 4;
-  for (int i = 0; i < Num32BitElements; i++) {
-    const auto SelectorIndex = (Selector >> i) & 1;
-
-    Result = _VInsElement(DstSize, 4, i, i, Result, Sources[SelectorIndex]);
-  }
-
+  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 4, Src1, Src2, Selector);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
