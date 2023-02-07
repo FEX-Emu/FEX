@@ -1353,12 +1353,12 @@
         "DestSize": "RegisterSize"
       },
 
-      "FPR = VBSL FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
+      "FPR = VBSL u8:#RegisterSize, FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
         "Desc": ["Does a vector bitwise select.",
                  "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
                  "If the bit in the field is 0 then the corresponding bit is pulled from VectorFalse"
                 ],
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       }
     },
     "Conv": {

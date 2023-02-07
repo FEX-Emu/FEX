@@ -1388,7 +1388,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
   auto b = _LoadContextIndexed(arg, 16, MMBaseOffset(), 16, FPRClass);
-  auto Result = _VBSL(VecCond, b, a);
+  auto Result = _VBSL(16, VecCond, b, a);
 
   // Write to ST[TOP]
   _StoreContextIndexed(Result, top, 16, MMBaseOffset(), 16, FPRClass);

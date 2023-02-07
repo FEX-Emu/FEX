@@ -3433,7 +3433,7 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
   // Arithmetic shift right by the element size, then use BSL to select the registers
   Mask = _VSShrI(Size, ElementSize, Mask, (ElementSize * 8) - 1);
 
-  auto Result = _VBSL(Mask, Src, Dest);
+  auto Result = _VBSL(Size, Mask, Src, Dest);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -3443,6 +3443,36 @@ template
 void OpDispatchBuilder::VectorVariableBlend<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VectorVariableBlend<8>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  constexpr auto ElementSizeBits = ElementSize * 8;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
+  const auto Src3Selector = Op->Src[2].Data.Literal.Value;
+
+  // Mask register is encoded within bits [7:4] of the selector
+  OrderedNode *Mask = LoadXMMRegister((Src3Selector >> 4) & 0b1111);
+
+  OrderedNode *Shifted = _VSShrI(SrcSize, ElementSize, Mask, ElementSizeBits - 1);
+  OrderedNode *Result = _VBSL(SrcSize, Shifted, Src2, Src1);
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult(FPRClass, Op, Result, -1);
+}
+template
+void OpDispatchBuilder::AVXVectorVariableBlend<1>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXVectorVariableBlend<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   // Invalidate deferred flags early
