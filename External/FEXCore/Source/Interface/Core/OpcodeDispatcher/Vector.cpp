@@ -3468,6 +3468,8 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 template
+void OpDispatchBuilder::AVXVectorVariableBlend<1>(OpcodeArgs);
+template
 void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVectorVariableBlend<8>(OpcodeArgs);
