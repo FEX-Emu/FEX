@@ -766,6 +766,9 @@ private:
   void AVXVectorScalarALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize, bool Scalar);
 
+  template <size_t ElementSize>
+  void AVXVectorVariableBlend(OpcodeArgs);
+
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
   OrderedNode* AESIMCImpl(OpcodeArgs);
 
