@@ -79,7 +79,7 @@ static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
   }
 }
 
-Decoder::Decoder(FEXCore::Context::Context *ctx)
+Decoder::Decoder(FEXCore::Context::ContextImpl *ctx)
   : CTX {ctx}
   , OSABI { ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN }
   , PoolObject {ctx->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {

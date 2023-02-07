@@ -30,7 +30,7 @@
 #include <tiny-json.h>
 
 namespace FEXCore::Context {
-  struct Context;
+  class Context;
 }
 
 namespace FEXCore::Config {

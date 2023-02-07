@@ -79,7 +79,7 @@ DEF_OP(Syscall) {
     Args.Argument[j] = *GetSrc<uint64_t*>(Data->SSAData, Op->Header.Args[j]);
   }
 
-  uint64_t Res = FEXCore::Context::HandleSyscall(Data->State->CTX->SyscallHandler, Data->State->CurrentFrame, &Args);
+  uint64_t Res = FEXCore::Context::HandleSyscall(static_cast<Context::ContextImpl*>(Data->State->CTX)->SyscallHandler, Data->State->CurrentFrame, &Args);
   GD = Res;
 }
 
@@ -114,7 +114,7 @@ DEF_OP(InlineSyscall) {
 DEF_OP(Thunk) {
   auto Op = IROp->C<IR::IROp_Thunk>();
 
-  auto thunkFn = Data->State->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+  auto thunkFn = static_cast<Context::ContextImpl*>(Data->State->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   thunkFn(*GetSrc<void**>(Data->SSAData, Op->ArgPtr));
 }
 
@@ -130,7 +130,7 @@ DEF_OP(ValidateCode) {
 }
 
 DEF_OP(ThreadRemoveCodeEntry) {
-  Data->State->CTX->ThreadRemoveCodeEntryFromJit(Data->State->CurrentFrame, Data->CurrentEntry);
+  static_cast<Context::ContextImpl*>(Data->State->CTX)->ThreadRemoveCodeEntryFromJit(Data->State->CurrentFrame, Data->CurrentEntry);
 }
 
 DEF_OP(CPUID) {
@@ -139,7 +139,7 @@ DEF_OP(CPUID) {
   const uint64_t Arg = *GetSrc<uint64_t*>(Data->SSAData, Op->Function);
   const uint64_t Leaf = *GetSrc<uint64_t*>(Data->SSAData, Op->Leaf);
 
-  auto Results = Data->State->CTX->CPUID.RunFunction(Arg, Leaf);
+  auto Results = Data->State->CTX->RunCPUIDFunction(Arg, Leaf);
   memcpy(DstPtr, &Results, sizeof(uint32_t) * 4);
 }
 

@@ -19,12 +19,12 @@ $end_info$
 namespace FEXCore {
 
 namespace Context {
-  struct Context;
+  class ContextImpl;
 }
 
 class GdbServer {
 public:
-    GdbServer(FEXCore::Context::Context *ctx);
+    GdbServer(FEXCore::Context::ContextImpl *ctx);
 
     // Public for threading
     void GdbServerLoop();
@@ -75,7 +75,7 @@ private:
     std::string readRegs();
     HandledPacketType readReg(const std::string& packet);
 
-    FEXCore::Context::Context *CTX;
+    FEXCore::Context::ContextImpl *CTX;
     std::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
     std::unique_ptr<std::iostream> CommsStream;
     std::mutex sendMutex;

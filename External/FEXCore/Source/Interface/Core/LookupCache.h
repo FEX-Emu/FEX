@@ -1,4 +1,5 @@
 #pragma once
+#include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdint>
@@ -12,9 +13,6 @@
 #include <tsl/robin_map.h>
 
 namespace FEXCore {
-namespace Context {
-  struct Context;
-}
 
 class LookupCache {
 public:
@@ -24,7 +22,7 @@ public:
     uintptr_t GuestCode;
   };
 
-  LookupCache(FEXCore::Context::Context *CTX);
+  LookupCache(FEXCore::Context::ContextImpl *CTX);
   ~LookupCache();
 
   uintptr_t FindBlock(uint64_t Address) {
@@ -260,7 +258,7 @@ private:
 
   size_t AllocateOffset {};
 
-  FEXCore::Context::Context *ctx;
+  FEXCore::Context::ContextImpl *ctx;
   uint64_t VirtualMemSize{};
 };
 }

@@ -10,7 +10,7 @@ namespace FEXCore::Core {
 }
 
 namespace FEXCore::Context {
-  struct Context;
+  class Context;
 
 namespace Debug {
 

@@ -35,7 +35,7 @@ public:
 
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
-  static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
+  static void InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX);
   
   void ClearCache() override;
 

@@ -377,8 +377,8 @@ int main(int argc, char **argv, char **const envp) {
   // System allocator is now system allocator or FEX
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
-  auto CTX = FEXCore::Context::CreateNewContext();
-  FEXCore::Context::InitializeContext(CTX);
+  auto CTX = FEXCore::Context::Context::CreateNewContext();
+  CTX->InitializeContext();
 
   auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
 
@@ -423,22 +423,22 @@ int main(int argc, char **argv, char **const envp) {
 
   SyscallHandler->DefaultProgramBreak(BRKInfo.Base, BRKInfo.Size);
 
-  FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
-  FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
-  FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+  CTX->SetSignalDelegator(SignalDelegation.get());
+  CTX->SetSyscallHandler(SyscallHandler.get());
+  CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
   // Pass in our VDSO thunks
-  FEXCore::Context::AppendThunkDefinitions(CTX, FEX::VDSO::GetVDSOThunkDefinitions());
-  FEXCore::Context::SetVDSOSigReturn(CTX, FEX::VDSO::GetVDSOSymbols());
+  CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
+  CTX->SetVDSOSigReturn(FEX::VDSO::GetVDSOSymbols());
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
   // There might already be an exit handler, leave it installed
-  if(!FEXCore::Context::GetExitHandler(CTX)) {
-    FEXCore::Context::SetExitHandler(CTX, [&](uint64_t thread, FEXCore::Context::ExitReason reason) {
+  if(!CTX->GetExitHandler()) {
+    CTX->SetExitHandler([&](uint64_t thread, FEXCore::Context::ExitReason reason) {
       if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
         ShutdownReason = reason;
-        FEXCore::Context::Stop(CTX);
+        CTX->Stop();
       }
     });
   }
@@ -448,13 +448,13 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
                       "Capture doesn't work with programs that fork.");
 
-    FEXCore::Context::SetAOTIRLoader(CTX, [](const std::string &fileid) -> int {
+    CTX->SetAOTIRLoader([](const std::string &fileid) -> int {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
       return open(filepath.c_str(), O_RDONLY);
     });
 
-    FEXCore::Context::SetAOTIRWriter(CTX, [](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+    CTX->SetAOTIRWriter([](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
@@ -467,7 +467,7 @@ int main(int argc, char **argv, char **const envp) {
       return AOTWrite;
     });
 
-    FEXCore::Context::SetAOTIRRenamer(CTX, [](const std::string& fileid) -> void {
+    CTX->SetAOTIRRenamer([](const std::string& fileid) -> void {
       auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
       auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
@@ -481,13 +481,13 @@ int main(int argc, char **argv, char **const envp) {
       FEX::AOT::AOTGenSection(CTX, Section);
     }
   } else {
-    FEXCore::Context::RunUntilExit(CTX);
+    CTX->RunUntilExit();
   }
 
   if (AOTEnabled) {
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
     if (!ec) {
-      FEXCore::Context::WriteFilesWithCode(CTX, [](const std::string& fileid, const std::string& filename) {
+      CTX->WriteFilesWithCode([](const std::string& fileid, const std::string& filename) {
         auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
         int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
         if (fd != -1) {
@@ -498,16 +498,16 @@ int main(int argc, char **argv, char **const envp) {
     }
 
     if (AOTIRCapture() || AOTIRGenerate()) {
-      FEXCore::Context::FinalizeAOTIRCache(CTX);
+      CTX->FinalizeAOTIRCache();
       LogMan::Msg::IFmt("AOTIR Cache Stored");
     }
   }
 
-  auto ProgramStatus = FEXCore::Context::GetProgramStatus(CTX);
+  auto ProgramStatus = CTX->GetProgramStatus();
 
   SyscallHandler.reset();
   SignalDelegation.reset();
-  FEXCore::Context::DestroyContext(CTX);
+  FEXCore::Context::Context::DestroyContext(CTX);
 
   FEXCore::Context::ShutdownStaticTables();
   FEXCore::Threads::Shutdown();

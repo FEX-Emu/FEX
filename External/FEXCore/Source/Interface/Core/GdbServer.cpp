@@ -68,11 +68,11 @@ void GdbServer::WaitForThreadWakeup() {
   ThreadBreakEvent.Wait();
 }
 
-GdbServer::GdbServer(FEXCore::Context::Context *ctx) : CTX(ctx) {
+GdbServer::GdbServer(FEXCore::Context::ContextImpl *ctx) : CTX(ctx) {
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
 
-  Context::SetExitHandler(ctx, [this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
+  ctx->SetExitHandler([this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
       this->Break(SIGTRAP);
     }

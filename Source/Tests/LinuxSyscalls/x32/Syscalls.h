@@ -15,7 +15,7 @@ $end_info$
 
 namespace FEXCore {
   namespace Context {
-    struct Context;
+    class Context;
   }
   namespace Core {
     struct CpuStateFrame;

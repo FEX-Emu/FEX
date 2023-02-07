@@ -79,7 +79,7 @@ $end_info$
 
 
 namespace FEXCore::CPU {
-  bool CreateCPUCore(FEXCore::Context::Context *CTX) {
+  bool CreateCPUCore(Context::ContextImpl *CTX) {
     // This should be used for generating things that are shared between threads
     CTX->CPUID.Init(CTX);
     return true;
@@ -147,7 +147,7 @@ std::string_view const& GetGRegName(unsigned Reg) {
 } // namespace FEXCore::Core
 
 namespace FEXCore::Context {
-  Context::Context()
+  ContextImpl::ContextImpl()
   : IRCaptureCache {this} {
 #ifdef BLOCKSTATS
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
@@ -172,7 +172,7 @@ namespace FEXCore::Context {
     }
   }
 
-  Context::~Context() {
+  ContextImpl::~ContextImpl() {
     {
       if (CodeObjectCacheService) {
         CodeObjectCacheService->Shutdown();
@@ -214,7 +214,7 @@ namespace FEXCore::Context {
     return NewThreadState;
   }
 
-  FEXCore::Core::InternalThreadState* Context::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
+  FEXCore::Core::InternalThreadState* ContextImpl::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
     // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
@@ -255,13 +255,13 @@ namespace FEXCore::Context {
     // Initialize common signal handlers
 
     auto PauseHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      return Thread->CTX->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
+      return static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
     };
 
     SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, PauseHandler, true);
 
     auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      return Thread->CTX->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
+      return static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
     };
 
     for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
@@ -295,22 +295,22 @@ namespace FEXCore::Context {
     return Thread;
   }
 
-  void Context::StartGdbServer() {
+  void ContextImpl::StartGdbServer() {
     if (!DebugServer) {
       DebugServer = std::make_unique<GdbServer>(this);
       StartPaused = true;
     }
   }
 
-  void Context::StopGdbServer() {
+  void ContextImpl::StopGdbServer() {
     DebugServer.reset();
   }
 
-  void Context::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-    Thread->CTX->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
+  void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
+    static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
   }
 
-  void Context::HandleSignalHandlerReturn(bool RT) {
+  void ContextImpl::HandleSignalHandlerReturn(bool RT) {
     using SignalHandlerReturnFunc = void(*)();
 
     SignalHandlerReturnFunc SignalHandlerReturn{};
@@ -325,15 +325,15 @@ namespace FEXCore::Context {
     FEX_UNREACHABLE;
   }
 
-  void Context::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+  void ContextImpl::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
       SignalDelegation->RegisterHostSignalHandler(Signal, Func, Required);
   }
 
-  void Context::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+  void ContextImpl::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
     SignalDelegation->RegisterFrontendHostSignalHandler(Signal, Func, Required);
   }
 
-  void Context::WaitForIdle() {
+  void ContextImpl::WaitForIdle() {
     std::unique_lock<std::mutex> lk(IdleWaitMutex);
     IdleWaitCV.wait(lk, [this] {
       return IdleWaitRefCount.load() == 0;
@@ -342,7 +342,7 @@ namespace FEXCore::Context {
     Running = false;
   }
 
-  void Context::WaitForIdleWithTimeout() {
+  void ContextImpl::WaitForIdleWithTimeout() {
     std::unique_lock<std::mutex> lk(IdleWaitMutex);
     bool WaitResult = IdleWaitCV.wait_for(lk, std::chrono::milliseconds(1500),
       [this] {
@@ -360,7 +360,7 @@ namespace FEXCore::Context {
     WaitForIdle();
   }
 
-  void Context::NotifyPause() {
+  void ContextImpl::NotifyPause() {
 
     // Tell all the threads that they should pause
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
@@ -373,7 +373,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void Context::Pause() {
+  void ContextImpl::Pause() {
     // If we aren't running, WaitForIdle will never compete.
     if (Running) {
       NotifyPause();
@@ -382,7 +382,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void Context::Run() {
+  void ContextImpl::Run() {
     // Spin up all the threads
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
@@ -394,7 +394,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void Context::WaitForThreadsToRun() {
+  void ContextImpl::WaitForThreadsToRun() {
     size_t NumThreads{};
     {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
@@ -410,7 +410,7 @@ namespace FEXCore::Context {
     Running = true;
   }
 
-  void Context::Step() {
+  void ContextImpl::Step() {
     {
       std::lock_guard<std::mutex> lk(ThreadCreationMutex);
       // Walk the threads and tell them to clear their caches
@@ -430,7 +430,7 @@ namespace FEXCore::Context {
     this->Config.MaxInstPerBlock = PreviousMaxIntPerBlock;
   }
 
-  void Context::Stop(bool IgnoreCurrentThread) {
+  void ContextImpl::Stop(bool IgnoreCurrentThread) {
     pid_t tid = FHU::Syscalls::gettid();
     FEXCore::Core::InternalThreadState* CurrentThread{};
 
@@ -468,21 +468,21 @@ namespace FEXCore::Context {
     }
   }
 
-  void Context::StopThread(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::StopThread(FEXCore::Core::InternalThreadState *Thread) {
     if (Thread->RunningEvents.Running.exchange(false)) {
       Thread->SignalReason.store(FEXCore::Core::SignalEvent::Stop);
       FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }
 
-  void Context::SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) {
+  void ContextImpl::SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) {
     if (Thread->RunningEvents.Running.load()) {
       Thread->SignalReason.store(Event);
       FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
     }
   }
 
-  FEXCore::Context::ExitReason Context::RunUntilExit() {
+  FEXCore::Context::ExitReason ContextImpl::RunUntilExit() {
     if(!StartPaused) {
       // We will only have one thread at this point, but just in case run notify everything
       std::lock_guard lk(ThreadCreationMutex);
@@ -503,16 +503,16 @@ namespace FEXCore::Context {
     }
   }
 
-  int Context::GetProgramStatus() const {
+  int ContextImpl::GetProgramStatus() const {
     return ParentThread->StatusCode;
   }
 
-  void Context::InitializeThreadData(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::InitializeThreadData(FEXCore::Core::InternalThreadState *Thread) {
     Thread->CPUBackend->Initialize();
   }
 
   struct ExecutionThreadHandler {
-    FEXCore::Context::Context *This;
+    ContextImpl *This;
     FEXCore::Core::InternalThreadState *Thread;
   };
 
@@ -523,7 +523,7 @@ namespace FEXCore::Context {
     return nullptr;
   }
 
-  void Context::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::InitializeThread(FEXCore::Core::InternalThreadState *Thread) {
     // This will create the execution thread but it won't actually start executing
     ExecutionThreadHandler *Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
     Arg->This = this;
@@ -545,7 +545,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void Context::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState *Thread) {
     // Let's do some initial bookkeeping here
     Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
@@ -553,12 +553,12 @@ namespace FEXCore::Context {
     ThunkHandler->RegisterTLSState(Thread);
   }
 
-  void Context::RunThread(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::RunThread(FEXCore::Core::InternalThreadState *Thread) {
     // Tell the thread to start executing
     Thread->StartRunning.NotifyAll();
   }
 
-  void Context::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
+  void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
     Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
     Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
     Thread->LookupCache = std::make_unique<FEXCore::LookupCache>(this);
@@ -610,7 +610,7 @@ namespace FEXCore::Context {
     }
   }
 
-  FEXCore::Core::InternalThreadState* Context::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
+  FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
     FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
 
     // Copy over the new thread state to the new object
@@ -632,7 +632,7 @@ namespace FEXCore::Context {
     return Thread;
   }
 
-  void Context::DestroyThread(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState *Thread) {
     // remove new thread object
     {
       std::lock_guard lk(ThreadCreationMutex);
@@ -651,7 +651,7 @@ namespace FEXCore::Context {
     delete Thread;
   }
 
-  void Context::CleanupAfterFork(FEXCore::Core::InternalThreadState *LiveThread) {
+  void ContextImpl::CleanupAfterFork(FEXCore::Core::InternalThreadState *LiveThread) {
     // This function is called after fork
     // We need to cleanup some of the thread data that is dead
     for (auto &DeadThread : Threads) {
@@ -690,11 +690,11 @@ namespace FEXCore::Context {
     FEXCore::Threads::Thread::CleanupAfterFork();
   }
 
-  void Context::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
+  void ContextImpl::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
     Thread->LookupCache->AddBlockMapping(Address, Ptr);
   }
 
-  void Context::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState *Thread) {
     FEXCORE_PROFILE_INSTANT("ClearCodeCache");
 
     {
@@ -712,7 +712,7 @@ namespace FEXCore::Context {
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
     FILE* f = nullptr;
     bool CloseAfter = false;
-    const auto DumpIRStr = Thread->CTX->Config.DumpIR();
+    const auto DumpIRStr = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR();
 
     // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
     if (DumpIRStr =="stderr" || DumpIRStr =="no") {
@@ -739,7 +739,7 @@ namespace FEXCore::Context {
     }
   };
 
-  static void ValidateIR(FEXCore::Context::Context *ctx, IR::IREmitter *IREmitter) {
+  static void ValidateIR(ContextImpl *ctx, IR::IREmitter *IREmitter) {
     // Convert to text, Parse, Convert to text again and make sure the texts match
     std::stringstream out;
     static auto compaction = IR::CreateIRCompaction(ctx->OpDispatcherAllocator);
@@ -763,7 +763,7 @@ namespace FEXCore::Context {
     }
   }
 
-  Context::GenerateIRResult Context::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {
+  ContextImpl::GenerateIRResult ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, bool ExtendedDebugInfo) {
     FEXCORE_PROFILE_SCOPED("GenerateIR");
 
     Thread->OpDispatcher->ReownOrClaimBuffer();
@@ -790,7 +790,7 @@ namespace FEXCore::Context {
 
       Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
-          Thread->CTX->SyscallHandler->MarkGuestExecutableRange(Start, Length);
+          static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Start, Length);
         }
       });
 
@@ -908,14 +908,14 @@ namespace FEXCore::Context {
 
     IR::IREmitter *IREmitter = Thread->OpDispatcher.get();
 
-    auto ShouldDump = Thread->CTX->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDump;
+    auto ShouldDump = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDump;
     // Debug
     {
       if (ShouldDump) {
         IRDumper(Thread, IREmitter, GuestRIP, nullptr);
       }
 
-      if (Thread->CTX->Config.ValidateIRarser) {
+      if (static_cast<ContextImpl*>(Thread->CTX)->Config.ValidateIRarser) {
         ValidateIR(this, IREmitter);
       }
     }
@@ -945,7 +945,7 @@ namespace FEXCore::Context {
     };
   }
 
-  Context::CompileCodeResult Context::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+  ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
     FEXCore::IR::IRListView *IRList {};
     FEXCore::Core::DebugData *DebugData {};
     FEXCore::IR::RegisterAllocationData::UniquePtr RAData {};
@@ -1030,7 +1030,7 @@ namespace FEXCore::Context {
     };
   }
 
-  void Context::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+  void ContextImpl::CompileBlockJit(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     auto NewBlock = CompileBlock(Frame, GuestRIP);
 
     if (NewBlock == 0) {
@@ -1041,7 +1041,7 @@ namespace FEXCore::Context {
     }
   }
 
-  uintptr_t Context::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
+  uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame *Frame, uint64_t GuestRIP) {
     FEXCORE_PROFILE_SCOPED("CompileBlock");
     auto Thread = Frame->Thread;
 
@@ -1141,7 +1141,7 @@ namespace FEXCore::Context {
     return (uintptr_t)CodePtr;
   }
 
-  void Context::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
+  void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
     Core::ThreadData.Thread = Thread;
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
@@ -1152,7 +1152,7 @@ namespace FEXCore::Context {
     // Now notify the thread that we are initialized
     Thread->ThreadWaiting.NotifyAll();
 
-    if (Thread != Thread->CTX->ParentThread || StartPaused || Thread->StartPaused) {
+    if (Thread != static_cast<ContextImpl*>(Thread->CTX)->ParentThread || StartPaused || Thread->StartPaused) {
       // Parent thread doesn't need to wait to run
       Thread->StartRunning.Wait();
     }
@@ -1164,7 +1164,7 @@ namespace FEXCore::Context {
 
       Thread->RunningEvents.Running = true;
 
-      Thread->CTX->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
+      static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
       Thread->RunningEvents.Running = false;
     }
@@ -1193,7 +1193,7 @@ namespace FEXCore::Context {
     SignalDelegation->UninstallTLSState(Thread);
 
     // If the parent thread is waiting to join, then we can't destroy our thread object
-    if (!Thread->DestroyedByParent && Thread != Thread->CTX->ParentThread) {
+    if (!Thread->DestroyedByParent && Thread != static_cast<ContextImpl*>(Thread->CTX)->ParentThread) {
       Thread->CTX->DestroyThread(Thread);
     }
   }
@@ -1206,34 +1206,34 @@ namespace FEXCore::Context {
 
     for (auto it = lower; it != upper; it++) {
       for (auto Address: it->second) {
-        Context::ThreadRemoveCodeEntry(Thread, Address);
+        ContextImpl::ThreadRemoveCodeEntry(Thread, Address);
       }
       it->second.clear();
     }
   }
 
-  static void InvalidateGuestCodeRangeInternal(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    std::lock_guard lk(CTX->ThreadCreationMutex);
+  static void InvalidateGuestCodeRangeInternal(ContextImpl *CTX, uint64_t Start, uint64_t Length) {
+    std::lock_guard lk(static_cast<ContextImpl*>(CTX)->ThreadCreationMutex);
 
-    for (auto &Thread : CTX->Threads) {
+    for (auto &Thread : static_cast<ContextImpl*>(CTX)->Threads) {
       InvalidateGuestThreadCodeRange(Thread, Start, Length);
     }
   }
 
-  void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+  void ContextImpl::InvalidateGuestCodeRange(uint64_t Start, uint64_t Length) {
+    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex);
 
-    InvalidateGuestCodeRangeInternal(CTX, Start, Length);
+    InvalidateGuestCodeRangeInternal(this, Start, Length);
   }
 
-  void InvalidateGuestCodeRange(FEXCore::Context::Context *CTX, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CTX->CodeInvalidationMutex);
+  void ContextImpl::InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
+    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex);
 
-    InvalidateGuestCodeRangeInternal(CTX, Start, Length);
+    InvalidateGuestCodeRangeInternal(this, Start, Length);
     CallAfter(Start, Length);
   }
 
-  void Context::MarkMemoryShared() {
+  void ContextImpl::MarkMemoryShared() {
     if (!IsMemoryShared) {
       IsMemoryShared = true;
 
@@ -1253,18 +1253,14 @@ namespace FEXCore::Context {
     }
   }
 
-  void MarkMemoryShared(FEXCore::Context::Context *CTX) {
-    CTX->MarkMemoryShared();
-  }
-
-  void Context::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
-    std::shared_lock lk(Thread->CTX->CodeInvalidationMutex);
+  void ContextImpl::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
+    std::shared_lock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex);
 
     Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
   }
 
-  void Context::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    LogMan::Throw::AFmt(Thread->CTX->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+  void ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
 
     std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
@@ -1272,7 +1268,7 @@ namespace FEXCore::Context {
     Thread->LookupCache->Erase(GuestRIP);
   }
 
-  CustomIRResult Context::AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
+  CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
     LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
     std::unique_lock lk(CustomIRMutex);
@@ -1288,12 +1284,12 @@ namespace FEXCore::Context {
     }
   }
 
-  void Context::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
+  void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
     LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
     std::scoped_lock lk(CustomIRMutex);
 
-    InvalidateGuestCodeRange(this, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
+    InvalidateGuestCodeRange(Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
       CustomIRHandlers.erase(Entrypoint);
     });
   }
@@ -1303,24 +1299,26 @@ namespace FEXCore::Context {
     uint64_t RIPBackup = Thread->CurrentFrame->State.rip;
     Thread->CurrentFrame->State.rip = RIP;
 
+    auto CTX = static_cast<ContextImpl*>(Thread->CTX);
+
     // Erase the RIP from all the storage backings if it exists
-    ThreadRemoveCodeEntry(Thread, RIP);
+    CTX->ThreadRemoveCodeEntry(Thread, RIP);
 
     // We don't care if compilation passes or not
-    CompileBlock(Thread->CurrentFrame, RIP);
+    CTX->CompileBlock(Thread->CurrentFrame, RIP);
 
     Thread->CurrentFrame->State.rip = RIPBackup;
   }
 
-  uint64_t Context::GetThreadCount() const {
+  uint64_t ContextImpl::GetThreadCount() const {
     return Threads.size();
   }
 
-  FEXCore::Core::RuntimeStats *Context::GetRuntimeStatsForThread(uint64_t Thread) {
+  FEXCore::Core::RuntimeStats *ContextImpl::GetRuntimeStatsForThread(uint64_t Thread) {
     return &Threads[Thread]->Stats;
   }
 
-  bool Context::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
+  bool ContextImpl::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
     std::lock_guard<std::recursive_mutex> lk(ParentThread->LookupCache->WriteLock);
     auto it = ParentThread->DebugStore.find(RIP);
     if (it == ParentThread->DebugStore.end()) {
@@ -1331,7 +1329,7 @@ namespace FEXCore::Context {
     return true;
   }
 
-  bool Context::FindHostCodeForRIP(uint64_t RIP, uint8_t **Code) {
+  bool ContextImpl::FindHostCodeForRIP(uint64_t RIP, uint8_t **Code) {
     uintptr_t HostCode = ParentThread->LookupCache->FindBlock(RIP);
     if (!HostCode) {
       return false;
@@ -1347,7 +1345,7 @@ namespace FEXCore::Context {
     return Result;
   }
 
-  IR::AOTIRCacheEntry *Context::LoadAOTIRCacheEntry(const std::string &filename) {
+  IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const std::string &filename) {
     auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
@@ -1355,19 +1353,18 @@ namespace FEXCore::Context {
     return rv;
   }
 
-  void Context::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry) {
+  void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry *Entry) {
     IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();
     }
   }
 
-
-  void Context::AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
+  void ContextImpl::AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
     ThunkHandler->AppendThunkDefinitions(Definitions);
   }
 
-  void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
+  void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
     Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
     Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
   }

@@ -49,9 +49,9 @@ InterpreterCore::InterpreterCore(Dispatcher *Dispatcher, FEXCore::Core::Internal
   ClearCache();
 }
 
-void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
+    return reinterpret_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
 
 #ifdef _M_ARM_64
@@ -67,7 +67,7 @@ CPUBackend::CompiledCode InterpreterCore::CompileCode(uint64_t Entry, [[maybe_un
   const auto MaxSize = IRSize + Dispatcher::MaxInterpreterTrampolineSize + GDBEnabled * Dispatcher::MaxGDBPauseCheckSize;
 
   if ((BufferUsed + MaxSize) > CurrentCodeBuffer->Size) {
-    ThreadState->CTX->ClearCodeCache(ThreadState);
+    static_cast<Context::ContextImpl*>(ThreadState->CTX)->ClearCodeCache(ThreadState);
   }
 
   CPUBackend::CompiledCode CodeData{};
@@ -103,11 +103,11 @@ void InterpreterCore::ClearCache() {
   BufferUsed = 0;
 }
 
-std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return std::make_unique<InterpreterCore>(ctx->Dispatcher.get(), Thread);
 }
 
-void InitializeInterpreterSignalHandlers(FEXCore::Context::Context *CTX) {
+void InitializeInterpreterSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
   InterpreterCore::InitializeSignalHandlers(CTX);
 }
 

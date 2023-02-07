@@ -14,6 +14,10 @@ $end_info$
 #include <utility>
 #include <vector>
 
+namespace FEXCore::Context {
+  class ContextImpl;
+}
+
 namespace FEXCore::HLE {
 class SyscallHandler;
 }
@@ -40,7 +44,7 @@ protected:
 class PassManager final {
   friend class SyscallOptimization;
 public:
-  void AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineConstants, bool StaticRegisterAllocation);
+  void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
   Pass* InsertPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
     Pass->RegisterPassManager(this);

@@ -75,7 +75,7 @@ public:
   OrderedNode* flagsOpDestSigned{};
   OrderedNode* flagsOpSrcSigned{};
 
-  FEXCore::Context::Context *CTX{};
+  FEXCore::Context::ContextImpl *CTX{};
 
   // Used during new op bringup
   bool ShouldDump {false};
@@ -149,7 +149,7 @@ public:
     return false;
   }
 
-  OpDispatchBuilder(FEXCore::Context::Context *ctx);
+  OpDispatchBuilder(FEXCore::Context::ContextImpl *ctx);
   OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
 
   void ResetWorkingList();

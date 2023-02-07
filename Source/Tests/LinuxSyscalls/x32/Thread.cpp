@@ -100,7 +100,7 @@ namespace FEX::HLE::x32 {
 
   void RegisterThread(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X32(sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      FEXCore::Context::HandleSignalHandlerReturn(Frame->Thread->CTX, false);
+      Frame->Thread->CTX->HandleSignalHandlerReturn(false);
       FEX_UNREACHABLE;
     });
 

@@ -20,7 +20,7 @@ struct InternalThreadState;
 }
 
 namespace FEXCore::Context {
-struct Context;
+class ContextImpl;
 }
 
 namespace FEXCore::CPU {
@@ -74,8 +74,8 @@ public:
   virtual size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) = 0;
   virtual size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) = 0;
 
-  static std::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::Context *CTX, const DispatcherConfig &Config);
-  static std::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::Context *CTX, const DispatcherConfig &Config);
+  static std::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
+  static std::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
 
   virtual void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
     DispatchPtr(Frame);
@@ -86,7 +86,7 @@ public:
   }
 
 protected:
-  Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &Config)
+  Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config)
     : CTX {ctx}
     , config {Config}
     {}
@@ -158,10 +158,10 @@ protected:
 
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
 
-  FEXCore::Context::Context *CTX;
+  FEXCore::Context::ContextImpl *CTX;
   DispatcherConfig config;
 
-  static void SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame);
+  static void SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::CpuStateFrame *Frame);
 
   static uint64_t GetCompileBlockPtr();
 

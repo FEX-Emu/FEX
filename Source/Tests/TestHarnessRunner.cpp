@@ -162,12 +162,12 @@ int main(int argc, char **argv, char **const envp) {
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
-  auto CTX = FEXCore::Context::CreateNewContext();
+  auto CTX = FEXCore::Context::Context::CreateNewContext();
 
-  FEXCore::Context::InitializeContext(CTX);
+  CTX->InitializeContext();
 
   // Skip any tests that the host doesn't support features for
-  auto HostFeatures = FEXCore::Context::GetHostFeatures(CTX);
+  auto HostFeatures = CTX->GetHostFeatures();
   SupportsAVX = HostFeatures.SupportsAVX;
 
   bool TestUnsupported =
@@ -182,7 +182,7 @@ int main(int argc, char **argv, char **const envp) {
     (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
 
   if (TestUnsupported) {
-    FEXCore::Context::DestroyContext(CTX);
+    FEXCore::Context::Context::DestroyContext(CTX);
     return 0;
   }
 
@@ -214,10 +214,10 @@ int main(int argc, char **argv, char **const envp) {
       return -ENOEXEC;
     }
 
-    FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
-    FEXCore::Context::SetSyscallHandler(CTX, SyscallHandler.get());
+    CTX->SetSignalDelegator(SignalDelegation.get());
+    CTX->SetSyscallHandler(SyscallHandler.get());
 
-    bool Result1 = FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+    bool Result1 = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
     if (!Result1) {
       return 1;
@@ -225,11 +225,11 @@ int main(int argc, char **argv, char **const envp) {
 
     LongJumpVal = setjmp(LongJump);
     if (!LongJumpVal) {
-      FEXCore::Context::RunUntilExit(CTX);
+      CTX->RunUntilExit();
     }
 
     // Just re-use compare state. It also checks against the expected values in config.
-    FEXCore::Context::GetCPUState(CTX, &State);
+    CTX->GetCPUState(&State);
 
     SyscallHandler.reset();
   } else {
@@ -245,7 +245,7 @@ int main(int argc, char **argv, char **const envp) {
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
 
-  FEXCore::Context::DestroyContext(CTX);
+  FEXCore::Context::Context::DestroyContext(CTX);
   FEXCore::Context::ShutdownStaticTables();
 
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);

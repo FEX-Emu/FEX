@@ -52,17 +52,17 @@ namespace FEX::EmulatedFile {
 
   std::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
     std::ostringstream cpu_stream{};
-    auto res_0 = FEXCore::Context::RunCPUIDFunction(ctx, 0, 0);
-    auto res_1 = FEXCore::Context::RunCPUIDFunction(ctx, 1, 0);
-    auto res_6 = FEXCore::Context::RunCPUIDFunction(ctx, 6, 0);
-    auto res_7 = FEXCore::Context::RunCPUIDFunction(ctx, 7, 0);
-    auto res_10 = FEXCore::Context::RunCPUIDFunction(ctx, 0x10, 0);
+    auto res_0  = ctx->RunCPUIDFunction(0, 0);
+    auto res_1  = ctx->RunCPUIDFunction(1, 0);
+    auto res_6  = ctx->RunCPUIDFunction(6, 0);
+    auto res_7  = ctx->RunCPUIDFunction(7, 0);
+    auto res_10 = ctx->RunCPUIDFunction(0x10, 0);
 
-    auto res_8000_0001 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0001, 0);
-    auto res_8000_0007 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0007, 0);
-    auto res_8000_0008 = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'0008, 0);
-    auto res_8000_000a = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'000a, 0);
-    auto res_8000_001f = FEXCore::Context::RunCPUIDFunction(ctx, 0x8000'001f, 0);
+    auto res_8000_0001 = ctx->RunCPUIDFunction(0x8000'0001, 0);
+    auto res_8000_0007 = ctx->RunCPUIDFunction(0x8000'0007, 0);
+    auto res_8000_0008 = ctx->RunCPUIDFunction(0x8000'0008, 0);
+    auto res_8000_000a = ctx->RunCPUIDFunction(0x8000'000a, 0);
+    auto res_8000_001f = ctx->RunCPUIDFunction(0x8000'001f, 0);
 
     union VendorID {
       struct {
@@ -573,9 +573,9 @@ namespace FEX::EmulatedFile {
       cpu_stream << "cpu family\t: " << Family  << std::endl;
       cpu_stream << "model\t\t: " << (info.Model + (info.FamilyID >= 6 ? (info.ExModelID << 4) : 0)) << std::endl;
       ModelName modelname {};
-      auto res_8000_0002 = FEXCore::Context::RunCPUIDFunctionName(ctx, 0x8000'0002, 0, i);
-      auto res_8000_0003 = FEXCore::Context::RunCPUIDFunctionName(ctx, 0x8000'0003, 0, i);
-      auto res_8000_0004 = FEXCore::Context::RunCPUIDFunctionName(ctx, 0x8000'0004, 0, i);
+      auto res_8000_0002 = ctx->RunCPUIDFunctionName(0x8000'0002, 0, i);
+      auto res_8000_0003 = ctx->RunCPUIDFunctionName(0x8000'0003, 0, i);
+      auto res_8000_0004 = ctx->RunCPUIDFunctionName(0x8000'0004, 0, i);
       modelname.cpuid_2 = res_8000_0002;
       modelname.cpuid_3 = res_8000_0003;
       modelname.cpuid_4 = res_8000_0004;

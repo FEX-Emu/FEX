@@ -5,7 +5,7 @@ namespace FEXCore {
 }
 
 namespace FEXCore::Context {
-  struct Context;
+  class ContextImpl;
 }
 
 namespace FEXCore::CPU {
@@ -17,7 +17,7 @@ namespace FEXCore::CPU {
    *
    * @return true if core was able to be create
    */
-  bool CreateCPUCore(FEXCore::Context::Context *CTX);
+  bool CreateCPUCore(FEXCore::Context::ContextImpl *CTX);
 
-  bool LoadCode(FEXCore::Context::Context *CTX, FEXCore::CodeLoader *Loader);
+  bool LoadCode(FEXCore::Context::ContextImpl *CTX, FEXCore::CodeLoader *Loader);
 }

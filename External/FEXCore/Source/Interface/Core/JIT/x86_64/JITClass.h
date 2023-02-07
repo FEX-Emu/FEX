@@ -51,7 +51,7 @@ const std::array<Xbyak::Xmm, 11> RAXMM_x = {  xmm1, xmm2, xmm3, xmm4, xmm5, xmm6
 
 class X86JITCore final : public CPUBackend, public Xbyak::CodeGenerator {
 public:
-  explicit X86JITCore(FEXCore::Context::Context *ctx,
+  explicit X86JITCore(FEXCore::Context::ContextImpl *ctx,
                       FEXCore::Core::InternalThreadState *Thread);
   ~X86JITCore() override;
 
@@ -68,7 +68,7 @@ public:
 
   void ClearCache() override;
 
-  static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
+  static void InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX);
 
   void ClearRelocations() override { Relocations.clear(); }
 
@@ -135,7 +135,7 @@ private:
   /**  @} */
 
   Label* PendingTargetLabel{};
-  FEXCore::Context::Context *CTX;
+  FEXCore::Context::ContextImpl *CTX;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
   CPUBackend::CompiledCode CodeData{};

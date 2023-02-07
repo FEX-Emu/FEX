@@ -15,7 +15,7 @@ namespace FEXCore::IR {
 }
 
 namespace FEXCore::Context {
-  struct Context;
+  class Context;
 }
 
 namespace FEXCore::Core {

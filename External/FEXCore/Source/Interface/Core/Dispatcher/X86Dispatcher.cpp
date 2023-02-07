@@ -27,7 +27,7 @@ namespace FEXCore::CPU {
 static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 #define STATE r14
 
-X86Dispatcher::X86Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
+X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
   : Dispatcher(ctx, config)
   , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE,
       FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
@@ -433,7 +433,7 @@ size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestR
   emit.mov(rax, reinterpret_cast<uint64_t>(CTX));
 
   // If the value == 0 then we don't need to stop
-  emit.cmp(dword [rax + (offsetof(FEXCore::Context::Context, Config.RunningMode))], 0);
+  emit.cmp(dword [rax + (offsetof(FEXCore::Context::ContextImpl, Config.RunningMode))], 0);
   emit.je(RunBlock);
   {
     // Make sure RIP is syncronized to the context
@@ -499,7 +499,7 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::Context *CTX, const DispatcherConfig &Config) {
+std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
   return std::make_unique<X86Dispatcher>(CTX, Config);
 }
 

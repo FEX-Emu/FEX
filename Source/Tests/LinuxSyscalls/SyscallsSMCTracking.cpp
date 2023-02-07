@@ -79,17 +79,17 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
           auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
 
           if (VMA->Prot.Writable) {
-            FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+            CTX->InvalidateGuestCodeRange(FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
               auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
               LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
             });
           } else {
-            FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
+            CTX->InvalidateGuestCodeRange(FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
           }
         }
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
-      FEXCore::Context::InvalidateGuestCodeRange(CTX, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+      CTX->InvalidateGuestCodeRange(FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
         auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
         LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
       });
@@ -184,7 +184,7 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
 	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   if (Flags & MAP_SHARED) {
-    MarkMemoryShared(CTX);
+    CTX->MarkMemoryShared();
   }
 
   {
@@ -206,7 +206,7 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
         Resource = &Iter->second;
 
         if (Inserted) {
-          Resource->AOTIRCacheEntry = FEXCore::Context::LoadAOTIRCacheEntry(CTX, filename.value());
+          Resource->AOTIRCacheEntry = CTX->LoadAOTIRCacheEntry(filename.value());
           Resource->Iterator = Iter;
         }
       }
@@ -225,7 +225,7 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Base, Size);
+    CTX->InvalidateGuestCodeRange((uintptr_t)Base, Size);
   }
 }
 
@@ -239,7 +239,7 @@ void SyscallHandler::TrackMunmap(uintptr_t Base, uintptr_t Size) {
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    FEXCore::Context::InvalidateGuestCodeRange(CTX, (uintptr_t)Base, Size);
+    CTX->InvalidateGuestCodeRange((uintptr_t)Base, Size);
   }
 }
 
@@ -253,7 +253,7 @@ void SyscallHandler::TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot) {
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    FEXCore::Context::InvalidateGuestCodeRange(CTX, Base, Size);
+    CTX->InvalidateGuestCodeRange(Base, Size);
   }
 }
 
@@ -299,19 +299,19 @@ void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t Ne
     if (OldAddress != NewAddress) {
       if (OldSize != 0) {
         // This also handles the MREMAP_DONTUNMAP case
-        FEXCore::Context::InvalidateGuestCodeRange(CTX, OldAddress, OldSize);
+        CTX->InvalidateGuestCodeRange(OldAddress, OldSize);
       }
     } else {
       // If mapping shrunk, flush the unmapped region
       if (OldSize > NewSize) {
-        FEXCore::Context::InvalidateGuestCodeRange(CTX, OldAddress + NewSize, OldSize - NewSize);
+        CTX->InvalidateGuestCodeRange(OldAddress + NewSize, OldSize - NewSize);
       }
     }
   }
 }
 
 void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
-  MarkMemoryShared(CTX);
+  CTX->MarkMemoryShared();
 
   shmid_ds stat;
 
@@ -336,7 +336,7 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
     );
   }
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    FEXCore::Context::InvalidateGuestCodeRange(CTX, Base, Length);
+    CTX->InvalidateGuestCodeRange(Base, Length);
   }
 }
 
@@ -350,7 +350,7 @@ void SyscallHandler::TrackShmdt(uintptr_t Base) {
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     // This might over flush if the shm has holes in it
-    FEXCore::Context::InvalidateGuestCodeRange(CTX, Base, Length);
+    CTX->InvalidateGuestCodeRange(Base, Length);
   }
 }
 

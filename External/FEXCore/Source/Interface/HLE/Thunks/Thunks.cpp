@@ -179,7 +179,7 @@ namespace FEXCore {
             };
 
             auto args = reinterpret_cast<args_t*>(argsv);
-            auto CTX = Thread->CTX;
+            auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
 
             LOGMAN_THROW_AA_FMT(args->original_callee, "Tried to link null pointer address to guest function");
             LOGMAN_THROW_AA_FMT(args->target_addr, "Tried to link address to null pointer guest function");
@@ -264,7 +264,7 @@ namespace FEXCore {
         }
 
         static void LoadLib(void *ArgsV) {
-            auto CTX = Thread->CTX;
+            auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
 
             auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
@@ -321,7 +321,7 @@ namespace FEXCore {
 
             auto &[Name, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-            auto CTX = Thread->CTX;
+            auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
             auto That = reinterpret_cast<ThunkHandler_impl*>(CTX->ThunkHandler.get());
 
             {
@@ -385,7 +385,7 @@ namespace FEXCore {
     HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
       LOGMAN_THROW_AA_FMT(GuestTarget, "Tried to create host-trampoline to null pointer guest function");
 
-      const auto CTX = Thread->CTX;
+      const auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
       const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl *>(CTX->ThunkHandler.get());
 
       const GuestcallInfo gci = { GuestUnpacker, GuestTarget };

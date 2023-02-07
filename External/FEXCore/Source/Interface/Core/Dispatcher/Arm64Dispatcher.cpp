@@ -35,7 +35,7 @@ namespace FEXCore::CPU {
 
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
-Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config)
+Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
   : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
 #ifdef VIXL_SIMULATOR
   , Simulator {&Decoder}
@@ -578,10 +578,10 @@ size_t Arm64Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t Gues
   // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
   // This happens when single stepping
 
-  static_assert(sizeof(FEXCore::Context::Context::Config.RunningMode) == 4, "This is expected to be size of 4");
+  static_assert(sizeof(FEXCore::Context::ContextImpl::Config.RunningMode) == 4, "This is expected to be size of 4");
   emit.ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, Thread));
   emit.ldr(ARMEmitter::XReg::x0, ARMEmitter::Reg::r0, offsetof(FEXCore::Core::InternalThreadState, CTX)); // Get Context
-  emit.ldr(ARMEmitter::WReg::w0, ARMEmitter::Reg::r0, offsetof(FEXCore::Context::Context, Config.RunningMode));
+  emit.ldr(ARMEmitter::WReg::w0, ARMEmitter::Reg::r0, offsetof(FEXCore::Context::ContextImpl, Config.RunningMode));
 
   // If the value == 0 then we don't need to stop
   emit.cbz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, &RunBlock);
@@ -672,7 +672,7 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::Context *CTX, const DispatcherConfig &Config) {
+std::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
   return std::make_unique<Arm64Dispatcher>(CTX, Config);
 }
 

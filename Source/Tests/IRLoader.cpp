@@ -33,7 +33,7 @@ $end_info$
 #include "HarnessHelpers.h"
 
 namespace FEXCore::Context {
-  struct Context;
+  class Context;
 }
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message)
@@ -108,12 +108,12 @@ public:
     }
   }
 
-  bool LoadIR(FEXCore::Context::Context *CTX) const { 
+  bool LoadIR(FEXCore::Context::Context *CTX) const {
     if (!ParsedCode) {
       return false;
     }
 
-    return !!AddCustomIREntrypoint(CTX, EntryRIP, [ParsedCodePtr = ParsedCode.get()](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
+    return !!CTX->AddCustomIREntrypoint(EntryRIP, [ParsedCodePtr = ParsedCode.get()](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
       emit->CopyData(*ParsedCodePtr);
     });
   }
@@ -181,20 +181,20 @@ int main(int argc, char **argv, char **const envp)
   LOGMAN_THROW_A_FMT(Args.size() > 1, "Not enough arguments");
 
   FEXCore::Context::InitializeStaticTables();
-  auto CTX = FEXCore::Context::CreateNewContext();
-  FEXCore::Context::InitializeContext(CTX);
+  auto CTX = FEXCore::Context::Context::CreateNewContext();
+  CTX->InitializeContext();
 
   std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
 
-  FEXCore::Context::SetSignalDelegator(CTX, SignalDelegation.get());
-  FEXCore::Context::SetSyscallHandler(CTX, new DummySyscallHandler());
+  CTX->SetSignalDelegator(SignalDelegation.get());
+  CTX->SetSyscallHandler(new DummySyscallHandler());
 
   IRCodeLoader Loader(Args[0], Args[1]);
 
   // Skip tests that require AVX on hosts that don't support it.
-  const bool SupportsAVX = FEXCore::Context::GetHostFeatures(CTX).SupportsAVX;
+  const bool SupportsAVX = CTX->GetHostFeatures().SupportsAVX;
   if (!SupportsAVX && Loader.RequiresAVX()) {
-    FEXCore::Context::DestroyContext(CTX);
+    FEXCore::Context::Context::DestroyContext(CTX);
     return 0;
   }
 
@@ -202,18 +202,18 @@ int main(int argc, char **argv, char **const envp)
 
   if (Loader.LoadIR(CTX))
   {
-    FEXCore::Context::InitCore(CTX, Loader.DefaultRIP(), Loader.GetStackPointer());
+    CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
     auto ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
     // There might already be an exit handler, leave it installed
-    if (!FEXCore::Context::GetExitHandler(CTX))
+    if (!CTX->GetExitHandler())
     {
-      FEXCore::Context::SetExitHandler(CTX, [&](uint64_t thread, FEXCore::Context::ExitReason reason) {
+      CTX->SetExitHandler([&](uint64_t thread, FEXCore::Context::ExitReason reason) {
         if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG)
         {
           ShutdownReason = reason;
-          FEXCore::Context::Stop(CTX);
+          CTX->Stop();
         }
       });
     }
@@ -228,14 +228,14 @@ int main(int argc, char **argv, char **const envp)
 
     LongJumpVal = setjmp(LongJump);
     if (!LongJumpVal) {
-      FEXCore::Context::RunUntilExit(CTX);
+      CTX->RunUntilExit();
     }
 
     LogMan::Msg::DFmt("Reason we left VM: {}", FEXCore::ToUnderlying(ShutdownReason));
 
     // Just re-use compare state. It also checks against the expected values in config.
     FEXCore::Core::CPUState State;
-    FEXCore::Context::GetCPUState(CTX, &State);
+    CTX->GetCPUState(&State);
 
     const bool Passed = Loader.CompareStates(&State, SupportsAVX);
 
@@ -249,7 +249,6 @@ int main(int argc, char **argv, char **const envp)
     Return = -1;
   }
 
-  FEXCore::Context::DestroyContext(CTX);
-
+  FEXCore::Context::Context::DestroyContext(CTX);
   return Return;
 }
