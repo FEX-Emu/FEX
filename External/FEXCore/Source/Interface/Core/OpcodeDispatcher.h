@@ -469,6 +469,7 @@ public:
 
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
+  void VPBLENDWOp(OpcodeArgs);
 
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);

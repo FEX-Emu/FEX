@@ -6101,6 +6101,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXVectorRound<8, true>},
     {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
     {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::VBLENDPDOp},
+    {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
 
     {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::PExtrOp<1>},
     {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::PExtrOp<2>},

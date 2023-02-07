@@ -3838,6 +3838,36 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[2].IsLiteral(), "Src[2] needs to be literal here");
+  const auto Selector = Op->Src[2].Data.Literal.Value;
+
+  if (Selector == 0) {
+    OrderedNode *Result = Is256Bit ? Src1 : _VMov(16, Src1);
+    StoreResult(FPRClass, Op, Result, -1);
+    return;
+  }
+  if (Selector == 0xFF) {
+    OrderedNode *Result = Is256Bit ? Src2 : _VMov(16, Src2);
+    StoreResult(FPRClass, Op, Result, -1);
+    return;
+  }
+
+  // 256-bit VPBLENDW acts as if the 8-bit selector values were also applied
+  // to the upper bits, so we can just replicate the bits by forming a 16-bit
+  // imm for the helper function to use.
+  const auto NewSelector = Selector << 8 | Selector;
+
+  OrderedNode *Result = VBLENDOpImpl(*this, DstSize, 2, Src1, Src2, NewSelector);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto IsVZEROALL = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
