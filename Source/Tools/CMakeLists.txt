@@ -16,6 +16,7 @@ if (ENABLE_GDB_SYMBOLS)
 endif()
 add_subdirectory(FEXGetConfig/)
 add_subdirectory(FEXServer/)
+add_subdirectory(FEXBash/)
 
 set(NAME Opt)
 set(SRCS Opt.cpp)
