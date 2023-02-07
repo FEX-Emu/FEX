@@ -800,341 +800,73 @@ public:
 
   // SVE Bitwise Shift - Predicated
   // SVE bitwise shift by immediate (predicated)
-  void asr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
+  void asr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b00, 0, 0, pg, zd, zdn, Shift);
+  }
+  void lsr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b00, 0, 1, pg, zd, zdn, Shift);
+  }
+  void lsl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b00, 1, 1, pg, zd, zdn, Shift);
+  }
+  void asrd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b01, 0, 0, pg, zd, zdn, Shift);
+  }
+  void sqshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b01, 1, 0, pg, zd, zdn, Shift);
+  }
+  void uqshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b01, 1, 1, pg, zd, zdn, Shift);
+  }
+  void srshr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b11, 0, 0, pg, zd, zdn, Shift);
+  }
+  void urshr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b11, 0, 1, pg, zd, zdn, Shift);
+  }
+  void sqshlu(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
+    SVEBitWiseShiftImmediatePred(size, 0b11, 1, 1, pg, zd, zdn, Shift);
+  }
 
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
+  void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "zd needs to equal zdn");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+    const bool IsLeftShift = L != 0;
+    if (IsLeftShift) {
+      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
+    } else {
+      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
+    }
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = IsLeftShift ? Shift
+                                              : (2 * ElementSize) - Shift;
+
+    if (size == SubRegSize::i8Bit) {
       tszh = 0b00;
       tszl = 0b01;
       imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
+    } else if (size == SubRegSize::i16Bit) {
       tszh = 0b00;
       tszl = 0b10 | ((InverseShift >> 3) & 0b1);
       imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
+    } else if (size == SubRegSize::i32Bit) {
       tszh = 0b01;
       tszl = (InverseShift >> 3) & 0b11;
       imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 64, "Incorrect shift");
+    } else if (size == SubRegSize::i64Bit) {
       tszh = 0b10 | ((InverseShift >> 5) & 1);
       tszl = (InverseShift >> 3) & 0b11;
       imm3 = InverseShift & 0b111;
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b00, 0, 0, pg, tszl, imm3, zd);
-  }
-  void lsr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b00, 0, 1, pg, tszl, imm3, zd);
-  }
-  void lsl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b00, 1, 1, pg, tszl, imm3, zd);
-  }
-  void asrd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b01, 0, 0, pg, tszl, imm3, zd);
-  }
-  void sqshl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b01, 1, 0, pg, tszl, imm3, zd);
-  }
-  void uqshl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b01, 1, 1, pg, tszl, imm3, zd);
-  }
-  void srshr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b11, 0, 0, pg, tszl, imm3, zd);
-  }
-  void urshr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b11, 0, 1, pg, tszl, imm3, zd);
-  }
-  void sqshlu(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 8, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 16, "Incorrect shift");
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 32, "Incorrect shift");
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Shift >= 0 && Shift < 64, "Incorrect shift");
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVEBitWiseShiftImmediatePred(tszh, 0b11, 1, 1, pg, tszl, imm3, zd);
-  }
-
-  void SVEBitWiseShiftImmediatePred(uint32_t tszh, uint32_t opc, uint32_t L, uint32_t U, FEXCore::ARMEmitter::PRegister pg, uint32_t tszl, uint32_t imm3, FEXCore::ARMEmitter::ZRegister zd) {
+    
     constexpr uint32_t Op = 0b0000'0100'0000'0000'100 << 13;
     uint32_t Instr = Op;
 
@@ -2084,143 +1816,46 @@ public:
   //
   // SVE2 Narrowing
   // SVE2 saturating extract narrow
-  void sqxtnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
+  void sqxtnb(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b00, 0, zn, zd);
+  }
+  void sqxtnt(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b00, 1, zn, zd);
+  }
+  void uqxtnb(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b01, 0, zn, zd);
+  }
+  void uqxtnt(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b01, 1, zn, zd);
+  }
+  void sqxtunb(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b10, 0, zn, zd);
+  }
+  void sqxtunt(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVE2SaturatingExtractNarrow(size, 0b10, 1, zn, zd);
+  }
 
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
+  void SVE2SaturatingExtractNarrow(SubRegSize size, uint32_t opc, uint32_t T, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    if (size == SubRegSize::i8Bit) {
       tszh = 0;
       tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       tszh = 0;
       tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       tszh = 1;
       tszl = 0b00;
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
 
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b00, 0, zn, zd);
-  }
-  void sqxtnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b00, 1, zn, zd);
-  }
-  void uqxtnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b01, 0, zn, zd);
-  }
-  void uqxtnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b01, 1, zn, zd);
-  }
-  void sqxtunb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b10, 0, zn, zd);
-  }
-  void sqxtunt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 64/128-bit size");
-    uint32_t tszh, tszl;
-
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2SaturatingExtractNarrow(tszh, tszl, 0b10, 1, zn, zd);
-  }
-
-  void SVE2SaturatingExtractNarrow(uint32_t tszh, uint32_t tszl, uint32_t opc, uint32_t T, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
     constexpr uint32_t Op = 0b0100'0101'0010'0000'010 << 13;
-    uint32_t Instr = Op;
 
+    uint32_t Instr = Op;
     Instr |= tszh << 22;
     Instr |= tszl << 19;
     Instr |= opc << 11;
@@ -2231,495 +1866,88 @@ public:
   }
 
   // SVE2 bitwise shift right narrow
-  void sqshrunb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
+  void sqshrunb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 0, 0, 0, zn, zd);
+  }
+  void sqshrunt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 0, 0, 1, zn, zd);
+  }
+  void sqrshrunb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 0, 1, 0, zn, zd);
+  }
+  void sqrshrunt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 0, 1, 1, zn, zd);
+  }
+  void shrnb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 1, 0, 0, zn, zd);
+  }
+  void shrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 1, 0, 1, zn, zd);
+  }
+  void rshrnb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 1, 1, 0, zn, zd);
+  }
+  void rshrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 0, 1, 1, 1, zn, zd);
+  }
+  void sqshrnb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 0, 0, 0, zn, zd);
+  }
+  void sqshrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 0, 0, 1, zn, zd);
+  }
+  void sqrshrnb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 0, 1, 0, zn, zd);
+  }
+  void sqrshrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 0, 1, 1, zn, zd);
+  }
+  void uqshrnb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 1, 0, 0, zn, zd);
+  }
+  void uqshrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 1, 0, 1, zn, zd);
+  }
+  void uqrshrnb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 1, 1, 0, zn, zd);
+  }
+  void uqrshrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    SVE2BitwiseShiftRightNarrow(size, Shift, 1, 1, 1, 1, zn, zd);
+  }
 
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
+  void SVE2BitwiseShiftRightNarrow(SubRegSize size, uint32_t shift, uint32_t opc, uint32_t U, uint32_t R, uint32_t T, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit element size");
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - shift;
+    if (size == SubRegSize::i8Bit) {
+      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 8, "Incorrect shift");
       tszh = 0;
       tszl = 0b01;
       imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
+    } else if (size == SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 16, "Incorrect shift");
       tszh = 0;
       tszl = 0b10 | ((InverseShift >> 3) & 0b1);
       imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
+    } else if (size == SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 32, "Incorrect shift");
       tszh = 1;
       tszl = (InverseShift >> 3) & 0b11;
       imm3 = InverseShift & 0b111;
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
 
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 0, 0, 0, zn, zd);
-  }
-  void sqshrunt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 0, 0, 1, zn, zd);
-  }
-  void sqrshrunb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 0, 1, 0, zn, zd);
-  }
-  void sqrshrunt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 0, 1, 1, zn, zd);
-  }
-  void shrnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 1, 0, 0, zn, zd);
-  }
-  void shrnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 1, 0, 1, zn, zd);
-  }
-  void rshrnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 1, 1, 0, zn, zd);
-  }
-  void rshrnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 0, 1, 1, 1, zn, zd);
-  }
-  void sqshrnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 0, 0, 0, zn, zd);
-  }
-  void sqshrnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 0, 0, 1, zn, zd);
-  }
-  void sqrshrnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 0, 1, 0, zn, zd);
-  }
-  void sqrshrnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 0, 1, 1, zn, zd);
-  }
-  void uqshrnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 1, 0, 0, zn, zd);
-  }
-  void uqshrnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 1, 0, 1, zn, zd);
-  }
-  void uqrshrnb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 1, 1, 0, zn, zd);
-  }
-  void uqrshrnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/128-bit size");
-
-    uint32_t tszh, tszl;
-    uint32_t imm3;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - Shift;
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Shift > 0 && Shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-
-    SVE2BitwiseShiftRightNarrow(tszh, tszl, imm3, 1, 1, 1, 1, zn, zd);
-  }
-
-  void SVE2BitwiseShiftRightNarrow(uint32_t tszh, uint32_t tszl, uint32_t imm3, uint32_t op, uint32_t U, uint32_t R, uint32_t T, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
     constexpr uint32_t Op = 0b0100'0101'0010'0000'00 << 14;
-    uint32_t Instr = Op;
 
+    uint32_t Instr = Op;
     Instr |= tszh << 22;
     Instr |= tszl << 19;
     Instr |= imm3 << 16;
-    Instr |= op << 13;
+    Instr |= opc << 13;
     Instr |= U << 12;
     Instr |= R << 11;
     Instr |= T << 10;
