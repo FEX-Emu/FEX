@@ -120,18 +120,24 @@ DEF_OP(CRC32) {
 }
 
 DEF_OP(PCLMUL) {
-  auto Op = IROp->C<IR::IROp_PCLMUL>();
+  const auto Op = IROp->C<IR::IROp_PCLMUL>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  auto Dst = GetDst(Node);
-  auto Src1 = GetSrc(Op->Src1.ID());
-  auto Src2 = GetSrc(Op->Src2.ID());
+  const auto Dst = GetDst(Node);
+  const auto Src1 = GetSrc(Op->Src1.ID());
+  const auto Src2 = GetSrc(Op->Src2.ID());
 
   switch (Op->Selector) {
   case 0b00000000:
   case 0b00000001:
   case 0b00010000:
   case 0b00010001:
-    vpclmulqdq(Dst, Src1, Src2, Op->Selector);
+    if (Is256Bit) {
+      vpclmulqdq(ToYMM(Dst), ToYMM(Src1), ToYMM(Src2), Op->Selector);
+    } else {
+      vpclmulqdq(Dst, Src1, Src2, Op->Selector);
+    }
     break;
   default:
     LOGMAN_MSG_A_FMT("Unknown PCLMUL selector: {}", Op->Selector);

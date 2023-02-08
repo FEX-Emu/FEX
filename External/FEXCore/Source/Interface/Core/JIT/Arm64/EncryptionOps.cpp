@@ -144,11 +144,15 @@ DEF_OP(CRC32) {
 }
 
 DEF_OP(PCLMUL) {
-  auto Op = IROp->C<IR::IROp_PCLMUL>();
+  const auto Op = IROp->C<IR::IROp_PCLMUL>();
+  const auto OpSize = IROp->Size;
 
-  auto Dst  = GetVReg(Node);
-  auto Src1 = GetVReg(Op->Src1.ID());
-  auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Dst  = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
+                      "Currently only supports 128-bit operations.");
 
   switch (Op->Selector) {
   case 0b00000000:

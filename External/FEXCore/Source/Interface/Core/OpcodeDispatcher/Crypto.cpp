@@ -399,7 +399,7 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Data.Literal.Value);
 
-  auto Res = _PCLMUL(Dest, Src, Selector);
+  auto Res = _PCLMUL(16, Dest, Src, Selector);
   StoreResult(FPRClass, Op, Res, -1);
 }
 
@@ -413,7 +413,7 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
 
-  OrderedNode *Res = _PCLMUL(Src1, Src2, Selector);
+  OrderedNode *Res = _PCLMUL(DstSize, Src1, Src2, Selector);
   if (Is128Bit) {
     Res = _VMov(16, Res);
   }

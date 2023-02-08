@@ -1443,7 +1443,7 @@
                 ],
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
       },
-      "FPR = PCLMUL FPR:$Src1, FPR:$Src2, u8:$Selector": {
+      "FPR = PCLMUL u8:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
         "Desc": [
           "Performs carryless multiplication of 64-bit elements depending on the selector.",
           "Selector = 0b00000000: Uses low 64-bit elements from both input vectors",
@@ -1451,7 +1451,7 @@
           "Selector = 0b00010000: Uses low 64-bit element from Src1 and high 64-bit element from Src2",
           "Selector = 0b00010001: Uses high 64-bit elements from both input vectors"
         ],
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       }
     },
     "F64": {
