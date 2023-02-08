@@ -1285,6 +1285,30 @@ void OpDispatchBuilder::PExtrOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::PExtrOp<8>(OpcodeArgs);
 
+void OpDispatchBuilder::VEXTRACT128Op(OpcodeArgs) {
+  const auto DstIsXMM = Op->Dest.IsGPR();
+  const auto StoreSize = DstIsXMM ? 32 : 16;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be literal here");
+  const auto Selector = Op->Src[1].Data.Literal.Value & 0b1;
+
+  // A selector of zero is the same as doing a 128-bit vector move.
+  if (Selector == 0) {
+    OrderedNode *Result = DstIsXMM ? _VMov(16, Src) : Src;
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
+    return;
+  }
+
+  // Otherwise replicate the element and only store the first 128-bits.
+  OrderedNode *Result = _VDupElement(32, 16, Src, Selector);
+  if (DstIsXMM) {
+    Result = _VMov(16, Result);
+  }
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
+}
+
 OrderedNode* OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize,
                                           OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
