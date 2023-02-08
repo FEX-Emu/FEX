@@ -21,23 +21,67 @@ DEF_OP(AESImc) {
 }
 
 DEF_OP(AESEnc) {
-  auto Op = IROp->C<IR::IROp_VAESEnc>();
-  vaesenc(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
+  const auto Op = IROp->C<IR::IROp_VAESEnc>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Key = GetSrc(Op->Key.ID());
+  const auto State = GetSrc(Op->State.ID());
+
+  if (Is256Bit) {
+    vaesenc(ToYMM(Dst), ToYMM(State), ToYMM(Key));
+  } else {
+    vaesenc(Dst, State, Key);
+  }
 }
 
 DEF_OP(AESEncLast) {
-  auto Op = IROp->C<IR::IROp_VAESEncLast>();
-  vaesenclast(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
+  const auto Op = IROp->C<IR::IROp_VAESEncLast>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Key = GetSrc(Op->Key.ID());
+  const auto State = GetSrc(Op->State.ID());
+
+  if (Is256Bit) {
+    vaesenclast(ToYMM(Dst), ToYMM(State), ToYMM(Key));
+  } else {
+    vaesenclast(Dst, State, Key);
+  }
 }
 
 DEF_OP(AESDec) {
-  auto Op = IROp->C<IR::IROp_VAESDec>();
-  vaesdec(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
+  const auto Op = IROp->C<IR::IROp_VAESDec>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Key = GetSrc(Op->Key.ID());
+  const auto State = GetSrc(Op->State.ID());
+
+  if (Is256Bit) {
+    vaesdec(ToYMM(Dst), ToYMM(State), ToYMM(Key));
+  } else {
+    vaesdec(Dst, State, Key);
+  }
 }
 
 DEF_OP(AESDecLast) {
-  auto Op = IROp->C<IR::IROp_VAESDecLast>();
-  vaesdeclast(GetDst(Node), GetSrc(Op->State.ID()), GetSrc(Op->Key.ID()));
+  const auto Op = IROp->C<IR::IROp_VAESDecLast>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Key = GetSrc(Op->Key.ID());
+  const auto State = GetSrc(Op->State.ID());
+
+  if (Is256Bit) {
+    vaesdeclast(ToYMM(Dst), ToYMM(State), ToYMM(Key));
+  } else {
+    vaesdeclast(Dst, State, Key);
+  }
 }
 
 DEF_OP(AESKeyGenAssist) {

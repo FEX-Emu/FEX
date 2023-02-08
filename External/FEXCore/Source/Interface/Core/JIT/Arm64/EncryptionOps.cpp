@@ -17,37 +17,73 @@ DEF_OP(AESImc) {
 }
 
 DEF_OP(AESEnc) {
-  auto Op = IROp->C<IR::IROp_VAESEnc>();
+  const auto Op = IROp->C<IR::IROp_VAESEnc>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto Key = GetVReg(Op->Key.ID());
+  const auto State = GetVReg(Op->State.ID());
+
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
+                      "Currently only supports 128-bit operations.");
+
   eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
-  mov(VTMP1.Q(), GetVReg(Op->State.ID()).Q());
+  mov(VTMP1.Q(), State.Q());
   aese(VTMP1, VTMP2);
   aesmc(VTMP1, VTMP1);
-  eor(GetVReg(Node).Q(), VTMP1.Q(), GetVReg(Op->Key.ID()).Q());
+  eor(Dst.Q(), VTMP1.Q(), Key.Q());
 }
 
 DEF_OP(AESEncLast) {
-  auto Op = IROp->C<IR::IROp_VAESEncLast>();
+  const auto Op = IROp->C<IR::IROp_VAESEncLast>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto Key = GetVReg(Op->Key.ID());
+  const auto State = GetVReg(Op->State.ID());
+
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
+                      "Currently only supports 128-bit operations.");
+
   eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
-  mov(VTMP1.Q(), GetVReg(Op->State.ID()).Q());
+  mov(VTMP1.Q(), State.Q());
   aese(VTMP1, VTMP2);
-  eor(GetVReg(Node).Q(), VTMP1.Q(), GetVReg(Op->Key.ID()).Q());
+  eor(Dst.Q(), VTMP1.Q(), Key.Q());
 }
 
 DEF_OP(AESDec) {
-  auto Op = IROp->C<IR::IROp_VAESDec>();
+  const auto Op = IROp->C<IR::IROp_VAESDec>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto Key = GetVReg(Op->Key.ID());
+  const auto State = GetVReg(Op->State.ID());
+
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
+                      "Currently only supports 128-bit operations.");
+
   eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
-  mov(VTMP1.Q(), GetVReg(Op->State.ID()).Q());
+  mov(VTMP1.Q(), State.Q());
   aesd(VTMP1, VTMP2);
   aesimc(VTMP1, VTMP1);
-  eor(GetVReg(Node).Q(), VTMP1.Q(), GetVReg(Op->Key.ID()).Q());
+  eor(Dst.Q(), VTMP1.Q(), Key.Q());
 }
 
 DEF_OP(AESDecLast) {
-  auto Op = IROp->C<IR::IROp_VAESDecLast>();
+  const auto Op = IROp->C<IR::IROp_VAESDecLast>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto Key = GetVReg(Op->Key.ID());
+  const auto State = GetVReg(Op->State.ID());
+
+  LOGMAN_THROW_AA_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE,
+                      "Currently only supports 128-bit operations.");
+
   eor(VTMP2.Q(), VTMP2.Q(), VTMP2.Q());
-  mov(VTMP1.Q(), GetVReg(Op->State.ID()).Q());
+  mov(VTMP1.Q(), State.Q());
   aesd(VTMP1, VTMP2);
-  eor(GetVReg(Node).Q(), VTMP1.Q(), GetVReg(Op->Key.ID()).Q());
+  eor(Dst.Q(), VTMP1.Q(), Key.Q());
 }
 
 DEF_OP(AESKeyGenAssist) {

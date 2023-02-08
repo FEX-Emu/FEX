@@ -1418,21 +1418,21 @@
         "Desc": "Does a stage of the inverse mix column transformation",
         "DestSize": "16"
       },
-      "FPR = VAESEnc FPR:$State, FPR:$Key": {
+      "FPR = VAESEnc u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does a step of AES encryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
-      "FPR = VAESEncLast FPR:$State, FPR:$Key": {
+      "FPR = VAESEncLast u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does the last step of AES encryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
-      "FPR = VAESDec FPR:$State, FPR:$Key": {
+      "FPR = VAESDec u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does a step of AES decryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
-      "FPR = VAESDecLast FPR:$State, FPR:$Key": {
+      "FPR = VAESDecLast u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does the last step of AES decryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
       "FPR = VAESKeyGenAssist FPR:$Src, u8:$RCON": {
         "Desc": "Assists in key generation",
