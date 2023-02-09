@@ -1910,16 +1910,60 @@ public:
   //
   // SVE Misc
   // SVE2 bitwise shift left long
-  // XXX:
+  void sshllb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b00, zd, zn, shift);
+  }
+  void sshllt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b01, zd, zn, shift);
+  }
+  void ushllb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b10, zd, zn, shift);
+  }
+  void ushllt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b11, zd, zn, shift);
+  }
+
   // SVE2 integer add/subtract interleaved long
-  // XXX:
+  void saddlbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b00, zd, zn, zm);
+  }
+  void ssublbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10, zd, zn, zm);
+  }
+  void ssubltb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b11, zd, zn, zm);
+  }
+
   // SVE2 bitwise exclusive-or interleaved
-  // XXX:
+  void eorbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwiseXorInterleaved(size, 0b0, zd, zn, zm);
+  }
+  void eortb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwiseXorInterleaved(size, 0b1, zd, zn, zm);
+  }
+
   // SVE integer matrix multiply accumulate
-  // XXX:
+  void smmla(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMatrixMulAccumulate(0b00, zda, zn, zm);
+  }
+  void usmmla(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMatrixMulAccumulate(0b10, zda, zn, zm);
+  }
+  void ummla(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMatrixMulAccumulate(0b11, zda, zn, zm);
+  }
+
   // SVE2 bitwise permute
-  // XXX:
-  //
+  void bext(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwisePermute(size, 0b00, zd, zn, zm);
+  }
+  void bdep(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwisePermute(size, 0b01, zd, zn, zm);
+  }
+  void bgrp(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwisePermute(size, 0b10, zd, zn, zm);
+  }
+
   // SVE2 Accumulate
   // SVE2 complex integer add
   // XXX:
@@ -2075,9 +2119,33 @@ public:
     Instr |= zd.Idx();
     dc32(Instr);
   }
+
   // SVE2 integer add/subtract narrow high part
-  // XXX:
-  //
+  void addhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b000, zd, zn, zm);
+  }
+  void addhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b001, zd, zn, zm);
+  }
+  void raddhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b010, zd, zn, zm);
+  }
+  void raddhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b011, zd, zn, zm);
+  }
+  void subhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b100, zd, zn, zm);
+  }
+  void subhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b101, zd, zn, zm);
+  }
+  void rsubhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b110, zd, zn, zm);
+  }
+  void rsubhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b111, zd, zn, zm);
+  }
+
   // SVE2 Crypto Extensions
   // SVE2 crypto unary operations
   // XXX:
@@ -3495,6 +3563,89 @@ private:
     Instr |= zm.Idx() << 16;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubNarrowHighPart(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
+                       "Can't use 64-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0010'0000'0110'0000'0000'0000;
+    Instr |= (FEXCore::ToUnderlying(size) + 1) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwisePermute(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1011'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseXorInterleaved(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1001'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerMatrixMulAccumulate(uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
+    uint32_t Instr = 0b0100'0101'0000'0000'1001'1000'0000'0000;
+    Instr |= opc << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubInterleavedLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                       "Can't use 8-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseShiftLeftLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                       "Can't use 8-bit or 128-bit element size");
+
+    const auto Underlying = FEXCore::ToUnderlying(size);
+    const auto ElementSize = SubRegSizeInBits(static_cast<SubRegSize>(Underlying - 1));
+
+    LOGMAN_THROW_A_FMT(shift >= 0 && shift < ElementSize,
+                       "Shift must be within 0-{}", ElementSize - 1);
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1010'0000'0000'0000;
+    Instr |= shift << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    if (size == SubRegSize::i64Bit) {
+      Instr |= 1U << 22;
+    } else {
+      Instr |= (1U << 19) << (Underlying - 1);
+    }
+
     dc32(Instr);
   }
 
