@@ -941,7 +941,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 signed saturating doublin
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by wide elements (unpredicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(asr(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),  "asr z30.b, z29.b, z28.d");
+  TEST_SINGLE(asr(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "asr z30.h, z29.h, z28.d");
+  TEST_SINGLE(asr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "asr z30.s, z29.s, z28.d");
+
+  TEST_SINGLE(lsr(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),  "lsr z30.b, z29.b, z28.d");
+  TEST_SINGLE(lsr(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "lsr z30.h, z29.h, z28.d");
+  TEST_SINGLE(lsr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "lsr z30.s, z29.s, z28.d");
+
+  TEST_SINGLE(lsl(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),  "lsl z30.b, z29.b, z28.d");
+  TEST_SINGLE(lsl(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "lsl z30.h, z29.h, z28.d");
+  TEST_SINGLE(lsl(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "lsl z30.s, z29.s, z28.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by immediate (unpredicated)") {

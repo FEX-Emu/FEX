@@ -1140,7 +1140,16 @@ public:
 
   // SVE Bitwise Shift - Unpredicated
   // SVE bitwise shift by wide elements (unpredicated)
-  // XXX:
+  void asr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftByWideElementsUnpredicated(size, 0b00, zd, zn, zm);
+  }
+  void lsr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftByWideElementsUnpredicated(size, 0b01, zd, zn, zm);
+  }
+  void lsl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftByWideElementsUnpredicated(size, 0b11, zd, zn, zm);
+  }
+
   // SVE bitwise shift by immediate (unpredicated)
   // XXX:
 
@@ -3372,6 +3381,19 @@ private:
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBitwiseShiftByWideElementsUnpredicated(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
+                       "Can't use 64-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0000'0100'0010'0000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 10;
+    Instr |= zm.Idx() << 16;
+    Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }
