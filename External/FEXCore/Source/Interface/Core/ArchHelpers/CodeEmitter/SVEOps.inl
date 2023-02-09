@@ -1917,9 +1917,18 @@ public:
   // XXX:
   // SVE integer matrix multiply accumulate
   // XXX:
+
   // SVE2 bitwise permute
-  // XXX:
-  //
+  void bext(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwisePermute(size, 0b00, zd, zn, zm);
+  }
+  void bdep(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwisePermute(size, 0b01, zd, zn, zm);
+  }
+  void bgrp(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2BitwisePermute(size, 0b10, zd, zn, zm);
+  }
+
   // SVE2 Accumulate
   // SVE2 complex integer add
   // XXX:
@@ -3528,6 +3537,18 @@ private:
 
     uint32_t Instr = 0b0100'0101'0010'0000'0110'0000'0000'0000;
     Instr |= (FEXCore::ToUnderlying(size) + 1) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwisePermute(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1011'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;

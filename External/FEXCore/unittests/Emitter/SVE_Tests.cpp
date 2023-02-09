@@ -1795,7 +1795,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer matrix multiply ac
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise permute") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(bext(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "bext z30.b, z29.b, z28.b");
+  TEST_SINGLE(bext(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bext z30.h, z29.h, z28.h");
+  TEST_SINGLE(bext(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bext z30.s, z29.s, z28.s");
+  TEST_SINGLE(bext(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bext z30.d, z29.d, z28.d");
+
+  TEST_SINGLE(bdep(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "bdep z30.b, z29.b, z28.b");
+  TEST_SINGLE(bdep(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bdep z30.h, z29.h, z28.h");
+  TEST_SINGLE(bdep(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bdep z30.s, z29.s, z28.s");
+  TEST_SINGLE(bdep(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bdep z30.d, z29.d, z28.d");
+
+  TEST_SINGLE(bgrp(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "bgrp z30.b, z29.b, z28.b");
+  TEST_SINGLE(bgrp(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bgrp z30.h, z29.h, z28.h");
+  TEST_SINGLE(bgrp(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bgrp z30.s, z29.s, z28.s");
+  TEST_SINGLE(bgrp(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "bgrp z30.d, z29.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 complex integer add") {
   // TODO: Implement in emitter.
