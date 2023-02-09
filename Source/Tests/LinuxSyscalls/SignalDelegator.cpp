@@ -89,6 +89,7 @@ namespace FEX::HLE {
     SignalHandler &Handler = HostHandlers[Signal];
 
     ucontext_t* _context = (ucontext_t*)UContext;
+    const auto SigInfo = static_cast<siginfo_t*>(Info);
 
     // Remove the pending signal
     ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
@@ -137,7 +138,7 @@ namespace FEX::HLE {
     // Unhandled crash
     // Call back in to the previous handler
     if (Handler.OldAction.sa_flags & SA_SIGINFO) {
-      Handler.OldAction.sigaction(Signal, static_cast<siginfo_t*>(Info), UContext);
+      Handler.OldAction.sigaction(Signal, SigInfo, UContext);
     }
     else if (Handler.OldAction.handler == SIG_IGN ||
       (Handler.OldAction.handler == SIG_DFL &&
@@ -149,6 +150,12 @@ namespace FEX::HLE {
        Handler.DefaultBehaviour == DEFAULT_TERM)) {
       // Reassign back to DFL and crash
       signal(Signal, SIG_DFL);
+      if (SigInfo->si_code != SI_KERNEL) {
+        // If the signal wasn't sent by the kernel then we need to reraise it.
+        // This is necessary since returning from this signal handler now might just continue executing.
+        // eg: If sent from tgkill then the signal gets dropped and returns.
+        FHU::Syscalls::tgkill(::getpid(), FHU::Syscalls::gettid(), Signal);
+      }
     }
     else {
       Handler.OldAction.handler(Signal);

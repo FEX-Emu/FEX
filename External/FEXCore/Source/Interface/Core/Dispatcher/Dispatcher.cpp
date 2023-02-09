@@ -70,12 +70,6 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(FEXCore::Core:
   // Set the new SP
   ArchHelpers::Context::SetSp(ucontext, NewSP);
 
-  // Signal frames are only used on the interpreter
-  // The JITS require the stack to be setup correctly on rt_sigreturn
-  if (CTX->Config.Core() == FEXCore::Config::CONFIG_INTERPRETER) {
-    SignalFrames.push(NewSP);
-  }
-
   Context->Flags = 0;
   Context->FPStateLocation = 0;
   Context->UContextLocation = 0;
@@ -255,24 +249,92 @@ void Dispatcher::RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Contex
 }
 
 void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type) {
+  // Pulling from context here
+  const bool Is64BitMode = CTX->Config.Is64BitMode;
+  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+
   uint64_t OldSP{};
-  if (CTX->Config.Core() == FEXCore::Config::CONFIG_IRJIT) {
+  if (Type == RestoreType::TYPE_PAUSE) [[unlikely]] {
     OldSP = ArchHelpers::Context::GetSp(ucontext);
   }
   else {
-    LOGMAN_THROW_A_FMT(!SignalFrames.empty(), "Trying to restore a signal frame when we don't have any");
-    OldSP = SignalFrames.top();
-    SignalFrames.pop();
+    // Some fun introspection here.
+    // We store a pointer to our host-stack on the guest stack.
+    // We need to inspect the guest state coming in, so we can get our host stack back.
+    uint64_t GuestSP = Thread->CurrentFrame->State.gregs[X86State::REG_RSP];
+
+    if (Is64BitMode) {
+      // Signal frame layout on stack needs to be as follows
+      // void* ReturnPointer
+      // ucontext_t
+      // siginfo_t
+      // FP state
+      // Host stack location
+
+      GuestSP += sizeof(FEXCore::x86_64::ucontext_t);
+      GuestSP = AlignUp(GuestSP, alignof(FEXCore::x86_64::ucontext_t));
+
+      GuestSP += sizeof(siginfo_t);
+      GuestSP = AlignUp(GuestSP, alignof(siginfo_t));
+
+      if (IsAVXEnabled) {
+        GuestSP += sizeof(x86_64::xstate);
+        GuestSP = AlignUp(GuestSP, alignof(x86_64::xstate));
+      } else {
+        GuestSP += sizeof(x86_64::_libc_fpstate);
+        GuestSP = AlignUp(GuestSP, alignof(x86_64::_libc_fpstate));
+      }
+    }
+    else {
+      if (Type == RestoreType::TYPE_NONREALTIME) {
+        // Signal frame layout on stack needs to be as follows
+        // SigFrame_i32
+        // FPState
+        // Host stack location
+
+        // Remove the 4-byte pretcode /AND/ a legacy argument that is ignored.
+        GuestSP += sizeof(SigFrame_i32) - 8;
+        GuestSP = AlignUp(GuestSP, alignof(SigFrame_i32));
+
+        if (IsAVXEnabled) {
+          GuestSP += sizeof(x86::xstate);
+          GuestSP = AlignUp(GuestSP, alignof(x86::xstate));
+        } else {
+          GuestSP += sizeof(x86::_libc_fpstate);
+          GuestSP = AlignUp(GuestSP, alignof(x86::_libc_fpstate));
+        }
+      }
+      else {
+        // Signal frame layout on stack needs to be as follows
+        // RTSigFrame_i32
+        // FPState
+        // Host stack location
+
+        // Remove the 4-byte pretcode.
+        GuestSP += sizeof(RTSigFrame_i32) - 4;
+        GuestSP = AlignUp(GuestSP, alignof(RTSigFrame_i32));
+
+        if (IsAVXEnabled) {
+          GuestSP += sizeof(x86::xstate);
+          GuestSP = AlignUp(GuestSP, alignof(x86::xstate));
+        } else {
+          GuestSP += sizeof(x86::_libc_fpstate);
+          GuestSP = AlignUp(GuestSP, alignof(x86::_libc_fpstate));
+        }
+      }
+    }
+
+    OldSP = *reinterpret_cast<uint64_t*>(GuestSP);
   }
 
   uintptr_t NewSP = OldSP;
   auto Context = reinterpret_cast<ArchHelpers::Context::ContextBackup*>(NewSP);
 
-  // First thing, reset the guest state
-  memcpy(Thread->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
-
-  // Now restore host state
+  // Restore host state
   ArchHelpers::Context::RestoreContext(ucontext, Context);
+
+  // Reset the guest state
+  memcpy(Thread->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
   if (Context->UContextLocation) {
     auto Frame = Thread->CurrentFrame;
@@ -283,7 +345,7 @@ void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, 
       // We can't currently support this since it might result in tearing without real state reconstruction
     }
 
-    if (!(Context->Flags & ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT)) {
+    if (Is64BitMode) {
       RestoreFrame_x64(Context, Frame, ucontext);
     }
     else {
@@ -354,9 +416,10 @@ uint64_t Dispatcher::SetupFrame_ia32(
   uint64_t NewGuestSP, const uint32_t eflags) {
 
   const bool IsAVXEnabled = CTX->Config.EnableAVX;
-  const uint64_t SignalReturn = CTX->X86CodeGen.SignalReturn;
+  const uint64_t SignalReturn = reinterpret_cast<uint64_t>(CTX->VDSOPointers.VDSO_kernel_sigreturn);
 
-  ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT;
+  NewGuestSP -= sizeof(uint64_t);
+  uint64_t HostStackLocation = NewGuestSP;
 
   if (IsAVXEnabled) {
     NewGuestSP -= sizeof(x86::xstate);
@@ -377,6 +440,8 @@ uint64_t Dispatcher::SetupFrame_ia32(
   ContextBackup->SigInfoLocation = 0;
 
   SigFrame_i32 *guest_uctx = reinterpret_cast<SigFrame_i32*>(SigFrameLocation);
+  // Store where the host context lives in the guest stack.
+  *(uint64_t*)HostStackLocation = (uint64_t)ContextBackup;
 
   // Pointer to where the fpreg memory is
   guest_uctx->sc.fpstate = static_cast<uint32_t>(FPStateLocation);
@@ -453,9 +518,21 @@ uint64_t Dispatcher::SetupFrame_ia32(
   // Copy over the signal information.
   guest_uctx->Signal = Signal;
 
+  // Retcode needs to be bit-exact for debuggers
+  constexpr static uint8_t retcode[] = {
+    0x58, // pop eax
+    0xb8, // mov
+    0x77, 0x00, 0x00, 0x00, // 32-bit sigreturn
+    0xcd, 0x80, // int 0x80
+  };
+
+  memcpy(guest_uctx->retcode, &retcode, sizeof(retcode));
+
   // 32-bit Guest can provide its own restorer or we need to provide our own.
   // On a real host this restorer will live in VDSO.
-  if (GuestAction->restorer && incomplete_guest_restorer_support) {
+  constexpr uint32_t SA_RESTORER = 0x04000000;
+  const bool HasRestorer = (GuestAction->sa_flags & SA_RESTORER) == SA_RESTORER;
+  if (HasRestorer) {
     // TODO: Support guest restorer
     guest_uctx->pretcode = (uint32_t)(uint64_t)GuestAction->restorer;
   }
@@ -479,9 +556,10 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
   uint64_t NewGuestSP, const uint32_t eflags) {
 
   const bool IsAVXEnabled = CTX->Config.EnableAVX;
-  const uint64_t SignalReturn = CTX->X86CodeGen.SignalReturnRT;
+  const uint64_t SignalReturn = reinterpret_cast<uint64_t>(CTX->VDSOPointers.VDSO_kernel_rt_sigreturn);
 
-  ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_32BIT;
+  NewGuestSP -= sizeof(uint64_t);
+  uint64_t HostStackLocation = NewGuestSP;
 
   if (IsAVXEnabled) {
     NewGuestSP -= sizeof(x86::xstate);
@@ -495,8 +573,11 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
 
   NewGuestSP -= sizeof(RTSigFrame_i32);
   NewGuestSP = AlignDown(NewGuestSP, alignof(RTSigFrame_i32));
+
   uint64_t SigFrameLocation = NewGuestSP;
   RTSigFrame_i32 *guest_uctx = reinterpret_cast<RTSigFrame_i32*>(SigFrameLocation);
+  // Store where the host context lives in the guest stack.
+  *(uint64_t*)HostStackLocation = (uint64_t)ContextBackup;
 
   ContextBackup->FPStateLocation = FPStateLocation;
   ContextBackup->UContextLocation = SigFrameLocation;
@@ -504,6 +585,7 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
 
   // We have extended float information
   guest_uctx->uc.uc_flags = FEXCore::x86::UC_FP_XSTATE;
+  guest_uctx->uc.uc_link = 0;
 
   // Pointer to where the fpreg memory is
   guest_uctx->uc.uc_mcontext.fpregs = static_cast<uint32_t>(FPStateLocation);
@@ -530,7 +612,8 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
 
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = eflags;
-  guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_UESP] = 0;
+  guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_UESP] = Frame->State.gregs[X86State::REG_RSP];
+  guest_uctx->uc.uc_mcontext.cr2 = 0;
 
 #define COPY_REG(x) \
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_##x] = Frame->State.gregs[X86State::REG_##x];
@@ -575,7 +658,6 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
     (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
     (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
     (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
-
 
   // Copy over signal stack information
   guest_uctx->uc.uc_stack.ss_flags = GuestStack->ss_flags;
@@ -630,9 +712,21 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
   guest_uctx->pinfo = (uint32_t)(uint64_t)&guest_uctx->info;
   guest_uctx->puc = (uint32_t)(uint64_t)&guest_uctx->uc;
 
+  // Retcode needs to be bit-exact for debuggers
+  constexpr static uint8_t rt_retcode[] = {
+    0xb8, // mov
+    0xad, 0x00, 0x00, 0x00, // 32-bit rt_sigreturn
+    0xcd, 0x80, // int 0x80
+    0x0, // Pad
+  };
+
+  memcpy(guest_uctx->retcode, &rt_retcode, sizeof(rt_retcode));
+
   // 32-bit Guest can provide its own restorer or we need to provide our own.
   // On a real host this restorer will live in VDSO.
-  if (GuestAction->restorer && incomplete_guest_restorer_support) {
+  constexpr uint32_t SA_RESTORER = 0x04000000;
+  const bool HasRestorer = (GuestAction->sa_flags & SA_RESTORER) == SA_RESTORER;
+  if (HasRestorer) {
     // TODO: Support guest restorer
     guest_uctx->pretcode = (uint32_t)(uint64_t)GuestAction->restorer;
   }
@@ -734,7 +828,6 @@ uint64_t Dispatcher::SetupFrame_x64(
   NewGuestSP -= 128;
 
   const bool IsAVXEnabled = CTX->Config.EnableAVX;
-  const uint64_t SignalReturn = CTX->X86CodeGen.SignalReturn;
 
   // On 64-bit the kernel sets up the siginfo_t and ucontext_t regardless of SA_SIGINFO set.
   // This allows the application to /always/ get the siginfo and ucontext even if it didn't set this flag.
@@ -744,6 +837,11 @@ uint64_t Dispatcher::SetupFrame_x64(
   // ucontext_t
   // siginfo_t
   // FP state
+  // Host stack location
+  NewGuestSP -= sizeof(uint64_t);
+
+  uint64_t HostStackLocation = NewGuestSP;
+
   if (IsAVXEnabled) {
     NewGuestSP -= sizeof(x86_64::xstate);
     NewGuestSP = AlignDown(NewGuestSP, alignof(x86_64::xstate));
@@ -768,6 +866,8 @@ uint64_t Dispatcher::SetupFrame_x64(
 
   FEXCore::x86_64::ucontext_t *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(UContextLocation);
   siginfo_t *guest_siginfo = reinterpret_cast<siginfo_t*>(SigInfoLocation);
+  // Store where the host context lives in the guest stack.
+  *(uint64_t*)HostStackLocation = (uint64_t)ContextBackup;
 
   // We have extended float information
   guest_uctx->uc_flags = FEXCore::x86_64::UC_FP_XSTATE |
@@ -866,14 +966,14 @@ uint64_t Dispatcher::SetupFrame_x64(
   // The host is required to provide us a restorer.
   // If the guest didn't provide a restorer then the application should fail with a SIGSEGV.
   // TODO: Emulate SIGSEGV when the guest doesn't provide a restorer.
-  // TODO: Support the guest's restorer. Required for libunwind.
   NewGuestSP -= 8;
-  if (incomplete_guest_restorer_support) {
+  if (GuestAction->restorer) {
     // TODO: Once we support the guest's restorer.
     *(uint64_t*)NewGuestSP = (uint64_t)GuestAction->restorer;
   }
   else {
-    *(uint64_t*)NewGuestSP = SignalReturn;
+    // XXX: Emulate SIGSEGV here
+    // *(uint64_t*)NewGuestSP = SignalReturn;
   }
 
   return NewGuestSP;

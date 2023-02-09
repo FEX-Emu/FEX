@@ -22,7 +22,7 @@
     "",
     "Eg:",
     "IR op with no result and no arguments",
-    "  SignalReturn",
+    "  CallbackReturn",
     "",
     "IR op with result and no arguments",
     "  GPR = ProcessorID",
@@ -262,9 +262,6 @@
         "DestSize": "GetOpSize(_NewRIP)"
       },
       "Break BreakDefinition:$Reason": {
-        "HasSideEffects": true
-      },
-      "SignalReturn i8:$IsRT": {
         "HasSideEffects": true
       },
       "CallbackReturn": {

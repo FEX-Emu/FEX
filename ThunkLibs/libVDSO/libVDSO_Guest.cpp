@@ -38,5 +38,29 @@ int __kernel_vsyscall() {
   )"
   ::: "memory");
 }
+
+__attribute__((naked))
+void __kernel_sigreturn() {
+  asm volatile(R"(
+  .intel_syntax noprefix
+  pop eax;
+  mov eax, 0x77;
+  int 0x80;
+  nop;
+  .att_syntax prefix
+  )"
+  ::: "memory");
+}
+__attribute__((naked))
+void __kernel_rt_sigreturn() {
+  asm volatile(R"(
+  .intel_syntax noprefix
+  mov eax, 0xad;
+  int 0x80;
+  .att_syntax prefix
+  )"
+  ::: "memory");
+}
+
 #endif
 }

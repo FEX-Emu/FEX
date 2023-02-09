@@ -72,6 +72,11 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
 
+    - name: Install
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+
     - name: ASM Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
@@ -198,12 +203,6 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
-
-    - name: Install
-      if: matrix.arch[1] == 'x64'
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target install
 
     - name: Test GL No-Thunks
       if: matrix.arch[1] == 'x64'

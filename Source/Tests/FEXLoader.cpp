@@ -429,6 +429,7 @@ int main(int argc, char **argv, char **const envp) {
 
   // Pass in our VDSO thunks
   FEXCore::Context::AppendThunkDefinitions(CTX, FEX::VDSO::GetVDSOThunkDefinitions());
+  FEXCore::Context::SetVDSOSigReturn(CTX, FEX::VDSO::GetVDSOSymbols());
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 

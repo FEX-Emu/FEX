@@ -69,6 +69,11 @@ namespace FEXCore::Context {
       std::unique_lock<std::shared_mutex> lock;
   };
 
+  struct VDSOSigReturn {
+    void *VDSO_kernel_sigreturn;
+    void *VDSO_kernel_rt_sigreturn;
+  };
+
   using CustomCPUFactoryType = std::function<std::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
 
   using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
@@ -252,6 +257,7 @@ namespace FEXCore::Context {
   FEX_DEFAULT_VISIBILITY void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
 
   FEX_DEFAULT_VISIBILITY void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);
+  [[noreturn]] FEX_DEFAULT_VISIBILITY void HandleSignalHandlerReturn(FEXCore::Context::Context *CTX, bool RT);
   FEX_DEFAULT_VISIBILITY void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required);
 
   FEX_DEFAULT_VISIBILITY FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID);
@@ -289,4 +295,7 @@ namespace FEXCore::Context {
    * @param Definitions A vector of thunk definitions that the frontend controls
    */
   FEX_DEFAULT_VISIBILITY void AppendThunkDefinitions(FEXCore::Context::Context *CTX, std::vector<FEXCore::IR::ThunkDefinition> const& Definitions);
+
+  FEX_DEFAULT_VISIBILITY void SetVDSOSigReturn(FEXCore::Context::Context *CTX, const VDSOSigReturn &Pointers);
+
 }

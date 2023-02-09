@@ -277,18 +277,6 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   BlockSetRIP = true;
 }
 
-void OpDispatchBuilder::SIGRETOp(OpcodeArgs) {
-  uint8_t Literal = Op->Src[0].Data.Literal.Value;
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  // Store the new RIP
-  bool IsRT = CTX->Config.Is64BitMode() || Literal;
-  _SignalReturn(IsRT);
-  auto NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
-  // This ExitFunction won't actually get hit but needs to exist
-  _ExitFunction(NewRIP);
-  BlockSetRIP = true;
-}
-
 void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   // Store the new RIP
@@ -6425,7 +6413,6 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xFE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>},
 
     // FEX reserved instructions
-    {0x36, 1, &OpDispatchBuilder::SIGRETOp},
     {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
   };
 

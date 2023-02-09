@@ -834,7 +834,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(ATOMICFETCHNEG, AtomicFetchNeg);
 
         // Branch ops
-        REGISTER_OP(SIGNALRETURN,      SignalReturn);
         REGISTER_OP(CALLBACKRETURN,    CallbackReturn);
         REGISTER_OP(EXITFUNCTION,      ExitFunction);
         REGISTER_OP(JUMP,              Jump);

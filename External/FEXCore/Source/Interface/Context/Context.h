@@ -152,6 +152,7 @@ namespace FEXCore::Context {
 
     SignalDelegator *SignalDelegation{};
     X86GeneratedCode X86CodeGen;
+    VDSOSigReturn VDSOPointers{};
 
     Context();
     ~Context();
@@ -173,6 +174,7 @@ namespace FEXCore::Context {
     void StartGdbServer();
     void StopGdbServer();
     void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP);
+    [[noreturn]] void HandleSignalHandlerReturn(bool RT);
     void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
     void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
@@ -325,6 +327,17 @@ namespace FEXCore::Context {
     }
 
     void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions);
+
+    void SetVDSOSigReturn(const VDSOSigReturn &Pointers) {
+      VDSOPointers = Pointers;
+      if (VDSOPointers.VDSO_kernel_sigreturn == nullptr) {
+        VDSOPointers.VDSO_kernel_sigreturn = reinterpret_cast<void*>(X86CodeGen.sigreturn_32);
+      }
+
+      if (VDSOPointers.VDSO_kernel_rt_sigreturn == nullptr) {
+        VDSOPointers.VDSO_kernel_rt_sigreturn = reinterpret_cast<void*>(X86CodeGen.rt_sigreturn_32);
+      }
+    }
 
     FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;

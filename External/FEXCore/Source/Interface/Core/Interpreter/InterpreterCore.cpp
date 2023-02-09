@@ -50,6 +50,9 @@ InterpreterCore::InterpreterCore(Dispatcher *Dispatcher, FEXCore::Core::Internal
 }
 
 void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+  CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+    return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
+  }, true);
 
 #ifdef _M_ARM_64
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {

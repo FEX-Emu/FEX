@@ -305,7 +305,6 @@ private:
   DEF_OP(AtomicFetchNeg);
 
   ///< Branch ops
-  DEF_OP(SignalReturn);
   DEF_OP(CallbackReturn);
   DEF_OP(ExitFunction);
   DEF_OP(Jump);

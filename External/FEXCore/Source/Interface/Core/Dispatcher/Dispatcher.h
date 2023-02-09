@@ -95,8 +95,6 @@ protected:
   void RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
   void RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
 
-  const bool incomplete_guest_restorer_support = false;
-
   ///< Setup the signal frame for x64.
   uint64_t SetupFrame_x64(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
     int Signal, siginfo_t *HostSigInfo, void *ucontext,
