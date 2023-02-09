@@ -1789,10 +1789,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract inte
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise exclusive-or interleaved") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(eorbt(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "eorbt z30.b, z29.b, z28.b");
+  TEST_SINGLE(eorbt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "eorbt z30.h, z29.h, z28.h");
+  TEST_SINGLE(eorbt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "eorbt z30.s, z29.s, z28.s");
+  TEST_SINGLE(eorbt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "eorbt z30.d, z29.d, z28.d");
+
+  TEST_SINGLE(eortb(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "eortb z30.b, z29.b, z28.b");
+  TEST_SINGLE(eortb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "eortb z30.h, z29.h, z28.h");
+  TEST_SINGLE(eortb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "eortb z30.s, z29.s, z28.s");
+  TEST_SINGLE(eortb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "eortb z30.d, z29.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer matrix multiply accumulate") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(smmla(ZReg::z30,  ZReg::z29, ZReg::z28), "smmla z30.s, z29.b, z28.b");
+  TEST_SINGLE(usmmla(ZReg::z30, ZReg::z29, ZReg::z28), "usmmla z30.s, z29.b, z28.b");
+  TEST_SINGLE(ummla(ZReg::z30,  ZReg::z29, ZReg::z28), "ummla z30.s, z29.b, z28.b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise permute") {
   TEST_SINGLE(bext(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "bext z30.b, z29.b, z28.b");

@@ -1923,7 +1923,15 @@ public:
   }
 
   // SVE integer matrix multiply accumulate
-  // XXX:
+  void smmla(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMatrixMulAccumulate(0b00, zda, zn, zm);
+  }
+  void usmmla(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMatrixMulAccumulate(0b10, zda, zn, zm);
+  }
+  void ummla(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMatrixMulAccumulate(0b11, zda, zn, zm);
+  }
 
   // SVE2 bitwise permute
   void bext(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
@@ -3572,6 +3580,15 @@ private:
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerMatrixMulAccumulate(uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
+    uint32_t Instr = 0b0100'0101'0000'0000'1001'1000'0000'0000;
+    Instr |= opc << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }
 
