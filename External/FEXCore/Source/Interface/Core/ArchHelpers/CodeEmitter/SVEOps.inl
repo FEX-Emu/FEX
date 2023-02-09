@@ -978,7 +978,15 @@ public:
   }
 
   // SVE bitwise shift by wide elements (predicated)
-  // XXX:
+  void asr_wide(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftByWideElementPredicated(size, 0b000, zd, pg, zn, zm);
+  }
+  void lsr_wide(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftByWideElementPredicated(size, 0b001, zd, pg, zn, zm);
+  }
+  void lsl_wide(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftByWideElementPredicated(size, 0b011, zd, pg, zn, zm);
+  }
 
   // SVE Integer Unary Arithmetic - Predicated
   // SVE integer unary operations (predicated)
@@ -1188,13 +1196,13 @@ public:
 
   // SVE Bitwise Shift - Unpredicated
   // SVE bitwise shift by wide elements (unpredicated)
-  void asr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+  void asr_wide(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementsUnpredicated(size, 0b00, zd, zn, zm);
   }
-  void lsr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+  void lsr_wide(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementsUnpredicated(size, 0b01, zd, zn, zm);
   }
-  void lsl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+  void lsl_wide(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementsUnpredicated(size, 0b11, zd, zn, zm);
   }
 
@@ -3433,6 +3441,21 @@ private:
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Saturing add/subtract can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0100'0100'0001'1000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBitwiseShiftByWideElementPredicated(SubRegSize size, uint32_t opc, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
+                       "Can't use 64-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Wide shift can only use p0-p7 as a governing predicate");
+    
+    uint32_t Instr = 0b0000'0100'0001'1000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
