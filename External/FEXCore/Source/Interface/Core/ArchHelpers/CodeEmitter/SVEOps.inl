@@ -1196,13 +1196,13 @@ public:
 
   // SVE Bitwise Shift - Unpredicated
   // SVE bitwise shift by wide elements (unpredicated)
-  void asr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+  void asr_wide(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementsUnpredicated(size, 0b00, zd, zn, zm);
   }
-  void lsr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+  void lsr_wide(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementsUnpredicated(size, 0b01, zd, zn, zm);
   }
-  void lsl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+  void lsl_wide(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementsUnpredicated(size, 0b11, zd, zn, zm);
   }
 
