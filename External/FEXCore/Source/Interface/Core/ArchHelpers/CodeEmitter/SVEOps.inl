@@ -1314,7 +1314,19 @@ public:
     Instr |= zd.Idx();
     dc32(Instr);
   }
-  // XXX: CPY (scalar)
+
+  // CPY (scalar)
+  void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, WRegister rn) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "cpy can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    uint32_t Instr = 0b0000'0101'0010'1000'1010'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= pg.Idx() << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
 
   template<FEXCore::ARMEmitter::OpType optype>
   requires(optype == FEXCore::ARMEmitter::OpType::Constructive)
