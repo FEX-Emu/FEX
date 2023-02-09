@@ -2078,9 +2078,6 @@ public:
   // SVE2 integer add/subtract narrow high part
   // XXX:
   //
-  // SVE2 Histogram Computation - Segment
-  // XXX:
-  //
   // SVE2 Crypto Extensions
   // SVE2 crypto unary operations
   // XXX:
