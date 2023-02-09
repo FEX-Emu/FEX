@@ -2075,9 +2075,33 @@ public:
     Instr |= zd.Idx();
     dc32(Instr);
   }
+
   // SVE2 integer add/subtract narrow high part
-  // XXX:
-  //
+  void addhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b000, zd, zn, zm);
+  }
+  void addhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b001, zd, zn, zm);
+  }
+  void raddhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b010, zd, zn, zm);
+  }
+  void raddhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b011, zd, zn, zm);
+  }
+  void subhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b100, zd, zn, zm);
+  }
+  void subhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b101, zd, zn, zm);
+  }
+  void rsubhnb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b110, zd, zn, zm);
+  }
+  void rsubhnt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubNarrowHighPart(size, 0b111, zd, zn, zm);
+  }
+
   // SVE2 Crypto Extensions
   // SVE2 crypto unary operations
   // XXX:
@@ -3493,6 +3517,19 @@ private:
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 10;
     Instr |= zm.Idx() << 16;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubNarrowHighPart(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
+                       "Can't use 64-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0010'0000'0110'0000'0000'0000;
+    Instr |= (FEXCore::ToUnderlying(size) + 1) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);
