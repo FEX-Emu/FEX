@@ -1418,21 +1418,21 @@
         "Desc": "Does a stage of the inverse mix column transformation",
         "DestSize": "16"
       },
-      "FPR = VAESEnc FPR:$State, FPR:$Key": {
+      "FPR = VAESEnc u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does a step of AES encryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
-      "FPR = VAESEncLast FPR:$State, FPR:$Key": {
+      "FPR = VAESEncLast u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does the last step of AES encryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
-      "FPR = VAESDec FPR:$State, FPR:$Key": {
+      "FPR = VAESDec u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does a step of AES decryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
-      "FPR = VAESDecLast FPR:$State, FPR:$Key": {
+      "FPR = VAESDecLast u8:#RegisterSize, FPR:$State, FPR:$Key": {
         "Desc": "Does the last step of AES decryption",
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       },
       "FPR = VAESKeyGenAssist FPR:$Src, u8:$RCON": {
         "Desc": "Assists in key generation",
@@ -1443,7 +1443,7 @@
                 ],
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
       },
-      "FPR = PCLMUL FPR:$Src1, FPR:$Src2, u8:$Selector": {
+      "FPR = PCLMUL u8:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
         "Desc": [
           "Performs carryless multiplication of 64-bit elements depending on the selector.",
           "Selector = 0b00000000: Uses low 64-bit elements from both input vectors",
@@ -1451,7 +1451,7 @@
           "Selector = 0b00010000: Uses low 64-bit element from Src1 and high 64-bit element from Src2",
           "Selector = 0b00010001: Uses high 64-bit elements from both input vectors"
         ],
-        "DestSize": "16"
+        "DestSize": "RegisterSize"
       }
     },
     "F64": {

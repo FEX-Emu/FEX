@@ -280,7 +280,7 @@ void OpDispatchBuilder::VAESIMCOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESEnc(Dest, Src);
+  OrderedNode *Result = _VAESEnc(16, Dest, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -293,7 +293,7 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESEnc(State, Key);
+  OrderedNode *Result = _VAESEnc(DstSize, State, Key);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -304,7 +304,7 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESEncLast(Dest, Src);
+  OrderedNode *Result = _VAESEncLast(16, Dest, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -317,7 +317,7 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESEncLast(State, Key);
+  OrderedNode *Result = _VAESEncLast(DstSize, State, Key);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -328,7 +328,7 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESDec(Dest, Src);
+  OrderedNode *Result = _VAESDec(16, Dest, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -341,7 +341,7 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESDec(State, Key);
+  OrderedNode *Result = _VAESDec(DstSize, State, Key);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -352,7 +352,7 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VAESDecLast(Dest, Src);
+  OrderedNode *Result = _VAESDecLast(16, Dest, Src);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -365,7 +365,7 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
 
   OrderedNode *State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VAESDecLast(State, Key);
+  OrderedNode *Result = _VAESDecLast(DstSize, State, Key);
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -399,7 +399,7 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Data.Literal.Value);
 
-  auto Res = _PCLMUL(Dest, Src, Selector);
+  auto Res = _PCLMUL(16, Dest, Src, Selector);
   StoreResult(FPRClass, Op, Res, -1);
 }
 
@@ -413,7 +413,7 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Data.Literal.Value);
 
-  OrderedNode *Res = _PCLMUL(Src1, Src2, Selector);
+  OrderedNode *Res = _PCLMUL(DstSize, Src1, Src2, Selector);
   if (Is128Bit) {
     Res = _VMov(16, Res);
   }
