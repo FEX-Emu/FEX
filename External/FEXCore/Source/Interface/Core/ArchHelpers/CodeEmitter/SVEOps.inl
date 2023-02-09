@@ -880,6 +880,54 @@ public:
     Instr |= zd.Idx();
     dc32(Instr);
   }
+
+  void SVEBitWiseShiftImmediateUnpred(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+    const bool IsLeftShift = opc == 0b11;
+    if (IsLeftShift) {
+      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
+    } else {
+      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
+    }
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = IsLeftShift ? Shift
+                                              : (2 * ElementSize) - Shift;
+
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0b00;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0b00;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 0b01;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i64Bit) {
+      tszh = 0b10 | ((InverseShift >> 5) & 1);
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    uint32_t Instr = 0b0000'0100'0010'0000'1001'0000'0000'0000;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= imm3 << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
   // SVE bitwise shift by vector (predicated)
   void asr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -1151,7 +1199,15 @@ public:
   }
 
   // SVE bitwise shift by immediate (unpredicated)
-  // XXX:
+  void asr(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVEBitWiseShiftImmediateUnpred(size, 0b00, zd, zn, shift);
+  }
+  void lsr(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVEBitWiseShiftImmediateUnpred(size, 0b01, zd, zn, shift);
+  }
+  void lsl(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVEBitWiseShiftImmediateUnpred(size, 0b11, zd, zn, shift);
+  }
 
   // SVE Integer Misc - Unpredicated
   // SVE floating-point trig select coefficient

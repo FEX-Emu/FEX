@@ -955,7 +955,32 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by wide elem
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise shift by immediate (unpredicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(asr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 1),  "asr z30.b, z29.b, #1");
+  TEST_SINGLE(asr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 8),  "asr z30.b, z29.b, #8");
+  TEST_SINGLE(asr(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 1),  "asr z30.h, z29.h, #1");
+  TEST_SINGLE(asr(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 16), "asr z30.h, z29.h, #16");
+  TEST_SINGLE(asr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 1),  "asr z30.s, z29.s, #1");
+  TEST_SINGLE(asr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 32), "asr z30.s, z29.s, #32");
+  TEST_SINGLE(asr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 1),  "asr z30.d, z29.d, #1");
+  TEST_SINGLE(asr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 64), "asr z30.d, z29.d, #64");
+
+  TEST_SINGLE(lsr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 1),  "lsr z30.b, z29.b, #1");
+  TEST_SINGLE(lsr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 8),  "lsr z30.b, z29.b, #8");
+  TEST_SINGLE(lsr(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 1),  "lsr z30.h, z29.h, #1");
+  TEST_SINGLE(lsr(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 16), "lsr z30.h, z29.h, #16");
+  TEST_SINGLE(lsr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 1),  "lsr z30.s, z29.s, #1");
+  TEST_SINGLE(lsr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 32), "lsr z30.s, z29.s, #32");
+  TEST_SINGLE(lsr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 1),  "lsr z30.d, z29.d, #1");
+  TEST_SINGLE(lsr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 64), "lsr z30.d, z29.d, #64");
+
+  TEST_SINGLE(lsl(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 0),  "lsl z30.b, z29.b, #0");
+  TEST_SINGLE(lsl(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 7),  "lsl z30.b, z29.b, #7");
+  TEST_SINGLE(lsl(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 0),  "lsl z30.h, z29.h, #0");
+  TEST_SINGLE(lsl(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 15), "lsl z30.h, z29.h, #15");
+  TEST_SINGLE(lsl(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 0),  "lsl z30.s, z29.s, #0");
+  TEST_SINGLE(lsl(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 31), "lsl z30.s, z29.s, #31");
+  TEST_SINGLE(lsl(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 0),  "lsl z30.d, z29.d, #0");
+  TEST_SINGLE(lsl(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 63), "lsl z30.d, z29.d, #63");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point trig select coefficient") {
