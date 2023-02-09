@@ -1094,13 +1094,23 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE permute predicate elements
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicated - Base") {
-  // XXX: CPY (SIMD&FP scalar)
+  // CPY (SIMD&FP scalar)
+  TEST_SINGLE(cpy(SubRegSize::i8Bit,  ZReg::z30, PReg::p7.Merging(), VReg::v30), "mov z30.b, p7/m, b30");
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), VReg::v30), "mov z30.h, p7/m, h30");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), VReg::v30), "mov z30.s, p7/m, s30");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), VReg::v30), "mov z30.d, p7/m, d30");
+
   //TEST_SINGLE(compact(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29),   "compact z30.b, p6, z29.b");
   //TEST_SINGLE(compact(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z29),  "compact z30.h, p6, z29.h");
   TEST_SINGLE(compact(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z29),  "compact z30.s, p6, z29.s");
   TEST_SINGLE(compact(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z29),  "compact z30.d, p6, z29.d");
   //TEST_SINGLE(compact(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z29), "compact z30.q, p6, z29.q");
-  // XXX: CPY (scalar)
+
+  // CPY (scalar)
+  TEST_SINGLE(cpy(SubRegSize::i8Bit,  ZReg::z30, PReg::p7.Merging(), WReg::rsp), "mov z30.b, p7/m, wsp");
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), WReg::rsp), "mov z30.h, p7/m, wsp");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), WReg::rsp), "mov z30.s, p7/m, wsp");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), XReg::rsp), "mov z30.d, p7/m, sp");
 
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),   "splice z30.b, p6, {z28.b, z29.b}");
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.h, p6, {z28.h, z29.h}");
