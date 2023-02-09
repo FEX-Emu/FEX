@@ -1,7 +1,55 @@
 #!/usr/bin/python3
+import json
 import os
 import sys
 import subprocess
+
+# Check if FEX indicates support for AVX
+def DoesFEXSupportAVX(mode):
+    fex_interpreter_path = os.path.dirname(sys.argv[7]) + "/FEXInterpreter"
+
+    args = list()
+    args.append(fex_interpreter_path)
+    if (mode == "guest"):
+        ROOTFS_ENV = os.getenv("ROOTFS")
+        if ROOTFS_ENV != None:
+            args.append("-R")
+            args.append(ROOTFS_ENV)
+    args.append('/bin/cat')
+    args.append('/proc/cpuinfo')
+
+    process = subprocess.run(args, capture_output=True, text=True)
+    output = process.stdout
+
+    for line in output:
+        if 'flags' in line:
+            flags = line.split(':')[1].strip().split(' ')
+            return 'avx' in flags and 'avx2' in flags
+    return False
+
+# Check if the test itself requires AVX
+def TestRequiresAVXSupport():
+    exe_path = sys.argv[len(sys.argv) - 1]
+    json_path = os.path.dirname(os.path.dirname(exe_path)) + '/requirements/' + os.path.basename(exe_path) + '.json'
+
+    try:
+        with open(json_path) as json_file:
+            try:
+                json_data = json.load(json_file)
+                if not isinstance(json_data, dict):
+                    raise TypeError('JSON data must be a dict')
+
+                if "AVX" in json_data["HostFeatures"]:
+                    return True
+            except ValueError as ve:
+                print(f'JSON error: {ve}')
+                pass
+    except IOError:
+        # If we get here, then we don't have a corresponding JSON
+        # file for the associated test, and can assume there's no
+        # feature requirements for the test.
+        pass
+    return False
 
 def LoadTestsFile(File):
     Dict = {}
@@ -46,6 +94,10 @@ test_name = sys.argv[5]
 mode = sys.argv[6]
 fexecutable = sys.argv[7]
 StartingFEXArgsOffset = 8
+
+# If the test requires AVX and FEX doesn't support it, just pass the test and move on
+if TestRequiresAVXSupport() and not DoesFEXSupportAVX(mode):
+    sys.exit(0)
 
 # Open test expected information files and load in to dictionaries.
 known_failures = LoadTestsFile(known_failures_file)
