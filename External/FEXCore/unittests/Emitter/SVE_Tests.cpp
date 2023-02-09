@@ -1786,7 +1786,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise shift left long")
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract interleaved long") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(saddlbt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddlbt z30.h, z29.b, z28.b");
+  TEST_SINGLE(saddlbt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddlbt z30.s, z29.h, z28.h");
+  TEST_SINGLE(saddlbt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddlbt z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(ssublbt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssublbt z30.h, z29.b, z28.b");
+  TEST_SINGLE(ssublbt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssublbt z30.s, z29.h, z28.h");
+  TEST_SINGLE(ssublbt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssublbt z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(ssubltb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubltb z30.h, z29.b, z28.b");
+  TEST_SINGLE(ssubltb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubltb z30.s, z29.h, z28.h");
+  TEST_SINGLE(ssubltb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubltb z30.d, z29.s, z28.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise exclusive-or interleaved") {
   TEST_SINGLE(eorbt(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "eorbt z30.b, z29.b, z28.b");

@@ -1911,8 +1911,17 @@ public:
   // SVE Misc
   // SVE2 bitwise shift left long
   // XXX:
+
   // SVE2 integer add/subtract interleaved long
-  // XXX:
+  void saddlbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b00, zd, zn, zm);
+  }
+  void ssublbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10, zd, zn, zm);
+  }
+  void ssubltb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b11, zd, zn, zm);
+  }
 
   // SVE2 bitwise exclusive-or interleaved
   void eorbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
@@ -3589,6 +3598,19 @@ private:
     Instr |= zm.Idx() << 16;
     Instr |= zn.Idx() << 5;
     Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubInterleavedLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                       "Can't use 8-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
