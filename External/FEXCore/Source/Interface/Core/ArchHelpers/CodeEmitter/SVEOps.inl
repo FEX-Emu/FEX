@@ -1910,7 +1910,18 @@ public:
   //
   // SVE Misc
   // SVE2 bitwise shift left long
-  // XXX:
+  void sshllb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b00, zd, zn, shift);
+  }
+  void sshllt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b01, zd, zn, shift);
+  }
+  void ushllb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b10, zd, zn, shift);
+  }
+  void ushllt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftLeftLong(size, 0b11, zd, zn, shift);
+  }
 
   // SVE2 integer add/subtract interleaved long
   void saddlbt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
@@ -3611,6 +3622,30 @@ private:
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseShiftLeftLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                       "Can't use 8-bit or 128-bit element size");
+
+    const auto Underlying = FEXCore::ToUnderlying(size);
+    const auto ElementSize = SubRegSizeInBits(static_cast<SubRegSize>(Underlying - 1));
+
+    LOGMAN_THROW_A_FMT(shift >= 0 && shift < ElementSize,
+                       "Shift must be within 0-{}", ElementSize - 1);
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1010'0000'0000'0000;
+    Instr |= shift << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    if (size == SubRegSize::i64Bit) {
+      Instr |= 1U << 22;
+    } else {
+      Instr |= (1U << 19) << (Underlying - 1);
+    }
+
     dc32(Instr);
   }
 
