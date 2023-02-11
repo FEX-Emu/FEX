@@ -1966,18 +1966,72 @@ public:
 
   // SVE2 Accumulate
   // SVE2 complex integer add
-  // XXX:
+  void cadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVE2ComplexIntAdd(size, 0b0, rot, zd, zn, zm);
+  }
+  void sqcadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVE2ComplexIntAdd(size, 0b1, rot, zd, zn, zm);
+  }
+
   // SVE2 integer absolute difference and accumulate long
-  // XXX:
+  void sabalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10000, zda, zn, zm);
+  }
+  void sabalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10001, zda, zn, zm);
+  }
+  void uabalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10010, zda, zn, zm);
+  }
+  void uabalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10011, zda, zn, zm);
+  }
+
   // SVE2 integer add/subtract long with carry
-  // XXX:
+  void adclb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 0, 0, zda, zn, zm);
+  }
+  void adclt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 0, 1, zda, zn, zm);
+  }
+  void sbclb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 1, 0, zda, zn, zm);
+  }
+  void sbclt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 1, 1, zda, zn, zm);
+  }
+
   // SVE2 bitwise shift right and accumulate
-  // XXX:
+  void ssra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b00, zda, zn, shift);
+  }
+  void usra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b01, zda, zn, shift);
+  }
+  void srsra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b10, zda, zn, shift);
+  }
+  void ursra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b11, zda, zn, shift);
+  }
+
   // SVE2 bitwise shift and insert
-  // XXX:
+  void sri(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftAndInsert(size, 0b0, zda, zn, shift);
+  }
+  void sli(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftAndInsert(size, 0b1, zda, zn, shift);
+  }
+
+
   // SVE2 integer absolute difference and accumulate
-  // XXX:
-  //
+  void saba(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAbsDiffAndAccumulate(size, 0b0, zda, zn, zm);
+  }
+  void uaba(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAbsDiffAndAccumulate(size, 0b1, zda, zn, zm);
+  }
+
   // SVE2 Narrowing
   // SVE2 saturating extract narrow
   void sqxtnb(SubRegSize size, ZRegister zd, ZRegister zn) {
@@ -3625,6 +3679,123 @@ private:
     dc32(Instr);
   }
 
+  void SVE2IntegerAbsDiffAndAccumulate(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1111'1000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubLongWithCarry(SubRegSize size, uint32_t sizep1, uint32_t T, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Element size must be 32-bit or 64-bit");
+
+    const uint32_t NewSize = size == SubRegSize::i32Bit ? 0 : 1;
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1101'0000'0000'0000;
+    Instr |= sizep1 << 23;
+    Instr |= NewSize << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseShiftRightAndAccumulate(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, uint32_t shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Element size cannot be 128-bit");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+
+    LOGMAN_THROW_A_FMT(shift > 0 && shift <= ElementSize, "Incorrect right shift: {}", shift);
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = (2 * ElementSize) - shift;
+
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0b00;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0b00;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 0b01;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i64Bit) {
+      tszh = 0b10 | ((InverseShift >> 5) & 1);
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1110'0000'0000'0000;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= imm3 << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseShiftAndInsert(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Element size cannot be 128-bit");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+    const bool IsLeftShift = opc != 0;
+    if (IsLeftShift) {
+      LOGMAN_THROW_A_FMT(shift >= 0 && shift < ElementSize, "Incorrect left shift: {}", shift);
+    } else {
+      LOGMAN_THROW_A_FMT(shift > 0 && shift <= ElementSize, "Incorrect right shift: {}", shift);
+    }
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = IsLeftShift ? shift
+                                              :(2 * ElementSize) - shift;
+
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0b00;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0b00;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 0b01;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i64Bit) {
+      tszh = 0b10 | ((InverseShift >> 5) & 1);
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1111'0000'0000'0000;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= imm3 << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
   void SVE2BitwiseShiftLeftLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t shift) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
                        "Can't use 8-bit or 128-bit element size");
@@ -3646,6 +3817,36 @@ private:
       Instr |= (1U << 19) << (Underlying - 1);
     }
 
+    dc32(Instr);
+  }
+
+  void SVE2ComplexIntAdd(SubRegSize size, uint32_t opc, Rotation rot, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Complex add cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
+                       "Rotation must be 90 or 270 degrees");
+
+    const uint32_t SanitizedRot = rot == Rotation::ROTATE_90 ? 0 : 1;
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1101'1000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= SanitizedRot << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2AbsDiffAccLong(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                      "Cannot use 8-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }
 
