@@ -1974,7 +1974,19 @@ public:
   }
 
   // SVE2 integer absolute difference and accumulate long
-  // XXX:
+  void sabalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10000, zda, zn, zm);
+  }
+  void sabalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10001, zda, zn, zm);
+  }
+  void uabalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10010, zda, zn, zm);
+  }
+  void uabalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubInterleavedLong(size, 0b10011, zda, zn, zm);
+  }
+
   // SVE2 integer add/subtract long with carry
   // XXX:
   // SVE2 bitwise shift right and accumulate
@@ -3669,6 +3681,19 @@ private:
     Instr |= SanitizedRot << 10;
     Instr |= zm.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2AbsDiffAccLong(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                      "Cannot use 8-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }
 

@@ -1878,7 +1878,21 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 complex integer add") {
   TEST_SINGLE(sqcadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, ZReg::z29, Rotation::ROTATE_270), "sqcadd z30.d, z30.d, z29.d, #270");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer absolute difference and accumulate long") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sabalb(SubRegSize::i16Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "sabalb z28.h, z29.b, z30.b");
+  TEST_SINGLE(sabalb(SubRegSize::i32Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "sabalb z28.s, z29.h, z30.h");
+  TEST_SINGLE(sabalb(SubRegSize::i64Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "sabalb z28.d, z29.s, z30.s");
+
+  TEST_SINGLE(sabalt(SubRegSize::i16Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "sabalt z28.h, z29.b, z30.b");
+  TEST_SINGLE(sabalt(SubRegSize::i32Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "sabalt z28.s, z29.h, z30.h");
+  TEST_SINGLE(sabalt(SubRegSize::i64Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "sabalt z28.d, z29.s, z30.s");
+
+  TEST_SINGLE(uabalb(SubRegSize::i16Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uabalb z28.h, z29.b, z30.b");
+  TEST_SINGLE(uabalb(SubRegSize::i32Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uabalb z28.s, z29.h, z30.h");
+  TEST_SINGLE(uabalb(SubRegSize::i64Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uabalb z28.d, z29.s, z30.s");
+
+  TEST_SINGLE(uabalt(SubRegSize::i16Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uabalt z28.h, z29.b, z30.b");
+  TEST_SINGLE(uabalt(SubRegSize::i32Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uabalt z28.s, z29.h, z30.h");
+  TEST_SINGLE(uabalt(SubRegSize::i64Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uabalt z28.d, z29.s, z30.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract long with carry") {
   // TODO: Implement in emitter.
