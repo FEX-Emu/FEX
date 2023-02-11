@@ -2002,7 +2002,19 @@ public:
   }
 
   // SVE2 bitwise shift right and accumulate
-  // XXX:
+  void ssra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b00, zda, zn, shift);
+  }
+  void usra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b01, zda, zn, shift);
+  }
+  void srsra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b10, zda, zn, shift);
+  }
+  void ursra(SubRegSize size, ZRegister zda, ZRegister zn, uint32_t shift) {
+    SVE2BitwiseShiftRightAndAccumulate(size, 0b11, zda, zn, shift);
+  }
+
   // SVE2 bitwise shift and insert
   // XXX:
   // SVE2 integer absolute difference and accumulate
@@ -3666,6 +3678,48 @@ private:
     Instr |= NewSize << 22;
     Instr |= zm.Idx() << 16;
     Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseShiftRightAndAccumulate(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, uint32_t shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Element size cannot be 128-bit");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+
+    LOGMAN_THROW_A_FMT(shift > 0 && shift <= ElementSize, "Incorrect right shift: {}", shift);
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = (2 * ElementSize) - shift;
+
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0b00;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0b00;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 0b01;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i64Bit) {
+      tszh = 0b10 | ((InverseShift >> 5) & 1);
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1110'0000'0000'0000;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= imm3 << 16;
+    Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zda.Idx();
     dc32(Instr);
