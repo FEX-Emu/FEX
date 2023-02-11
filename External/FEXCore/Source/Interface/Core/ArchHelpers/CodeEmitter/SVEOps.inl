@@ -1966,7 +1966,13 @@ public:
 
   // SVE2 Accumulate
   // SVE2 complex integer add
-  // XXX:
+  void cadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVE2ComplexIntAdd(size, 0b0, rot, zd, zn, zm);
+  }
+  void sqcadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVE2ComplexIntAdd(size, 0b1, rot, zd, zn, zm);
+  }
+
   // SVE2 integer absolute difference and accumulate long
   // XXX:
   // SVE2 integer add/subtract long with carry
@@ -3646,6 +3652,23 @@ private:
       Instr |= (1U << 19) << (Underlying - 1);
     }
 
+    dc32(Instr);
+  }
+
+  void SVE2ComplexIntAdd(SubRegSize size, uint32_t opc, Rotation rot, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Complex add cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd and zn must be the same register");
+    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
+                       "Rotation must be 90 or 270 degrees");
+
+    const uint32_t SanitizedRot = rot == Rotation::ROTATE_90 ? 0 : 1;
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1101'1000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= SanitizedRot << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
