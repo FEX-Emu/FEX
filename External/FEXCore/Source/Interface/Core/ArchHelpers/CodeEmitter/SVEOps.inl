@@ -2025,8 +2025,13 @@ public:
 
 
   // SVE2 integer absolute difference and accumulate
-  // XXX:
-  //
+  void saba(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAbsDiffAndAccumulate(size, 0b0, zda, zn, zm);
+  }
+  void uaba(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAbsDiffAndAccumulate(size, 0b1, zda, zn, zm);
+  }
+
   // SVE2 Narrowing
   // SVE2 saturating extract narrow
   void sqxtnb(SubRegSize size, ZRegister zd, ZRegister zn) {
@@ -3671,6 +3676,18 @@ private:
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAbsDiffAndAccumulate(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1111'1000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }
 

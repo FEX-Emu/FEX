@@ -1972,7 +1972,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise shift and insert"
   TEST_SINGLE(sli(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 63), "sli z30.d, z29.d, #63");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer absolute difference and accumulate") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(saba(SubRegSize::i8Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "saba z28.b, z29.b, z30.b");
+  TEST_SINGLE(saba(SubRegSize::i16Bit, ZReg::z28, ZReg::z29, ZReg::z30), "saba z28.h, z29.h, z30.h");
+  TEST_SINGLE(saba(SubRegSize::i32Bit, ZReg::z28, ZReg::z29, ZReg::z30), "saba z28.s, z29.s, z30.s");
+  TEST_SINGLE(saba(SubRegSize::i64Bit, ZReg::z28, ZReg::z29, ZReg::z30), "saba z28.d, z29.d, z30.d");
+
+  TEST_SINGLE(uaba(SubRegSize::i8Bit,  ZReg::z28, ZReg::z29, ZReg::z30), "uaba z28.b, z29.b, z30.b");
+  TEST_SINGLE(uaba(SubRegSize::i16Bit, ZReg::z28, ZReg::z29, ZReg::z30), "uaba z28.h, z29.h, z30.h");
+  TEST_SINGLE(uaba(SubRegSize::i32Bit, ZReg::z28, ZReg::z29, ZReg::z30), "uaba z28.s, z29.s, z30.s");
+  TEST_SINGLE(uaba(SubRegSize::i64Bit, ZReg::z28, ZReg::z29, ZReg::z30), "uaba z28.d, z29.d, z30.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating extract narrow") {
   TEST_SINGLE(sqxtnb(SubRegSize::i8Bit, ZReg::z30, ZReg::z29), "sqxtnb z30.b, z29.h");
