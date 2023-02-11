@@ -91,6 +91,7 @@ protected:
     , config {Config}
     {}
 
+  uint64_t ReconstructRIPFromContext(FEXCore::Core::CpuStateFrame *Frame, void *ucontext) const;
   void RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
   void RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
   void RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
