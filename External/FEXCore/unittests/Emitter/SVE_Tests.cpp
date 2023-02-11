@@ -1945,7 +1945,31 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise shift right and a
   TEST_SINGLE(ursra(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 64), "ursra z30.d, z29.d, #64");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise shift and insert") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sri(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 1),  "sri z30.b, z29.b, #1");\
+  TEST_SINGLE(sri(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 4),  "sri z30.b, z29.b, #4");
+  TEST_SINGLE(sri(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 8),  "sri z30.b, z29.b, #8");
+  TEST_SINGLE(sri(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 1),  "sri z30.h, z29.h, #1");
+  TEST_SINGLE(sri(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 15), "sri z30.h, z29.h, #15");
+  TEST_SINGLE(sri(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 16), "sri z30.h, z29.h, #16");
+  TEST_SINGLE(sri(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 1),  "sri z30.s, z29.s, #1");
+  TEST_SINGLE(sri(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 15), "sri z30.s, z29.s, #15");
+  TEST_SINGLE(sri(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 32), "sri z30.s, z29.s, #32");
+  TEST_SINGLE(sri(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 1),  "sri z30.d, z29.d, #1");
+  TEST_SINGLE(sri(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 31), "sri z30.d, z29.d, #31");
+  TEST_SINGLE(sri(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 64), "sri z30.d, z29.d, #64");
+
+  TEST_SINGLE(sli(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 0),  "sli z30.b, z29.b, #0");
+  TEST_SINGLE(sli(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 4),  "sli z30.b, z29.b, #4");
+  TEST_SINGLE(sli(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 7),  "sli z30.b, z29.b, #7");
+  TEST_SINGLE(sli(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 0),  "sli z30.h, z29.h, #0");
+  TEST_SINGLE(sli(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 7),  "sli z30.h, z29.h, #7");
+  TEST_SINGLE(sli(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 15), "sli z30.h, z29.h, #15");
+  TEST_SINGLE(sli(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 0),  "sli z30.s, z29.s, #0");
+  TEST_SINGLE(sli(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 15), "sli z30.s, z29.s, #15");
+  TEST_SINGLE(sli(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 31), "sli z30.s, z29.s, #31");
+  TEST_SINGLE(sli(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 0),  "sli z30.d, z29.d, #0");
+  TEST_SINGLE(sli(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 31), "sli z30.d, z29.d, #31");
+  TEST_SINGLE(sli(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 63), "sli z30.d, z29.d, #63");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer absolute difference and accumulate") {
   // TODO: Implement in emitter.
