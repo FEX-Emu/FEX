@@ -1988,7 +1988,19 @@ public:
   }
 
   // SVE2 integer add/subtract long with carry
-  // XXX:
+  void adclb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 0, 0, zda, zn, zm);
+  }
+  void adclt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 0, 1, zda, zn, zm);
+  }
+  void sbclb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 1, 0, zda, zn, zm);
+  }
+  void sbclt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLongWithCarry(size, 1, 1, zda, zn, zm);
+  }
+
   // SVE2 bitwise shift right and accumulate
   // XXX:
   // SVE2 bitwise shift and insert
@@ -3640,6 +3652,22 @@ private:
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubLongWithCarry(SubRegSize size, uint32_t sizep1, uint32_t T, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Element size must be 32-bit or 64-bit");
+
+    const uint32_t NewSize = size == SubRegSize::i32Bit ? 0 : 1;
+
+    uint32_t Instr = 0b0100'0101'0000'0000'1101'0000'0000'0000;
+    Instr |= sizep1 << 23;
+    Instr |= NewSize << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }
 
