@@ -810,13 +810,6 @@ namespace FEXCore::Context {
         // Reset any block-specific state
         Thread->OpDispatcher->StartNewBlock();
 
-        if (Config.x86dec_SynchronizeRIPOnAllBlocks) {
-          // Ensure the RIP is synchronized to the context on block entry.
-          // In the case of block linking, the RIP may not have synchronized.
-          auto NewRIP = Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize);
-          Thread->OpDispatcher->_StoreContext(GPRSize, IR::GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
-        }
-
         uint64_t InstsInBlock = Block.NumInstructions;
 
         for (size_t i = 0; i < InstsInBlock; ++i) {
