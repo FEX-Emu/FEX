@@ -963,28 +963,33 @@ void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPUNPCKHOp<8>(OpcodeArgs);
 
-void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+OrderedNode* OpDispatchBuilder::PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                                             const X86Tables::DecodedOperand& Src2) {
+  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
+  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
+
+  const auto SrcSize = GetSrcSize(Op);
 
   // PSHUFB doesn't 100% match VTBL behaviour
-  // VTBL will set the element zero if the index is greater than the number of elements
-  // In the array
+  // VTBL will set the element zero if the index is greater than
+  // the number of elements in the array
+  //
   // Bit 7 is the only bit that is supposed to set elements to zero with PSHUFB
   // Mask the selection bits and top bit correctly
-  // Bits [6:4] is reserved for 128bit
-  // Bits [6:3] is reserved for 64bit
-  if (Size == 8) {
-    auto MaskVector = _VectorImm(Size, 1, 0b1000'0111);
-    Src = _VAnd(Size, Size, Src, MaskVector);
-  }
-  else {
-    auto MaskVector = _VectorImm(Size, 1, 0b1000'1111);
-    Src = _VAnd(Size, Size, Src, MaskVector);
-  }
-  auto Res = _VTBL1(Size, Dest, Src);
-  StoreResult(FPRClass, Op, Res, -1);
+  // Bits [6:4] is reserved for 128-bit/256-bit
+  // Bits [6:3] is reserved for 64-bit
+  const uint8_t MaskImm = SrcSize == 8 ? 0b1000'0111
+                                       : 0b1000'1111;
+
+  OrderedNode *MaskVector = _VectorImm(SrcSize, 1, MaskImm);
+  OrderedNode *MaskedIndices = _VAnd(SrcSize, SrcSize, Src2Node, MaskVector);
+
+  return  _VTBL1(SrcSize, Src1Node, MaskedIndices);
+}
+
+void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
+  OrderedNode *Result = PSHUFBOpImpl(Op, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize, bool HalfSize, bool Low>

@@ -809,6 +809,9 @@ private:
   OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
                            OrderedNode *Src1, OrderedNode *Src2);
 
+  OrderedNode* PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                            const X86Tables::DecodedOperand& Src2);
+
   OrderedNode* PSIGNImpl(OpcodeArgs, size_t ElementSize,
                          OrderedNode *Src1, OrderedNode *Src2);
 
