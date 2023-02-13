@@ -2633,7 +2633,7 @@ public:
   template<typename T>
   void sqadd(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit sqadd");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b00001, rd, rn, rm);
@@ -2654,7 +2654,7 @@ public:
   template<typename T>
   void sqsub(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit sqsub");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b00101, rd, rn, rm);
@@ -2662,7 +2662,7 @@ public:
   template<typename T>
   void cmgt(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit cmgt");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b00110, rd, rn, rm);
@@ -2670,7 +2670,7 @@ public:
   template<typename T>
   void cmge(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit cmge");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b00111, rd, rn, rm);
@@ -2678,7 +2678,7 @@ public:
   template<typename T>
   void sshl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit sshl");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b01000, rd, rn, rm);
@@ -2686,7 +2686,7 @@ public:
   template<typename T>
   void sqshl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit sqshl");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b01001, rd, rn, rm);
@@ -2694,7 +2694,7 @@ public:
   template<typename T>
   void srshl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit srshl");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b01010, rd, rn, rm);
@@ -2702,7 +2702,7 @@ public:
   template<typename T>
   void sqrshl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit sqrshl");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b01011, rd, rn, rm);
@@ -2734,7 +2734,7 @@ public:
   template<typename T>
   void add(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit add");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b10000, rd, rn, rm);
@@ -2742,7 +2742,7 @@ public:
   template<typename T>
   void cmtst(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit cmtst");
     }
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b10001, rd, rn, rm);
