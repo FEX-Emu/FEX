@@ -111,6 +111,53 @@ DEF_OP(VCastFromGPR) {
   }
 }
 
+DEF_OP(VDupFromGPR) {
+  const auto Op = IROp->C<IR::IROp_VDupFromGPR>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Src = GetSrc<RA_64>(Op->Src.ID()).cvt64();
+
+  vmovq(Dst, Src);
+
+  switch (ElementSize) {
+    case 1:
+      if (Is256Bit) {
+        vpbroadcastb(ToYMM(Dst), Dst);
+      } else {
+        vpbroadcastb(Dst, Dst);
+      }
+      break;
+    case 2:
+      if (Is256Bit) {
+        vpbroadcastw(ToYMM(Dst), Dst);
+      } else {
+        vpbroadcastw(Dst, Dst);
+      }
+      break;
+    case 4:
+      if (Is256Bit) {
+        vpbroadcastd(ToYMM(Dst), Dst);
+      } else {
+        vpbroadcastd(Dst, Dst);
+      }
+      break;
+    case 8:
+      if (Is256Bit) {
+        vpbroadcastq(ToYMM(Dst), Dst);
+      } else {
+        vpbroadcastq(Dst, Dst);
+      }
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled element size: {}", ElementSize);
+      return;
+  }
+}
+
 DEF_OP(Float_FromGPR_S) {
   const auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
 
@@ -357,6 +404,7 @@ void X86JITCore::RegisterConversionHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
   REGISTER_OP(VINSGPR,         VInsGPR);
   REGISTER_OP(VCASTFROMGPR,    VCastFromGPR);
+  REGISTER_OP(VDUPFROMGPR,     VDupFromGPR);
   REGISTER_OP(FLOAT_FROMGPR_S, Float_FromGPR_S);
   REGISTER_OP(FLOAT_FTOF,      Float_FToF);
   REGISTER_OP(VECTOR_STOF,     Vector_SToF);

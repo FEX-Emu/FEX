@@ -318,6 +318,7 @@ private:
   ///< Conversion ops
   DEF_OP(VInsGPR);
   DEF_OP(VCastFromGPR);
+  DEF_OP(VDupFromGPR);
   DEF_OP(Float_FromGPR_S);
   DEF_OP(Float_FToF);
   DEF_OP(Vector_UToF);

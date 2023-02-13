@@ -1367,6 +1367,12 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
+      "FPR = VDupFromGPR u8:#RegisterSize, u8:#ElementSize, GPR:$Src": {
+        "Desc": ["Broadcasts a value in a GPR into each ElementSize-sized element in a vector"],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+
       "FPR = Float_FromGPR_S u8:#DstElementSize, u8:$SrcElementSize, GPR:$Src": {
         "Desc": ["Scalar op: Converts signed GPR to Scalar float",
                  "Zeroes the upper bits of the vector register"

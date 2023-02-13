@@ -847,12 +847,7 @@ void OpDispatchBuilder::MOVMSKOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  //TODO: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
-  auto M = _Constant(0x80'40'20'10'08'04'02'01ULL);
-  OrderedNode *VMask = _VCastFromGPR(16, 8, M);
-
-  VMask = _VInsGPR(16, 8, 1, VMask, M);
+  OrderedNode *VMask = _VDupFromGPR(16, 8, _Constant(0x80'40'20'10'08'04'02'01ULL));
 
   auto VCMP = _VCMPLTZ(16, 1, Src);
   auto VAnd = _VAnd(16, 1, VCMP, VMask);
@@ -2769,10 +2764,8 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   // Implementation is more efficient for 8byte registers
   // Multiplies 4 16bit values in to 4 32bit values
   Res = _VSMull(Size * 2, 2, Dest, Src);
-  //TODO: We could remove this VCastFromGOR + VInsGPR pair if we had a VDUPFromGPR instruction that maps directly to AArch64.
-  auto M = _Constant(0x0000'8000'0000'8000ULL);
-  OrderedNode *VConstant = _VCastFromGPR(16, 8, M);
-  VConstant = _VInsGPR(16, 8, 1, VConstant, M);
+
+  OrderedNode *VConstant = _VDupFromGPR(16, 8, _Constant(0x0000'8000'0000'8000ULL));
 
   Res = _VAdd(Size * 2, 4, Res, VConstant);
 

@@ -127,6 +127,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   // Conversion ops
   REGISTER_OP(VINSGPR,                VInsGPR);
   REGISTER_OP(VCASTFROMGPR,           VCastFromGPR);
+  REGISTER_OP(VDUPFROMGPR,            VDupFromGPR);
   REGISTER_OP(FLOAT_FROMGPR_S,        Float_FromGPR_S);
   REGISTER_OP(FLOAT_FTOF,             Float_FToF);
   REGISTER_OP(VECTOR_STOF,            Vector_SToF);
