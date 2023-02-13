@@ -62,6 +62,23 @@ DEF_OP(VCastFromGPR) {
   memcpy(GDP, GetSrc<void*>(Data->SSAData, Op->Src), Op->Header.ElementSize);
 }
 
+DEF_OP(VDupFromGPR) {
+  const auto Op = IROp->C<IR::IROp_VDupFromGPR>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+  const auto NumElements = OpSize / IROp->ElementSize;
+
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+
+  const auto *Src = GetSrc<void*>(Data->SSAData, Op->Src);
+  for (size_t i = 0; i < NumElements; i++) {
+    memcpy(Tmp + (i * ElementSize), Src, ElementSize);
+  }
+
+  memcpy(GDP, Tmp, sizeof(Tmp));
+}
+
 DEF_OP(Float_FromGPR_S) {
   auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
 

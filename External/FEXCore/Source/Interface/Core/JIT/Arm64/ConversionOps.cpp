@@ -108,6 +108,32 @@ DEF_OP(VCastFromGPR) {
   }
 }
 
+DEF_OP(VDupFromGPR) {
+  const auto Op = IROp->C<IR::IROp_VDupFromGPR>();
+  const auto OpSize = IROp->Size;
+
+  const auto Dst = GetVReg(Node);
+  const auto Src = GetReg(Op->Src.ID());
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 8 || ElementSize == 4 || ElementSize == 2 || ElementSize == 1,
+                      "Unexpected {} element size: {}", __func__, ElementSize);
+
+  const auto SubEmitSize =
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE && Is256Bit) {
+    dup(SubEmitSize, Dst.Z(), Src);
+  } else {
+    dup(SubEmitSize, Dst.Q(), Src);
+  }
+}
+
 DEF_OP(Float_FromGPR_S) {
   const auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
 
