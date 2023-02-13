@@ -2342,21 +2342,28 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
-  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  auto Size = GetDstSize(Op);
+OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                                              const X86Tables::DecodedOperand& Src2,
+                                              const X86Tables::DecodedOperand& Imm) {
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
 
-  uint8_t Index = Op->Src[1].Data.Literal.Value;
-  OrderedNode *Res{};
-  if (Index >= (Size * 2)) {
+  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
+  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
+
+  const auto DstSize = GetDstSize(Op);
+  const auto Index = Imm.Data.Literal.Value;
+
+  if (Index >= (DstSize * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
-    Res = _VectorZero(Size);
+    return _VectorZero(DstSize);
   }
-  else {
-    Res = _VExtr(Size, 1, Src1, Src2, Index);
-  }
-  StoreResult(FPRClass, Op, Res, -1);
+
+  return _VExtr(DstSize, 1, Src1Node, Src2Node, Index);
+}
+
+void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
+  OrderedNode *Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize>

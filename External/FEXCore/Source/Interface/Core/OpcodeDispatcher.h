@@ -790,6 +790,10 @@ private:
   OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
 
+  OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                             const X86Tables::DecodedOperand& Src2,
+                             const X86Tables::DecodedOperand& Imm);
+
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
 
   OrderedNode* PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
