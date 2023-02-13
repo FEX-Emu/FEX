@@ -2350,19 +2350,36 @@ OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::Decod
   OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
   OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
+  // For the 256-bit case we handle it as pairs of 128-bit halves.
   const auto DstSize = GetDstSize(Op);
+  const auto SanitizedDstSize = std::min(DstSize, uint8_t{16});
+
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Index = Imm.Data.Literal.Value;
 
-  if (Index >= (DstSize * 2)) {
+  if (Index >= (SanitizedDstSize * 2)) {
     // If the immediate is greater than both vectors combined then it zeroes the vector
     return _VectorZero(DstSize);
   }
 
-  return _VExtr(DstSize, 1, Src1Node, Src2Node, Index);
+  OrderedNode *Low = _VExtr(SanitizedDstSize, 1, Src1Node, Src2Node, Index);
+  if (!Is256Bit) {
+    return Low;
+  }
+
+  OrderedNode *HighSrc1 = _VInsElement(DstSize, 16, 0, 1, Src1Node, Src1Node);
+  OrderedNode *HighSrc2 = _VInsElement(DstSize, 16, 0, 1, Src2Node, Src2Node);
+  OrderedNode *High = _VExtr(SanitizedDstSize, 1, HighSrc1, HighSrc2, Index);
+  return _VInsElement(DstSize, 16, 1, 0, Low, High);
 }
 
 void OpDispatchBuilder::PAlignrOp(OpcodeArgs) {
   OrderedNode *Result = PALIGNROpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
+  OrderedNode *Result = PALIGNROpImpl(Op, Op->Src[0], Op->Src[1], Op->Src[2]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
