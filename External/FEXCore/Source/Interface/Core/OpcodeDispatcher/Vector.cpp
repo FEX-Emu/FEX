@@ -969,6 +969,11 @@ OrderedNode* OpDispatchBuilder::PSHUFBOpImpl(OpcodeArgs, const X86Tables::Decode
   OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
   const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  // We perform the 256-bit version as two 128-bit operations due to
+  // the lane splitting behavior, so cap the maximum size at 16.
+  const auto SanitizedSrcSize = std::min(SrcSize, uint8_t{16});
 
   // PSHUFB doesn't 100% match VTBL behaviour
   // VTBL will set the element zero if the index is greater than
@@ -984,11 +989,23 @@ OrderedNode* OpDispatchBuilder::PSHUFBOpImpl(OpcodeArgs, const X86Tables::Decode
   OrderedNode *MaskVector = _VectorImm(SrcSize, 1, MaskImm);
   OrderedNode *MaskedIndices = _VAnd(SrcSize, SrcSize, Src2Node, MaskVector);
 
-  return  _VTBL1(SrcSize, Src1Node, MaskedIndices);
+  OrderedNode *Low = _VTBL1(SanitizedSrcSize, Src1Node, MaskedIndices);
+  if (!Is256Bit) {
+    return Low;
+  }
+
+  OrderedNode *HighSrc1 = _VInsElement(SrcSize, 16, 0, 1, Src1Node, Src1Node);
+  OrderedNode *High = _VTBL1(SanitizedSrcSize, HighSrc1, MaskedIndices);
+  return _VInsElement(SrcSize, 16, 1, 0, Low, High);
 }
 
 void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
   OrderedNode *Result = PSHUFBOpImpl(Op, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
+  OrderedNode *Result = PSHUFBOpImpl(Op, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

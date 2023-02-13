@@ -493,6 +493,8 @@ public:
   template <size_t ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
+  void VPSHUFBOp(OpcodeArgs);
+
   template <size_t ElementSize>
   void VPSLLOp(OpcodeArgs);
   void VPSLLDQOp(OpcodeArgs);
