@@ -468,6 +468,8 @@ public:
   template <size_t ElementSize>
   void VPACKUSOp(OpcodeArgs);
 
+  void VPALIGNROp(OpcodeArgs);
+
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
@@ -789,6 +791,10 @@ private:
 
   OrderedNode* PACKUSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
+
+  OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                             const X86Tables::DecodedOperand& Src2,
+                             const X86Tables::DecodedOperand& Imm);
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
 
