@@ -2904,6 +2904,11 @@ void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
+  OrderedNode *Result = PMADDWDOpImpl(Op, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
   // This is a pretty curious operation
   // Does four MADD operations across 8 8bit signed and unsigned integers and accumulates to 16bit integers in the destination WITH saturation

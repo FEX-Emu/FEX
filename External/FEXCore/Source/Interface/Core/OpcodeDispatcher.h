@@ -485,6 +485,8 @@ public:
   template <size_t ElementSize>
   void VPHSUBOp(OpcodeArgs);
 
+  void VPMADDWDOp(OpcodeArgs);
+
   void VPMULHRSWOp(OpcodeArgs);
 
   template <bool Signed>
