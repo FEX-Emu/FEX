@@ -1042,6 +1042,64 @@ void OpDispatchBuilder::PSHUFDOp<2, true, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSHUFDOp<4, false, true>(OpcodeArgs);
 
+template <size_t ElementSize, bool Low>
+void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
+  auto Shuffle = Op->Src[1].Data.Literal.Value;
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  // Note/TODO: With better immediate facilities or vector loading in our IR
+  //            much of this can be reduced to setting up a table index register
+  //            and then using TBL
+  //
+  //            SVE has the INDEX instruction that works essentially like
+  //            std::iota (setting a range to an initial value and progressively
+  //            incrementing each successive element), so it's well suited for this.
+  //            It's just a matter of exposing these facilities in a way that works
+  //            well together.
+  //
+  //            Should be much nicer than doing repeated inserts in any case.
+
+  const size_t BaseElement = Low ? 0 : 4;
+  OrderedNode *Result = Src;
+  if (Is256Bit) {
+    for (size_t i = 0; i < 4; i++) {
+      const auto Index = Shuffle & 0b11;
+      const auto UpperLaneOffset = Core::CPUState::XMM_SSE_REG_SIZE / ElementSize;
+
+      const auto LowDstIndex = BaseElement + i;
+      const auto LowSrcIndex = BaseElement + Index;
+
+      const auto HighDstIndex = BaseElement + UpperLaneOffset + i;
+      const auto HighSrcIndex = BaseElement + UpperLaneOffset + Index;
+
+      // Take care of both lanes per iteration
+      Result = _VInsElement(SrcSize, ElementSize, LowDstIndex, LowSrcIndex, Result, Src);
+      Result = _VInsElement(SrcSize, ElementSize, HighDstIndex, HighSrcIndex, Result, Src);
+
+      Shuffle >>= 2;
+    }
+  } else {
+    for (size_t i = 0; i < 4; i++) {
+      const auto Index = Shuffle & 0b11;
+      Result = _VInsElement(SrcSize, ElementSize, BaseElement + i, BaseElement + Index, Result, Src);
+      Shuffle >>= 2;
+    }
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+template
+void OpDispatchBuilder::VPSHUFWOp<2, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSHUFWOp<2, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSHUFWOp<4, true>(OpcodeArgs);
+
 template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
   static_assert(ElementSize != 0);
