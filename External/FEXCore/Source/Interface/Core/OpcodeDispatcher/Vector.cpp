@@ -1110,25 +1110,48 @@ OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize,
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
   uint8_t Shuffle = Imm.Data.Literal.Value;
 
-  const uint8_t Size = GetSrcSize(Op);
-  const uint8_t NumElements = Size / ElementSize;
+  // Since 256-bit variants and up don't lane cross, we can construct
+  // everything in terms of the 128-variant, as each lane is essentially
+  // its own 128-bit segment.
+  const uint8_t NumElements = Core::CPUState::XMM_SSE_REG_SIZE / ElementSize;
+  const uint8_t HalfNumElements = NumElements >> 1;
+
+  const uint8_t DstSize = GetDstSize(Op);
+  const bool Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   std::array<OrderedNode*, 4> Srcs{};
-  for (size_t i = 0; i < (NumElements >> 1); ++i) {
+  for (size_t i = 0; i < HalfNumElements; ++i) {
     Srcs[i] = Src1Node;
   }
-  for (size_t i = (NumElements >> 1); i < NumElements; ++i) {
+  for (size_t i = HalfNumElements; i < NumElements; ++i) {
     Srcs[i] = Src2Node;
   }
 
   OrderedNode *Dest = Src1Node;
   const uint8_t SelectionMask = NumElements - 1;
   const uint8_t ShiftAmount = std::popcount(SelectionMask);
-  for (uint8_t Element = 0; Element < NumElements; ++Element) {
-    const auto SrcIndex = Shuffle & SelectionMask;
 
-    Dest = _VInsElement(Size, ElementSize, Element, SrcIndex, Dest, Srcs[Element]);
-    Shuffle >>= ShiftAmount;
+  if (Is256Bit) {
+    for (uint8_t Element = 0; Element < NumElements; ++Element) {
+      const auto SrcIndex1  = Shuffle & SelectionMask;
+
+      // AVX differs the behavior of VSHUFPD and VSHUFPS.
+      // The same immediate bits are used for both lanes with VSHUFPS,
+      // but VSHUFPD uses different immediate bits for each lane.
+      const auto SrcIndex2 = ElementSize == 4 ? SrcIndex1
+                                              : ((Shuffle >> 2) & SelectionMask);
+
+      OrderedNode *Insert = _VInsElement(DstSize, ElementSize, Element, SrcIndex1, Dest, Srcs[Element]);
+      Dest = _VInsElement(DstSize, ElementSize, Element + NumElements, SrcIndex2 + NumElements, Insert, Srcs[Element]);
+
+      Shuffle >>= ShiftAmount;
+    }
+  } else {
+    for (uint8_t Element = 0; Element < NumElements; ++Element) {
+      const auto SrcIndex = Shuffle & SelectionMask;
+      Dest = _VInsElement(DstSize, ElementSize, Element, SrcIndex, Dest, Srcs[Element]);
+      Shuffle >>= ShiftAmount;
+    }
   }
 
   return Dest;
