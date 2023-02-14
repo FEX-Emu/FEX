@@ -832,6 +832,11 @@ private:
   OrderedNode* PSRLDOpImpl(OpcodeArgs, size_t ElementSize,
                            OrderedNode *Src, OrderedNode *ShiftVec);
 
+  OrderedNode* SHUFOpImpl(OpcodeArgs, size_t ElementSize,
+                          const X86Tables::DecodedOperand& Src1,
+                          const X86Tables::DecodedOperand& Src2,
+                          const X86Tables::DecodedOperand& Imm);
+
   OrderedNode* VFCMPOpImpl(OpcodeArgs, size_t ElementSize, bool Scalar,
                            OrderedNode *Src1, OrderedNode *Src2, uint8_t CompType);
 

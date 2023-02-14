@@ -1100,45 +1100,44 @@ void OpDispatchBuilder::VPSHUFWOp<2, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPSHUFWOp<4, true>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
-  static_assert(ElementSize != 0);
+OrderedNode* OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t ElementSize,
+                                           const X86Tables::DecodedOperand& Src1,
+                                           const X86Tables::DecodedOperand& Src2,
+                                           const X86Tables::DecodedOperand& Imm) {
+  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
+  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
-  const auto Size = GetSrcSize(Op);
-  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  uint8_t Shuffle = Op->Src[1].Data.Literal.Value;
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
+  uint8_t Shuffle = Imm.Data.Literal.Value;
 
-  uint8_t NumElements = Size / ElementSize;
+  const uint8_t Size = GetSrcSize(Op);
+  const uint8_t NumElements = Size / ElementSize;
 
-  auto Dest = Src1;
-  std::array<OrderedNode*, 4> Srcs = {
-  };
-
-  for (int i = 0; i < (NumElements >> 1); ++i) {
-    Srcs[i] = Src1;
+  std::array<OrderedNode*, 4> Srcs{};
+  for (size_t i = 0; i < (NumElements >> 1); ++i) {
+    Srcs[i] = Src1Node;
+  }
+  for (size_t i = (NumElements >> 1); i < NumElements; ++i) {
+    Srcs[i] = Src2Node;
   }
 
-  for (int i = (NumElements >> 1); i < NumElements; ++i) {
-    Srcs[i] = Src2;
-  }
-
-  // 32bit:
-  // [31:0]   = Src1[Selection]
-  // [63:32]  = Src1[Selection]
-  // [95:64]  = Src2[Selection]
-  // [127:96] = Src2[Selection]
-  // 64bit:
-  // [63:0]   = Src1[Selection]
-  // [127:64] = Src2[Selection]
-  uint8_t SelectionMask = NumElements - 1;
-  uint8_t ShiftAmount = std::popcount(SelectionMask);
+  OrderedNode *Dest = Src1Node;
+  const uint8_t SelectionMask = NumElements - 1;
+  const uint8_t ShiftAmount = std::popcount(SelectionMask);
   for (uint8_t Element = 0; Element < NumElements; ++Element) {
-    Dest = _VInsElement(Size, ElementSize, Element, Shuffle & SelectionMask, Dest, Srcs[Element]);
+    const auto SrcIndex = Shuffle & SelectionMask;
+
+    Dest = _VInsElement(Size, ElementSize, Element, SrcIndex, Dest, Srcs[Element]);
     Shuffle >>= ShiftAmount;
   }
 
-  StoreResult(FPRClass, Op, Dest, -1);
+  return Dest;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
+  OrderedNode *Result = SHUFOpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
