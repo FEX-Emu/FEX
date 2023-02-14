@@ -250,6 +250,24 @@ void OpDispatchBuilder::MOVSDOp(OpcodeArgs) {
   }
 }
 
+void OpDispatchBuilder::VMOVSSOp(OpcodeArgs) {
+  if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Src[1].IsGPR()) {
+    // VMOVSS xmm1, xmm2, xmm3
+    OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, -1);
+    OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 4, Op->Flags, -1);
+    OrderedNode *Result = _VInsElement(16, 4, 0, 0, Src1, Src2);
+    StoreResult(FPRClass, Op, Result, -1);
+  } else if (Op->Dest.IsGPR()) {
+    // VMOVSS xmm1, mem32
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 4, Op->Flags, -1);
+    StoreResult(FPRClass, Op, Src, -1);
+  } else {
+    // VMOVSS mem32, xmm1
+    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], 4, Op->Flags, -1);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 4, -1);
+  }
+}
+
 void OpDispatchBuilder::VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);

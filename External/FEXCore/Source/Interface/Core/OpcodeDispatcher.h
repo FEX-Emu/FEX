@@ -460,6 +460,8 @@ public:
   void VMOVSHDUPOp(OpcodeArgs);
   void VMOVSLDUPOp(OpcodeArgs);
 
+  void VMOVSSOp(OpcodeArgs);
+
   void VMOVVectorNTOp(OpcodeArgs);
 
   template <size_t ElementSize>

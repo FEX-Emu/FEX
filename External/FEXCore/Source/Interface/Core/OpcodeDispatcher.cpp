@@ -5814,8 +5814,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   static constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> AVXTable[] = {
     {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPD_Op},
     {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPD_Op},
+    {OPD(1, 0b10, 0x10), 1, &OpDispatchBuilder::VMOVSSOp},
     {OPD(1, 0b00, 0x11), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPD_Op},
     {OPD(1, 0b01, 0x11), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPD_Op},
+    {OPD(1, 0b10, 0x11), 1, &OpDispatchBuilder::VMOVSSOp},
 
     {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
     {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
