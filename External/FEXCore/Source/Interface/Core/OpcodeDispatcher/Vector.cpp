@@ -1162,11 +1162,18 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
   OrderedNode *Result = SHUFOpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
-
 template
 void OpDispatchBuilder::SHUFOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::SHUFOp<8>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
+  OrderedNode *Result = SHUFOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1], Op->Src[2]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+template
+void OpDispatchBuilder::VSHUFOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
