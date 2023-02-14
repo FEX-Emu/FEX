@@ -1087,6 +1087,8 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 template
+void OpDispatchBuilder::VPSHUFWOp<false>(OpcodeArgs);
+template
 void OpDispatchBuilder::VPSHUFWOp<true>(OpcodeArgs);
 
 template<size_t ElementSize>
