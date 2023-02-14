@@ -495,7 +495,7 @@ public:
 
   void VPSHUFBOp(OpcodeArgs);
 
-  template <bool Low>
+  template <size_t ElementSize, bool Low>
   void VPSHUFWOp(OpcodeArgs);
 
   template <size_t ElementSize>

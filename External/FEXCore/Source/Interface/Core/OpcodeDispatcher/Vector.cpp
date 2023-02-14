@@ -1042,7 +1042,7 @@ void OpDispatchBuilder::PSHUFDOp<2, true, true>(OpcodeArgs);
 template
 void OpDispatchBuilder::PSHUFDOp<4, false, true>(OpcodeArgs);
 
-template <bool Low>
+template <size_t ElementSize, bool Low>
 void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
@@ -1069,17 +1069,24 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   if (Is256Bit) {
     for (size_t i = 0; i < 4; i++) {
       const auto Index = Shuffle & 0b11;
+      const auto UpperLaneOffset = Core::CPUState::XMM_SSE_REG_SIZE / ElementSize;
+
+      const auto LowDstIndex = BaseElement + i;
+      const auto LowSrcIndex = BaseElement + Index;
+
+      const auto HighDstIndex = BaseElement + UpperLaneOffset + i;
+      const auto HighSrcIndex = BaseElement + UpperLaneOffset + Index;
 
       // Take care of both lanes per iteration
-      Result = _VInsElement(SrcSize, 2, BaseElement + 0 + i, BaseElement + 0 + Index, Result, Src);
-      Result = _VInsElement(SrcSize, 2, BaseElement + 8 + i, BaseElement + 8 + Index, Result, Src);
+      Result = _VInsElement(SrcSize, ElementSize, LowDstIndex, LowSrcIndex, Result, Src);
+      Result = _VInsElement(SrcSize, ElementSize, HighDstIndex, HighSrcIndex, Result, Src);
 
       Shuffle >>= 2;
     }
   } else {
     for (size_t i = 0; i < 4; i++) {
       const auto Index = Shuffle & 0b11;
-      Result = _VInsElement(SrcSize, 2, BaseElement + i, BaseElement + Index, Result, Src);
+      Result = _VInsElement(SrcSize, ElementSize, BaseElement + i, BaseElement + Index, Result, Src);
       Shuffle >>= 2;
     }
   }
@@ -1087,9 +1094,11 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 template
-void OpDispatchBuilder::VPSHUFWOp<false>(OpcodeArgs);
+void OpDispatchBuilder::VPSHUFWOp<2, false>(OpcodeArgs);
 template
-void OpDispatchBuilder::VPSHUFWOp<true>(OpcodeArgs);
+void OpDispatchBuilder::VPSHUFWOp<2, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPSHUFWOp<4, true>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
