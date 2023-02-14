@@ -1173,6 +1173,8 @@ void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 template
+void OpDispatchBuilder::VSHUFOp<4>(OpcodeArgs);
+template
 void OpDispatchBuilder::VSHUFOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
