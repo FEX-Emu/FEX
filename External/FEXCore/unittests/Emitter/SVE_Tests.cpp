@@ -1044,15 +1044,26 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Unpredica
   TEST_SINGLE(dup(SubRegSize::i16Bit, ZReg::z30, Reg::r29),  "mov z30.h, w29");
   TEST_SINGLE(dup(SubRegSize::i32Bit, ZReg::z30, Reg::r29),  "mov z30.s, w29");
   TEST_SINGLE(dup(SubRegSize::i64Bit, ZReg::z30, Reg::r29),  "mov z30.d, x29");
-  //TEST_SINGLE(dup(SubRegSize::i128Bit, ZReg::z30, Reg::r29), "mov z30.q, x29");
+
   TEST_SINGLE(mov(SubRegSize::i8Bit, ZReg::z30, Reg::r29),   "mov z30.b, w29");
   TEST_SINGLE(mov(SubRegSize::i16Bit, ZReg::z30, Reg::r29),  "mov z30.h, w29");
   TEST_SINGLE(mov(SubRegSize::i32Bit, ZReg::z30, Reg::r29),  "mov z30.s, w29");
   TEST_SINGLE(mov(SubRegSize::i64Bit, ZReg::z30, Reg::r29),  "mov z30.d, x29");
-  //TEST_SINGLE(mov(SubRegSize::i128Bit, ZReg::z30, Reg::r29), "mov z30.q, x29");
-  // XXX: INSR
-  // XXX: INSR SIMD
-  // XXX: REV
+
+  TEST_SINGLE(insr(SubRegSize::i8Bit, ZReg::z30, Reg::r29),  "insr z30.b, w29");
+  TEST_SINGLE(insr(SubRegSize::i16Bit, ZReg::z30, Reg::r29), "insr z30.h, w29");
+  TEST_SINGLE(insr(SubRegSize::i32Bit, ZReg::z30, Reg::r29), "insr z30.s, w29");
+  TEST_SINGLE(insr(SubRegSize::i64Bit, ZReg::z30, Reg::r29), "insr z30.d, x29");
+
+  TEST_SINGLE(insr(SubRegSize::i8Bit, ZReg::z30, VReg::v29),  "insr z30.b, b29");
+  TEST_SINGLE(insr(SubRegSize::i16Bit, ZReg::z30, VReg::v29), "insr z30.h, h29");
+  TEST_SINGLE(insr(SubRegSize::i32Bit, ZReg::z30, VReg::v29), "insr z30.s, s29");
+  TEST_SINGLE(insr(SubRegSize::i64Bit, ZReg::z30, VReg::v29), "insr z30.d, d29");
+
+  TEST_SINGLE(rev(SubRegSize::i8Bit, ZReg::z30, ZReg::z29),  "rev z30.b, z29.b");
+  TEST_SINGLE(rev(SubRegSize::i16Bit, ZReg::z30, ZReg::z29), "rev z30.h, z29.h");
+  TEST_SINGLE(rev(SubRegSize::i32Bit, ZReg::z30, ZReg::z29), "rev z30.s, z29.s");
+  TEST_SINGLE(rev(SubRegSize::i64Bit, ZReg::z30, ZReg::z29), "rev z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE unpack vector elements") {
@@ -1081,16 +1092,44 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE unpack vector elements") {
   //TEST_SINGLE(uunpkhi(SubRegSize::i128Bit, ZReg::z30, ZReg::z29), "uunpkhi z30.q, z29.q");
 }
 
-TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Predicate - Base") {
-  // TODO: Implement in emitter.
-}
-
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Predicate") {
-  // TODO: Implement in emitter.
-}
+  TEST_SINGLE(rev(SubRegSize::i8Bit,  PReg::p15, PReg::p14), "rev p15.b, p14.b");
+  TEST_SINGLE(rev(SubRegSize::i16Bit, PReg::p15, PReg::p14), "rev p15.h, p14.h");
+  TEST_SINGLE(rev(SubRegSize::i32Bit, PReg::p15, PReg::p14), "rev p15.s, p14.s");
+  TEST_SINGLE(rev(SubRegSize::i64Bit, PReg::p15, PReg::p14), "rev p15.d, p14.d");
+  
+  TEST_SINGLE(punpklo(PReg::p15, PReg::p14), "punpklo p15.h, p14.b");
+  TEST_SINGLE(punpkhi(PReg::p15, PReg::p14), "punpkhi p15.h, p14.b");
 
-TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE permute predicate elements") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(zip1(SubRegSize::i8Bit,  PReg::p15, PReg::p14, PReg::p13), "zip1 p15.b, p14.b, p13.b");
+  TEST_SINGLE(zip1(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p13), "zip1 p15.h, p14.h, p13.h");
+  TEST_SINGLE(zip1(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p13), "zip1 p15.s, p14.s, p13.s");
+  TEST_SINGLE(zip1(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p13), "zip1 p15.d, p14.d, p13.d");
+
+  TEST_SINGLE(zip2(SubRegSize::i8Bit,  PReg::p15, PReg::p14, PReg::p13), "zip2 p15.b, p14.b, p13.b");
+  TEST_SINGLE(zip2(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p13), "zip2 p15.h, p14.h, p13.h");
+  TEST_SINGLE(zip2(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p13), "zip2 p15.s, p14.s, p13.s");
+  TEST_SINGLE(zip2(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p13), "zip2 p15.d, p14.d, p13.d");
+
+  TEST_SINGLE(uzp1(SubRegSize::i8Bit,  PReg::p15, PReg::p14, PReg::p13), "uzp1 p15.b, p14.b, p13.b");
+  TEST_SINGLE(uzp1(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p13), "uzp1 p15.h, p14.h, p13.h");
+  TEST_SINGLE(uzp1(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p13), "uzp1 p15.s, p14.s, p13.s");
+  TEST_SINGLE(uzp1(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p13), "uzp1 p15.d, p14.d, p13.d");
+
+  TEST_SINGLE(uzp2(SubRegSize::i8Bit,  PReg::p15, PReg::p14, PReg::p13), "uzp2 p15.b, p14.b, p13.b");
+  TEST_SINGLE(uzp2(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p13), "uzp2 p15.h, p14.h, p13.h");
+  TEST_SINGLE(uzp2(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p13), "uzp2 p15.s, p14.s, p13.s");
+  TEST_SINGLE(uzp2(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p13), "uzp2 p15.d, p14.d, p13.d");
+
+  TEST_SINGLE(trn1(SubRegSize::i8Bit,  PReg::p15, PReg::p14, PReg::p13), "trn1 p15.b, p14.b, p13.b");
+  TEST_SINGLE(trn1(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p13), "trn1 p15.h, p14.h, p13.h");
+  TEST_SINGLE(trn1(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p13), "trn1 p15.s, p14.s, p13.s");
+  TEST_SINGLE(trn1(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p13), "trn1 p15.d, p14.d, p13.d");
+
+  TEST_SINGLE(trn2(SubRegSize::i8Bit,  PReg::p15, PReg::p14, PReg::p13), "trn2 p15.b, p14.b, p13.b");
+  TEST_SINGLE(trn2(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p13), "trn2 p15.h, p14.h, p13.h");
+  TEST_SINGLE(trn2(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p13), "trn2 p15.s, p14.s, p13.s");
+  TEST_SINGLE(trn2(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p13), "trn2 p15.d, p14.d, p13.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicated - Base") {
