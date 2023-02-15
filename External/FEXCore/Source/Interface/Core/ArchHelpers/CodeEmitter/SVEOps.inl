@@ -1285,11 +1285,37 @@ public:
   }
 
   // SVE Permute Predicate
-  // XXX: REV (predicate)
-  // sve unpack predicate elements
-  // XXX:
+  void rev(SubRegSize size, PRegister pd, PRegister pn) {
+    SVEPermutePredicate(size, 0b10100, 0b0000, 0b0, pd, pn);
+  }
+
+  // SVE unpack predicate elements
+  void punpklo(PRegister pd, PRegister pn) {
+    SVEPermutePredicate(SubRegSize::i8Bit, 0b10000, 0b0000, 0b0, pd, pn);
+  }
+  void punpkhi(PRegister pd, PRegister pn) {
+    SVEPermutePredicate(SubRegSize::i8Bit, 0b10001, 0b0000, 0b0, pd, pn);
+  }
+
   // SVE permute predicate elements
-  // XXX:
+  void zip1(SubRegSize size, PRegister pd, PRegister pn, PRegister pm) {
+    SVEPermutePredicate(size, pm.Idx(), 0b0000, 0b0, pd, pn);
+  }
+  void zip2(SubRegSize size, PRegister pd, PRegister pn, PRegister pm) {
+    SVEPermutePredicate(size, pm.Idx(), 0b0010, 0b0, pd, pn);
+  }
+  void uzp1(SubRegSize size, PRegister pd, PRegister pn, PRegister pm) {
+    SVEPermutePredicate(size, pm.Idx(), 0b0100, 0b0, pd, pn);
+  }
+  void uzp2(SubRegSize size, PRegister pd, PRegister pn, PRegister pm) {
+    SVEPermutePredicate(size, pm.Idx(), 0b0110, 0b0, pd, pn);
+  }
+  void trn1(SubRegSize size, PRegister pd, PRegister pn, PRegister pm) {
+    SVEPermutePredicate(size, pm.Idx(), 0b1000, 0b0, pd, pn);
+  }
+  void trn2(SubRegSize size, PRegister pd, PRegister pn, PRegister pm) {
+    SVEPermutePredicate(size, pm.Idx(), 0b1010, 0b0, pd, pn);
+  }
 
   // SVE Permute Vector - Predicated - Base
   // CPY (SIMD&FP scalar)
@@ -3406,6 +3432,20 @@ private:
     Instr |= opc << 16;
     Instr |= zm.Idx() << 5;
     Instr |= zdn.Idx();
+    dc32(Instr);
+  }
+
+  // SVE Permute Predicate
+  void SVEPermutePredicate(SubRegSize size, uint32_t op1, uint32_t op2, uint32_t op3, PRegister pd, PRegister pn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+
+    uint32_t Instr = 0b0000'0101'0010'0000'0100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= op1 << 16;
+    Instr |= op2 << 9;
+    Instr |= op3 << 4;
+    Instr |= pn.Idx() << 5;
+    Instr |= pd.Idx();
     dc32(Instr);
   }
 
