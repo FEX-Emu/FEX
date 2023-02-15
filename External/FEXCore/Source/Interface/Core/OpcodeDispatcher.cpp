@@ -5960,6 +5960,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::PExtrOp<2>},
 
+    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},
+    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<8>},
+
     {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<8>},
     {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<4>},
 
