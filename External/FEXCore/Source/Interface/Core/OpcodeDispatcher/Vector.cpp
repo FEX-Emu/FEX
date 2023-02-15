@@ -2898,7 +2898,8 @@ void OpDispatchBuilder::VPFCMPOp<1>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPFCMPOp<2>(OpcodeArgs);
 
-void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
+OrderedNode* OpDispatchBuilder::PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                                              const X86Tables::DecodedOperand& Src2) {
   // This is a pretty curious operation
   // Does two MADD operations across 4 16bit signed integers and accumulates to 32bit integers in the destination
   //
@@ -2909,25 +2910,34 @@ void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op);
 
-  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
+  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
 
   if (Size == 8) {
     Size <<= 1;
   }
 
-  auto Src1_L = _VSXTL(Size, 2, Src1);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
-  auto Src1_H = _VSXTL2(Size, 2, Src1); // [79:64], [95:80], [111:96], [127:112]
+  auto Src1_L = _VSXTL(Size, 2, Src1Node);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
+  auto Src1_H = _VSXTL2(Size, 2, Src1Node); // [79:64], [95:80], [111:96], [127:112]
 
-  auto Src2_L = _VSXTL(Size, 2, Src2);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
-  auto Src2_H = _VSXTL2(Size, 2, Src2); // [79:64], [95:80], [111:96], [127:112]
+  auto Src2_L = _VSXTL(Size, 2, Src2Node);  // [15:0 ], [31:16], [32:47 ], [63:48  ]
+  auto Src2_H = _VSXTL2(Size, 2, Src2Node); // [79:64], [95:80], [111:96], [127:112]
 
   auto Res_L = _VSMul(Size, 4, Src1_L, Src2_L); // [15:0 ], [31:16], [32:47 ], [63:48  ] : Original elements
   auto Res_H = _VSMul(Size, 4, Src1_H, Src2_H); // [79:64], [95:80], [111:96], [127:112] : Original elements
 
   // [15:0 ] + [31:16], [32:47 ] + [63:48  ], [79:64] + [95:80], [111:96] + [127:112]
-  auto Res = _VAddP(Size, 4, Res_L, Res_H);
-  StoreResult(FPRClass, Op, Res, -1);
+  return _VAddP(Size, 4, Res_L, Res_H);
+}
+
+void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
+  OrderedNode *Result = PMADDWDOpImpl(Op, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
+  OrderedNode *Result = PMADDWDOpImpl(Op, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {

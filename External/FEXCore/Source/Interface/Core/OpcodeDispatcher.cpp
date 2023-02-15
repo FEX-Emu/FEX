@@ -6010,6 +6010,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::VPSLLOp<4>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::VPSLLOp<8>},
     {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<4, false>},
+    {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
     {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
 
     {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 1>},
