@@ -2468,14 +2468,13 @@ DEF_OP(VUShrNI2) {
     ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE && Is256Bit) {
-    mov(VTMP1.Z(), VectorLower.Z());
-
     const auto Mask = PRED_TMP_16B;
 
     shrnb(SubRegSize, VTMP2.Z(), VectorUpper.Z(), BitShift);
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
-    splice<ARMEmitter::OpType::Destructive>(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), VTMP2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+
+    movprfx(Dst.Z(), VectorLower.Z());
+    splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
     mov(VTMP1.Q(), VectorLower.Q());
     shrn2(SubRegSize, VTMP1.Q(), VectorUpper.Q(), BitShift);
@@ -2651,12 +2650,6 @@ DEF_OP(VSQXTN2) {
     ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (HostSupportsSVE && Is256Bit) {
-    // Need to use the destructive variant of SPLICE, since
-    // the constructive variant requires a register list, and
-    // we can't guarantee VectorLower and VectorUpper will always
-    // have consecutive indexes with one another.
-    mov(VTMP1.Z(), VectorLower.Z());
-
     // We use the 16 byte mask due to how SPLICE works. We only
     // want to get at the first 16 bytes in the lower vector, so
     // that SPLICE will then begin copying the first 16 bytes
@@ -2666,20 +2659,23 @@ DEF_OP(VSQXTN2) {
 
     sqxtnb(SubRegSize, VTMP2.Z(), VectorUpper.Z());
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
-    splice<ARMEmitter::OpType::Destructive>(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), VTMP2.Z());
 
-    mov(Dst.Z(), VTMP1.Z());
+    // Need to use the destructive variant of SPLICE, since
+    // the constructive variant requires a register list, and
+    // we can't guarantee VectorLower and VectorUpper will always
+    // have consecutive indexes with one another.
+    movprfx(Dst.Z(), VectorLower.Z());
+    splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
-    mov(VTMP1.Q(), VectorLower.Q());
-
     if (OpSize == 8) {
       sqxtn(SubRegSize, VTMP2, VectorUpper);
-      ins(ARMEmitter::SubRegSize::i32Bit, VTMP1, 1, VTMP2, 0);
+      mov(Dst.Q(), VectorLower.Q());
+      ins(ARMEmitter::SubRegSize::i32Bit, Dst, 1, VTMP2, 0);
     } else {
+      mov(VTMP1.Q(), VectorLower.Q());
       sqxtn2(SubRegSize, VTMP1, VectorUpper);
+      mov(Dst.Q(), VTMP1.Q());
     }
-
-    mov(Dst.Q(), VTMP1.Q());
   }
 }
 
@@ -2728,24 +2724,23 @@ DEF_OP(VSQXTUN2) {
     // NOTE: See VSQXTN2 implementation for an in-depth explanation
     //       of everything going on here.
 
-    mov(VTMP1.Z(), VectorLower.Z());
-
     const auto Mask = PRED_TMP_16B;
 
     sqxtunb(SubRegSize, VTMP2.Z(), VectorUpper.Z());
     uzp1(SubRegSize, VTMP2.Z(), VTMP2.Z(), VTMP2.Z());
-    splice<ARMEmitter::OpType::Destructive>(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), VTMP2.Z());
 
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(Dst.Z(), VectorLower.Z());
+    splice<ARMEmitter::OpType::Destructive>(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
   } else {
-    mov(VTMP1.Q(), VectorLower.Q());
     if (OpSize == 8) {
       sqxtun(SubRegSize, VTMP2, VectorUpper);
-      ins(ARMEmitter::SubRegSize::i32Bit, VTMP1, 1, VTMP2, 0);
+      mov(Dst.Q(), VectorLower.Q());
+      ins(ARMEmitter::SubRegSize::i32Bit, Dst, 1, VTMP2, 0);
     } else {
+      mov(VTMP1.Q(), VectorLower.Q());
       sqxtun2(SubRegSize, VTMP1, VectorUpper);
+      mov(Dst.Q(), VTMP1.Q());
     }
-    mov(Dst.Q(), VTMP1.Q());
   }
 }
 
