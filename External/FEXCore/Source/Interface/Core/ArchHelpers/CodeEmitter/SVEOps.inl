@@ -1248,40 +1248,40 @@ public:
   // XXX: FCPY
   // SVE copy integer immediate (predicated)
   // XXX:
+
   // SVE Permute Vector - Unpredicated
-  void dup(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'0011'10 << 10;
-    SVEPermuteUnpredicated(Op, 0b00, 0b000, size, rn, zd);
+  void dup(SubRegSize size, ZRegister zd, Register rn) {
+    SVEPermuteUnpredicated(size, 0b00000, zd, ZRegister{rn.Idx()});
   }
-  void mov(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::Register rn) {
+  void mov(SubRegSize size, ZRegister zd, Register rn) {
     dup(size, zd, rn);
   }
-
-  // XXX: INSR
-  // XXX: INSR SIMD
-  // XXX: REV
+  void insr(SubRegSize size, ZRegister zdn, Register rm) {
+    SVEPermuteUnpredicated(size, 0b00100, zdn, ZRegister{rm.Idx()});
+  }
+  void insr(SubRegSize size, ZRegister zdn, VRegister vm) {
+    SVEPermuteUnpredicated(size, 0b10100, zdn, vm.Z());
+  }
+  void rev(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVEPermuteUnpredicated(size, 0b11000, zd, zn);
+  }
 
   // SVE unpack vector elements
-  void sunpklo(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0101'0011'0000'0011'10 << 10;
-    SVEUnpackVectorElements(Op, 0, 0, size, zn, zd);
+  void sunpklo(SubRegSize size, ZRegister zd, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEPermuteUnpredicated(size, 0b10000, zd, zn);
   }
-  void sunpkhi(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0101'0011'0000'0011'10 << 10;
-    SVEUnpackVectorElements(Op, 0, 1, size, zn, zd);
+  void sunpkhi(SubRegSize size, ZRegister zd, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEPermuteUnpredicated(size, 0b10001, zd, zn);
   }
-  void uunpklo(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0101'0011'0000'0011'10 << 10;
-    SVEUnpackVectorElements(Op, 1, 0, size, zn, zd);
+  void uunpklo(SubRegSize size, ZRegister zd, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEPermuteUnpredicated(size, 0b10010, zd, zn);
   }
-  void uunpkhi(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0101'0011'0000'0011'10 << 10;
-    SVEUnpackVectorElements(Op, 1, 1, size, zn, zd);
+  void uunpkhi(SubRegSize size, ZRegister zd, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEPermuteUnpredicated(size, 0b10011, zd, zn);
   }
 
   // SVE Permute Predicate
@@ -3398,26 +3398,14 @@ private:
   }
 
   // SVE Permute Vector - Unpredicated
-  void SVEPermuteUnpredicated(uint32_t Op, uint32_t op0, uint32_t op1, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEPermuteUnpredicated(SubRegSize size, uint32_t opc, ZRegister zdn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
 
+    uint32_t Instr = 0b0000'0101'0010'0000'0011'1000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= op0 << 19;
-    Instr |= op1 << 16;
-    Instr |= Encode_rn(rn);
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
-  // SVE unpack vector elements
-  void SVEUnpackVectorElements(uint32_t Op, uint32_t U, uint32_t H, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= U << 17;
-    Instr |= H << 16;
-    Instr |= Encode_rn(zn);
-    Instr |= Encode_rd(zd);
+    Instr |= opc << 16;
+    Instr |= zm.Idx() << 5;
+    Instr |= zdn.Idx();
     dc32(Instr);
   }
 
@@ -3847,6 +3835,17 @@ private:
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVEPermuteVectorUnpredicated(SubRegSize size, uint32_t opc, ZRegister zdn, VRegister vm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+
+    uint32_t Instr = 0b0000'0101'0010'0000'0011'1000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= vm.Idx() << 5;
+    Instr |= zdn.Idx();
     dc32(Instr);
   }
 

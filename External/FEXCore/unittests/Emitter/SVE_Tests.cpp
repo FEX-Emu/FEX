@@ -1044,15 +1044,26 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Unpredica
   TEST_SINGLE(dup(SubRegSize::i16Bit, ZReg::z30, Reg::r29),  "mov z30.h, w29");
   TEST_SINGLE(dup(SubRegSize::i32Bit, ZReg::z30, Reg::r29),  "mov z30.s, w29");
   TEST_SINGLE(dup(SubRegSize::i64Bit, ZReg::z30, Reg::r29),  "mov z30.d, x29");
-  //TEST_SINGLE(dup(SubRegSize::i128Bit, ZReg::z30, Reg::r29), "mov z30.q, x29");
+
   TEST_SINGLE(mov(SubRegSize::i8Bit, ZReg::z30, Reg::r29),   "mov z30.b, w29");
   TEST_SINGLE(mov(SubRegSize::i16Bit, ZReg::z30, Reg::r29),  "mov z30.h, w29");
   TEST_SINGLE(mov(SubRegSize::i32Bit, ZReg::z30, Reg::r29),  "mov z30.s, w29");
   TEST_SINGLE(mov(SubRegSize::i64Bit, ZReg::z30, Reg::r29),  "mov z30.d, x29");
-  //TEST_SINGLE(mov(SubRegSize::i128Bit, ZReg::z30, Reg::r29), "mov z30.q, x29");
-  // XXX: INSR
-  // XXX: INSR SIMD
-  // XXX: REV
+
+  TEST_SINGLE(insr(SubRegSize::i8Bit, ZReg::z30, Reg::r29),  "insr z30.b, w29");
+  TEST_SINGLE(insr(SubRegSize::i16Bit, ZReg::z30, Reg::r29), "insr z30.h, w29");
+  TEST_SINGLE(insr(SubRegSize::i32Bit, ZReg::z30, Reg::r29), "insr z30.s, w29");
+  TEST_SINGLE(insr(SubRegSize::i64Bit, ZReg::z30, Reg::r29), "insr z30.d, x29");
+
+  TEST_SINGLE(insr(SubRegSize::i8Bit, ZReg::z30, VReg::v29),  "insr z30.b, b29");
+  TEST_SINGLE(insr(SubRegSize::i16Bit, ZReg::z30, VReg::v29), "insr z30.h, h29");
+  TEST_SINGLE(insr(SubRegSize::i32Bit, ZReg::z30, VReg::v29), "insr z30.s, s29");
+  TEST_SINGLE(insr(SubRegSize::i64Bit, ZReg::z30, VReg::v29), "insr z30.d, d29");
+
+  TEST_SINGLE(rev(SubRegSize::i8Bit, ZReg::z30, ZReg::z29),  "rev z30.b, z29.b");
+  TEST_SINGLE(rev(SubRegSize::i16Bit, ZReg::z30, ZReg::z29), "rev z30.h, z29.h");
+  TEST_SINGLE(rev(SubRegSize::i32Bit, ZReg::z30, ZReg::z29), "rev z30.s, z29.s");
+  TEST_SINGLE(rev(SubRegSize::i64Bit, ZReg::z30, ZReg::z29), "rev z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE unpack vector elements") {
