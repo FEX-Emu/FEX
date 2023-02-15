@@ -994,9 +994,6 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   // Set our state register to point to our guest thread data
   ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
-  uint64_t OldGuestSP = Frame->State.gregs[X86State::REG_RSP];
-  uint64_t NewGuestSP = OldGuestSP;
-
   // Pulling from context here
   const bool Is64BitMode = CTX->Config.Is64BitMode;
 
@@ -1044,6 +1041,9 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
       }
     }
   }
+
+  uint64_t OldGuestSP = Frame->State.gregs[X86State::REG_RSP];
+  uint64_t NewGuestSP = OldGuestSP;
 
   // altstack is only used if the signal handler was setup with SA_ONSTACK
   if (GuestAction->sa_flags & SA_ONSTACK) {
