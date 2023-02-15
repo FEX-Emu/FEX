@@ -3677,8 +3677,8 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   Test1 = _VAddV(Size, 2, Test1);
   Test2 = _VAddV(Size, 2, Test2);
 
-  Test1 = _VExtractToGPR(16, 2, Test1, 0);
-  Test2 = _VExtractToGPR(16, 2, Test2, 0);
+  Test1 = _VExtractToGPR(Size, 2, Test1, 0);
+  Test2 = _VExtractToGPR(Size, 2, Test2, 0);
 
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
