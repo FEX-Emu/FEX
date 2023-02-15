@@ -1349,11 +1349,11 @@ OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::Deco
 
   // ZMask happens after insert
   if (ZMask == 0xF) {
-    return _VectorImm(16, 4, 0);
+    return _VectorZero(DstSize);
   }
 
   if (ZMask) {
-    auto Zero = _VectorImm(16, 4, 0);
+    auto Zero = _VectorZero(DstSize);
     for (size_t i = 0; i < 4; ++i) {
       if ((ZMask & (1 << i)) != 0) {
         Dest = _VInsElement(DstSize, 4, i, 0, Dest, Zero);
