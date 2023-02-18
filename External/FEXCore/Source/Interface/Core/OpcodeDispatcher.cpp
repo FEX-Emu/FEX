@@ -5353,58 +5353,7 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::ACCESS_STREAM);
 }
 
-void OpDispatchBuilder::ALUOp(OpcodeArgs) {
-  bool RequiresMask = false;
-  FEXCore::IR::IROps IROp;
-  switch (Op->OP) {
-  case 0x0:
-  case 0x1:
-  case 0x2:
-  case 0x3:
-  case 0x4:
-  case 0x5:
-    IROp = FEXCore::IR::IROps::OP_ADD;
-    RequiresMask = true;
-  break;
-  case 0x8:
-  case 0x9:
-  case 0xA:
-  case 0xB:
-  case 0xC:
-  case 0xD:
-    IROp = FEXCore::IR::IROps::OP_OR;
-  break;
-  case 0x20:
-  case 0x21:
-  case 0x22:
-  case 0x23:
-  case 0x24:
-  case 0x25:
-    IROp = FEXCore::IR::IROps::OP_AND;
-  break;
-  case 0x28:
-  case 0x29:
-  case 0x2A:
-  case 0x2B:
-  case 0x2C:
-  case 0x2D:
-    IROp = FEXCore::IR::IROps::OP_SUB;
-    RequiresMask = true;
-  break;
-  case 0x30:
-  case 0x31:
-  case 0x32:
-  case 0x33:
-  case 0x34:
-  case 0x35:
-    IROp = FEXCore::IR::IROps::OP_XOR;
-  break;
-  default:
-    IROp = FEXCore::IR::IROps::OP_LAST;
-    LOGMAN_MSG_A_FMT("Unknown ALU Op: 0x{:x}", Op->OP);
-  break;
-  }
-
+void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask) {
   auto Size = GetDstSize(Op);
 
   // X86 basic ALU ops just do the operation between the destination and a single source
@@ -5417,43 +5366,24 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
     HandledLock = true;
     OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
     DestMem = AppendSegmentOffset(DestMem, Op->Flags);
-    switch (IROp) {
-      case FEXCore::IR::IROps::OP_ADD: {
-        Dest = _AtomicFetchAdd(Size, Src, DestMem);
-        Result = _Add(Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_SUB: {
-        Dest = _AtomicFetchSub(Size, Src, DestMem);
-        Result = _Sub(Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_OR: {
-        Dest = _AtomicFetchOr(Size, Src, DestMem);
-        Result = _Or(Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_AND: {
-        Dest = _AtomicFetchAnd(Size, Src, DestMem);
-        Result = _And(Dest, Src);
-        break;
-      }
-      case FEXCore::IR::IROps::OP_XOR: {
-        Dest = _AtomicFetchXor(Size, Src, DestMem);
-        Result = _Xor(Dest, Src);
-        break;
-      }
-      default:
-        LOGMAN_MSG_A_FMT("Unknown Atomic IR Op: {}", ToUnderlying(IROp));
-        break;
-    }
+
+    auto FetchOp = _AtomicFetchAdd(Size, Src, DestMem);
+    // Overwrite our atomic op type
+    FetchOp.first->Header.Op = AtomicFetchOp;
+    Dest = FetchOp;
+
+    auto ALUOp = _Add(Dest, Src);
+    // Overwrite our IR's op type
+    ALUOp.first->Header.Op = ALUIROp;
+
+    Result = ALUOp;
   }
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
     auto ALUOp = _Add(Dest, Src);
     // Overwrite our IR's op type
-    ALUOp.first->Header.Op = IROp;
+    ALUOp.first->Header.Op = ALUIROp;
 
     Result = ALUOp;
     StoreResult(GPRClass, Op, Result, -1);
@@ -5465,7 +5395,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
 
   // Flags set
   {
-    switch (IROp) {
+    switch (ALUIROp) {
     case FEXCore::IR::IROps::OP_ADD:
       GenerateFlags_ADD(Op, Result, Dest, Src);
     break;
@@ -5481,6 +5411,11 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
     default: break;
     }
   }
+}
+
+template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask>
+void OpDispatchBuilder::ALUOp(OpcodeArgs) {
+  ALUOpImpl(Op, ALUIROp, AtomicFetchOp, RequiresMask);
 }
 
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
@@ -6197,19 +6132,19 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable[] = {
     // Instructions
-    {0x00, 6, &OpDispatchBuilder::ALUOp},
+    {0x00, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, true>},
 
-    {0x08, 6, &OpDispatchBuilder::ALUOp},
+    {0x08, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, false>},
 
     {0x10, 6, &OpDispatchBuilder::ADCOp<0>},
 
     {0x18, 6, &OpDispatchBuilder::SBBOp<0>},
 
-    {0x20, 6, &OpDispatchBuilder::ALUOp},
+    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_AND, FEXCore::IR::IROps::OP_ATOMICFETCHAND, false>},
 
-    {0x28, 6, &OpDispatchBuilder::ALUOp},
+    {0x28, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB, true>},
 
-    {0x30, 6, &OpDispatchBuilder::ALUOp},
+    {0x30, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, false>},
 
     {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
     {0x50, 8, &OpDispatchBuilder::PUSHREGOp},

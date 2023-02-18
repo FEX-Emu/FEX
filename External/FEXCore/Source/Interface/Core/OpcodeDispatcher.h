@@ -168,6 +168,7 @@ public:
   void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs);
+  template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask>
   void ALUOp(OpcodeArgs);
   void INTOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs);
@@ -772,6 +773,8 @@ private:
   bool NeedsBlockEnd{false};
   FEXCore::IR::IROp_IRHeader *Current_Header{};
   OrderedNode *Current_HeaderNode{};
+
+  void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask);
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
