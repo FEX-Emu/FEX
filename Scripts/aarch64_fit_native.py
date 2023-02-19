@@ -15,7 +15,16 @@ BigCoreIDs = {
         tuple([0x41, 0xd0b]): "cortex-a76",
         tuple([0x41, 0xd0d]): "cortex-a77",
         tuple([0x41, 0xd41]): "cortex-a78",
+        tuple([0x41, 0xd41]):
+            [ ["cortex-a78", "0.0"],
+              ["cortex-x1c", "14.0"],    # Claim to be x1c as an alternative if available.
+              ["cortex-a78c", "9999.0"], # Doesn't exist in clang as of version 15.0
+            ],
         tuple([0x41, 0xd44]): "cortex-x1",
+        tuple([0x41, 0xd4c]):
+            [ ["cortex-x1", "0.0"],
+              ["cortex-x1c", "14.0"],
+            ],
         tuple([0x41, 0xd47]):
             [ ["cortex-a78", "0.0"],
               ["cortex-a710", "14.0"],
