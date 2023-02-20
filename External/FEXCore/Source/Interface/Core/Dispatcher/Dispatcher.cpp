@@ -1009,14 +1009,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
         // We need to spill SRA but only some of it, since some values have already been spilled
         // Lower 16 bits tells us which registers are already spilled to the context
         // So we ignore spilling those ones
-        uint16_t NumRegisters = std::popcount(Frame->InSyscallInfo & 0xFFFF);
-        if (NumRegisters >= 4) {
-          // Unhandled case
-          IgnoreMask = 0;
-        }
-        else {
-          IgnoreMask = Frame->InSyscallInfo & 0xFFFF;
-        }
+        IgnoreMask = Frame->InSyscallInfo & 0xFFFF;
       }
       else {
         // We must spill everything
