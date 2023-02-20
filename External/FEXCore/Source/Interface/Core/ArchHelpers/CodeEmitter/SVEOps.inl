@@ -242,19 +242,6 @@ public:
     SVEIntegerCompareImm(1, 1, imm, size, pg, zn, pd);
   }
 
-  void SVEIntegerCompareImm(uint32_t lt, uint32_t ne, uint32_t imm7, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0010'0100'0010'0000'0000 << 12;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= imm7 << 14;
-    Instr |= lt << 13;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= ne << 4;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
   // SVE integer compare with signed immediate
   void cmpeq(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, int32_t imm) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -286,20 +273,6 @@ public:
     SVEIntegerCompareSignedImm(0, 1, 1, imm, size, pg, zn, pd);
   }
 
-  void SVEIntegerCompareSignedImm(uint32_t op, uint32_t o2, uint32_t ne, uint32_t imm5, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'000 << 13;;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= (imm5 & 0b1'1111) << 16;
-    Instr |= op << 15;
-    Instr |= o2 << 13;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= ne << 4;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
   // SVE predicate logical operations
   void and_(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
     constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
@@ -525,21 +498,6 @@ public:
     SVEFloatCompareVector(1, 0, 0, size, zm, pg, zn, pd);
   }
 
-  void SVEFloatCompareVector(uint32_t op, uint32_t o2, uint32_t o3, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'010 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= op << 15;
-    Instr |= o2 << 13;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= o3 << 4;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
-
   // SVE floating-point arithmetic (unpredicated)
   void fadd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
     LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
@@ -660,19 +618,6 @@ public:
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
     SVEIntegerMinMaxDifferencePredicated(0b10, 1, size, pg, zm, zd);
-  }
-
-  void SVEIntegerMinMaxDifferencePredicated(uint32_t opc, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0000'0100'0000'1000'000 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
   }
 
   // SVE integer multiply vectors (predicated)
@@ -826,106 +771,6 @@ public:
   }
   void sqshlu(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, uint32_t Shift) {
     SVEBitWiseShiftImmediatePred(size, 0b11, 1, 1, pg, zd, zdn, Shift);
-  }
-
-  void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "zd needs to equal zdn");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-
-    const auto ElementSize = SubRegSizeInBits(size);
-    const bool IsLeftShift = L != 0;
-    if (IsLeftShift) {
-      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
-    } else {
-      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
-    }
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = IsLeftShift ? Shift
-                                              : (2 * ElementSize) - Shift;
-
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i64Bit) {
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
-    
-    constexpr uint32_t Op = 0b0000'0100'0000'0000'100 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= tszh << 22;
-    Instr |= opc << 18;
-    Instr |= L << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= tszl << 8;
-    Instr |= imm3 << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
-  void SVEBitWiseShiftImmediateUnpred(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
-
-    const auto ElementSize = SubRegSizeInBits(size);
-    const bool IsLeftShift = opc == 0b11;
-    if (IsLeftShift) {
-      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
-    } else {
-      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
-    }
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = IsLeftShift ? Shift
-                                              : (2 * ElementSize) - Shift;
-
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i64Bit) {
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
-
-    uint32_t Instr = 0b0000'0100'0010'0000'1001'0000'0000'0000;
-    Instr |= tszh << 22;
-    Instr |= tszl << 19;
-    Instr |= imm3 << 16;
-    Instr |= opc << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
   }
 
   // SVE bitwise shift by vector (predicated)
@@ -1119,19 +964,23 @@ public:
     SVE2BitwiseTernary(0b11, 1, zm, zk, zd);
   }
 
-  void SVE2BitwiseTernary(uint32_t opc, uint32_t o2, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk, FEXCore::ARMEmitter::ZRegister zdn) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'1 << 11;
-    uint32_t Instr = Op;
-
-    Instr |= opc << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= o2 << 10;
-    Instr |= zk.Idx() << 5;
-    Instr |= zdn.Idx();
-    dc32(Instr);
-  }
   // SVE Index Generation
-  // XXX:
+  void index(SubRegSize size, ZRegister zd, int32_t initial, int32_t increment) {
+    LOGMAN_THROW_A_FMT(initial >= -16 && initial <= 15, "initial value must be within -16-15. initial: {}", initial);
+    LOGMAN_THROW_A_FMT(increment >= -16 && increment <= 15, "increment value must be within -16-15. increment: {}", increment);
+    SVEIndexGeneration(0b00, size, zd, initial, increment);
+  }
+  void index(SubRegSize size, ZRegister zd, XRegister initial, int32_t increment) {
+    LOGMAN_THROW_A_FMT(increment >= -16 && increment <= 15, "increment value must be within -16-15. increment: {}", increment);
+    SVEIndexGeneration(0b01, size, zd, static_cast<int32_t>(initial.Idx()), increment);
+  }
+  void index(SubRegSize size, ZRegister zd, int32_t initial, XRegister increment) {
+    LOGMAN_THROW_A_FMT(initial >= -16 && initial <= 15, "initial value must be within -16-15. initial: {}", initial);
+    SVEIndexGeneration(0b10, size, zd, initial, static_cast<int32_t>(increment.Idx()));
+  }
+  void index(SubRegSize size, ZRegister zd, XRegister initial, XRegister increment) {
+    SVEIndexGeneration(0b11, size, zd, static_cast<int32_t>(initial.Idx()), static_cast<int32_t>(increment.Idx()));
+  }
 
   // SVE Stack Allocation
   // SVE stack frame adjustment
@@ -1170,20 +1019,6 @@ public:
 
   void pmul(ZRegister zd, ZRegister zn, ZRegister zm) {
     SVE2IntegerMultiplyVectors(0b01, SubRegSize::i8Bit, zm, zn, zd);
-  }
-
-  void SVE2IntegerMultiplyVectors(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0110 << 12;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= opc << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
   }
 
   // SVE2 signed saturating doubling multiply high (unpredicated)
@@ -1458,18 +1293,6 @@ public:
     SVEPermuteVector(0, zd, zm, Imm);
   }
 
-  void SVEPermuteVector(uint32_t op0, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zm, uint32_t Imm) {
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'000 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= op0 << 22;
-    Instr |= (Imm >> 3) << 16;
-    Instr |= (Imm & 0b111) << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   // SVE Permute Vector - Segments
   // SVE permute vector segments
   // XXX:
@@ -1501,20 +1324,6 @@ public:
     SVEIntegerCompareVector(1, 1, 1, size, zm, pg, zn, pd);
   }
 
-  void SVEIntegerCompareVector(uint32_t op, uint32_t o2, uint32_t ne, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0010'0100'0000'0000'000 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= op << 15;
-    Instr |= o2 << 13;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= ne << 4;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
   // SVE integer compare with wide elements
   // XXX:
 
@@ -1870,20 +1679,6 @@ public:
     SVE2IntegerAddSubLong(1, 1, 1, 1, size, zd, zn, zm);
   }
 
-  void SVE2IntegerAddSubLong(uint32_t op, uint32_t S, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0100'0101'0000'0000'00 << 14;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= op << 13;
-    Instr |= S << 12;
-    Instr |= U << 11;
-    Instr |= T << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
   // SVE2 integer add/subtract wide
   // XXX:
   // SVE2 integer multiply long
@@ -1920,19 +1715,6 @@ public:
     SVE2IntegerMultiplyLong(1, 1, 1, size, zd, zn, zm);
   }
 
-  void SVE2IntegerMultiplyLong(uint32_t op, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0100'0101'0000'0000'011 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= op << 12;
-    Instr |= U << 11;
-    Instr |= T << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
   //
   // SVE Misc
   // SVE2 bitwise shift left long
@@ -2079,36 +1861,6 @@ public:
     SVE2SaturatingExtractNarrow(size, 0b10, 1, zn, zd);
   }
 
-  void SVE2SaturatingExtractNarrow(SubRegSize size, uint32_t opc, uint32_t T, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    } else {
-      FEX_UNREACHABLE;
-    }
-
-    constexpr uint32_t Op = 0b0100'0101'0010'0000'010 << 13;
-
-    uint32_t Instr = Op;
-    Instr |= tszh << 22;
-    Instr |= tszl << 19;
-    Instr |= opc << 11;
-    Instr |= T << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   // SVE2 bitwise shift right narrow
   void sqshrunb(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
     SVE2BitwiseShiftRightNarrow(size, Shift, 0, 0, 0, 0, zn, zd);
@@ -2157,47 +1909,6 @@ public:
   }
   void uqrshrnt(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Shift) {
     SVE2BitwiseShiftRightNarrow(size, Shift, 1, 1, 1, 1, zn, zd);
-  }
-
-  void SVE2BitwiseShiftRightNarrow(SubRegSize size, uint32_t shift, uint32_t opc, uint32_t U, uint32_t R, uint32_t T, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit element size");
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - shift;
-    if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
-
-    constexpr uint32_t Op = 0b0100'0101'0010'0000'00 << 14;
-
-    uint32_t Instr = Op;
-    Instr |= tszh << 22;
-    Instr |= tszl << 19;
-    Instr |= imm3 << 16;
-    Instr |= opc << 13;
-    Instr |= U << 12;
-    Instr |= R << 11;
-    Instr |= T << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
   }
 
   // SVE2 integer add/subtract narrow high part
@@ -2369,18 +2080,6 @@ public:
       size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
       size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
     SVEFloatUnary(0b01, size, pg, zn, zd);
-  }
-
-  void SVEFloatUnary(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0110'0101'0000'1100'101 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
   }
 
   // SVE integer convert to floating-point
@@ -4019,3 +3718,336 @@ private:
     dc32(Instr);
   }
 
+  void SVEIndexGeneration(uint32_t op, SubRegSize size, ZRegister zd, int32_t imm5, int32_t imm5b) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "INDEX cannot use 128-bit element sizes");
+
+    uint32_t Instr = 0b0000'0100'0010'0000'0100'0000'0000'0000;
+    Instr |= op << 10;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= (static_cast<uint32_t>(imm5b) & 0b11111) << 16;
+    Instr |= (static_cast<uint32_t>(imm5) & 0b11111) << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerCompareImm(uint32_t lt, uint32_t ne, uint32_t imm7, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
+    constexpr uint32_t Op = 0b0010'0100'0010'0000'0000 << 12;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= imm7 << 14;
+    Instr |= lt << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= ne << 4;
+    Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerCompareSignedImm(uint32_t op, uint32_t o2, uint32_t ne, uint32_t imm5, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
+    constexpr uint32_t Op = 0b0010'0101'0000'0000'000 << 13;;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= (imm5 & 0b1'1111) << 16;
+    Instr |= op << 15;
+    Instr |= o2 << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= ne << 4;
+    Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFloatCompareVector(uint32_t op, uint32_t o2, uint32_t o3, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
+    constexpr uint32_t Op = 0b0110'0101'0000'0000'010 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 15;
+    Instr |= o2 << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= o3 << 4;
+    Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerMinMaxDifferencePredicated(uint32_t opc, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
+    constexpr uint32_t Op = 0b0000'0100'0000'1000'000 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 17;
+    Instr |= U << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+    void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "zd needs to equal zdn");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+    const bool IsLeftShift = L != 0;
+    if (IsLeftShift) {
+      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
+    } else {
+      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
+    }
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = IsLeftShift ? Shift
+                                              : (2 * ElementSize) - Shift;
+
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0b00;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0b00;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 0b01;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i64Bit) {
+      tszh = 0b10 | ((InverseShift >> 5) & 1);
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+    
+    constexpr uint32_t Op = 0b0000'0100'0000'0000'100 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= tszh << 22;
+    Instr |= opc << 18;
+    Instr |= L << 17;
+    Instr |= U << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= tszl << 8;
+    Instr |= imm3 << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBitWiseShiftImmediateUnpred(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t Shift) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    const auto ElementSize = SubRegSizeInBits(size);
+    const bool IsLeftShift = opc == 0b11;
+    if (IsLeftShift) {
+      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
+    } else {
+      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
+    }
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = IsLeftShift ? Shift
+                                              : (2 * ElementSize) - Shift;
+
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0b00;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0b00;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 0b01;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i64Bit) {
+      tszh = 0b10 | ((InverseShift >> 5) & 1);
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    uint32_t Instr = 0b0000'0100'0010'0000'1001'0000'0000'0000;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= imm3 << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseTernary(uint32_t opc, uint32_t o2, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk, FEXCore::ARMEmitter::ZRegister zdn) {
+    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'1 << 11;
+    uint32_t Instr = Op;
+
+    Instr |= opc << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= o2 << 10;
+    Instr |= zk.Idx() << 5;
+    Instr |= zdn.Idx();
+    dc32(Instr);
+  }
+
+  void SVEPermuteVector(uint32_t op0, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zm, uint32_t Imm) {
+    constexpr uint32_t Op = 0b0000'0101'0010'0000'000 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= op0 << 22;
+    Instr |= (Imm >> 3) << 16;
+    Instr |= (Imm & 0b111) << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerCompareVector(uint32_t op, uint32_t o2, uint32_t ne, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
+    constexpr uint32_t Op = 0b0010'0100'0000'0000'000 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 15;
+    Instr |= o2 << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= ne << 4;
+    Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubLong(uint32_t op, uint32_t S, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
+    constexpr uint32_t Op = 0b0100'0101'0000'0000'00 << 14;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 13;
+    Instr |= S << 12;
+    Instr |= U << 11;
+    Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerMultiplyLong(uint32_t op, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
+    constexpr uint32_t Op = 0b0100'0101'0000'0000'011 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 12;
+    Instr |= U << 11;
+    Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2SaturatingExtractNarrow(SubRegSize size, uint32_t opc, uint32_t T, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    if (size == SubRegSize::i8Bit) {
+      tszh = 0;
+      tszl = 0b01;
+    } else if (size == SubRegSize::i16Bit) {
+      tszh = 0;
+      tszl = 0b10;
+    } else if (size == SubRegSize::i32Bit) {
+      tszh = 1;
+      tszl = 0b00;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    constexpr uint32_t Op = 0b0100'0101'0010'0000'010 << 13;
+
+    uint32_t Instr = Op;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= opc << 11;
+    Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2BitwiseShiftRightNarrow(SubRegSize size, uint32_t shift, uint32_t opc, uint32_t U, uint32_t R, uint32_t T, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit element size");
+
+    uint32_t tszh = 0;
+    uint32_t tszl = 0;
+    uint32_t imm3 = 0;
+    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - shift;
+    if (size == SubRegSize::i8Bit) {
+      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 8, "Incorrect shift");
+      tszh = 0;
+      tszl = 0b01;
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i16Bit) {
+      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 16, "Incorrect shift");
+      tszh = 0;
+      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
+      imm3 = InverseShift & 0b111;
+    } else if (size == SubRegSize::i32Bit) {
+      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 32, "Incorrect shift");
+      tszh = 1;
+      tszl = (InverseShift >> 3) & 0b11;
+      imm3 = InverseShift & 0b111;
+    } else {
+      FEX_UNREACHABLE;
+    }
+
+    constexpr uint32_t Op = 0b0100'0101'0010'0000'00 << 14;
+
+    uint32_t Instr = Op;
+    Instr |= tszh << 22;
+    Instr |= tszl << 19;
+    Instr |= imm3 << 16;
+    Instr |= opc << 13;
+    Instr |= U << 12;
+    Instr |= R << 11;
+    Instr |= T << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFloatUnary(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
+    constexpr uint32_t Op = 0b0110'0101'0000'1100'101 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerMultiplyVectors(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+
+    constexpr uint32_t Op = 0b0000'0100'0010'0000'0110 << 12;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
