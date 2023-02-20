@@ -3281,6 +3281,21 @@ void OpDispatchBuilder::PHADDS(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = PHADDSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  OrderedNode *Dest = Result;
+
+  if (Is256Bit) {
+    Dest = _VInsElement(SrcSize, 8, 1, 2, Result, Result);
+    Dest = _VInsElement(SrcSize, 8, 2, 1, Dest, Result);
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
 void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   uint8_t ElementSize = 2;
