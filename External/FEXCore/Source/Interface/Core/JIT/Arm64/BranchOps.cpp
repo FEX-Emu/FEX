@@ -167,13 +167,22 @@ DEF_OP(Syscall) {
   FEXCore::IR::SyscallFlags Flags = Op->Flags;
   PushDynamicRegsAndLR(TMP1);
 
-  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
-    SpillStaticRegs();
-  }
-  else {
+  uint32_t GPRSpillMask = ~0U;
+  uint32_t FPRSpillMask = ~0U;
+  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) == FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
     // Need to spill all caller saved registers still
-    SpillStaticRegs(true, CALLER_GPR_MASK, CALLER_FPR_MASK);
+    GPRSpillMask = CALLER_GPR_MASK;
+    FPRSpillMask = CALLER_FPR_MASK;
   }
+
+  SpillStaticRegs(true, GPRSpillMask, FPRSpillMask);
+
+  // Now that we are spilled, store in the state that we are in a syscall
+  // Still without overwriting registers that matter
+  // 16bit LoadConstant to be a single instruction
+  // This gives the signal handler a value to check to see if we are in a syscall at all
+  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GPRSpillMask & 0xFFFF);
+  str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
   uint64_t SPOffset = AlignUp(FEXCore::HLE::SyscallArguments::MAX_ARGS * 8, 16);
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
@@ -196,19 +205,17 @@ DEF_OP(Syscall) {
 
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
-  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) != FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY &&
-      (Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
-    FillStaticRegs();
-  }
-  else {
+  if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     // Result is now in x0
     // Fix the stack and any values that were stepped on
-    FillStaticRegs(true, CALLER_GPR_MASK, CALLER_FPR_MASK);
-  }
+    FillStaticRegs(true, GPRSpillMask, FPRSpillMask);
 
-  PopDynamicRegsAndLR();
+    // Now the registers we've spilled are back in their original host registers
+    // We can safely claim we are no longer in a syscall
+    str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
-  if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
+    PopDynamicRegsAndLR();
+
     // Move result to its destination register
     mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
   }
