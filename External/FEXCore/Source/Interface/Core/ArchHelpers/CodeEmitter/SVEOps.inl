@@ -1130,8 +1130,24 @@ public:
     Instr |= zdn.Idx();
     dc32(Instr);
   }
+
   // SVE Index Generation
-  // XXX:
+  void index(SubRegSize size, ZRegister zd, int32_t initial, int32_t increment) {
+    LOGMAN_THROW_A_FMT(initial >= -16 && initial <= 15, "initial value must be within -16-15. initial: {}", initial);
+    LOGMAN_THROW_A_FMT(increment >= -16 && increment <= 15, "increment value must be within -16-15. increment: {}", increment);
+    SVEIndexGeneration(0b00, size, zd, initial, increment);
+  }
+  void index(SubRegSize size, ZRegister zd, XRegister initial, int32_t increment) {
+    LOGMAN_THROW_A_FMT(increment >= -16 && increment <= 15, "increment value must be within -16-15. increment: {}", increment);
+    SVEIndexGeneration(0b01, size, zd, static_cast<int32_t>(initial.Idx()), increment);
+  }
+  void index(SubRegSize size, ZRegister zd, int32_t initial, XRegister increment) {
+    LOGMAN_THROW_A_FMT(initial >= -16 && initial <= 15, "initial value must be within -16-15. initial: {}", initial);
+    SVEIndexGeneration(0b10, size, zd, initial, static_cast<int32_t>(increment.Idx()));
+  }
+  void index(SubRegSize size, ZRegister zd, XRegister initial, XRegister increment) {
+    SVEIndexGeneration(0b11, size, zd, static_cast<int32_t>(initial.Idx()), static_cast<int32_t>(increment.Idx()));
+  }
 
   // SVE Stack Allocation
   // SVE stack frame adjustment
@@ -4016,6 +4032,18 @@ private:
     Instr |= S << 16;
     Instr |= FEXCore::ToUnderlying(pattern) << 5;
     Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIndexGeneration(uint32_t op, SubRegSize size, ZRegister zd, int32_t imm5, int32_t imm5b) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "INDEX cannot use 128-bit element sizes");
+
+    uint32_t Instr = 0b0000'0100'0010'0000'0100'0000'0000'0000;
+    Instr |= op << 10;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= (static_cast<uint32_t>(imm5b) & 0b11111) << 16;
+    Instr |= (static_cast<uint32_t>(imm5) & 0b11111) << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 

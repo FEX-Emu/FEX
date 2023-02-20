@@ -896,7 +896,41 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise ternary operation
   TEST_SINGLE(nbsl(ZReg::z30, ZReg::z30, ZReg::z28, ZReg::z29), "nbsl z30.d, z30.d, z28.d, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Index Generation") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, -16, -16), "index z30.b, #-16, #-16");
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, -16, 15),  "index z30.b, #-16, #15");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, -16, -16), "index z30.h, #-16, #-16");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, -16, 15),  "index z30.h, #-16, #15");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, -16, -16), "index z30.s, #-16, #-16");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, -16, 15),  "index z30.s, #-16, #15");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, -16, -16), "index z30.d, #-16, #-16");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, -16, 15),  "index z30.d, #-16, #15");
+
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, WReg::w29, -16), "index z30.b, w29, #-16");
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, WReg::w29, 15),  "index z30.b, w29, #15");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, WReg::w29, -16), "index z30.h, w29, #-16");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, WReg::w29, 15),  "index z30.h, w29, #15");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, WReg::w29, -16), "index z30.s, w29, #-16");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, WReg::w29, 15),  "index z30.s, w29, #15");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, XReg::x29, -16), "index z30.d, x29, #-16");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, XReg::x29, 15),  "index z30.d, x29, #15");
+
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, -16, WReg::w29), "index z30.b, #-16, w29");
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, 15, WReg::w29),  "index z30.b, #15, w29");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, -16, WReg::w29), "index z30.h, #-16, w29");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, 15, WReg::w29),  "index z30.h, #15, w29");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, -16, WReg::w29), "index z30.s, #-16, w29");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, 15, WReg::w29),  "index z30.s, #15, w29");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, -16, XReg::x29), "index z30.d, #-16, x29");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, 15, XReg::x29),  "index z30.d, #15, x29");
+
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, WReg::w29, WReg::w28), "index z30.b, w29, w28");
+  TEST_SINGLE(index(SubRegSize::i8Bit,  ZReg::z30, WReg::w29, WReg::w28), "index z30.b, w29, w28");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, WReg::w29, WReg::w28), "index z30.h, w29, w28");
+  TEST_SINGLE(index(SubRegSize::i16Bit, ZReg::z30, WReg::w29, WReg::w28), "index z30.h, w29, w28");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, WReg::w29, WReg::w28), "index z30.s, w29, w28");
+  TEST_SINGLE(index(SubRegSize::i32Bit, ZReg::z30, WReg::w29, WReg::w28), "index z30.s, w29, w28");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, XReg::x29, XReg::x28), "index z30.d, x29, x28");
+  TEST_SINGLE(index(SubRegSize::i64Bit, ZReg::z30, XReg::x29, XReg::x28), "index z30.d, x29, x28");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE stack frame adjustment") {
   TEST_SINGLE(addvl(XReg::rsp, XReg::rsp, -32), "addvl sp, sp, #-32");
