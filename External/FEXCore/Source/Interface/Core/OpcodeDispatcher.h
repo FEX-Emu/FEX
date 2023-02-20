@@ -437,16 +437,20 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
+  void VBLENDPDOp(OpcodeArgs);
+  void VPBLENDDOp(OpcodeArgs);
+  void VPBLENDWOp(OpcodeArgs);
+
   template <size_t ElementSize>
   void VBROADCASTOp(OpcodeArgs);
 
   template <size_t ElementSize>
   void VDPPOp(OpcodeArgs);
 
+  void VEXTRACT128Op(OpcodeArgs);
+
   template <IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
-
-  void VEXTRACT128Op(OpcodeArgs);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
@@ -474,15 +478,13 @@ public:
 
   void VPALIGNROp(OpcodeArgs);
 
-  void VBLENDPDOp(OpcodeArgs);
-  void VPBLENDDOp(OpcodeArgs);
-  void VPBLENDWOp(OpcodeArgs);
-
   void VPERM2Op(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
   template <size_t ElementSize>
   void VPERMILImmOp(OpcodeArgs);
+
+  void VPHADDSWOp(OpcodeArgs);
 
   void VPHMINPOSUWOp(OpcodeArgs);
 
@@ -811,6 +813,9 @@ private:
   OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                              const X86Tables::DecodedOperand& Src2,
                              const X86Tables::DecodedOperand& Imm);
+
+  OrderedNode* PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
+                            const X86Tables::DecodedOperand& Src2);
 
   OrderedNode* PHMINPOSUWOpImpl(OpcodeArgs);
 
