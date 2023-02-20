@@ -11,7 +11,7 @@ $end_info$
 #include <vector>
 
 namespace FEXCore::Context {
-  struct Context;
+  class ContextImpl;
 }
 
 namespace FEXCore::Core {

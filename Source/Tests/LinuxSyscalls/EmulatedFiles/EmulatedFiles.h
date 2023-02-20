@@ -14,7 +14,7 @@ $end_info$
 #include <sys/types.h>
 
 namespace FEXCore::Context {
-  struct Context;
+  class Context;
 }
 
 namespace FEX::EmulatedFile {

@@ -53,10 +53,6 @@ $end_info$
 #include <sys/utsname.h>
 #include <unistd.h>
 
-namespace FEXCore::Context {
-  struct Context;
-}
-
 namespace FEX::HLE {
 class SignalDelegator;
 SyscallHandler *_SyscallHandler{};
@@ -607,7 +603,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
   };
 
   if (flags & CLONE_VM) {
-    MarkMemoryShared(Frame->Thread->CTX);
+    Frame->Thread->CTX->MarkMemoryShared();
   }
 
   // If there are flags that can't be handled regularly then we need to hand off to the true clone handler
@@ -666,14 +662,14 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     }
 
     // Actually start the thread
-    FEXCore::Context::RunThread(Thread->CTX, NewThread);
+    Thread->CTX->RunThread(NewThread);
 
     if (flags & CLONE_VFORK) {
       // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
       NewThread->ExecutionThread->join(nullptr);
 
       // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
-      FEXCore::Context::DestroyThread(Thread->CTX, NewThread);
+      Thread->CTX->DestroyThread(NewThread);
     }
     SYSCALL_ERRNO();
   }
@@ -708,7 +704,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
         // We have pages we can unmap
         auto ok = GuestMunmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
         LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
-                
+
         DataSpaceMaxSize = NewSizeAligned;
       }
       else if (NewSize > DataSpaceMaxSize) {
@@ -864,8 +860,8 @@ void SyscallHandler::UnlockAfterFork() {
 
   // XXX shared_mutex has issues with locking and forks
   // VMATracking.Mutex.unlock();
-  
-  FM.GetFDLock()->unlock(); 
+
+  FM.GetFDLock()->unlock();
 }
 
 static bool isHEX(char c) {
@@ -880,7 +876,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     LogMan::Msg::DFmt("GenerateMap: '{}' is not an elf file?", GuestBinaryFile);
     return {};
   }
-  
+
   struct stat GuestBinaryFileStat;
 
   if (stat(GuestBinaryFile.data(), &GuestBinaryFileStat)) {
@@ -903,7 +899,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
   if (stat(GuestSourceFile.data(), &GuestSourceFileStat) != 0 || GuestBinaryFileStat.st_mtime > GuestSourceFileStat.st_mtime) {
     LogMan::Msg::DFmt("GenerateMap: Generating source for '{}'", GuestBinaryFile);
-    auto command = fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);  
+    auto command = fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);
     if (system(command.c_str()) != 0) {
       LogMan::Msg::DFmt("GenerateMap: '{}' failed", command);
       return {};
@@ -918,7 +914,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
   if (!GenerateIndex) {
     // Index file de-serialization
     LogMan::Msg::DFmt("GenerateMap: Reading index '{}'", GuestIndexFile);
-    
+
     std::ifstream Stream(GuestIndexFile);
 
     if (!Stream) {
@@ -945,7 +941,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
     {
       auto len = rv->SortedLineMappings.size();
-      
+
       Stream.read((char*)&len, sizeof(len));
 
       rv->SortedLineMappings.resize(len);
@@ -959,7 +955,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
     {
       auto len = rv->SortedSymbolMappings.size();
-      
+
       Stream.read((char*)&len, sizeof(len));
 
       rv->SortedSymbolMappings.resize(len);
@@ -1000,7 +996,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     // objdump parsing
     std::string Line;
     int LineNum = 0;
-    
+
     bool PreviousLineWasEmpty = false;
 
     uintptr_t LastSymbolOffset{};
@@ -1143,7 +1139,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
     {
       auto len = rv->SortedLineMappings.size();
-      
+
       IndexStream.write((const char*)&len, sizeof(len));
 
       for (const auto &Mapping: rv->SortedLineMappings) {
@@ -1155,7 +1151,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
     {
       auto len = rv->SortedSymbolMappings.size();
-      
+
       IndexStream.write((char*)&len, sizeof(len));
 
       for (const auto &Mapping: rv->SortedSymbolMappings) {
@@ -1174,7 +1170,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     return rv;
   }
 
-  
+
 }
 
 }

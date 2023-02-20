@@ -330,7 +330,7 @@ static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame,
   }
 
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-  Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+  Context::ContextImpl::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;
   });
@@ -342,7 +342,7 @@ static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame,
 void X86JITCore::Op_NoOp(IR::IROp_Header *IROp, IR::NodeID Node) {
 }
 
-X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+X86JITCore::X86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , CodeGenerator(0, this, nullptr) // this is not used here
   , CTX {ctx} {
@@ -379,7 +379,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::ThreadRemoveCodeEntryFromJit);
+    Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadRemoveCodeEntryFromJit);
     Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {
@@ -389,7 +389,7 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
-    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::Context::ThreadExitFunctionLink<X86JITCore_ExitFunctionLink>);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<X86JITCore_ExitFunctionLink>);
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers);
@@ -399,9 +399,9 @@ X86JITCore::X86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalTh
   ClearCache();
 }
 
-void X86JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+void X86JITCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
+    return static_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
 }
 
@@ -786,7 +786,7 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
   return CodeData;
 }
 
-std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return std::make_unique<X86JITCore>(ctx, Thread);
 }
 
@@ -794,7 +794,7 @@ CPUBackendFeatures GetX86JITBackendFeatures() {
   return CPUBackendFeatures { };
 }
 
-void InitializeX86JITSignalHandlers(FEXCore::Context::Context *CTX) {
+void InitializeX86JITSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
   X86JITCore::InitializeSignalHandlers(CTX);
 }
 

@@ -331,7 +331,7 @@ DEF_OP(Thunk) {
 
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr.ID()));
 
-  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+  auto thunkFn = static_cast<Context::ContextImpl*>(ThreadState->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
 #ifdef VIXL_SIMULATOR
   GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);

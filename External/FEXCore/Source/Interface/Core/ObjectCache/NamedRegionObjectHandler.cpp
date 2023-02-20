@@ -4,7 +4,7 @@
 #include <FEXCore/Config/Config.h>
 
 namespace FEXCore::CodeSerialize {
-  NamedRegionObjectHandler::NamedRegionObjectHandler(FEXCore::Context::Context *ctx) {
+  NamedRegionObjectHandler::NamedRegionObjectHandler(FEXCore::Context::ContextImpl *ctx) {
     DefaultSerializationConfig.Cookie = CODE_COOKIE;
 
     // Initialize the Arch from CPUID

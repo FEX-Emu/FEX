@@ -28,208 +28,108 @@ namespace FEXCore::Context {
     FEXCore::Paths::ShutdownPaths();
   }
 
-  FEXCore::Context::Context *CreateNewContext() {
-    return new FEXCore::Context::Context{};
+  FEXCore::Context::Context *FEXCore::Context::Context::CreateNewContext() {
+    return new FEXCore::Context::ContextImpl{};
   }
 
-  bool InitializeContext(FEXCore::Context::Context *CTX) {
-    return FEXCore::CPU::CreateCPUCore(CTX);
-  }
-
-  void DestroyContext(FEXCore::Context::Context *CTX) {
-    if (CTX->ParentThread) {
-      CTX->DestroyThread(CTX->ParentThread);
-    }
+  void FEXCore::Context::Context::DestroyContext(FEXCore::Context::Context *CTX) {
+    CTX->DestroyContext();
     delete CTX;
   }
 
-  FEXCore::Core::InternalThreadState* InitCore(FEXCore::Context::Context *CTX, uint64_t InitialRIP, uint64_t StackPointer) {
-    return CTX->InitCore(InitialRIP, StackPointer);
+  bool FEXCore::Context::ContextImpl::InitializeContext() {
+    return FEXCore::CPU::CreateCPUCore(this);
   }
 
-  void SetExitHandler(FEXCore::Context::Context *CTX, ExitHandler handler) {
-    CTX->CustomExitHandler = std::move(handler);
+  void FEXCore::Context::ContextImpl::DestroyContext() {
+    if (ParentThread) {
+      DestroyThread(ParentThread);
+    }
   }
 
-  ExitHandler GetExitHandler(const FEXCore::Context::Context *CTX) {
-    return CTX->CustomExitHandler;
+  void FEXCore::Context::ContextImpl::SetExitHandler(ExitHandler handler) {
+    CustomExitHandler = std::move(handler);
   }
 
-  void Run(FEXCore::Context::Context *CTX) {
-    CTX->Run();
+  ExitHandler FEXCore::Context::ContextImpl::GetExitHandler() const {
+    return CustomExitHandler;
   }
 
-  void Step(FEXCore::Context::Context *CTX) {
-    CTX->Step();
+  void FEXCore::Context::ContextImpl::Stop() {
+    Stop(false);
   }
 
-  void CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
-    Thread->CTX->CompileBlock(Thread->CurrentFrame, GuestRIP);
+  void FEXCore::Context::ContextImpl::CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP) {
+    CompileBlock(Thread->CurrentFrame, GuestRIP);
   }
 
-  FEXCore::Context::ExitReason RunUntilExit(FEXCore::Context::Context *CTX) {
-    return CTX->RunUntilExit();
+  FEXCore::Context::ExitReason FEXCore::Context::ContextImpl::GetExitReason() {
+    return ParentThread->ExitReason;
   }
 
-  int GetProgramStatus(const FEXCore::Context::Context *CTX) {
-    return CTX->GetProgramStatus();
+  bool FEXCore::Context::ContextImpl::IsDone() const {
+    return IsPaused();
   }
 
-  FEXCore::Context::ExitReason GetExitReason(const FEXCore::Context::Context *CTX) {
-    return CTX->ParentThread->ExitReason;
+  void FEXCore::Context::ContextImpl::GetCPUState(FEXCore::Core::CPUState *State) const {
+    memcpy(State, ParentThread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
   }
 
-  bool IsDone(const FEXCore::Context::Context *CTX) {
-    return CTX->IsPaused();
+  void FEXCore::Context::ContextImpl::SetCPUState(const FEXCore::Core::CPUState *State) {
+    memcpy(ParentThread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
   }
 
-  void GetCPUState(const FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *State) {
-    memcpy(State, CTX->ParentThread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
+  void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) {
+    CustomCPUFactory = std::move(Factory);
   }
 
-  void SetCPUState(FEXCore::Context::Context *CTX, const FEXCore::Core::CPUState *State) {
-    memcpy(CTX->ParentThread->CurrentFrame, State, sizeof(FEXCore::Core::CPUState));
-  }
-
-  void Pause(FEXCore::Context::Context *CTX) {
-    CTX->Pause();
-  }
-
-  void Stop(FEXCore::Context::Context *CTX) {
-    CTX->Stop(false);
-  }
-
-  void SetCustomCPUBackendFactory(FEXCore::Context::Context *CTX, CustomCPUFactoryType Factory) {
-    CTX->CustomCPUFactory = std::move(Factory);
-  }
-
-  bool AddVirtualMemoryMapping([[maybe_unused]] FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {
+  bool FEXCore::Context::ContextImpl::AddVirtualMemoryMapping([[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {
     return false;
   }
 
-  void RegisterExternalSyscallVisitor(FEXCore::Context::Context *CTX, [[maybe_unused]] uint64_t Syscall, [[maybe_unused]] FEXCore::HLE::SyscallVisitor *Visitor) {
+  HostFeatures FEXCore::Context::ContextImpl::GetHostFeatures() const {
+    return HostFeatures;
   }
 
-  HostFeatures GetHostFeatures(const FEXCore::Context::Context *CTX) {
-    return CTX->HostFeatures;
+  void FEXCore::Context::ContextImpl::SetSignalDelegator(FEXCore::SignalDelegator *_SignalDelegation) {
+    SignalDelegation = _SignalDelegation;
   }
 
-  void HandleCallback(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-    CTX->HandleCallback(Thread, RIP);
-  }
-  void HandleSignalHandlerReturn(FEXCore::Context::Context *CTX, bool RT) {
-    CTX->HandleSignalHandlerReturn(RT);
-  }
-  void RegisterHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required) {
-      CTX->RegisterHostSignalHandler(Signal, std::move(Func), Required);
+  void FEXCore::Context::ContextImpl::SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) {
+    SyscallHandler = Handler;
+    SourcecodeResolver = Handler->GetSourcecodeResolver();
   }
 
-  void RegisterFrontendHostSignalHandler(FEXCore::Context::Context *CTX, int Signal, HostSignalDelegatorFunction Func, bool Required) {
-    CTX->RegisterFrontendHostSignalHandler(Signal, std::move(Func), Required);
+  FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunction(uint32_t Function, uint32_t Leaf) {
+    return CPUID.RunFunction(Function, Leaf);
   }
 
-  FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Context::Context *CTX, FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
-    return CTX->CreateThread(NewThreadState, ParentTID);
-  }
-
-  void ExecutionThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    return CTX->ExecutionThread(Thread);
-  }
-
-  void InitializeThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    return CTX->InitializeThread(Thread);
-  }
-
-  void RunThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->RunThread(Thread);
-  }
-
-  void StopThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->StopThread(Thread);
-  }
-
-  void DestroyThread(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->DestroyThread(Thread);
-  }
-
-  void CleanupAfterFork(FEXCore::Context::Context *CTX, FEXCore::Core::InternalThreadState *Thread) {
-    CTX->CleanupAfterFork(Thread);
-  }
-  
-  void SetSignalDelegator(FEXCore::Context::Context *CTX, FEXCore::SignalDelegator *SignalDelegation) {
-    CTX->SignalDelegation = SignalDelegation;
-  }
-
-  void SetSyscallHandler(FEXCore::Context::Context *CTX, FEXCore::HLE::SyscallHandler *Handler) {
-    CTX->SyscallHandler = Handler;
-    CTX->SourcecodeResolver = Handler->GetSourcecodeResolver();
-  }
-
-  FEXCore::CPUID::FunctionResults RunCPUIDFunction(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf) {
-    return CTX->CPUID.RunFunction(Function, Leaf);
-  }
-
-  FEX_DEFAULT_VISIBILITY FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(FEXCore::Context::Context *CTX, uint32_t Function, uint32_t Leaf, uint32_t CPU) {
-    return CTX->CPUID.RunFunctionName(Function, Leaf, CPU);
-  }
-
-  void SetAOTIRLoader(FEXCore::Context::Context *CTX, std::function<int(const std::string&)> CacheReader) {
-    CTX->SetAOTIRLoader(CacheReader);
-  }
-
-  void SetAOTIRWriter(FEXCore::Context::Context *CTX, std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) {
-    CTX->SetAOTIRWriter(CacheWriter);
-  }
-
-  void SetAOTIRRenamer(FEXCore::Context::Context *CTX, std::function<void(const std::string&)> CacheRenamer) {
-    CTX->SetAOTIRRenamer(CacheRenamer);
-  }
-
-  void FinalizeAOTIRCache(FEXCore::Context::Context *CTX) {
-    CTX->FinalizeAOTIRCache();
-  }
-
-  void WriteFilesWithCode(FEXCore::Context::Context *CTX, std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
-    CTX->WriteFilesWithCode(Writer);
-  }
-
-  IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(FEXCore::Context::Context *CTX, const std::string &Name) {
-    return CTX->LoadAOTIRCacheEntry(Name);
-  }
-  void UnloadAOTIRCacheEntry(FEXCore::Context::Context *CTX, IR::AOTIRCacheEntry *Entry) {
-    return CTX->UnloadAOTIRCacheEntry(Entry);
-  }
-
-  CustomIRResult AddCustomIREntrypoint(FEXCore::Context::Context *CTX, uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
-    return CTX->AddCustomIREntrypoint(Entrypoint, Handler, Creator, Data);
-  }
-
-  void AppendThunkDefinitions(FEXCore::Context::Context *CTX, std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
-    CTX->AppendThunkDefinitions(Definitions);
+  FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
+    return CPUID.RunFunctionName(Function, Leaf, CPU);
   }
   void SetVDSOSigReturn(FEXCore::Context::Context *CTX, const VDSOSigReturn &Pointers) {
     CTX->SetVDSOSigReturn(Pointers);
   }
 
 namespace Debug {
-  void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
-    CTX->CompileRIP(CTX->ParentThread, RIP);
-  }
-  uint64_t GetThreadCount(FEXCore::Context::Context *CTX) {
-    return CTX->GetThreadCount();
-  }
+  //void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
+  //  CTX->CompileRIP(CTX->ParentThread, RIP);
+  //}
+  //uint64_t GetThreadCount(FEXCore::Context::Context *CTX) {
+  //  return CTX->GetThreadCount();
+  //}
 
-  FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(FEXCore::Context::Context *CTX, uint64_t Thread) {
-    return CTX->GetRuntimeStatsForThread(Thread);
-  }
+  //FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(FEXCore::Context::Context *CTX, uint64_t Thread) {
+  //  return CTX->GetRuntimeStatsForThread(Thread);
+  //}
 
-  bool GetDebugDataForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::Core::DebugData *Data) {
-    return CTX->GetDebugDataForRIP(RIP, Data);
-  }
+  //bool GetDebugDataForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::Core::DebugData *Data) {
+  //  return CTX->GetDebugDataForRIP(RIP, Data);
+  //}
 
-  bool FindHostCodeForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, uint8_t **Code) {
-    return CTX->FindHostCodeForRIP(RIP, Code);
-  }
+  //bool FindHostCodeForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, uint8_t **Code) {
+  //  return CTX->FindHostCodeForRIP(RIP, Code);
+  //}
 
   // XXX:
   // bool FindIRForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir) {

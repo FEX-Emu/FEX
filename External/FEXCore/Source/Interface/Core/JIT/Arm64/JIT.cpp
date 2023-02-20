@@ -484,7 +484,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 24);
 
     // Add de-linking handler
-    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
+    Context::ContextImpl::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
       FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 24);
       FEXCore::ARMEmitter::ForwardLabel l_BranchHost;
       emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
@@ -498,7 +498,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     record[0] = HostCode;
 
     // Add de-linking handler
-    Context::Context::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    Context::ContextImpl::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
       record[0] = LinkerAddress;
     });
   }
@@ -509,7 +509,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
 void Arm64JITCore::Op_NoOp(IR::IROp_Header const *IROp, IR::NodeID Node) {
 }
 
-Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread)
+Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , Arm64Emitter(ctx, 0)
   , HostSupportsSVE{ctx->HostFeatures.SupportsAVX}
@@ -543,7 +543,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
     Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
-    Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::Context::ThreadRemoveCodeEntryFromJit);
+    Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadRemoveCodeEntryFromJit);
     Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {
@@ -553,7 +553,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
-    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::Context::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
 
 
     // Fill in the fallback handlers
@@ -572,9 +572,9 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::Intern
   ClearCache();
 }
 
-void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
+void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return Thread->CTX->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
+    return reinterpret_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
 
 #ifdef _M_ARM_64
@@ -584,7 +584,7 @@ void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::Context *CTX) {
       return false;
     }
 
-    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(Thread->CTX->Config.ParanoidTSO(), Signal, info, ucontext);
+    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(static_cast<Context::ContextImpl*>(Thread->CTX)->Config.ParanoidTSO(), Signal, info, ucontext);
   }, true);
 #endif
 }
@@ -1081,11 +1081,11 @@ void Arm64JITCore::ResetStack() {
   }
 }
 
-std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::Context *ctx, FEXCore::Core::InternalThreadState *Thread) {
+std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return std::make_unique<Arm64JITCore>(ctx, Thread);
 }
 
-void InitializeArm64JITSignalHandlers(FEXCore::Context::Context *CTX) {
+void InitializeArm64JITSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
   Arm64JITCore::InitializeSignalHandlers(CTX);
 }
 

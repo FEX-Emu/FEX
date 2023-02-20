@@ -22,7 +22,7 @@
 
 namespace FEXCore::CPU {
 
-void Dispatcher::SleepThread(FEXCore::Context::Context *ctx, FEXCore::Core::CpuStateFrame *Frame) {
+void Dispatcher::SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::CpuStateFrame *Frame) {
   auto Thread = Frame->Thread;
 
   --ctx->IdleWaitRefCount;
@@ -1178,7 +1178,7 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
     if (Thread->RunningEvents.ThreadSleeping) {
       // If the thread was sleeping then its idle counter was decremented
       // Reincrement it here to not break logic
-      ++Thread->CTX->IdleWaitRefCount;
+      ++static_cast<Context::ContextImpl*>(Thread->CTX)->IdleWaitRefCount;
     }
 
     Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
@@ -1200,14 +1200,14 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
 }
 
 uint64_t Dispatcher::GetCompileBlockPtr() {
-  using ClassPtrType = void (FEXCore::Context::Context::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
+  using ClassPtrType = void (FEXCore::Context::ContextImpl::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
   union PtrCast {
     ClassPtrType ClassPtr;
     uintptr_t Data;
   };
 
   PtrCast CompileBlockPtr;
-  CompileBlockPtr.ClassPtr = &FEXCore::Context::Context::CompileBlockJit;
+  CompileBlockPtr.ClassPtr = &FEXCore::Context::ContextImpl::CompileBlockJit;
   return CompileBlockPtr.Data;
 }
 

@@ -1210,7 +1210,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) {
   return Res;
 }
 
-void CPUIDEmu::Init(FEXCore::Context::Context *ctx) {
+void CPUIDEmu::Init(FEXCore::Context::ContextImpl *ctx) {
   CTX = ctx;
 
   // Setup some state tracking

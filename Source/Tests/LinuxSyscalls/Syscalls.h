@@ -42,7 +42,7 @@ $end_info$
 namespace FEXCore {
   class CodeLoader;
   namespace Context {
-    struct Context;
+    class Context;
   }
   namespace Core {
     struct CpuStateFrame;

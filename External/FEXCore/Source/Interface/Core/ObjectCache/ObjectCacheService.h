@@ -253,7 +253,7 @@ namespace FEXCore::CodeSerialize {
 
   class NamedRegionObjectHandler final {
     public:
-      NamedRegionObjectHandler(FEXCore::Context::Context *ctx);
+      NamedRegionObjectHandler(FEXCore::Context::ContextImpl *ctx);
 
       void HandleNamedRegionObjectJobs();
 
@@ -338,7 +338,7 @@ namespace FEXCore::CodeSerialize {
    */
   class CodeObjectSerializeService final {
     public:
-      CodeObjectSerializeService(FEXCore::Context::Context *ctx);
+      CodeObjectSerializeService(FEXCore::Context::ContextImpl *ctx);
 
       /**
        * @brief Initialize the internal interface
@@ -440,7 +440,7 @@ namespace FEXCore::CodeSerialize {
       void NotifyWork() { WorkAvailable.NotifyOne(); }
 
     private:
-      FEXCore::Context::Context *CTX;
+      FEXCore::Context::ContextImpl *CTX;
 
       Event WorkAvailable{};
       std::unique_ptr<FEXCore::Threads::Thread> WorkerThread;

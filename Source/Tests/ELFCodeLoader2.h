@@ -836,7 +836,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   void CalculateHWCaps(FEXCore::Context::Context *ctx) {
     // HWCAP is just CPUID function 0x1, the EDX result
-    auto res_1 = FEXCore::Context::RunCPUIDFunction(ctx, 1, 0);
+    auto res_1 = ctx->RunCPUIDFunction(1, 0);
     HWCap = res_1.edx;
 
     // HWCAP2 is as follows:

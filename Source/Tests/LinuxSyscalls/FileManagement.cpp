@@ -55,10 +55,6 @@ namespace JSON {
   }
 }
 
-namespace FEXCore::Context {
-  struct Context;
-}
-
 namespace FEX::HLE {
   struct open_how;
 

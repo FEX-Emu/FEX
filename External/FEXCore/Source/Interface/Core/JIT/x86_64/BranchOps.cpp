@@ -202,7 +202,7 @@ DEF_OP(Thunk) {
 
   mov(rdi, GetSrc<RA_64>(Op->ArgPtr.ID()));
 
-  auto thunkFn = ThreadState->CTX->ThunkHandler->LookupThunk(Op->ThunkNameHash);
+  auto thunkFn = static_cast<Context::ContextImpl*>(ThreadState->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
 
   mov(rax, reinterpret_cast<uintptr_t>(thunkFn));
   call(rax);

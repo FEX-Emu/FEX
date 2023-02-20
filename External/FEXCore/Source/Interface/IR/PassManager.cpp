@@ -17,7 +17,7 @@ $end_info$
 namespace FEXCore::IR {
 class IREmitter;
 
-void PassManager::AddDefaultPasses(FEXCore::Context::Context *ctx, bool InlineConstants, bool StaticRegisterAllocation) {
+void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 
   if (!DisablePasses()) {

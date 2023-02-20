@@ -31,7 +31,7 @@ namespace FEXCore::Core {
 namespace FEXCore::CPU {
 class Arm64JITCore final : public CPUBackend, public Arm64Emitter  {
 public:
-  explicit Arm64JITCore(FEXCore::Context::Context *ctx,
+  explicit Arm64JITCore(FEXCore::Context::ContextImpl *ctx,
                         FEXCore::Core::InternalThreadState *Thread);
   ~Arm64JITCore() override;
 
@@ -48,7 +48,7 @@ public:
 
   void ClearCache() override;
 
-  static void InitializeSignalHandlers(FEXCore::Context::Context *CTX);
+  static void InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX);
 
   void ClearRelocations() override { Relocations.clear(); }
 
@@ -57,7 +57,7 @@ private:
   const bool HostSupportsSVE{};
 
   ARMEmitter::BiDirectionalLabel *PendingTargetLabel;
-  FEXCore::Context::Context *CTX;
+  FEXCore::Context::ContextImpl *CTX;
   FEXCore::IR::IRListView const *IR;
   uint64_t Entry;
   CPUBackend::CompiledCode CodeData{};

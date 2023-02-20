@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace FEXCore::Context {
-struct Context;
+class ContextImpl;
 }
 
 namespace FEXCore::Frontend {
@@ -25,7 +25,7 @@ public:
     bool HasInvalidInstruction{};
   };
 
-  Decoder(FEXCore::Context::Context *ctx);
+  Decoder(FEXCore::Context::ContextImpl *ctx);
   ~Decoder();
   void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
@@ -52,7 +52,7 @@ private:
     bool L;       // VEX.L bit (if set then 256 bit operation, if unset then scalar or 128-bit operation)
   };
 
-  FEXCore::Context::Context *CTX;
+  FEXCore::Context::ContextImpl *CTX;
   const FEXCore::HLE::SyscallOSABI OSABI{};
 
   bool DecodeInstruction(uint64_t PC);

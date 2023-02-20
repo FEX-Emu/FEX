@@ -102,10 +102,9 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
 
       // Setup thread - Each compilation thread uses its own backing FEX thread
       FEXCore::Core::CPUState state;
-      auto Thread = FEXCore::Context::CreateThread(CTX, &state, FHU::Syscalls::gettid());
+      auto Thread = CTX->CreateThread(&state, FHU::Syscalls::gettid());
       std::set<uint64_t> ExternalBranchesLocal;
-      FEXCore::Context::ConfigureAOTGen(Thread, &ExternalBranchesLocal, SectionMaxAddress);
-
+      CTX->ConfigureAOTGen(Thread, &ExternalBranchesLocal, SectionMaxAddress);
 
       for (;;) {
         uint64_t BranchTarget;
@@ -123,7 +122,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
 
         // Compile entrypoint
         counter++;
-        FEXCore::Context::CompileRIP(Thread, BranchTarget);
+        CTX->CompileRIP(Thread, BranchTarget);
 
         // Are there more branches?
         if (ExternalBranchesLocal.size() > 0) {
@@ -143,7 +142,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
       }
 
       // All entryproints processed, cleanup this thread
-      FEXCore::Context::DestroyThread(CTX, Thread);
+      CTX->DestroyThread(Thread);
     });
 
     // Add to the thread pool

@@ -14,7 +14,7 @@ $end_info$
 #include <sys/mman.h>
 
 namespace FEXCore {
-LookupCache::LookupCache(FEXCore::Context::Context *CTX)
+LookupCache::LookupCache(FEXCore::Context::ContextImpl *CTX)
   : ctx {CTX} {
 
   TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;

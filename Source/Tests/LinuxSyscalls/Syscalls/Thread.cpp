@@ -55,8 +55,8 @@ namespace FEX::HLE {
       NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->args.stack;
     }
 
-    auto NewThread = FEXCore::Context::CreateThread(CTX, &NewThreadState, args->args.parent_tid);
-    FEXCore::Context::InitializeThread(CTX, NewThread);
+    auto NewThread = CTX->CreateThread(&NewThreadState, args->args.parent_tid);
+    CTX->InitializeThread(NewThread);
 
     if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
       if (flags & CLONE_SETTLS) {
@@ -128,7 +128,7 @@ namespace FEX::HLE {
       }
 
       // Overwrite thread
-      NewThread = FEXCore::Context::CreateThread(CTX, &NewThreadState, GuestArgs->parent_tid);
+      NewThread = CTX->CreateThread(&NewThreadState, GuestArgs->parent_tid);
 
       // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
       // Call execution thread directly since we already are on the new thread
@@ -138,7 +138,7 @@ namespace FEX::HLE {
       // If we don't have CLONE_THREAD then we are effectively a fork
       // Clear all the other threads that are being tracked
       // Frame->Thread is /ONLY/ safe to access when CLONE_THREAD flag is not set
-      FEXCore::Context::CleanupAfterFork(CTX, Frame->Thread);
+      CTX->CleanupAfterFork(Frame->Thread);
 
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBX] = 0;
@@ -177,7 +177,7 @@ namespace FEX::HLE {
 
     // Start exuting the thread directly
     // Our host clone starts in a new stack space, so it can't return back to the JIT space
-    FEXCore::Context::ExecutionThread(CTX, Thread);
+    CTX->ExecutionThread(Thread);
 
     // The rest of the context remains as is and the thread will continue executing
     return Thread->StatusCode;
@@ -209,7 +209,7 @@ namespace FEX::HLE {
       Thread->ThreadManager.clear_child_tid = nullptr;
 
       // Clear all the other threads that are being tracked
-      FEXCore::Context::CleanupAfterFork(Thread->CTX, Frame->Thread);
+      Thread->CTX->CleanupAfterFork(Frame->Thread);
 
       // only a  single thread running so no need to remove anything from the thread array
 
@@ -264,7 +264,7 @@ namespace FEX::HLE {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      FEXCore::Context::HandleSignalHandlerReturn(Frame->Thread->CTX, true);
+      Frame->Thread->CTX->HandleSignalHandlerReturn(true);
       FEX_UNREACHABLE;
     });
 
@@ -305,7 +305,7 @@ namespace FEX::HLE {
       }
 
       Thread->StatusCode = status;
-      FEXCore::Context::StopThread(Thread->CTX, Thread);
+      Thread->CTX->StopThread(Thread);
 
       return 0;
     });
@@ -513,7 +513,7 @@ namespace FEX::HLE {
       [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
       auto Thread = Frame->Thread;
       Thread->StatusCode = status;
-      FEXCore::Context::Stop(Thread->CTX);
+      Thread->CTX->Stop();
       // This will never be reached
       std::terminate();
     });

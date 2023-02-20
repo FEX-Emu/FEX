@@ -5318,7 +5318,7 @@ void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCor
   StoreResult(Class, Op, Op->Dest, Src, Align, AccessType);
 }
 
-OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::Context *ctx)
+OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl *ctx)
   : IREmitter {ctx->OpDispatcherAllocator}
   , CTX {ctx} {
   ResetWorkingList();

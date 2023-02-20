@@ -23,10 +23,6 @@ $end_info$
 #include <utility>
 #include <vector>
 
-namespace FEXCore::Context {
-  struct Context;
-}
-
 namespace FEX::HLE::x32 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *Handler);
   void RegisterFD(FEX::HLE::SyscallHandler *Handler);

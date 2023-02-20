@@ -17,6 +17,9 @@
 namespace FEXCore::Core {
 struct DebugData;
 }
+namespace FEXCore::Context {
+  class ContextImpl;
+}
 
 namespace FEXCore::IR {
   class RegisterAllocationData;
@@ -87,7 +90,7 @@ namespace FEXCore::IR {
   class AOTIRCaptureCache final {
     public:
 
-      AOTIRCaptureCache(FEXCore::Context::Context *ctx) : CTX {ctx} {}
+      AOTIRCaptureCache(FEXCore::Context::ContextImpl *ctx) : CTX {ctx} {}
 
       void FinalizeAOTIRCache();
       void AOTIRCaptureCacheWriteoutQueue_Flush();
@@ -131,7 +134,7 @@ namespace FEXCore::IR {
       }
 
     private:
-      FEXCore::Context::Context *CTX;
+      FEXCore::Context::ContextImpl *CTX;
 
       std::shared_mutex AOTIRCacheLock;
       std::shared_mutex AOTIRCaptureCacheWriteoutLock;

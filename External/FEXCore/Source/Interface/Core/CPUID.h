@@ -10,7 +10,7 @@
 
 namespace FEXCore {
 namespace Context {
-  struct Context;
+  class ContextImpl;
 }
 
 // Debugging define to switch what family of CPU we execute as.
@@ -31,7 +31,7 @@ public:
   // if we report anything differently then applications are likely to break
   constexpr static uint64_t CACHELINE_SIZE = 64;
 
-  void Init(FEXCore::Context::Context *ctx);
+  void Init(FEXCore::Context::ContextImpl *ctx);
 
   FEXCore::CPUID::FunctionResults RunFunction(uint32_t Function, uint32_t Leaf) {
     if (Function < Primary.size()) {
@@ -64,7 +64,7 @@ public:
   }
 
 private:
-  FEXCore::Context::Context *CTX;
+  FEXCore::Context::ContextImpl *CTX;
   bool Hybrid{};
   FEX_CONFIG_OPT(Cores, THREADS);
 

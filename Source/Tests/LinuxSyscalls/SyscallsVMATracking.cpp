@@ -198,7 +198,7 @@ void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context *CTX, ui
         if (Current->Resource) {
           if (ListRemove(Current) && Current->Resource != PreservedMappedResource) {
             if (Current->Resource->AOTIRCacheEntry) {
-              FEXCore::Context::UnloadAOTIRCacheEntry(CTX, Current->Resource->AOTIRCacheEntry);
+              CTX->UnloadAOTIRCacheEntry(Current->Resource->AOTIRCacheEntry);
             }
             MappedResources.erase(Current->Resource->Iterator);
           }
@@ -351,7 +351,7 @@ uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context 
     if (Entry->second.Resource == Resource) {
       if (ListRemove(&Entry->second)) {
         if (Entry->second.Resource->AOTIRCacheEntry) {
-          FEXCore::Context::UnloadAOTIRCacheEntry(CTX, Entry->second.Resource->AOTIRCacheEntry);
+          CTX->UnloadAOTIRCacheEntry(Entry->second.Resource->AOTIRCacheEntry);
         }
         MappedResources.erase(Entry->second.Resource->Iterator);
       }

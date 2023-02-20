@@ -20,7 +20,7 @@
 namespace FEXCore::CPU {
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
-Arm64Emitter::Arm64Emitter(FEXCore::Context::Context *ctx, size_t size)
+Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
   : Emitter(size ? (uint8_t*)FEXCore::Allocator::mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) : nullptr, size)
   , EmitterCTX {ctx} {
   CPU.SetUp();

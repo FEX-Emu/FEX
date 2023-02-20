@@ -24,7 +24,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
 namespace FEXCore::Context {
-struct Context;
+class Context;
 }
 
 namespace FEX::HLE {

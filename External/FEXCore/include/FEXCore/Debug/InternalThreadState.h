@@ -18,7 +18,7 @@ namespace FEXCore {
 }
 
 namespace FEXCore::Context {
-  struct Context;
+  class Context;
 }
 
 namespace FEXCore::CPU {

@@ -13,7 +13,7 @@ namespace {
 }
 
 namespace FEXCore::CodeSerialize {
-  CodeObjectSerializeService::CodeObjectSerializeService(FEXCore::Context::Context *ctx)
+  CodeObjectSerializeService::CodeObjectSerializeService(FEXCore::Context::ContextImpl *ctx)
     : CTX {ctx}
     , AsyncHandler { &NamedRegionHandler , this }
     , NamedRegionHandler { ctx } {

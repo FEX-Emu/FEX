@@ -7,10 +7,6 @@
 #include <aarch64/simulator-aarch64.h>
 #endif
 
-namespace FEXCore::Context {
-struct Context;
-}
-
 namespace FEXCore::Core {
 struct InternalThreadState;
 }
@@ -22,7 +18,7 @@ namespace FEXCore::CPU {
 
 class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
   public:
-    Arm64Dispatcher(FEXCore::Context::Context *ctx, const DispatcherConfig &config);
+    Arm64Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config);
     void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) override;
     size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) override;
     size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) override;
