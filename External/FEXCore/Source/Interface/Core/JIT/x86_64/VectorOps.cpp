@@ -1958,6 +1958,191 @@ DEF_OP(VUnZip2) {
   }
 }
 
+DEF_OP(VTrn) {
+  const auto Op = IROp->C<IR::IROp_VTrn>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  const auto LoadPshufbReg = [&](Xbyak::Xmm reg, uint64_t lower) {
+    mov(rax, lower);
+    mov(rcx, 0x80'80'80'80'80'80'80'80);
+    vmovq(reg, rax);
+    pinsrq(reg, rcx, 1);
+  };
+
+  switch (ElementSize) {
+  case 1: {
+    LoadPshufbReg(xmm15, 0x0E'0C'0A'08'06'04'02'00);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpcklbw(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpcklbw(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  case 2: {
+    LoadPshufbReg(xmm15, 0x0D'0C'09'08'05'04'01'00);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpcklwd(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpcklwd(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  case 4: {
+    LoadPshufbReg(xmm15, 0x0B'0A'09'08'03'02'01'00);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpckldq(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpckldq(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  case 8: {
+    LoadPshufbReg(xmm15, 0x07'06'05'04'03'02'01'00);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpcklqdq(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  default:
+    LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+    return;
+  }
+}
+
+DEF_OP(VTrn2) {
+  const auto Op = IROp->C<IR::IROp_VTrn2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto VectorLower = GetSrc(Op->VectorLower.ID());
+  const auto VectorUpper = GetSrc(Op->VectorUpper.ID());
+
+  const auto LoadPshufbReg = [&](Xbyak::Xmm reg, uint64_t lower) {
+    mov(rax, lower);
+    mov(rcx, 0x80'80'80'80'80'80'80'80);
+    vmovq(reg, rax);
+    pinsrq(reg, rcx, 1);
+  };
+
+  switch (ElementSize) {
+  case 1: {
+    LoadPshufbReg(xmm15, 0x0F'0D'0B'09'07'05'03'01);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpcklbw(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpcklbw(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  case 2: {
+    LoadPshufbReg(xmm15, 0x0F'0E'0B'0A'07'06'03'02);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpcklwd(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpcklwd(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  case 4: {
+    LoadPshufbReg(xmm15, 0x0F'0E'0D'0C'07'06'05'04);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpckldq(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpckldq(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  case 8: {
+    LoadPshufbReg(xmm15, 0x0F'0E'0D'0C'0B'0A'09'08);
+
+    if (Is256Bit) {
+      vinserti128(ymm15, ymm15, xmm15, 1);
+
+      vpshufb(ymm14, ToYMM(VectorLower), ymm15);
+      vpshufb(ymm13, ToYMM(VectorUpper), ymm15);
+
+      vpunpcklqdq(ToYMM(Dst), ymm14, ymm13);
+    } else {
+      vpshufb(xmm14, VectorLower, xmm15);
+      vpshufb(xmm13, VectorUpper, xmm15);
+      vpunpcklqdq(Dst, xmm14, xmm13);
+    }
+    break;
+  }
+  default:
+    LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+    return;
+  }
+}
 
 DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
@@ -4304,6 +4489,8 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VZIP2,             VZip2);
   REGISTER_OP(VUNZIP,            VUnZip);
   REGISTER_OP(VUNZIP2,           VUnZip2);
+  REGISTER_OP(VTRN,              VTrn);
+  REGISTER_OP(VTRN2,             VTrn2);
   REGISTER_OP(VBSL,              VBSL);
   REGISTER_OP(VCMPEQ,            VCMPEQ);
   REGISTER_OP(VCMPEQZ,           VCMPEQZ);
