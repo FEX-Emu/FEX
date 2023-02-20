@@ -967,6 +967,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VZIP2,             VZip2);
         REGISTER_OP(VUNZIP,            VUnZip);
         REGISTER_OP(VUNZIP2,           VUnZip2);
+        REGISTER_OP(VTRN,              VTrn);
+        REGISTER_OP(VTRN2,             VTrn2);
         REGISTER_OP(VBSL,              VBSL);
         REGISTER_OP(VCMPEQ,            VCMPEQ);
         REGISTER_OP(VCMPEQZ,           VCMPEQZ);

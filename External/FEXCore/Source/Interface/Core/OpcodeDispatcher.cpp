@@ -5973,6 +5973,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::VPSIGN<4>},
     {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::VPMULHRSWOp},
 
+    {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::PTestOp},
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::VBROADCASTOp<4>},
     {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::VBROADCASTOp<8>},
@@ -5999,6 +6000,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::AVXExtendVectorElements<2, 4, false>},
     {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::AVXExtendVectorElements<2, 8, false>},
     {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::AVXExtendVectorElements<4, 8, false>},
+    {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::VPERMDOp},
 
     {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 8>},
     {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 1>},

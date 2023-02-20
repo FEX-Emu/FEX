@@ -242,6 +242,7 @@ namespace FEXCore::CPU {
   DEF_OP(VSMax);
   DEF_OP(VZip);
   DEF_OP(VUnZip);
+  DEF_OP(VTrn);
   DEF_OP(VBSL);
   DEF_OP(VCMPEQ);
   DEF_OP(VCMPEQZ);

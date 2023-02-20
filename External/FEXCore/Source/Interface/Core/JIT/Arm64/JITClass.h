@@ -413,6 +413,8 @@ private:
   DEF_OP(VZip2);
   DEF_OP(VUnZip);
   DEF_OP(VUnZip2);
+  DEF_OP(VTrn);
+  DEF_OP(VTrn2);
   DEF_OP(VBSL);
   DEF_OP(VCMPEQ);
   DEF_OP(VCMPEQZ);

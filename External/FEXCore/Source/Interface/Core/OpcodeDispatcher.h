@@ -479,6 +479,7 @@ public:
   void VPALIGNROp(OpcodeArgs);
 
   void VPERM2Op(OpcodeArgs);
+  void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
   template <size_t ElementSize>

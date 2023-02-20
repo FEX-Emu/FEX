@@ -1422,6 +1422,64 @@ DEF_OP(VUnZip2) {
   }
 }
 
+DEF_OP(VTrn) {
+  const auto Op = IROp->C<IR::IROp_VTrn>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE && Is256Bit) {
+    trn1(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
+  } else {
+    if (OpSize == 8) {
+      trn1(SubRegSize, Dst.D(), VectorLower.D(), VectorUpper.D());
+    } else {
+      trn1(SubRegSize, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
+    }
+  }
+}
+
+DEF_OP(VTrn2) {
+  const auto Op = IROp->C<IR::IROp_VTrn2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto VectorLower = GetVReg(Op->VectorLower.ID());
+  const auto VectorUpper = GetVReg(Op->VectorUpper.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE && Is256Bit) {
+    trn2(SubRegSize, Dst.Z(), VectorLower.Z(), VectorUpper.Z());
+  } else {
+    if (OpSize == 8) {
+      trn2(SubRegSize, Dst.D(), VectorLower.D(), VectorUpper.D());
+    } else {
+      trn2(SubRegSize, Dst.Q(), VectorLower.Q(), VectorUpper.Q());
+    }
+  }
+}
+
 DEF_OP(VBSL) {
   const auto Op = IROp->C<IR::IROp_VBSL>();
   const auto OpSize = IROp->Size;

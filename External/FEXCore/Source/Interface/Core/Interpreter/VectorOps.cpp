@@ -902,6 +902,67 @@ DEF_OP(VZip) {
   memcpy(GDP, Tmp, OpSize);
 }
 
+DEF_OP(VTrn) {
+  const auto Op = IROp->C<IR::IROp_VTrn>();
+  const uint8_t OpSize = IROp->Size;
+
+  void *Src1 = GetSrc<void*>(Data->SSAData, Op->VectorLower);
+  void *Src2 = GetSrc<void*>(Data->SSAData, Op->VectorUpper);
+  uint8_t Tmp[Core::CPUState::XMM_AVX_REG_SIZE]{};
+  const uint8_t ElementSize = Op->Header.ElementSize;
+  uint8_t Elements = OpSize / ElementSize;
+  const uint8_t BaseOffset = IROp->Op == IR::OP_VTRN2 ? 1 : 0;
+  Elements >>= 1;
+
+  switch (ElementSize) {
+    case 1: {
+      auto *Dst_d  = reinterpret_cast<uint8_t*>(Tmp);
+      auto *Src1_d = reinterpret_cast<uint8_t*>(Src1);
+      auto *Src2_d = reinterpret_cast<uint8_t*>(Src2);
+      for (unsigned i = 0; i < Elements; ++i) {
+        Dst_d[i*2] = Src1_d[i*2 + BaseOffset];
+        Dst_d[i*2+1] = Src2_d[i*2 + BaseOffset];
+      }
+      break;
+    }
+    case 2: {
+      auto *Dst_d  = reinterpret_cast<uint16_t*>(Tmp);
+      auto *Src1_d = reinterpret_cast<uint16_t*>(Src1);
+      auto *Src2_d = reinterpret_cast<uint16_t*>(Src2);
+      for (unsigned i = 0; i < Elements; ++i) {
+        Dst_d[i*2] = Src1_d[i*2 + BaseOffset];
+        Dst_d[i*2+1] = Src2_d[i*2 + BaseOffset];
+      }
+      break;
+    }
+    case 4: {
+      auto *Dst_d  = reinterpret_cast<uint32_t*>(Tmp);
+      auto *Src1_d = reinterpret_cast<uint32_t*>(Src1);
+      auto *Src2_d = reinterpret_cast<uint32_t*>(Src2);
+      for (unsigned i = 0; i < Elements; ++i) {
+        Dst_d[i*2] = Src1_d[i*2 + BaseOffset];
+        Dst_d[i*2+1] = Src2_d[i*2 + BaseOffset];
+      }
+      break;
+    }
+    case 8: {
+      auto *Dst_d  = reinterpret_cast<uint64_t*>(Tmp);
+      auto *Src1_d = reinterpret_cast<uint64_t*>(Src1);
+      auto *Src2_d = reinterpret_cast<uint64_t*>(Src2);
+      for (unsigned i = 0; i < Elements; ++i) {
+        Dst_d[i*2] = Src1_d[i*2 + BaseOffset];
+        Dst_d[i*2+1] = Src2_d[i*2 + BaseOffset];
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+
+  memcpy(GDP, Tmp, OpSize);
+}
+
 DEF_OP(VUnZip) {
   const auto Op = IROp->C<IR::IROp_VUnZip>();
   const uint8_t OpSize = IROp->Size;

@@ -222,6 +222,8 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VZIP2,                  VZip);
   REGISTER_OP(VUNZIP,                 VUnZip);
   REGISTER_OP(VUNZIP2,                VUnZip);
+  REGISTER_OP(VTRN,                   VTrn);
+  REGISTER_OP(VTRN2,                  VTrn);
   REGISTER_OP(VBSL,                   VBSL);
   REGISTER_OP(VCMPEQ,                 VCMPEQ);
   REGISTER_OP(VCMPEQZ,                VCMPEQZ);
