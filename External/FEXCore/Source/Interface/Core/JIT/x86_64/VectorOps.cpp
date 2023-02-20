@@ -3332,6 +3332,23 @@ DEF_OP(VShlI) {
   const auto Vector = GetSrc(Op->Vector.ID());
 
   switch (ElementSize) {
+    case 1: {
+      const auto Mask = 0xFFU >> BitShift;
+
+      mov(rax, Mask);
+      vmovq(xmm15, rax);
+
+      if (Is256Bit) {
+        vpsllw(ToYMM(Dst), ToYMM(Vector), BitShift);
+        vpbroadcastb(ymm15, xmm15);
+        vpand(ToYMM(Dst), ToYMM(Dst), ymm15);
+      } else {
+        vpsllw(Dst, Vector, BitShift);
+        vpbroadcastb(xmm15, xmm15);
+        vpand(Dst, Dst, ymm15);
+      }
+      break;
+    }
     case 2: {
       if (Is256Bit) {
         vpsllw(ToYMM(Dst), ToYMM(Vector), BitShift);
