@@ -484,6 +484,8 @@ public:
 
   template <size_t ElementSize>
   void VPERMILImmOp(OpcodeArgs);
+  template <size_t ElementSize>
+  void VPERMILRegOp(OpcodeArgs);
 
   void VPHADDSWOp(OpcodeArgs);
 
