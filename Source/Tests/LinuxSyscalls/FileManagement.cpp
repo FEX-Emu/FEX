@@ -24,6 +24,7 @@ $end_info$
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -345,9 +346,17 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   }
 
   UpdatePID(::getpid());
+
+  if (!LDPath().empty()) {
+    RootFSFD = open(LDPath().c_str(), O_DIRECTORY | O_PATH | O_CLOEXEC);
+    if (RootFSFD == -1) {
+      RootFSFD = AT_FDCWD;
+    }
+  }
 }
 
 FileManager::~FileManager() {
+  close(RootFSFD);
 }
 
 std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
@@ -370,8 +379,8 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
   std::string Path = RootFSPath + pathname;
   if (FollowSymlink) {
     char Filename[PATH_MAX];
-    while(FEX::HLE::IsSymlink(Path)) {
-      auto SymlinkSize = FEX::HLE::GetSymlink(Path, Filename, PATH_MAX - 1);
+    while(FEX::HLE::IsSymlink(AT_FDCWD, Path.c_str())) {
+      auto SymlinkSize = FEX::HLE::GetSymlink(AT_FDCWD, Path.c_str(), Filename, PATH_MAX - 1);
       if (SymlinkSize > 0 && Filename[0] == '/') {
         Path = RootFSPath;
         Path += std::string_view(Filename, SymlinkSize);
@@ -384,6 +393,66 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
   return Path;
 }
 
+std::optional<std::pair<int, const char*>> FileManager::GetEmulatedFDPath(const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename) {
+  if (!pathname || // If no pathname
+      pathname[0] != '/' || // If relative
+      pathname[1] == 0) { // If we are getting root
+    return std::nullopt;
+  }
+
+  auto thunkOverlay = ThunkOverlays.find(pathname);
+  if (thunkOverlay != ThunkOverlays.end()) {
+    return std::make_pair(AT_FDCWD, thunkOverlay->second.c_str());
+  }
+
+  if (RootFSFD == AT_FDCWD) {
+    // If RootFS doesn't exist
+    return std::nullopt;
+  }
+
+  // Starting subpath is the pathname passed in.
+  const char *SubPath = pathname;
+
+  // Current index for the temporary path to use.
+  uint32_t CurrentIndex{};
+
+  // The two temporary paths.
+  const std::array<char*, 2> TmpPaths ={
+    TmpFilename[0],
+    TmpFilename[1],
+  };
+
+  if (FollowSymlink) {
+    // Check if the combination of RootFS FD and subpath with the front '/' stripped off is a symlink.
+    while(FEX::HLE::IsSymlink(RootFSFD, &SubPath[1])) {
+      // Choose the current temporary working path.
+      auto CurrentTmp = TmpPaths[CurrentIndex];
+
+      // Get the symlink of RootFS FD + stripped subpath.
+      auto SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
+
+      if (SymlinkSize > 0 && CurrentTmp[0] == '/') {
+        // If the symlink is absolute:
+        // 1) Zero terminate it.
+        // 2) Set the path as our current subpath.
+        // 3) Switch to the next temporary index. (We don't want to overwrite the current one on the next loop iteration).
+        // 4) Run the loop again.
+        CurrentTmp[SymlinkSize] = 0;
+        SubPath = CurrentTmp;
+        CurrentIndex ^= 1;
+      }
+      else {
+        // If the path wasn't a symlink or wasn't absolute.
+        // 1) Break early, returning the previous found result.
+        // 2) If first iteration then we return `pathname`.
+        break;
+      }
+    }
+  }
+
+  // Return the pair of rootfs FD plus relative subpath by stripping off the front '/'
+  return std::make_pair(RootFSFD, &SubPath[1]);
+}
 
 std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
   if (!Pathname) {
@@ -409,9 +478,10 @@ uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[m
 
   fd = EmuFD.OpenAt(AT_FDCWD, SelfPath, flags, mode);
   if (fd == -1) {
-    auto Path = GetEmulatedPath(SelfPath, true);
-    if (!Path.empty()) {
-      fd = ::open(Path.c_str(), flags, mode);
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+    if (Path.has_value()) {
+      fd = ::openat(Path->first, Path->second, flags, mode);
     }
 
     if (fd == -1) {
@@ -439,7 +509,6 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
 #ifndef CLOSE_RANGE_CLOEXEC
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
-
   if (!(flags & CLOSE_RANGE_CLOEXEC)) {
     // If the flag was set then it doesn't actually close the FDs
     // Just sets the flag on a range
@@ -457,9 +526,10 @@ uint64_t FileManager::Stat(const char *pathname, void *buf) {
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
   // Stat follows symlinks
-  auto Path = GetEmulatedPath(SelfPath, true);
-  if (!Path.empty()) {
-    uint64_t Result = ::stat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::fstatat(Path->first, Path->second, reinterpret_cast<struct stat*>(buf), 0);
     if (Result != -1)
       return Result;
   }
@@ -471,9 +541,10 @@ uint64_t FileManager::Lstat(const char *pathname, void *buf) {
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
   // lstat does not follow symlinks
-  auto Path = GetEmulatedPath(SelfPath, false);
-  if (!Path.empty()) {
-    uint64_t Result = ::lstat(Path.c_str(), reinterpret_cast<struct stat*>(buf));
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, false, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::fstatat(Path->first, Path->second, reinterpret_cast<struct stat*>(buf), AT_SYMLINK_NOFOLLOW);
     if (Result != -1)
       return Result;
   }
@@ -486,9 +557,10 @@ uint64_t FileManager::Access(const char *pathname, [[maybe_unused]] int mode) {
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
   // Access follows symlinks
-  auto Path = GetEmulatedPath(SelfPath, true);
-  if (!Path.empty()) {
-    uint64_t Result = ::access(Path.c_str(), mode);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::faccessat(Path->first, Path->second, mode, 0);
     if (Result != -1)
       return Result;
   }
@@ -500,9 +572,10 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
-  if (!Path.empty()) {
-    uint64_t Result = ::syscall(SYS_faccessat, dirfd, Path.c_str(), mode);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), Path->first, Path->second, mode, 0);
     if (Result != -1)
       return Result;
   }
@@ -514,9 +587,10 @@ uint64_t FileManager::FAccessat2(int dirfd, const char *pathname, int mode, int 
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0);
-  if (!Path.empty()) {
-    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), dirfd, Path.c_str(), mode, flags);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), Path->first, Path->second, mode, flags);
     if (Result != -1)
       return Result;
   }
@@ -538,9 +612,10 @@ uint64_t FileManager::Readlink(const char *pathname, char *buf, size_t bufsiz) {
     return std::min(bufsiz, App.size());
   }
 
-  auto Path = GetEmulatedPath(pathname);
-  if (!Path.empty()) {
-    uint64_t Result = ::readlink(Path.c_str(), buf, bufsiz);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(pathname, false, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::readlinkat(Path->first, Path->second, buf, bufsiz);
     if (Result != -1)
       return Result;
 
@@ -559,9 +634,10 @@ uint64_t FileManager::Chmod(const char *pathname, mode_t mode) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
-  if (!Path.empty()) {
-    uint64_t Result = ::chmod(Path.c_str(), mode);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, false, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::fchmodat(Path->first, Path->second, mode, 0);
     if (Result != -1)
       return Result;
   }
@@ -611,9 +687,10 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
     return std::min(bufsiz, App.size());
   }
 
-  Path = GetEmulatedPath(pathname);
-  if (!Path.empty()) {
-    uint64_t Result = ::readlinkat(dirfd, Path.c_str(), buf, bufsiz);
+  FDPathTmpData TmpFilename;
+  auto NewPath = GetEmulatedFDPath(pathname, false, TmpFilename);
+  if (NewPath.has_value()) {
+    uint64_t Result = ::readlinkat(NewPath->first, NewPath->second, buf, bufsiz);
     if (Result != -1)
       return Result;
 
@@ -636,9 +713,10 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
   fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
   if (fd == -1) {
-    auto Path = GetEmulatedPath(SelfPath, true);
-    if (!Path.empty()) {
-      fd = ::openat(dirfs, Path.c_str(), flags, mode);
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+    if (Path.has_value()) {
+      fd = ::openat(Path->first, Path->second, flags, mode);
     }
 
     if (fd == -1)
@@ -661,9 +739,10 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
 
   fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
   if (fd == -1) {
-    auto Path = GetEmulatedPath(SelfPath, true);
-    if (!Path.empty()) {
-      fd = ::syscall(SYSCALL_DEF(openat2), dirfs, Path.c_str(), how, usize);
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+    if (Path.has_value()) {
+      fd = ::syscall(SYSCALL_DEF(openat2), Path->first, Path->second, how, usize);
     }
 
     if (fd == -1)
@@ -683,9 +762,10 @@ uint64_t FileManager::Statx(int dirfd, const char *pathname, int flags, uint32_t
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0);
-  if (!Path.empty()) {
-    uint64_t Result = FHU::Syscalls::statx(dirfd, Path.c_str(), flags, mask, statxbuf);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = FHU::Syscalls::statx(Path->first, Path->second, flags, mask, statxbuf);
     if (Result != -1)
       return Result;
   }
@@ -696,9 +776,10 @@ uint64_t FileManager::Mknod(const char *pathname, mode_t mode, dev_t dev) {
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath);
-  if (!Path.empty()) {
-    uint64_t Result = ::mknod(Path.c_str(), mode, dev);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, false, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::mknodat(Path->first, Path->second, mode, dev);
     if (Result != -1)
       return Result;
   }
@@ -719,9 +800,10 @@ uint64_t FileManager::NewFSStatAt(int dirfd, const char *pathname, struct stat *
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0);
-  if (!Path.empty()) {
-    uint64_t Result = ::fstatat(dirfd, Path.c_str(), buf, flag);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::fstatat(Path->first, Path->second, buf, flag);
     if (Result != -1) {
       return Result;
     }
@@ -733,9 +815,10 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
   auto NewPath = GetSelf(pathname);
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
 
-  auto Path = GetEmulatedPath(SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0);
-  if (!Path.empty()) {
-    uint64_t Result = ::fstatat64(dirfd, Path.c_str(), buf, flag);
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.has_value()) {
+    uint64_t Result = ::fstatat64(Path->first, Path->second, buf, flag);
     if (Result != -1) {
       return Result;
     }

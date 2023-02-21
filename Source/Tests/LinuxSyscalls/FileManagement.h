@@ -8,9 +8,11 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 
 #include <cstdint>
+#include <fcntl.h>
 #include <functional>
 #include <map>
 #include <mutex>
+#include <linux/limits.h>
 #include <optional>
 #include <stddef.h>
 #include <string>
@@ -29,16 +31,16 @@ class Context;
 
 namespace FEX::HLE {
 [[maybe_unused]]
-static bool IsSymlink(const std::string &Filename) {
+static bool IsSymlink(int FD, const char *Filename) {
   // Checks to see if a filepath is a symlink.
   struct stat Buffer{};
-  int Result = lstat(Filename.c_str(), &Buffer);
+  int Result = fstatat(FD, Filename, &Buffer, AT_SYMLINK_NOFOLLOW);
   return Result == 0 && S_ISLNK(Buffer.st_mode);
 }
 
 [[maybe_unused]]
-static ssize_t GetSymlink(const std::string &Filename, char *ResultBuffer, size_t ResultBufferSize) {
-  return readlink(Filename.c_str(), ResultBuffer, ResultBufferSize);
+static ssize_t GetSymlink(int FD, const char *Filename, char *ResultBuffer, size_t ResultBufferSize) {
+  return readlinkat(FD, Filename, ResultBuffer, ResultBufferSize);
 }
 
 struct open_how;
@@ -78,6 +80,8 @@ public:
   void UpdatePID(uint32_t PID) { CurrentPID = PID; }
 
   std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
+  using FDPathTmpData = std::array<char[PATH_MAX], 2>;
+  std::optional<std::pair<int, const char*>> GetEmulatedFDPath(const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
 
   std::mutex *GetFDLock() { return &FDLock; }
 
@@ -96,5 +100,6 @@ private:
   FEX_CONFIG_OPT(AppConfigName, APP_CONFIG_NAME);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   uint32_t CurrentPID{};
+  int RootFSFD{AT_FDCWD};
 };
 }
