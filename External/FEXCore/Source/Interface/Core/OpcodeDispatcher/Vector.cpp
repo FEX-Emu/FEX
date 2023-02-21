@@ -4239,4 +4239,63 @@ void OpDispatchBuilder::VPERMILImmOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPERMILImmOp<8>(OpcodeArgs);
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
+  // NOTE: See implementation of VPERMD for the gist of what we do to make this work.
+  //
+  //       The only difference here is that we need to add 16 to the upper lane
+  //       before doing the final addition to build up the indices for TBL.
+
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  constexpr auto IsPD = ElementSize == 8;
+
+  const auto SanitizeIndices = [&](OrderedNode *Indices) {
+    const auto ShiftAmount = 0b11 >> static_cast<uint32_t>(IsPD);
+    OrderedNode *IndexMask = _VectorImm(DstSize, ElementSize, ShiftAmount);
+    return _VAnd(DstSize, 1, Indices, IndexMask);
+  };
+
+  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
+  if constexpr (IsPD) {
+    // VPERMILPD stores the selector in the second bit, rather than the
+    // first bit of each element in the index vector. So move it over by one.
+    Indices = _VUShrI(DstSize, ElementSize, Indices, 1);
+  }
+
+  OrderedNode *SanitizedIndices = SanitizeIndices(Indices);
+  OrderedNode *IndexTrn1 = _VTrn(DstSize, 1, SanitizedIndices, SanitizedIndices);
+  OrderedNode *IndexTrn2 = _VTrn(DstSize, 2, IndexTrn1, IndexTrn1);
+  OrderedNode *IndexTrn3 = IndexTrn2;
+  if constexpr (IsPD) {
+    IndexTrn3 = _VTrn(DstSize, 4, IndexTrn2, IndexTrn2);
+  }
+
+  constexpr auto IndexShift = IsPD ? 3 : 2;
+  OrderedNode *ShiftedIndices = _VShlI(DstSize, 1, IndexTrn3, IndexShift);
+
+  constexpr uint64_t VConstant = IsPD ? 0x0706050403020100 : 0x03020100;
+  OrderedNode *VectorConst = _VDupFromGPR(DstSize, ElementSize, _Constant(VConstant));
+  OrderedNode *FinalIndices{};
+
+  if (Is256Bit) {
+    OrderedNode *Vector16 = _VInsElement(DstSize, 16, 1, 0, _VectorZero(DstSize), _VectorImm(DstSize, 1, 16));
+    OrderedNode *IndexOffsets = _VAdd(DstSize, 1, VectorConst, Vector16);
+
+    FinalIndices = _VAdd(DstSize, 1, IndexOffsets, ShiftedIndices);
+  } else {
+    FinalIndices = _VAdd(DstSize, 1, VectorConst, ShiftedIndices);
+  }
+
+  OrderedNode *Result = _VTBL1(DstSize, Src, FinalIndices);
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::VPERMILRegOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
+
 }
