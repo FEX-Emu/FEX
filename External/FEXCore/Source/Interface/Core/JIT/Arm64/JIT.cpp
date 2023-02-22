@@ -1050,6 +1050,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
   CodeData.Size = GetCursorAddress<uint8_t *>() - CodeData.BlockBegin;
+
+  JITBlockTail->Size = CodeData.Size;
+
   ClearICache(CodeData.BlockBegin, CodeData.Size);
 
 #ifdef VIXL_DISASSEMBLER

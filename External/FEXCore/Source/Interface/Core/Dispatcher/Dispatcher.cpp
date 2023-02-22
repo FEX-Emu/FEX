@@ -40,6 +40,27 @@ void Dispatcher::SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::
   ctx->IdleWaitCV.notify_all();
 }
 
+uint64_t Dispatcher::ReconstructRIPFromContext(FEXCore::Core::CpuStateFrame *Frame, void *ucontext) const {
+  const uint64_t HostPC = ArchHelpers::Context::GetPc(ucontext);
+  const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
+  const CPUBackend::JITCodeHeader *InlineHeader = reinterpret_cast<const CPUBackend::JITCodeHeader *>(BlockBegin);
+
+  if (InlineHeader) {
+    const CPUBackend::JITCodeTail *InlineTail = reinterpret_cast<const CPUBackend::JITCodeTail *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+
+    // Check if the host PC is currently within a code block.
+    // If it is then RIP can be reconstructed from the beginning of the code block.
+    // This is currently as close as FEX can get RIP reconstructions.
+    if (HostPC >= reinterpret_cast<uint64_t>(BlockBegin) &&
+        HostPC < reinterpret_cast<uint64_t>(BlockBegin + InlineTail->Size)) {
+      return InlineTail->RIP;
+    }
+  }
+
+  // Fallback to what is stored in the RIP currently.
+  return Frame->State.rip;
+}
+
 ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext) {
   // We can end up getting a signal at any point in our host state
   // Jump to a handler that saves all state so we can safely return
@@ -465,7 +486,7 @@ uint64_t Dispatcher::SetupFrame_ia32(
     guest_uctx->sc.err = ConvertSignalToError(ucontext, Signal, HostSigInfo);
   }
 
-  guest_uctx->sc.ip = Frame->State.rip;
+  guest_uctx->sc.ip = ContextBackup->OriginalRIP;
   guest_uctx->sc.flags = eflags;
   guest_uctx->sc.sp_at_signal = 0;
 
@@ -610,7 +631,7 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
     guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR] = ConvertSignalToError(ucontext, Signal, HostSigInfo);
   }
 
-  guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = Frame->State.rip;
+  guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] = ContextBackup->OriginalRIP;
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EFL] = eflags;
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_UESP] = Frame->State.gregs[X86State::REG_RSP];
   guest_uctx->uc.uc_mcontext.cr2 = 0;
@@ -687,7 +708,7 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
     case SIGILL:
       // Macro expansion to get the si_addr
       // Can't really give a real result here. Pull from the context for now
-      guest_uctx->info._sifields._sigfault.addr = Frame->State.rip;
+      guest_uctx->info._sifields._sigfault.addr = ContextBackup->OriginalRIP;
       break;
     case SIGCHLD:
       guest_uctx->info._sifields._sigchld.pid = HostSigInfo->si_pid;
@@ -879,7 +900,7 @@ uint64_t Dispatcher::SetupFrame_x64(
   auto *xstate = reinterpret_cast<x86_64::xstate*>(FPStateLocation);
   SetXStateInfo(xstate, IsAVXEnabled);
 
-  guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = Frame->State.rip;
+  guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = ContextBackup->OriginalRIP;
   guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = eflags;
   guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] = 0;
 
@@ -989,11 +1010,6 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   ++Thread->CurrentFrame->SignalHandlerRefCounter;
 
   uint64_t OldPC = ArchHelpers::Context::GetPc(ucontext);
-  // Set the new PC
-  ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
-  // Set our state register to point to our guest thread data
-  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
-
   // Pulling from context here
   const bool Is64BitMode = CTX->Config.Is64BitMode;
 
@@ -1060,7 +1076,7 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
 
   // Backup where we think the RIP currently is
-  ContextBackup->OriginalRIP = Frame->State.rip;
+  ContextBackup->OriginalRIP = ReconstructRIPFromContext(Frame, ucontext);
   // Calculate eflags upfront.
   uint32_t eflags = 0;
   for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
@@ -1090,6 +1106,11 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   memset(Frame->State.mm, 0, sizeof(Frame->State.mm));
   Frame->State.FCW = 0x37F;
   Frame->State.FTW = 0xFFFF;
+
+  // Set the new PC
+  ArchHelpers::Context::SetPc(ucontext, AbsoluteLoopTopAddressFillSRA);
+  // Set our state register to point to our guest thread data
+  ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
   return true;
 }

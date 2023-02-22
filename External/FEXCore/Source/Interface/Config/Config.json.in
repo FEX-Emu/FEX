@@ -342,16 +342,6 @@
           "Forces a process to stall out on initialization",
           "Useful for a process that keeps restarting and doesn't work"
         ]
-      },
-      "x86dec_SynchronizeRIPOnAllBlocks": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "An application that uses try-catch or longjump extensively needs the ability to do context aware state flushing",
-          "In the case of FEX's block-linking, it won't always ensure that RIP is synchronized.",
-          "If an exception occurs and RIP isn't synchronized, then FEX's exception stack restore may not long jump as expected",
-          "Can be useful for Wine applications that rely on stack unwinding"
-        ]
       }
     },
     "Misc": {

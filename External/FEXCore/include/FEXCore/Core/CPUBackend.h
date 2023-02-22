@@ -85,6 +85,8 @@ namespace CPU {
     // Any data that is explicitly tied to the JIT code and needs to be cached with it
     // should end up in this data structure.
     struct JITCodeTail {
+      // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
+      size_t Size;
       // RIP that the block's entry comes from.
       uint64_t RIP;
     };

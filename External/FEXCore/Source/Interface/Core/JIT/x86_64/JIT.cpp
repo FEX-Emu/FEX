@@ -772,7 +772,9 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
 
   CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 
-  CodeData.Size = CodeData.BlockBegin - getCurr<uint8_t*>();
+  CodeData.Size = getCurr<uint8_t*>() - CodeData.BlockBegin;
+
+  JITBlockTail->Size = CodeData.Size;
 
   this->IR = nullptr;
 
