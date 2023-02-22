@@ -803,6 +803,10 @@ private:
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
 
+  OrderedNode* HSUBPOpImpl(OpcodeArgs, size_t ElementSize,
+                           const X86Tables::DecodedOperand& Src1Op,
+                           const X86Tables::DecodedOperand& Src2Op);
+
   OrderedNode* InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                               const X86Tables::DecodedOperand& Src2,
                               const X86Tables::DecodedOperand& Imm);
