@@ -1155,15 +1155,7 @@ public:
   // SVE Permute Vector - Predicated - Base
   // CPY (SIMD&FP scalar)
   void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, VRegister vn) {
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "cpy can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
-
-    uint32_t Instr = 0b0000'0101'0010'0000'1000'0000'0000'0000;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= pg.Idx() << 10;
-    Instr |= vn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+    SVEPermuteVectorPredicated(0b00000, 0b0, size, zd, pg, ZRegister{vn.Idx()});
   }
 
   void compact(SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
@@ -1174,15 +1166,7 @@ public:
 
   // CPY (scalar)
   void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, WRegister rn) {
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "cpy can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
-
-    uint32_t Instr = 0b0000'0101'0010'1000'1010'0000'0000'0000;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= pg.Idx() << 10;
-    Instr |= rn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+    SVEPermuteVectorPredicated(0b01000, 0b1, size, zd, pg, ZRegister{rn.Idx()});
   }
 
   template<FEXCore::ARMEmitter::OpType optype>
