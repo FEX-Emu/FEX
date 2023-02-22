@@ -1237,11 +1237,22 @@ public:
   }
 
   // SVE Permute Vector - Predicated
-  // XXX:
-  // XXX: LASTA
-  // XXX: LASTB
+  // SVE extract element to general register
+  void lasta(SubRegSize size, Register rd, PRegister pg, ZRegister zn) {
+    SVEPermuteVectorPredicated(0b00000, 0b1, size, ZRegister{rd.Idx()}, pg, zn);
+  }
+  void lastb(SubRegSize size, Register rd, PRegister pg, ZRegister zn) {
+    SVEPermuteVectorPredicated(0b00001, 0b1, size, ZRegister{rd.Idx()}, pg, zn);
+  }
+
   // SVE extract element to SIMD&FP scalar register
-  // XXX:
+  void lasta(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    SVEPermuteVectorPredicated(0b00010, 0b0, size, ZRegister{vd.Idx()}, pg, zn);
+  }
+  void lastb(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
+    SVEPermuteVectorPredicated(0b00011, 0b0, size, ZRegister{vd.Idx()}, pg, zn);
+  }
+
   // SVE reverse within elements
   void revb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -4047,6 +4058,20 @@ private:
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEPermuteVectorPredicated(uint32_t opc1, uint32_t opc2, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0000'0101'0010'0000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc1 << 16;
+    Instr |= opc2 << 13;
+    Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);

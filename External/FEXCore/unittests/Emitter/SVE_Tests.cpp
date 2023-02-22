@@ -1198,12 +1198,28 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicate
   //TEST_SINGLE(splice<OpType::Destructive>(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z30, ZReg::z28), "splice z30.q, p6, z30.q, z28.q");
 }
 
-TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicated") {
-  // TODO: Implement in emitter.
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE extract element to general register") {
+  TEST_SINGLE(lasta(SubRegSize::i8Bit,  WReg::w30, PReg::p7, ZReg::z30), "lasta w30, p7, z30.b");
+  TEST_SINGLE(lasta(SubRegSize::i16Bit, WReg::w30, PReg::p7, ZReg::z30), "lasta w30, p7, z30.h");
+  TEST_SINGLE(lasta(SubRegSize::i32Bit, WReg::w30, PReg::p7, ZReg::z30), "lasta w30, p7, z30.s");
+  TEST_SINGLE(lasta(SubRegSize::i64Bit, XReg::x30, PReg::p7, ZReg::z30), "lasta x30, p7, z30.d");
+
+  TEST_SINGLE(lastb(SubRegSize::i8Bit,  WReg::w30, PReg::p7, ZReg::z30), "lastb w30, p7, z30.b");
+  TEST_SINGLE(lastb(SubRegSize::i16Bit, WReg::w30, PReg::p7, ZReg::z30), "lastb w30, p7, z30.h");
+  TEST_SINGLE(lastb(SubRegSize::i32Bit, WReg::w30, PReg::p7, ZReg::z30), "lastb w30, p7, z30.s");
+  TEST_SINGLE(lastb(SubRegSize::i64Bit, XReg::x30, PReg::p7, ZReg::z30), "lastb x30, p7, z30.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE extract element to SIMD&FP scalar register") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(lasta(SubRegSize::i8Bit,  BReg::b30, PReg::p7, ZReg::z29), "lasta b30, p7, z29.b");
+  TEST_SINGLE(lasta(SubRegSize::i16Bit, HReg::h30, PReg::p7, ZReg::z29), "lasta h30, p7, z29.h");
+  TEST_SINGLE(lasta(SubRegSize::i32Bit, SReg::s30, PReg::p7, ZReg::z29), "lasta s30, p7, z29.s");
+  TEST_SINGLE(lasta(SubRegSize::i64Bit, DReg::d30, PReg::p7, ZReg::z29), "lasta d30, p7, z29.d");
+
+  TEST_SINGLE(lastb(SubRegSize::i8Bit,  BReg::b30, PReg::p7, ZReg::z29), "lastb b30, p7, z29.b");
+  TEST_SINGLE(lastb(SubRegSize::i16Bit, HReg::h30, PReg::p7, ZReg::z29), "lastb h30, p7, z29.h");
+  TEST_SINGLE(lastb(SubRegSize::i32Bit, SReg::s30, PReg::p7, ZReg::z29), "lastb s30, p7, z29.s");
+  TEST_SINGLE(lastb(SubRegSize::i64Bit, DReg::d30, PReg::p7, ZReg::z29), "lastb d30, p7, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse within elements") {
