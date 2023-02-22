@@ -3147,40 +3147,78 @@ void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::HSUBP(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+OrderedNode* OpDispatchBuilder::HSUBPOpImpl(OpcodeArgs, size_t ElementSize,
+                                            const X86Tables::DecodedOperand& Src1Op,
+                                            const X86Tables::DecodedOperand& Src2Op) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
   // This is a bit complicated since AArch64 doesn't support a pairwise subtract
-  auto Dest_Neg = _VFNeg(Size, ElementSize, Dest);
-  auto Src_Neg = _VFNeg(Size, ElementSize, Src);
+  OrderedNode *Src1_Neg = _VFNeg(SrcSize, ElementSize, Src1);
+  OrderedNode *Src2_Neg = _VFNeg(SrcSize, ElementSize, Src2);
 
   // Now we need to swizzle the values
-  OrderedNode *Swizzle_Dest = Dest;
-  OrderedNode *Swizzle_Src = Src;
+  OrderedNode *Swizzle_Src1 = Src1;
+  OrderedNode *Swizzle_Src2 = Src2;
 
-  if constexpr (ElementSize == 4) {
-    Swizzle_Dest = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Dest, Dest_Neg);
-    Swizzle_Dest = _VInsElement(Size, ElementSize, 3, 3, Swizzle_Dest, Dest_Neg);
+  if (Is256Bit) {
+    OrderedNode *UzpSrc1 = _VUnZip(SrcSize, ElementSize, Src1, Src1);
+    OrderedNode *UzpSrc2 = _VUnZip(SrcSize, ElementSize, Src2, Src2);
 
-    Swizzle_Src = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Src, Src_Neg);
-    Swizzle_Src = _VInsElement(Size, ElementSize, 3, 3, Swizzle_Src, Src_Neg);
+    OrderedNode *UzpSrc1Neg = _VUnZip2(SrcSize, ElementSize, Src1_Neg, Src1_Neg);
+    OrderedNode *UzpSrc2Neg = _VUnZip2(SrcSize, ElementSize, Src2_Neg, Src2_Neg);
+
+    Swizzle_Src1 = _VZip(SrcSize, ElementSize, UzpSrc1, UzpSrc1Neg);
+    Swizzle_Src2 = _VZip(SrcSize, ElementSize, UzpSrc2, UzpSrc2Neg);
+  } else {
+    if (ElementSize == 4) {
+      Swizzle_Src1 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src1, Src1_Neg);
+      Swizzle_Src1 = _VInsElement(SrcSize, ElementSize, 3, 3, Swizzle_Src1, Src1_Neg);
+
+      Swizzle_Src2 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src2, Src2_Neg);
+      Swizzle_Src2 = _VInsElement(SrcSize, ElementSize, 3, 3, Swizzle_Src2, Src2_Neg);
+    } else {
+      Swizzle_Src1 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src1, Src1_Neg);
+      Swizzle_Src2 = _VInsElement(SrcSize, ElementSize, 1, 1, Swizzle_Src2, Src2_Neg);
+    }
   }
-  else {
-    Swizzle_Dest = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Dest, Dest_Neg);
-    Swizzle_Src = _VInsElement(Size, ElementSize, 1, 1, Swizzle_Src, Src_Neg);
-  }
 
-  OrderedNode *Res = _VFAddP(Size, ElementSize, Swizzle_Dest, Swizzle_Src);
-  StoreResult(FPRClass, Op, Res, -1);
+  return _VFAddP(SrcSize, ElementSize, Swizzle_Src1, Swizzle_Src2);
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::HSUBP(OpcodeArgs) {
+  OrderedNode *Result = HSUBPOpImpl(Op, ElementSize, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
 void OpDispatchBuilder::HSUBP<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::HSUBP<8>(OpcodeArgs);
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = HSUBPOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
+  OrderedNode *Dest = Result;
+  if (Is256Bit) {
+    Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
+    Dest = _VInsElement(DstSize, 8, 2, 1, Dest, Result);
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
+template
+void OpDispatchBuilder::VHSUBPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VHSUBPOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                                             const X86Tables::DecodedOperand& Src2, size_t ElementSize) {

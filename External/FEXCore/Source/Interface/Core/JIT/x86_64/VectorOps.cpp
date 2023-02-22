@@ -1944,7 +1944,7 @@ DEF_OP(VUnZip2) {
       }
       case 8: {
         if (Is256Bit) {
-          vshufpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b1'1);
+          vshufpd(ToYMM(Dst), ToYMM(VectorLower), ToYMM(VectorUpper), 0b11'11);
           vpermq(ToYMM(Dst), ToYMM(Dst), 0b11'01'10'00);
         } else {
           vshufpd(Dst, VectorLower, VectorUpper, 0b1'1);

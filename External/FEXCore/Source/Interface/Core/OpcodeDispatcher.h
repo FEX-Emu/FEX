@@ -451,6 +451,8 @@ public:
 
   template <IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
+  template <size_t ElementSize>
+  void VHSUBPOp(OpcodeArgs);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
@@ -802,6 +804,10 @@ private:
 
   OrderedNode* ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize,
                                         size_t DstElementSize, bool Signed);
+
+  OrderedNode* HSUBPOpImpl(OpcodeArgs, size_t ElementSize,
+                           const X86Tables::DecodedOperand& Src1Op,
+                           const X86Tables::DecodedOperand& Src2Op);
 
   OrderedNode* InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                               const X86Tables::DecodedOperand& Src2,
