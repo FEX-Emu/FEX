@@ -1289,11 +1289,27 @@ public:
   }
 
   // SVE conditionally extract element to SIMD&FP scalar
+  void clasta(SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(vd.Idx() == vn.Idx(), "vd must be the same as vn");
+    SVEPermuteVectorPredicated(0b01010, 0b0, size, ZRegister{vd.Idx()}, pg, zm);
+  }
+  void clastb(SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(vd.Idx() == vn.Idx(), "vd must be the same as vn");
+    SVEPermuteVectorPredicated(0b01011, 0b0, size, ZRegister{vd.Idx()}, pg, zm);
+  }
+
+  // SVE reverse doublewords (SME)
   // XXX:
-  // SVE reverse doublewords
-  // XXX:
+
   // SVE conditionally extract element to general register
-  // XXX:
+  void clasta(SubRegSize size, Register rd, PRegister pg, Register rn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(rd.Idx() == rn.Idx(), "rd must be the same as rn");
+    SVEPermuteVectorPredicated(0b10000, 0b1, size, ZRegister{rd.Idx()}, pg, zm);
+  }
+  void clastb(SubRegSize size, Register rd, PRegister pg, Register rn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(rd.Idx() == rn.Idx(), "rd must be the same as rn");
+    SVEPermuteVectorPredicated(0b10001, 0b1, size, ZRegister{rd.Idx()}, pg, zm);
+  }
 
   // SVE Permute Vector - Extract
   // Constructive

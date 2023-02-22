@@ -1257,7 +1257,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally broadcast el
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract element to SIMD&FP scalar") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(clasta(SubRegSize::i8Bit,  VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta b30, p7, b30, z29.b");
+  TEST_SINGLE(clasta(SubRegSize::i16Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta h30, p7, h30, z29.h");
+  TEST_SINGLE(clasta(SubRegSize::i32Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta s30, p7, s30, z29.s");
+  TEST_SINGLE(clasta(SubRegSize::i64Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta d30, p7, d30, z29.d");
+
+  TEST_SINGLE(clastb(SubRegSize::i8Bit,  VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb b30, p7, b30, z29.b");
+  TEST_SINGLE(clastb(SubRegSize::i16Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb h30, p7, h30, z29.h");
+  TEST_SINGLE(clastb(SubRegSize::i32Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb s30, p7, s30, z29.s");
+  TEST_SINGLE(clastb(SubRegSize::i64Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb d30, p7, d30, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse doublewords") {
@@ -1265,7 +1273,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse doublewords") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract element to general register") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(clasta(SubRegSize::i8Bit,  WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clasta w30, p7, w30, z29.b");
+  TEST_SINGLE(clasta(SubRegSize::i16Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clasta w30, p7, w30, z29.h");
+  TEST_SINGLE(clasta(SubRegSize::i32Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clasta w30, p7, w30, z29.s");
+  TEST_SINGLE(clasta(SubRegSize::i64Bit, XReg::x30, PReg::p7, XReg::x30, ZReg::z29), "clasta x30, p7, x30, z29.d");
+
+  TEST_SINGLE(clastb(SubRegSize::i8Bit,  WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clastb w30, p7, w30, z29.b");
+  TEST_SINGLE(clastb(SubRegSize::i16Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clastb w30, p7, w30, z29.h");
+  TEST_SINGLE(clastb(SubRegSize::i32Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clastb w30, p7, w30, z29.s");
+  TEST_SINGLE(clastb(SubRegSize::i64Bit, XReg::x30, PReg::p7, XReg::x30, ZReg::z29), "clastb x30, p7, x30, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Extract") {
