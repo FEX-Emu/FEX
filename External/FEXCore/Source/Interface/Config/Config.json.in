@@ -397,6 +397,17 @@
           "Override for a FEXServer socket path. Only useful for chroots."
         ]
       }
+    },
+    "FEXServer": {
+      "CooperativeCoreDump": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Once enabled, FEX will ask FEXServer will act as a coredump service.",
+          "Giving backtraces on unhandled signals that will coredump",
+          "FEXServer will only give a backtrace socket when in foreground mode"
+        ]
+      }
     }
   },
   "UnnamedOptions": {
