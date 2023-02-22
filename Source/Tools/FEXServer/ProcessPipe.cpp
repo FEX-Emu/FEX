@@ -3,6 +3,7 @@
 #include "SquashFS.h"
 
 #include "Common/FEXServerClient.h"
+#include "Common/SocketUtil.h"
 
 #include <atomic>
 #include <fcntl.h>
@@ -283,45 +284,11 @@ namespace ProcessPipe {
 
   void HandleSocketData(int Socket) {
     std::vector<uint8_t> Data(1500);
-    size_t CurrentRead{};
 
     // Get the current number of FDs of the process before we start handling sockets.
     GetMaxFDs();
 
-    while (true) {
-      struct iovec iov {
-        .iov_base = &Data.at(CurrentRead),
-        .iov_len = Data.size() - CurrentRead,
-      };
-
-      struct msghdr msg {
-        .msg_name = nullptr,
-        .msg_namelen = 0,
-        .msg_iov = &iov,
-        .msg_iovlen = 1,
-      };
-
-      ssize_t Read = recvmsg(Socket, &msg, 0);
-      if (Read <= msg.msg_iov->iov_len) {
-        CurrentRead += Read;
-        if (CurrentRead == Data.size()) {
-          Data.resize(Data.size() << 1);
-        }
-        else {
-          // No more to read
-          break;
-        }
-      }
-      else {
-        if (errno == EWOULDBLOCK) {
-          // no error
-        }
-        else {
-          perror("read");
-        }
-        break;
-      }
-    }
+    size_t CurrentRead = SocketUtil::ReadDataFromSocket(Socket, &Data);
 
     size_t CurrentOffset{};
     while (CurrentOffset < CurrentRead) {
