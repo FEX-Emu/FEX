@@ -24,6 +24,7 @@ namespace FEX::ArgLoader {
     optparse::OptionGroup HacksGroup(Parser, "Hacks options");
     optparse::OptionGroup MiscGroup(Parser, "Miscellaneous options");
     optparse::OptionGroup LoggingGroup(Parser, "Logging options");
+    optparse::OptionGroup FEXServerGroup(Parser, "FEXServer options");
 
 #define BEFORE_PARSE
 #include <FEXCore/Config/ConfigOptions.inl>
