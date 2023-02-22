@@ -1279,7 +1279,15 @@ public:
   }
 
   // SVE conditionally broadcast element to vector
-  // XXX:
+  void clasta(SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd must be the same as zn");
+    SVEPermuteVectorPredicated(0b01000, 0b0, size, zd, pg, zm);
+  }
+  void clastb(SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd must be the same as zn");
+    SVEPermuteVectorPredicated(0b01001, 0b0, size, zd, pg, zm);
+  }
+
   // SVE conditionally extract element to SIMD&FP scalar
   // XXX:
   // SVE reverse doublewords

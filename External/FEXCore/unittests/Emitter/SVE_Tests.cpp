@@ -1245,7 +1245,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse within elements") 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally broadcast element to vector") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(clasta(SubRegSize::i8Bit,  ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.b, p7, z30.b, z29.b");
+  TEST_SINGLE(clasta(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.h, p7, z30.h, z29.h");
+  TEST_SINGLE(clasta(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.s, p7, z30.s, z29.s");
+  TEST_SINGLE(clasta(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.d, p7, z30.d, z29.d");
+
+  TEST_SINGLE(clastb(SubRegSize::i8Bit,  ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.b, p7, z30.b, z29.b");
+  TEST_SINGLE(clastb(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.h, p7, z30.h, z29.h");
+  TEST_SINGLE(clastb(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.s, p7, z30.s, z29.s");
+  TEST_SINGLE(clastb(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.d, p7, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract element to SIMD&FP scalar") {
