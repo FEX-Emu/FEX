@@ -6282,7 +6282,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x15, 1, &OpDispatchBuilder::PUNPCKHOp<4>},
     {0x16, 1, &OpDispatchBuilder::MOVLHPSOp},
     {0x17, 1, &OpDispatchBuilder::MOVUPSOp},
-    {0x28, 2, &OpDispatchBuilder::MOVUPSOp},
+    {0x28, 2, &OpDispatchBuilder::MOVAPSOp},
     {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float<4, false>},
     {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
     {0x2C, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
