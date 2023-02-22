@@ -1169,39 +1169,17 @@ public:
     SVEPermuteVectorPredicated(0b01000, 0b1, size, zd, pg, ZRegister{rn.Idx()});
   }
 
-  template<FEXCore::ARMEmitter::OpType optype>
-  requires(optype == FEXCore::ARMEmitter::OpType::Constructive)
-  void splice(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zn2) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-
-    constexpr uint32_t Op = 0b0000'0101'0010'1101'100 << 13;
-
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= FEXCore::ToUnderlying(optype) << 16;
-    Instr |= pv.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+  template<OpType optype>
+  requires(optype == OpType::Constructive)
+  void splice(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zn2) {
+    SVEPermuteVectorPredicated(0b01101, 0b0, size, zd, pv, zn);
   }
 
-  template<FEXCore::ARMEmitter::OpType optype>
-  requires(optype == FEXCore::ARMEmitter::OpType::Destructive)
-  void splice(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
-
-    constexpr uint32_t Op = 0b0000'0101'0010'1100'100 << 13;
-
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= FEXCore::ToUnderlying(optype) << 16;
-    Instr |= pv.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+  template<OpType optype>
+  requires(optype == OpType::Destructive)
+  void splice(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd.Idx() == zn.Idx(), "zd needs to equal zn");
+    SVEPermuteVectorPredicated(0b01100, 0b0, size, zd, pv, zm);
   }
 
   // SVE Permute Vector - Predicated
