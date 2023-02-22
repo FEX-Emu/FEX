@@ -451,6 +451,8 @@ public:
 
   template <IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
+  template <size_t ElementSize>
+  void VHSUBPOp(OpcodeArgs);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
