@@ -1254,28 +1254,21 @@ public:
   }
 
   // SVE reverse within elements
-  void revb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8-bit size");
-    SVEReverseWithinElements(0b00, size, pg, zn, zd);
+  void revb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit element size");
+    SVEPermuteVectorPredicated(0b00100, 0b0, size, zd, pg, zn);
   }
-
-  void revh(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit &&
-                        size != FEXCore::ARMEmitter::SubRegSize::i8Bit &&
-                        size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Can't use 8/16/128-bit size");
-
-    SVEReverseWithinElements(0b01, size, pg, zn, zd);
+  void revh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit,
+                        "Can't use 8/16-bit element sizes");
+    SVEPermuteVectorPredicated(0b00101, 0b0, size, zd, pg, zn);
   }
-
-  void revw(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Can't use 8/16/32/128-bit size");
-    SVEReverseWithinElements(0b10, size, pg, zn, zd);
+  void revw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit, "Can't use 8/16/32-bit element sizes");
+    SVEPermuteVectorPredicated(0b00110, 0b0, size, zd, pg, zn);
   }
-
-  void rbit(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    SVEReverseWithinElements(0b11, size, pg, zn, zd);
+  void rbit(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEPermuteVectorPredicated(0b00111, 0b0, size, zd, pg, zn);
   }
 
   // SVE conditionally broadcast element to vector
@@ -3180,19 +3173,6 @@ private:
     Instr |= op3 << 4;
     Instr |= pn.Idx() << 5;
     Instr |= pd.Idx();
-    dc32(Instr);
-  }
-
-  // SVE reverse within elements
-  void SVEReverseWithinElements(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0000'0101'0010'0100'100 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
     dc32(Instr);
   }
 
