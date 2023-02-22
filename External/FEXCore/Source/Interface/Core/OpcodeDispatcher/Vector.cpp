@@ -3216,6 +3216,8 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
 }
 
 template
+void OpDispatchBuilder::VHSUBPOp<4>(OpcodeArgs);
+template
 void OpDispatchBuilder::VHSUBPOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
