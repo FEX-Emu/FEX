@@ -1166,26 +1166,10 @@ public:
     dc32(Instr);
   }
 
-  void compact(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Invalid size");
-    constexpr uint32_t Op = 0b0000'0101'0010'0001'100 << 13;
-
-    const uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 : 0b00;
-
-    uint32_t Instr = Op;
-
-    Instr |= ConvertedSize << 22;
-    Instr |= 0 << 20; // op0
-    Instr |= 0b000 << 17; // op1
-    Instr |= 0 << 16; // op2
-    Instr |= 0 << 13; // op3
-    Instr |= pg.Idx() << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+  void compact(SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
+                        "Invalid element size");
+    SVEPermuteVectorPredicated(0b00001, 0b0, size, zd, pg, zn);
   }
 
   // CPY (scalar)
