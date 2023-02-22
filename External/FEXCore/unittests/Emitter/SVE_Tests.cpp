@@ -1189,6 +1189,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicate
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.h, p6, {z28.h, z29.h}");
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.s, p6, {z28.s, z29.s}");
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.d, p6, {z28.d, z29.d}");
+  TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z31, ZReg::z0),  "splice z30.d, p6, {z31.d, z0.d}");
   //TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29), "splice z30.q, p6, {z28.q, z29.q}");
 
   TEST_SINGLE(splice<OpType::Destructive>(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z30, ZReg::z28),   "splice z30.b, p6, z30.b, z28.b");
@@ -1198,12 +1199,28 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicate
   //TEST_SINGLE(splice<OpType::Destructive>(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z30, ZReg::z28), "splice z30.q, p6, z30.q, z28.q");
 }
 
-TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicated") {
-  // TODO: Implement in emitter.
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE extract element to general register") {
+  TEST_SINGLE(lasta(SubRegSize::i8Bit,  WReg::w30, PReg::p7, ZReg::z30), "lasta w30, p7, z30.b");
+  TEST_SINGLE(lasta(SubRegSize::i16Bit, WReg::w30, PReg::p7, ZReg::z30), "lasta w30, p7, z30.h");
+  TEST_SINGLE(lasta(SubRegSize::i32Bit, WReg::w30, PReg::p7, ZReg::z30), "lasta w30, p7, z30.s");
+  TEST_SINGLE(lasta(SubRegSize::i64Bit, XReg::x30, PReg::p7, ZReg::z30), "lasta x30, p7, z30.d");
+
+  TEST_SINGLE(lastb(SubRegSize::i8Bit,  WReg::w30, PReg::p7, ZReg::z30), "lastb w30, p7, z30.b");
+  TEST_SINGLE(lastb(SubRegSize::i16Bit, WReg::w30, PReg::p7, ZReg::z30), "lastb w30, p7, z30.h");
+  TEST_SINGLE(lastb(SubRegSize::i32Bit, WReg::w30, PReg::p7, ZReg::z30), "lastb w30, p7, z30.s");
+  TEST_SINGLE(lastb(SubRegSize::i64Bit, XReg::x30, PReg::p7, ZReg::z30), "lastb x30, p7, z30.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE extract element to SIMD&FP scalar register") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(lasta(SubRegSize::i8Bit,  BReg::b30, PReg::p7, ZReg::z29), "lasta b30, p7, z29.b");
+  TEST_SINGLE(lasta(SubRegSize::i16Bit, HReg::h30, PReg::p7, ZReg::z29), "lasta h30, p7, z29.h");
+  TEST_SINGLE(lasta(SubRegSize::i32Bit, SReg::s30, PReg::p7, ZReg::z29), "lasta s30, p7, z29.s");
+  TEST_SINGLE(lasta(SubRegSize::i64Bit, DReg::d30, PReg::p7, ZReg::z29), "lasta d30, p7, z29.d");
+
+  TEST_SINGLE(lastb(SubRegSize::i8Bit,  BReg::b30, PReg::p7, ZReg::z29), "lastb b30, p7, z29.b");
+  TEST_SINGLE(lastb(SubRegSize::i16Bit, HReg::h30, PReg::p7, ZReg::z29), "lastb h30, p7, z29.h");
+  TEST_SINGLE(lastb(SubRegSize::i32Bit, SReg::s30, PReg::p7, ZReg::z29), "lastb s30, p7, z29.s");
+  TEST_SINGLE(lastb(SubRegSize::i64Bit, DReg::d30, PReg::p7, ZReg::z29), "lastb d30, p7, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse within elements") {
@@ -1229,11 +1246,27 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse within elements") 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally broadcast element to vector") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(clasta(SubRegSize::i8Bit,  ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.b, p7, z30.b, z29.b");
+  TEST_SINGLE(clasta(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.h, p7, z30.h, z29.h");
+  TEST_SINGLE(clasta(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.s, p7, z30.s, z29.s");
+  TEST_SINGLE(clasta(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clasta z30.d, p7, z30.d, z29.d");
+
+  TEST_SINGLE(clastb(SubRegSize::i8Bit,  ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.b, p7, z30.b, z29.b");
+  TEST_SINGLE(clastb(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.h, p7, z30.h, z29.h");
+  TEST_SINGLE(clastb(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.s, p7, z30.s, z29.s");
+  TEST_SINGLE(clastb(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z29), "clastb z30.d, p7, z30.d, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract element to SIMD&FP scalar") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(clasta(SubRegSize::i8Bit,  VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta b30, p7, b30, z29.b");
+  TEST_SINGLE(clasta(SubRegSize::i16Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta h30, p7, h30, z29.h");
+  TEST_SINGLE(clasta(SubRegSize::i32Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta s30, p7, s30, z29.s");
+  TEST_SINGLE(clasta(SubRegSize::i64Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clasta d30, p7, d30, z29.d");
+
+  TEST_SINGLE(clastb(SubRegSize::i8Bit,  VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb b30, p7, b30, z29.b");
+  TEST_SINGLE(clastb(SubRegSize::i16Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb h30, p7, h30, z29.h");
+  TEST_SINGLE(clastb(SubRegSize::i32Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb s30, p7, s30, z29.s");
+  TEST_SINGLE(clastb(SubRegSize::i64Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "clastb d30, p7, d30, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse doublewords") {
@@ -1241,15 +1274,24 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE reverse doublewords") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract element to general register") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(clasta(SubRegSize::i8Bit,  WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clasta w30, p7, w30, z29.b");
+  TEST_SINGLE(clasta(SubRegSize::i16Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clasta w30, p7, w30, z29.h");
+  TEST_SINGLE(clasta(SubRegSize::i32Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clasta w30, p7, w30, z29.s");
+  TEST_SINGLE(clasta(SubRegSize::i64Bit, XReg::x30, PReg::p7, XReg::x30, ZReg::z29), "clasta x30, p7, x30, z29.d");
+
+  TEST_SINGLE(clastb(SubRegSize::i8Bit,  WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clastb w30, p7, w30, z29.b");
+  TEST_SINGLE(clastb(SubRegSize::i16Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clastb w30, p7, w30, z29.h");
+  TEST_SINGLE(clastb(SubRegSize::i32Bit, WReg::w30, PReg::p7, WReg::w30, ZReg::z29), "clastb w30, p7, w30, z29.s");
+  TEST_SINGLE(clastb(SubRegSize::i64Bit, XReg::x30, PReg::p7, XReg::x30, ZReg::z29), "clastb x30, p7, x30, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Extract") {
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 0), "ext z30.b, z30.b, z29.b, #0");
+  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 0),   "ext z30.b, z30.b, z29.b, #0");
   TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 255), "ext z30.b, z30.b, z29.b, #255");
 
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 0), "ext z30.b, {z28.b, z29.b}, #0");
+  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 0),   "ext z30.b, {z28.b, z29.b}, #0");
   TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 255), "ext z30.b, {z28.b, z29.b}, #255");
+  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z31, ZReg::z0,  255), "ext z30.b, {z31.b, z0.b}, #255");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE permute vector segments") {
