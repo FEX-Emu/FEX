@@ -1172,6 +1172,7 @@ public:
   template<OpType optype>
   requires(optype == OpType::Constructive)
   void splice(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zn2) {
+    LOGMAN_THROW_A_FMT(zn2.Idx() == ((zn.Idx() + 1) % 32), "zn and zn2 must be consecutive registers");
     SVEPermuteVectorPredicated(0b01101, 0b0, size, zd, pv, zn);
   }
 
@@ -1255,7 +1256,7 @@ public:
   template<FEXCore::ARMEmitter::OpType optype>
   requires(optype == FEXCore::ARMEmitter::OpType::Constructive)
   void ext(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zn2, uint8_t Imm) {
-    LOGMAN_THROW_A_FMT((zn.Idx() + 1) == zn2.Idx(), "zn needs to be consecutive");
+    LOGMAN_THROW_A_FMT(zn2.Idx() == ((zn.Idx() + 1) % 32), "zn and zn2 must be consecutive registers");
     SVEPermuteVector(1, zd, zn, Imm);
   }
 

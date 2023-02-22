@@ -1189,6 +1189,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Predicate
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.h, p6, {z28.h, z29.h}");
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.s, p6, {z28.s, z29.s}");
   TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29),  "splice z30.d, p6, {z28.d, z29.d}");
+  TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i64Bit, ZReg::z30, PReg::p6, ZReg::z31, ZReg::z0),  "splice z30.d, p6, {z31.d, z0.d}");
   //TEST_SINGLE(splice<OpType::Constructive>(SubRegSize::i128Bit, ZReg::z30, PReg::p6, ZReg::z28, ZReg::z29), "splice z30.q, p6, {z28.q, z29.q}");
 
   TEST_SINGLE(splice<OpType::Destructive>(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z30, ZReg::z28),   "splice z30.b, p6, z30.b, z28.b");
@@ -1285,11 +1286,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally extract elem
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Extract") {
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 0), "ext z30.b, z30.b, z29.b, #0");
+  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 0),   "ext z30.b, z30.b, z29.b, #0");
   TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Destructive>(ZReg::z30, ZReg::z30, ZReg::z29, 255), "ext z30.b, z30.b, z29.b, #255");
 
-  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 0), "ext z30.b, {z28.b, z29.b}, #0");
+  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 0),   "ext z30.b, {z28.b, z29.b}, #0");
   TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z28, ZReg::z29, 255), "ext z30.b, {z28.b, z29.b}, #255");
+  TEST_SINGLE(ext<FEXCore::ARMEmitter::OpType::Constructive>(ZReg::z30, ZReg::z31, ZReg::z0,  255), "ext z30.b, {z31.b, z0.b}, #255");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE permute vector segments") {
