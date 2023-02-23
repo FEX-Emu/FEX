@@ -1395,7 +1395,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE partition break condition"
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Predicate Misc") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(pnext(SubRegSize::i8Bit, PReg::p15,  PReg::p14, PReg::p15), "pnext p15.b, p14, p15.b");
+  TEST_SINGLE(pnext(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p15), "pnext p15.h, p14, p15.h");
+  TEST_SINGLE(pnext(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p15), "pnext p15.s, p14, p15.s");
+  TEST_SINGLE(pnext(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p15), "pnext p15.d, p14, p15.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate test") {

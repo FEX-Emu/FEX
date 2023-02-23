@@ -1372,8 +1372,11 @@ public:
   }
 
   // SVE Predicate Misc
-  // XXX:
-  // XXX: PNEXT
+  void pnext(SubRegSize size, PRegister pd, PRegister pv, PRegister pn) {
+    LOGMAN_THROW_A_FMT(pd == pn, "pd and pn need to be the same");
+    SVEPredicateMisc(0b1001, 0b00010, pv.Idx(), size, pd);
+  }
+
   // SVE predicate test
   void ptest(PRegister pg, PRegister pn) {
     SVEPredicateMisc(0b0000, pg.Idx() << 1, pn.Idx(), SubRegSize::i16Bit, PReg::p0);
