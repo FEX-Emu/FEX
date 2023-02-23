@@ -1395,28 +1395,37 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE partition break condition"
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Predicate Misc") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(pnext(SubRegSize::i8Bit, PReg::p15,  PReg::p14, PReg::p15), "pnext p15.b, p14, p15.b");
+  TEST_SINGLE(pnext(SubRegSize::i16Bit, PReg::p15, PReg::p14, PReg::p15), "pnext p15.h, p14, p15.h");
+  TEST_SINGLE(pnext(SubRegSize::i32Bit, PReg::p15, PReg::p14, PReg::p15), "pnext p15.s, p14, p15.s");
+  TEST_SINGLE(pnext(SubRegSize::i64Bit, PReg::p15, PReg::p14, PReg::p15), "pnext p15.d, p14, p15.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate test") {
-  TEST_SINGLE(ptest(PReg::p6, PReg::p5), "ptest p6, p5.b");
+  TEST_SINGLE(ptest(PReg::p6, PReg::p5),   "ptest p6, p5.b");
+  TEST_SINGLE(ptest(PReg::p15, PReg::p14), "ptest p15, p14.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate first active") {
-  TEST_SINGLE(pfirst(PReg::p6, PReg::p5, PReg::p6), "pfirst p6.b, p5, p6.b");
+  TEST_SINGLE(pfirst(PReg::p6,  PReg::p5,  PReg::p6),  "pfirst p6.b, p5, p6.b");
+  TEST_SINGLE(pfirst(PReg::p15, PReg::p14, PReg::p15), "pfirst p15.b, p14, p15.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate zero") {
-  TEST_SINGLE(pfalse(PReg::p6), "pfalse p6.b");
+  TEST_SINGLE(pfalse(PReg::p6),  "pfalse p6.b");
+  TEST_SINGLE(pfalse(PReg::p15), "pfalse p15.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate read from FFR (predicated)") {
-  TEST_SINGLE(rdffr(PReg::p6, PReg::p5), "rdffr p6.b, p5/z");
-  TEST_SINGLE(rdffrs(PReg::p6, PReg::p5), "rdffrs p6.b, p5/z");
+  TEST_SINGLE(rdffr(PReg::p6,  PReg::p5.Zeroing()),   "rdffr p6.b, p5/z");
+  TEST_SINGLE(rdffr(PReg::p15, PReg::p14.Zeroing()),  "rdffr p15.b, p14/z");
+  TEST_SINGLE(rdffrs(PReg::p6, PReg::p5.Zeroing()),   "rdffrs p6.b, p5/z");
+  TEST_SINGLE(rdffrs(PReg::p15, PReg::p14.Zeroing()), "rdffrs p15.b, p14/z");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate read from FFR (unpredicated)") {
-  TEST_SINGLE(rdffr(PReg::p6), "rdffr p6.b");
+  TEST_SINGLE(rdffr(PReg::p6),  "rdffr p6.b");
+  TEST_SINGLE(rdffr(PReg::p15), "rdffr p15.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate initialize") {
