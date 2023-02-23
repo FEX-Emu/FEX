@@ -321,7 +321,6 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   const bool HasMODRM = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM);
 
   const bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
-  const bool HasHighXMM = HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_HIGH_XMM_REG);
   const bool Has16BitAddressing = !CTX->Config.Is64BitMode &&
     DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
@@ -444,7 +443,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     // ADDITIONALLY:
     // If there is a REX prefix then that allows extended GPR usage
     CurrentDest->Type = DecodedOperand::OpType::GPR;
-    DecodeInst->Dest.Data.GPR.HighBits = (Is8BitDest && !HasREX && (Op & 0b111) >= 0b100) || HasHighXMM;
+    DecodeInst->Dest.Data.GPR.HighBits = (Is8BitDest && !HasREX && (Op & 0b111) >= 0b100);
     CurrentDest->Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, Op & 0b111, Is8BitDest, HasREX, false, false);
 
     if (CurrentDest->Data.GPR.GPR == FEXCore::X86State::REG_INVALID)
@@ -472,7 +471,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
 
     // Decode the GPR source first
     GPR.Type = DecodedOperand::OpType::GPR;
-    GPR.Data.GPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX) || HasHighXMM;
+    GPR.Data.GPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX);
     GPR.Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_R ? 1 : 0, ModRM.reg, GPR8Bit, HasREX, HasXMMGPR, HasMMGPR);
 
     if (GPR.Data.GPR.GPR == FEXCore::X86State::REG_INVALID)
@@ -482,7 +481,7 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
     // ModRM.Mod != 0b11 == Register-direct addressing
     if (ModRM.mod == 0b11) {
       NonGPR.Type = DecodedOperand::OpType::GPR;
-      NonGPR.Data.GPR.HighBits = (NonGPR8Bit && ModRM.rm >= 0b100 && !HasREX) || HasHighXMM;
+      NonGPR.Data.GPR.HighBits = (NonGPR8Bit && ModRM.rm >= 0b100 && !HasREX);
       NonGPR.Data.GPR.GPR = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, ModRM.rm, NonGPR8Bit, HasREX, HasXMMNonGPR, HasMMNonGPR);
       if (NonGPR.Data.GPR.GPR == FEXCore::X86State::REG_INVALID)
         return false;

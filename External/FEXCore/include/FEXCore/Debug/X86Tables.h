@@ -303,7 +303,7 @@ constexpr InstFlagType FLAGS_X87_FLAGS             = (1ULL << 10);
   constexpr InstFlagType FLAGS_SF_REX_IN_BYTE           = (1ULL << 15);
 
   // XMM subflags
-  constexpr InstFlagType FLAGS_SF_HIGH_XMM_REG       = (1ULL << 11);
+  constexpr InstFlagType FLAGS_SF_UNUSED             = (1ULL << 11); // No assigned behavior yet
   constexpr InstFlagType FLAGS_SF_DST_GPR            = (1ULL << 12);
   constexpr InstFlagType FLAGS_SF_SRC_GPR            = (1ULL << 13);
   constexpr InstFlagType FLAGS_SF_MMX_DST            = (1ULL << 14);
