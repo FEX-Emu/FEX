@@ -5,6 +5,7 @@
 #include "Interface/HLE/Thunks/Thunks.h"
 
 #include <FEXCore/Core/CoreState.h>
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 
@@ -222,7 +223,7 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
     } else {
       if (GPRSpillMask && FPRSpillMask == ~0U) {
         // Optimize the common case where we can spill four registers per instruction
-        auto TmpReg = SRA64[__builtin_ffs(GPRSpillMask)];
+        auto TmpReg = SRA64[FindFirstSetBit(GPRSpillMask)];
 
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
@@ -280,7 +281,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
       if (GPRFillMask && FPRFillMask == ~0U) {
         // Optimize the common case where we can fill four registers per instruction.
         // Use one of the filling static registers before we fill it.
-        auto TmpReg = SRA64[__builtin_ffs(GPRFillMask)];
+        auto TmpReg = SRA64[FindFirstSetBit(GPRFillMask)];
 
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
