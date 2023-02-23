@@ -1340,6 +1340,17 @@ public:
     SVEPropagateBreak(0b0100, 0b11, 1, pd, pg, pn, pm);
   }
 
+  // SVE Partition Break
+  // SVE propagate break to next partition
+  void brkn(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    LOGMAN_THROW_A_FMT(pd == pm, "pd and pm need to be the same");
+    SVEPropagateBreak(0b0001, 0b01, 0, pd, pg, pn, PReg::p8);
+  }
+  void brkns(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    LOGMAN_THROW_A_FMT(pd == pm, "pd and pm need to be the same");
+    SVEPropagateBreak(0b0101, 0b01, 0, pd, pg, pn, PReg::p8);
+  }
+
   // SVE Predicate Misc
   // XXX:
   // XXX: PNEXT
