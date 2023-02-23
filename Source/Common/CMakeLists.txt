@@ -5,6 +5,7 @@ set(SRCS
   EnvironmentLoader.cpp
   FEXServerClient.cpp
   FileFormatCheck.cpp
+  SocketUtil.cpp
   StringUtil.cpp)
 
 add_library(${NAME} STATIC ${SRCS})
