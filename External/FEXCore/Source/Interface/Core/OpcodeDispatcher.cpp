@@ -4945,20 +4945,8 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
 
-      const auto regSize = CTX->HostFeatures.SupportsAVX ?
-        Core::CPUState::XMM_AVX_REG_SIZE :
-        Core::CPUState::XMM_SSE_REG_SIZE;
-
       // Load the full register size if it is a XMM register source.
       Src = LoadXMMRegister(gprIndex);
-
-      // If we are wanting a high-index then we need to extract an element from the upper half of the reg.
-      // We can only extract an element size here.
-      // TODO: Have the instruction doing this load do the extract instead of here.
-      // We don't have enough information here to know if we can avoid this dup.
-      if (highIndex && OpSize < Core::CPUState::XMM_SSE_REG_SIZE) {
-        Src = _VDupElement(regSize, OpSize, Src, 1);
-      }
 
       // Now extract the subregister if it was a partial load /smaller/ than SSE size
       // TODO: Instead of doing the VMov implicitly on load, hunt down all use cases that require partial loads and do it after load.
