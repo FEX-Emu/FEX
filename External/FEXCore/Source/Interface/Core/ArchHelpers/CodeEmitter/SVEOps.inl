@@ -1351,6 +1351,26 @@ public:
     SVEPropagateBreak(0b0101, 0b01, 0, pd, pg, pn, PReg::p8);
   }
 
+  // SVE partition break condition
+  void brka(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPropagateBreak(0b0001, 0b01, 0, pd, pg, pn, PReg::p0);
+  }
+  void brka(PRegister pd, PRegisterMerge pg, PRegister pn) {
+    SVEPropagateBreak(0b0001, 0b01, 1, pd, pg, pn, PReg::p0);
+  }
+  void brkas(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPropagateBreak(0b0101, 0b01, 0, pd, pg, pn, PReg::p0);
+  }
+  void brkb(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPropagateBreak(0b1001, 0b01, 0, pd, pg, pn, PReg::p0);
+  }
+  void brkb(PRegister pd, PRegisterMerge pg, PRegister pn) {
+    SVEPropagateBreak(0b1001, 0b01, 1, pd, pg, pn, PReg::p0);
+  }
+  void brkbs(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPropagateBreak(0b1101, 0b01, 0, pd, pg, pn, PReg::p0);
+  }
+
   // SVE Predicate Misc
   // XXX:
   // XXX: PNEXT

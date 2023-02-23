@@ -1384,6 +1384,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE propagate break to next pa
  TEST_SINGLE(brkns(PReg::p15, PReg::p14.Zeroing(), PReg::p13, PReg::p15), "brkns p15.b, p14/z, p13.b, p15.b");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE partition break condition") {
+  TEST_SINGLE(brka(PReg::p15, PReg::p14.Zeroing(), PReg::p13),  "brka p15.b, p14/z, p13.b");
+  TEST_SINGLE(brka(PReg::p15, PReg::p14.Merging(), PReg::p13),  "brka p15.b, p14/m, p13.b");
+  TEST_SINGLE(brkas(PReg::p15, PReg::p14.Zeroing(), PReg::p13), "brkas p15.b, p14/z, p13.b");
+
+  TEST_SINGLE(brkb(PReg::p15, PReg::p14.Zeroing(), PReg::p13),  "brkb p15.b, p14/z, p13.b");
+  TEST_SINGLE(brkb(PReg::p15, PReg::p14.Merging(), PReg::p13),  "brkb p15.b, p14/m, p13.b");
+  TEST_SINGLE(brkbs(PReg::p15, PReg::p14.Zeroing(), PReg::p13), "brkbs p15.b, p14/z, p13.b");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Predicate Misc") {
   // TODO: Implement in emitter.
 }
