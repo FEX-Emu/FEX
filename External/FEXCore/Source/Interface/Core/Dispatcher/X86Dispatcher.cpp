@@ -416,6 +416,13 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
 }
 
+FEXCore::Context::Context::JITRegionPairs X86Dispatcher::GetDispatcherRegion() const {
+  return {
+    .Base = reinterpret_cast<uint64_t>(getCode()),
+    .Size = MAX_DISPATCHER_CODE_SIZE
+  };
+}
+
 // Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
 static thread_local Xbyak::CodeGenerator emit(1, &emit); // actual emit target set with setNewBuffer
 

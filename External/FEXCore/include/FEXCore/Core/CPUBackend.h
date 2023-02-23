@@ -7,6 +7,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <cstdint>
@@ -155,6 +156,8 @@ namespace CPU {
     virtual void ClearRelocations() {}
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
+
+    void GetJITRegions(std::vector<Context::Context::JITRegionPairs> *RegionPairs) const;
 
   protected:
     // Max spill slot size in bytes. We need at most 32 bytes

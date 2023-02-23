@@ -1,4 +1,5 @@
 #pragma once
+#include "FEXCore/Core/UContext.h"
 #include <functional>
 #include <stdint.h>
 #include <string>
@@ -281,6 +282,23 @@ namespace FEXCore::Context {
        * @param Definitions A vector of thunk definitions that the frontend controls
        */
       FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
+
+      // TODO: Fetching thread signal data should be moved to the frontend once guest signal handling is moved there.
+      struct FrameData {
+        uint64_t sigreturn;
+        FEXCore::x86_64::ucontext_t GuestContext;
+        siginfo_t GuestInfo;
+        union {
+          FEXCore::x86_64::xstate AVXState;
+          FEXCore::x86_64::_libc_fpstate FPState;
+        } FPState;
+      };
+
+      struct JITRegionPairs {
+        uint64_t Base, Size;
+      };
+      FEX_DEFAULT_VISIBILITY virtual FrameData* FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, FrameData *Frame) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void FetchJITSections(FEXCore::Core::InternalThreadState *Thread, JITRegionPairs *Dispatcher, std::vector<JITRegionPairs> *RegionPairs) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void SetVDSOSigReturn(const VDSOSigReturn &Pointers) = 0;
     private:

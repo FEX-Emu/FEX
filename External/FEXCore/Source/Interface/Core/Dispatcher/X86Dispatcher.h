@@ -19,6 +19,8 @@ class X86Dispatcher final : public Dispatcher, public Xbyak::CodeGenerator {
     size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) override;
 
     virtual ~X86Dispatcher() override;
+
+    FEXCore::Context::Context::JITRegionPairs GetDispatcherRegion() const override;
 };
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/Context.h>
 #include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <cstdint>
@@ -60,6 +61,7 @@ public:
   bool HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
   bool HandleSIGILL(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
   bool HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
+  Context::Context::FrameData* FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, Context::Context::FrameData *SignalFrame);
 
   bool IsAddressInDispatcher(uint64_t Address) const {
     return Address >= Start && Address < End;
@@ -84,6 +86,7 @@ public:
   virtual void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
     CallbackPtr(Frame, RIP);
   }
+  virtual FEXCore::Context::Context::JITRegionPairs GetDispatcherRegion() const = 0;
 
 protected:
   Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config)

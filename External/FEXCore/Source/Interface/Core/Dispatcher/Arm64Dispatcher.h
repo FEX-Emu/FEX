@@ -30,6 +30,8 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
 
   void EmitDispatcher();
 
+  FEXCore::Context::Context::JITRegionPairs GetDispatcherRegion() const override;
+
   protected:
     void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) override;
 

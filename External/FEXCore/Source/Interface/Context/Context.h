@@ -192,6 +192,8 @@ namespace FEXCore::Context {
       CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
       void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
+      FrameData* FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, FrameData *SignalFrame) override;
+      void FetchJITSections(FEXCore::Core::InternalThreadState *Thread, JITRegionPairs *Dispatcher, std::vector<JITRegionPairs> *RegionPairs) override;
 
     public:
     friend class FEXCore::HLE::SyscallHandler;

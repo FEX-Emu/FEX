@@ -1115,6 +1115,44 @@ bool Dispatcher::HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, i
   return true;
 }
 
+Context::Context::FrameData* Dispatcher::FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, Context::Context::FrameData *SignalFrame) {
+
+  // Setup a context backup without backing anything up on the real stack.
+  // We aren't setting up a host signal context, we just want to setup the data.
+  ArchHelpers::Context::ContextBackup TemporaryBackup{};
+  // Retain the action pointer so we can see it when we return
+  TemporaryBackup.Signal = Signal;
+
+  TemporaryBackup.Flags = 0;
+  TemporaryBackup.FPStateLocation = 0;
+  TemporaryBackup.UContextLocation = 0;
+  TemporaryBackup.SigInfoLocation = 0;
+
+  auto Frame = Thread->CurrentFrame;
+
+  // siginfo_t
+  siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
+
+  // Backup where we think the RIP currently is
+  TemporaryBackup.OriginalRIP = ReconstructRIPFromContext(Frame, ucontext);
+
+  // Calculate eflags upfront.
+  uint32_t eflags = 0;
+  for (size_t i = 0; i < Core::CPUState::NUM_EFLAG_BITS; ++i) {
+    eflags |= Frame->State.flags[i] << i;
+  }
+
+  stack_t FakeAltStack{};
+  GuestSigAction FakeSigAction{};
+
+  // Treat all frames as 64-bit frames. Makes it easier for whatever is parsing this data.
+  return reinterpret_cast<Context::Context::FrameData*>(SetupFrame_x64(Thread, &TemporaryBackup,
+                 Frame, Signal, HostSigInfo,
+                 ucontext, &FakeSigAction, &FakeAltStack,
+                 reinterpret_cast<uint64_t>(SignalFrame) + sizeof(*SignalFrame),
+                 eflags));
+}
+
 bool Dispatcher::HandleSIGILL(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
 
   if (ArchHelpers::Context::GetPc(ucontext) == SignalHandlerReturnAddress ||

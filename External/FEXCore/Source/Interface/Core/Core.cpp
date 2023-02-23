@@ -1357,6 +1357,15 @@ namespace FEXCore::Context {
     ThunkHandler->AppendThunkDefinitions(Definitions);
   }
 
+  Context::Context::FrameData* ContextImpl::FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, Context::Context::FrameData *SignalFrame) {
+    return Dispatcher->FetchThreadSignalData(Thread, Signal, info, ucontext, SignalFrame);
+  }
+
+  void ContextImpl::FetchJITSections(FEXCore::Core::InternalThreadState *Thread, Context::Context::JITRegionPairs *DispatcherRegion, std::vector<Context::Context::JITRegionPairs> *RegionPairs) {
+    *DispatcherRegion = Dispatcher->GetDispatcherRegion();
+    Thread->CPUBackend->GetJITRegions(RegionPairs);
+  }
+
   void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
     Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
     Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
