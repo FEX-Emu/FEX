@@ -192,6 +192,7 @@ namespace FEXCore::Context {
       CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
       void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
+      void FetchJITSections(FEXCore::Core::InternalThreadState *Thread, JITRegionPairs *Dispatcher, fextl::vector<JITRegionPairs> *RegionPairs) override;
 
     public:
     friend class FEXCore::HLE::SyscallHandler;

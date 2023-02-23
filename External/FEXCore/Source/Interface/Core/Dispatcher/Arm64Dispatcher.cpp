@@ -48,6 +48,13 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispa
   EmitDispatcher();
 }
 
+FEXCore::Context::Context::JITRegionPairs Arm64Dispatcher::GetDispatcherRegion() const {
+  return {
+    .Base = reinterpret_cast<uint64_t>(GetBufferBase()),
+    .Size = MAX_DISPATCHER_CODE_SIZE
+  };
+}
+
 void Arm64Dispatcher::EmitDispatcher() {
 #ifdef VIXL_DISASSEMBLER
   const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();

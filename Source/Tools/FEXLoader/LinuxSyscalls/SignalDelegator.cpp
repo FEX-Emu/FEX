@@ -5,6 +5,9 @@ desc: Handles host -> host and host -> guest signal routing, emulates procmask &
 $end_info$
 */
 
+#include "Common/Config.h"
+#include "Common/FEXServerClient.h"
+
 #include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Core/Context.h>
@@ -30,6 +33,7 @@ $end_info$
 #include <syscall.h>
 #include <sys/mman.h>
 #include <sys/signalfd.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <utility>
 
@@ -1539,7 +1543,6 @@ namespace FEX::HLE {
     else if (Handler.OldAction.handler == SIG_DFL &&
       (Handler.DefaultBehaviour == DEFAULT_COREDUMP ||
        Handler.DefaultBehaviour == DEFAULT_TERM)) {
-
       // In the case of signals that cause coredump or terminate, save telemetry early.
       // FEX is hard crashing at this point and won't hit regular shutdown routines.
       // Add the signal to the crash mask.
@@ -1547,6 +1550,9 @@ namespace FEX::HLE {
       if (!ApplicationName.empty()) {
         FEXCore::Telemetry::Shutdown(ApplicationName);
       }
+
+      // Do work with the core dump service.
+      CoreDumpService(Thread, Signal, Info, UContext);
 
       // Reassign back to DFL and crash
       signal(Signal, SIG_DFL);
@@ -1559,6 +1565,89 @@ namespace FEX::HLE {
     }
     else {
       Handler.OldAction.handler(Signal);
+    }
+  }
+
+  SignalDelegator::SigFrame_x64* SignalDelegator::FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SignalDelegator::SigFrame_x64 *SignalFrame) {
+    // Setup a context backup without backing anything up on the real stack.
+    // We aren't setting up a host signal context, we just want to setup the data.
+    ArchHelpers::Context::ContextBackup TemporaryBackup{};
+    // Retain the action pointer so we can see it when we return
+    TemporaryBackup.Signal = Signal;
+
+    TemporaryBackup.Flags = 0;
+    TemporaryBackup.FPStateLocation = 0;
+    TemporaryBackup.UContextLocation = 0;
+    TemporaryBackup.SigInfoLocation = 0;
+
+    auto Frame = Thread->CurrentFrame;
+
+    // siginfo_t
+    siginfo_t *HostSigInfo = reinterpret_cast<siginfo_t*>(info);
+
+    // Backup where we think the RIP currently is
+    TemporaryBackup.OriginalRIP = CTX->RestoreRIPFromHostPC(Thread, ArchHelpers::Context::GetPc(ucontext));
+
+    // Calculate eflags upfront.
+    uint32_t eflags = 0;
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_EFLAG_BITS; ++i) {
+      eflags |= Frame->State.flags[i] << i;
+    }
+
+    stack_t FakeAltStack{};
+    GuestSigAction FakeSigAction{};
+
+    // Treat all frames as 64-bit frames. Makes it easier for whatever is parsing this data.
+    return reinterpret_cast<SignalDelegator::SigFrame_x64*>(SetupFrame_x64(Thread, &TemporaryBackup,
+                   Frame, Signal, HostSigInfo,
+                   ucontext, &FakeSigAction, &FakeAltStack,
+                   reinterpret_cast<uint64_t>(SignalFrame) + sizeof(*SignalFrame),
+                   eflags));
+  }
+
+  void SignalDelegator::CoreDumpService(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) {
+    FEX_CONFIG_OPT(CooperativeCoreDump, COOPERATIVECOREDUMP);
+
+    if (!CooperativeCoreDump) {
+      return;
+    }
+
+    int CoredumpFD = FEXServerClient::RequestCoredumpFD(FEXServerClient::GetServerFD());
+    if (CoredumpFD != -1) {
+      FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+
+      // Send the host frame.
+      ucontext_t* _context = (ucontext_t*)UContext;
+      siginfo_t *_info = (siginfo_t*)Info;
+      FEXServerClient::CoreDump::SendHostContext(CoredumpFD, _info, &_context->uc_mcontext);
+
+      // Send the guest frame.
+      SigFrame_x64 GuestFrameData{};
+      auto GuestFrame = FetchThreadSignalData(Thread, Signal, Info, UContext, &GuestFrameData);
+      FEXServerClient::CoreDump::SendGuestContext(CoredumpFD, &GuestFrame->GuestInfo, &GuestFrame->GuestContext.uc_mcontext, sizeof(GuestFrame->GuestContext.uc_mcontext), Is64BitMode());
+
+      // Send the command line arguments.
+      FEXServerClient::CoreDump::SendCommandLineFD(CoredumpFD);
+      // Send the program description information.
+      FEXServerClient::CoreDump::SendDescPacket(CoredumpFD, Signal, Is64BitMode());
+      // Send FD for mapped files.
+      FEXServerClient::CoreDump::SendMapFilesFD(CoredumpFD);
+      // Send FD for memory maps.
+      FEXServerClient::CoreDump::SendMapsFD(CoredumpFD);
+
+      // Send the JIT regions.
+      FEXCore::Context::Context::JITRegionPairs Dispatcher{};
+      fextl::vector<FEXCore::Context::Context::JITRegionPairs> JITRegionPairs{};
+      Thread->CTX->FetchJITSections(Thread, &Dispatcher, &JITRegionPairs);
+      FEXServerClient::CoreDump::SendJITRegions(CoredumpFD, &Dispatcher, &JITRegionPairs);
+
+      // Ask FEXServer to unwind for us.
+      FEXServerClient::CoreDump::SendContextUnwind(CoredumpFD);
+
+      // Wait for FEXServer to tell us to shutdown.
+      FEXServerClient::CoreDump::WaitForRequests(CoredumpFD);
+      shutdown(CoredumpFD, SHUT_RDWR);
+      close(CoredumpFD);
     }
   }
 

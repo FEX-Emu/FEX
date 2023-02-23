@@ -50,6 +50,8 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
     }
   }
 
+  FEXCore::Context::Context::JITRegionPairs GetDispatcherRegion() const override;
+
   private:
     // Long division helpers
     uint64_t LUDIVHandlerAddress{};

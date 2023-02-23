@@ -1,8 +1,10 @@
+#include "CoreDumpService.h"
 #include "FEXHeaderUtils/Syscalls.h"
 #include "Logger.h"
 #include "SquashFS.h"
 
 #include "Common/FEXServerClient.h"
+#include "Common/SocketUtil.h"
 
 #include <atomic>
 #include <fcntl.h>
@@ -282,46 +284,12 @@ namespace ProcessPipe {
   }
 
   void HandleSocketData(int Socket) {
-    std::vector<uint8_t> Data(1500);
-    size_t CurrentRead{};
+    fextl::vector<uint8_t> Data(1500);
 
     // Get the current number of FDs of the process before we start handling sockets.
     GetMaxFDs();
 
-    while (true) {
-      struct iovec iov {
-        .iov_base = &Data.at(CurrentRead),
-        .iov_len = Data.size() - CurrentRead,
-      };
-
-      struct msghdr msg {
-        .msg_name = nullptr,
-        .msg_namelen = 0,
-        .msg_iov = &iov,
-        .msg_iovlen = 1,
-      };
-
-      ssize_t Read = recvmsg(Socket, &msg, 0);
-      if (Read <= msg.msg_iov->iov_len) {
-        CurrentRead += Read;
-        if (CurrentRead == Data.size()) {
-          Data.resize(Data.size() << 1);
-        }
-        else {
-          // No more to read
-          break;
-        }
-      }
-      else {
-        if (errno == EWOULDBLOCK) {
-          // no error
-        }
-        else {
-          perror("read");
-        }
-        break;
-      }
-    }
+    size_t CurrentRead = SocketUtil::ReadDataFromSocket(Socket, Data);
 
     size_t CurrentOffset{};
     while (CurrentOffset < CurrentRead) {
@@ -425,6 +393,29 @@ namespace ProcessPipe {
           }
 
           CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+          break;
+        }
+        case FEXServerClient::PacketType::TYPE_GET_COREDUMP_FD: {
+          // Coredump FD only should be returned if FEXServer is running in foreground mode.
+          // Otherwise the logs won't be visible regardless of receiving them.
+          if (Foreground) {
+            auto Result = CoreDumpService::CreateCoreDumpService();
+            SendFDSuccessPacket(Socket, Result);
+
+            // Close the sent socket now that it was passed over.
+            CoreDumpService::ShutdownFD(Result);
+
+            // Check if we need to increase the FD limit.
+            ++NumFilesOpened;
+            CheckRaiseFDLimit();
+          }
+          else {
+            // Log thread isn't running. Let FEXInterpreter know it can't have one.
+            SendEmptyErrorPacket(Socket);
+          }
+
+          CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+
           break;
         }
           // Invalid
