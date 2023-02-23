@@ -1,27 +1,31 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "XMM0": ["0x4142434445464748", "0x6162636465666768"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
+    "XMM0": ["0x4142434445464748", "0x6162636465666768"],
+    "XMM1": ["0x6162636465666768", "0xFFFFFFFFFFFFFFFF"]
   }
 }
 %endif
 
-mov rdx, 0xe0000000
+lea rdx, [rel .data]
 
-mov rax, 0x4142434445464748
-mov [rdx + 8 * 0], rax
-mov rax, 0x5152535455565758
-mov [rdx + 8 * 1], rax
+; Into register
+movaps xmm0, [rdx]
+movhps xmm0, [rdx + 16]
 
-mov rax, 0x6162636465666768
-mov [rdx + 8 * 2], rax
-mov rax, 0x7172737475767778
-mov [rdx + 8 * 3], rax
-
-movaps xmm0, [rdx + 8 * 0]
-movhps xmm0, [rdx + 8 * 2]
+; Into memory (should only store upper half of xmm into 64-bit region of memory)
+movhps [rdx + 32], xmm0
+movaps xmm1, [rdx + 32]
 
 hlt
+
+align 16
+.data:
+dq 0x4142434445464748
+dq 0x5152535455565758
+
+dq 0x6162636465666768
+dq 0x7172737475767778
+
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xFFFFFFFFFFFFFFFF

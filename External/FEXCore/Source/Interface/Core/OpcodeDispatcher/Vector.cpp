@@ -79,16 +79,9 @@ void OpDispatchBuilder::MOVUPSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1);
 }
 
-void OpDispatchBuilder::MOVLHPSOp(OpcodeArgs) {
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, 8);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, 8);
-  auto Result = _VInsElement(16, 8, 1, 0, Dest, Src);
-  StoreResult(FPRClass, Op, Result, 8);
-}
-
 void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 128bit
+
   if (Op->Dest.IsGPR()) {
     // If the destination is a GPR then the source is memory
     // xmm1[127:64] = src

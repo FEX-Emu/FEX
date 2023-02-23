@@ -304,7 +304,6 @@ public:
   // SSE
   void MOVAPSOp(OpcodeArgs);
   void MOVUPSOp(OpcodeArgs);
-  void MOVLHPSOp(OpcodeArgs);
   void MOVLPOp(OpcodeArgs);
   void MOVSHDUPOp(OpcodeArgs);
   void MOVSLDUPOp(OpcodeArgs);
