@@ -1375,51 +1375,43 @@ public:
   // XXX:
   // XXX: PNEXT
   // SVE predicate test
-  void ptest(FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0001'0000'11 << 14;
-    SVEPredicateTest(Op, 0, 1, 0b0000, pg, pn);
+  void ptest(PRegister pg, PRegister pn) {
+    SVEPredicateMisc(0b0000, pg.Idx() << 1, pn.Idx(), SubRegSize::i16Bit, PReg::p0);
   }
 
   // SVE predicate first active
-  void pfirst(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::PRegister pn) {
+  void pfirst(PRegister pd, PRegister pg, PRegister pn) {
     LOGMAN_THROW_A_FMT(pd == pn, "pd and pn need to be the same");
-    constexpr uint32_t Op = 0b0010'0101'0001'1000'1100 << 12;
-    SVEPredicateReadFFRPredicated(Op, 0, 1, pg, pd);
+    SVEPredicateMisc(0b1000, 0b00000, pg.Idx(), SubRegSize::i16Bit, pd);
   }
 
   // SVE predicate zero
-  void pfalse(FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0010'0101'0001'1000'1110'01 << 10;
-    SVEPredicateReadFFR(Op, 0, 0, pd);
+  void pfalse(PRegister pd) {
+    SVEPredicateMisc(0b1000, 0b10010, 0b0000, SubRegSize::i8Bit, pd);
   }
 
   // SVE predicate read from FFR (predicated)
-  void rdffr(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegister pg) {
-    constexpr uint32_t Op = 0b0010'0101'0001'1000'1111 << 12;
-    SVEPredicateReadFFRPredicated(Op, 0, 0, pg, pd);
+  void rdffr(PRegister pd, PRegisterZero pg) {
+    SVEPredicateMisc(0b1000, 0b11000, pg.Idx(), SubRegSize::i8Bit, pd);
   }
 
-  void rdffrs(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegister pg) {
-    constexpr uint32_t Op = 0b0010'0101'0001'1000'1111 << 12;
-    SVEPredicateReadFFRPredicated(Op, 0, 1, pg, pd);
+  void rdffrs(PRegister pd, PRegisterZero pg) {
+    SVEPredicateMisc(0b1000, 0b11000, pg.Idx(), SubRegSize::i16Bit, pd);
   }
 
   // SVE predicate read from FFR (unpredicated)
-  void rdffr(FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0010'0101'0001'1001'1111 << 12;
-    SVEPredicateReadFFR(Op, 0, 0, pd);
+  void rdffr(PRegister pd) {
+    SVEPredicateMisc(0b1001, 0b11000, 0b0000, SubRegSize::i8Bit, pd);
   }
 
   // SVE predicate initialize
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ptrue(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PredicatePattern pattern) {
-    constexpr uint32_t Op = 0b0010'0101'0001'1000'1110 << 12;
-    SVEPredicateInit(Op, size, 0, pattern, pd);
+  template <SubRegSize size>
+  void ptrue(PRegister pd, PredicatePattern pattern) {
+    SVEPredicateMisc(0b1000, 0b10000, FEXCore::ToUnderlying(pattern), size, pd);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ptrues(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PredicatePattern pattern) {
-    constexpr uint32_t Op = 0b0010'0101'0001'1000'1110 << 12;
-    SVEPredicateInit(Op, size, 1, pattern, pd);
+  template <SubRegSize size>
+  void ptrues(PRegister pd, PredicatePattern pattern) {
+    SVEPredicateMisc(0b1001, 0b10000, FEXCore::ToUnderlying(pattern), size, pd);
   }
 
   // SVE Integer Compare - Scalars
@@ -3705,45 +3697,6 @@ private:
     Instr |= zt.Idx();
     dc32(Instr);
   }
-  void SVEPredicateTest(uint32_t Op, uint32_t op, uint32_t S, uint32_t opc2, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::PRegister pn) {
-    uint32_t Instr = Op;
-
-    Instr |= op << 23;
-    Instr |= S << 22;
-    Instr |= pg.Idx() << 10;
-    Instr |= pn.Idx() << 5;
-    Instr |= opc2;
-    dc32(Instr);
-  }
-
-  void SVEPredicateReadFFRPredicated(uint32_t Op, uint32_t op, uint32_t S, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::PRegister pd) {
-    uint32_t Instr = Op;
-
-    Instr |= op << 23;
-    Instr |= S << 22;
-    Instr |= pg.Idx() << 5;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
-
-  void SVEPredicateReadFFR(uint32_t Op, uint32_t op, uint32_t S, FEXCore::ARMEmitter::PRegister pd) {
-    uint32_t Instr = Op;
-
-    Instr |= op << 23;
-    Instr |= S << 16;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
-
-  void SVEPredicateInit(uint32_t Op, FEXCore::ARMEmitter::SubRegSize size, uint32_t S, FEXCore::ARMEmitter::PredicatePattern pattern, FEXCore::ARMEmitter::PRegister pd) {
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= S << 16;
-    Instr |= FEXCore::ToUnderlying(pattern) << 5;
-    Instr |= pd.Idx();
-    dc32(Instr);
-  }
 
   void SVEIndexGeneration(uint32_t op, SubRegSize size, ZRegister zd, int32_t imm5, int32_t imm5b) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "INDEX cannot use 128-bit element sizes");
@@ -4109,6 +4062,19 @@ private:
     Instr |= pm.Idx() << 16;
     Instr |= pg.Idx() << 10;
     Instr |= pn.Idx() << 5;
+    Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEPredicateMisc(uint32_t op0, uint32_t op2, uint32_t op3, SubRegSize size, PRegister pd) {
+    // Note: op2 combines op1 like [op1:op2], since they're adjacent.
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+
+    uint32_t Instr = 0b0010'0101'0001'0000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= op0 << 16;
+    Instr |= op2 << 9;
+    Instr |= op3 << 5;
     Instr |= pd.Idx();
     dc32(Instr);
   }
