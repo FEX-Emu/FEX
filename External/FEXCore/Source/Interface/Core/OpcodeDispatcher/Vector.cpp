@@ -3327,58 +3327,74 @@ void OpDispatchBuilder::VPHADDSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
-void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
-  uint8_t ElementSize = 2;
-  uint8_t NumElements = Size / ElementSize;
+OrderedNode* OpDispatchBuilder::PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                                             const X86Tables::DecodedOperand& Src2Op) {
+  const auto Size = GetSrcSize(Op);
+  const uint8_t ElementSize = 2;
+  const uint8_t NumElements = Size / ElementSize;
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
   // This is a bit complicated since AArch64 doesn't support a pairwise subtract
-  auto Dest_Neg = _VNeg(Size, ElementSize, Dest);
-  auto Src_Neg = _VNeg(Size, ElementSize, Src);
+  OrderedNode *Src1_Neg = _VNeg(Size, ElementSize, Src1);
+  OrderedNode *Src2_Neg = _VNeg(Size, ElementSize, Src2);
 
   // Now we need to swizzle the values
-  OrderedNode *Swizzle_Dest = Dest;
-  OrderedNode *Swizzle_Src = Src;
+  OrderedNode *Swizzle_Src1 = Src1;
+  OrderedNode *Swizzle_Src2 = Src2;
 
   // Odd elements turn in to negated elements
   for (size_t i = 1; i < NumElements; i += 2) {
-    Swizzle_Dest = _VInsElement(Size, ElementSize, i, i, Swizzle_Dest, Dest_Neg);
-    Swizzle_Src = _VInsElement(Size, ElementSize, i, i, Swizzle_Src, Src_Neg);
+    Swizzle_Src1 = _VInsElement(Size, ElementSize, i, i, Swizzle_Src1, Src1_Neg);
+    Swizzle_Src2 = _VInsElement(Size, ElementSize, i, i, Swizzle_Src2, Src2_Neg);
   }
 
-  Dest = Swizzle_Dest;
-  Src = Swizzle_Src;
+  Src1 = Swizzle_Src1;
+  Src2 = Swizzle_Src2;
 
   if (Size == 8) {
     // Implementation is more efficient for 8byte registers
-    auto Dest_Larger = _VSXTL(Size * 2, 2, Dest);
-    auto Src_Larger = _VSXTL(Size * 2, 2, Src);
+    OrderedNode *Src1_Larger = _VSXTL(Size * 2, 2, Src1);
+    OrderedNode *Src2_Larger = _VSXTL(Size * 2, 2, Src2);
 
-    OrderedNode *AddRes = _VAddP(Size * 2, 4, Dest_Larger, Src_Larger);
-
-    // Saturate back down to the result
-    OrderedNode *Res = _VSQXTN(Size * 2, 4, AddRes);
-    StoreResult(FPRClass, Op, Res, -1);
-  }
-  else {
-    auto Dest_Larger = _VSXTL(Size, 2, Dest);
-    auto Dest_Larger_H = _VSXTL2(Size, 2, Dest);
-
-    auto Src_Larger = _VSXTL(Size, 2, Src);
-    auto Src_Larger_H = _VSXTL2(Size, 2, Src);
-
-    OrderedNode *AddRes_L = _VAddP(Size, 4, Dest_Larger, Dest_Larger_H);
-    OrderedNode *AddRes_H = _VAddP(Size, 4, Src_Larger, Src_Larger_H);
+    OrderedNode *AddRes = _VAddP(Size * 2, 4, Src1_Larger, Src2_Larger);
 
     // Saturate back down to the result
-    OrderedNode *Res = _VSQXTN(Size, 4, AddRes_L);
-    Res = _VSQXTN2(Size, 4, Res, AddRes_H);
-
-    StoreResult(FPRClass, Op, Res, -1);
+    return _VSQXTN(Size * 2, 4, AddRes);
   }
+
+  OrderedNode *Src1_Larger = _VSXTL(Size, 2, Src1);
+  OrderedNode *Src1_Larger_H = _VSXTL2(Size, 2, Src1);
+
+  OrderedNode *Src2_Larger = _VSXTL(Size, 2, Src2);
+  OrderedNode *Src2_Larger_H = _VSXTL2(Size, 2, Src2);
+
+  OrderedNode *AddRes_L = _VAddP(Size, 4, Src1_Larger, Src1_Larger_H);
+  OrderedNode *AddRes_H = _VAddP(Size, 4, Src2_Larger, Src2_Larger_H);
+
+  // Saturate back down to the result
+  OrderedNode *Res = _VSQXTN(Size, 4, AddRes_L);
+  return _VSQXTN2(Size, 4, Res, AddRes_H);
+}
+
+void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
+  OrderedNode *Result = PHSUBSOpImpl(Op, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = PHSUBSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  OrderedNode *Dest = Result;
+  if (Is256Bit) {
+    Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
+    Dest = _VInsElement(DstSize, 8, 2, 1, Dest, Result);
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
 }
 
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {

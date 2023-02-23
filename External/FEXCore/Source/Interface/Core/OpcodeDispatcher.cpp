@@ -5967,6 +5967,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::VPHSUBOp<2>},
     {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::VPHSUBOp<4>},
+    {OPD(2, 0b01, 0x07), 1, &OpDispatchBuilder::VPHSUBSWOp},
 
     {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::VPSIGN<1>},
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::VPSIGN<2>},

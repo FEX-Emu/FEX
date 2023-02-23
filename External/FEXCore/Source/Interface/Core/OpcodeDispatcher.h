@@ -494,6 +494,7 @@ public:
 
   template <size_t ElementSize>
   void VPHSUBOp(OpcodeArgs);
+  void VPHSUBSWOp(OpcodeArgs);
 
   void VPMADDWDOp(OpcodeArgs);
 
@@ -829,6 +830,9 @@ private:
 
   OrderedNode* PHSUBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                            const X86Tables::DecodedOperand& Src2, size_t ElementSize);
+
+  OrderedNode* PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                            const X86Tables::DecodedOperand& Src2Op);
 
   OrderedNode* PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                              const X86Tables::DecodedOperand& Src2);
