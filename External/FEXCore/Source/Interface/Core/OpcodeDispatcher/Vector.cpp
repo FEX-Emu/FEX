@@ -3390,6 +3390,20 @@ void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  OrderedNode *Result = PHSUBSOpImpl(Op, Op->Src[0], Op->Src[1]);
+  OrderedNode *Dest = Result;
+  if (Is256Bit) {
+    Dest = _VInsElement(DstSize, 8, 1, 2, Result, Result);
+    Dest = _VInsElement(DstSize, 8, 2, 1, Dest, Result);
+  }
+
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
   // The documentation is actually incorrect in how this instruction operates
   // It strongly implies that the `abs(dest[i] - src[i])` operates in 8bit space

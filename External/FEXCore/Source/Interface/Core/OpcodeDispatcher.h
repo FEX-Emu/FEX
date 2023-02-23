@@ -495,6 +495,7 @@ public:
 
   template <size_t ElementSize>
   void VPHSUBOp(OpcodeArgs);
+  void VPHSUBSWOp(OpcodeArgs);
 
   void VPMADDWDOp(OpcodeArgs);
 
