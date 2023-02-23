@@ -10,7 +10,8 @@ set(SRCS
 if (NOT MINGW_BUILD)
   list (APPEND SRCS
     FEXServerClient.cpp
-    FileFormatCheck.cpp)
+    FileFormatCheck.cpp
+    SocketUtil.cpp)
 endif()
 
 add_library(${NAME} STATIC ${SRCS})

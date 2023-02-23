@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "ArgumentLoader.h"
+#include "CoreDumpService.h"
 #include "Logger.h"
 #include "PipeScanner.h"
 #include "ProcessPipe.h"
@@ -201,6 +202,7 @@ int main(int argc, char **argv, char **const envp) {
 
   SquashFS::UnmountRootFS();
 
+  CoreDumpService::Shutdown();
   Logger::Shutdown();
 
   return 0;

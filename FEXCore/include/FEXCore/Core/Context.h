@@ -312,6 +312,11 @@ namespace FEXCore::Context {
        *
        */
       FEX_DEFAULT_VISIBILITY virtual void EnableExitOnHLT() = 0;
+
+      struct JITRegionPairs {
+        uint64_t Base, Size;
+      };
+      FEX_DEFAULT_VISIBILITY virtual void FetchJITSections(FEXCore::Core::InternalThreadState *Thread, JITRegionPairs *Dispatcher, fextl::vector<JITRegionPairs> *RegionPairs) = 0;
     private:
   };
 

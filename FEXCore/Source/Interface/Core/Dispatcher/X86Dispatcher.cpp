@@ -347,6 +347,13 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
 }
 
+FEXCore::Context::Context::JITRegionPairs X86Dispatcher::GetDispatcherRegion() const {
+  return {
+    .Base = reinterpret_cast<uint64_t>(getCode()),
+    .Size = MAX_DISPATCHER_CODE_SIZE
+  };
+}
+
 size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
   using namespace Xbyak;
   using namespace Xbyak::util;

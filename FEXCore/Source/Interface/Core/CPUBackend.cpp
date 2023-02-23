@@ -276,5 +276,17 @@ bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
   return false;
 }
 
+fextl::vector<Context::Context::JITRegionPairs> CPUBackend::GetJITRegions() const {
+  fextl::vector<Context::Context::JITRegionPairs> RegionPairs;
+  RegionPairs.reserve(CodeBuffers.size());
+  for (auto &Buffer : CodeBuffers) {
+    RegionPairs.emplace_back(Context::Context::JITRegionPairs{
+      .Base = reinterpret_cast<uint64_t>(Buffer.Ptr),
+      .Size = Buffer.Size,
+    });
+  }
+  return RegionPairs;
+}
+
 }
 }

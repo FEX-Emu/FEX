@@ -2,6 +2,7 @@
 #pragma once
 
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/fextl/memory.h>
 
 #include <cstdint>
@@ -76,6 +77,7 @@ public:
   virtual void ExecuteJITCallback(FEXCore::Core::CpuStateFrame *Frame, uint64_t RIP) {
     CallbackPtr(Frame, RIP);
   }
+  virtual FEXCore::Context::Context::JITRegionPairs GetDispatcherRegion() const = 0;
 
   virtual uint16_t GetSRAGPRCount() const {
     return 0U;

@@ -161,6 +161,11 @@ namespace FEX::HLE {
     bool InstallHostThunk(int Signal);
     bool UpdateHostThunk(int Signal);
 
+    struct SigFrame_x64;
+    SigFrame_x64* FetchThreadSignalData(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, SigFrame_x64 *Frame);
+
+    void CoreDumpService(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext);
+
     FEXCore::Context::VDSOSigReturn VDSOPointers{};
 
     bool IsAddressInDispatcher(uint64_t Address) const {
@@ -198,6 +203,20 @@ namespace FEX::HLE {
       FEXCore::x86::ucontext_t uc;
       char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
       ///< FP state now follows after this.
+    };
+
+    // The 64-bit signal frame.
+    // This frame type is always used on 64-bit, regardless of `SA_SIGINFO` flag.
+    struct SigFrame_x64 {
+      uint64_t sigreturn; ///< sigreturn return branch point.
+      FEXCore::x86_64::ucontext_t GuestContext;
+      siginfo_t GuestInfo;
+      union {
+        FEXCore::x86_64::xstate AVXState;
+        FEXCore::x86_64::_libc_fpstate FPState;
+      } FPState;
+      ///< Redzone padding will actually be intermixed with FPState depending on if AVX is supported or not.
+      uint8_t RedZonePad[128];
     };
 
     void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask);

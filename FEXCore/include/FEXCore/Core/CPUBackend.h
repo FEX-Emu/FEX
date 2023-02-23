@@ -8,6 +8,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -181,6 +182,8 @@ namespace CPU {
     virtual void ClearRelocations() {}
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
+
+    fextl::vector<Context::Context::JITRegionPairs> GetJITRegions() const;
 
   protected:
     // Max spill slot size in bytes. We need at most 32 bytes
