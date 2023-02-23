@@ -1373,7 +1373,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare with wide 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE propagate break from previous partition") {
-  // TODO: Implement in emitter.
+ TEST_SINGLE(brkpa(PReg::p15, PReg::p14.Zeroing(), PReg::p13, PReg::p12),  "brkpa p15.b, p14/z, p13.b, p12.b");
+ TEST_SINGLE(brkpas(PReg::p15, PReg::p14.Zeroing(), PReg::p13, PReg::p12), "brkpas p15.b, p14/z, p13.b, p12.b");
+ TEST_SINGLE(brkpb(PReg::p15, PReg::p14.Zeroing(), PReg::p13, PReg::p12),  "brkpb p15.b, p14/z, p13.b, p12.b");
+ TEST_SINGLE(brkpbs(PReg::p15, PReg::p14.Zeroing(), PReg::p13, PReg::p12), "brkpbs p15.b, p14/z, p13.b, p12.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Predicate Misc") {

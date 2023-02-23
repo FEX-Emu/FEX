@@ -1327,7 +1327,18 @@ public:
 
   // SVE Propagate Break
   // SVE propagate break from previous partition
-  // XXX:
+  void brkpa(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPropagateBreak(0b0000, 0b11, 0, pd, pg, pn, pm);
+  }
+  void brkpb(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPropagateBreak(0b0000, 0b11, 1, pd, pg, pn, pm);
+  }
+  void brkpas(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPropagateBreak(0b0100, 0b11, 0, pd, pg, pn, pm);
+  }
+  void brkpbs(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPropagateBreak(0b0100, 0b11, 1, pd, pg, pn, pm);
+  }
 
   // SVE Predicate Misc
   // XXX:
@@ -4056,5 +4067,17 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEPropagateBreak(uint32_t opc, uint32_t op2, uint32_t op3, PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    uint32_t Instr = 0b0010'0101'0000'0000'0000'0000'0000'0000;
+    Instr |= opc << 20;
+    Instr |= op2 << 14;
+    Instr |= op3 << 4;
+    Instr |= pm.Idx() << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= pn.Idx() << 5;
+    Instr |= pd.Idx();
     dc32(Instr);
   }
