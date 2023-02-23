@@ -1,3 +1,4 @@
+#include "CoreDumpService.h"
 #include "FEXHeaderUtils/Syscalls.h"
 #include "Logger.h"
 #include "SquashFS.h"
@@ -392,6 +393,29 @@ namespace ProcessPipe {
           }
 
           CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+          break;
+        }
+        case FEXServerClient::PacketType::TYPE_GET_COREDUMP_FD: {
+          // Coredump FD only should be returned if FEXServer is running in foreground mode.
+          // Otherwise the logs won't be visible regardless of receiving them.
+          if (Foreground) {
+            auto Result = CoreDumpService::CreateCoreDumpService();
+            SendFDSuccessPacket(Socket, Result);
+
+            // Close the sent socket now that it was passed over.
+            CoreDumpService::ShutdownFD(Result);
+
+            // Check if we need to increase the FD limit.
+            ++NumFilesOpened;
+            CheckRaiseFDLimit();
+          }
+          else {
+            // Log thread isn't running. Let FEXInterpreter know it can't have one.
+            SendEmptyErrorPacket(Socket);
+          }
+
+          CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+
           break;
         }
           // Invalid

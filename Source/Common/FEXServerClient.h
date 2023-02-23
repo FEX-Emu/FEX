@@ -1,9 +1,13 @@
 #pragma once
 
+#include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/UContext.h>
+
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <string>
+#include <vector>
 
 namespace FEXServerClient {
   enum class PacketType {
@@ -12,6 +16,7 @@ namespace FEXServerClient {
     TYPE_GET_LOG_FD,
     TYPE_GET_ROOTFS_PATH,
     TYPE_GET_PID_FD,
+    TYPE_GET_COREDUMP_FD,
 
     // Result only
     TYPE_SUCCESS,
@@ -104,8 +109,20 @@ namespace FEXServerClient {
    */
   int RequestPIDFD(int ServerSocket);
 
+  /**
+   * @brief Request a FEXServer to give us a log FD to communicate with the coredump service
+   *
+   * @param ServerSocket - Socket to the server
+   *
+   * @return FD for coredump communication
+   */
+  int RequestCoredumpFD(int ServerSocket);
+
   /**  @} */
 
+  namespace Socket {
+    size_t ReadDataFromSocket(int Socket, std::vector<uint8_t> *Data);
+  }
   /**
    * @name FEX logging through FEXServer
    * @{ */
@@ -152,4 +169,179 @@ namespace FEXServerClient {
   void MsgHandler(int FD, LogMan::DebugLevels Level, char const *Message);
   void AssertHandler(int FD, char const *Message);
   /**  @} */
+
+  /**
+   * @name FEX core dump through FEXServer
+   * @{ */
+  namespace CoreDump {
+    enum class PacketTypes : uint32_t {
+      TYPE_DESC,
+      TYPE_FD_COMMANDLINE,
+      TYPE_FD_MAPS,
+      TYPE_FD_MAP_FILES,
+      TYPE_CLIENT_SHUTDOWN,
+      TYPE_HOST_CONTEXT,
+      TYPE_GUEST_CONTEXT,
+      TYPE_CONTEXT_UNWIND,
+      TYPE_PEEK_MEMORY,
+      TYPE_PEEK_MEMORY_RESPONSE,
+      TYPE_GET_FD_FROM_CLIENT,
+      TYPE_GET_JIT_REGIONS,
+
+      TYPE_ACK,
+      TYPE_SUCCESS,
+    };
+
+    struct PacketHeader {
+      PacketTypes PacketType{};
+    };
+
+    inline PacketHeader FillHeader(CoreDump::PacketTypes Type) {
+      CoreDump::PacketHeader Msg {
+        .PacketType = Type,
+      };
+      return Msg;
+    }
+
+    struct PacketDescription {
+      PacketHeader Header{};
+      uint32_t pid{};
+      uint32_t tid{};
+      uint32_t uid{};
+      uint32_t gid{};
+      uint32_t Signal;
+      uint64_t Timestamp{};
+      uint8_t HostArch;
+      uint8_t GuestArch;
+
+      static PacketDescription Fill(uint32_t Signal, uint8_t GuestArch) {
+        uint64_t Timestamp{};
+        time_t now = time(nullptr);
+        Timestamp = now;
+
+        PacketDescription Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_DESC),
+          .pid = (uint32_t)::getpid(),
+          .tid = (uint32_t)::gettid(),
+          .uid = ::getuid(),
+          .gid = ::getgid(),
+          .Signal = Signal,
+          .Timestamp = Timestamp,
+#ifdef _M_X86_64
+          .HostArch = 1,
+#elif defined(_M_ARM_64)
+          .HostArch = 2,
+#else
+          .HostArch = 0,
+#endif
+          .GuestArch = GuestArch,
+        };
+        return Msg;
+      }
+    };
+
+    struct PacketHostContext {
+      PacketHeader Header{};
+      siginfo_t siginfo;
+      mcontext_t context;
+
+      static PacketHostContext Fill(siginfo_t const *siginfo, mcontext_t const *context) {
+        PacketHostContext Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_HOST_CONTEXT),
+          .siginfo = *siginfo,
+          .context = *context,
+        };
+
+        return Msg;
+      }
+    };
+
+    struct PacketGuestContext {
+      PacketHeader Header{};
+      siginfo_t siginfo;
+      FEXCore::x86_64::mcontext_t context;
+      uint8_t GuestArch;
+
+      static PacketGuestContext Fill(siginfo_t const *siginfo, FEXCore::x86_64::mcontext_t const *context, uint8_t GuestArch) {
+        PacketGuestContext Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_GUEST_CONTEXT),
+          .siginfo = *siginfo,
+          .context = *context,
+          .GuestArch = GuestArch,
+        };
+
+        return Msg;
+      }
+    };
+
+    struct PacketPeekMem {
+      PacketHeader Header{};
+      uint64_t Addr;
+      uint32_t Size;
+      static PacketPeekMem Fill(uint64_t Addr, uint32_t Size) {
+        PacketPeekMem Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_PEEK_MEMORY),
+          .Addr = Addr,
+          .Size = Size,
+        };
+
+        return Msg;
+      }
+    };
+
+    struct PacketPeekMemResponse {
+      PacketHeader Header{};
+      uint64_t Data;
+      static PacketPeekMemResponse Fill(uint64_t Data) {
+        PacketPeekMemResponse Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_PEEK_MEMORY_RESPONSE),
+          .Data = Data,
+        };
+
+        return Msg;
+      }
+    };
+
+    struct PacketGetFDFromFilename {
+      PacketHeader Header{};
+      size_t FilenameLength;
+      char Filepath[];
+      static PacketGetFDFromFilename Fill(std::string const *Filename) {
+        PacketGetFDFromFilename Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_GET_FD_FROM_CLIENT),
+          .FilenameLength = Filename->size(),
+        };
+
+        return Msg;
+      }
+    };
+
+    struct PacketGetJITRegions {
+      PacketHeader Header{};
+      FEXCore::Context::Context::JITRegionPairs Dispatcher{};
+      uint64_t NumJITRegions{};
+      FEXCore::Context::Context::JITRegionPairs JITRegions[];
+      static PacketGetJITRegions Fill(FEXCore::Context::Context::JITRegionPairs const *Dispatcher, uint64_t NumJITRegions) {
+        PacketGetJITRegions Msg = {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_GET_JIT_REGIONS),
+          .Dispatcher = *Dispatcher,
+          .NumJITRegions = NumJITRegions,
+        };
+
+        return Msg;
+      }
+    };
+
+    void SendDescPacket(int CoreDumpSocket, uint32_t Signal, uint8_t GuestArch);
+    void SendCommandLineFD(int CoreDumpSocket);
+    void SendMapsFD(int CoreDumpSocket);
+    void SendMapFilesFD(int CoreDumpSocket);
+    void SendHostContext(int CoreDumpSocket, siginfo_t const *siginfo, mcontext_t const *context);
+    void SendGuestContext(int CoreDumpSocket, siginfo_t const *siginfo, FEXCore::x86_64::mcontext_t const *context, uint8_t GuestArch);
+    void SendContextUnwind(int CoreDumpSocket);
+    void SendJITRegions(int CoreDumpSocket, FEXCore::Context::Context::JITRegionPairs const *Dispatcher, std::vector<FEXCore::Context::Context::JITRegionPairs> const *RegionPairs);
+    void WaitForRequests(int CoreDumpSocket);
+  }
+  /**  @} */
+
 }

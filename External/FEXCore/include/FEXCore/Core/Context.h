@@ -292,6 +292,7 @@ namespace FEXCore::Context {
           FEXCore::x86_64::xstate AVXState;
           FEXCore::x86_64::_libc_fpstate FPState;
         } FPState;
+        uint8_t RedZonePad[128];
       };
 
       struct JITRegionPairs {

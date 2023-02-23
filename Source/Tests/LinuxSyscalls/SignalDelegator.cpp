@@ -7,8 +7,11 @@ $end_info$
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include "Common/Config.h"
+#include "Common/FEXServerClient.h"
 #include "Tests/LinuxSyscalls/SignalDelegator.h"
 
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
@@ -28,6 +31,7 @@ $end_info$
 #include <syscall.h>
 #include <sys/mman.h>
 #include <sys/signalfd.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <utility>
 
@@ -148,6 +152,8 @@ namespace FEX::HLE {
     else if (Handler.OldAction.handler == SIG_DFL &&
       (Handler.DefaultBehaviour == DEFAULT_COREDUMP ||
        Handler.DefaultBehaviour == DEFAULT_TERM)) {
+      // Do work with the core dump service.
+      CoreDumpService(Thread, Signal, Info, UContext);
       // Reassign back to DFL and crash
       signal(Signal, SIG_DFL);
       if (SigInfo->si_code != SI_KERNEL) {
@@ -159,6 +165,52 @@ namespace FEX::HLE {
     }
     else {
       Handler.OldAction.handler(Signal);
+    }
+  }
+
+  void SignalDelegator::CoreDumpService(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) {
+    FEX_CONFIG_OPT(CooperativeCoreDump, COOPERATIVECOREDUMP);
+
+    if (!CooperativeCoreDump) {
+      return;
+    }
+
+    int CoredumpFD = FEXServerClient::RequestCoredumpFD(FEXServerClient::GetServerFD());
+    if (CoredumpFD != -1) {
+      FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+
+      // Send the host frame.
+      ucontext_t* _context = (ucontext_t*)UContext;
+      siginfo_t *_info = (siginfo_t*)Info;
+      FEXServerClient::CoreDump::SendHostContext(CoredumpFD, _info, &_context->uc_mcontext);
+
+      // Send the guest frame.
+      FEXCore::Context::Context::FrameData GuestFrameData{};
+      auto GuestFrame = Thread->CTX->FetchThreadSignalData(Thread, Signal, Info, UContext, &GuestFrameData);
+      FEXServerClient::CoreDump::SendGuestContext(CoredumpFD, &GuestFrame->GuestInfo, &GuestFrame->GuestContext.uc_mcontext, Is64BitMode());
+
+      // Send the command line arguments.
+      FEXServerClient::CoreDump::SendCommandLineFD(CoredumpFD);
+      // Send the program description information.
+      FEXServerClient::CoreDump::SendDescPacket(CoredumpFD, Signal, Is64BitMode());
+      // Send FD for mapped files.
+      FEXServerClient::CoreDump::SendMapFilesFD(CoredumpFD);
+      // Send FD for memory maps.
+      FEXServerClient::CoreDump::SendMapsFD(CoredumpFD);
+
+      // Send the JIT regions.
+      FEXCore::Context::Context::JITRegionPairs Dispatcher{};
+      std::vector<FEXCore::Context::Context::JITRegionPairs> JITRegionPairs{};
+      Thread->CTX->FetchJITSections(Thread, &Dispatcher, &JITRegionPairs);
+      FEXServerClient::CoreDump::SendJITRegions(CoredumpFD, &Dispatcher, &JITRegionPairs);
+
+      // Ask FEXServer to unwind for us.
+      FEXServerClient::CoreDump::SendContextUnwind(CoredumpFD);
+
+      // Wait for FEXServer to tell us to shutdown.
+      FEXServerClient::CoreDump::WaitForRequests(CoredumpFD);
+      shutdown(CoredumpFD, SHUT_RDWR);
+      close(CoredumpFD);
     }
   }
 

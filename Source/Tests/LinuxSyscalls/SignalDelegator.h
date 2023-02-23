@@ -107,6 +107,8 @@ namespace FEX::HLE {
     bool InstallHostThunk(int Signal);
     bool UpdateHostThunk(int Signal);
 
+    void CoreDumpService(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext);
+
     std::mutex HostDelegatorMutex;
     std::mutex GuestDelegatorMutex;
   };
