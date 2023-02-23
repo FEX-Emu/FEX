@@ -1331,7 +1331,45 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare vectors") 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare with wide elements") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cmpeq_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmpeq p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmpeq_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpeq p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmpeq_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpeq p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmpgt_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmpgt p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmpgt_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpgt p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmpgt_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpgt p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmpge_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmpge p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmpge_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpge p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmpge_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpge p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmphi_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmphi p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmphi_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmphi p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmphi_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmphi p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmphs_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmphs p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmphs_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmphs p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmphs_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmphs p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmplt_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmplt p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmplt_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmplt p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmplt_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmplt p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmple_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmple p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmple_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmple p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmple_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmple p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmplo_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmplo p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmplo_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmplo p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmplo_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmplo p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmpls_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmpls p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmpls_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpls p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmpls_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpls p6.s, p5/z, z30.s, z29.d");
+
+  TEST_SINGLE(cmpne_wide(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29),  "cmpne p6.b, p5/z, z30.b, z29.d");
+  TEST_SINGLE(cmpne_wide(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpne p6.h, p5/z, z30.h, z29.d");
+  TEST_SINGLE(cmpne_wide(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "cmpne p6.s, p5/z, z30.s, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE propagate break from previous partition") {

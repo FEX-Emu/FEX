@@ -1294,7 +1294,36 @@ public:
   }
 
   // SVE integer compare with wide elements
-  // XXX:
+  void cmpeq_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(0, 0b01, 0, size, pd, pg, zn, zm);
+  }
+  void cmpgt_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(0, 0b10, 1, size, pd, pg, zn, zm);
+  }
+  void cmpge_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(0, 0b10, 0, size, pd, pg, zn, zm);
+  }
+  void cmphi_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(1, 0b10, 1, size, pd, pg, zn, zm);
+  }
+  void cmphs_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(1, 0b10, 0, size, pd, pg, zn, zm);
+  }
+  void cmplt_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(0, 0b11, 0, size, pd, pg, zn, zm);
+  }
+  void cmple_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(0, 0b11, 1, size, pd, pg, zn, zm);
+  }
+  void cmplo_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(1, 0b11, 0, size, pd, pg, zn, zm);
+  }
+  void cmpls_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(1, 0b11, 1, size, pd, pg, zn, zm);
+  }
+  void cmpne_wide(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerCompareVectorWide(0, 0b01, 1, size, pd, pg, zn, zm);
+  }
 
   // SVE Propagate Break
   // SVE propagate break from previous partition
@@ -3883,6 +3912,11 @@ private:
     Instr |= ne << 4;
     Instr |= pd.Idx();
     dc32(Instr);
+  }
+
+  void SVEIntegerCompareVectorWide(uint32_t op, uint32_t o2, uint32_t ne, SubRegSize size, PRegister pd, PRegister pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Can't use 64-bit element size");
+    SVEIntegerCompareVector(op, o2, ne, size, zm, pg, zn, pd);
   }
 
   void SVE2IntegerAddSubLong(uint32_t op, uint32_t S, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
