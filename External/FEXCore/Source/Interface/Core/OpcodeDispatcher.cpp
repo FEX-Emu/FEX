@@ -5161,18 +5161,16 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     }
     else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
-      const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
-
       const auto VectorSize = CTX->HostFeatures.SupportsAVX ? 32 : 16;
 
       auto Result = Src;
-      if (highIndex || OpSize != VectorSize) {
+      if (OpSize != VectorSize) {
         // Partial writes can come from GPR or FPR.
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
         auto SrcVector = LoadXMMRegister(gprIndex);
 
         if (Class == IR::GPRClass) {
-          Result = _VInsGPR(VectorSize, OpSize, highIndex, SrcVector, Src);
+          Result = _VInsGPR(VectorSize, OpSize, 0, SrcVector, Src);
         }
         else {
           // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
@@ -5181,7 +5179,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
             Result = _VMov(OpSize, Src);
           }
           else {
-            Result = _VInsElement(VectorSize, OpSize, highIndex, 0, SrcVector, Src);
+            Result = _VInsElement(VectorSize, OpSize, 0, 0, SrcVector, Src);
           }
         }
       }
