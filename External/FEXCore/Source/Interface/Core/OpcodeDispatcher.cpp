@@ -5153,22 +5153,19 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
       auto Result = Src;
       if (OpSize != VectorSize) {
-        // Partial writes can come from GPR or FPR.
+        // Partial writes can come from FPRs.
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
         auto SrcVector = LoadXMMRegister(gprIndex);
 
-        if (Class == IR::GPRClass) {
-          Result = _VInsGPR(VectorSize, OpSize, 0, SrcVector, Src);
-        }
-        else {
-          // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
-          // TODO: Longer term we should enforce the difference between zero and insert.
-          if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
-            Result = _VMov(OpSize, Src);
-          }
-          else {
-            Result = _VInsElement(VectorSize, OpSize, 0, 0, SrcVector, Src);
-          }
+        LOGMAN_THROW_AA_FMT(Class != IR::GPRClass, "Partial writes from GPR not allowed. Instruction: {}",
+                            Op->TableInfo->Name);
+
+        // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
+        // TODO: Longer term we should enforce the difference between zero and insert.
+        if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
+          Result = _VMov(OpSize, Src);
+        } else {
+          Result = _VInsElement(VectorSize, OpSize, 0, 0, SrcVector, Src);
         }
       }
 
