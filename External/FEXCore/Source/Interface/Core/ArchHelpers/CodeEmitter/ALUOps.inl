@@ -287,12 +287,12 @@ public:
 
   void lsl(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t shift) {
     const auto RegSize = RegSizeInBits(s);
-    LOGMAN_THROW_A_FMT(shift < RegSize, "Tried to asr a region larger than the register");
+    LOGMAN_THROW_A_FMT(shift < RegSize, "Tried to lsl a region larger than the register");
     ubfm(s, rd, rn, (RegSize - shift) % RegSize, RegSize - shift - 1);
   }
   void lsr(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t shift) {
     const auto RegSize = RegSizeInBits(s);
-    LOGMAN_THROW_A_FMT(shift < RegSize, "Tried to asr a region larger than the register");
+    LOGMAN_THROW_A_FMT(shift < RegSize, "Tried to lsr a region larger than the register");
     ubfm(s, rd, rn, shift, RegSize - 1);
   }
   void ubfx(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t lsb, uint32_t width) {
@@ -303,8 +303,8 @@ public:
 
   void bfi(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t lsb, uint32_t width) {
     const auto RegSize = RegSizeInBits(s);
-    LOGMAN_THROW_A_FMT(width > 0, "sbfx needs width > 0");
-    LOGMAN_THROW_A_FMT((lsb + width) <= RegSize, "Tried to sbfx a region larger than the register");
+    LOGMAN_THROW_A_FMT(width > 0, "bfi needs width > 0");
+    LOGMAN_THROW_A_FMT((lsb + width) <= RegSize, "Tried to bfi a region larger than the register");
     bfm(s, rd, rn, (RegSize - lsb) & (RegSize - 1), width - 1);
   }
 
@@ -316,7 +316,6 @@ public:
   }
 
   void ror(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t Imm) {
-    LOGMAN_THROW_A_FMT(Imm < RegSizeInBits(s), "Tried to extr a region larger than the register");
     extr(s, rd, rn, rn, Imm);
   }
 
