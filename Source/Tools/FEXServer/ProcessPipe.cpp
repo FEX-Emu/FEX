@@ -289,7 +289,7 @@ namespace ProcessPipe {
     // Get the current number of FDs of the process before we start handling sockets.
     GetMaxFDs();
 
-    size_t CurrentRead = SocketUtil::ReadDataFromSocket(Socket, &Data);
+    size_t CurrentRead = SocketUtil::ReadDataFromSocket(Socket, Data);
 
     size_t CurrentOffset{};
     while (CurrentOffset < CurrentRead) {

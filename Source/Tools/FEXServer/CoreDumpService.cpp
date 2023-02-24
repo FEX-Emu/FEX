@@ -129,7 +129,7 @@ namespace CoreDumpService {
 
 
   void SendAckPacket(int ServerSocket) {
-    FEXServerClient::CoreDump::PacketHeader Msg = FEXServerClient::CoreDump::FillHeader(FEXServerClient::CoreDump::PacketTypes::TYPE_ACK);
+    FEXServerClient::CoreDump::PacketHeader Msg = FEXServerClient::CoreDump::FillHeader(FEXServerClient::CoreDump::PacketTypes::ACK);
 
     struct iovec iov {
       .iov_base = &Msg,
@@ -147,7 +147,7 @@ namespace CoreDumpService {
   }
 
   void SendShutdownPacket(int ServerSocket) {
-    FEXServerClient::CoreDump::PacketHeader Msg = FEXServerClient::CoreDump::FillHeader(FEXServerClient::CoreDump::PacketTypes::TYPE_CLIENT_SHUTDOWN);
+    FEXServerClient::CoreDump::PacketHeader Msg = FEXServerClient::CoreDump::FillHeader(FEXServerClient::CoreDump::PacketTypes::CLIENT_SHUTDOWN);
 
     struct iovec iov {
       .iov_base = &Msg,
@@ -273,6 +273,8 @@ namespace CoreDumpService {
 #else
     uint64_t HostPC = HostContextData.context.gregs[REG_RIP];
 #endif
+    fmt::print(stderr, "Host Program counter: 0x{:x}\n", HostPC);
+
     bool CrashInDispatcher{};
     bool CrashInJITRegion{};
     if (ThreadDispatcher.Size) {
@@ -306,9 +308,7 @@ namespace CoreDumpService {
     }
     else if (CrashInJITRegion) {
       fmt::print(stderr, "@@ Crash was inside FEX's JIT. Highly likely a guest side crash.\n");
-    }
-
-    if (!CrashInJITRegion && !CrashInDispatcher) {
+    } else {
       fmt::print(stderr, "@@ Crash was outside of FEX's JIT. Highly likely a host side crash. Please upload a coredump.\n");
     }
 
@@ -320,39 +320,39 @@ namespace CoreDumpService {
 
   void CoreDumpClass::HandleSocketData() {
     std::vector<uint8_t> Data(1500);
-    size_t CurrentRead = SocketUtil::ReadDataFromSocket(SVs[0], &Data);
+    size_t CurrentRead = SocketUtil::ReadDataFromSocket(ServerSocket, Data);
     size_t CurrentOffset{};
     while (CurrentOffset < CurrentRead) {
       FEXServerClient::CoreDump::PacketHeader *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketHeader *>(&Data[CurrentOffset]);
       switch (Req->PacketType) {
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_FD_COMMANDLINE: {
+        case FEXServerClient::CoreDump::PacketTypes::FD_COMMANDLINE: {
           // Client is waiting for acknowledgement.
-          SendAckPacket(SVs[0]);
-          int FD = ReceiveFDPacket(SVs[0]);
+          SendAckPacket(ServerSocket);
+          int FD = ReceiveFDPacket(ServerSocket);
 
           ParseCommandLineFD(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_FD_MAPS: {
+        case FEXServerClient::CoreDump::PacketTypes::FD_MAPS: {
           // Client is waiting for acknowledgement.
-          SendAckPacket(SVs[0]);
-          int FD = ReceiveFDPacket(SVs[0]);
+          SendAckPacket(ServerSocket);
+          int FD = ReceiveFDPacket(ServerSocket);
 
           ConsumeMapsFD(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_FD_MAP_FILES: {
+        case FEXServerClient::CoreDump::PacketTypes::FD_MAP_FILES: {
           // Client is waiting for acknowledgement.
-          SendAckPacket(SVs[0]);
-          int FD = ReceiveFDPacket(SVs[0]);
+          SendAckPacket(ServerSocket);
+          int FD = ReceiveFDPacket(ServerSocket);
 
           ConsumeFileMapsFD(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_DESC: {
+        case FEXServerClient::CoreDump::PacketTypes::DESC: {
           FEXServerClient::CoreDump::PacketDescription *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketDescription *>(&Data[CurrentOffset]);
           SetDesc(Req->pid,
             Req->tid,
@@ -366,26 +366,26 @@ namespace CoreDumpService {
           CurrentOffset += sizeof(*Req);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_HOST_CONTEXT: {
+        case FEXServerClient::CoreDump::PacketTypes::HOST_CONTEXT: {
           FEXServerClient::CoreDump::PacketHostContext *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketHostContext *>(&Data[CurrentOffset]);
           HostContextData = *Req;
           // TODO: Create host context unwinder.
           CurrentOffset += sizeof(*Req);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_GUEST_CONTEXT: {
+        case FEXServerClient::CoreDump::PacketTypes::GUEST_CONTEXT: {
           FEXServerClient::CoreDump::PacketGuestContext *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGuestContext *>(&Data[CurrentOffset]);
           Desc.GuestArch = Req->GuestArch;
           // TODO: Create guest context unwinder.
           CurrentOffset += sizeof(*Req);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_CONTEXT_UNWIND: {
+        case FEXServerClient::CoreDump::PacketTypes::CONTEXT_UNWIND: {
           // Print the header to the backtrace.
           BacktraceHeader();
           // TODO: Unwind the host and guest contexts that were received.
           // Shutdown the client once FEXServer has unwound.
-          SendShutdownPacket(SVs[0]);
+          SendShutdownPacket(ServerSocket);
 
           // Wait a moment for the client to sanely clean-up.
           // Then just leave if it hung regardless.
@@ -394,7 +394,7 @@ namespace CoreDumpService {
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_GET_JIT_REGIONS: {
+        case FEXServerClient::CoreDump::PacketTypes::GET_JIT_REGIONS: {
           FEXServerClient::CoreDump::PacketGetJITRegions *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGetJITRegions *>(&Data[CurrentOffset]);
           ThreadDispatcher = Req->Dispatcher;
           for (size_t i = 0; i < Req->NumJITRegions; ++i) {
@@ -431,7 +431,7 @@ namespace CoreDumpService {
             bool Erase{};
 
             if (Event.revents != 0) {
-              if (Event.fd == SVs[0]) {
+              if (Event.fd == ServerSocket) {
                 //LogMan::Msg::DFmt("Event: 0x{:x}", Event.revents);
                 if (Event.revents & POLLIN) {
                   HandleSocketData();
@@ -475,8 +475,8 @@ namespace CoreDumpService {
     }
 
     // Close the socket on this side
-    shutdown(SVs[0], SHUT_RDWR);
-    close(SVs[0]);
+    shutdown(ServerSocket, SHUT_RDWR);
+    close(ServerSocket);
 
     Running = false;
   }
@@ -504,14 +504,21 @@ namespace CoreDumpService {
   }
 
   void InitCoreDumpThread() {
-    CoreDumpTracker = std::thread(CoreDumpTrackerThread);
+    if (!CoreDumpTracker.joinable()) {
+      CoreDumpTracker = std::thread(CoreDumpTrackerThread);
+    }
   }
 
   void Shutdown() {
     ShouldShutdown = true;
+    if (CoreDumpTracker.joinable()) {
+      CoreDumpTracker.join();
+    }
   }
 
   int CreateCoreDumpService() {
+    CoreDumpService::InitCoreDumpThread();
+
     CoreDumpClass *CoreDump{};
     {
       std::unique_lock lk{InsertMutex};

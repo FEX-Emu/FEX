@@ -4,5 +4,5 @@
 #include <vector>
 
 namespace SocketUtil {
-  size_t ReadDataFromSocket(int Socket, std::vector<uint8_t> *Data);
+  size_t ReadDataFromSocket(int Socket, std::vector<uint8_t> &Data);
 }

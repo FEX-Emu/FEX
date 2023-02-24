@@ -363,10 +363,10 @@ namespace FEXServerClient {
    * @{ */
   namespace CoreDump {
     template<typename T>
-    ssize_t SendPacket(int Socket, T &Msg, size_t size) {
+    ssize_t SendPacket(int Socket, T &Msg) {
       struct iovec iov {
         .iov_base = &Msg,
-        .iov_len = size,
+        .iov_len = sizeof(T),
       };
 
       struct msghdr msg {
@@ -394,7 +394,7 @@ namespace FEXServerClient {
       };
 
       ssize_t Read = recvmsg(Socket, &msg, 0);
-      return Read == iov.iov_len && Msg.PacketType == CoreDump::PacketTypes::TYPE_ACK;
+      return Read == iov.iov_len && Msg.PacketType == CoreDump::PacketTypes::ACK;
     }
 
     void SendFDPacket(int Socket, CoreDump::PacketHeader &Msg, int FD) {
@@ -438,15 +438,15 @@ namespace FEXServerClient {
     void SendDescPacket(int CoreDumpSocket, uint32_t Signal, uint8_t GuestArch) {
       CoreDump::PacketDescription Msg;
       Msg = CoreDump::PacketDescription::Fill(Signal, GuestArch);
-      SendPacket(CoreDumpSocket, Msg, sizeof(Msg));
+      SendPacket(CoreDumpSocket, Msg);
     }
 
     template<typename T>
-    ssize_t SendPacketWithData(int Socket, T &Msg, size_t size, std::span<const char> Data) {
+    ssize_t SendPacketWithData(int Socket, T &Msg, std::span<const char> Data) {
       struct iovec iov[2] = {
         {
           .iov_base = &Msg,
-          .iov_len = size,
+          .iov_len = sizeof(T),
         },
         {
           .iov_base = const_cast<char*>(Data.data()),
@@ -467,9 +467,9 @@ namespace FEXServerClient {
     bool SendFD(int CoreDumpSocket, CoreDump::PacketTypes Type, int FD) {
       CoreDump::PacketHeader Msg;
       Msg = CoreDump::FillHeader(Type);
-      if (SendPacket(CoreDumpSocket, Msg, sizeof(Msg)) != -1) {
+      if (SendPacket(CoreDumpSocket, Msg) != -1) {
         if (WaitForAck(CoreDumpSocket)) {
-          Msg = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_SUCCESS);
+          Msg = CoreDump::FillHeader(CoreDump::PacketTypes::SUCCESS);
           SendFDPacket(CoreDumpSocket, Msg, FD);
           return true;
         }
@@ -478,47 +478,47 @@ namespace FEXServerClient {
     }
     void SendCommandLineFD(int CoreDumpSocket) {
       int FD = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
-      SendFD(CoreDumpSocket, CoreDump::PacketTypes::TYPE_FD_COMMANDLINE, FD);
+      SendFD(CoreDumpSocket, CoreDump::PacketTypes::FD_COMMANDLINE, FD);
       close(FD);
     }
 
     void SendMapsFD(int CoreDumpSocket) {
       int FD = open("/proc/self/maps", O_RDONLY | O_CLOEXEC);
 
-      SendFD(CoreDumpSocket, CoreDump::PacketTypes::TYPE_FD_MAPS, FD);
+      SendFD(CoreDumpSocket, CoreDump::PacketTypes::FD_MAPS, FD);
       close(FD);
     }
     void SendMapFilesFD(int CoreDumpSocket) {
       int FD = open("/proc/self/map_files", O_RDONLY | O_CLOEXEC | O_DIRECTORY);
-      SendFD(CoreDumpSocket, CoreDump::PacketTypes::TYPE_FD_MAP_FILES, FD);
+      SendFD(CoreDumpSocket, CoreDump::PacketTypes::FD_MAP_FILES, FD);
       close(FD);
     }
     void SendHostContext(int CoreDumpSocket, siginfo_t const *siginfo, mcontext_t const *context) {
       CoreDump::PacketHostContext Msg = CoreDump::PacketHostContext::Fill(siginfo, context);
-      SendPacket(CoreDumpSocket, Msg, sizeof(Msg));
+      SendPacket(CoreDumpSocket, Msg);
     }
     void SendGuestContext(int CoreDumpSocket, siginfo_t const *siginfo, FEXCore::x86_64::mcontext_t const *context, uint8_t GuestArch) {
       CoreDump::PacketGuestContext Msg = CoreDump::PacketGuestContext::Fill(siginfo, context, GuestArch);
-      SendPacket(CoreDumpSocket, Msg, sizeof(Msg));
+      SendPacket(CoreDumpSocket, Msg);
     }
     void SendContextUnwind(int CoreDumpSocket) {
-      CoreDump::PacketHeader Msg = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_CONTEXT_UNWIND);
-      SendPacket(CoreDumpSocket, Msg, sizeof(Msg));
+      CoreDump::PacketHeader Msg = CoreDump::FillHeader(CoreDump::PacketTypes::CONTEXT_UNWIND);
+      SendPacket(CoreDumpSocket, Msg);
     }
 
     void SendJITRegions(int CoreDumpSocket, FEXCore::Context::Context::JITRegionPairs const *Dispatcher, std::vector<FEXCore::Context::Context::JITRegionPairs> const *RegionPairs) {
       FEXServerClient::CoreDump::PacketGetJITRegions Msg = FEXServerClient::CoreDump::PacketGetJITRegions::Fill(Dispatcher, RegionPairs->size());
-      SendPacketWithData(CoreDumpSocket, Msg, sizeof(Msg), std::span(reinterpret_cast<const char*>(RegionPairs->data()), RegionPairs->size() * sizeof(FEXCore::Context::Context::JITRegionPairs)));
+      SendPacketWithData(CoreDumpSocket, Msg, std::span(reinterpret_cast<const char*>(RegionPairs->data()), RegionPairs->size() * sizeof(FEXCore::Context::Context::JITRegionPairs)));
     }
 
     void HandleSocketData(bool *ShouldShutdown, int CoreDumpSocket) {
       std::vector<uint8_t> Data(1500);
-      size_t CurrentRead = SocketUtil::ReadDataFromSocket(CoreDumpSocket, &Data);
+      size_t CurrentRead = SocketUtil::ReadDataFromSocket(CoreDumpSocket, Data);
       size_t CurrentOffset{};
       while (CurrentOffset < CurrentRead) {
         FEXServerClient::CoreDump::PacketHeader *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketHeader *>(&Data[CurrentOffset]);
         switch (Req->PacketType) {
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_PEEK_MEMORY: {
+        case FEXServerClient::CoreDump::PacketTypes::PEEK_MEMORY: {
           FEXServerClient::CoreDump::PacketPeekMem *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketPeekMem *>(&Data[CurrentOffset]);
           uint64_t Data{};
           if (Req->Size == 8) {
@@ -531,21 +531,21 @@ namespace FEXServerClient {
           }
 
           FEXServerClient::CoreDump::PacketPeekMemResponse Msg = FEXServerClient::CoreDump::PacketPeekMemResponse::Fill(Data);
-          SendPacket(CoreDumpSocket, Msg, sizeof(Msg));
+          SendPacket(CoreDumpSocket, Msg);
           CurrentOffset += sizeof(*Req);
           break;
         }
 
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_GET_FD_FROM_CLIENT: {
+        case FEXServerClient::CoreDump::PacketTypes::GET_FD_FROM_CLIENT: {
           FEXServerClient::CoreDump::PacketGetFDFromFilename *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGetFDFromFilename *>(&Data[CurrentOffset]);
           int FD = open(Req->Filepath, O_RDONLY);
-          auto Msg = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_SUCCESS);
+          auto Msg = CoreDump::FillHeader(CoreDump::PacketTypes::SUCCESS);
           SendFDPacket(CoreDumpSocket, Msg, FD);
           close(FD);
           CurrentOffset += sizeof(*Req) + Req->FilenameLength + 1;
           break;
         }
-        case FEXServerClient::CoreDump::PacketTypes::TYPE_CLIENT_SHUTDOWN: {
+        case FEXServerClient::CoreDump::PacketTypes::CLIENT_SHUTDOWN: {
           *ShouldShutdown = true;
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;

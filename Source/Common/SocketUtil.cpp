@@ -7,12 +7,12 @@
 #include <vector>
 
 namespace SocketUtil {
-  size_t ReadDataFromSocket(int Socket, std::vector<uint8_t> *Data) {
+  size_t ReadDataFromSocket(int Socket, std::vector<uint8_t> &Data) {
     size_t CurrentRead{};
     while (true) {
       struct iovec iov {
-        .iov_base = &Data->at(CurrentRead),
-        .iov_len = Data->size() - CurrentRead,
+        .iov_base = &Data.at(CurrentRead),
+        .iov_len = Data.size() - CurrentRead,
       };
 
       struct msghdr msg {
@@ -25,8 +25,8 @@ namespace SocketUtil {
       ssize_t Read = recvmsg(Socket, &msg, 0);
       if (Read <= msg.msg_iov->iov_len) {
         CurrentRead += Read;
-        if (CurrentRead == Data->size()) {
-          Data->resize(Data->size() << 1);
+        if (CurrentRead == Data.size()) {
+          Data.resize(Data.size() << 1);
         }
         else {
           // No more to read

@@ -157,7 +157,7 @@ namespace CPU {
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
-    void GetJITRegions(std::vector<Context::Context::JITRegionPairs> *RegionPairs) const;
+    std::vector<Context::Context::JITRegionPairs> GetJITRegions() const;
 
   protected:
     // Max spill slot size in bytes. We need at most 32 bytes

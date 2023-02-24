@@ -30,6 +30,7 @@ namespace CoreDumpService {
 
 
       int Init() {
+        int SVs[2];
         int Result = socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, SVs);
         if (Result == -1) {
           return -1;
@@ -43,11 +44,14 @@ namespace CoreDumpService {
 
         ExecutionThread = std::thread(&CoreDumpClass::ExecutionFunc, this);
 
+        ServerSocket = SVs[0];
+
         // Return the second socket FD
         return SVs[1];
       }
       ~CoreDumpClass() {
         ExecutionThread.join();
+        close(ServerSocket);
       }
 
       void ExecutionFunc();
@@ -64,7 +68,7 @@ namespace CoreDumpService {
         return Desc;
       }
 
-      FileMapping::FileMapping* FindFileMapping(std::string Path) {
+      FileMapping::FileMapping* FindFileMapping(const std::string &Path) {
         auto it = PathToFileMap.find(Path);
         if (it == PathToFileMap.end()) {
           return nullptr;
@@ -161,7 +165,7 @@ namespace CoreDumpService {
 
       void BacktraceHeader();
 
-      int SVs[2];
+      int ServerSocket;
       std::thread ExecutionThread;
       std::vector<struct pollfd> PollFDs{};
       time_t RequestTimeout {10};
@@ -179,8 +183,8 @@ namespace CoreDumpService {
       void HandleSocketData();
 
       std::list<FileMapping::FileMapping> FileMappings;
-      std::list<FileMapping::MemMapping> MemMappings;
-      std::map<std::string, FileMapping::FileMapping*> PathToFileMap;
+      std::vector<FileMapping::MemMapping> MemMappings;
+      std::unordered_map<std::string, FileMapping::FileMapping*> PathToFileMap;
 
       FEXCore::Context::Context::JITRegionPairs ThreadDispatcher{};
       std::vector<FEXCore::Context::Context::JITRegionPairs> ThreadJITRegions{};

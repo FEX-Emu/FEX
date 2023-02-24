@@ -1363,7 +1363,7 @@ namespace FEXCore::Context {
 
   void ContextImpl::FetchJITSections(FEXCore::Core::InternalThreadState *Thread, Context::Context::JITRegionPairs *DispatcherRegion, std::vector<Context::Context::JITRegionPairs> *RegionPairs) {
     *DispatcherRegion = Dispatcher->GetDispatcherRegion();
-    Thread->CPUBackend->GetJITRegions(RegionPairs);
+    *RegionPairs = Thread->CPUBackend->GetJITRegions();
   }
 
   void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {

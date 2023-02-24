@@ -175,21 +175,21 @@ namespace FEXServerClient {
    * @{ */
   namespace CoreDump {
     enum class PacketTypes : uint32_t {
-      TYPE_DESC,
-      TYPE_FD_COMMANDLINE,
-      TYPE_FD_MAPS,
-      TYPE_FD_MAP_FILES,
-      TYPE_CLIENT_SHUTDOWN,
-      TYPE_HOST_CONTEXT,
-      TYPE_GUEST_CONTEXT,
-      TYPE_CONTEXT_UNWIND,
-      TYPE_PEEK_MEMORY,
-      TYPE_PEEK_MEMORY_RESPONSE,
-      TYPE_GET_FD_FROM_CLIENT,
-      TYPE_GET_JIT_REGIONS,
+      DESC,
+      FD_COMMANDLINE,
+      FD_MAPS,
+      FD_MAP_FILES,
+      CLIENT_SHUTDOWN,
+      HOST_CONTEXT,
+      GUEST_CONTEXT,
+      CONTEXT_UNWIND,
+      PEEK_MEMORY,
+      PEEK_MEMORY_RESPONSE,
+      GET_FD_FROM_CLIENT,
+      GET_JIT_REGIONS,
 
-      TYPE_ACK,
-      TYPE_SUCCESS,
+      ACK,
+      SUCCESS,
     };
 
     struct PacketHeader {
@@ -197,10 +197,9 @@ namespace FEXServerClient {
     };
 
     inline PacketHeader FillHeader(CoreDump::PacketTypes Type) {
-      CoreDump::PacketHeader Msg {
+      return PacketHeader {
         .PacketType = Type,
       };
-      return Msg;
     }
 
     struct PacketDescription {
@@ -219,8 +218,8 @@ namespace FEXServerClient {
         time_t now = time(nullptr);
         Timestamp = now;
 
-        PacketDescription Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_DESC),
+        return PacketDescription {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::DESC),
           .pid = (uint32_t)::getpid(),
           .tid = (uint32_t)::gettid(),
           .uid = ::getuid(),
@@ -232,11 +231,10 @@ namespace FEXServerClient {
 #elif defined(_M_ARM_64)
           .HostArch = 2,
 #else
-          .HostArch = 0,
+#error unknown architecture
 #endif
           .GuestArch = GuestArch,
         };
-        return Msg;
       }
     };
 
@@ -246,13 +244,11 @@ namespace FEXServerClient {
       mcontext_t context;
 
       static PacketHostContext Fill(siginfo_t const *siginfo, mcontext_t const *context) {
-        PacketHostContext Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_HOST_CONTEXT),
+        return PacketHostContext {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::HOST_CONTEXT),
           .siginfo = *siginfo,
           .context = *context,
         };
-
-        return Msg;
       }
     };
 
@@ -263,14 +259,12 @@ namespace FEXServerClient {
       uint8_t GuestArch;
 
       static PacketGuestContext Fill(siginfo_t const *siginfo, FEXCore::x86_64::mcontext_t const *context, uint8_t GuestArch) {
-        PacketGuestContext Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_GUEST_CONTEXT),
+        return PacketGuestContext {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GUEST_CONTEXT),
           .siginfo = *siginfo,
           .context = *context,
           .GuestArch = GuestArch,
         };
-
-        return Msg;
       }
     };
 
@@ -279,13 +273,11 @@ namespace FEXServerClient {
       uint64_t Addr;
       uint32_t Size;
       static PacketPeekMem Fill(uint64_t Addr, uint32_t Size) {
-        PacketPeekMem Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_PEEK_MEMORY),
+        return PacketPeekMem {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::PEEK_MEMORY),
           .Addr = Addr,
           .Size = Size,
         };
-
-        return Msg;
       }
     };
 
@@ -293,12 +285,10 @@ namespace FEXServerClient {
       PacketHeader Header{};
       uint64_t Data;
       static PacketPeekMemResponse Fill(uint64_t Data) {
-        PacketPeekMemResponse Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_PEEK_MEMORY_RESPONSE),
+        return PacketPeekMemResponse {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::PEEK_MEMORY_RESPONSE),
           .Data = Data,
         };
-
-        return Msg;
       }
     };
 
@@ -307,12 +297,10 @@ namespace FEXServerClient {
       size_t FilenameLength;
       char Filepath[];
       static PacketGetFDFromFilename Fill(std::string const *Filename) {
-        PacketGetFDFromFilename Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_GET_FD_FROM_CLIENT),
+        return PacketGetFDFromFilename {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GET_FD_FROM_CLIENT),
           .FilenameLength = Filename->size(),
         };
-
-        return Msg;
       }
     };
 
@@ -322,13 +310,11 @@ namespace FEXServerClient {
       uint64_t NumJITRegions{};
       FEXCore::Context::Context::JITRegionPairs JITRegions[];
       static PacketGetJITRegions Fill(FEXCore::Context::Context::JITRegionPairs const *Dispatcher, uint64_t NumJITRegions) {
-        PacketGetJITRegions Msg = {
-          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::TYPE_GET_JIT_REGIONS),
+        return PacketGetJITRegions {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GET_JIT_REGIONS),
           .Dispatcher = *Dispatcher,
           .NumJITRegions = NumJITRegions,
         };
-
-        return Msg;
       }
     };
 
