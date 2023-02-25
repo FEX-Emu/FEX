@@ -53,3 +53,6 @@
 	shallow = true
 	path = External/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "External/libunwind"]
+	path = External/libunwind
+	url = https://github.com/FEX-Emu/libunwind.git
