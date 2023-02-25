@@ -1,5 +1,7 @@
 #include "CoreDumpService.h"
 #include "ProcessPipe.h"
+#include "Unwind/Unwind_x86.h"
+#include "Unwind/Unwind_x86_64.h"
 #include "Common/FEXServerClient.h"
 
 #include "Common/SocketUtil.h"
@@ -369,21 +371,49 @@ namespace CoreDumpService {
         case FEXServerClient::CoreDump::PacketTypes::HOST_CONTEXT: {
           FEXServerClient::CoreDump::PacketHostContext *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketHostContext *>(&Data[CurrentOffset]);
           HostContextData = *Req;
-          // TODO: Create host context unwinder.
+
+          UnwindHost = Unwind::x86_64::Unwind(this, &HostContextData.siginfo, &HostContextData.context);
+
+          auto PeekMem = [&](uint64_t Addr, uint8_t Size) -> uint64_t {
+            return PeekMemory(ServerSocket, Addr, Size);
+          };
+          auto GetFD = [&](std::string const *Filename) -> int {
+            return GetFDFromClient(ServerSocket, Filename);
+          };
+
+          UnwindHost->SetPeekMemory(PeekMem);
+          UnwindHost->SetGetFileFD(GetFD);
           CurrentOffset += sizeof(*Req);
           break;
         }
         case FEXServerClient::CoreDump::PacketTypes::GUEST_CONTEXT: {
           FEXServerClient::CoreDump::PacketGuestContext *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGuestContext *>(&Data[CurrentOffset]);
           Desc.GuestArch = Req->GuestArch;
-          // TODO: Create guest context unwinder.
+          if (Desc.GuestArch == 0) {
+            UnwindGuest = Unwind::x86::Unwind(this, &Req->siginfo, &Req->context);
+          }
+          else {
+            UnwindGuest = Unwind::x86_64::Unwind(this, &Req->siginfo, &Req->context);
+          }
+
+          auto PeekMem = [&](uint64_t Addr, uint32_t Size) -> uint64_t {
+            return PeekMemory(ServerSocket, Addr, Size);
+          };
+          auto GetFD = [&](std::string const *Filename) -> int {
+            return GetFDFromClient(ServerSocket, Filename);
+          };
+          UnwindGuest->SetPeekMemory(PeekMem);
+          UnwindGuest->SetGetFileFD(GetFD);
+
           CurrentOffset += sizeof(*Req);
           break;
         }
         case FEXServerClient::CoreDump::PacketTypes::CONTEXT_UNWIND: {
           // Print the header to the backtrace.
           BacktraceHeader();
-          // TODO: Unwind the host and guest contexts that were received.
+          if (UnwindGuest) {
+            UnwindGuest->Backtrace();
+          }
           // Shutdown the client once FEXServer has unwound.
           SendShutdownPacket(ServerSocket);
 
