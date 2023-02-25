@@ -52,3 +52,6 @@
 [submodule "External/rpmalloc"]
 	path = External/rpmalloc
 	url = https://github.com/FEX-Emu/rpmalloc.git
+[submodule "External/libunwind"]
+	path = External/libunwind
+	url = https://github.com/FEX-Emu/libunwind.git
