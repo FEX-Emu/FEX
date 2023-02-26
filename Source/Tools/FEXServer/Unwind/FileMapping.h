@@ -2,7 +2,7 @@
 #include "ELFMapping.h"
 
 #include <cstdint>
-#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -13,7 +13,7 @@ namespace FileMapping {
     uint64_t Begin, End;
     std::string Path;
     std::vector<MemMapping*> MemMappings;
-    std::unique_ptr<ELFMapping::ELFMemMapping> ELFMapping;
+    std::optional<ELFMapping::ELFMemMapping*> ELFMapping;
   };
 
   struct MemMapping {

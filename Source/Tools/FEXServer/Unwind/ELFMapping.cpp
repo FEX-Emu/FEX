@@ -53,7 +53,8 @@ namespace ELFMapping {
       reinterpret_cast<const Elf64_Phdr *>(&RawBase[Mapping->Header._64.e_phoff]);
 
     if (Mapping->Header._64.e_shoff > Mapping->TotalSize) {
-      __builtin_unreachable();
+      // Corrupt input.
+      return;
     }
     for (uint32_t i = 0; i < Mapping->Header._64.e_shnum; ++i) {
       Mapping->SectionHeaders[i]._64 = &RawShdrs[i];
@@ -72,8 +73,8 @@ namespace ELFMapping {
     Elf64_Shdr const *DynStringTableHeader{nullptr};
     char const *DynStrTab{nullptr};
 
-    for (uint32_t i = 0; i < Mapping->SectionHeaders.size(); ++i) {
-      Elf64_Shdr const *hdr = Mapping->SectionHeaders.at(i)._64;
+    for (const auto &Header : Mapping->SectionHeaders) {
+      Elf64_Shdr const *hdr = Header._64;
       if (hdr->sh_type == SHT_SYMTAB) {
         SymTabHeader = hdr;
       }
@@ -199,7 +200,8 @@ namespace ELFMapping {
       reinterpret_cast<const Elf32_Phdr *>(&RawBase[Mapping->Header._32.e_phoff]);
 
     if (Mapping->Header._32.e_shoff > Mapping->TotalSize) {
-      __builtin_unreachable();
+      // Corrupt input.
+      return;
     }
     for (uint32_t i = 0; i < Mapping->Header._32.e_shnum; ++i) {
       Mapping->SectionHeaders[i]._32 = &RawShdrs[i];
@@ -218,8 +220,8 @@ namespace ELFMapping {
     Elf32_Shdr const *DynStringTableHeader{nullptr};
     char const *DynStrTab{nullptr};
 
-    for (uint32_t i = 0; i < Mapping->SectionHeaders.size(); ++i) {
-      Elf32_Shdr const *hdr = Mapping->SectionHeaders.at(i)._32;
+    for (const auto &Header : Mapping->SectionHeaders) {
+      Elf32_Shdr const *hdr = Header._32;
       if (hdr->sh_type == SHT_SYMTAB) {
         SymTabHeader = hdr;
       }
@@ -336,15 +338,11 @@ namespace ELFMapping {
   void ParseELFSymbols(ELFMemMapping *Mapping) {
     // Find the ELF header, which should be the first element.
     uint64_t Bits = IsELFBits(Mapping);
-    if (Bits != 0) {
-      if (Bits == 64) {
-        ParseELFSymbols64(Mapping);
-      }
-      if (Bits == 32) {
-        ParseELFSymbols32(Mapping);
-      }
-
-      return;
+    if (Bits == 64) {
+      ParseELFSymbols64(Mapping);
+    }
+    else if (Bits == 32) {
+      ParseELFSymbols32(Mapping);
     }
   }
 

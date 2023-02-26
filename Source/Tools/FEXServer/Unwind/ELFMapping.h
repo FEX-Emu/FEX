@@ -21,7 +21,10 @@ namespace ELFMapping {
   };
 
   struct ELFMemMapping {
+    ELFMemMapping() = default;
+    ELFMemMapping(const ELFMemMapping&) = delete;
     ~ELFMemMapping();
+
     int FD;
     uint64_t OriginalBase;
     char *BaseRemapped;

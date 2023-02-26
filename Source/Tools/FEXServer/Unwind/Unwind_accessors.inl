@@ -55,7 +55,7 @@
       }
 
       if (write == 0) {
-        *valp = Unwind->PeekMem(addr, 8);
+        *valp = Unwind->PeekMem(addr, sizeof(unw_word_t));
       }
       else {
         fmt::print("[CoreDumpService] Can't write to memory with access_mem\n");
@@ -100,11 +100,11 @@
       }
 
       if (!Mapping->ELFMapping) {
-        Mapping->ELFMapping.reset(ELFMapping::LoadELFMapping(Mapping, Unwind->GetFD(&Mapping->Path)));
+        Mapping->ELFMapping = ELFMapping::LoadELFMapping(Mapping, Unwind->GetFD(&Mapping->Path));
       }
 
       if (Mapping->ELFMapping) {
-        auto Symbol = ELFMapping::GetSymbolFromAddress(Mapping->ELFMapping.get(), addr);
+        auto Symbol = ELFMapping::GetSymbolFromAddress(Mapping->ELFMapping.value(), addr);
         if (Symbol) {
           strncpy(bufp, Symbol->Name, buf_len);
           *offp = addr - Symbol->Address;

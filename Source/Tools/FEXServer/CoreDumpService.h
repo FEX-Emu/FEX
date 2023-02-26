@@ -59,7 +59,7 @@ namespace CoreDumpService {
           close(FD);
         }
 
-        FDCountWatch::IncrementFDCountAndCheckLimits(-TrackedFDs.size() - 1);
+        FDCountWatch::DecrementFDCountAndCheckLimits(TrackedFDs.size() + 1);
 
         TrackedFDs.clear();
       }

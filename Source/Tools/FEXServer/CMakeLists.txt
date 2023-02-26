@@ -14,7 +14,6 @@ target_link_libraries(fex_unwind_x86_64
   unwind-x86_64
   FEXCore
   fmt)
-target_compile_options(fex_unwind_x86_64 PRIVATE -fcommon)
 add_dependencies(fex_unwind_x86_64 unwind_x86_64)
 
 set (fex_unwind_x86_src
@@ -31,7 +30,6 @@ target_link_libraries(fex_unwind_x86
   unwind-x86
   FEXCore
   fmt)
-target_compile_options(fex_unwind_x86 PRIVATE -fcommon)
 add_dependencies(fex_unwind_x86 unwind_x86)
 
 set(NAME FEXServer)

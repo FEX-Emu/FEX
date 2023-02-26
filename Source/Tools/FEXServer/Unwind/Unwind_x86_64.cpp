@@ -26,9 +26,6 @@
 #include <vector>
 
 namespace Unwind::x86_64 {
-#define panic(args...) \
-  { fprintf (stderr, args); __builtin_unreachable(); fflush(stderr); }
-
 #define FORWARD_DECLARE
 #include "Unwind/Unwind_accessors.inl"
 
@@ -42,7 +39,7 @@ namespace Unwind::x86_64 {
         addr = unw_create_addr_space(&accessors, __LITTLE_ENDIAN);
 
         if (unw_init_remote (&cursor, addr, this) < 0) {
-          panic ("unw_init_remote failed!\n");
+          fmt::print(stderr, "unw_init_remote failed!\n");
           CanBacktrace = false;
         }
       }
@@ -94,7 +91,7 @@ namespace Unwind::x86_64 {
           GETREG(RIP);
 #undef GETREG
           default:
-            panic("Unhandled access regnum: %d", regnum);
+            fmt::print(stderr, "Unhandled access regnum: %d", regnum);
         }
         return 0;
       }
@@ -120,7 +117,7 @@ namespace Unwind::x86_64 {
           GETREG(RIP);
 #undef GETREG
           default:
-            panic("Unhandled access regnum: %d", regnum);
+            fmt::print(stderr, "Unhandled access regnum: %d", regnum);
         }
       }
 

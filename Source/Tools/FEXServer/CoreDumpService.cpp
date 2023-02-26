@@ -322,10 +322,10 @@ namespace CoreDumpService {
   }
 
   void CoreDumpClass::HandleSocketData() {
-    auto PeekMem = [&](uint64_t Addr, uint8_t Size) -> uint64_t {
+    auto PeekMem = [this](uint64_t Addr, uint8_t Size) -> uint64_t {
       return PeekMemory(ServerSocket, Addr, Size);
     };
-    auto GetFD = [&](std::string const *Filename) -> int {
+    auto GetFD = [this](std::string const *Filename) -> int {
       int FD = GetFDFromClient(ServerSocket, Filename);
       if (FD != -1) {
         FDCountWatch::IncrementFDCountAndCheckLimits(1);
@@ -510,7 +510,7 @@ namespace CoreDumpService {
     // Close the socket on this side
     shutdown(ServerSocket, SHUT_RDWR);
     close(ServerSocket);
-    FDCountWatch::IncrementFDCountAndCheckLimits(-1);
+    FDCountWatch::DecrementFDCountAndCheckLimits(1);
 
     Running = false;
   }
@@ -565,6 +565,6 @@ namespace CoreDumpService {
   void ShutdownFD(int FD) {
     // Only close the socket FD.
     close(FD);
-    FDCountWatch::IncrementFDCountAndCheckLimits(-1);
+    FDCountWatch::DecrementFDCountAndCheckLimits(1);
   }
 }

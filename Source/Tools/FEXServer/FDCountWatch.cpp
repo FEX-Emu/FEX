@@ -9,9 +9,9 @@
 namespace FDCountWatch {
   // FD count watching
   constexpr size_t static MAX_FD_DISTANCE = 32;
-  rlimit MaxFDs{};
-  std::atomic<ssize_t> NumFilesOpened{};
-  std::mutex FDLimitMutex;
+  static rlimit MaxFDs{};
+  static std::atomic<ssize_t> NumFilesOpened{};
+  static std::mutex FDLimitMutex;
 
   size_t GetNumFilesOpen() {
     // Walk /proc/self/fd/ to see how many open files we currently have
@@ -44,13 +44,15 @@ namespace FDCountWatch {
         fprintf(stderr, "[FEXMountDaemon] FEXMountDaemon will now no longer be able to track new instances of FEX\n");
         fprintf(stderr, "[FEXMountDaemon] Current limit is %zd(hard %zd) FDs and we are at %zd\n", MaxFDs.rlim_cur, MaxFDs.rlim_max, GetNumFilesOpen());
         fprintf(stderr, "[FEXMountDaemon] Ask your administrator to raise your kernel's hard limit on open FDs\n");
+        fprintf(stderr, "[FEXMountDaemon] Future instances of FEX will hang.\n");
+        FDLimitMutex.unlock();
         return;
       }
 
       rlimit NewLimit = MaxFDs;
 
       // Just multiply by two
-      NewLimit.rlim_cur <<= 1;
+      NewLimit.rlim_cur *= 2;
 
       // Now limit to the hard max
       NewLimit.rlim_cur = std::min(NewLimit.rlim_cur, NewLimit.rlim_max);
@@ -67,10 +69,18 @@ namespace FDCountWatch {
     }
   }
 
-  void IncrementFDCountAndCheckLimits(ssize_t Num) {
+  void IncrementFDCountAndCheckLimits(size_t Num) {
     // Increment number of FDs.
     NumFilesOpened += Num;
 
     CheckRaiseFDLimit();
   }
+
+  void DecrementFDCountAndCheckLimits(size_t Num) {
+    // Increment number of FDs.
+    NumFilesOpened -= Num;
+
+    CheckRaiseFDLimit();
+  }
+
 }
