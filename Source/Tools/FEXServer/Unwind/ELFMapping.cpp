@@ -10,43 +10,6 @@
 #include <sys/stat.h>
 
 namespace ELFMapping {
-  struct ELFMemMapping {
-    int FD;
-    uint64_t OriginalBase;
-    char *BaseRemapped;
-    size_t TotalSize;
-
-    struct MappedRemapping {
-      uint64_t OriginalBase;
-      void* Remapped;
-      size_t Size;
-    };
-    std::vector<MappedRemapping> ReadMappings;
-
-    union {
-      Elf32_Ehdr _32;
-      Elf64_Ehdr _64;
-    } Header;
-
-    union SectionHeader {
-      const Elf32_Shdr *_32;
-      const Elf64_Shdr *_64;
-    };
-
-    union ProgramHeader {
-      const Elf32_Phdr *_32;
-      const Elf64_Phdr *_64;
-    };
-
-    std::vector<SectionHeader> SectionHeaders;
-    std::vector<ProgramHeader> ProgramHeaders;
-    std::vector<ELFSymbol> Symbols;
-    std::vector<std::string> AddressSymbolNames;
-    std::vector<uintptr_t> UnwindEntries;
-    std::unordered_map<std::string, ELFSymbol *> SymbolMap;
-    std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
-  };
-
   uint64_t IsELFBits(ELFMemMapping *Mapping) {
     constexpr size_t ELFHeaderSize = std::max(sizeof(Elf32_Ehdr), sizeof(Elf64_Ehdr));
     if (Mapping->TotalSize < ELFHeaderSize) {
@@ -426,4 +389,12 @@ namespace ELFMapping {
     return nullptr;
   }
 
+  ELFMemMapping::~ELFMemMapping() {
+    if (BaseRemapped) {
+      // If the FD was mapped then make sure to unmap it.
+      munmap(BaseRemapped, TotalSize);
+    }
+
+    // FD is tracked externally so we don't close it here.
+  }
 }

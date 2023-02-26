@@ -1,4 +1,5 @@
 #pragma once
+#include "FDCountWatch.h"
 #include "Common/FEXServerClient.h"
 #include "Unwind/FileMapping.h"
 
@@ -36,6 +37,8 @@ namespace CoreDumpService {
           return -1;
         }
 
+        FDCountWatch::IncrementFDCountAndCheckLimits(2);
+
         PollFDs.emplace_back(pollfd {
           .fd = SVs[0],
           .events = POLLIN | POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP,
@@ -52,6 +55,13 @@ namespace CoreDumpService {
       ~CoreDumpClass() {
         ExecutionThread.join();
         close(ServerSocket);
+        for (auto FD : TrackedFDs) {
+          close(FD);
+        }
+
+        FDCountWatch::IncrementFDCountAndCheckLimits(-TrackedFDs.size() - 1);
+
+        TrackedFDs.clear();
       }
 
       void ExecutionFunc();
@@ -144,7 +154,6 @@ namespace CoreDumpService {
           }
 
         }
-        close(FD);
       }
 
       void SetDesc(uint32_t pid, uint32_t tid, uint32_t uid, uint32_t gid, uint32_t Signal, uint64_t Timestamp, uint8_t HostArch, uint8_t GuestArch) {
@@ -188,6 +197,7 @@ namespace CoreDumpService {
 
       FEXCore::Context::Context::JITRegionPairs ThreadDispatcher{};
       std::vector<FEXCore::Context::Context::JITRegionPairs> ThreadJITRegions{};
+      std::vector<int> TrackedFDs;
   };
 
 

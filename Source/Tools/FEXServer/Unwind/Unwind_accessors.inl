@@ -100,11 +100,11 @@
       }
 
       if (!Mapping->ELFMapping) {
-        Mapping->ELFMapping = ELFMapping::LoadELFMapping(Mapping, Unwind->GetFD(&Mapping->Path));
+        Mapping->ELFMapping.reset(ELFMapping::LoadELFMapping(Mapping, Unwind->GetFD(&Mapping->Path)));
       }
 
       if (Mapping->ELFMapping) {
-        auto Symbol = ELFMapping::GetSymbolFromAddress(Mapping->ELFMapping, addr);
+        auto Symbol = ELFMapping::GetSymbolFromAddress(Mapping->ELFMapping.get(), addr);
         if (Symbol) {
           strncpy(bufp, Symbol->Name, buf_len);
           *offp = addr - Symbol->Address;

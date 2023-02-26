@@ -1,4 +1,5 @@
 #include "CoreDumpService.h"
+#include "FDCountWatch.h"
 #include "FEXHeaderUtils/Syscalls.h"
 #include "Logger.h"
 #include "SquashFS.h"
@@ -24,59 +25,6 @@ namespace ProcessPipe {
   time_t RequestTimeout {10};
   bool Foreground {false};
   std::vector<struct pollfd> PollFDs{};
-
-  // FD count watching
-  constexpr size_t static MAX_FD_DISTANCE = 32;
-  rlimit MaxFDs{};
-  std::atomic<size_t> NumFilesOpened{};
-
-  size_t GetNumFilesOpen() {
-    // Walk /proc/self/fd/ to see how many open files we currently have
-    const std::filesystem::path self{"/proc/self/fd/"};
-
-    return std::distance(std::filesystem::directory_iterator{self}, std::filesystem::directory_iterator{});
-  }
-
-  void GetMaxFDs() {
-    // Get our kernel limit for the number of open files
-    if (getrlimit(RLIMIT_NOFILE, &MaxFDs) != 0) {
-      fprintf(stderr, "[FEXMountDaemon] getrlimit(RLIMIT_NOFILE) returned error %d %s\n", errno, strerror(errno));
-    }
-
-    // Walk /proc/self/fd/ to see how many open files we currently have
-    NumFilesOpened = GetNumFilesOpen();
-  }
-
-  void CheckRaiseFDLimit() {
-    if (NumFilesOpened < (MaxFDs.rlim_cur - MAX_FD_DISTANCE)) {
-      // No need to raise the limit.
-      return;
-    }
-
-    if (MaxFDs.rlim_cur == MaxFDs.rlim_max) {
-      fprintf(stderr, "[FEXMountDaemon] Our open FD limit is already set to max and we are wanting to increase it\n");
-      fprintf(stderr, "[FEXMountDaemon] FEXMountDaemon will now no longer be able to track new instances of FEX\n");
-      fprintf(stderr, "[FEXMountDaemon] Current limit is %zd(hard %zd) FDs and we are at %zd\n", MaxFDs.rlim_cur, MaxFDs.rlim_max, GetNumFilesOpen());
-      fprintf(stderr, "[FEXMountDaemon] Ask your administrator to raise your kernel's hard limit on open FDs\n");
-      return;
-    }
-
-    rlimit NewLimit = MaxFDs;
-
-    // Just multiply by two
-    NewLimit.rlim_cur <<= 1;
-
-    // Now limit to the hard max
-    NewLimit.rlim_cur = std::min(NewLimit.rlim_cur, NewLimit.rlim_max);
-
-    if (setrlimit(RLIMIT_NOFILE, &NewLimit) != 0) {
-      fprintf(stderr, "[FEXMountDaemon] Couldn't raise FD limit to %zd even though our hard limit is %zd\n", NewLimit.rlim_cur, NewLimit.rlim_max);
-    }
-    else {
-      // Set the new limit
-      MaxFDs = NewLimit;
-    }
-  }
 
   bool InitializeServerPipe() {
     std::string ServerFolder = FEXServerClient::GetServerLockFolder();
@@ -286,9 +234,6 @@ namespace ProcessPipe {
   void HandleSocketData(int Socket) {
     std::vector<uint8_t> Data(1500);
 
-    // Get the current number of FDs of the process before we start handling sockets.
-    GetMaxFDs();
-
     size_t CurrentRead = SocketUtil::ReadDataFromSocket(Socket, Data);
 
     size_t CurrentOffset{};
@@ -313,8 +258,7 @@ namespace ProcessPipe {
             close(fds[1]);
 
             // Check if we need to increase the FD limit.
-            ++NumFilesOpened;
-            CheckRaiseFDLimit();
+            FDCountWatch::IncrementFDCountAndCheckLimits(1);
           }
           else {
             // Log thread isn't running. Let FEXInterpreter know it can't have one.
@@ -380,8 +324,7 @@ namespace ProcessPipe {
             close(fds[0]);
 
             // Check if we need to increase the FD limit.
-            ++NumFilesOpened;
-            CheckRaiseFDLimit();
+            FDCountWatch::IncrementFDCountAndCheckLimits(1);
 
             // Write side will naturally close on process exit, letting the other process know we have exited.
           }
@@ -406,8 +349,7 @@ namespace ProcessPipe {
             CoreDumpService::ShutdownFD(Result);
 
             // Check if we need to increase the FD limit.
-            ++NumFilesOpened;
-            CheckRaiseFDLimit();
+            FDCountWatch::IncrementFDCountAndCheckLimits(1);
           }
           else {
             // Log thread isn't running. Let FEXInterpreter know it can't have one.
@@ -440,6 +382,9 @@ namespace ProcessPipe {
 
   void WaitForRequests() {
     auto LastDataTime = std::chrono::system_clock::now();
+
+    // Get the current number of FDs of the process before we start handling sockets.
+    FDCountWatch::GetMaxFDs();
 
     while (!ShouldShutdown) {
       struct timespec ts{};

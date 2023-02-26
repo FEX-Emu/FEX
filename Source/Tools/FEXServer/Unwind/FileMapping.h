@@ -1,11 +1,10 @@
 #pragma once
+#include "ELFMapping.h"
+
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
-
-namespace ELFMapping {
-  struct ELFMemMapping;
-}
 
 namespace FileMapping {
   struct MemMapping;
@@ -14,7 +13,7 @@ namespace FileMapping {
     uint64_t Begin, End;
     std::string Path;
     std::vector<MemMapping*> MemMappings;
-    ELFMapping::ELFMemMapping *ELFMapping{};
+    std::unique_ptr<ELFMapping::ELFMemMapping> ELFMapping;
   };
 
   struct MemMapping {

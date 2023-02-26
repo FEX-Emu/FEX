@@ -1,4 +1,5 @@
 #include "CoreDumpService.h"
+#include "FDCountWatch.h"
 #include "ProcessPipe.h"
 #include "Unwind/Unwind_x86.h"
 #include "Unwind/Unwind_x86_64.h"
@@ -321,6 +322,19 @@ namespace CoreDumpService {
   }
 
   void CoreDumpClass::HandleSocketData() {
+    auto PeekMem = [&](uint64_t Addr, uint8_t Size) -> uint64_t {
+      return PeekMemory(ServerSocket, Addr, Size);
+    };
+    auto GetFD = [&](std::string const *Filename) -> int {
+      int FD = GetFDFromClient(ServerSocket, Filename);
+      if (FD != -1) {
+        FDCountWatch::IncrementFDCountAndCheckLimits(1);
+        TrackedFDs.emplace_back(FD);
+      }
+
+      return FD;
+    };
+
     std::vector<uint8_t> Data(1500);
     size_t CurrentRead = SocketUtil::ReadDataFromSocket(ServerSocket, Data);
     size_t CurrentOffset{};
@@ -333,6 +347,7 @@ namespace CoreDumpService {
           int FD = ReceiveFDPacket(ServerSocket);
 
           ParseCommandLineFD(FD);
+          close(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -342,6 +357,7 @@ namespace CoreDumpService {
           int FD = ReceiveFDPacket(ServerSocket);
 
           ConsumeMapsFD(FD);
+          close(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -351,6 +367,7 @@ namespace CoreDumpService {
           int FD = ReceiveFDPacket(ServerSocket);
 
           ConsumeFileMapsFD(FD);
+          close(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -373,14 +390,6 @@ namespace CoreDumpService {
           HostContextData = *Req;
 
           UnwindHost = Unwind::x86_64::Unwind(this, &HostContextData.siginfo, &HostContextData.context);
-
-          auto PeekMem = [&](uint64_t Addr, uint8_t Size) -> uint64_t {
-            return PeekMemory(ServerSocket, Addr, Size);
-          };
-          auto GetFD = [&](std::string const *Filename) -> int {
-            return GetFDFromClient(ServerSocket, Filename);
-          };
-
           UnwindHost->SetPeekMemory(PeekMem);
           UnwindHost->SetGetFileFD(GetFD);
           CurrentOffset += sizeof(*Req);
@@ -396,12 +405,6 @@ namespace CoreDumpService {
             UnwindGuest = Unwind::x86_64::Unwind(this, &Req->siginfo, &Req->context);
           }
 
-          auto PeekMem = [&](uint64_t Addr, uint32_t Size) -> uint64_t {
-            return PeekMemory(ServerSocket, Addr, Size);
-          };
-          auto GetFD = [&](std::string const *Filename) -> int {
-            return GetFDFromClient(ServerSocket, Filename);
-          };
           UnwindGuest->SetPeekMemory(PeekMem);
           UnwindGuest->SetGetFileFD(GetFD);
 
@@ -507,6 +510,7 @@ namespace CoreDumpService {
     // Close the socket on this side
     shutdown(ServerSocket, SHUT_RDWR);
     close(ServerSocket);
+    FDCountWatch::IncrementFDCountAndCheckLimits(-1);
 
     Running = false;
   }
@@ -561,5 +565,6 @@ namespace CoreDumpService {
   void ShutdownFD(int FD) {
     // Only close the socket FD.
     close(FD);
+    FDCountWatch::IncrementFDCountAndCheckLimits(-1);
   }
 }
