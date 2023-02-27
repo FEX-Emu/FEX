@@ -1683,7 +1683,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally terminate sc
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE pointer conflict compare") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(whilewr(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilewr p15.b, x30, x29");
+  TEST_SINGLE(whilewr(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilewr p15.h, x30, x29");
+  TEST_SINGLE(whilewr(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilewr p15.s, x30, x29");
+  TEST_SINGLE(whilewr(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilewr p15.d, x30, x29");
+
+  TEST_SINGLE(whilerw(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilerw p15.b, x30, x29");
+  TEST_SINGLE(whilerw(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilerw p15.h, x30, x29");
+  TEST_SINGLE(whilerw(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilerw p15.s, x30, x29");
+  TEST_SINGLE(whilerw(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilerw p15.d, x30, x29");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract immediate (unpredicated)") {

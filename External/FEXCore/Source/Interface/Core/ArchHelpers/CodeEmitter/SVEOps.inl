@@ -1483,7 +1483,12 @@ public:
   }
 
   // SVE pointer conflict compare
-  // XXX:
+  void whilewr(SubRegSize size, PRegister pd, XRegister rn, XRegister rm) {
+    SVEIntCompareScalar(0b1100, 0, pd.Idx(), size, rn, rm);
+  }
+  void whilerw(SubRegSize size, PRegister pd, XRegister rn, XRegister rm) {
+    SVEIntCompareScalar(0b1100, 1, pd.Idx(), size, rn, rm);
+  }
 
   // SVE Integer Wide Immediate - Unpredicated
   // SVE integer add/subtract immediate (unpredicated)
@@ -1492,6 +1497,7 @@ public:
   // XXX:
   // SVE integer multiply immediate (unpredicated)
   // XXX:
+
   // SVE broadcast integer immediate (unpredicated)
   void dup_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
