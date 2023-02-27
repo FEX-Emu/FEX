@@ -544,6 +544,11 @@ namespace FEXCore::ARMEmitter {
     ROTATE_270 = 0b11,
   };
 
+  // Concept for contraining some instructions to accept only an XRegister or WRegister.
+  // Particularly for operations that differ encodings depending on which one is used.
+  template <typename T>
+  concept IsXOrWRegister = std::is_same_v<T, XRegister> || std::is_same_v<T, WRegister>;
+
   // This is an emitter that is designed around the smallest code bloat as possible.
   // Eschewing most developer convenience in order to keep code as small as possible.
 
