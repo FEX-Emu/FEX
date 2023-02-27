@@ -4234,167 +4234,89 @@ public:
 
   // Loadstore PAC
   // TODO
+
   // Loadstore unsigned immediate
-  void strb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1001'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void strb(Register rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 0, 0b00, rt, rn, Imm);
   }
-  void ldrb(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1001'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void ldrb(Register rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 0, 0b01, rt, rn, Imm);
   }
-  void ldrsb(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1001'10 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void ldrsb(XRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 0, 0b10, rt, rn, Imm);
   }
-  void ldrsb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1001'11 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void ldrsb(WRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 0, 0b11, rt, rn, Imm);
   }
-  void strb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1101'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void strb(VRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 1, 0b00, rt, rn, Imm);
   }
-  void ldrb(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1101'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void ldrb(VRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 1, 0b01, rt, rn, Imm);
   }
-  void strh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0111'1001'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 1);
+  void strh(Register rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b01, 0, 0b00, rt, rn, Imm);
   }
-  void ldrh(FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0111'1001'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 1);
+  void ldrh(Register rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b01, 0, 0b01, rt, rn, Imm);
   }
-  void ldrsh(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0111'1001'10 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 1);
+  void ldrsh(XRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b01, 0, 0b10, rt, rn, Imm);
   }
-  void ldrsh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0111'1001'11 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 1);
+  void ldrsh(WRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b01, 0, 0b11, rt, rn, Imm);
   }
-  void strh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0111'1101'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 1);
+  void strh(VRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b01, 1, 0b00, rt, rn, Imm);
   }
-  void ldrh(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0111'1101'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 1);
+  void ldrh(VRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b01, 1, 0b01, rt, rn, Imm);
   }
-  void str(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1011'1001'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 2);
+  void str(WRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b10, 0, 0b00, rt, rn, Imm);
   }
-  void ldr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1011'1001'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 2);
+  void ldr(WRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b10, 0, 0b01, rt, rn, Imm);
   }
-  void ldrsw(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1011'1001'10 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 2);
+  void ldrsw(XRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b10, 0, 0b10, rt, rn, Imm);
   }
-  void str(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1011'1101'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 2);
+  void str(SRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b10, 1, 0b00, rt, rn, Imm);
   }
-  void ldr(FEXCore::ARMEmitter::SRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1011'1101'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 2);
+  void ldr(SRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b10, 1, 0b01, rt, rn, Imm);
   }
-  void str(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1111'1001'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 3);
+  void str(XRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b11, 0, 0b00, rt, rn, Imm);
   }
-  void ldr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1111'1001'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 3);
-  }
-  void ldr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    uint32_t Op = (0b0011'1001'01 << 22) |
-                  (FEXCore::ToUnderlying(size) << 30);
-    if (size == ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    }
-    else if (size == ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-      Imm >>= 1;
-    }
-    else if (size == ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-      Imm >>= 2;
-    }
-    else if (size == ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-      Imm >>= 3;
-    }
-    LoadStoreUnsigned(Op, rt, rn, Imm);
-  }
-  void str(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    uint32_t Op = (0b0011'1001'00 << 22) |
-                  (FEXCore::ToUnderlying(size) << 30);
-    if (size == ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 4095, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    }
-    else if (size == ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 8190 && (Imm & 0b1) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-      Imm >>= 1;
-    }
-    else if (size == ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 16380 && (Imm & 0b11) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-      Imm >>= 2;
-    }
-    else if (size == ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-      Imm >>= 3;
-    }
-    LoadStoreUnsigned(Op, rt, rn, Imm);
+  void ldr(XRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b11, 0, 0b01, rt, rn, Imm);
   }
 
-  void prfm(FEXCore::ARMEmitter::Prefetch prfop, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1111'1001'10 << 22;
-    LoadStoreUnsigned(Op, prfop, rn, Imm >> 3);
+  void ldr(SubRegSize size, Register rt, Register rn, uint32_t Imm = 0) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LoadStoreUnsigned(FEXCore::ToUnderlying(size), 0, 0b01, rt, rn, Imm);
   }
-  void str(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1111'1101'00 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 3);
+  void str(SubRegSize size, Register rt, Register rn, uint32_t Imm = 0) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LoadStoreUnsigned(FEXCore::ToUnderlying(size), 0, 0b00, rt, rn, Imm);
   }
-  void ldr(FEXCore::ARMEmitter::DRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 32760 && (Imm & 0b111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b1111'1101'01 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 3);
+
+  void prfm(Prefetch prfop, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b11, 0, 0b10, prfop, rn, Imm);
   }
-  void str(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 65520 && (Imm & 0b1111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1101'10 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 4);
+  void str(DRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b11, 1, 0b00, rt, rn, Imm);
   }
-  void ldr(FEXCore::ARMEmitter::QRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_A_FMT(Imm <= 65520 && (Imm & 0b1111) == 0, "Offset not valid: {} 0x{:x}", __func__, Imm);
-    constexpr uint32_t Op = 0b0011'1101'11 << 22;
-    LoadStoreUnsigned(Op, rt, rn, Imm >> 4);
+  void ldr(DRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b11, 1, 0b01, rt, rn, Imm);
+  }
+  void str(QRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 1, 0b10, rt, rn, Imm);
+  }
+  void ldr(QRegister rt, Register rn, uint32_t Imm = 0) {
+    LoadStoreUnsigned(0b00, 1, 0b11, rt, rn, Imm);
   }
 
 private:
@@ -4521,15 +4443,35 @@ private:
   }
 
   // Loadstore unsigned immediate
-  template<typename T>
-  void LoadStoreUnsigned(uint32_t Op, T rt, FEXCore::ARMEmitter::Register rn, uint32_t Imm) {
-    uint32_t Instr = Op;
+  template <typename T>
+  void LoadStoreUnsigned(uint32_t size, uint32_t V, uint32_t opc, T rt, Register rn, uint32_t Imm) {
+    uint32_t SizeShift = size;
+    if constexpr (std::is_same_v<T, QRegister>) {
+      // 128-bit variant is specified via size=0b00, V=1, opc=0b1x
+      // so we need to special case this one based on whether or not
+      // rt indicates a 128-bit vector. Nice thing is this can be
+      // checked at compile-time.
+      SizeShift = 4;
+    }
 
-    Instr |= Imm << 10;
+    [[maybe_unused]] const uint32_t MaxImm = 4095 << SizeShift;
+    [[maybe_unused]] const uint32_t ElementSize = 1U << SizeShift;
+
+    LOGMAN_THROW_A_FMT(Imm <= MaxImm, "{}: Offset not valid: Imm: 0x{:x} Max: 0x{:x}", __func__, Imm, MaxImm);
+    LOGMAN_THROW_A_FMT((Imm % ElementSize) == 0, "{}: Offset must be a multiple of {}. Offset: 0x{:x}", __func__, ElementSize, Imm);
+
+    const uint32_t ShiftedImm = Imm >> SizeShift;
+
+    uint32_t Instr = 0b0011'1001'0000'0000'0000'0000'0000'0000;
+    Instr |= size << 30;
+    Instr |= V << 26;
+    Instr |= opc << 22;
+    Instr |= ShiftedImm << 10;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rt(rt);
     dc32(Instr);
   }
+
   template<IndexType Index>
   void ldp_w(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
