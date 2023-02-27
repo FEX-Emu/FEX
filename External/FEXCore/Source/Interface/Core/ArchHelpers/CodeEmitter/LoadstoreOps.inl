@@ -4236,6 +4236,13 @@ public:
   // TODO
 
   // Loadstore unsigned immediate
+  // Maximum values of unsigned immediate offsets for particular data sizes.
+  static constexpr uint32_t LSByteMaxUnsignedOffset = 4095;
+  static constexpr uint32_t LSHalfMaxUnsignedOffset = 8190;
+  static constexpr uint32_t LSWordMaxUnsignedOffset = 16380;
+  static constexpr uint32_t LSDWordMaxUnsignedOffset = 32760;
+  static constexpr uint32_t LSQWordMaxUnsignedOffset = 65520;
+
   void strb(Register rt, Register rn, uint32_t Imm = 0) {
     LoadStoreUnsigned(0b00, 0, 0b00, rt, rn, Imm);
   }
@@ -4454,7 +4461,7 @@ private:
       SizeShift = 4;
     }
 
-    [[maybe_unused]] const uint32_t MaxImm = 4095 << SizeShift;
+    [[maybe_unused]] const uint32_t MaxImm = LSByteMaxUnsignedOffset << SizeShift;
     [[maybe_unused]] const uint32_t ElementSize = 1U << SizeShift;
 
     LOGMAN_THROW_A_FMT(Imm <= MaxImm, "{}: Offset not valid: Imm: 0x{:x} Max: 0x{:x}", __func__, Imm, MaxImm);
