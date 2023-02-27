@@ -1675,7 +1675,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare scalar cou
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally terminate scalars") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(ctermeq(XReg::x30, XReg::x29), "ctermeq x30, x29");
+  TEST_SINGLE(ctermeq(WReg::w30, WReg::w29), "ctermeq w30, w29");
+
+  TEST_SINGLE(ctermne(XReg::x30, XReg::x29), "ctermne x30, x29");
+  TEST_SINGLE(ctermne(WReg::w30, WReg::w29), "ctermne w30, w29");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE pointer conflict compare") {

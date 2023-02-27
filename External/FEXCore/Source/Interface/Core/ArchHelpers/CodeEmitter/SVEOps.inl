@@ -1469,7 +1469,19 @@ public:
   }
 
   // SVE conditionally terminate scalars
-  // XXX:
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void ctermeq(T rn, T rm) {
+    constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
+    SVEIntCompareScalar(0b1000, 0, 0b0000, size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void ctermne(T rn, T rm) {
+    constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
+    SVEIntCompareScalar(0b1000, 1, 0b0000, size, rn, rm);
+  }
+
   // SVE pointer conflict compare
   // XXX:
 
