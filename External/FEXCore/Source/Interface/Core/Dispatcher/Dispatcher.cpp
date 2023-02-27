@@ -440,6 +440,8 @@ uint64_t Dispatcher::SetupFrame_ia32(
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(CTX->VDSOPointers.VDSO_kernel_sigreturn);
 
   NewGuestSP -= sizeof(uint64_t);
+  NewGuestSP = AlignDown(NewGuestSP, alignof(uint64_t));
+
   uint64_t HostStackLocation = NewGuestSP;
 
   if (IsAVXEnabled) {
@@ -580,6 +582,8 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(CTX->VDSOPointers.VDSO_kernel_rt_sigreturn);
 
   NewGuestSP -= sizeof(uint64_t);
+  NewGuestSP = AlignDown(NewGuestSP, alignof(uint64_t));
+
   uint64_t HostStackLocation = NewGuestSP;
 
   if (IsAVXEnabled) {
@@ -860,6 +864,7 @@ uint64_t Dispatcher::SetupFrame_x64(
   // FP state
   // Host stack location
   NewGuestSP -= sizeof(uint64_t);
+  NewGuestSP = AlignDown(NewGuestSP, alignof(uint64_t));
 
   uint64_t HostStackLocation = NewGuestSP;
 

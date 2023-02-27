@@ -237,8 +237,10 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 template <typename T>
 static inline void RestoreContext(void* ucontext, T *Backup) {
   if constexpr (std::is_same<T, ArmContextBackup>::value) {
+    LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
+
     auto _ucontext = GetUContext(ucontext);
-   auto _mcontext = GetMContext(ucontext);
+    auto _mcontext = GetMContext(ucontext);
 
     HostFPRState *HostState = reinterpret_cast<HostFPRState*>(&_mcontext->__reserved[0]);
     LOGMAN_THROW_AA_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
@@ -254,8 +256,6 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
-
-    LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
@@ -334,6 +334,8 @@ static inline void BackupContext(void* ucontext, T *Backup) {
 template <typename T>
 static inline void RestoreContext(void* ucontext, T *Backup) {
   if constexpr (std::is_same<T, X86ContextBackup>::value) {
+    LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
+
     auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
 
@@ -344,8 +346,6 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 
     // Restore the signal mask now
     memcpy(&_ucontext->uc_sigmask, &Backup->sa_mask, sizeof(uint64_t));
-
-    LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
   } else {
     // This must be a runtime error
     ERROR_AND_DIE_FMT("Wrong context type");
