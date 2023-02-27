@@ -1511,18 +1511,6 @@ public:
     dup_imm(size, zd, Value, LSL8);
   }
 
-  void SVEBroadcastImm(uint32_t opc, uint32_t sh, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1000'110 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= sh << 13;
-    Instr |= (imm & 0xFF) << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   // SVE broadcast floating-point immediate (unpredicated)
   void fdup(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, float Value) {
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
@@ -1553,17 +1541,6 @@ public:
     fdup(size, zd, Value);
   }
 
-  void SVEBroadcastFloatImm(uint32_t opc, uint32_t o2, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1001'110 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= o2 << 13;
-    Instr |= imm << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
   // XXX:
 
   // SVE Predicate Count
@@ -3072,6 +3049,30 @@ private:
     Instr |= tsz << 16;
     Instr |= Encode_rn(zn);
     Instr |= Encode_rd(zd);
+    dc32(Instr);
+  }
+
+  void SVEBroadcastImm(uint32_t opc, uint32_t sh, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
+    constexpr uint32_t Op = 0b0010'0101'0011'1000'110 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 17;
+    Instr |= sh << 13;
+    Instr |= (imm & 0xFF) << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBroadcastFloatImm(uint32_t opc, uint32_t o2, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
+    constexpr uint32_t Op = 0b0010'0101'0011'1001'110 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 17;
+    Instr |= o2 << 13;
+    Instr |= imm << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
