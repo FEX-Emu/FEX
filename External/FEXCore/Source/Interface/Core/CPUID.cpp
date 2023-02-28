@@ -410,6 +410,9 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
   // XXX: Enable once the rest of the SSE4.2 instructions are emulated
   uint32_t SupportsSSE42 = CTX->HostFeatures.SupportsCRC && false ? 1 : 0;
 
+  // Hypervisor bit is normally set but some applications have issues with it.
+  uint32_t Hypervisor = HideHypervisorBit() ? 0 : 1;
+
   Res.eax = FAMILY_IDENTIFIER;
 
   Res.ebx = 0 | // Brand index
@@ -449,7 +452,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (SUPPORTS_AVX << 28) | // AVX
     (0 << 29) | // F16C
     (CTX->HostFeatures.SupportsRAND << 30) | // RDRAND
-    (1 << 31);  // Hypervisor always returns one
+    (Hypervisor << 31);
 
   Res.edx =
     (1 <<  0) | // FPU
