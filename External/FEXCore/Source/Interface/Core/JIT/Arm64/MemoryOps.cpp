@@ -703,7 +703,7 @@ DEF_OP(SpillRegister) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
     case 1: {
-      if (SlotOffset > 4095) {
+      if (SlotOffset > LSByteMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         strb(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -713,7 +713,7 @@ DEF_OP(SpillRegister) {
       break;
     }
     case 2: {
-      if (SlotOffset > 8190) {
+      if (SlotOffset > LSHalfMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         strh(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -723,7 +723,7 @@ DEF_OP(SpillRegister) {
       break;
     }
     case 4: {
-      if (SlotOffset > 16380) {
+      if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -733,7 +733,7 @@ DEF_OP(SpillRegister) {
       break;
     }
     case 8: {
-      if (SlotOffset > 32760) {
+      if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -751,7 +751,7 @@ DEF_OP(SpillRegister) {
 
     switch (OpSize) {
     case 4: {
-      if (SlotOffset > 16380) {
+      if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -761,7 +761,7 @@ DEF_OP(SpillRegister) {
       break;
     }
     case 8: {
-      if (SlotOffset > 32760) {
+      if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -771,7 +771,7 @@ DEF_OP(SpillRegister) {
       break;
     }
     case 16: {
-      if (SlotOffset > 65520) {
+      if (SlotOffset > LSQWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -803,7 +803,7 @@ DEF_OP(FillRegister) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
     case 1: {
-      if (SlotOffset > 4095) {
+      if (SlotOffset > LSByteMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldrb(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -813,7 +813,7 @@ DEF_OP(FillRegister) {
       break;
     }
     case 2: {
-      if (SlotOffset > 8190) {
+      if (SlotOffset > LSHalfMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldrh(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -823,7 +823,7 @@ DEF_OP(FillRegister) {
       break;
     }
     case 4: {
-      if (SlotOffset > 16380) {
+      if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -833,7 +833,7 @@ DEF_OP(FillRegister) {
       break;
     }
     case 8: {
-      if (SlotOffset > 32760) {
+      if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -851,7 +851,7 @@ DEF_OP(FillRegister) {
 
     switch (OpSize) {
     case 4: {
-      if (SlotOffset > 16380) {
+      if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -861,7 +861,7 @@ DEF_OP(FillRegister) {
       break;
     }
     case 8: {
-      if (SlotOffset > 32760) {
+      if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
@@ -871,7 +871,7 @@ DEF_OP(FillRegister) {
       break;
     }
     case 16: {
-      if (SlotOffset > 65520) {
+      if (SlotOffset > LSQWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
       }
