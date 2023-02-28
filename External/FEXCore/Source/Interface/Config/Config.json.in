@@ -342,6 +342,14 @@
           "Forces a process to stall out on initialization",
           "Useful for a process that keeps restarting and doesn't work"
         ]
+      },
+      "HideHypervisorBit": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Hides the hypervisor CPUID bit when set.",
+          "Should only be used for applications that have issues with this set."
+        ]
       }
     },
     "Misc": {

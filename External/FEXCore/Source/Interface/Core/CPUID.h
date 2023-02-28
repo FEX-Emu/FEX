@@ -67,6 +67,7 @@ private:
   FEXCore::Context::ContextImpl *CTX;
   bool Hybrid{};
   FEX_CONFIG_OPT(Cores, THREADS);
+  FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
 
   using FunctionHandler = FEXCore::CPUID::FunctionResults (CPUIDEmu::*)(uint32_t Leaf);
   struct CPUData {
