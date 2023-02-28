@@ -1419,11 +1419,76 @@ public:
 
   // SVE Integer Compare - Scalars
   // SVE integer compare scalar count and limit
-  // XXX:
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilege(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar(IsXRegister << 2, 0, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilegt(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar(IsXRegister << 2, 1, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilelt(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar((IsXRegister << 2) | 0b001, 0, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilele(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar((IsXRegister << 2) | 0b001, 1, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilehs(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar((IsXRegister << 2) | 0b010, 0, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilehi(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar((IsXRegister << 2) | 0b010, 1, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilelo(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar((IsXRegister << 2) | 0b011, 0, pd.Idx(), size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void whilels(SubRegSize size, PRegister pd, T rn, T rm) {
+    constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
+    SVEIntCompareScalar((IsXRegister << 2) | 0b011, 1, pd.Idx(), size, rn, rm);
+  }
+
   // SVE conditionally terminate scalars
-  // XXX:
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void ctermeq(T rn, T rm) {
+    constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
+    SVEIntCompareScalar(0b1000, 0, 0b0000, size, rn, rm);
+  }
+  template <typename T>
+  requires IsXOrWRegister<T>
+  void ctermne(T rn, T rm) {
+    constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
+    SVEIntCompareScalar(0b1000, 1, 0b0000, size, rn, rm);
+  }
+
   // SVE pointer conflict compare
-  // XXX:
+  void whilewr(SubRegSize size, PRegister pd, XRegister rn, XRegister rm) {
+    SVEIntCompareScalar(0b1100, 0, pd.Idx(), size, rn, rm);
+  }
+  void whilerw(SubRegSize size, PRegister pd, XRegister rn, XRegister rm) {
+    SVEIntCompareScalar(0b1100, 1, pd.Idx(), size, rn, rm);
+  }
 
   // SVE Integer Wide Immediate - Unpredicated
   // SVE integer add/subtract immediate (unpredicated)
@@ -1432,6 +1497,7 @@ public:
   // XXX:
   // SVE integer multiply immediate (unpredicated)
   // XXX:
+
   // SVE broadcast integer immediate (unpredicated)
   void dup_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -1443,18 +1509,6 @@ public:
   }
   void mov_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
     dup_imm(size, zd, Value, LSL8);
-  }
-
-  void SVEBroadcastImm(uint32_t opc, uint32_t sh, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1000'110 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= sh << 13;
-    Instr |= (imm & 0xFF) << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
   }
 
   // SVE broadcast floating-point immediate (unpredicated)
@@ -1487,17 +1541,6 @@ public:
     fdup(size, zd, Value);
   }
 
-  void SVEBroadcastFloatImm(uint32_t opc, uint32_t o2, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1001'110 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= o2 << 13;
-    Instr |= imm << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
   // XXX:
 
   // SVE Predicate Count
@@ -3009,6 +3052,30 @@ private:
     dc32(Instr);
   }
 
+  void SVEBroadcastImm(uint32_t opc, uint32_t sh, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
+    constexpr uint32_t Op = 0b0010'0101'0011'1000'110 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 17;
+    Instr |= sh << 13;
+    Instr |= (imm & 0xFF) << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBroadcastFloatImm(uint32_t opc, uint32_t o2, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
+    constexpr uint32_t Op = 0b0010'0101'0011'1001'110 << 13;
+    uint32_t Instr = Op;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 17;
+    Instr |= o2 << 13;
+    Instr |= imm << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
   void SVESel(uint32_t Op, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
     uint32_t Instr = Op;
 
@@ -4079,5 +4146,18 @@ private:
     Instr |= op2 << 9;
     Instr |= op3 << 5;
     Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntCompareScalar(uint32_t op1, uint32_t b4, uint32_t op2, SubRegSize size, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+
+    uint32_t Instr = 0b0010'0101'0010'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= rm.Idx() << 16;
+    Instr |= op1 << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= b4 << 4;
+    Instr |= op2;
     dc32(Instr);
   }

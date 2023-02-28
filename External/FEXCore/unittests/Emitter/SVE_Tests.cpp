@@ -1601,15 +1601,97 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate initialize") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare scalar count and limit") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(whilege(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilege p15.b, x30, x29");
+  TEST_SINGLE(whilege(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilege p15.h, x30, x29");
+  TEST_SINGLE(whilege(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilege p15.s, x30, x29");
+  TEST_SINGLE(whilege(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilege p15.d, x30, x29");
+  TEST_SINGLE(whilege(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilege p15.b, w30, w29");
+  TEST_SINGLE(whilege(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilege p15.h, w30, w29");
+  TEST_SINGLE(whilege(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilege p15.s, w30, w29");
+  TEST_SINGLE(whilege(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilege p15.d, w30, w29");
+
+  TEST_SINGLE(whilegt(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilegt p15.b, x30, x29");
+  TEST_SINGLE(whilegt(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilegt p15.h, x30, x29");
+  TEST_SINGLE(whilegt(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilegt p15.s, x30, x29");
+  TEST_SINGLE(whilegt(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilegt p15.d, x30, x29");
+  TEST_SINGLE(whilegt(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilegt p15.b, w30, w29");
+  TEST_SINGLE(whilegt(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilegt p15.h, w30, w29");
+  TEST_SINGLE(whilegt(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilegt p15.s, w30, w29");
+  TEST_SINGLE(whilegt(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilegt p15.d, w30, w29");
+
+  TEST_SINGLE(whilelt(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilelt p15.b, x30, x29");
+  TEST_SINGLE(whilelt(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilelt p15.h, x30, x29");
+  TEST_SINGLE(whilelt(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilelt p15.s, x30, x29");
+  TEST_SINGLE(whilelt(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilelt p15.d, x30, x29");
+  TEST_SINGLE(whilelt(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilelt p15.b, w30, w29");
+  TEST_SINGLE(whilelt(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilelt p15.h, w30, w29");
+  TEST_SINGLE(whilelt(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilelt p15.s, w30, w29");
+  TEST_SINGLE(whilelt(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilelt p15.d, w30, w29");
+
+  TEST_SINGLE(whilele(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilele p15.b, x30, x29");
+  TEST_SINGLE(whilele(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilele p15.h, x30, x29");
+  TEST_SINGLE(whilele(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilele p15.s, x30, x29");
+  TEST_SINGLE(whilele(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilele p15.d, x30, x29");
+  TEST_SINGLE(whilele(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilele p15.b, w30, w29");
+  TEST_SINGLE(whilele(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilele p15.h, w30, w29");
+  TEST_SINGLE(whilele(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilele p15.s, w30, w29");
+  TEST_SINGLE(whilele(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilele p15.d, w30, w29");
+
+  TEST_SINGLE(whilehs(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilehs p15.b, x30, x29");
+  TEST_SINGLE(whilehs(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilehs p15.h, x30, x29");
+  TEST_SINGLE(whilehs(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilehs p15.s, x30, x29");
+  TEST_SINGLE(whilehs(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilehs p15.d, x30, x29");
+  TEST_SINGLE(whilehs(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilehs p15.b, w30, w29");
+  TEST_SINGLE(whilehs(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilehs p15.h, w30, w29");
+  TEST_SINGLE(whilehs(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilehs p15.s, w30, w29");
+  TEST_SINGLE(whilehs(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilehs p15.d, w30, w29");
+
+  TEST_SINGLE(whilehi(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilehi p15.b, x30, x29");
+  TEST_SINGLE(whilehi(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilehi p15.h, x30, x29");
+  TEST_SINGLE(whilehi(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilehi p15.s, x30, x29");
+  TEST_SINGLE(whilehi(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilehi p15.d, x30, x29");
+  TEST_SINGLE(whilehi(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilehi p15.b, w30, w29");
+  TEST_SINGLE(whilehi(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilehi p15.h, w30, w29");
+  TEST_SINGLE(whilehi(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilehi p15.s, w30, w29");
+  TEST_SINGLE(whilehi(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilehi p15.d, w30, w29");
+
+  TEST_SINGLE(whilelo(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilelo p15.b, x30, x29");
+  TEST_SINGLE(whilelo(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilelo p15.h, x30, x29");
+  TEST_SINGLE(whilelo(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilelo p15.s, x30, x29");
+  TEST_SINGLE(whilelo(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilelo p15.d, x30, x29");
+  TEST_SINGLE(whilelo(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilelo p15.b, w30, w29");
+  TEST_SINGLE(whilelo(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilelo p15.h, w30, w29");
+  TEST_SINGLE(whilelo(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilelo p15.s, w30, w29");
+  TEST_SINGLE(whilelo(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilelo p15.d, w30, w29");
+
+  TEST_SINGLE(whilels(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilels p15.b, x30, x29");
+  TEST_SINGLE(whilels(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilels p15.h, x30, x29");
+  TEST_SINGLE(whilels(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilels p15.s, x30, x29");
+  TEST_SINGLE(whilels(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilels p15.d, x30, x29");
+  TEST_SINGLE(whilels(SubRegSize::i8Bit,  PReg::p15, WReg::w30, WReg::w29), "whilels p15.b, w30, w29");
+  TEST_SINGLE(whilels(SubRegSize::i16Bit, PReg::p15, WReg::w30, WReg::w29), "whilels p15.h, w30, w29");
+  TEST_SINGLE(whilels(SubRegSize::i32Bit, PReg::p15, WReg::w30, WReg::w29), "whilels p15.s, w30, w29");
+  TEST_SINGLE(whilels(SubRegSize::i64Bit, PReg::p15, WReg::w30, WReg::w29), "whilels p15.d, w30, w29");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE conditionally terminate scalars") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(ctermeq(XReg::x30, XReg::x29), "ctermeq x30, x29");
+  TEST_SINGLE(ctermeq(WReg::w30, WReg::w29), "ctermeq w30, w29");
+
+  TEST_SINGLE(ctermne(XReg::x30, XReg::x29), "ctermne x30, x29");
+  TEST_SINGLE(ctermne(WReg::w30, WReg::w29), "ctermne w30, w29");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE pointer conflict compare") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(whilewr(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilewr p15.b, x30, x29");
+  TEST_SINGLE(whilewr(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilewr p15.h, x30, x29");
+  TEST_SINGLE(whilewr(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilewr p15.s, x30, x29");
+  TEST_SINGLE(whilewr(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilewr p15.d, x30, x29");
+
+  TEST_SINGLE(whilerw(SubRegSize::i8Bit,  PReg::p15, XReg::x30, XReg::x29), "whilerw p15.b, x30, x29");
+  TEST_SINGLE(whilerw(SubRegSize::i16Bit, PReg::p15, XReg::x30, XReg::x29), "whilerw p15.h, x30, x29");
+  TEST_SINGLE(whilerw(SubRegSize::i32Bit, PReg::p15, XReg::x30, XReg::x29), "whilerw p15.s, x30, x29");
+  TEST_SINGLE(whilerw(SubRegSize::i64Bit, PReg::p15, XReg::x30, XReg::x29), "whilerw p15.d, x30, x29");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract immediate (unpredicated)") {
