@@ -305,32 +305,24 @@ public:
   }
 
   // Advanced SIMD copy
-  template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void dup(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Index) {
-    if constexpr(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+  template <typename T>
+  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  void dup(SubRegSize size, T rd, T rn, uint32_t Index) {
+    if constexpr(std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
     }
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
 
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
-    else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm5 = (Index << 4) | 0b1000;
-    }
+
+    const uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    const uint32_t IndexShift = SizeImm + 1;
+    const uint32_t ElementSize = 1U << SizeImm;
+    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, Q, imm5, 0b0000, rd.V(), rn.V());
   }
@@ -388,201 +380,132 @@ public:
     dc32(Instr);
   }
 
-  template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void dup(FEXCore::ARMEmitter::SubRegSize size, T rd, FEXCore::ARMEmitter::Register rn) {
-    if constexpr(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
+  template <typename T>
+  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  void dup(SubRegSize size, T rd, Register rn) {
+    if constexpr(std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
     }
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
 
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
 
     // Upper bits of imm5 are ignored for GPR dup
-    uint32_t imm5 = 0b00000;
-    if (size == SubRegSize::i8Bit) {
-      imm5 = 1;
-    }
-    else if (size == SubRegSize::i16Bit) {
-      imm5 = 0b10;
-    }
-    else if (size == SubRegSize::i32Bit) {
-      imm5 = 0b100;
-    }
-    else if (size == SubRegSize::i64Bit) {
-      imm5 = 0b1000;
-    }
+    const uint32_t imm5 = 1U << FEXCore::ToUnderlying(size);
 
     ASIMDScalarCopy(Op, Q, imm5, 0b0001, rd, ToVReg(rn));
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  requires(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit)
-  void smov(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Index) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i8Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Unsupported smov size");
+  template <SubRegSize size>
+  requires(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit)
+  void smov(XRegister rd, VRegister rn, uint32_t Index) {
+    static_assert(size == SubRegSize::i8Bit ||
+                  size == SubRegSize::i16Bit ||
+                  size == SubRegSize::i32Bit, "Unsupported smov size");
 
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if constexpr (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if constexpr (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if constexpr (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
+
+    constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    constexpr uint32_t IndexShift = SizeImm + 1;
+    constexpr uint32_t ElementSize = 1U << SizeImm;
+    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, 1, imm5, 0b0101, ToVReg(rd), rn);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  requires(size == FEXCore::ARMEmitter::SubRegSize::i8Bit || size == FEXCore::ARMEmitter::SubRegSize::i16Bit)
-  void smov(FEXCore::ARMEmitter::WRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Index) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i8Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported smov size");
+  template <SubRegSize size>
+  requires(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit)
+  void smov(WRegister rd, VRegister rn, uint32_t Index) {
+    static_assert(size == SubRegSize::i8Bit ||
+                  size == SubRegSize::i16Bit, "Unsupported smov size");
 
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if constexpr (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if constexpr (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
+
+    constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    constexpr uint32_t IndexShift = SizeImm + 1;
+    constexpr uint32_t ElementSize = 1U << SizeImm;
+    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, 0, imm5, 0b0101, ToVReg(rd), rn);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void umov(FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Index) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i8Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Unsupported smov size");
+  template <SubRegSize size>
+  void umov(Register rd, VRegister rn, uint32_t Index) {
+    static_assert(size == SubRegSize::i8Bit ||
+                  size == SubRegSize::i16Bit ||
+                  size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Unsupported umov size");
 
 
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    uint32_t Q = 0;
-    if constexpr (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if constexpr (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if constexpr (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
-    else if constexpr (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm5 = (Index << 4) | 0b1000;
-      Q = 1;
-    }
+    constexpr uint32_t Q = size == SubRegSize::i64Bit ? 1 : 0;
+
+    constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    constexpr uint32_t IndexShift = SizeImm + 1;
+    constexpr uint32_t ElementSize = 1U << SizeImm;
+    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, Q, imm5, 0b0111, ToVReg(rd), rn);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ins(FEXCore::ARMEmitter::VRegister rd, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
+  template <SubRegSize size>
+  void ins(VRegister rd, uint32_t Index, Register rn) {
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if constexpr (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if constexpr (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if constexpr (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
-    else if constexpr (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm5 = (Index << 4) | 0b1000;
-    }
+
+    constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    constexpr uint32_t IndexShift = SizeImm + 1;
+    constexpr uint32_t ElementSize = 1U << SizeImm;
+    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, 1, imm5, 0b0011, rd, ToVReg(rn));
   }
 
-  void ins(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
+  void ins(SubRegSize size, VRegister rd, uint32_t Index, Register rn) {
     constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
-    else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm5 = (Index << 4) | 0b1000;
-    }
+
+    const uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    const uint32_t IndexShift = SizeImm + 1;
+    const uint32_t ElementSize = 1U << SizeImm;
+    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, 1, imm5, 0b0011, rd, ToVReg(rn));
   }
 
-  void ins(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, uint32_t Index, FEXCore::ARMEmitter::VRegister rn, uint32_t Index2) {
+  void ins(SubRegSize size, VRegister rd, uint32_t Index, VRegister rn, uint32_t Index2) {
     constexpr uint32_t Op = 0b0110'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
-    else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm5 = (Index << 4) | 0b1000;
-    }
+    
+    const uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    const uint32_t IndexShift = SizeImm + 1;
+    const uint32_t ElementSize = 1U << SizeImm;
+    const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
-    uint32_t imm4 = 0b0000;
-    if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm4 = Index2;
-    }
-    else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm4 = Index2 << 1;
-      // bit 0 ignored
-    }
-    else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm4 = Index2 << 2;
-      // bits [1:0] ignored
-    }
-    else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm4 = Index2 << 3;
-      // bits [2:0] ignored
-    }
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex,  "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+    LOGMAN_THROW_AA_FMT(Index2 < MaxIndex, "Index2 too large. Index2={}, Max Index: {}", Index2, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
+    const uint32_t imm4 = Index2 << SizeImm;
 
     ASIMDScalarCopy(Op, 1, imm5, imm4, rd, rn);
   }
-
 
   // Advanced SIMD three same (FP16)
   template<FEXCore::ARMEmitter::SubRegSize size, typename T>
