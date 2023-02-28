@@ -17,25 +17,17 @@
  */
 public:
 // Advanced SIMD scalar copy
-  void dup(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Index) {
+  void dup(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Index) {
     constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'01 << 10;
-    uint32_t imm5 = 0b00000;
-    if (size == ScalarRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      imm5 = (Index << 1) | 1;
-    }
-    else if (size == ScalarRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      imm5 = (Index << 2) | 0b10;
-    }
-    else if (size == ScalarRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      imm5 = (Index << 3) | 0b100;
-    }
-    else if (size == ScalarRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
-      imm5 = (Index << 4) | 0b1000;
-    }
+
+    const uint32_t SizeImm = FEXCore::ToUnderlying(size);
+    const uint32_t IndexShift = SizeImm + 1;
+    const uint32_t ElementSize = 1U << SizeImm;
+    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+
+    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+
+    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
     ASIMDScalarCopy(Op, 1, imm5, 0b0000, rd, rn);
   }
