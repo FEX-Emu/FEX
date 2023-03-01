@@ -549,6 +549,31 @@ namespace FEXCore::ARMEmitter {
   template <typename T>
   concept IsXOrWRegister = std::is_same_v<T, XRegister> || std::is_same_v<T, WRegister>;
 
+  // Whether or not a given set of vector registers are sequential
+  // in increasing order as far as the register file is concerned (modulo its size)
+  //
+  // For example, a set of registers like:
+  //
+  // v1,  v2, v3 and
+  // v31, v0, v1
+  //
+  // would both be considered sequential sequences, and some instructions in particular
+  // limit register lists to these kind of sequences.
+  //
+  template <typename T, typename... Args>
+  constexpr bool AreVectorsSequential(T first, const Args&... args) {
+    // Ensure we always have a pair of registers to compare against.
+    static_assert(sizeof...(args) >= 1, "Number of arguments must be greater than 1");
+
+    const auto fn = [](auto& lhs, const auto& rhs) {
+      const auto result = ((lhs.Idx() + 1) % 32) == rhs.Idx();
+      lhs = rhs;
+      return result;
+    };
+
+    return (fn(first, args) && ...);
+  }
+
   // This is an emitter that is designed around the smallest code bloat as possible.
   // Eschewing most developer convenience in order to keep code as small as possible.
 
