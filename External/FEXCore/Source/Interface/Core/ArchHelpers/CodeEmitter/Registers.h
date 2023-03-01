@@ -291,7 +291,7 @@ namespace FEXCore::ARMEmitter {
   class VRegister {
     public:
       VRegister() = delete;
-      constexpr VRegister(uint32_t Idx)
+      constexpr explicit VRegister(uint32_t Idx)
         : Index {Idx} {}
 
       uint32_t Idx() const {
