@@ -2538,50 +2538,62 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
   // XXX: LDR (vector)
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load multiple structures (scalar plus immediate)") {
+  TEST_SINGLE(ld2b(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, 0), "ld2b {z31.b, z0.b}, p6/z, [x29]");
   TEST_SINGLE(ld2b(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 0), "ld2b {z26.b, z27.b}, p6/z, [x29]");
   TEST_SINGLE(ld2b(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, -16), "ld2b {z26.b, z27.b}, p6/z, [x29, #-16, mul vl]");
   TEST_SINGLE(ld2b(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 14), "ld2b {z26.b, z27.b}, p6/z, [x29, #14, mul vl]");
 
+  TEST_SINGLE(ld2h(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, 0), "ld2h {z31.h, z0.h}, p6/z, [x29]");
   TEST_SINGLE(ld2h(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 0), "ld2h {z26.h, z27.h}, p6/z, [x29]");
   TEST_SINGLE(ld2h(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, -16), "ld2h {z26.h, z27.h}, p6/z, [x29, #-16, mul vl]");
   TEST_SINGLE(ld2h(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 14), "ld2h {z26.h, z27.h}, p6/z, [x29, #14, mul vl]");
 
+  TEST_SINGLE(ld2w(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, 0), "ld2w {z31.s, z0.s}, p6/z, [x29]");
   TEST_SINGLE(ld2w(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 0), "ld2w {z26.s, z27.s}, p6/z, [x29]");
   TEST_SINGLE(ld2w(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, -16), "ld2w {z26.s, z27.s}, p6/z, [x29, #-16, mul vl]");
   TEST_SINGLE(ld2w(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 14), "ld2w {z26.s, z27.s}, p6/z, [x29, #14, mul vl]");
 
+  TEST_SINGLE(ld2d(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, 0), "ld2d {z31.d, z0.d}, p6/z, [x29]");
   TEST_SINGLE(ld2d(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 0), "ld2d {z26.d, z27.d}, p6/z, [x29]");
   TEST_SINGLE(ld2d(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, -16), "ld2d {z26.d, z27.d}, p6/z, [x29, #-16, mul vl]");
   TEST_SINGLE(ld2d(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, 14), "ld2d {z26.d, z27.d}, p6/z, [x29, #14, mul vl]");
 
+  TEST_SINGLE(ld3b(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6.Zeroing(), Reg::r29, 0), "ld3b {z31.b, z0.b, z1.b}, p6/z, [x29]");
   TEST_SINGLE(ld3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 0), "ld3b {z26.b, z27.b, z28.b}, p6/z, [x29]");
   TEST_SINGLE(ld3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, -24), "ld3b {z26.b, z27.b, z28.b}, p6/z, [x29, #-24, mul vl]");
   TEST_SINGLE(ld3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 21), "ld3b {z26.b, z27.b, z28.b}, p6/z, [x29, #21, mul vl]");
 
+  TEST_SINGLE(ld3h(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6.Zeroing(), Reg::r29, 0), "ld3h {z31.h, z0.h, z1.h}, p6/z, [x29]");
   TEST_SINGLE(ld3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 0), "ld3h {z26.h, z27.h, z28.h}, p6/z, [x29]");
   TEST_SINGLE(ld3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, -24), "ld3h {z26.h, z27.h, z28.h}, p6/z, [x29, #-24, mul vl]");
   TEST_SINGLE(ld3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 21), "ld3h {z26.h, z27.h, z28.h}, p6/z, [x29, #21, mul vl]");
 
+  TEST_SINGLE(ld3w(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6.Zeroing(), Reg::r29, 0), "ld3w {z31.s, z0.s, z1.s}, p6/z, [x29]");
   TEST_SINGLE(ld3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 0), "ld3w {z26.s, z27.s, z28.s}, p6/z, [x29]");
   TEST_SINGLE(ld3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, -24), "ld3w {z26.s, z27.s, z28.s}, p6/z, [x29, #-24, mul vl]");
   TEST_SINGLE(ld3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 21), "ld3w {z26.s, z27.s, z28.s}, p6/z, [x29, #21, mul vl]");
 
+  TEST_SINGLE(ld3d(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6.Zeroing(), Reg::r29, 0), "ld3d {z31.d, z0.d, z1.d}, p6/z, [x29]");
   TEST_SINGLE(ld3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 0), "ld3d {z26.d, z27.d, z28.d}, p6/z, [x29]");
   TEST_SINGLE(ld3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, -24), "ld3d {z26.d, z27.d, z28.d}, p6/z, [x29, #-24, mul vl]");
   TEST_SINGLE(ld3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6.Zeroing(), Reg::r29, 21), "ld3d {z26.d, z27.d, z28.d}, p6/z, [x29, #21, mul vl]");
 
+  TEST_SINGLE(ld4b(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6.Zeroing(), Reg::r29, 0), "ld4b {z31.b, z0.b, z1.b, z2.b}, p6/z, [x29]");
   TEST_SINGLE(ld4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 0), "ld4b {z26.b, z27.b, z28.b, z29.b}, p6/z, [x29]");
   TEST_SINGLE(ld4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, -32), "ld4b {z26.b, z27.b, z28.b, z29.b}, p6/z, [x29, #-32, mul vl]");
   TEST_SINGLE(ld4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 28), "ld4b {z26.b, z27.b, z28.b, z29.b}, p6/z, [x29, #28, mul vl]");
 
+  TEST_SINGLE(ld4h(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6.Zeroing(), Reg::r29, 0), "ld4h {z31.h, z0.h, z1.h, z2.h}, p6/z, [x29]");
   TEST_SINGLE(ld4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 0), "ld4h {z26.h, z27.h, z28.h, z29.h}, p6/z, [x29]");
   TEST_SINGLE(ld4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, -32), "ld4h {z26.h, z27.h, z28.h, z29.h}, p6/z, [x29, #-32, mul vl]");
   TEST_SINGLE(ld4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 28), "ld4h {z26.h, z27.h, z28.h, z29.h}, p6/z, [x29, #28, mul vl]");
 
+  TEST_SINGLE(ld4w(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6.Zeroing(), Reg::r29, 0), "ld4w {z31.s, z0.s, z1.s, z2.s}, p6/z, [x29]");
   TEST_SINGLE(ld4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 0), "ld4w {z26.s, z27.s, z28.s, z29.s}, p6/z, [x29]");
   TEST_SINGLE(ld4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, -32), "ld4w {z26.s, z27.s, z28.s, z29.s}, p6/z, [x29, #-32, mul vl]");
   TEST_SINGLE(ld4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 28), "ld4w {z26.s, z27.s, z28.s, z29.s}, p6/z, [x29, #28, mul vl]");
 
+  TEST_SINGLE(ld4d(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6.Zeroing(), Reg::r29, 0), "ld4d {z31.d, z0.d, z1.d, z2.d}, p6/z, [x29]");
   TEST_SINGLE(ld4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 0), "ld4d {z26.d, z27.d, z28.d, z29.d}, p6/z, [x29]");
   TEST_SINGLE(ld4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, -32), "ld4d {z26.d, z27.d, z28.d, z29.d}, p6/z, [x29, #-32, mul vl]");
   TEST_SINGLE(ld4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6.Zeroing(), Reg::r29, 28), "ld4d {z26.d, z27.d, z28.d, z29.d}, p6/z, [x29, #28, mul vl]");
@@ -2801,50 +2813,62 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert to 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
+  TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, -16), "st2b {z26.b, z27.b}, p6, [x29, #-16, mul vl]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 14), "st2b {z26.b, z27.b}, p6, [x29, #14, mul vl]");
 
+  TEST_SINGLE(st2h(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2h {z31.h, z0.h}, p6, [x29]");
   TEST_SINGLE(st2h(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2h {z26.h, z27.h}, p6, [x29]");
   TEST_SINGLE(st2h(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, -16), "st2h {z26.h, z27.h}, p6, [x29, #-16, mul vl]");
   TEST_SINGLE(st2h(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 14), "st2h {z26.h, z27.h}, p6, [x29, #14, mul vl]");
 
+  TEST_SINGLE(st2w(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2w {z31.s, z0.s}, p6, [x29]");
   TEST_SINGLE(st2w(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2w {z26.s, z27.s}, p6, [x29]");
   TEST_SINGLE(st2w(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, -16), "st2w {z26.s, z27.s}, p6, [x29, #-16, mul vl]");
   TEST_SINGLE(st2w(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 14), "st2w {z26.s, z27.s}, p6, [x29, #14, mul vl]");
 
+  TEST_SINGLE(st2d(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2d {z31.d, z0.d}, p6, [x29]");
   TEST_SINGLE(st2d(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2d {z26.d, z27.d}, p6, [x29]");
   TEST_SINGLE(st2d(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, -16), "st2d {z26.d, z27.d}, p6, [x29, #-16, mul vl]");
   TEST_SINGLE(st2d(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 14), "st2d {z26.d, z27.d}, p6, [x29, #14, mul vl]");
 
+  TEST_SINGLE(st3b(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6, Reg::r29, 0), "st3b {z31.b, z0.b, z1.b}, p6, [x29]");
   TEST_SINGLE(st3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 0), "st3b {z26.b, z27.b, z28.b}, p6, [x29]");
   TEST_SINGLE(st3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, -24), "st3b {z26.b, z27.b, z28.b}, p6, [x29, #-24, mul vl]");
   TEST_SINGLE(st3b(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 21), "st3b {z26.b, z27.b, z28.b}, p6, [x29, #21, mul vl]");
 
+  TEST_SINGLE(st3h(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6, Reg::r29, 0), "st3h {z31.h, z0.h, z1.h}, p6, [x29]");
   TEST_SINGLE(st3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 0), "st3h {z26.h, z27.h, z28.h}, p6, [x29]");
   TEST_SINGLE(st3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, -24), "st3h {z26.h, z27.h, z28.h}, p6, [x29, #-24, mul vl]");
   TEST_SINGLE(st3h(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 21), "st3h {z26.h, z27.h, z28.h}, p6, [x29, #21, mul vl]");
 
+  TEST_SINGLE(st3w(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6, Reg::r29, 0), "st3w {z31.s, z0.s, z1.s}, p6, [x29]");
   TEST_SINGLE(st3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 0), "st3w {z26.s, z27.s, z28.s}, p6, [x29]");
   TEST_SINGLE(st3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, -24), "st3w {z26.s, z27.s, z28.s}, p6, [x29, #-24, mul vl]");
   TEST_SINGLE(st3w(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 21), "st3w {z26.s, z27.s, z28.s}, p6, [x29, #21, mul vl]");
 
+  TEST_SINGLE(st3d(ZReg::z31, ZReg::z0,  ZReg::z1,  PReg::p6, Reg::r29, 0), "st3d {z31.d, z0.d, z1.d}, p6, [x29]");
   TEST_SINGLE(st3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 0), "st3d {z26.d, z27.d, z28.d}, p6, [x29]");
   TEST_SINGLE(st3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, -24), "st3d {z26.d, z27.d, z28.d}, p6, [x29, #-24, mul vl]");
   TEST_SINGLE(st3d(ZReg::z26, ZReg::z27, ZReg::z28, PReg::p6, Reg::r29, 21), "st3d {z26.d, z27.d, z28.d}, p6, [x29, #21, mul vl]");
 
+  TEST_SINGLE(st4b(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, 0), "st4b {z31.b, z0.b, z1.b, z2.b}, p6, [x29]");
   TEST_SINGLE(st4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 0), "st4b {z26.b, z27.b, z28.b, z29.b}, p6, [x29]");
   TEST_SINGLE(st4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, -32), "st4b {z26.b, z27.b, z28.b, z29.b}, p6, [x29, #-32, mul vl]");
   TEST_SINGLE(st4b(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 28), "st4b {z26.b, z27.b, z28.b, z29.b}, p6, [x29, #28, mul vl]");
 
+  TEST_SINGLE(st4h(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, 0), "st4h {z31.h, z0.h, z1.h, z2.h}, p6, [x29]");
   TEST_SINGLE(st4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 0), "st4h {z26.h, z27.h, z28.h, z29.h}, p6, [x29]");
   TEST_SINGLE(st4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, -32), "st4h {z26.h, z27.h, z28.h, z29.h}, p6, [x29, #-32, mul vl]");
   TEST_SINGLE(st4h(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 28), "st4h {z26.h, z27.h, z28.h, z29.h}, p6, [x29, #28, mul vl]");
 
+  TEST_SINGLE(st4w(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, 0), "st4w {z31.s, z0.s, z1.s, z2.s}, p6, [x29]");
   TEST_SINGLE(st4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 0), "st4w {z26.s, z27.s, z28.s, z29.s}, p6, [x29]");
   TEST_SINGLE(st4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, -32), "st4w {z26.s, z27.s, z28.s, z29.s}, p6, [x29, #-32, mul vl]");
   TEST_SINGLE(st4w(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 28), "st4w {z26.s, z27.s, z28.s, z29.s}, p6, [x29, #28, mul vl]");
 
+  TEST_SINGLE(st4d(ZReg::z31, ZReg::z0,  ZReg::z1,  ZReg::z2,  PReg::p6, Reg::r29, 0), "st4d {z31.d, z0.d, z1.d, z2.d}, p6, [x29]");
   TEST_SINGLE(st4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 0), "st4d {z26.d, z27.d, z28.d, z29.d}, p6, [x29]");
   TEST_SINGLE(st4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, -32), "st4d {z26.d, z27.d, z28.d, z29.d}, p6, [x29, #-32, mul vl]");
   TEST_SINGLE(st4d(ZReg::z26, ZReg::z27, ZReg::z28, ZReg::z29, PReg::p6, Reg::r29, 28), "st4d {z26.d, z27.d, z28.d, z29.d}, p6, [x29, #28, mul vl]");

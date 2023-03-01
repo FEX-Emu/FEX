@@ -1172,7 +1172,7 @@ public:
   template<OpType optype>
   requires(optype == OpType::Constructive)
   void splice(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zn2) {
-    LOGMAN_THROW_A_FMT(zn2.Idx() == ((zn.Idx() + 1) % 32), "zn and zn2 must be consecutive registers");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zn, zn2), "zn and zn2 must be sequential registers");
     SVEPermuteVectorPredicated(0b01101, 0b0, size, zd, pv, zn);
   }
 
@@ -1253,17 +1253,17 @@ public:
 
   // SVE Permute Vector - Extract
   // Constructive
-  template<FEXCore::ARMEmitter::OpType optype>
-  requires(optype == FEXCore::ARMEmitter::OpType::Constructive)
-  void ext(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zn2, uint8_t Imm) {
-    LOGMAN_THROW_A_FMT(zn2.Idx() == ((zn.Idx() + 1) % 32), "zn and zn2 must be consecutive registers");
+  template<OpType optype>
+  requires(optype == OpType::Constructive)
+  void ext(ZRegister zd, ZRegister zn, ZRegister zn2, uint8_t Imm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zn, zn2), "zn and zn2 must be sequential registers");
     SVEPermuteVector(1, zd, zn, Imm);
   }
 
   // Destructive
-  template<FEXCore::ARMEmitter::OpType optype>
-  requires(optype == FEXCore::ARMEmitter::OpType::Destructive)
-  void ext(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, uint8_t Imm) {
+  template<OpType optype>
+  requires(optype == OpType::Destructive)
+  void ext(ZRegister zd, ZRegister zdn, ZRegister zm, uint8_t Imm) {
     LOGMAN_THROW_A_FMT(zd.Idx() == zdn.Idx(), "Dest needs to equal zdn");
     SVEPermuteVector(0, zd, zm, Imm);
   }
@@ -2396,91 +2396,75 @@ public:
   // SVE contiguous non-temporal load (scalar plus scalar)
   // XXX:
   // SVE load multiple structures (scalar plus immediate)
-  void ld2b(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld2b(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b00, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void ld3b(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b00, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void ld4b(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b00, 0b11, Imm / 4, zt1, pg, rn);
   }
-  void ld2h(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld2h(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b01, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void ld3h(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b01, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void ld4h(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b01, 0b11, Imm / 4, zt1, pg, rn);
   }
-  void ld2w(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld2w(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b10, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void ld3w(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b10, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void ld4w(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b10, 0b11, Imm / 4, zt1, pg, rn);
   }
-  void ld2d(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld2d(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b11, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void ld3d(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b11, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void ld4d(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ld4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b11, 0b11, Imm / 4, zt1, pg, rn);
   }
@@ -2917,91 +2901,75 @@ public:
   // SVE contiguous non-temporal store (scalar plus immediate)
   // XXX:
   // SVE store multiple structures (scalar plus immediate)
-  void st2b(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st2b(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b00, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void st3b(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b00, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void st4b(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b00, 0b11, Imm / 4, zt1, pg, rn);
   }
-  void st2h(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st2h(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b01, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void st3h(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b01, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void st4h(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b01, 0b11, Imm / 4, zt1, pg, rn);
   }
-  void st2w(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st2w(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b10, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void st3w(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b10, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void st4w(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b10, 0b11, Imm / 4, zt1, pg, rn);
   }
-  void st2d(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st2d(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b11, 0b01, Imm / 2, zt1, pg, rn);
   }
-  void st3d(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b11, 0b10, Imm / 3, zt1, pg, rn);
   }
-  void st4d(FEXCore::ARMEmitter::ZRegister zt1, FEXCore::ARMEmitter::ZRegister zt2, FEXCore::ARMEmitter::ZRegister zt3, FEXCore::ARMEmitter::ZRegister zt4, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void st4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
-    LOGMAN_THROW_A_FMT((zt1.Idx() + 1) == zt2.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt2.Idx() + 1) == zt3.Idx(), "Registers need to be contiguous");
-    LOGMAN_THROW_A_FMT((zt3.Idx() + 1) == zt4.Idx(), "Registers need to be contiguous");
-
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
     constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
     SVEContiguousMultipleStructures(Op, 0b11, 0b11, Imm / 4, zt1, pg, rn);
   }

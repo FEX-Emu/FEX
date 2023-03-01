@@ -37,380 +37,344 @@ public:
   }
 
   // Advanced SIMD load/store multiple structures
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, FEXCore::ARMEmitter::Register rn) {
+  template<SubRegSize size, typename T>
+  void ld1(T rt, Register rn) {
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0111 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b1010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, T rt3, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0110 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, T rt3, T rt4, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, FEXCore::ARMEmitter::Register rn) {
+  template<SubRegSize size, typename T>
+  void st1(T rt, Register rn) {
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0111 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b1010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, T rt3, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0110 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, T rt3, T rt4, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2(T rt, T rt2, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld2(T rt, T rt2, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b1000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st2(T rt, T rt2, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st2(T rt, T rt2, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b1000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld3(T rt, T rt2, T rt3, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0100 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st3(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st3(T rt, T rt2, T rt3, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0100 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld4(T rt, T rt2, T rt3, T rt4, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, true>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st4(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st4(T rt, T rt2, T rt3, T rt4, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1100'000 << 21;
     constexpr uint32_t Opcode = 0b0000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDLoadStoreMultipleStructure<size, false>(Op, Opcode, rt, rn, Reg::r0);
   }
   // Advanced SIMD load/store multiple structures (post-indexed)
   static constexpr uint32_t ASIMDLoadstoreMultiplePost_Op = 0b0000'1100'100 << 21;
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<SubRegSize size, typename T>
+  void ld1(T rt, Register rn, Register rm) {
     constexpr uint32_t Opcode = 0b0111 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size, typename T>
+  void ld1(T rt, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 16)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 8)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 16)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 8)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0111 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Opcode = 0b1010 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 16)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, T rt3, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Opcode = 0b0110 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 24)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0110 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, T rt3, T rt4, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Opcode = 0b0010 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld1(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld1(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 32)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<SubRegSize size, typename T>
+  void st1(T rt, Register rn, Register rm) {
     constexpr uint32_t Opcode = 0b0111 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size, typename T>
+  void st1(T rt, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 16)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 8)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 16)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 8)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0111 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Opcode = 0b1010 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 16)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, T rt3, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Opcode = 0b0110 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 24)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0110 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, T rt3, T rt4, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Opcode = 0b0010 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st1(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st1(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 32)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0010 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2(T rt, T rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld2(T rt, T rt2, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Opcode = 0b1000 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld2(T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld2(T rt, T rt2, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 16)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st2(T rt, T rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st2(T rt, T rt2, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Opcode = 0b1000 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st2(T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st2(T rt, T rt2, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 16)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld3(T rt, T rt2, T rt3, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Opcode = 0b0100 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld3(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld3(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 24)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0100 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st3(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st3(T rt, T rt2, T rt3, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Opcode = 0b0100 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st3(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st3(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 24)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0100 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld4(T rt, T rt2, T rt3, T rt4, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Opcode = 0b0000 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void ld4(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void ld4(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 32)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st4(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st4(T rt, T rt2, T rt3, T rt4, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Opcode = 0b0000 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  void st4(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  void st4(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     LOGMAN_THROW_A_FMT(
-      (std::is_same_v<FEXCore::ARMEmitter::QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<FEXCore::ARMEmitter::DRegister, T> && (PostOffset == 32)),
+      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
+      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0000 << 12;
-    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
   }
 
   // ASIMD loadstore single
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
+  template<SubRegSize size>
+  void st1(VRegister rt, uint32_t Index, Register rn) {
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -418,11 +382,11 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 1>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, false, 1>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st2(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void st2(VRegister rt, VRegister rt2, uint32_t Index, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -430,12 +394,11 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 2>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, false, 2>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st3(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void st3(VRegister rt, VRegister rt2, VRegister rt3, uint32_t Index, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -443,13 +406,11 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 3>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, false, 3>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st4(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::VRegister rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void st4(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, uint32_t Index, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -457,10 +418,10 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 4>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, false, 4>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
+  template<SubRegSize size>
+  void ld1(VRegister rt, uint32_t Index, Register rn) {
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -468,18 +429,18 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void ld1r(T rt, FEXCore::ARMEmitter::Register rn) {
+  template<SubRegSize size, typename T>
+  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  void ld1r(T rt, Register rn) {
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld2(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld2(VRegister rt, VRegister rt2, uint32_t Index, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -487,20 +448,19 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void ld2r(T rt, T rt2, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  void ld2r(T rt, T rt2, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld3(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld3(VRegister rt, VRegister rt2, VRegister rt3, uint32_t Index, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -508,22 +468,19 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void ld3r(T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  void ld3r(T rt, T rt2, T rt3, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld4(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::VRegister rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld4(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, uint32_t Index, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -531,22 +488,20 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size, typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T> || std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void ld4r(T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size, typename T>
+  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  void ld4r(T rt, T rt2, T rt3, T rt4, Register rn) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, rn, FEXCore::ARMEmitter::Reg::r0);
+    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, rn, Reg::r0);
   }
 
   // ASIMD loadstore single post-indexed
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<SubRegSize size>
+  void st1(VRegister rt, uint32_t Index, Register rn, Register rm) {
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -556,8 +511,8 @@ public:
         0;
     ASIMDSTLD<size, false, 1>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void st1(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 1)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
@@ -571,11 +526,11 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 1>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, false, 1>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st2(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void st2(VRegister rt, VRegister rt2, uint32_t Index, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -585,8 +540,8 @@ public:
         0;
     ASIMDSTLD<size, false, 2>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st2(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void st2(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 2)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
@@ -600,12 +555,11 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 2>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, false, 2>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st3(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void st3(VRegister rt, VRegister rt2, VRegister rt3, uint32_t Index, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -615,8 +569,8 @@ public:
         0;
     ASIMDSTLD<size, false, 3>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st3(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void st3(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 3)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
@@ -630,13 +584,11 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 3>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, false, 3>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st4(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::VRegister rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void st4(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, uint32_t Index, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -646,8 +598,8 @@ public:
         0;
     ASIMDSTLD<size, false, 4>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st4(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void st4(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 4)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
@@ -661,10 +613,10 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, false, 4>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, false, 4>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<SubRegSize size>
+  void ld1(VRegister rt, uint32_t Index, Register rn, Register rm) {
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -674,8 +626,8 @@ public:
         0;
     ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void ld1(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 1)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
@@ -688,16 +640,16 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  template<SubRegSize size>
+  void ld1r(VRegister rt, Register rn, Register rm) {
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 1>(Op, Opcode, rt, 0, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void ld1r(VRegister rt, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 1)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
@@ -705,11 +657,11 @@ public:
       (size == SubRegSize::i64Bit && (PostOffset == 8)), "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, 0, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 1>(Op, Opcode, rt, 0, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld2(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld2(VRegister rt, VRegister rt2, uint32_t Index, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -719,8 +671,8 @@ public:
         0;
     ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld2(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void ld2(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 2)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
@@ -733,18 +685,18 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld2r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld2r(VRegister rt, VRegister rt2, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 2>(Op, Opcode, rt, 0, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld2r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld2r(VRegister rt, VRegister rt2, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 2)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
@@ -752,12 +704,11 @@ public:
       (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, 0, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 2>(Op, Opcode, rt, 0, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld3(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld3(VRegister rt, VRegister rt2, VRegister rt3, uint32_t Index, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -767,8 +718,8 @@ public:
         0;
     ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld3(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void ld3(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 3)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
@@ -781,20 +732,18 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld3r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld3r(VRegister rt, VRegister rt2, VRegister rt3, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 3>(Op, Opcode, rt, 0, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld3r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld3r(VRegister rt, VRegister rt2, VRegister rt3, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 3)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
@@ -802,13 +751,11 @@ public:
       (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, 0, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 3>(Op, Opcode, rt, 0, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld4(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::VRegister rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld4(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, uint32_t Index, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -818,8 +765,8 @@ public:
         0;
     ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld4(FEXCore::ARMEmitter::VRegister rt, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  template<SubRegSize size>
+  void ld4(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 4)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
@@ -832,22 +779,18 @@ public:
         size == SubRegSize::i32Bit ? 0b100 : // Scale = 2
         size == SubRegSize::i64Bit ? 0b100 : // Scale = 2 (Uses size to determine difference between 32-bit).
         0;
-    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, Reg::r31);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld4r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::VRegister rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld4r(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 4>(Op, Opcode, rt, 0, rn, rm);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld4r(FEXCore::ARMEmitter::VRegister rt, FEXCore::ARMEmitter::VRegister rt2, FEXCore::ARMEmitter::VRegister rt3, FEXCore::ARMEmitter::VRegister rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  template<SubRegSize size>
+  void ld4r(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     LOGMAN_THROW_A_FMT(
       (size == SubRegSize::i8Bit && (PostOffset == 4)) ||
       (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
@@ -855,7 +798,7 @@ public:
       (size == SubRegSize::i64Bit && (PostOffset == 32)), "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
-    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, 0, rn, FEXCore::ARMEmitter::Reg::r31);
+    ASIMDSTLD<size, true, 4>(Op, Opcode, rt, 0, rn, Reg::r31);
   }
 
   // Advanced SIMD load/store single structure (post-indexed)
@@ -960,50 +903,47 @@ public:
   }
 
   template<typename T>
-  void ld2r(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  void ld2r(SubRegSize size, T rt, T rt2, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     LOGMAN_THROW_AA_FMT(PostOffset == 2 || PostOffset == 4 || PostOffset == 8 || PostOffset == 16, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 1;
     uint32_t opcode = 0b110;
     uint32_t S = 0;
     uint32_t Size = FEXCore::ToUnderlying(size);
-    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt);
+    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, Reg::r31, rn, rt);
   }
 
   template<typename T>
-  void ld3r(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  void ld3r(SubRegSize size, T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     LOGMAN_THROW_AA_FMT(PostOffset == 3 || PostOffset == 6 || PostOffset == 12 || PostOffset == 24, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 0;
     uint32_t opcode = 0b111;
     uint32_t S = 0;
     uint32_t Size = FEXCore::ToUnderlying(size);
-    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt);
+    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, Reg::r31, rn, rt);
   }
   template<typename T>
-  void ld4r(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  void ld4r(SubRegSize size, T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     LOGMAN_THROW_AA_FMT(PostOffset == 4 || PostOffset == 8 || PostOffset == 16 || PostOffset == 32, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 1;
     uint32_t opcode = 0b111;
     uint32_t S = 0;
     uint32_t Size = FEXCore::ToUnderlying(size);
-    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt);
+    ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, Reg::r31, rn, rt);
   }
 
   template<typename T>
-  void st2(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1044,12 +984,12 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void ld2(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1090,13 +1030,12 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void st3(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1137,13 +1076,12 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void ld3(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1184,14 +1122,12 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void st4(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1232,14 +1168,12 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, Reg::r31, rn, rt.Q());
   }
   template<typename T>
-  void ld4(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, uint32_t PostOffset) {
+  void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1280,7 +1214,7 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, FEXCore::ARMEmitter::Reg::r31, rn, rt.Q());
+    ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, Reg::r31, rn, rt.Q());
   }
 
   template<typename T>
@@ -1372,9 +1306,9 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void ld1r(FEXCore::ARMEmitter::SubRegSize size, T rt, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void ld1r(SubRegSize size, T rt, Register rn, Register rm) {
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 0;
     uint32_t opcode = 0b110;
     uint32_t S = 0;
@@ -1383,10 +1317,10 @@ public:
   }
 
   template<typename T>
-  void ld2r(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+  void ld2r(SubRegSize size, T rt, T rt2, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 1;
     uint32_t opcode = 0b110;
     uint32_t S = 0;
@@ -1395,11 +1329,10 @@ public:
   }
 
   template<typename T>
-  void ld3r(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+  void ld3r(SubRegSize size, T rt, T rt2, T rt3, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 0;
     uint32_t opcode = 0b111;
     uint32_t S = 0;
@@ -1407,12 +1340,10 @@ public:
     ASIMDLoadStoreSinglePost<T>(Op, Q, 1, R, opcode, S, Size, rm, rn, rt);
   }
   template<typename T>
-  void ld4r(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, T rt4, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+  void ld4r(SubRegSize size, T rt, T rt2, T rt3, T rt4, Register rn, Register rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
-    constexpr uint32_t Q = std::is_same_v<FEXCore::ARMEmitter::QRegister, T> ? 1 : 0;
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 1;
     uint32_t opcode = 0b111;
     uint32_t S = 0;
@@ -1421,9 +1352,9 @@ public:
   }
 
   template<typename T>
-  void st2(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1467,9 +1398,9 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void ld2(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1513,10 +1444,9 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void st3(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1560,10 +1490,9 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void ld3(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1607,11 +1536,9 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 1, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void st4(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
@@ -1655,11 +1582,9 @@ public:
     ASIMDLoadStoreSinglePost(Op, Q, 0, R, opcode, S, Size, rm, rn, rt.Q());
   }
   template<typename T>
-  void ld4(FEXCore::ARMEmitter::SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+  void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, Register rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
-    LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt2.Idx() + 1) == rt3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rt3.Idx() + 1) == rt4.Idx(), "These must be sequential");
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
