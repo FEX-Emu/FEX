@@ -2972,7 +2972,7 @@ DEF_OP(VTBL1) {
 
   switch (OpSize) {
     case 8: {
-      tbl(Dst.D(), VectorTable.Q(), VectorIndices.Q());
+      tbl(Dst.D(), VectorTable.Q(), VectorIndices.D());
       break;
     }
     case 16: {
