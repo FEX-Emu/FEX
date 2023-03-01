@@ -2629,7 +2629,7 @@ DEF_OP(VUXTL2) {
   if (HostSupportsSVE && Is256Bit) {
     uunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
-    uxtl2(SubRegSize, Dst.D(), Vector.D());
+    uxtl2(SubRegSize, Dst.Q(), Vector.Q());
   }
 }
 
@@ -2972,7 +2972,7 @@ DEF_OP(VTBL1) {
 
   switch (OpSize) {
     case 8: {
-      tbl(Dst.D(), VectorTable.D(), VectorIndices.D());
+      tbl(Dst.D(), VectorTable.Q(), VectorIndices.Q());
       break;
     }
     case 16: {
