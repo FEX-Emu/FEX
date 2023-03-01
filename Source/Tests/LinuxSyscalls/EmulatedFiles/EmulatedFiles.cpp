@@ -711,48 +711,68 @@ namespace FEX::EmulatedFile {
   }
 
   int32_t EmulatedFDManager::OpenAt(int dirfs, const char *pathname, int flags, uint32_t mode) {
-    std::string Path{};
-    if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
-        !pathname) &&
-        dirfs != AT_FDCWD) {
-      // Passed in a dirfd that isn't magic FDCWD
-      // We need to get the path from the fd now
-      Path = FEX::get_fdpath(dirfs).value_or("");
+    char Tmp[PATH_MAX];
+    const char *Path{};
 
-      if (pathname) {
-        if (!Path.empty()) {
-          // If the path returned empty then we don't need a separator
-          Path += "/";
-        }
-        Path += pathname;
-      }
+    auto Creator = FDReadCreators.end();
+    if (pathname) {
+      Creator = FDReadCreators.find(pathname);
     }
-    else {
-      if (!pathname || strlen(pathname) == 0) {
-        return -1;
+
+    if (Creator == FDReadCreators.end()) {
+      if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
+          !pathname) &&
+          dirfs != AT_FDCWD) {
+        // Passed in a dirfd that isn't magic FDCWD
+        // We need to get the path from the fd now
+        auto PathLength = FEX::get_fdpath(dirfs, Tmp);
+        if (PathLength != -1) {
+          if (pathname) {
+            Tmp[PathLength] = '/';
+            PathLength += 1;
+            strncpy(&Tmp[PathLength], pathname, PATH_MAX - PathLength);
+          }
+          else {
+            Tmp[PathLength] = '\0';
+          }
+          Path = Tmp;
+        }
+        else if (pathname) {
+          Path = pathname;
+        }
       }
-      else if (pathname) {
+      else {
+        if (!pathname || pathname[0] == 0) {
+          return -1;
+        }
+
         Path = pathname;
       }
+
+      bool exists = access(Path, F_OK) == 0;
+      bool RealPathExists = false;
+
+      if (exists) {
+        // If realpath fails then the temporary buffer is in an undefined state.
+        // Need to use another temporary just in-case realpath doesn't succeed.
+        char ExistsTempPath[PATH_MAX];
+        char *RealPath = realpath(Path, ExistsTempPath);
+        if (RealPath) {
+          RealPathExists = true;
+          Creator = FDReadCreators.find(realpath(Path, Tmp));
+        }
+      }
+
+      if (!RealPathExists) {
+        Creator = FDReadCreators.find(std::filesystem::path(Path).lexically_normal().string());
+      }
+
+      if (Creator == FDReadCreators.end()) {
+        return -1;
+      }
     }
 
-    std::error_code ec;
-    bool exists = access(Path.c_str(), F_OK) == 0;
-    if (ec) {
-      return -1;
-    }
-    string cpath = exists ? std::filesystem::canonical(Path, ec)
-      : std::filesystem::path(Path).lexically_normal(); // *Note: this doesn't transform to absolute
-
-    if (ec) {
-      return -1;
-    }
-    auto Creator = FDReadCreators.find(cpath);
-    if (Creator == FDReadCreators.end()) {
-      return -1;
-    }
-
-    return Creator->second(CTX, dirfs, Path.c_str(), flags, mode);
+    return Creator->second(CTX, dirfs, Path, flags, mode);
   }
 
   int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode)

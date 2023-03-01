@@ -23,4 +23,10 @@ std::optional<std::string> get_fdpath(int fd) {
   return std::nullopt;
 }
 
+inline
+int get_fdpath(int fd, char *SymlinkPath) {
+  auto Path = fmt::format("/proc/self/fd/{}", fd);
+  return readlinkat(AT_FDCWD, Path.c_str(), SymlinkPath, PATH_MAX);
+}
+
 }
