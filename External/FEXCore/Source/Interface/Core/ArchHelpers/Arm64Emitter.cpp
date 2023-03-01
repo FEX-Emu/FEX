@@ -217,7 +217,7 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
 
         if (((1U << Reg.Idx()) & FPRSpillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
-          st1b<ARMEmitter::SubRegSize::i8Bit>(Reg, PRED_TMP_32B, STATE.R(), TMP4.R());
+          st1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B, STATE.R(), TMP4.R());
         }
       }
     } else {
@@ -274,7 +274,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
         const auto Reg = SRAFPR[i];
         if (((1U << Reg.Idx()) & FPRFillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
-          ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg, PRED_TMP_32B, STATE.R(), TMP4.R());
+          ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B, STATE.R(), TMP4.R());
         }
       }
     } else {
@@ -348,7 +348,7 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
-      st4b(Reg1, Reg2, Reg3, Reg4, PRED_TMP_32B, TmpReg, 0);
+      st4b(Reg1.Z(), Reg2.Z(), Reg3.Z(), Reg4.Z(), PRED_TMP_32B, TmpReg, 0);
       add(ARMEmitter::Size::i64Bit, TmpReg, TmpReg, 32 * 4);
     }
   } else {
@@ -374,7 +374,7 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
-      ld4b(Reg1, Reg2, Reg3, Reg4, PRED_TMP_32B, ARMEmitter::Reg::rsp);
+      ld4b(Reg1.Z(), Reg2.Z(), Reg3.Z(), Reg4.Z(), PRED_TMP_32B, ARMEmitter::Reg::rsp);
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 32 * 4);
     }
   } else {

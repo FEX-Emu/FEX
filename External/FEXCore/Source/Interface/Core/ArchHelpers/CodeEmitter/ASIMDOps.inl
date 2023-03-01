@@ -3598,11 +3598,11 @@ public:
   }
   ///< size is destination size
   void sxtl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn) {
-    sshll(size, rd, rn, 0);
+    sshll(size, rd.D(), rn.D(), 0);
   }
   ///< size is destination size
   void sxtl2(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn) {
-    sshll2(size, rd, rn, 0);
+    sshll2(size, rd.Q(), rn.Q(), 0);
   }
 
   template<typename T>

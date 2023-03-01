@@ -1473,7 +1473,7 @@ DEF_OP(ParanoidStoreMemTSO) {
       }
       case 32: {
         dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        st1b<ARMEmitter::SubRegSize::i8Bit>(Src, PRED_TMP_32B, Addr, 0);
+        st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, Addr, 0);
         dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
         break;
       }
