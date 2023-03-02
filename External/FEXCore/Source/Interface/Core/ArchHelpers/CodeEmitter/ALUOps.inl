@@ -710,28 +710,28 @@ public:
     DataProcessing_3Source(Op, 0, s, rd, rn, rm, ra);
   }
   void mul(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    madd(s, rd, rn, rm, FEXCore::ARMEmitter::Reg::zr);
+    madd(s, rd, rn, rm, XReg::zr);
   }
   void msub(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::Register ra) {
     constexpr uint32_t Op = 0b001'1011'000U << 21;
     DataProcessing_3Source(Op, 1, s, rd, rn, rm, ra);
   }
   void mneg(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    msub(s, rd, rn, rm, FEXCore::ARMEmitter::Reg::zr);
+    msub(s, rd, rn, rm, XReg::zr);
   }
   void smaddl(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm, FEXCore::ARMEmitter::XRegister ra) {
     constexpr uint32_t Op = 0b001'1011'001U << 21;
     DataProcessing_3Source(Op, 0, FEXCore::ARMEmitter::Size::i64Bit, rd, rn, rm, ra);
   }
   void smull(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm) {
-    smaddl(rd, rn, rm, FEXCore::ARMEmitter::Reg::zr);
+    smaddl(rd, rn, rm, XReg::zr);
   }
   void smsubl(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm, FEXCore::ARMEmitter::XRegister ra) {
     constexpr uint32_t Op = 0b001'1011'001U << 21;
     DataProcessing_3Source(Op, 1, FEXCore::ARMEmitter::Size::i64Bit, rd, rn, rm, ra);
   }
   void smnegl(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm) {
-    smsubl(rd, rn, rm, FEXCore::ARMEmitter::Reg::zr);
+    smsubl(rd, rn, rm, XReg::zr);
   }
   void smulh(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::XRegister rn, FEXCore::ARMEmitter::XRegister rm) {
     constexpr uint32_t Op = 0b001'1011'010U << 21;
@@ -742,14 +742,14 @@ public:
     DataProcessing_3Source(Op, 0, FEXCore::ARMEmitter::Size::i64Bit, rd, rn, rm, ra);
   }
   void umull(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm) {
-    umaddl(rd, rn, rm, FEXCore::ARMEmitter::Reg::zr);
+    umaddl(rd, rn, rm, XReg::zr);
   }
   void umsubl(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm, FEXCore::ARMEmitter::XRegister ra) {
     constexpr uint32_t Op = 0b001'1011'101U << 21;
     DataProcessing_3Source(Op, 1, FEXCore::ARMEmitter::Size::i64Bit, rd, rn, rm, ra);
   }
   void umnegl(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm) {
-    umsubl(rd, rn, rm, FEXCore::ARMEmitter::Reg::zr);
+    umsubl(rd, rn, rm, XReg::zr);
   }
   void umulh(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::XRegister rn, FEXCore::ARMEmitter::XRegister rm) {
     constexpr uint32_t Op = 0b001'1011'110U << 21;

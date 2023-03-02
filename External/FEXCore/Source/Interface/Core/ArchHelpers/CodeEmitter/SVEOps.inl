@@ -970,15 +970,15 @@ public:
     LOGMAN_THROW_A_FMT(increment >= -16 && increment <= 15, "increment value must be within -16-15. increment: {}", increment);
     SVEIndexGeneration(0b00, size, zd, initial, increment);
   }
-  void index(SubRegSize size, ZRegister zd, XRegister initial, int32_t increment) {
+  void index(SubRegSize size, ZRegister zd, Register initial, int32_t increment) {
     LOGMAN_THROW_A_FMT(increment >= -16 && increment <= 15, "increment value must be within -16-15. increment: {}", increment);
     SVEIndexGeneration(0b01, size, zd, static_cast<int32_t>(initial.Idx()), increment);
   }
-  void index(SubRegSize size, ZRegister zd, int32_t initial, XRegister increment) {
+  void index(SubRegSize size, ZRegister zd, int32_t initial, Register increment) {
     LOGMAN_THROW_A_FMT(initial >= -16 && initial <= 15, "initial value must be within -16-15. initial: {}", initial);
     SVEIndexGeneration(0b10, size, zd, initial, static_cast<int32_t>(increment.Idx()));
   }
-  void index(SubRegSize size, ZRegister zd, XRegister initial, XRegister increment) {
+  void index(SubRegSize size, ZRegister zd, Register initial, Register increment) {
     SVEIndexGeneration(0b11, size, zd, static_cast<int32_t>(initial.Idx()), static_cast<int32_t>(increment.Idx()));
   }
 
@@ -1165,7 +1165,7 @@ public:
   }
 
   // CPY (scalar)
-  void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, WRegister rn) {
+  void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, Register rn) {
     SVEPermuteVectorPredicated(0b01000, 0b1, size, zd, pg, ZRegister{rn.Idx()});
   }
 

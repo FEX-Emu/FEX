@@ -137,7 +137,7 @@ DEF_OP(CRC32) {
       crc32cw(Dst.W(), Src1.W(), Src2.W());
       break;
     case 8:
-      crc32cx(Dst, Src1, Src2);
+      crc32cx(Dst.X(), Src1.X(), Src2.X());
       break;
     default: LOGMAN_MSG_A_FMT("Unknown CRC32 size: {}", Op->SrcSize);
   }

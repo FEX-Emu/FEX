@@ -911,20 +911,20 @@ FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t
                                             IR::MemOffsetType OffsetType,
                                             uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
-    return FEXCore::ARMEmitter::ExtendedMemOperand(Base, ARMEmitter::IndexType::OFFSET, 0);
+    return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, 0);
   } else {
     if (OffsetScale != 1 && OffsetScale != AccessSize) {
       LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetScale: {}", OffsetScale);
     }
     uint64_t Const;
     if (IsInlineConstant(Offset, &Const)) {
-      return FEXCore::ARMEmitter::ExtendedMemOperand(Base, ARMEmitter::IndexType::OFFSET, Const);
+      return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, Const);
     } else {
       auto RegOffset = GetReg(Offset.ID());
       switch(OffsetType.Val) {
-        case IR::MEM_OFFSET_SXTX.Val: return FEXCore::ARMEmitter::ExtendedMemOperand(Base, RegOffset, FEXCore::ARMEmitter::ExtendedType::SXTX, (int)std::log2(OffsetScale) );
-        case IR::MEM_OFFSET_UXTW.Val: return FEXCore::ARMEmitter::ExtendedMemOperand(Base, RegOffset, FEXCore::ARMEmitter::ExtendedType::UXTW, (int)std::log2(OffsetScale) );
-        case IR::MEM_OFFSET_SXTW.Val: return FEXCore::ARMEmitter::ExtendedMemOperand(Base, RegOffset, FEXCore::ARMEmitter::ExtendedType::SXTW, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTX.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTX, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_UXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::UXTW, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTW, (int)std::log2(OffsetScale) );
         default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType.Val); break;
       }
     }
@@ -1101,14 +1101,14 @@ DEF_OP(LoadMemTSO) {
     const auto Dst = GetReg(Node);
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
-      ldaprb(Dst, MemReg);
+      ldaprb(Dst.W(), MemReg);
     }
     else {
       // Aligned
       nop();
       switch (OpSize) {
         case 2:
-          ldaprh(Dst, MemReg);
+          ldaprh(Dst.W(), MemReg);
           break;
         case 4:
           ldapr(Dst.W(), MemReg);
