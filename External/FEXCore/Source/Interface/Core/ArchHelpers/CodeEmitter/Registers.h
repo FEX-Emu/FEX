@@ -24,9 +24,6 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator WRegister() const;
-      operator XRegister() const;
-
       WRegister W() const;
       XRegister X() const;
 
@@ -56,10 +53,7 @@ namespace FEXCore::ARMEmitter {
         return Register(Index);
       }
 
-      operator XRegister() const;
-
       XRegister X() const;
-
       Register R() const;
 
     private:
@@ -88,10 +82,7 @@ namespace FEXCore::ARMEmitter {
         return Register(Index);
       }
 
-      operator WRegister() const;
-
       WRegister W() const;
-
       Register R() const;
 
     private:
@@ -102,43 +93,27 @@ namespace FEXCore::ARMEmitter {
   static_assert(std::is_standard_layout_v<Register>, "Needs to be standard");
 
   inline WRegister Register::W() const {
-    return *this;
+    return WRegister{Index};
   }
 
   inline XRegister Register::X() const {
-    return *this;
-  }
-
-  inline Register::operator WRegister () const {
-    return WRegister(Index);
-  }
-
-  inline Register::operator XRegister () const {
-    return XRegister(Index);
+    return XRegister{Index};
   }
 
   inline XRegister WRegister::X() const {
-    return *this;
+    return XRegister{Index};
   }
 
   inline Register WRegister::R() const {
     return *this;
   }
 
-  inline WRegister::operator XRegister () const {
-    return XRegister(Index);
-  }
-
   inline WRegister XRegister::W() const {
-    return *this;
+    return WRegister{Index};
   }
 
   inline Register XRegister::R() const {
     return *this;
-  }
-
-  inline XRegister::operator WRegister () const {
-    return WRegister(Index);
   }
 
   // Namespace containing all unsized GPR register objects.

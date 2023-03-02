@@ -1028,7 +1028,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore exclusive regi
   TEST_SINGLE(ldaxr(WReg::w30, Reg::r29), "ldaxr w30, [x29]");
 
   TEST_SINGLE(stxr(XReg::x30, XReg::x29, Reg::r28), "stxr w30, x29, [x28]");
-  TEST_SINGLE(stlxr(XReg::x30, XReg::x29, Reg::r28), "stlxr w30, x29, [x28]");
+  TEST_SINGLE(stlxr(WReg::w30, XReg::x29, Reg::r28), "stlxr w30, x29, [x28]");
 
   TEST_SINGLE(ldxr(XReg::x30, Reg::r29), "ldxr x30, [x29]");
   TEST_SINGLE(ldaxr(XReg::x30, Reg::r29), "ldaxr x30, [x29]");
@@ -1319,8 +1319,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register pair 
   TEST_SINGLE(ldp<IndexType::POST>(WReg::w30, WReg::w28, Reg::r29, -256), "ldp w30, w28, [x29], #-256");
   TEST_SINGLE(ldp<IndexType::POST>(WReg::w30, WReg::w28, Reg::r29, 252), "ldp w30, w28, [x29], #252");
 
-  TEST_SINGLE(ldpsw<IndexType::POST>(XReg::x30, WReg::w28, Reg::r29, -256), "ldpsw x30, x28, [x29], #-256");
-  TEST_SINGLE(ldpsw<IndexType::POST>(XReg::x30, WReg::w28, Reg::r29, 252), "ldpsw x30, x28, [x29], #252");
+  TEST_SINGLE(ldpsw<IndexType::POST>(XReg::x30, XReg::x28, Reg::r29, -256), "ldpsw x30, x28, [x29], #-256");
+  TEST_SINGLE(ldpsw<IndexType::POST>(XReg::x30, XReg::x28, Reg::r29, 252), "ldpsw x30, x28, [x29], #252");
 
   TEST_SINGLE(stp<IndexType::POST>(XReg::x30, XReg::x28, Reg::r29, -512), "stp x30, x28, [x29], #-512");
   TEST_SINGLE(stp<IndexType::POST>(XReg::x30, XReg::x28, Reg::r29, 504), "stp x30, x28, [x29], #504");
@@ -1353,8 +1353,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register pair 
   TEST_SINGLE(ldp<IndexType::OFFSET>(WReg::w30, WReg::w28, Reg::r29, -256), "ldp w30, w28, [x29, #-256]");
   TEST_SINGLE(ldp<IndexType::OFFSET>(WReg::w30, WReg::w28, Reg::r29, 252), "ldp w30, w28, [x29, #252]");
 
-  TEST_SINGLE(ldpsw<IndexType::OFFSET>(XReg::x30, WReg::w28, Reg::r29, -256), "ldpsw x30, x28, [x29, #-256]");
-  TEST_SINGLE(ldpsw<IndexType::OFFSET>(XReg::x30, WReg::w28, Reg::r29, 252), "ldpsw x30, x28, [x29, #252]");
+  TEST_SINGLE(ldpsw<IndexType::OFFSET>(XReg::x30, XReg::x28, Reg::r29, -256), "ldpsw x30, x28, [x29, #-256]");
+  TEST_SINGLE(ldpsw<IndexType::OFFSET>(XReg::x30, XReg::x28, Reg::r29, 252), "ldpsw x30, x28, [x29, #252]");
 
   TEST_SINGLE(stp<IndexType::OFFSET>(XReg::x30, XReg::x28, Reg::r29, -512), "stp x30, x28, [x29, #-512]");
   TEST_SINGLE(stp<IndexType::OFFSET>(XReg::x30, XReg::x28, Reg::r29, 504), "stp x30, x28, [x29, #504]");
@@ -1387,8 +1387,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register pair 
   TEST_SINGLE(ldp<IndexType::PRE>(WReg::w30, WReg::w28, Reg::r29, -256), "ldp w30, w28, [x29, #-256]!");
   TEST_SINGLE(ldp<IndexType::PRE>(WReg::w30, WReg::w28, Reg::r29, 252), "ldp w30, w28, [x29, #252]!");
 
-  TEST_SINGLE(ldpsw<IndexType::PRE>(XReg::x30, WReg::w28, Reg::r29, -256), "ldpsw x30, x28, [x29, #-256]!");
-  TEST_SINGLE(ldpsw<IndexType::PRE>(XReg::x30, WReg::w28, Reg::r29, 252), "ldpsw x30, x28, [x29, #252]!");
+  TEST_SINGLE(ldpsw<IndexType::PRE>(XReg::x30, XReg::x28, Reg::r29, -256), "ldpsw x30, x28, [x29, #-256]!");
+  TEST_SINGLE(ldpsw<IndexType::PRE>(XReg::x30, XReg::x28, Reg::r29, 252), "ldpsw x30, x28, [x29, #252]!");
 
   TEST_SINGLE(stp<IndexType::PRE>(XReg::x30, XReg::x28, Reg::r29, -512), "stp x30, x28, [x29, #-512]!");
   TEST_SINGLE(stp<IndexType::PRE>(XReg::x30, XReg::x28, Reg::r29, 504), "stp x30, x28, [x29, #504]!");
