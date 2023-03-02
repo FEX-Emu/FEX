@@ -390,7 +390,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Bitfield") {
   TEST_SINGLE(sxth(Size::i32Bit, Reg::r29, Reg::r28), "sxth w29, w28");
   TEST_SINGLE(sxth(Size::i64Bit, Reg::r29, Reg::r28), "sxth x29, w28");
 
-  TEST_SINGLE(sxtw(XReg::x29, XReg::x28), "sxtw x29, w28");
+  TEST_SINGLE(sxtw(XReg::x29, WReg::w28), "sxtw x29, w28");
 
   TEST_SINGLE(sbfx(Size::i32Bit, Reg::r29, Reg::r28, 4, 16), "sbfx w29, w28, #4, #16");
   TEST_SINGLE(sbfx(Size::i64Bit, Reg::r29, Reg::r28, 4, 16), "sbfx x29, x28, #4, #16");
