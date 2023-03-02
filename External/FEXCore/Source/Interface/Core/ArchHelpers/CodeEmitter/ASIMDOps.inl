@@ -1906,641 +1906,513 @@ public:
   // TODO: Don't enforce DRegister/QRegister for Q check
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void saddl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void saddl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void saddl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void saddl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void saddw(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void saddw(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void saddw2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void saddw2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void ssubl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void ssubl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void ssubl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void ssubl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void ssubw(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void ssubw(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void ssubw2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void ssubw2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
   }
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void addhn(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "No 64-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void addhn(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     ASIMD3Different<T>(Op, 0, 0b0100, size, rd, rn, rm);
   }
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void addhn2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "No 64-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void addhn2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     ASIMD3Different<T>(Op, 0, 0b0100, size, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void sabal(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void sabal(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void sabal2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void sabal2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
   }
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void subhn(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "No 64-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void subhn(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     ASIMD3Different<T>(Op, 0, 0b0110, size, rd, rn, rm);
   }
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void subhn2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i64Bit, "No 64-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void subhn2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     ASIMD3Different<T>(Op, 0, 0b0110, size, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void sabdl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void sabdl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void sabdl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void sabdl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void smlal(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void smlal(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void smlal2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void smlal2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void sqdmlal(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit && size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "No 8/16-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void sqdmlal(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void sqdmlal2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit && size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "No 8/16-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void sqdmlal2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void smlsl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void smlsl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void smlsl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void smlsl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void sqdmlsl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit && size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "No 8/16-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void sqdmlsl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void sqdmlsl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit && size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "No 8/16-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void sqdmlsl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void smull(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void smull(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void smull2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void smull2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void sqdmull(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit && size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "No 8/16-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void sqdmull(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void sqdmull2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit && size != FEXCore::ARMEmitter::SubRegSize::i16Bit, "No 8/16-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void sqdmull2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void pmull(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i64Bit;
+  requires(std::is_same_v<DRegister, T>)
+  void pmull(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     ASIMD3Different<T>(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void pmull2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i64Bit;
+  requires(std::is_same_v<QRegister, T>)
+  void pmull2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     ASIMD3Different<T>(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void uaddl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void uaddl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void uaddl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void uaddl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void uaddw(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void uaddw(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void uaddw2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void uaddw2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void usubl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void usubl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void usubl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void usubl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void usubw(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void usubw(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void usubw2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void usubw2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
   }
   // XXX: RADDHN/2
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void uabal(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void uabal(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void uabal2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void uabal2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
   }
   // XXX: RSUBHN/2
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void uabdl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void uabdl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different(Op, 1, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void uabdl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void uabdl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different(Op, 1, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void umlal(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void umlal(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void umlal2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void umlal2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void umlsl(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void umlsl(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void umlsl2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void umlsl2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::DRegister, T>)
-  void umull(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<DRegister, T>)
+  void umull(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::QRegister, T>)
-  void umull2(FEXCore::ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "No 8-bit dest support.");
+  requires(std::is_same_v<QRegister, T>)
+  void umull2(SubRegSize size, T rd, T rn, T rm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? FEXCore::ARMEmitter::SubRegSize::i32Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? FEXCore::ARMEmitter::SubRegSize::i16Bit :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? FEXCore::ARMEmitter::SubRegSize::i8Bit : FEXCore::ARMEmitter::SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     ASIMD3Different<T>(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
   }
