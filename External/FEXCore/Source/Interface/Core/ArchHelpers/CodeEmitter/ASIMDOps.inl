@@ -93,77 +93,65 @@ public:
     ASIMDTable(Op, 0, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
   }
 
-  void tbl(FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
+  void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 1, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbl(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
+  void tbl(DRegister rd, QRegister rn, QRegister rn2, DRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 0, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbx(FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
+  void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 1, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
   }
-  void tbx(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
+  void tbx(DRegister rd, QRegister rn, QRegister rn2, DRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 0, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
   }
 
-  void tbl(FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::QRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
+  void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 1, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbl(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
+  void tbl(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, DRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 0, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbx(FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::QRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
+  void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 1, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
   }
-  void tbx(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
+  void tbx(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, DRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 0, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
   }
 
-  void tbl(FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::QRegister rn4, FEXCore::ARMEmitter::QRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn3.Idx() + 1) == rn4.Idx(), "These must be sequential");
+  void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, QRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 1, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbl(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::QRegister rn4, FEXCore::ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn3.Idx() + 1) == rn4.Idx(), "These must be sequential");
+  void tbl(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, DRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 0, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbx(FEXCore::ARMEmitter::QRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::QRegister rn4, FEXCore::ARMEmitter::QRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn3.Idx() + 1) == rn4.Idx(), "These must be sequential");
+  void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, QRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 1, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
   }
-  void tbx(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::QRegister rn, FEXCore::ARMEmitter::QRegister rn2, FEXCore::ARMEmitter::QRegister rn3, FEXCore::ARMEmitter::QRegister rn4, FEXCore::ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT((rn.Idx() + 1) == rn2.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn2.Idx() + 1) == rn3.Idx(), "These must be sequential");
-    LOGMAN_THROW_A_FMT((rn3.Idx() + 1) == rn4.Idx(), "These must be sequential");
+  void tbx(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, DRegister rm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
     constexpr uint32_t Op = 0b0000'1110'000 << 21;
     ASIMDTable(Op, 0, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
   }

@@ -40,18 +40,33 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD table lookup")
   TEST_SINGLE(tbx(QReg::q30, QReg::q26, QReg::q25), "tbx v30.16b, {v26.16b}, v25.16b");
   TEST_SINGLE(tbx(DReg::d30, QReg::q26, DReg::d25), "tbx v30.8b, {v26.16b}, v25.8b");
 
+  TEST_SINGLE(tbl(QReg::q30, QReg::q31, QReg::q0,  QReg::q25), "tbl v30.16b, {v31.16b, v0.16b}, v25.16b");
+  TEST_SINGLE(tbl(DReg::d30, QReg::q31, QReg::q0,  DReg::d25), "tbl v30.8b, {v31.16b, v0.16b}, v25.8b");
   TEST_SINGLE(tbl(QReg::q30, QReg::q26, QReg::q27, QReg::q25), "tbl v30.16b, {v26.16b, v27.16b}, v25.16b");
   TEST_SINGLE(tbl(DReg::d30, QReg::q26, QReg::q27, DReg::d25), "tbl v30.8b, {v26.16b, v27.16b}, v25.8b");
+
+  TEST_SINGLE(tbx(QReg::q30, QReg::q31, QReg::q0,  QReg::q25), "tbx v30.16b, {v31.16b, v0.16b}, v25.16b");
+  TEST_SINGLE(tbx(DReg::d30, QReg::q31, QReg::q0,  DReg::d25), "tbx v30.8b, {v31.16b, v0.16b}, v25.8b");
   TEST_SINGLE(tbx(QReg::q30, QReg::q26, QReg::q27, QReg::q25), "tbx v30.16b, {v26.16b, v27.16b}, v25.16b");
   TEST_SINGLE(tbx(DReg::d30, QReg::q26, QReg::q27, DReg::d25), "tbx v30.8b, {v26.16b, v27.16b}, v25.8b");
 
+  TEST_SINGLE(tbl(QReg::q30, QReg::q31, QReg::q0,  QReg::q1,  QReg::q25), "tbl v30.16b, {v31.16b, v0.16b, v1.16b}, v25.16b");
+  TEST_SINGLE(tbl(DReg::d30, QReg::q31, QReg::q0,  QReg::q1,  DReg::d25), "tbl v30.8b, {v31.16b, v0.16b, v1.16b}, v25.8b");
   TEST_SINGLE(tbl(QReg::q30, QReg::q26, QReg::q27, QReg::q28, QReg::q25), "tbl v30.16b, {v26.16b, v27.16b, v28.16b}, v25.16b");
   TEST_SINGLE(tbl(DReg::d30, QReg::q26, QReg::q27, QReg::q28, DReg::d25), "tbl v30.8b, {v26.16b, v27.16b, v28.16b}, v25.8b");
+
+  TEST_SINGLE(tbx(QReg::q30, QReg::q31, QReg::q0,  QReg::q1,  QReg::q25), "tbx v30.16b, {v31.16b, v0.16b, v1.16b}, v25.16b");
+  TEST_SINGLE(tbx(DReg::d30, QReg::q31, QReg::q0,  QReg::q1,  DReg::d25), "tbx v30.8b, {v31.16b, v0.16b, v1.16b}, v25.8b");
   TEST_SINGLE(tbx(QReg::q30, QReg::q26, QReg::q27, QReg::q28, QReg::q25), "tbx v30.16b, {v26.16b, v27.16b, v28.16b}, v25.16b");
   TEST_SINGLE(tbx(DReg::d30, QReg::q26, QReg::q27, QReg::q28, DReg::d25), "tbx v30.8b, {v26.16b, v27.16b, v28.16b}, v25.8b");
 
+  TEST_SINGLE(tbl(QReg::q30, QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  QReg::q25), "tbl v30.16b, {v31.16b, v0.16b, v1.16b, v2.16b}, v25.16b");
+  TEST_SINGLE(tbl(DReg::d30, QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  DReg::d25), "tbl v30.8b, {v31.16b, v0.16b, v1.16b, v2.16b}, v25.8b");
   TEST_SINGLE(tbl(QReg::q30, QReg::q26, QReg::q27, QReg::q28, QReg::q29, QReg::q25), "tbl v30.16b, {v26.16b, v27.16b, v28.16b, v29.16b}, v25.16b");
   TEST_SINGLE(tbl(DReg::d30, QReg::q26, QReg::q27, QReg::q28, QReg::q29, DReg::d25), "tbl v30.8b, {v26.16b, v27.16b, v28.16b, v29.16b}, v25.8b");
+
+  TEST_SINGLE(tbx(QReg::q30, QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  QReg::q25), "tbx v30.16b, {v31.16b, v0.16b, v1.16b, v2.16b}, v25.16b");
+  TEST_SINGLE(tbx(DReg::d30, QReg::q31, QReg::q0,  QReg::q1,  QReg::q2,  DReg::d25), "tbx v30.8b, {v31.16b, v0.16b, v1.16b, v2.16b}, v25.8b");
   TEST_SINGLE(tbx(QReg::q30, QReg::q26, QReg::q27, QReg::q28, QReg::q29, QReg::q25), "tbx v30.16b, {v26.16b, v27.16b, v28.16b, v29.16b}, v25.16b");
   TEST_SINGLE(tbx(DReg::d30, QReg::q26, QReg::q27, QReg::q28, QReg::q29, DReg::d25), "tbx v30.8b, {v26.16b, v27.16b, v28.16b, v29.16b}, v25.8b");
 }
