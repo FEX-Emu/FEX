@@ -257,8 +257,8 @@ public:
   void sxth(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn) {
     sbfm(s, rd, rn, 0, 15);
   }
-  void sxtw(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::XRegister rn) {
-    sbfm(ARMEmitter::Size::i64Bit, rd, rn, 0, 31);
+  void sxtw(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::WRegister rn) {
+    sbfm(ARMEmitter::Size::i64Bit, rd, rn.X(), 0, 31);
   }
   void sbfx(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t lsb, uint32_t width) {
     LOGMAN_THROW_A_FMT(width > 0, "sbfx needs width > 0");

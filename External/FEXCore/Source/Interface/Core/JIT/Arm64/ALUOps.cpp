@@ -262,8 +262,8 @@ DEF_OP(MulH) {
   const auto Src2 = GetReg(Op->Src2.ID());
 
   if (OpSize == 4) {
-    sxtw(TMP1, Src1.X());
-    sxtw(TMP2, Src2.X());
+    sxtw(TMP1, Src1.W());
+    sxtw(TMP2, Src2.W());
     mul(ARMEmitter::Size::i32Bit, Dst, TMP1, TMP2);
     ubfx(ARMEmitter::Size::i32Bit, Dst, Dst, 32, 32);
   }
@@ -610,7 +610,7 @@ DEF_OP(LDiv) {
     case 4: {
       mov(EmitSize, TMP1, Lower);
       bfi(EmitSize, TMP1, Upper, 32, 32);
-      sxtw(TMP2, Divisor.X());
+      sxtw(TMP2, Divisor.W());
       sdiv(EmitSize, Dst, TMP1, TMP2);
     break;
     }
@@ -744,7 +744,7 @@ DEF_OP(LRem) {
     case 4: {
       mov(EmitSize, TMP1, Lower);
       bfi(EmitSize, TMP1, Upper, 32, 32);
-      sxtw(TMP3, Divisor.X());
+      sxtw(TMP3, Divisor.W());
       sdiv(EmitSize, TMP2, TMP1, TMP3);
       msub(EmitSize, Dst, TMP2, TMP3, TMP1);
     break;
