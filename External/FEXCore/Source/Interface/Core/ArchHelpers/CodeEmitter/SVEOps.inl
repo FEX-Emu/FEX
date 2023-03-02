@@ -465,6 +465,18 @@ public:
   void fcmuo(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     SVEFloatCompareVector(1, 0, 0, size, zm, pg, zn, pd);
   }
+  void facge(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEFloatCompareVector(1, 0, 1, size, zm, pg, zn, pd);
+  }
+  void facgt(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+    SVEFloatCompareVector(1, 1, 1, size, zm, pg, zn, pd);
+  }
+  void facle(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zm, ZRegister zn) {
+    facge(size, pd, pg, zn, zm);
+  }
+  void faclt(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zm, ZRegister zn) {
+    facgt(size, pd, pg, zn, zm);
+  }
 
   // SVE floating-point arithmetic (unpredicated)
   void fadd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {

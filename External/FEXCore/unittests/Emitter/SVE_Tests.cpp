@@ -394,6 +394,22 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point compare vec
   TEST_SINGLE(fcmuo(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "fcmuo p6.h, p5/z, z30.h, z29.h");
   TEST_SINGLE(fcmuo(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "fcmuo p6.s, p5/z, z30.s, z29.s");
   TEST_SINGLE(fcmuo(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "fcmuo p6.d, p5/z, z30.d, z29.d");
+
+  TEST_SINGLE(facge(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facge p6.h, p5/z, z30.h, z29.h");
+  TEST_SINGLE(facge(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facge p6.s, p5/z, z30.s, z29.s");
+  TEST_SINGLE(facge(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facge p6.d, p5/z, z30.d, z29.d");
+
+  TEST_SINGLE(facgt(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facgt p6.h, p5/z, z30.h, z29.h");
+  TEST_SINGLE(facgt(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facgt p6.s, p5/z, z30.s, z29.s");
+  TEST_SINGLE(facgt(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facgt p6.d, p5/z, z30.d, z29.d");
+
+  TEST_SINGLE(facle(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facge p6.h, p5/z, z29.h, z30.h");
+  TEST_SINGLE(facle(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facge p6.s, p5/z, z29.s, z30.s");
+  TEST_SINGLE(facle(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facge p6.d, p5/z, z29.d, z30.d");
+
+  TEST_SINGLE(faclt(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facgt p6.h, p5/z, z29.h, z30.h");
+  TEST_SINGLE(faclt(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facgt p6.s, p5/z, z29.s, z30.s");
+  TEST_SINGLE(faclt(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "facgt p6.d, p5/z, z29.d, z30.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic (unpredicated)") {
   //TEST_SINGLE(fadd(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),   "fadd z30.b, z29.b, z28.b");
