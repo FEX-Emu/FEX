@@ -298,13 +298,6 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator BRegister() const;
-      operator HRegister() const;
-      operator SRegister() const;
-      operator DRegister() const;
-      operator QRegister() const;
-      operator ZRegister() const;
-
       BRegister B() const;
       HRegister H() const;
       SRegister S() const;
@@ -332,12 +325,9 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator VRegister() const;
-      operator HRegister() const;
-      operator SRegister() const;
-      operator DRegister() const;
-      operator QRegister() const;
-      operator ZRegister() const;
+      operator VRegister () const {
+        return VRegister(Index);
+      }
 
       BRegister V() const;
       HRegister H() const;
@@ -366,12 +356,9 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator VRegister() const;
-      operator BRegister() const;
-      operator SRegister() const;
-      operator DRegister() const;
-      operator QRegister() const;
-      operator ZRegister() const;
+      operator VRegister() const {
+        return VRegister(Index);
+      }
 
       HRegister V() const;
       BRegister B() const;
@@ -400,12 +387,9 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator VRegister() const;
-      operator BRegister() const;
-      operator HRegister() const;
-      operator DRegister() const;
-      operator QRegister() const;
-      operator ZRegister() const;
+      operator VRegister() const {
+        return VRegister(Index);
+      }
 
       SRegister V() const;
       BRegister B() const;
@@ -435,12 +419,9 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator VRegister() const;
-      operator BRegister() const;
-      operator HRegister() const;
-      operator SRegister() const;
-      operator QRegister() const;
-      operator ZRegister() const;
+      operator VRegister() const {
+        return VRegister(Index);
+      }
 
       DRegister V() const;
       BRegister B() const;
@@ -470,12 +451,9 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator VRegister() const;
-      operator BRegister() const;
-      operator HRegister() const;
-      operator SRegister() const;
-      operator DRegister() const;
-      operator ZRegister() const;
+      operator VRegister () const {
+        return VRegister(Index);
+      }
 
       QRegister V() const;
       BRegister B() const;
@@ -520,41 +498,22 @@ namespace FEXCore::ARMEmitter {
 
   // VRegister
   inline BRegister VRegister::B() const {
-    return *this;
+    return BRegister{Index};
   }
   inline HRegister VRegister::H() const {
-    return *this;
+    return HRegister{Index};
   }
   inline SRegister VRegister::S() const {
-    return *this;
+    return SRegister{Index};
   }
   inline DRegister VRegister::D() const {
-    return *this;
+    return DRegister{Index};
   }
   inline QRegister VRegister::Q() const {
-    return *this;
+    return QRegister{Index};
   }
   inline ZRegister VRegister::Z() const {
-    return *this;
-  }
-
-  inline VRegister::operator BRegister () const {
-    return BRegister(Index);
-  }
-  inline VRegister::operator HRegister () const {
-    return HRegister(Index);
-  }
-  inline VRegister::operator SRegister () const {
-    return SRegister(Index);
-  }
-  inline VRegister::operator DRegister () const {
-    return DRegister(Index);
-  }
-  inline VRegister::operator QRegister () const {
-    return QRegister(Index);
-  }
-  inline VRegister::operator ZRegister () const {
-    return ZRegister(Index);
+    return ZRegister{Index};
   }
 
   // BRegister
@@ -562,38 +521,19 @@ namespace FEXCore::ARMEmitter {
     return *this;
   }
   inline HRegister BRegister::H() const {
-    return *this;
+    return HRegister{Index};
   }
   inline SRegister BRegister::S() const {
-    return *this;
+    return SRegister{Index};
   }
   inline DRegister BRegister::D() const {
-    return *this;
+    return DRegister{Index};
   }
   inline QRegister BRegister::Q() const {
-    return *this;
+    return QRegister{Index};
   }
   inline ZRegister BRegister::Z() const {
-    return *this;
-  }
-
-  inline BRegister::operator VRegister () const {
-    return VRegister(Index);
-  }
-  inline BRegister::operator HRegister () const {
-    return HRegister(Index);
-  }
-  inline BRegister::operator SRegister () const {
-    return SRegister(Index);
-  }
-  inline BRegister::operator DRegister () const {
-    return DRegister(Index);
-  }
-  inline BRegister::operator QRegister () const {
-    return QRegister(Index);
-  }
-  inline BRegister::operator ZRegister () const {
-    return ZRegister(Index);
+    return ZRegister{Index};
   }
 
   // HRegister
@@ -601,38 +541,19 @@ namespace FEXCore::ARMEmitter {
     return *this;
   }
   inline BRegister HRegister::B() const {
-    return *this;
+    return BRegister{Index};
   }
   inline SRegister HRegister::S() const {
-    return *this;
+    return SRegister{Index};
   }
   inline DRegister HRegister::D() const {
-    return *this;
+    return DRegister{Index};
   }
   inline QRegister HRegister::Q() const {
-    return *this;
+    return QRegister{Index};
   }
   inline ZRegister HRegister::Z() const {
-    return *this;
-  }
-
-  inline HRegister::operator VRegister () const {
-    return VRegister(Index);
-  }
-  inline HRegister::operator BRegister () const {
-    return BRegister(Index);
-  }
-  inline HRegister::operator SRegister () const {
-    return SRegister(Index);
-  }
-  inline HRegister::operator DRegister () const {
-    return DRegister(Index);
-  }
-  inline HRegister::operator QRegister () const {
-    return QRegister(Index);
-  }
-  inline HRegister::operator ZRegister () const {
-    return ZRegister(Index);
+    return ZRegister{Index};
   }
 
   // SRegister
@@ -640,77 +561,39 @@ namespace FEXCore::ARMEmitter {
     return *this;
   }
   inline BRegister SRegister::B() const {
-    return *this;
+    return BRegister{Index};
   }
   inline HRegister SRegister::H() const {
-    return *this;
+    return HRegister{Index};
   }
   inline DRegister SRegister::D() const {
-    return *this;
+    return DRegister{Index};
   }
   inline QRegister SRegister::Q() const {
-    return *this;
+    return QRegister{Index};
   }
   inline ZRegister SRegister::Z() const {
-    return *this;
-  }
-
-  inline SRegister::operator VRegister () const {
-    return VRegister(Index);
-  }
-  inline SRegister::operator BRegister () const {
-    return BRegister(Index);
-  }
-  inline SRegister::operator HRegister () const {
-    return HRegister(Index);
-  }
-  inline SRegister::operator DRegister () const {
-    return DRegister(Index);
-  }
-  inline SRegister::operator QRegister () const {
-    return QRegister(Index);
-  }
-  inline SRegister::operator ZRegister () const {
-    return ZRegister(Index);
+    return ZRegister{Index};
   }
 
   // DRegister
   inline DRegister DRegister::V() const {
-    return *this;
+    return DRegister{Index};
   }
   inline BRegister DRegister::B() const {
-    return *this;
+    return BRegister{Index};
   }
   inline HRegister DRegister::H() const {
-    return *this;
+    return HRegister{Index};
   }
   inline SRegister DRegister::S() const {
-    return *this;
+    return SRegister{Index};
   }
   inline QRegister DRegister::Q() const {
-    return *this;
+    return QRegister{Index};
   }
   inline ZRegister DRegister::Z() const {
-    return *this;
-  }
-
-  inline DRegister::operator VRegister () const {
-    return VRegister(Index);
-  }
-  inline DRegister::operator BRegister () const {
-    return BRegister(Index);
-  }
-  inline DRegister::operator HRegister () const {
-    return HRegister(Index);
-  }
-  inline DRegister::operator SRegister () const {
-    return SRegister(Index);
-  }
-  inline DRegister::operator QRegister () const {
-    return QRegister(Index);
-  }
-  inline DRegister::operator ZRegister () const {
-    return ZRegister(Index);
+    return ZRegister{Index};
   }
 
   // QRegister
@@ -718,38 +601,19 @@ namespace FEXCore::ARMEmitter {
     return *this;
   }
   inline BRegister QRegister::B() const {
-    return *this;
+    return BRegister{Index};
   }
   inline HRegister QRegister::H() const {
-    return *this;
+    return HRegister{Index};
   }
   inline SRegister QRegister::S() const {
-    return *this;
+    return SRegister{Index};
   }
   inline DRegister QRegister::D() const {
-    return *this;
+    return DRegister{Index};
   }
   inline ZRegister QRegister::Z() const {
-    return *this;
-  }
-
-  inline QRegister::operator VRegister () const {
-    return VRegister(Index);
-  }
-  inline QRegister::operator BRegister () const {
-    return BRegister(Index);
-  }
-  inline QRegister::operator HRegister () const {
-    return HRegister(Index);
-  }
-  inline QRegister::operator SRegister () const {
-    return SRegister(Index);
-  }
-  inline QRegister::operator DRegister () const {
-    return DRegister(Index);
-  }
-  inline QRegister::operator ZRegister () const {
-    return ZRegister(Index);
+    return ZRegister{Index};
   }
 
   // ZRegister

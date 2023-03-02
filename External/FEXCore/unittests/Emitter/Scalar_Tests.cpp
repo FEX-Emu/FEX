@@ -658,7 +658,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Floating-point data-process
   TEST_SINGLE(fcvt(SReg::s30, DReg::d29), "fcvt s30, d29");
   if (false) {
     // vixl doesn't support this instruction.
-    TEST_SINGLE(bfcvt(HReg::h30, DReg::d29), "bfcvt h30, d29");
+    TEST_SINGLE(bfcvt(HReg::h30, SReg::s29), "bfcvt h30, s29");
   }
   TEST_SINGLE(fcvt(HReg::h30, DReg::d29), "fcvt h30, d29");
   TEST_SINGLE(frintn(DReg::d30, DReg::d29), "frintn d30, d29");

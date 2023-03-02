@@ -830,11 +830,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD two-register m
   TEST_SINGLE(sqxtun2(SubRegSize::i32Bit, DReg::d30, DReg::d29), "sqxtun2 v30.4s, v29.2d");
   //TEST_SINGLE(sqxtun2(SubRegSize::i64Bit, DReg::d30, DReg::d29), "sqxtun2 v30.2d, v29.1d");
 
-  //TEST_SINGLE(shll(SubRegSize::i8Bit, QReg::q30, QReg::q29), "shll v30.16b, v29.16b, #0");
-  TEST_SINGLE(shll(SubRegSize::i16Bit, QReg::q30, QReg::q29), "shll v30.8h, v29.8b, #8");
-  TEST_SINGLE(shll(SubRegSize::i32Bit, QReg::q30, QReg::q29), "shll v30.4s, v29.4h, #16");
-  TEST_SINGLE(shll(SubRegSize::i64Bit, QReg::q30, QReg::q29), "shll v30.2d, v29.2s, #32");
-
   //TEST_SINGLE(shll(SubRegSize::i8Bit, DReg::d30, DReg::d29), "shll v30.8b, v29.8b, #0");
   TEST_SINGLE(shll(SubRegSize::i16Bit, DReg::d30, DReg::d29), "shll v30.8h, v29.8b, #8");
   TEST_SINGLE(shll(SubRegSize::i32Bit, DReg::d30, DReg::d29), "shll v30.4s, v29.4h, #16");
@@ -844,11 +839,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD two-register m
   TEST_SINGLE(shll2(SubRegSize::i16Bit, QReg::q30, QReg::q29), "shll2 v30.8h, v29.16b, #8");
   TEST_SINGLE(shll2(SubRegSize::i32Bit, QReg::q30, QReg::q29), "shll2 v30.4s, v29.8h, #16");
   TEST_SINGLE(shll2(SubRegSize::i64Bit, QReg::q30, QReg::q29), "shll2 v30.2d, v29.4s, #32");
-
-  //TEST_SINGLE(shll2(SubRegSize::i8Bit, DReg::d30, DReg::d29), "shll2 v30.8b, v29.8b, #0");
-  TEST_SINGLE(shll2(SubRegSize::i16Bit, DReg::d30, DReg::d29), "shll2 v30.8h, v29.16b, #8");
-  TEST_SINGLE(shll2(SubRegSize::i32Bit, DReg::d30, DReg::d29), "shll2 v30.4s, v29.8h, #16");
-  TEST_SINGLE(shll2(SubRegSize::i64Bit, DReg::d30, DReg::d29), "shll2 v30.2d, v29.4s, #32");
 
   TEST_SINGLE(uqxtn(SubRegSize::i8Bit, QReg::q30, QReg::q29), "uqxtn v30.8b, v29.8h");
   TEST_SINGLE(uqxtn(SubRegSize::i16Bit, QReg::q30, QReg::q29), "uqxtn v30.4h, v29.4s");
@@ -2236,15 +2226,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   //TEST_SINGLE(sqshl(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "sqshl v30.1d, v29.1d, #1");
   //TEST_SINGLE(sqshl(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "sqshl v30.1d, v29.1d, #63");
 
-  TEST_SINGLE(shrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "shrn v30.8b, v29.8h, #1");
-  TEST_SINGLE(shrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "shrn v30.8b, v29.8h, #7");
-  TEST_SINGLE(shrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "shrn v30.4h, v29.4s, #1");
-  TEST_SINGLE(shrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "shrn v30.4h, v29.4s, #15");
-  TEST_SINGLE(shrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "shrn v30.2s, v29.2d, #1");
-  TEST_SINGLE(shrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "shrn v30.2s, v29.2d, #31");
-  //TEST_SINGLE(shrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "shrn v30.2d, v29.2d, #1");
-  //TEST_SINGLE(shrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "shrn v30.2d, v29.2d, #63");
-
   TEST_SINGLE(shrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "shrn v30.8b, v29.8h, #1");
   TEST_SINGLE(shrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "shrn v30.8b, v29.8h, #7");
   TEST_SINGLE(shrn(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "shrn v30.4h, v29.4s, #1");
@@ -2262,24 +2243,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(shrn2(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "shrn2 v30.4s, v29.2d, #31");
   //TEST_SINGLE(shrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "shrn2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(shrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "shrn2 v30.2d, v29.2d, #63");
-
-  TEST_SINGLE(shrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "shrn2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(shrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "shrn2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(shrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "shrn2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(shrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "shrn2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(shrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "shrn2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(shrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "shrn2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(shrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "shrn2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(shrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "shrn2 v30.1d, v29.1d, #63");
-
-  TEST_SINGLE(rshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "rshrn v30.8b, v29.8h, #1");
-  TEST_SINGLE(rshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "rshrn v30.8b, v29.8h, #7");
-  TEST_SINGLE(rshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "rshrn v30.4h, v29.4s, #1");
-  TEST_SINGLE(rshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "rshrn v30.4h, v29.4s, #15");
-  TEST_SINGLE(rshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "rshrn v30.2s, v29.2d, #1");
-  TEST_SINGLE(rshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "rshrn v30.2s, v29.2d, #31");
-  //TEST_SINGLE(rshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "rshrn v30.2d, v29.2d, #1");
-  //TEST_SINGLE(rshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "rshrn v30.2d, v29.2d, #63");
 
   TEST_SINGLE(rshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "rshrn v30.8b, v29.8h, #1");
   TEST_SINGLE(rshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "rshrn v30.8b, v29.8h, #7");
@@ -2299,24 +2262,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   //TEST_SINGLE(rshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "rshrn2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(rshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "rshrn2 v30.2d, v29.2d, #63");
 
-  TEST_SINGLE(rshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "rshrn2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(rshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "rshrn2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(rshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "rshrn2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(rshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "rshrn2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(rshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "rshrn2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(rshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "rshrn2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(rshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "rshrn2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(rshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "rshrn2 v30.1d, v29.1d, #63");
-
-  TEST_SINGLE(sqshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "sqshrn v30.8b, v29.8h, #1");
-  TEST_SINGLE(sqshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "sqshrn v30.8b, v29.8h, #7");
-  TEST_SINGLE(sqshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "sqshrn v30.4h, v29.4s, #1");
-  TEST_SINGLE(sqshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "sqshrn v30.4h, v29.4s, #15");
-  TEST_SINGLE(sqshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "sqshrn v30.2s, v29.2d, #1");
-  TEST_SINGLE(sqshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "sqshrn v30.2s, v29.2d, #31");
-  //TEST_SINGLE(sqshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqshrn v30.2d, v29.2d, #1");
-  //TEST_SINGLE(sqshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqshrn v30.2d, v29.2d, #63");
-
   TEST_SINGLE(sqshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqshrn v30.8b, v29.8h, #1");
   TEST_SINGLE(sqshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqshrn v30.8b, v29.8h, #7");
   TEST_SINGLE(sqshrn(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sqshrn v30.4h, v29.4s, #1");
@@ -2334,24 +2279,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(sqshrn2(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "sqshrn2 v30.4s, v29.2d, #31");
   //TEST_SINGLE(sqshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqshrn2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(sqshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqshrn2 v30.2d, v29.2d, #63");
-
-  TEST_SINGLE(sqshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqshrn2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(sqshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqshrn2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(sqshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sqshrn2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(sqshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "sqshrn2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(sqshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "sqshrn2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(sqshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "sqshrn2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(sqshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "sqshrn2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(sqshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "sqshrn2 v30.1d, v29.1d, #63");
-
-  TEST_SINGLE(sqrshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "sqrshrn v30.8b, v29.8h, #1");
-  TEST_SINGLE(sqrshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "sqrshrn v30.8b, v29.8h, #7");
-  TEST_SINGLE(sqrshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "sqrshrn v30.4h, v29.4s, #1");
-  TEST_SINGLE(sqrshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "sqrshrn v30.4h, v29.4s, #15");
-  TEST_SINGLE(sqrshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "sqrshrn v30.2s, v29.2d, #1");
-  TEST_SINGLE(sqrshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "sqrshrn v30.2s, v29.2d, #31");
-  //TEST_SINGLE(sqrshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqrshrn v30.2d, v29.2d, #1");
-  //TEST_SINGLE(sqrshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqrshrn v30.2d, v29.2d, #63");
 
   TEST_SINGLE(sqrshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqrshrn v30.8b, v29.8h, #1");
   TEST_SINGLE(sqrshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqrshrn v30.8b, v29.8h, #7");
@@ -2371,24 +2298,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   //TEST_SINGLE(sqrshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqrshrn2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(sqrshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqrshrn2 v30.2d, v29.2d, #63");
 
-  TEST_SINGLE(sqrshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqrshrn2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(sqrshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqrshrn2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(sqrshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sqrshrn2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(sqrshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "sqrshrn2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(sqrshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "sqrshrn2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(sqrshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "sqrshrn2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(sqrshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "sqrshrn2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(sqrshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "sqrshrn2 v30.1d, v29.1d, #63");
-
-  //TEST_SINGLE(sshll(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "sshll v30.8b, v29.8h, #1");
-  //TEST_SINGLE(sshll(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "sshll v30.8b, v29.8h, #7");
-  TEST_SINGLE(sshll(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "sshll v30.8h, v29.8b, #1");
-  TEST_SINGLE(sshll(SubRegSize::i16Bit, QReg::q30, QReg::q29, 7), "sshll v30.8h, v29.8b, #7");
-  TEST_SINGLE(sshll(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "sshll v30.4s, v29.4h, #1");
-  TEST_SINGLE(sshll(SubRegSize::i32Bit, QReg::q30, QReg::q29, 15), "sshll v30.4s, v29.4h, #15");
-  TEST_SINGLE(sshll(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sshll v30.2d, v29.2s, #1");
-  TEST_SINGLE(sshll(SubRegSize::i64Bit, QReg::q30, QReg::q29, 31), "sshll v30.2d, v29.2s, #31");
-
   //TEST_SINGLE(sshll(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sshll v30.8b, v29.8h, #1");
   //TEST_SINGLE(sshll(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sshll v30.8b, v29.8h, #7");
   TEST_SINGLE(sshll(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sshll v30.8h, v29.8b, #1");
@@ -2406,15 +2315,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(sshll2(SubRegSize::i32Bit, QReg::q30, QReg::q29, 15), "sshll2 v30.4s, v29.8h, #15");
   TEST_SINGLE(sshll2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sshll2 v30.2d, v29.4s, #1");
   TEST_SINGLE(sshll2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 31), "sshll2 v30.2d, v29.4s, #31");
-
-  //TEST_SINGLE(sshll2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sshll2 v30.16b, v29.8h, #1");
-  //TEST_SINGLE(sshll2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sshll2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(sshll2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sshll2 v30.8h, v29.16b, #1");
-  TEST_SINGLE(sshll2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 7), "sshll2 v30.8h, v29.16b, #7");
-  TEST_SINGLE(sshll2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "sshll2 v30.4s, v29.8h, #1");
-  TEST_SINGLE(sshll2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 15), "sshll2 v30.4s, v29.8h, #15");
-  TEST_SINGLE(sshll2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "sshll2 v30.2d, v29.4s, #1");
-  TEST_SINGLE(sshll2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 31), "sshll2 v30.2d, v29.4s, #31");
 
   //TEST_SINGLE(sxtl(SubRegSize::i8Bit, QReg::q30, QReg::q29),   "sxtl v30.8b, v29.8h");
   TEST_SINGLE(sxtl(SubRegSize::i16Bit, QReg::q30, QReg::q29),  "sxtl v30.8h, v29.8b");
@@ -2616,15 +2516,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   //TEST_SINGLE(uqshl(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "uqshl v30.1d, v29.1d, #1");
   //TEST_SINGLE(uqshl(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "uqshl v30.1d, v29.1d, #63");
 
-  TEST_SINGLE(sqshrun(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "sqshrun v30.8b, v29.8h, #1");
-  TEST_SINGLE(sqshrun(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "sqshrun v30.8b, v29.8h, #7");
-  TEST_SINGLE(sqshrun(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "sqshrun v30.4h, v29.4s, #1");
-  TEST_SINGLE(sqshrun(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "sqshrun v30.4h, v29.4s, #15");
-  TEST_SINGLE(sqshrun(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "sqshrun v30.2s, v29.2d, #1");
-  TEST_SINGLE(sqshrun(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "sqshrun v30.2s, v29.2d, #31");
-  //TEST_SINGLE(sqshrun(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqshrun v30.2d, v29.2d, #1");
-  //TEST_SINGLE(sqshrun(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqshrun v30.2d, v29.2d, #63");
-
   TEST_SINGLE(sqshrun(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqshrun v30.8b, v29.8h, #1");
   TEST_SINGLE(sqshrun(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqshrun v30.8b, v29.8h, #7");
   TEST_SINGLE(sqshrun(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sqshrun v30.4h, v29.4s, #1");
@@ -2642,24 +2533,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(sqshrun2(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "sqshrun2 v30.4s, v29.2d, #31");
   //TEST_SINGLE(sqshrun2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqshrun2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(sqshrun2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqshrun2 v30.2d, v29.2d, #63");
-
-  TEST_SINGLE(sqshrun2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqshrun2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(sqshrun2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqshrun2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(sqshrun2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sqshrun2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(sqshrun2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "sqshrun2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(sqshrun2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "sqshrun2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(sqshrun2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "sqshrun2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(sqshrun2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "sqshrun2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(sqshrun2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "sqshrun2 v30.1d, v29.1d, #63");
-
-  TEST_SINGLE(sqrshrun(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "sqrshrun v30.8b, v29.8h, #1");
-  TEST_SINGLE(sqrshrun(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "sqrshrun v30.8b, v29.8h, #7");
-  TEST_SINGLE(sqrshrun(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "sqrshrun v30.4h, v29.4s, #1");
-  TEST_SINGLE(sqrshrun(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "sqrshrun v30.4h, v29.4s, #15");
-  TEST_SINGLE(sqrshrun(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "sqrshrun v30.2s, v29.2d, #1");
-  TEST_SINGLE(sqrshrun(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "sqrshrun v30.2s, v29.2d, #31");
-  //TEST_SINGLE(sqrshrun(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqrshrun v30.2d, v29.2d, #1");
-  //TEST_SINGLE(sqrshrun(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqrshrun v30.2d, v29.2d, #63");
 
   TEST_SINGLE(sqrshrun(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqrshrun v30.8b, v29.8h, #1");
   TEST_SINGLE(sqrshrun(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqrshrun v30.8b, v29.8h, #7");
@@ -2679,24 +2552,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   //TEST_SINGLE(sqrshrun2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "sqrshrun2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(sqrshrun2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "sqrshrun2 v30.2d, v29.2d, #63");
 
-  TEST_SINGLE(sqrshrun2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "sqrshrun2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(sqrshrun2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "sqrshrun2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(sqrshrun2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "sqrshrun2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(sqrshrun2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "sqrshrun2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(sqrshrun2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "sqrshrun2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(sqrshrun2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "sqrshrun2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(sqrshrun2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "sqrshrun2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(sqrshrun2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "sqrshrun2 v30.1d, v29.1d, #63");
-
-  TEST_SINGLE(uqshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "uqshrn v30.8b, v29.8h, #1");
-  TEST_SINGLE(uqshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "uqshrn v30.8b, v29.8h, #7");
-  TEST_SINGLE(uqshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "uqshrn v30.4h, v29.4s, #1");
-  TEST_SINGLE(uqshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "uqshrn v30.4h, v29.4s, #15");
-  TEST_SINGLE(uqshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "uqshrn v30.2s, v29.2d, #1");
-  TEST_SINGLE(uqshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "uqshrn v30.2s, v29.2d, #31");
-  //TEST_SINGLE(uqshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "uqshrn v30.2d, v29.2d, #1");
-  //TEST_SINGLE(uqshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "uqshrn v30.2d, v29.2d, #63");
-
   TEST_SINGLE(uqshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "uqshrn v30.8b, v29.8h, #1");
   TEST_SINGLE(uqshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "uqshrn v30.8b, v29.8h, #7");
   TEST_SINGLE(uqshrn(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "uqshrn v30.4h, v29.4s, #1");
@@ -2714,24 +2569,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(uqshrn2(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "uqshrn2 v30.4s, v29.2d, #31");
   //TEST_SINGLE(uqshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "uqshrn2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(uqshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "uqshrn2 v30.2d, v29.2d, #63");
-
-  TEST_SINGLE(uqshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "uqshrn2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(uqshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "uqshrn2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(uqshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "uqshrn2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(uqshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "uqshrn2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(uqshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "uqshrn2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(uqshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "uqshrn2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(uqshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "uqshrn2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(uqshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "uqshrn2 v30.1d, v29.1d, #63");
-
-  TEST_SINGLE(uqrshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "uqrshrn v30.8b, v29.8h, #1");
-  TEST_SINGLE(uqrshrn(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "uqrshrn v30.8b, v29.8h, #7");
-  TEST_SINGLE(uqrshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "uqrshrn v30.4h, v29.4s, #1");
-  TEST_SINGLE(uqrshrn(SubRegSize::i16Bit, QReg::q30, QReg::q29, 15), "uqrshrn v30.4h, v29.4s, #15");
-  TEST_SINGLE(uqrshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "uqrshrn v30.2s, v29.2d, #1");
-  TEST_SINGLE(uqrshrn(SubRegSize::i32Bit, QReg::q30, QReg::q29, 31), "uqrshrn v30.2s, v29.2d, #31");
-  //TEST_SINGLE(uqrshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "uqrshrn v30.2d, v29.2d, #1");
-  //TEST_SINGLE(uqrshrn(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "uqrshrn v30.2d, v29.2d, #63");
 
   TEST_SINGLE(uqrshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "uqrshrn v30.8b, v29.8h, #1");
   TEST_SINGLE(uqrshrn(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "uqrshrn v30.8b, v29.8h, #7");
@@ -2751,24 +2588,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   //TEST_SINGLE(uqrshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "uqrshrn2 v30.2d, v29.2d, #1");
   //TEST_SINGLE(uqrshrn2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 63), "uqrshrn2 v30.2d, v29.2d, #63");
 
-  TEST_SINGLE(uqrshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "uqrshrn2 v30.16b, v29.8h, #1");
-  TEST_SINGLE(uqrshrn2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "uqrshrn2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(uqrshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "uqrshrn2 v30.8h, v29.4s, #1");
-  TEST_SINGLE(uqrshrn2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 15), "uqrshrn2 v30.8h, v29.4s, #15");
-  TEST_SINGLE(uqrshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "uqrshrn2 v30.4s, v29.2d, #1");
-  TEST_SINGLE(uqrshrn2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 31), "uqrshrn2 v30.4s, v29.2d, #31");
-  //TEST_SINGLE(uqrshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "uqrshrn2 v30.1d, v29.1d, #1");
-  //TEST_SINGLE(uqrshrn2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 63), "uqrshrn2 v30.1d, v29.1d, #63");
-
-  //TEST_SINGLE(ushll(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "ushll v30.8b, v29.8h, #1");
-  //TEST_SINGLE(ushll(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "ushll v30.8b, v29.8h, #7");
-  TEST_SINGLE(ushll(SubRegSize::i16Bit, QReg::q30, QReg::q29, 1),  "ushll v30.8h, v29.8b, #1");
-  TEST_SINGLE(ushll(SubRegSize::i16Bit, QReg::q30, QReg::q29, 7), "ushll v30.8h, v29.8b, #7");
-  TEST_SINGLE(ushll(SubRegSize::i32Bit, QReg::q30, QReg::q29, 1),  "ushll v30.4s, v29.4h, #1");
-  TEST_SINGLE(ushll(SubRegSize::i32Bit, QReg::q30, QReg::q29, 15), "ushll v30.4s, v29.4h, #15");
-  TEST_SINGLE(ushll(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "ushll v30.2d, v29.2s, #1");
-  TEST_SINGLE(ushll(SubRegSize::i64Bit, QReg::q30, QReg::q29, 31), "ushll v30.2d, v29.2s, #31");
-
   //TEST_SINGLE(ushll(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "ushll v30.8b, v29.8h, #1");
   //TEST_SINGLE(ushll(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "ushll v30.8b, v29.8h, #7");
   TEST_SINGLE(ushll(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "ushll v30.8h, v29.8b, #1");
@@ -2787,20 +2606,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(ushll2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 1),  "ushll2 v30.2d, v29.4s, #1");
   TEST_SINGLE(ushll2(SubRegSize::i64Bit, QReg::q30, QReg::q29, 31), "ushll2 v30.2d, v29.4s, #31");
 
-  //TEST_SINGLE(ushll2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 1),   "ushll2 v30.16b, v29.8h, #1");
-  //TEST_SINGLE(ushll2(SubRegSize::i8Bit, DReg::d30, DReg::d29, 7),   "ushll2 v30.16b, v29.8h, #7");
-  TEST_SINGLE(ushll2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 1),  "ushll2 v30.8h, v29.16b, #1");
-  TEST_SINGLE(ushll2(SubRegSize::i16Bit, DReg::d30, DReg::d29, 7), "ushll2 v30.8h, v29.16b, #7");
-  TEST_SINGLE(ushll2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 1),  "ushll2 v30.4s, v29.8h, #1");
-  TEST_SINGLE(ushll2(SubRegSize::i32Bit, DReg::d30, DReg::d29, 15), "ushll2 v30.4s, v29.8h, #15");
-  TEST_SINGLE(ushll2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 1),  "ushll2 v30.2d, v29.4s, #1");
-  TEST_SINGLE(ushll2(SubRegSize::i64Bit, DReg::d30, DReg::d29, 31), "ushll2 v30.2d, v29.4s, #31");
-
-  //TEST_SINGLE(uxtl(SubRegSize::i8Bit, QReg::q30, QReg::q29),   "uxtl v30.8b, v29.8h");
-  TEST_SINGLE(uxtl(SubRegSize::i16Bit, QReg::q30, QReg::q29),  "uxtl v30.8h, v29.8b");
-  TEST_SINGLE(uxtl(SubRegSize::i32Bit, QReg::q30, QReg::q29),  "uxtl v30.4s, v29.4h");
-  TEST_SINGLE(uxtl(SubRegSize::i64Bit, QReg::q30, QReg::q29),  "uxtl v30.2d, v29.2s");
-
   //TEST_SINGLE(uxtl(SubRegSize::i8Bit, DReg::d30, DReg::d29),   "uxtl v30.8b, v29.8h");
   TEST_SINGLE(uxtl(SubRegSize::i16Bit, DReg::d30, DReg::d29),  "uxtl v30.8h, v29.8b");
   TEST_SINGLE(uxtl(SubRegSize::i32Bit, DReg::d30, DReg::d29),  "uxtl v30.4s, v29.4h");
@@ -2810,11 +2615,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD shift by immed
   TEST_SINGLE(uxtl2(SubRegSize::i16Bit, QReg::q30, QReg::q29),  "uxtl2 v30.8h, v29.16b");
   TEST_SINGLE(uxtl2(SubRegSize::i32Bit, QReg::q30, QReg::q29),  "uxtl2 v30.4s, v29.8h");
   TEST_SINGLE(uxtl2(SubRegSize::i64Bit, QReg::q30, QReg::q29),  "uxtl2 v30.2d, v29.4s");
-
-  //TEST_SINGLE(uxtl2(SubRegSize::i8Bit, DReg::d30, DReg::d29),   "uxtl2 v30.16b, v29.8h");
-  TEST_SINGLE(uxtl2(SubRegSize::i16Bit, DReg::d30, DReg::d29),  "uxtl2 v30.8h, v29.16b");
-  TEST_SINGLE(uxtl2(SubRegSize::i32Bit, DReg::d30, DReg::d29),  "uxtl2 v30.4s, v29.8h");
-  TEST_SINGLE(uxtl2(SubRegSize::i64Bit, DReg::d30, DReg::d29),  "uxtl2 v30.2d, v29.4s");
 
   //TEST_SINGLE(ucvtf(SubRegSize::i8Bit, QReg::q30, QReg::q29, 1),   "ucvtf v30.16b, v29.16b, #1");
   //TEST_SINGLE(ucvtf(SubRegSize::i8Bit, QReg::q30, QReg::q29, 7),   "ucvtf v30.16b, v29.16b, #7");

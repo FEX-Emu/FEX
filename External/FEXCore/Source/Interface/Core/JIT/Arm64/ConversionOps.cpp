@@ -55,7 +55,7 @@ DEF_OP(VInsGPR) {
       // Move the upper lane down for the insertion.
       const auto CompactPred = ARMEmitter::PReg::p0;
       not_(CompactPred, PRED_TMP_32B.Zeroing(), PRED_TMP_16B);
-      compact(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), CompactPred, DestVector);
+      compact(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), CompactPred, DestVector.Z());
     }
 
     // Put data in place for destructive SPLICE below.
@@ -225,7 +225,7 @@ DEF_OP(Vector_FToZS) {
   const auto Vector = GetVReg(Op->Vector.ID());
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B;
-    fcvtzs(Dst, SubEmitSize, Mask.Merging(), Vector, SubEmitSize);
+    fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
     fcvtzs(SubEmitSize, Dst.Q(), Vector.Q());
   }
@@ -248,8 +248,8 @@ DEF_OP(Vector_FToS) {
 
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B;
-    frinti(SubEmitSize, Dst, Mask.Merging(), Vector);
-    fcvtzs(Dst, SubEmitSize, Mask.Merging(), Dst, SubEmitSize);
+    frinti(SubEmitSize, Dst.Z(), Mask.Merging(), Vector.Z());
+    fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Dst.Z(), SubEmitSize);
   } else {
     const auto Dst = GetVReg(Node);
     const auto Vector = GetVReg(Op->Vector.ID());
@@ -302,12 +302,12 @@ DEF_OP(Vector_FToF) {
         break;
       }
       case 0x0204: { // Half <- Float
-        fcvtnt(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst, Mask, Vector);
+        fcvtnt(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Mask, Vector.Z());
         uzp2(FEXCore::ARMEmitter::SubRegSize::i16Bit, Dst.Z(), Dst.Z(), Dst.Z());
         break;
       }
       case 0x0408: { // Float <- Double
-        fcvtnt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst, Mask, Vector);
+        fcvtnt(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Mask, Vector.Z());
         uzp2(FEXCore::ARMEmitter::SubRegSize::i32Bit, Dst.Z(), Dst.Z(), Dst.Z());
         break;
       }

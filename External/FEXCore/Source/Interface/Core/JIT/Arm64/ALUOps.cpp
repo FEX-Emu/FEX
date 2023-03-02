@@ -1174,7 +1174,7 @@ DEF_OP(VExtractToGPR) {
     // all of the top lanes. We can then compact those into a temporary.
     const auto CompactPred = ARMEmitter::PReg::p0;
     not_(CompactPred, PRED_TMP_32B, PRED_TMP_16B);
-    compact(ARMEmitter::SubRegSize::i64Bit, VTMP1, CompactPred, Vector);
+    compact(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), CompactPred, Vector.Z());
 
     // Sanitize the zero-based index to work on the now-moved
     // upper half of the vector.
