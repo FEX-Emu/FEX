@@ -950,10 +950,6 @@ namespace FEXCore::ARMEmitter {
 
       friend constexpr auto operator<=>(const PRegister&, const PRegister&) = default;
 
-      operator uint32_t() const {
-        return Index;
-      }
-
       uint32_t Idx() const {
         return Index;
       }
@@ -980,10 +976,6 @@ namespace FEXCore::ARMEmitter {
 
       friend constexpr auto operator<=>(const PRegisterZero&, const PRegisterZero&) = default;
 
-      operator uint32_t() const {
-        return Index;
-      }
-
       uint32_t Idx() const {
         return Index;
       }
@@ -1009,10 +1001,6 @@ namespace FEXCore::ARMEmitter {
         : Index {Idx} {}
 
       friend constexpr auto operator<=>(const PRegisterMerge&, const PRegisterMerge&) = default;
-
-      operator uint32_t() const {
-        return Index;
-      }
 
       uint32_t Idx() const {
         return Index;
