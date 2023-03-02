@@ -1,5 +1,8 @@
 #pragma once
+
 #include <FEXCore/Utils/EnumUtils.h>
+
+#include <compare>
 #include <cstdint>
 
 namespace FEXCore::ARMEmitter {
@@ -14,6 +17,8 @@ namespace FEXCore::ARMEmitter {
       Register() = delete;
       constexpr explicit Register(uint32_t Idx)
         : Index {Idx} {}
+
+      friend constexpr auto operator<=>(const Register&, const Register&) = default;
 
       uint32_t Idx() const {
         return Index;
@@ -41,9 +46,7 @@ namespace FEXCore::ARMEmitter {
       constexpr explicit WRegister(uint32_t Idx)
         : Index {Idx} {}
 
-      bool operator==(const WRegister &rhs) {
-        return Idx() == rhs.Idx();
-      }
+      friend constexpr auto operator<=>(const WRegister&, const WRegister&) = default;
 
       uint32_t Idx() const {
         return Index;
@@ -75,9 +78,7 @@ namespace FEXCore::ARMEmitter {
       constexpr explicit XRegister(uint32_t Idx)
         : Index {Idx} {}
 
-      bool operator==(const XRegister &rhs) {
-        return Idx() == rhs.Idx();
-      }
+      friend constexpr auto operator<=>(const XRegister&, const XRegister&) = default;
 
       uint32_t Idx() const {
         return Index;
@@ -294,6 +295,8 @@ namespace FEXCore::ARMEmitter {
       constexpr explicit VRegister(uint32_t Idx)
         : Index {Idx} {}
 
+      friend constexpr auto operator<=>(const VRegister&, const VRegister&) = default;
+
       uint32_t Idx() const {
         return Index;
       }
@@ -320,6 +323,8 @@ namespace FEXCore::ARMEmitter {
       BRegister() = delete;
       constexpr explicit BRegister(uint32_t Idx)
         : Index {Idx} {}
+
+      friend constexpr auto operator<=>(const BRegister&, const BRegister&) = default;
 
       uint32_t Idx() const {
         return Index;
@@ -352,6 +357,8 @@ namespace FEXCore::ARMEmitter {
       constexpr explicit HRegister(uint32_t Idx)
         : Index {Idx} {}
 
+      friend constexpr auto operator<=>(const HRegister&, const HRegister&) = default;
+
       uint32_t Idx() const {
         return Index;
       }
@@ -382,6 +389,8 @@ namespace FEXCore::ARMEmitter {
       SRegister() = delete;
       constexpr explicit SRegister(uint32_t Idx)
         : Index {Idx} {}
+
+      friend constexpr auto operator<=>(const SRegister&, const SRegister&) = default;
 
       uint32_t Idx() const {
         return Index;
@@ -415,6 +424,8 @@ namespace FEXCore::ARMEmitter {
       constexpr explicit DRegister(uint32_t Idx)
         : Index {Idx} {}
 
+      friend constexpr auto operator<=>(const DRegister&, const DRegister&) = default;
+
       uint32_t Idx() const {
         return Index;
       }
@@ -447,6 +458,8 @@ namespace FEXCore::ARMEmitter {
       constexpr explicit QRegister(uint32_t Idx)
         : Index {Idx} {}
 
+      friend constexpr auto operator<=>(const QRegister&, const QRegister&) = default;
+
       uint32_t Idx() const {
         return Index;
       }
@@ -477,6 +490,8 @@ namespace FEXCore::ARMEmitter {
       ZRegister() = delete;
       constexpr explicit ZRegister(uint32_t Idx)
         : Index {Idx} {}
+
+      friend constexpr auto operator<=>(const ZRegister&, const ZRegister&) = default;
 
       uint32_t Idx() const {
         return Index;
@@ -933,6 +948,8 @@ namespace FEXCore::ARMEmitter {
       constexpr PRegister(uint32_t Idx)
         : Index {Idx} {}
 
+      friend constexpr auto operator<=>(const PRegister&, const PRegister&) = default;
+
       operator uint32_t() const {
         return Index;
       }
@@ -961,6 +978,8 @@ namespace FEXCore::ARMEmitter {
       constexpr PRegisterZero(uint32_t Idx)
         : Index {Idx} {}
 
+      friend constexpr auto operator<=>(const PRegisterZero&, const PRegisterZero&) = default;
+
       operator uint32_t() const {
         return Index;
       }
@@ -988,6 +1007,8 @@ namespace FEXCore::ARMEmitter {
       PRegisterMerge() = delete;
       constexpr PRegisterMerge(uint32_t Idx)
         : Index {Idx} {}
+
+      friend constexpr auto operator<=>(const PRegisterMerge&, const PRegisterMerge&) = default;
 
       operator uint32_t() const {
         return Index;

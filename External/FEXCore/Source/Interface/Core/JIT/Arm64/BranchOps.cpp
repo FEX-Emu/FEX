@@ -245,9 +245,9 @@ DEF_OP(InlineSyscall) {
     if (Op->Header.Args[i].IsInvalid()) break;
 
     auto Reg = GetReg(Op->Header.Args[i].ID());
-    if (Reg.Idx() == ARMEmitter::Reg::r8.Idx() ||
-        Reg.Idx() == ARMEmitter::Reg::r4.Idx() ||
-        Reg.Idx() == ARMEmitter::Reg::r5.Idx()) {
+    if (Reg == ARMEmitter::Reg::r8 ||
+        Reg == ARMEmitter::Reg::r4 ||
+        Reg == ARMEmitter::Reg::r5) {
 
       SpillMask |= (1U << Reg.Idx());
       Intersects = true;
@@ -278,13 +278,13 @@ DEF_OP(InlineSyscall) {
       // In the case of intersection with x4, x5, or x8 then these are currently SRA
       // for registers RAX, RBX, and RSI. Which have just been spilled
       // Just load back from the context. Could be slightly smarter but this is fairly uncommon
-      if (Reg.Idx() == FEXCore::ARMEmitter::Reg::r8.Idx()) {
+      if (Reg == ARMEmitter::Reg::r8) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSI]));
       }
-      else if (Reg.Idx() == FEXCore::ARMEmitter::Reg::r4.Idx()) {
+      else if (Reg == ARMEmitter::Reg::r4) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX]));
       }
-      else if (Reg.Idx() == FEXCore::ARMEmitter::Reg::r5.Idx()) {
+      else if (Reg == ARMEmitter::Reg::r5) {
         ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RBX]));
       }
       else {
