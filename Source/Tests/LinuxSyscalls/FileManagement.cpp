@@ -478,17 +478,19 @@ uint64_t FileManager::Open(const char *pathname, [[maybe_unused]] int flags, [[m
   const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
   int fd = -1;
 
-  fd = EmuFD.OpenAt(AT_FDCWD, SelfPath, flags, mode);
-  if (fd == -1) {
-    FDPathTmpData TmpFilename;
-    auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
-    if (Path.first != -1) {
-      fd = ::openat(Path.first, Path.second, flags, mode);
-    }
-
+  if (!((flags & O_CREAT) || (mode & O_WRONLY))) {
+    fd = EmuFD.OpenAt(AT_FDCWD, SelfPath, flags, mode);
     if (fd == -1) {
-      fd = ::open(SelfPath, flags, mode);
+      FDPathTmpData TmpFilename;
+      auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+      if (Path.first != -1) {
+        fd = ::openat(Path.first, Path.second, flags, mode);
+      }
     }
+  }
+
+  if (fd == -1) {
+    fd = ::open(SelfPath, flags, mode);
   }
 
   if (fd != -1) {
@@ -713,16 +715,19 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
 
   int32_t fd = -1;
 
-  fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
-  if (fd == -1) {
-    FDPathTmpData TmpFilename;
-    auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
-    if (Path.first != -1) {
-      fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+  if (!((flags & O_CREAT) || (mode & O_WRONLY))) {
+    fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
+    if (fd == -1) {
+      FDPathTmpData TmpFilename;
+      auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+      if (Path.first != -1) {
+        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+      }
     }
+  }
 
-    if (fd == -1)
-      fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
+  if (fd == -1) {
+    fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
   }
 
   if (fd != -1) {
@@ -739,16 +744,19 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
 
   int32_t fd = -1;
 
-  fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
-  if (fd == -1) {
-    FDPathTmpData TmpFilename;
-    auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
-    if (Path.first != -1) {
-      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+  if (!((how->flags & O_CREAT) || (how->mode & O_WRONLY))) {
+    fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
+    if (fd == -1) {
+      FDPathTmpData TmpFilename;
+      auto Path = GetEmulatedFDPath(SelfPath, true, TmpFilename);
+      if (Path.first != -1) {
+        fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+      }
     }
+  }
 
-    if (fd == -1)
-      fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
+  if (fd == -1) {
+    fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
   }
 
   if (fd != -1) {
