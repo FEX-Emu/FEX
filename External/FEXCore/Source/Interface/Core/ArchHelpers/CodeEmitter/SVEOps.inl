@@ -448,33 +448,21 @@ public:
   // XXX:
   // SVE floating point matrix multiply accumulate
   // XXX:
+
   // SVE floating-point compare vectors
-  void fcmeq(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8-bit size");
+  void fcmeq(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     SVEFloatCompareVector(0, 1, 0, size, zm, pg, zn, pd);
   }
-
-  void fcmgt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8-bit size");
+  void fcmgt(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     SVEFloatCompareVector(0, 0, 1, size, zm, pg, zn, pd);
   }
-
-  void fcmge(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8-bit size");
+  void fcmge(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     SVEFloatCompareVector(0, 0, 0, size, zm, pg, zn, pd);
   }
-  void fcmne(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8-bit size");
+  void fcmne(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     SVEFloatCompareVector(0, 1, 1, size, zm, pg, zn, pd);
   }
-
-  void fcmuo(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8-bit size");
+  void fcmuo(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     SVEFloatCompareVector(1, 0, 0, size, zm, pg, zn, pd);
   }
 
@@ -3728,10 +3716,12 @@ private:
     dc32(Instr);
   }
 
-  void SVEFloatCompareVector(uint32_t op, uint32_t o2, uint32_t o3, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'010 << 13;
-    uint32_t Instr = Op;
+  void SVEFloatCompareVector(uint32_t op, uint32_t o2, uint32_t o3, SubRegSize size, ZRegister zm, PRegister pg, ZRegister zn, PRegister pd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit size");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0110'0101'0000'0000'0100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= op << 15;
