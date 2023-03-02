@@ -1173,7 +1173,7 @@ DEF_OP(VExtractToGPR) {
     // Inverting our dedicated predicate for 128-bit operations selects
     // all of the top lanes. We can then compact those into a temporary.
     const auto CompactPred = ARMEmitter::PReg::p0;
-    not_(CompactPred, PRED_TMP_32B, PRED_TMP_16B);
+    not_(CompactPred, PRED_TMP_32B.Zeroing(), PRED_TMP_16B);
     compact(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), CompactPred, Vector.Z());
 
     // Sanitize the zero-based index to work on the now-moved

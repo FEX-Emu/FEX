@@ -929,9 +929,6 @@ namespace FEXCore::ARMEmitter {
         return Index;
       }
 
-      operator PRegisterZero() const;
-      operator PRegisterMerge() const;
-
       PRegisterZero Zeroing() const;
       PRegisterMerge Merging() const;
 
@@ -956,7 +953,6 @@ namespace FEXCore::ARMEmitter {
       }
 
       operator PRegister() const;
-      operator PRegisterMerge() const;
 
       PRegister P() const;
       PRegisterMerge Merging() const;
@@ -982,7 +978,6 @@ namespace FEXCore::ARMEmitter {
       }
 
       operator PRegister() const;
-      operator PRegisterZero() const;
 
       PRegister P() const;
       PRegisterZero Zeroing() const;
@@ -996,14 +991,6 @@ namespace FEXCore::ARMEmitter {
 
 
   // PRegister
-  inline PRegister::operator PRegisterZero() const {
-    return PRegisterZero(Index);
-  }
-
-  inline PRegister::operator PRegisterMerge() const {
-    return PRegisterMerge(Index);
-  }
-
   inline PRegisterZero PRegister::Zeroing() const {
     return PRegisterZero(Idx());
   }
@@ -1017,10 +1004,6 @@ namespace FEXCore::ARMEmitter {
     return PRegister(Index);
   }
 
-  inline PRegisterZero::operator PRegisterMerge() const {
-    return PRegisterMerge(Index);
-  }
-
   inline PRegister PRegisterZero::P() const {
     return PRegister(Idx());
   }
@@ -1031,10 +1014,6 @@ namespace FEXCore::ARMEmitter {
 
   // PRegisterMerge
   inline PRegisterMerge::operator PRegister() const {
-    return PRegisterZero(Index);
-  }
-
-  inline PRegisterMerge::operator PRegisterZero() const {
     return PRegisterZero(Index);
   }
 
