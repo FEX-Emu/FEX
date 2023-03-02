@@ -1112,7 +1112,7 @@ DEF_OP(VNot) {
   const auto Vector = GetVReg(Op->Vector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
-    not_(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), PRED_TMP_32B, Vector.Z());
+    not_(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), PRED_TMP_32B.Merging(), Vector.Z());
   } else {
     mvn(ARMEmitter::SubRegSize::i8Bit, Dst.Q(), Vector.Q());
   }
@@ -2288,10 +2288,10 @@ DEF_OP(VInsElement) {
     dup(SubRegSize, VTMP2.Z(), SrcVector.Z(), SrcIdx);
     mov(Dst.Z(), Reg.Z());
     if (ElementSize == 16) {
-      mov(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Predicate, VTMP2.Z());
+      mov(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Predicate.Merging(), VTMP2.Z());
     }
     else {
-      mov(SubRegSize, Dst.Z(), Predicate, VTMP2.Z());
+      mov(SubRegSize, Dst.Z(), Predicate.Merging(), VTMP2.Z());
     }
 
     // Set up a label to jump over the data we inserted, so we don't try and execute it.

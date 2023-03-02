@@ -2602,7 +2602,7 @@ public:
   }
 
   template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
     if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -2621,7 +2621,7 @@ public:
   }
 
   template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
     if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -2640,7 +2640,7 @@ public:
   }
 
   template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
     if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -2658,7 +2658,7 @@ public:
     }
   }
 
-  void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
     if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -4092,7 +4092,7 @@ private:
     dc32(Instr);
   }
 
-  void SVEPropagateBreak(uint32_t opc, uint32_t op2, uint32_t op3, PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+  void SVEPropagateBreak(uint32_t opc, uint32_t op2, uint32_t op3, PRegister pd, PRegister pg, PRegister pn, PRegister pm) {
     uint32_t Instr = 0b0010'0101'0000'0000'0000'0000'0000'0000;
     Instr |= opc << 20;
     Instr |= op2 << 14;

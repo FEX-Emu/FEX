@@ -479,20 +479,20 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply-add writi
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract vectors (predicated)") {
-  TEST_SINGLE(add(SubRegSize::i8Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28),  "add z30.b, p7/m, z30.b, z28.b");
-  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "add z30.h, p7/m, z30.h, z28.h");
-  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "add z30.s, p7/m, z30.s, z28.s");
-  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "add z30.d, p7/m, z30.d, z28.d");
+  TEST_SINGLE(add(SubRegSize::i8Bit,  ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "add z30.b, p7/m, z30.b, z28.b");
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "add z30.h, p7/m, z30.h, z28.h");
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "add z30.s, p7/m, z30.s, z28.s");
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "add z30.d, p7/m, z30.d, z28.d");
 
-  TEST_SINGLE(sub(SubRegSize::i8Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28),  "sub z30.b, p7/m, z30.b, z28.b");
-  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "sub z30.h, p7/m, z30.h, z28.h");
-  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "sub z30.s, p7/m, z30.s, z28.s");
-  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "sub z30.d, p7/m, z30.d, z28.d");
+  TEST_SINGLE(sub(SubRegSize::i8Bit,  ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sub z30.b, p7/m, z30.b, z28.b");
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sub z30.h, p7/m, z30.h, z28.h");
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sub z30.s, p7/m, z30.s, z28.s");
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "sub z30.d, p7/m, z30.d, z28.d");
 
-  TEST_SINGLE(subr(SubRegSize::i8Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28),  "subr z30.b, p7/m, z30.b, z28.b");
-  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "subr z30.h, p7/m, z30.h, z28.h");
-  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "subr z30.s, p7/m, z30.s, z28.s");
-  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, PReg::p7, ZReg::z30, ZReg::z28), "subr z30.d, p7/m, z30.d, z28.d");
+  TEST_SINGLE(subr(SubRegSize::i8Bit,  ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "subr z30.b, p7/m, z30.b, z28.b");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "subr z30.h, p7/m, z30.h, z28.h");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "subr z30.s, p7/m, z30.s, z28.s");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z30, ZReg::z28), "subr z30.d, p7/m, z30.d, z28.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max/difference (predicated)") {
@@ -2422,8 +2422,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract narr
   TEST_SINGLE(rsubhnt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "rsubhnt z30.s, z29.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 Histogram Computation") {
-  TEST_SINGLE(histcnt(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29, ZReg::z28),  "histcnt z30.s, p6/z, z29.s, z28.s");
-  TEST_SINGLE(histcnt(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29, ZReg::z28),  "histcnt z30.d, p6/z, z29.d, z28.d");
+  TEST_SINGLE(histcnt(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), ZReg::z29, ZReg::z28),  "histcnt z30.s, p6/z, z29.s, z28.s");
+  TEST_SINGLE(histcnt(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), ZReg::z29, ZReg::z28),  "histcnt z30.d, p6/z, z29.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 Histogram Computation - Segment") {
   TEST_SINGLE(histseg(ZReg::z30, ZReg::z29, ZReg::z28), "histseg z30.b, z29.b, z28.b");
