@@ -288,6 +288,111 @@ DEF_OP(StoreMem) {
   }
 }
 
+DEF_OP(MemSet) {
+  const auto Op = IROp->C<IR::IROp_MemSet>();
+  const int32_t Size = Op->Size;
+
+  char *MemData = *GetSrc<char **>(Data->SSAData, Op->Addr);
+  const auto Value = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
+  const auto Length = *GetSrc<uint64_t*>(Data->SSAData, Op->Length);
+  const auto Direction = *GetSrc<uint8_t*>(Data->SSAData, Op->Direction);
+
+  auto MemSetElements = [](auto* Memory, uint64_t Value, size_t Length) {
+    for (size_t i = 0; i < Length; ++i) {
+      Memory[i] = Value;
+    }
+  };
+
+  auto MemSetElementsInverse = [](auto* Memory, uint64_t Value, size_t Length) {
+    for (size_t i = 0; i < Length; ++i) {
+      Memory[-i] = Value;
+    }
+  };
+
+  if (Direction == 0) { // Forward
+    if (Op->IsAtomic) {
+      switch (Size) {
+        case 1:
+          MemSetElements(reinterpret_cast<std::atomic<uint8_t>*>(MemData), Value, Length);
+          break;
+        case 2:
+          MemSetElements(reinterpret_cast<std::atomic<uint16_t>*>(MemData), Value, Length);
+          break;
+        case 4:
+          MemSetElements(reinterpret_cast<std::atomic<uint32_t>*>(MemData), Value, Length);
+          break;
+        case 8:
+          MemSetElements(reinterpret_cast<std::atomic<uint64_t>*>(MemData), Value, Length);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+    }
+    else {
+      switch (Size) {
+        case 1:
+          MemSetElements(reinterpret_cast<uint8_t*>(MemData), Value, Length);
+          break;
+        case 2:
+          MemSetElements(reinterpret_cast<uint16_t*>(MemData), Value, Length);
+          break;
+        case 4:
+          MemSetElements(reinterpret_cast<uint32_t*>(MemData), Value, Length);
+          break;
+        case 8:
+          MemSetElements(reinterpret_cast<uint64_t*>(MemData), Value, Length);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+    }
+    GD = reinterpret_cast<uint64_t>(MemData + (Length * Size));
+  }
+  else { // Backward
+    if (Op->IsAtomic) {
+      switch (Size) {
+        case 1:
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint8_t>*>(MemData), Value, Length);
+          break;
+        case 2:
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint16_t>*>(MemData), Value, Length);
+          break;
+        case 4:
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint32_t>*>(MemData), Value, Length);
+          break;
+        case 8:
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint64_t>*>(MemData), Value, Length);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+    }
+    else {
+      switch (Size) {
+        case 1:
+          MemSetElementsInverse(reinterpret_cast<uint8_t*>(MemData), Value, Length);
+          break;
+        case 2:
+          MemSetElementsInverse(reinterpret_cast<uint16_t*>(MemData), Value, Length);
+          break;
+        case 4:
+          MemSetElementsInverse(reinterpret_cast<uint32_t*>(MemData), Value, Length);
+          break;
+        case 8:
+          MemSetElementsInverse(reinterpret_cast<uint64_t*>(MemData), Value, Length);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+    }
+    GD = reinterpret_cast<uint64_t>(MemData - (Length * Size));
+  }
+}
+
 DEF_OP(CacheLineClear) {
   auto Op = IROp->C<IR::IROp_CacheLineClear>();
 

@@ -476,6 +476,14 @@
         ]
       },
 
+      "GPR = MemSet i1:$IsAtomic, u8:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
+        "Desc": ["Duplicates behaviour of x86 STOS repeat",
+                 "Returns the final address that gets generated without the prefix appended."
+                ],
+        "HasSideEffects": true,
+        "DestSize": "8"
+      },
+
       "CacheLineClear GPR:$Addr, i1:$Serialize": {
         "Desc": ["Does a 64 byte cacheline clear at the address specified",
                  "Only clears the data cachelines. Doesn't do any zeroing",

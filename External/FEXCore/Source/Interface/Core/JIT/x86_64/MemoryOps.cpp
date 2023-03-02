@@ -766,6 +766,94 @@ DEF_OP(StoreMem) {
   }
 }
 
+DEF_OP(MemSet) {
+  const auto Op = IROp->C<IR::IROp_MemSet>();
+
+  const int32_t Size = Op->Size;
+  const auto MemReg = GetSrc<RA_64>(Op->Addr.ID());
+  const auto Value = GetSrc<RA_64>(Op->Value.ID());
+  const auto Length = GetSrc<RA_64>(Op->Length.ID());
+  const auto Direction = GetSrc<RA_64>(Op->Direction.ID());
+  const auto Dst = GetSrc<RA_64>(Node);
+
+  // If Direction == 0 then:
+  //   MemReg is incremented (by size)
+  // else:
+  //   MemReg is decremented (by size)
+  //
+  // Counter is decremented regardless.
+
+  // TMP1 = rax
+  // TMP2 = rcx
+  // TMP4 = rdi
+  // That leaves us with TMP3 and TMP5
+  mov(rax, Value);
+  mov(rcx, Length);
+  mov(rdi, MemReg);
+
+  {
+    mov(TMP3, Length);
+    auto CalculateDest = [&]() {
+      mov(Dst, MemReg);
+      switch (Size) {
+        case 1:
+          break;
+        case 2:
+          shl(TMP3, 1);
+          break;
+        case 4:
+          shl(TMP3, 2);
+          break;
+        case 8:
+          shl(TMP3, 3);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+    };
+
+    Label AfterDir;
+    Label BackwardDir;
+
+    cmp(Direction, 0);
+    jne(BackwardDir);
+    // Incrementing DF flag.
+    cld();
+    CalculateDest();
+    add(Dst, TMP3);
+    jmp(AfterDir);
+
+    L(BackwardDir);
+    // Decrementing DF flag.
+    std();
+    CalculateDest();
+    sub(Dst, TMP3);
+
+    L(AfterDir);
+  }
+
+  switch (Size) {
+    case 1:
+      rep(); stosb();
+      break;
+    case 2:
+      rep(); stosw();
+      break;
+    case 4:
+      rep(); stosd();
+      break;
+    case 8:
+      rep(); stosq();
+      break;
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+      break;
+  }
+  // Ensure we set DF back to zero. Required by the ABI.
+  cld();
+}
+
 DEF_OP(CacheLineClear) {
   auto Op = IROp->C<IR::IROp_CacheLineClear>();
 
@@ -820,6 +908,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREMEM,            StoreMem);
   REGISTER_OP(LOADMEMTSO,          LoadMem);
   REGISTER_OP(STOREMEMTSO,         StoreMem);
+  REGISTER_OP(MEMSET,              MemSet);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
   REGISTER_OP(CACHELINECLEAN,      CacheLineClean);
   REGISTER_OP(CACHELINEZERO,       CacheLineZero);

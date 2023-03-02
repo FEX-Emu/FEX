@@ -899,6 +899,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
             Op_StoreMemTSO(IROp, ID);
           }
           break;
+
+        REGISTER_OP(MEMSET,              MemSet);
         REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
         REGISTER_OP(CACHELINECLEAN,      CacheLineClean);
         REGISTER_OP(CACHELINEZERO,       CacheLineZero);

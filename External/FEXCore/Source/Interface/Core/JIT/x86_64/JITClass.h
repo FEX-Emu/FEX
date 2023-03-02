@@ -344,6 +344,7 @@ private:
   DEF_OP(StoreFlag);
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
+  DEF_OP(MemSet);
   DEF_OP(CacheLineClear);
   DEF_OP(CacheLineClean);
   DEF_OP(CacheLineZero);
