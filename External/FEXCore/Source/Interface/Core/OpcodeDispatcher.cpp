@@ -3793,73 +3793,21 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RDI, TailDest);
   }
   else {
-    // Calculate deffered flags.
-    // This block is ending and it needs flag status
-    CalculateDeferredFlags();
+    // FEX doesn't support partial faulting REP instructions.
+    // Converting this to a `MemSet` IR op optimizes this quite significantly in our codegen.
+    // If FEX is to gain support for faulting REP instructions, then this implementation needs to change significantly.
+    OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+    OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
 
-    // Create all our blocks
-    auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
-    auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
-    auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
+    // Only ES prefix
+    auto Segment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
 
-    // At the time this was written, our RA can't handle accessing nodes across blocks.
-    // So we need to re-load and re-calculate essential values each iteration of the loop.
-
-    // First thing we need to do is finish this block and jump to the start of the loop.
-
-    // RA can now better allocate things, move these ops before the header, to avoid accessing
-    // DF on every iteration
-    auto SizeConst = _Constant(Size);
-    auto NegSizeConst = _Constant(-Size);
-
-    // Calculate direction.
+    OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
     auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-    auto PtrDir = _Select(FEXCore::IR::COND_EQ,
-        DF,  _Constant(0),
-        SizeConst, NegSizeConst);
 
-    _Jump(LoopHead);
-
-    SetCurrentCodeBlock(LoopHead);
-    {
-      OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
-
-      // Can we end the block?
-      _CondJump(Counter, LoopEnd, LoopTail, {COND_EQ});
-    }
-
-    SetCurrentCodeBlock(LoopTail);
-    {
-      OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-      OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
-
-      // Only ES prefix
-      Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
-
-      // Store to memory where RDI points
-      _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
-
-      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
-      OrderedNode *TailDest = LoadGPRRegister(X86State::REG_RDI);
-
-      // Decrement counter
-      TailCounter = _Sub(TailCounter, _Constant(1));
-
-      // Store the counter so we don't have to deal with PHI here
-      StoreGPRRegister(X86State::REG_RCX, TailCounter);
-
-
-      // Offset the pointer
-      TailDest = _Add(TailDest, PtrDir);
-      StoreGPRRegister(X86State::REG_RDI, TailDest);
-
-      // Jump back to the start, we have more work to do
-      _Jump(LoopHead);
-    }
-
-    // Make sure to start a new block after ending this one
-
-    SetCurrentCodeBlock(LoopEnd);
+    auto Result = _MemSet(CTX->IsTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, DF);
+    StoreGPRRegister(X86State::REG_RCX, _Constant(0));
+    StoreGPRRegister(X86State::REG_RDI, Result);
   }
 }
 
@@ -4832,20 +4780,19 @@ uint32_t OpDispatchBuilder::GetDstBitSize(X86Tables::DecodedOp Op) const {
   return GetDstSize(Op) * 8;
 }
 
-OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
+OrderedNode *OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   if (CTX->Config.Is64BitMode) {
     if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
-      Value = _Add(Value, _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached)));
+      return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
     }
     else if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
-      Value = _Add(Value, _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached)));
+      return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
     }
     // If there was any other segment in 64bit then it is ignored
   }
   else {
-    OrderedNode *Segment{};
     uint32_t Prefix = Flags & FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS;
     if (!Prefix || Override) {
       // If there was no prefix then use the default one if available
@@ -4855,29 +4802,28 @@ OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t
     // With the segment register optimization we store the GDT bases directly in the segment register to remove indexed loads
     switch (Prefix) {
       case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
-        Segment = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, es_cached));
-        break;
+        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, es_cached));
       case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
-        Segment = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, cs_cached));
-        break;
+        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, cs_cached));
       case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
-        Segment = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ss_cached));
-        break;
+        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ss_cached));
       case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
-        Segment = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ds_cached));
-        break;
+        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, ds_cached));
       case FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX:
-        Segment = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
-        break;
+        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
       case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
-        Segment = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
-        break;
-      default: break; // Do nothing
+        return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
+      default:
+        break; // Do nothing
     }
+  }
+  return nullptr;
+}
 
-    if (Segment) {
-      Value = _Add(Value, Segment);
-    }
+OrderedNode *OpDispatchBuilder::AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
+  auto Segment = GetSegment(Flags, DefaultPrefix, Override);
+  if (Segment) {
+    Value = _Add(Value, Segment);
   }
 
   return Value;
