@@ -1638,35 +1638,20 @@ public:
   }
 
   // SVE2 integer pairwise arithmetic
-  void addp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0100'0100'0001'0000'101 << 13;
-    SVEIntegerPairwiseArithmetic(Op, 0b00, 1, size, pg, zm, zd);
+  void addp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerPairwiseArithmetic(0b00, 1, size, pg, zd, zn, zm);
   }
-  void smaxp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0100'0100'0001'0000'101 << 13;
-    SVEIntegerPairwiseArithmetic(Op, 0b10, 0, size, pg, zm, zd);
+  void smaxp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerPairwiseArithmetic(0b10, 0, size, pg, zd, zn, zm);
   }
-  void umaxp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0100'0100'0001'0000'101 << 13;
-    SVEIntegerPairwiseArithmetic(Op, 0b10, 1, size, pg, zm, zd);
+  void umaxp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerPairwiseArithmetic(0b10, 1, size, pg, zd, zn, zm);
   }
-  void sminp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0100'0100'0001'0000'101 << 13;
-    SVEIntegerPairwiseArithmetic(Op, 0b11, 0, size, pg, zm, zd);
+  void sminp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerPairwiseArithmetic(0b11, 0, size, pg, zd, zn, zm);
   }
-  void uminp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0100'0100'0001'0000'101 << 13;
-    SVEIntegerPairwiseArithmetic(Op, 0b11, 1, size, pg, zm, zd);
+  void uminp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEIntegerPairwiseArithmetic(0b11, 1, size, pg, zd, zn, zm);
   }
 
   // SVE2 saturating add/subtract
@@ -3244,9 +3229,12 @@ private:
   }
 
   // SVE2 integer pairwise arithmetic
-  void SVEIntegerPairwiseArithmetic(uint32_t Op, uint32_t opc, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEIntegerPairwiseArithmetic(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0100'0100'0001'0000'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 17;
     Instr |= U << 16;
