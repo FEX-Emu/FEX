@@ -456,7 +456,7 @@ namespace WebFileFetcher {
     FileType Type;
   };
 
-  const static std::string DownloadURL = "https://rootfs.fex-emu.com/file/fex-rootfs/RootFS_links.json";
+  const static std::string DownloadURL = "https://rootfs.fex-emu.gg/RootFS_links.json";
 
   std::string DownloadToString(const std::string &URL) {
     std::string BigArgs =
