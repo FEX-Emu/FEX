@@ -81,7 +81,7 @@ public:
 
   std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
-  std::pair<int, const char*> GetEmulatedFDPath(const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
+  std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
 
   std::mutex *GetFDLock() { return &FDLock; }
 
