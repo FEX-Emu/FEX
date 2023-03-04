@@ -1340,6 +1340,169 @@ DEF_OP(StoreMemTSO) {
   }
 }
 
+DEF_OP(MemSet) {
+  // TODO: A future looking task would be to support this with ARM's MOPS instructions.
+  // The 8-bit non-atomic forward path directly matches ARM's SETP/SETM/SETE instruction,
+  // while the backward version needs some fixup to convert it to a forward direction.
+  //
+  // Assuming non-atomicity and non-faulting behaviour, this can accelerate this implementation.
+  // Additionally: This is commonly used as a memset to zero. If we know up-front with an inline constant
+  // that the value is zero, we can optimize any operation larger than 8-bit down to 8-bit to use the MOPS implementation.
+  const auto Op = IROp->C<IR::IROp_MemSet>();
+
+  const int32_t Size = Op->Size;
+  const auto MemReg = GetReg(Op->Addr.ID());
+  const auto Value = GetReg(Op->Value.ID());
+  const auto Length = GetReg(Op->Length.ID());
+  const auto Direction = GetReg(Op->Direction.ID());
+  const auto Dst = GetReg(Node);
+
+  // If Direction == 0 then:
+  //   MemReg is incremented (by size)
+  // else:
+  //   MemReg is decremented (by size)
+  //
+  // Counter is decremented regardless.
+
+  ARMEmitter::ForwardLabel BackwardImpl{};
+  ARMEmitter::ForwardLabel Done{};
+
+  mov(TMP1, Length.X());
+  if (Op->Prefix.IsInvalid()) {
+    mov(TMP2, MemReg.X());
+  }
+  else {
+    const auto Prefix = GetReg(Op->Prefix.ID());
+    add(TMP2, Prefix.X(), MemReg.X());
+  }
+
+  // Backward or forwards implementation depends on flag
+  cbnz(ARMEmitter::Size::i64Bit, Direction, &BackwardImpl);
+
+  auto MemStore = [this](auto Value, uint32_t OpSize, int32_t Size) {
+    switch (OpSize) {
+      case 1:
+        strb<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size);
+        break;
+      case 2:
+        strh<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size);
+        break;
+      case 4:
+        str<ARMEmitter::IndexType::POST>(Value.W(), TMP2, Size);
+        break;
+      case 8:
+        str<ARMEmitter::IndexType::POST>(Value.X(), TMP2, Size);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+        break;
+    }
+  };
+
+  auto MemStoreTSO = [this](auto Value, uint32_t OpSize, int32_t Size) {
+    if (OpSize == 1) {
+      // 8bit load is always aligned to natural alignment
+      stlrb(Value.W(), TMP2);
+    }
+    else {
+      nop();
+      switch (OpSize) {
+        case 2:
+          stlrh(Value.W(), TMP2);
+          break;
+        case 4:
+          stlr(Value.W(), TMP2);
+          break;
+        case 8:
+          stlr(Value.X(), TMP2);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+      nop();
+    }
+
+    if (Size >= 0) {
+      add(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
+    }
+    else {
+      sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
+    }
+  };
+
+  // Emit forward direction memset then backward direction memset.
+  for (int32_t Direction :  { 1, -1 }) {
+    const int32_t OpSize = Size;
+    const int32_t SizeDirection = Size * Direction;
+
+    ARMEmitter::BackwardLabel AgainInternal{};
+    ARMEmitter::ForwardLabel DoneInternal{};
+
+    // Early exit if zero count.
+    cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+    Bind(&AgainInternal);
+    if (Op->IsAtomic) {
+      MemStoreTSO(Value, OpSize, SizeDirection);
+    }
+    else {
+      MemStore(Value, OpSize, SizeDirection);
+    }
+    sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
+    cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
+
+    Bind(&DoneInternal);
+
+    if (SizeDirection >= 0) {
+      switch (OpSize) {
+        case 1:
+          add(Dst.X(), MemReg.X(), Length.X());
+          break;
+        case 2:
+          add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1);
+          break;
+        case 4:
+          add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2);
+          break;
+        case 8:
+          add(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+          break;
+      }
+    }
+    else {
+      switch (OpSize) {
+        case 1:
+          sub(Dst.X(), MemReg.X(), Length.X());
+          break;
+        case 2:
+          sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 1);
+          break;
+        case 4:
+          sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 2);
+          break;
+        case 8:
+          sub(Dst.X(), MemReg.X(), Length.X(), ARMEmitter::ShiftType::LSL, 3);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+          break;
+      }
+    }
+
+    if (Direction == 1) {
+      b(&Done);
+      Bind(&BackwardImpl);
+    }
+  }
+
+  Bind(&Done);
+  // Destination already set to the final pointer.
+}
+
 DEF_OP(ParanoidLoadMemTSO) {
   const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
   const auto OpSize = IROp->Size;

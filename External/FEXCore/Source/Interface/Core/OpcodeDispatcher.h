@@ -889,6 +889,8 @@ private:
   #undef OpcodeArgs
 
   OrderedNode *AppendSegmentOffset(OrderedNode *Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
+  OrderedNode *GetSegment(uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
+
   void UpdatePrefixFromSegment(OrderedNode *Segment, uint32_t SegmentReg);
 
   enum class MemoryAccessType {
