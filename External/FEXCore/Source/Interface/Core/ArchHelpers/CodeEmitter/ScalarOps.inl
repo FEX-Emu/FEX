@@ -404,35 +404,32 @@ public:
   }
 // Advanced SIMD scalar three different
   ///< size is destination.
-  void sqdmlal(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'00 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i32Bit :
-        ARMEmitter::ScalarRegSize::i16Bit;
-    ASIMD3RegDifferent(Op, 0, ConvertedSize, 0b1001, rd, rn, rm);
+  void sqdmlal(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i32Bit :
+        ScalarRegSize::i16Bit;
+    ASIMD3RegDifferent(0, ConvertedSize, 0b1001, rd, rn, rm);
   }
   ///< size is destination.
-  void sqdmlsl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'00 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i32Bit :
-        ARMEmitter::ScalarRegSize::i16Bit;
-    ASIMD3RegDifferent(Op, 0, ConvertedSize, 0b1011, rd, rn, rm);
+  void sqdmlsl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i32Bit :
+        ScalarRegSize::i16Bit;
+    ASIMD3RegDifferent(0, ConvertedSize, 0b1011, rd, rn, rm);
   }
 
   ///< size is destination.
-  void sqdmull(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'00 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i32Bit :
-        ARMEmitter::ScalarRegSize::i16Bit;
-    ASIMD3RegDifferent(Op, 0, ConvertedSize, 0b1101, rd, rn, rm);
+  void sqdmull(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i32Bit :
+        ScalarRegSize::i16Bit;
+    ASIMD3RegDifferent(0, ConvertedSize, 0b1101, rd, rn, rm);
   }
 // Advanced SIMD scalar three same
   void sqadd(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
@@ -1534,8 +1531,8 @@ private:
 // Advanced SIMD scalar pairwise
 // XXX:
 // Advanced SIMD scalar three different
-  void ASIMD3RegDifferent(uint32_t Op, uint32_t U, FEXCore::ARMEmitter::ScalarRegSize size, uint32_t opcode, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
+  void ASIMD3RegDifferent(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0101'1110'0010'0000'0000'0000'0000'0000;
 
     Instr |= U << 29;
     Instr |= FEXCore::ToUnderlying(size) << 22;
