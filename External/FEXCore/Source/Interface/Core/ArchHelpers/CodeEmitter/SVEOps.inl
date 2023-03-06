@@ -1034,13 +1034,20 @@ public:
 
   // SVE Integer Misc - Unpredicated
   // SVE floating-point trig select coefficient
-  // XXX:
+  void ftssel(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "ftssel may only have 16-bit, 32-bit, or 64-bit element sizes");
+    SVEIntegerMiscUnpredicated(0b00, zm.Idx(), FEXCore::ToUnderlying(size), zd, zn);
+  }
   // SVE floating-point exponential accelerator
-  // XXX:
+  void fexpa(SubRegSize size, ZRegister zd, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "fexpa may only have 16-bit, 32-bit, or 64-bit element sizes");
+    SVEIntegerMiscUnpredicated(0b10, 0b00000, FEXCore::ToUnderlying(size), zd, zn);
+  }
   // SVE constructive prefix (unpredicated)
-  void movprfx(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    const uint32_t Op = 0b0000'0100'0010'0000'1011'11 << 10;
-    SVEConstructivePrefixUnpredicated(Op, 0b00, 0b00000, zn, zd);
+  void movprfx(ZRegister zd, ZRegister zn) {
+    SVEIntegerMiscUnpredicated(0b11, 0b00000, 0b00, zd, zn);
   }
 
   // SVE Element Count
@@ -3153,14 +3160,14 @@ private:
     dc32(Instr);
   }
 
-  // SVE constructive prefix (unpredicated)
-  void SVEConstructivePrefixUnpredicated(uint32_t Op, uint32_t opc, uint32_t opc2, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
-
-    Instr |= opc << 22;
-    Instr |= opc2 << 16;
-    Instr |= Encode_rn(zn);
-    Instr |= Encode_rd(zd);
+  // SVE Integer Misc - Unpredicated
+  void SVEIntegerMiscUnpredicated(uint32_t op0, uint32_t opc, uint32_t opc2, ZRegister zd, ZRegister zn) {
+    uint32_t Instr = 0b0000'0100'0010'0000'1011'0000'0000'0000;
+    Instr |= opc2 << 22;
+    Instr |= opc << 16;
+    Instr |= op0 << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
