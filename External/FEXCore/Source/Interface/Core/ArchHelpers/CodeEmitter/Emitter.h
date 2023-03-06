@@ -64,10 +64,7 @@ namespace FEXCore::ARMEmitter {
   // This allows us to get the `Size` enum in bits.
   [[nodiscard]]
   constexpr size_t RegSizeInBits(Size size) {
-    constexpr size_t RegSize[] = {
-      32, 64, 128,
-    };
-    return RegSize[FEXCore::ToUnderlying(size)];
+    return size_t{32} << FEXCore::ToUnderlying(size);
   }
 
   /* This `SubRegSize` enum is used for most ASIMD operations.
@@ -84,7 +81,7 @@ namespace FEXCore::ARMEmitter {
   // This allows us to get the `SubRegSize` in bits.
   [[nodiscard]]
   constexpr size_t SubRegSizeInBits(SubRegSize size) {
-    return (size_t{1} << FEXCore::ToUnderlying(size)) * 8;
+    return size_t{8} << FEXCore::ToUnderlying(size);
   }
 
   /* This `ScalarRegSize` enum is used for most scalar float
@@ -106,7 +103,7 @@ namespace FEXCore::ARMEmitter {
   // This allows us to get the `ScalarRegSize` in bits.
   [[nodiscard]]
   constexpr size_t ScalarRegSizeInBits(ScalarRegSize size) {
-    return (size_t{1} << FEXCore::ToUnderlying(size)) * 8;
+    return size_t{8} << FEXCore::ToUnderlying(size);
   }
 
   /* This `VectorRegSizePair` union allows us to have an overlapping type
