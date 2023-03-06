@@ -1347,41 +1347,23 @@ public:
   }
 
 // Floating-point conditional compare
-  void fccmp(FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b01 << 10;
-
-    FloatConditionalCompare(Op, 0, 0, 0b00, 0b0, rn.V(), rm.V(), flags, Cond);
+  void fccmp(SRegister rn, SRegister rm, StatusFlags flags, Condition Cond) {
+    FloatConditionalCompare(0, 0, 0b00, 0b0, rn.V(), rm.V(), flags, Cond);
   }
-  void fccmpe(FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b01 << 10;
-
-    FloatConditionalCompare(Op, 0, 0, 0b00, 0b1, rn.V(), rm.V(), flags, Cond);
+  void fccmpe(SRegister rn, SRegister rm, StatusFlags flags, Condition Cond) {
+    FloatConditionalCompare(0, 0, 0b00, 0b1, rn.V(), rm.V(), flags, Cond);
   }
-  void fccmp(FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b01 << 10;
-
-    FloatConditionalCompare(Op, 0, 0, 0b01, 0b0, rn.V(), rm.V(), flags, Cond);
+  void fccmp(DRegister rn, DRegister rm, StatusFlags flags, Condition Cond) {
+    FloatConditionalCompare(0, 0, 0b01, 0b0, rn.V(), rm.V(), flags, Cond);
   }
-  void fccmpe(FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b01 << 10;
-
-    FloatConditionalCompare(Op, 0, 0, 0b01, 0b1, rn.V(), rm.V(), flags, Cond);
+  void fccmpe(DRegister rn, DRegister rm, StatusFlags flags, Condition Cond) {
+    FloatConditionalCompare(0, 0, 0b01, 0b1, rn.V(), rm.V(), flags, Cond);
   }
-  void fccmp(FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b01 << 10;
-
-    FloatConditionalCompare(Op, 0, 0, 0b11, 0b0, rn.V(), rm.V(), flags, Cond);
+  void fccmp(HRegister rn, HRegister rm, StatusFlags flags, Condition Cond) {
+    FloatConditionalCompare(0, 0, 0b11, 0b0, rn.V(), rm.V(), flags, Cond);
   }
-  void fccmpe(FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b01 << 10;
-
-    FloatConditionalCompare(Op, 0, 0, 0b11, 0b1, rn.V(), rm.V(), flags, Cond);
+  void fccmpe(HRegister rn, HRegister rm, StatusFlags flags, Condition Cond) {
+    FloatConditionalCompare(0, 0, 0b11, 0b1, rn.V(), rm.V(), flags, Cond);
   }
 
 // Floating-point data-processing (2 source)
@@ -1725,8 +1707,8 @@ private:
 // Floating-point immediate
 // XXX:
 // Floating-point conditional compare
-  void FloatConditionalCompare(uint32_t Op, uint32_t M, uint32_t S, uint32_t ptype, uint32_t op, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, FEXCore::ARMEmitter::StatusFlags flags, FEXCore::ARMEmitter::Condition Cond) {
-    uint32_t Instr = Op;
+  void FloatConditionalCompare(uint32_t M, uint32_t S, uint32_t ptype, uint32_t op, VRegister rn, VRegister rm, StatusFlags flags, Condition Cond) {
+    uint32_t Instr = 0b0001'1110'0010'0000'0000'0100'0000'0000;
 
     Instr |= M << 31;
     Instr |= S << 29;
