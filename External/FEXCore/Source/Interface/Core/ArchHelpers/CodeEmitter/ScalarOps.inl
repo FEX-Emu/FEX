@@ -1163,67 +1163,43 @@ public:
   }
 
 // Floating-point data-processing (3 source)
-  void fmadd(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::SRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b00, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
+  void fmadd(SRegister rd, SRegister rn, SRegister rm, SRegister ra) {
+    Float3Source(0, 0, 0b00, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fmsub(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::SRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b00, 0, 1, rd.V(), rn.V(), rm.V(), ra.V());
+  void fmsub(SRegister rd, SRegister rn, SRegister rm, SRegister ra) {
+    Float3Source(0, 0, 0b00, 0, 1, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fnmadd(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::SRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b00, 1, 0, rd.V(), rn.V(), rm.V(), ra.V());
+  void fnmadd(SRegister rd, SRegister rn, SRegister rm, SRegister ra) {
+    Float3Source(0, 0, 0b00, 1, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fnmsub(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::SRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b00, 1, 1, rd.V(), rn.V(), rm.V(), ra.V());
+  void fnmsub(SRegister rd, SRegister rn, SRegister rm, SRegister ra) {
+    Float3Source(0, 0, 0b00, 1, 1, rd.V(), rn.V(), rm.V(), ra.V());
   }
 
-  void fmadd(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::DRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b01, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
+  void fmadd(DRegister rd, DRegister rn, DRegister rm, DRegister ra) {
+    Float3Source(0, 0, 0b01, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fmsub(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::DRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b01, 0, 1, rd.V(), rn.V(), rm.V(), ra.V());
+  void fmsub(DRegister rd, DRegister rn, DRegister rm, DRegister ra) {
+    Float3Source(0, 0, 0b01, 0, 1, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fnmadd(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::DRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b01, 1, 0, rd.V(), rn.V(), rm.V(), ra.V());
+  void fnmadd(DRegister rd, DRegister rn, DRegister rm, DRegister ra) {
+    Float3Source(0, 0, 0b01, 1, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fnmsub(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::DRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b01, 1, 1, rd.V(), rn.V(), rm.V(), ra.V());
+  void fnmsub(DRegister rd, DRegister rn, DRegister rm, DRegister ra) {
+    Float3Source(0, 0, 0b01, 1, 1, rd.V(), rn.V(), rm.V(), ra.V());
   }
 
-  void fmadd(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::HRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b11, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
+  void fmadd(HRegister rd, HRegister rn, HRegister rm, HRegister ra) {
+    Float3Source(0, 0, 0b11, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fmsub(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::HRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b11, 0, 1, rd.V(), rn.V(), rm.V(), ra.V());
+  void fmsub(HRegister rd, HRegister rn, HRegister rm, HRegister ra) {
+    Float3Source(0, 0, 0b11, 0, 1, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fnmadd(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::HRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b11, 1, 0, rd.V(), rn.V(), rm.V(), ra.V());
+  void fnmadd(HRegister rd, HRegister rn, HRegister rm, HRegister ra) {
+    Float3Source(0, 0, 0b11, 1, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
-  void fnmsub(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::HRegister ra) {
-    constexpr uint32_t Op = 0b0001'1111'000 << 21;
-
-    Float3Source(Op, 0, 0, 0b11, 1, 1, rd.V(), rn.V(), rm.V(), ra.V());
+  void fnmsub(HRegister rd, HRegister rn, HRegister rm, HRegister ra) {
+    Float3Source(0, 0, 0b11, 1, 1, rd.V(), rn.V(), rm.V(), ra.V());
   }
 
 private:
@@ -1392,8 +1368,8 @@ private:
   }
 
 // Floating-point data-processing (3 source)
-  void Float3Source(uint32_t Op, uint32_t M, uint32_t S, uint32_t ptype, uint32_t o1, uint32_t o0, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, FEXCore::ARMEmitter::VRegister ra) {
-    uint32_t Instr = Op;
+  void Float3Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t o1, uint32_t o0, VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    uint32_t Instr = 0b0001'1111'0000'0000'0000'0000'0000'0000;
 
     Instr |= M << 31;
     Instr |= S << 29;
