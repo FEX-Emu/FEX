@@ -1893,433 +1893,351 @@ public:
   // TODO: Double check narrowing op size limits.
   // TODO: Don't enforce DRegister/QRegister for Q check
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void saddl(SubRegSize size, T rd, T rn, T rm) {
+  void saddl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void saddl2(SubRegSize size, T rd, T rn, T rm) {
+  void saddl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void saddw(SubRegSize size, T rd, T rn, T rm) {
+  void saddw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void saddw2(SubRegSize size, T rd, T rn, T rm) {
+  void saddw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void ssubl(SubRegSize size, T rd, T rn, T rm) {
+  void ssubl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void ssubl2(SubRegSize size, T rd, T rn, T rm) {
+  void ssubl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void ssubw(SubRegSize size, T rd, T rn, T rm) {
+  void ssubw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void ssubw2(SubRegSize size, T rd, T rn, T rm) {
+  void ssubw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
   }
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void addhn(SubRegSize size, T rd, T rn, T rm) {
+  void addhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different<T>(Op, 0, 0b0100, size, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0100, size, rd, rn, rm);
   }
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void addhn2(SubRegSize size, T rd, T rn, T rm) {
+  void addhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different<T>(Op, 0, 0b0100, size, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0100, size, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void sabal(SubRegSize size, T rd, T rn, T rm) {
+  void sabal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void sabal2(SubRegSize size, T rd, T rn, T rm) {
+  void sabal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
   }
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void subhn(SubRegSize size, T rd, T rn, T rm) {
+  void subhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different<T>(Op, 0, 0b0110, size, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0110, size, rd, rn, rm);
   }
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void subhn2(SubRegSize size, T rd, T rn, T rm) {
+  void subhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different<T>(Op, 0, 0b0110, size, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0110, size, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void sabdl(SubRegSize size, T rd, T rn, T rm) {
+  void sabdl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void sabdl2(SubRegSize size, T rd, T rn, T rm) {
+  void sabdl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void smlal(SubRegSize size, T rd, T rn, T rm) {
+  void smlal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void smlal2(SubRegSize size, T rd, T rn, T rm) {
+  void smlal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void sqdmlal(SubRegSize size, T rd, T rn, T rm) {
+  void sqdmlal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void sqdmlal2(SubRegSize size, T rd, T rn, T rm) {
+  void sqdmlal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void smlsl(SubRegSize size, T rd, T rn, T rm) {
+  void smlsl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void smlsl2(SubRegSize size, T rd, T rn, T rm) {
+  void smlsl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void sqdmlsl(SubRegSize size, T rd, T rn, T rm) {
+  void sqdmlsl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void sqdmlsl2(SubRegSize size, T rd, T rn, T rm) {
+  void sqdmlsl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void smull(SubRegSize size, T rd, T rn, T rm) {
+  void smull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void smull2(SubRegSize size, T rd, T rn, T rm) {
+  void smull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void sqdmull(SubRegSize size, T rd, T rn, T rm) {
+  void sqdmull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void sqdmull2(SubRegSize size, T rd, T rn, T rm) {
+  void sqdmull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void pmull(SubRegSize size, T rd, T rn, T rm) {
+  void pmull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different<T>(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void pmull2(SubRegSize size, T rd, T rn, T rm) {
+  void pmull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different<T>(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void uaddl(SubRegSize size, T rd, T rn, T rm) {
+  void uaddl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void uaddl2(SubRegSize size, T rd, T rn, T rm) {
+  void uaddl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void uaddw(SubRegSize size, T rd, T rn, T rm) {
+  void uaddw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void uaddw2(SubRegSize size, T rd, T rn, T rm) {
+  void uaddw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void usubl(SubRegSize size, T rd, T rn, T rm) {
+  void usubl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void usubl2(SubRegSize size, T rd, T rn, T rm) {
+  void usubl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void usubw(SubRegSize size, T rd, T rn, T rm) {
+  void usubw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void usubw2(SubRegSize size, T rd, T rn, T rm) {
+  void usubw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
   }
   // XXX: RADDHN/2
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void uabal(SubRegSize size, T rd, T rn, T rm) {
+  void uabal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void uabal2(SubRegSize size, T rd, T rn, T rm) {
+  void uabal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
   }
   // XXX: RSUBHN/2
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void uabdl(SubRegSize size, T rd, T rn, T rm) {
+  void uabdl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
@@ -2328,9 +2246,7 @@ public:
     ASIMD3Different(Op, 1, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void uabdl2(SubRegSize size, T rd, T rn, T rm) {
+  void uabdl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
@@ -2339,70 +2255,58 @@ public:
     ASIMD3Different(Op, 1, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void umlal(SubRegSize size, T rd, T rn, T rm) {
+  void umlal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void umlal2(SubRegSize size, T rd, T rn, T rm) {
+  void umlal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void umlsl(SubRegSize size, T rd, T rn, T rm) {
+  void umlsl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void umlsl2(SubRegSize size, T rd, T rn, T rm) {
+  void umlsl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<DRegister, T>)
-  void umull(SubRegSize size, T rd, T rn, T rm) {
+  void umull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
-  template<typename T>
-  requires(std::is_same_v<QRegister, T>)
-  void umull2(SubRegSize size, T rd, T rn, T rm) {
+  void umull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize{FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different<T>(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
   }
 
   // Advanced SIMD three same
