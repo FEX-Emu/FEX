@@ -797,295 +797,151 @@ public:
 // XXX:
 //
 // Floating-point data-processing (1 source)
-  void fmov(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b000000, rd.V(), rn.V());
+  void fmov(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b000000, rd.V(), rn.V());
   }
-  void fabs(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b000001, rd.V(), rn.V());
+  void fabs(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b000001, rd.V(), rn.V());
   }
-  void fneg(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b000010, rd.V(), rn.V());
+  void fneg(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b000010, rd.V(), rn.V());
   }
-  void fsqrt(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b000011, rd.V(), rn.V());
+  void fsqrt(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b000011, rd.V(), rn.V());
   }
-  void fcvt(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b000101, rd.V(), rn.V());
+  void fcvt(DRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b000101, rd.V(), rn.V());
   }
-  void fcvt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b000111, rd.V(), rn.V());
+  void fcvt(HRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b000111, rd.V(), rn.V());
   }
-  void frintn(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001000, rd.V(), rn.V());
+  void frintn(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001000, rd.V(), rn.V());
   }
-  void frintp(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001001, rd.V(), rn.V());
+  void frintp(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001001, rd.V(), rn.V());
   }
-  void frintm(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001010, rd.V(), rn.V());
+  void frintm(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001010, rd.V(), rn.V());
   }
-  void frintz(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001011, rd.V(), rn.V());
+  void frintz(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001011, rd.V(), rn.V());
   }
-  void frinta(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001100, rd.V(), rn.V());
+  void frinta(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001100, rd.V(), rn.V());
   }
-  void frintx(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001110, rd.V(), rn.V());
+  void frintx(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001110, rd.V(), rn.V());
   }
-  void frinti(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b001111, rd.V(), rn.V());
+  void frinti(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b001111, rd.V(), rn.V());
   }
-  void frint32z(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b010000, rd.V(), rn.V());
+  void frint32z(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b010000, rd.V(), rn.V());
   }
-  void frint32x(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b010001, rd.V(), rn.V());
+  void frint32x(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b010001, rd.V(), rn.V());
   }
-  void frint64z(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b010010, rd.V(), rn.V());
+  void frint64z(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b010010, rd.V(), rn.V());
   }
-  void frint64x(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b00, 0b010011, rd.V(), rn.V());
+  void frint64x(SRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b00, 0b010011, rd.V(), rn.V());
   }
 
-  void fmov(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000000, rd.V(), rn.V());
+  void fmov(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000000, rd.V(), rn.V());
   }
-  void fabs(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000001, rd.V(), rn.V());
+  void fabs(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000001, rd.V(), rn.V());
   }
-  void fneg(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000010, rd.V(), rn.V());
+  void fneg(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000010, rd.V(), rn.V());
   }
-  void fsqrt(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000011, rd.V(), rn.V());
+  void fsqrt(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000011, rd.V(), rn.V());
   }
-  void fcvt(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000100, rd.V(), rn.V());
+  void fcvt(SRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000100, rd.V(), rn.V());
   }
-  void bfcvt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000110, rd.V(), rn.V());
+  void bfcvt(HRegister rd, SRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000110, rd.V(), rn.V());
   }
-  void fcvt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b000111, rd.V(), rn.V());
+  void fcvt(HRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b000111, rd.V(), rn.V());
   }
-  void frintn(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001000, rd.V(), rn.V());
+  void frintn(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001000, rd.V(), rn.V());
   }
-  void frintp(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001001, rd.V(), rn.V());
+  void frintp(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001001, rd.V(), rn.V());
   }
-  void frintm(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001010, rd.V(), rn.V());
+  void frintm(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001010, rd.V(), rn.V());
   }
-  void frintz(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001011, rd.V(), rn.V());
+  void frintz(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001011, rd.V(), rn.V());
   }
-  void frinta(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001100, rd.V(), rn.V());
+  void frinta(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001100, rd.V(), rn.V());
   }
-  void frintx(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001110, rd.V(), rn.V());
+  void frintx(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001110, rd.V(), rn.V());
   }
-  void frinti(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b001111, rd.V(), rn.V());
+  void frinti(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b001111, rd.V(), rn.V());
   }
-  void frint32z(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b010000, rd.V(), rn.V());
+  void frint32z(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b010000, rd.V(), rn.V());
   }
-  void frint32x(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b010001, rd.V(), rn.V());
+  void frint32x(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b010001, rd.V(), rn.V());
   }
-  void frint64z(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b010010, rd.V(), rn.V());
+  void frint64z(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b010010, rd.V(), rn.V());
   }
-  void frint64x(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b01, 0b010011, rd.V(), rn.V());
+  void frint64x(DRegister rd, DRegister rn) {
+    Float1Source(0, 0, 0b01, 0b010011, rd.V(), rn.V());
   }
 
-  void fmov(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b000000, rd.V(), rn.V());
+  void fmov(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b000000, rd.V(), rn.V());
   }
-  void fabs(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b000001, rd.V(), rn.V());
+  void fabs(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b000001, rd.V(), rn.V());
   }
-  void fneg(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b000010, rd.V(), rn.V());
+  void fneg(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b000010, rd.V(), rn.V());
   }
-  void fsqrt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b000011, rd.V(), rn.V());
+  void fsqrt(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b000011, rd.V(), rn.V());
   }
-  void fcvt(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b000100, rd.V(), rn.V());
+  void fcvt(SRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b000100, rd.V(), rn.V());
   }
-  void fcvt(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b000101, rd.V(), rn.V());
+  void fcvt(DRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b000101, rd.V(), rn.V());
   }
-  void frintn(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001000, rd.V(), rn.V());
+  void frintn(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001000, rd.V(), rn.V());
   }
-  void frintp(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001001, rd.V(), rn.V());
+  void frintp(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001001, rd.V(), rn.V());
   }
-  void frintm(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001010, rd.V(), rn.V());
+  void frintm(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001010, rd.V(), rn.V());
   }
-  void frintz(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001011, rd.V(), rn.V());
+  void frintz(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001011, rd.V(), rn.V());
   }
-  void frinta(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001100, rd.V(), rn.V());
+  void frinta(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001100, rd.V(), rn.V());
   }
-  void frintx(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001110, rd.V(), rn.V());
+  void frintx(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001110, rd.V(), rn.V());
   }
-  void frinti(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b100'00 << 10;
-
-    Float1Source(Op, 0, 0, 0b11, 0b001111, rd.V(), rn.V());
+  void frinti(HRegister rd, HRegister rn) {
+    Float1Source(0, 0, 0b11, 0b001111, rd.V(), rn.V());
   }
 
 // Floating-point compare
@@ -1523,8 +1379,8 @@ private:
 // Advanced SIMD scalar x indexed element
 // XXX:
 // Floating-point data-processing (1 source)
-  void Float1Source(uint32_t Op, uint32_t M, uint32_t S, uint32_t ptype, uint32_t opcode, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
+  void Float1Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t opcode, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0001'1110'0010'0000'0100'0000'0000'0000;
 
     Instr |= M << 31;
     Instr |= S << 29;
