@@ -1219,89 +1219,63 @@ public:
   }
 
 // Floating-point compare
-  void fcmp(FEXCore::ARMEmitter::ScalarRegSize Size, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(Size != FEXCore::ARMEmitter::ScalarRegSize::i8Bit, "8-bit destination not supported");
+  void fcmp(ScalarRegSize Size, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(Size != ScalarRegSize::i8Bit, "8-bit destination not supported");
 
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
     const auto ConvertedSize =
       Size == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
       Size == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
       Size == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 : 0;
 
-    FloatCompare(Op, 0, 0, ConvertedSize, 0b00, 0b00000, rn, rm);
+    FloatCompare(0, 0, ConvertedSize, 0b00, 0b00000, rn, rm);
   }
 
-  void fcmp(FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b00, 0b00, 0b00000, rn.V(), rm.V());
+  void fcmp(SRegister rn, SRegister rm) {
+    FloatCompare(0, 0, 0b00, 0b00, 0b00000, rn.V(), rm.V());
   }
   ///< Compare to #0.0
-  void fcmp(FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b00, 0b00, 0b01000, rn.V(), FEXCore::ARMEmitter::VReg::v0);
+  void fcmp(SRegister rn) {
+    FloatCompare(0, 0, 0b00, 0b00, 0b01000, rn.V(), VReg::v0);
   }
-  void fcmpe(FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b00, 0b00, 0b10000, rn.V(), rm.V());
+  void fcmpe(SRegister rn, SRegister rm) {
+    FloatCompare(0, 0, 0b00, 0b00, 0b10000, rn.V(), rm.V());
   }
 
   ///< Compare to #0.0
-  void fcmpe(FEXCore::ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b00, 0b00, 0b11000, rn.V(), FEXCore::ARMEmitter::VReg::v0);
+  void fcmpe(SRegister rn) {
+    FloatCompare(0, 0, 0b00, 0b00, 0b11000, rn.V(), VReg::v0);
   }
-  void fcmp(FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b01, 0b00, 0b00000, rn.V(), rm.V());
+  void fcmp(DRegister rn, DRegister rm) {
+    FloatCompare(0, 0, 0b01, 0b00, 0b00000, rn.V(), rm.V());
   }
 
   ///< Compare to #0.0
-  void fcmp(FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b01, 0b00, 0b01000, rn.V(), FEXCore::ARMEmitter::VReg::v0);
+  void fcmp(DRegister rn) {
+    FloatCompare(0, 0, 0b01, 0b00, 0b01000, rn.V(), VReg::v0);
   }
-  void fcmpe(FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b01, 0b00, 0b10000, rn.V(), rm.V());
+  void fcmpe(DRegister rn, DRegister rm) {
+    FloatCompare(0, 0, 0b01, 0b00, 0b10000, rn.V(), rm.V());
   }
 
   ///< Compare to #0.0
-  void fcmpe(FEXCore::ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b01, 0b00, 0b11000, rn.V(), FEXCore::ARMEmitter::VReg::v0);
+  void fcmpe(DRegister rn) {
+    FloatCompare(0, 0, 0b01, 0b00, 0b11000, rn.V(), VReg::v0);
   }
-  void fcmp(FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b11, 0b00, 0b00000, rn.V(), rm.V());
+  void fcmp(HRegister rn, HRegister rm) {
+    FloatCompare(0, 0, 0b11, 0b00, 0b00000, rn.V(), rm.V());
   }
 
   ///< Compare to #0.0
-  void fcmp(FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b11, 0b00, 0b01000, rn.V(), FEXCore::ARMEmitter::VReg::v0);
+  void fcmp(HRegister rn) {
+    FloatCompare(0, 0, 0b11, 0b00, 0b01000, rn.V(), VReg::v0);
   }
-  void fcmpe(FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b11, 0b00, 0b10000, rn.V(), rm.V());
+  void fcmpe(HRegister rn, HRegister rm) {
+    FloatCompare(0, 0, 0b11, 0b00, 0b10000, rn.V(), rm.V());
   }
 
   ///< Compare to #0.0
-  void fcmpe(FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b1000 << 10;
-    FloatCompare(Op, 0, 0, 0b11, 0b00, 0b11000, rn.V(), FEXCore::ARMEmitter::VReg::v0);
+  void fcmpe(HRegister rn) {
+    FloatCompare(0, 0, 0b11, 0b00, 0b11000, rn.V(), VReg::v0);
   }
 
 // Floating-point immediate
@@ -1691,8 +1665,8 @@ private:
     dc32(Instr);
   }
 // Floating-point compare
-  void FloatCompare(uint32_t Op, uint32_t M, uint32_t S, uint32_t ftype, uint32_t op, uint32_t opcode2, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
+  void FloatCompare(uint32_t M, uint32_t S, uint32_t ftype, uint32_t op, uint32_t opcode2, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0001'1110'0010'0000'0010'0000'0000'0000;
 
     Instr |= M << 31;
     Instr |= S << 29;
