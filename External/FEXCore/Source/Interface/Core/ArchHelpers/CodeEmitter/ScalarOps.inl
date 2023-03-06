@@ -432,177 +432,151 @@ public:
     ASIMD3RegDifferent(0, ConvertedSize, 0b1101, rd, rn, rm);
   }
 // Advanced SIMD scalar three same
-  void sqadd(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b00001, rd, rn, rm);
+  void sqadd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(0, size, 0b00001, rd, rn, rm);
   }
-  void sqsub(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b00101, rd, rn, rm);
+  void sqsub(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(0, size, 0b00101, rd, rn, rm);
   }
-  void cmgt(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b00110, rd, rn, rm);
+  void cmgt(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(0, size, 0b00110, rd, rn, rm);
   }
-  void cmge(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b00111, rd, rn, rm);
+  void cmge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(0, size, 0b00111, rd, rn, rm);
   }
-  void sshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b01000, rd, rn, rm);
+  void sshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(0, size, 0b01000, rd, rn, rm);
   }
-  void sqshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b01001, rd, rn, rm);
+  void sqshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(0, size, 0b01001, rd, rn, rm);
   }
-  void srshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b01010, rd, rn, rm);
+  void srshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(0, size, 0b01010, rd, rn, rm);
   }
-  void sqrshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b01011, rd, rn, rm);
+  void sqrshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(0, size, 0b01011, rd, rn, rm);
   }
-  void add(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b10000, rd, rn, rm);
+  void add(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(0, size, 0b10000, rd, rn, rm);
   }
-  void cmtst(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b10001, rd, rn, rm);
+  void cmtst(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(0, size, 0b10001, rd, rn, rm);
   }
-  void sqdmulh(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i32Bit || size == ARMEmitter::ScalarRegSize::i16Bit, "Invalid size");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b10110, rd, rn, rm);
+  void sqdmulh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i32Bit || size == ScalarRegSize::i16Bit, "Invalid size");
+    ASIMD3RegSame(0, size, 0b10110, rd, rn, rm);
   }
-  void fmulx(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i16Bit :
-        ARMEmitter::ScalarRegSize::i8Bit;
+  void fmulx(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    ASIMD3RegSame(Op, 0, ConvertedSize, 0b11011, rd, rn, rm);
-  }
-  void fcmeq(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i16Bit :
-        ARMEmitter::ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i16Bit :
+        ScalarRegSize::i8Bit;
 
-    ASIMD3RegSame(Op, 0, ConvertedSize, 0b11100, rd, rn, rm);
+    ASIMD3RegSame(0, ConvertedSize, 0b11011, rd, rn, rm);
   }
-  void frecps(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i16Bit :
-        ARMEmitter::ScalarRegSize::i8Bit;
+  void fcmeq(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    ASIMD3RegSame(Op, 0, ConvertedSize, 0b11111, rd, rn, rm);
-  }
-  void frsqrts(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 0, size, 0b11111, rd, rn, rm);
-  }
-  void uqadd(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b00001, rd, rn, rm);
-  }
-  void uqsub(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b00101, rd, rn, rm);
-  }
-  void cmhi(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b00110, rd, rn, rm);
-  }
-  void cmhs(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b00111, rd, rn, rm);
-  }
-  void ushl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b01000, rd, rn, rm);
-  }
-  void uqshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b01001, rd, rn, rm);
-  }
-  void urshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b01010, rd, rn, rm);
-  }
-  void uqrshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b01011, rd, rn, rm);
-  }
-  void sub(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b10000, rd, rn, rm);
-  }
-  void cmeq(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit, "Only supports 64-bit");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b10001, rd, rn, rm);
-  }
-  void sqrdmulh(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i32Bit || size == ARMEmitter::ScalarRegSize::i16Bit, "Invalid size");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b10110, rd, rn, rm);
-  }
-  void fcmge(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i16Bit :
-        ARMEmitter::ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i16Bit :
+        ScalarRegSize::i8Bit;
 
-    ASIMD3RegSame(Op, 1, ConvertedSize, 0b11100, rd, rn, rm);
+    ASIMD3RegSame(0, ConvertedSize, 0b11100, rd, rn, rm);
   }
-  void facge(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    const FEXCore::ARMEmitter::ScalarRegSize ConvertedSize =
-      size == ARMEmitter::ScalarRegSize::i64Bit ?
-        ARMEmitter::ScalarRegSize::i16Bit :
-        ARMEmitter::ScalarRegSize::i8Bit;
+  void frecps(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    ASIMD3RegSame(Op, 1, ConvertedSize, 0b11101, rd, rn, rm);
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i16Bit :
+        ScalarRegSize::i8Bit;
+
+    ASIMD3RegSame(0, ConvertedSize, 0b11111, rd, rn, rm);
   }
-  void fabd(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b11010, rd, rn, rm);
+  void frsqrts(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    ASIMD3RegSame(0, size, 0b11111, rd, rn, rm);
   }
-  void fcmgt(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b11100, rd, rn, rm);
+  void uqadd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(1, size, 0b00001, rd, rn, rm);
   }
-  void facgt(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit || size == ARMEmitter::ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    constexpr uint32_t Op = 0b0101'1110'0010'0000'0000'01 << 10;
-    ASIMD3RegSame(Op, 1, size, 0b11101, rd, rn, rm);
+  void uqsub(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(1, size, 0b00101, rd, rn, rm);
+  }
+  void cmhi(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(1, size, 0b00110, rd, rn, rm);
+  }
+  void cmhs(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(1, size, 0b00111, rd, rn, rm);
+  }
+  void ushl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(1, size, 0b01000, rd, rn, rm);
+  }
+  void uqshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(1, size, 0b01001, rd, rn, rm);
+  }
+  void urshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(1, size, 0b01010, rd, rn, rm);
+  }
+  void uqrshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    ASIMD3RegSame(1, size, 0b01011, rd, rn, rm);
+  }
+  void sub(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(1, size, 0b10000, rd, rn, rm);
+  }
+  void cmeq(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    ASIMD3RegSame(1, size, 0b10001, rd, rn, rm);
+  }
+  void sqrdmulh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i32Bit || size == ScalarRegSize::i16Bit, "Invalid size");
+    ASIMD3RegSame(1, size, 0b10110, rd, rn, rm);
+  }
+  void fcmge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i16Bit :
+        ScalarRegSize::i8Bit;
+
+    ASIMD3RegSame(1, ConvertedSize, 0b11100, rd, rn, rm);
+  }
+  void facge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+
+    const ScalarRegSize ConvertedSize =
+      size == ScalarRegSize::i64Bit ?
+        ScalarRegSize::i16Bit :
+        ScalarRegSize::i8Bit;
+
+    ASIMD3RegSame(1, ConvertedSize, 0b11101, rd, rn, rm);
+  }
+  void fabd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    ASIMD3RegSame(1, size, 0b11010, rd, rn, rm);
+  }
+  void fcmgt(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    ASIMD3RegSame(1, size, 0b11100, rd, rn, rm);
+  }
+  void facgt(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    ASIMD3RegSame(1, size, 0b11101, rd, rn, rm);
   }
 // Advanced SIMD scalar shift by immediate
   void sshr(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
@@ -1543,8 +1517,8 @@ private:
     dc32(Instr);
   }
 // Advanced SIMD scalar three same
-  void ASIMD3RegSame(uint32_t Op, uint32_t U, FEXCore::ARMEmitter::ScalarRegSize size, uint32_t opcode, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
+  void ASIMD3RegSame(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0101'1110'0010'0000'0000'0100'0000'0000;
 
     Instr |= U << 29;
     Instr |= FEXCore::ToUnderlying(size) << 22;
