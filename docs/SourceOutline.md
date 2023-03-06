@@ -1,4 +1,4 @@
-# FEX-2302
+# FEX-2303
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -270,9 +270,6 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 ## Source/Tests
 
 ### Bin
-
-#### FEXBash
-- [FEXBash.cpp](../Source/Tests/FEXBash.cpp): Launches bash under FEX and passes arguments via -c to it
 
 #### FEXLoader
 - [FEXLoader.cpp](../Source/Tests/FEXLoader.cpp): Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
