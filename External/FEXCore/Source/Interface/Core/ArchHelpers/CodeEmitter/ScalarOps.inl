@@ -37,41 +37,32 @@ public:
   }
 
 // Advanced SIMD scalar three same FP16
-  void fmulx(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 0, 0, 0b011, rm, rn, rd);
+  void fmulx(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(0, 0, 0b011, rm, rn, rd);
   }
-  void fcmeq(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 0, 0, 0b100, rm, rn, rd);
+  void fcmeq(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(0, 0, 0b100, rm, rn, rd);
   }
-  void frecps(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 0, 0, 0b111, rm, rn, rd);
+  void frecps(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(0, 0, 0b111, rm, rn, rd);
   }
-  void frsqrts(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 0, 1, 0b111, rm, rn, rd);
+  void frsqrts(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(0, 1, 0b111, rm, rn, rd);
   }
-  void fcmge(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 1, 0, 0b100, rm, rn, rd);
+  void fcmge(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(1, 0, 0b100, rm, rn, rd);
   }
-  void facge(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 1, 0, 0b101, rm, rn, rd);
+  void facge(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(1, 0, 0b101, rm, rn, rd);
   }
-  void fabd(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 1, 1, 0b010, rm, rn, rd);
+  void fabd(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(1, 1, 0b010, rm, rn, rd);
   }
-  void fcmgt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 1, 1, 0b100, rm, rn, rd);
+  void fcmgt(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(1, 1, 0b100, rm, rn, rd);
   }
-  void facgt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0100'0000'0000'01 << 10;
-    ASIMDScalarThreeSameFP16(Op, 1, 1, 0b101, rm, rn, rd);
+  void facgt(HRegister rd, HRegister rn, HRegister rm) {
+    ASIMDScalarThreeSameFP16(1, 1, 0b101, rm, rn, rd);
   }
 
 // Advanced SIMD scalar two-register miscellaneous FP16
@@ -1574,8 +1565,8 @@ private:
   }
 
 // Advanced SIMD scalar three same FP16
-  void ASIMDScalarThreeSameFP16(uint32_t Op, uint32_t U, uint32_t a, uint32_t opcode, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rd) {
-    uint32_t Instr = Op;
+  void ASIMDScalarThreeSameFP16(uint32_t U, uint32_t a, uint32_t opcode, HRegister rm, HRegister rn, HRegister rd) {
+    uint32_t Instr = 0b0101'1110'0100'0000'0000'0100'0000'0000;
 
     Instr |= U << 29;
     Instr |= a << 23;
