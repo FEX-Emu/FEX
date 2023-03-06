@@ -579,238 +579,218 @@ public:
     ASIMD3RegSame(1, size, 0b11101, rd, rn, rm);
   }
 // Advanced SIMD scalar shift by immediate
-  void sshr(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b00000, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b00000, rd, rn);
   }
-  void ssra(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void ssra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b00010, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b00010, rd, rn);
   }
-  void srshr(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void srshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b00100, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b00100, rd, rn);
   }
-  void srsra(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void srsra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b00110, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b00110, rd, rn);
   }
-  void shl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void shl(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
     const uint32_t immb = Shift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b01010, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b01010, rd, rn);
   }
-  void sqshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sqshl(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
     const uint32_t immb = Shift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b01110, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b01110, rd, rn);
   }
   ///< size is destination
-  void sqshrn(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sqshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrn");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b10010, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b10010, rd, rn);
   }
-  void sqrshrn(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sqrshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrn");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 0, immh, immb, 0b10011, rd, rn);
+    ASIMDScalarShiftByImm(0, immh, immb, 0b10011, rd, rn);
   }
   // TODO: SCVTF, FCVTZS
-  void ushr(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void ushr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b00000, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b00000, rd, rn);
   }
-  void usra(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void usra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b00010, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b00010, rd, rn);
   }
-  void urshr(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void urshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b00100, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b00100, rd, rn);
   }
-  void ursra(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void ursra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b00110, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b00110, rd, rn);
   }
-  void sri(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sri(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b01000, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b01000, rd, rn);
   }
-  void sli(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sli(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
     const uint32_t immb = Shift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b01010, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b01010, rd, rn);
   }
-  void sqshlu(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sqshlu(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
     const uint32_t immb = Shift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b01100, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b01100, rd, rn);
   }
-  void uqshl(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void uqshl(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
     const uint32_t immb = Shift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b01110, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b01110, rd, rn);
   }
   ///< size is destination.
-  void sqshrun(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sqshrun(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrun");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b10000, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b10000, rd, rn);
   }
   ///< size is destination.
-  void sqrshrun(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void sqrshrun(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b10001, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b10001, rd, rn);
   }
   ///< size is destination.
-  void uqshrn(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void uqshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b10010, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b10010, rd, rn);
   }
   ///< size is destination.
-  void uqrshrn(FEXCore::ARMEmitter::ScalarRegSize size, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, uint32_t Shift) {
+  void uqrshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
     LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
-    constexpr uint32_t Op = 0b0101'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
     const uint32_t InvertedShift = (SubregSizeInBits * 2) - Shift;
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
-    ASIMDScalarShiftByImm(Op, 1, immh, immb, 0b10011, rd, rn);
+    ASIMDScalarShiftByImm(1, immh, immb, 0b10011, rd, rn);
   }
   // TODO: UCVTF, FCVTZU
 // Advanced SIMD scalar x indexed element
@@ -1529,8 +1509,8 @@ private:
     dc32(Instr);
   }
 // Advanced SIMD scalar shift by immediate
-  void ASIMDScalarShiftByImm(uint32_t Op, uint32_t U, uint32_t immh, uint32_t immb, uint32_t opcode, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
+  void ASIMDScalarShiftByImm(uint32_t U, uint32_t immh, uint32_t immb, uint32_t opcode, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0101'1111'0000'0000'0000'0100'0000'0000;
 
     Instr |= U << 29;
     Instr |= immh << 19;
