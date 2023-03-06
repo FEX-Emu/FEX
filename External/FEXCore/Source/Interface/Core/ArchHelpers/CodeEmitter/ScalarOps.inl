@@ -1206,20 +1206,14 @@ public:
   }
 
   // Floating-point conditional select
-  void fcsel(FEXCore::ARMEmitter::SRegister rd, FEXCore::ARMEmitter::SRegister rn, FEXCore::ARMEmitter::SRegister rm, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b11 << 10;
-    Float2Source(Op, 0, 0, 0b00, FEXCore::ToUnderlying(Cond), rd.V(), rn.V(), rm.V());
+  void fcsel(SRegister rd, SRegister rn, SRegister rm, Condition Cond) {
+    FloatConditionalSelect(0, 0, 0b00, rd.V(), rn.V(), rm.V(), Cond);
   }
-  void fcsel(FEXCore::ARMEmitter::DRegister rd, FEXCore::ARMEmitter::DRegister rn, FEXCore::ARMEmitter::DRegister rm, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b11 << 10;
-    Float2Source(Op, 0, 0, 0b01, FEXCore::ToUnderlying(Cond), rd.V(), rn.V(), rm.V());
+  void fcsel(DRegister rd, DRegister rn, DRegister rm, Condition Cond) {
+    FloatConditionalSelect(0, 0, 0b01, rd.V(), rn.V(), rm.V(), Cond);
   }
-  void fcsel(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rm, FEXCore::ARMEmitter::Condition Cond) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21 |
-                            0b11 << 10;
-    Float2Source(Op, 0, 0, 0b11, FEXCore::ToUnderlying(Cond), rd.V(), rn.V(), rm.V());
+  void fcsel(HRegister rd, HRegister rn, HRegister rm, Condition Cond) {
+    FloatConditionalSelect(0, 0, 0b11, rd.V(), rn.V(), rm.V(), Cond);
   }
 
 // Floating-point data-processing (3 source)
@@ -1438,8 +1432,8 @@ private:
   }
 
 // Floating-point conditional select
-  void FloatConditionalSelect(uint32_t Op, uint32_t M, uint32_t S, uint32_t ptype, FEXCore::ARMEmitter::VRegister rd, FEXCore::ARMEmitter::VRegister rn, FEXCore::ARMEmitter::VRegister rm, FEXCore::ARMEmitter::Condition Cond) {
-    uint32_t Instr = Op;
+  void FloatConditionalSelect(uint32_t M, uint32_t S, uint32_t ptype, VRegister rd, VRegister rn, VRegister rm, Condition Cond) {
+    uint32_t Instr = 0b0001'1110'0010'0000'0000'1100'0000'0000;
 
     Instr |= M << 31;
     Instr |= S << 29;
