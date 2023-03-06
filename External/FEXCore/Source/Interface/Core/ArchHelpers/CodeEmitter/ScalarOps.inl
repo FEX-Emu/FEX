@@ -66,85 +66,65 @@ public:
   }
 
 // Advanced SIMD scalar two-register miscellaneous FP16
-  void fcvtns(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 0, 0b11010, rn, rd);
+  void fcvtns(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 0, 0b11010, rn, rd);
   }
-  void fcvtms(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 0, 0b11011, rn, rd);
+  void fcvtms(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 0, 0b11011, rn, rd);
   }
-  void fcvtas(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 0, 0b11100, rn, rd);
+  void fcvtas(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 0, 0b11100, rn, rd);
   }
-  void scvtf(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 0, 0b11101, rn, rd);
+  void scvtf(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 0, 0b11101, rn, rd);
   }
-  void fcmgt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b01100, rn, rd);
+  void fcmgt(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b01100, rn, rd);
   }
-  void fcmeq(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b01101, rn, rd);
+  void fcmeq(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b01101, rn, rd);
   }
-  void fcmlt(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b01110, rn, rd);
+  void fcmlt(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b01110, rn, rd);
   }
-  void fcvtps(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b11010, rn, rd);
+  void fcvtps(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b11010, rn, rd);
   }
-  void fcvtzs(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b11011, rn, rd);
+  void fcvtzs(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b11011, rn, rd);
   }
-  void frecpe(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b11101, rn, rd);
+  void frecpe(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b11101, rn, rd);
   }
-  void frecpx(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 0, 1, 0b11111, rn, rd);
+  void frecpx(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(0, 1, 0b11111, rn, rd);
   }
-  void fcvtnu(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 0, 0b11010, rn, rd);
+  void fcvtnu(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 0, 0b11010, rn, rd);
   }
-  void fcvtmu(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 0, 0b11011, rn, rd);
+  void fcvtmu(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 0, 0b11011, rn, rd);
   }
-  void fcvtau(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 0, 0b11100, rn, rd);
+  void fcvtau(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 0, 0b11100, rn, rd);
   }
-  void ucvtf(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 0, 0b11101, rn, rd);
+  void ucvtf(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 0, 0b11101, rn, rd);
   }
-  void fcmge(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 1, 0b01100, rn, rd);
+  void fcmge(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 1, 0b01100, rn, rd);
   }
-  void fcmle(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 1, 0b01101, rn, rd);
+  void fcmle(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 1, 0b01101, rn, rd);
   }
-  void fcvtpu(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 1, 0b11010, rn, rd);
+  void fcvtpu(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 1, 0b11010, rn, rd);
   }
-  void fcvtzu(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 1, 0b11011, rn, rd);
+  void fcvtzu(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 1, 0b11011, rn, rd);
   }
-  void frsqrte(FEXCore::ARMEmitter::HRegister rd, FEXCore::ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0111'1000'0000'10 << 10;
-    ASIMDScalarTwoRegMiscFP16(Op, 1, 1, 0b11101, rn, rd);
+  void frsqrte(HRegister rd, HRegister rn) {
+    ASIMDScalarTwoRegMiscFP16(1, 1, 0b11101, rn, rd);
   }
 
 // Advanced SIMD scalar three same extra
@@ -1577,8 +1557,8 @@ private:
     dc32(Instr);
   }
 // Advanced SIMD scalar two-register miscellaneous FP16
-  void ASIMDScalarTwoRegMiscFP16(uint32_t Op, uint32_t U, uint32_t a, uint32_t opcode, FEXCore::ARMEmitter::HRegister rn, FEXCore::ARMEmitter::HRegister rd) {
-    uint32_t Instr = Op;
+  void ASIMDScalarTwoRegMiscFP16(uint32_t U, uint32_t a, uint32_t opcode, HRegister rn, HRegister rd) {
+    uint32_t Instr = 0b0101'1110'0111'1000'0000'1000'0000'0000;
 
     Instr |= U << 29;
     Instr |= a << 23;
