@@ -62,16 +62,8 @@ namespace FEXCore::ARMEmitter {
   };
 
   // This allows us to get the `Size` enum in bits.
-  template<Size size>
-  constexpr size_t RegSizeInBits() {
-    constexpr size_t RegSize[] = {
-      32, 64, 128,
-    };
-    return RegSize[FEXCore::ToUnderlying(size)];
-  }
-
-  [[maybe_unused]]
-  static inline size_t RegSizeInBits(Size size) {
+  [[nodiscard]]
+  constexpr size_t RegSizeInBits(Size size) {
     constexpr size_t RegSize[] = {
       32, 64, 128,
     };
@@ -90,14 +82,9 @@ namespace FEXCore::ARMEmitter {
   };
 
   // This allows us to get the `SubRegSize` in bits.
-  template<SubRegSize size>
-  constexpr size_t SubRegSizeInBits() {
-    return (1 << FEXCore::ToUnderlying(size)) * 8;
-  }
-
-  [[maybe_unused]]
-  static inline size_t SubRegSizeInBits(SubRegSize size) {
-    return (1 << FEXCore::ToUnderlying(size)) * 8;
+  [[nodiscard]]
+  constexpr size_t SubRegSizeInBits(SubRegSize size) {
+    return (size_t{1} << FEXCore::ToUnderlying(size)) * 8;
   }
 
   /* This `ScalarRegSize` enum is used for most scalar float
@@ -117,14 +104,9 @@ namespace FEXCore::ARMEmitter {
   };
 
   // This allows us to get the `ScalarRegSize` in bits.
-  template<ScalarRegSize size>
-  constexpr size_t ScalarRegSizeInBits() {
-    return (1 << FEXCore::ToUnderlying(size)) * 8;
-  }
-
-  [[maybe_unused]]
-  static inline size_t ScalarRegSizeInBits(ScalarRegSize size) {
-    return (1 << FEXCore::ToUnderlying(size)) * 8;
+  [[nodiscard]]
+  constexpr size_t ScalarRegSizeInBits(ScalarRegSize size) {
+    return (size_t{1} << FEXCore::ToUnderlying(size)) * 8;
   }
 
   /* This `VectorRegSizePair` union allows us to have an overlapping type
@@ -140,12 +122,12 @@ namespace FEXCore::ARMEmitter {
   };
 
   // This allows us to create a `VectorRegSizePair` union.
-  [[maybe_unused]]
-  static inline VectorRegSizePair ToVectorSizePair(SubRegSize size) {
+  [[nodiscard]]
+  constexpr VectorRegSizePair ToVectorSizePair(SubRegSize size) {
     return VectorRegSizePair {.Vector = size};
   }
-  [[maybe_unused]]
-  static inline VectorRegSizePair ToVectorSizePair(ScalarRegSize size) {
+  [[nodiscard]]
+  constexpr VectorRegSizePair ToVectorSizePair(ScalarRegSize size) {
     return VectorRegSizePair {.Scalar = size};
   }
 
