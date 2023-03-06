@@ -1399,64 +1399,54 @@ public:
 
   // SVE Integer Compare - Scalars
   // SVE integer compare scalar count and limit
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilege(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar(IsXRegister << 2, 0, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilegt(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar(IsXRegister << 2, 1, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilelt(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b001, 0, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilele(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b001, 1, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilehs(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b010, 0, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilehi(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b010, 1, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilelo(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b011, 0, pd.Idx(), size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void whilels(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b011, 1, pd.Idx(), size, rn, rm);
   }
 
   // SVE conditionally terminate scalars
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void ctermeq(T rn, T rm) {
     constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
     SVEIntCompareScalar(0b1000, 0, 0b0000, size, rn, rm);
   }
-  template <typename T>
-  requires IsXOrWRegister<T>
+  template <IsXOrWRegister T>
   void ctermne(T rn, T rm) {
     constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
     SVEIntCompareScalar(0b1000, 1, 0b0000, size, rn, rm);
