@@ -633,6 +633,9 @@ namespace FEXCore::Context {
     InitializeCompiler(Thread);
     InitializeThreadData(Thread);
 
+    Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
+    Thread->CurrentFrame->State.DeferredSignalFaultAddress = reinterpret_cast<Core::MoveableNonatomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));
+
     // Insert after the Thread object has been fully initialized
     {
       std::lock_guard lk(ThreadCreationMutex);
@@ -658,6 +661,8 @@ namespace FEXCore::Context {
       // To be able to delete a thread from itself, we need to detached the std::thread object
       Thread->ExecutionThread->detach();
     }
+
+    FEXCore::Allocator::VirtualFree(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096);
     delete Thread;
   }
 
