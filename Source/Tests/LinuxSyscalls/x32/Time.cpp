@@ -131,23 +131,28 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(clock_nanosleep, [](FEXCore::Core::CpuStateFrame *Frame, clockid_t clockid, int flags, const timespec32 *request, timespec32 *remain) -> uint64_t {
+      struct timespec req64{};
+      struct timespec *req64_ptr{};
+
       struct timespec rem64{};
       struct timespec *rem64_ptr{};
+
+      if (request) {
+        req64 = *request;
+        req64_ptr = &req64;
+      }
 
       if (remain) {
         rem64 = *remain;
         rem64_ptr = &rem64;
       }
 
-      uint64_t Result = 0;
-      if (request) {
-        const struct timespec req64 = *request;
-        Result = ::clock_nanosleep(clockid, flags, &req64, rem64_ptr);
-      } else {
-        Result = ::clock_nanosleep(clockid, flags, nullptr, rem64_ptr);
-      }
+      // Can't use glibc helper here since it does additional validation and data munging that breaks games.
+      uint64_t Result = ::syscall(SYSCALL_DEF(clock_nanosleep), clockid, flags, req64_ptr, rem64_ptr);
 
-      if (remain) {
+      if (remain &&
+          (flags & TIMER_ABSTIME) == 0) {
+        // Remain is completely ignored if TIMER_ABSTIME is set.
         *remain = rem64;
       }
       SYSCALL_ERRNO();
