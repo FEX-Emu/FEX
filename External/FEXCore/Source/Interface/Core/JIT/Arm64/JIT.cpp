@@ -901,6 +901,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
           break;
 
         REGISTER_OP(MEMSET,              MemSet);
+        REGISTER_OP(MEMCPY,              MemCpy);
         REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
         REGISTER_OP(CACHELINECLEAN,      CacheLineClean);
         REGISTER_OP(CACHELINEZERO,       CacheLineZero);

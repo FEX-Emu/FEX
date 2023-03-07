@@ -791,6 +791,10 @@ DEF_OP(MemSet) {
   mov(rcx, Length);
   mov(rdi, MemReg);
 
+  if (!Op->Prefix.IsInvalid()) {
+    add(rdi, GetSrc<RA_64>(Op->Prefix.ID()));
+  }
+
   {
     mov(TMP3, Length);
     auto CalculateDest = [&]() {
@@ -854,6 +858,139 @@ DEF_OP(MemSet) {
   cld();
 }
 
+DEF_OP(MemCpy) {
+  const auto Op = IROp->C<IR::IROp_MemCpy>();
+
+  const int32_t Size = Op->Size;
+  const auto MemRegDest = GetSrc<RA_64>(Op->AddrDest.ID());
+  const auto MemRegSrc = GetSrc<RA_64>(Op->AddrSrc.ID());
+
+  const auto Length = GetSrc<RA_64>(Op->Length.ID());
+  const auto Direction = GetSrc<RA_64>(Op->Direction.ID());
+
+  // If Direction == 0 then:
+  //   MemRegDest is incremented (by size)
+  //   MemRegSrc is incremented (by size)
+  // else:
+  //   MemRegDest is decremented (by size)
+  //   MemRegSrc is decremented (by size)
+  //
+  // Counter is decremented regardless.
+
+  // TMP1 = Length
+  // TMP2 = Dest
+  // TMP3 = Src
+  // TMP4 = Temp value
+  mov(TMP1, Length);
+  mov(TMP2, MemRegDest);
+  mov(TMP3, MemRegSrc);
+  if (!Op->PrefixDest.IsInvalid()) {
+    add(TMP2, GetSrc<RA_64>(Op->PrefixDest.ID()));
+  }
+  if (!Op->PrefixSrc.IsInvalid()) {
+    add(TMP3, GetSrc<RA_64>(Op->PrefixSrc.ID()));
+  }
+
+  auto Dst = GetSrcPair<RA_64>(Node);
+  Label Done;
+  Label BackwardImpl;
+  cmp(Direction, 0);
+  jne(BackwardImpl);
+
+  // Emit forward direction memcpy then backward direction memcpy.
+  for (int32_t Direction :  { 1, -1 }) {
+    Label DoneInternal;
+    Label AgainInternal;
+
+    L(AgainInternal);
+    cmp(TMP1, 0);
+    je(DoneInternal);
+
+    {
+      switch (Size) {
+        case 1:
+          movzx(TMP4, byte [TMP3]);
+          mov(byte [TMP2], TMP4.cvt8());
+          break;
+        case 2:
+          movzx(TMP4, word [TMP3]);
+          mov(word [TMP2], TMP4.cvt16());
+          break;
+        case 4:
+          mov(TMP4.cvt32(), dword [TMP3]);
+          mov(dword [TMP2], TMP4.cvt32());
+          break;
+        case 8:
+          mov(TMP4, qword [TMP3]);
+          mov(qword [TMP2], TMP4);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+          break;
+      }
+    }
+
+    if (Direction == 1) {
+      // Incrementing pointers
+      add(TMP2, Size);
+      add(TMP3, Size);
+    }
+    else {
+      // Decrementing pointers
+      sub(TMP2, Size);
+      sub(TMP3, Size);
+    }
+
+    // Decrement counter by one
+    sub(TMP1, 1);
+
+    jmp(AgainInternal);
+    L(DoneInternal);
+
+    // Pointer math using source pointers and length.
+    mov(TMP3, Length);
+    switch (Size) {
+      case 1:
+        break;
+      case 2:
+        shl(TMP3, 1);
+        break;
+      case 4:
+        shl(TMP3, 2);
+        break;
+      case 8:
+        shl(TMP3, 3);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+        break;
+    }
+
+    // Needs to use temporaries just in case of overwrite
+    mov(TMP1, MemRegDest);
+    mov(TMP2, MemRegSrc);
+
+    mov(Dst.first, TMP1);
+    mov(Dst.second, TMP2);
+
+    if (Direction == 1) {
+      // Incrementing pointers
+      add(Dst.first, TMP3);
+      add(Dst.second, TMP3);
+
+      jmp(Done);
+      L(BackwardImpl);
+    }
+    else {
+      // Decrementing pointers
+      sub(Dst.first, TMP3);
+      sub(Dst.second, TMP3);
+    }
+  }
+
+  L(Done);
+}
+
 DEF_OP(CacheLineClear) {
   auto Op = IROp->C<IR::IROp_CacheLineClear>();
 
@@ -909,6 +1046,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(LOADMEMTSO,          LoadMem);
   REGISTER_OP(STOREMEMTSO,         StoreMem);
   REGISTER_OP(MEMSET,              MemSet);
+  REGISTER_OP(MEMCPY,              MemCpy);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
   REGISTER_OP(CACHELINECLEAN,      CacheLineClean);
   REGISTER_OP(CACHELINEZERO,       CacheLineZero);
