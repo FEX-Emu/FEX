@@ -3820,75 +3820,35 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
 
   // RA now can handle these to be here, to avoid DF accesses
   const auto Size = GetSrcSize(Op);
-  auto SizeConst = _Constant(Size);
-  auto NegSizeConst = _Constant(-Size);
 
   // Calculate direction.
   auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
-  auto PtrDir = _Select(FEXCore::IR::COND_EQ, DF,  _Constant(0), SizeConst, NegSizeConst);
 
   if (Op->Flags & (FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX | FEXCore::X86Tables::DecodeFlags::FLAG_REPNE_PREFIX)) {
-    // Calculate flags early. because end of block
-    CalculateDeferredFlags();
+    auto SrcAddr = LoadGPRRegister(X86State::REG_RSI);
+    auto DstAddr = LoadGPRRegister(X86State::REG_RDI);
+    auto Counter = LoadGPRRegister(X86State::REG_RCX);
 
-    // Create all our blocks
-    auto LoopHead = CreateNewCodeBlockAfter(GetCurrentBlock());
-    auto LoopTail = CreateNewCodeBlockAfter(LoopHead);
-    auto LoopEnd = CreateNewCodeBlockAfter(LoopTail);
+    auto DstSegment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
+    auto SrcSegment = GetSegment(Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
+    auto Result = _MemCpy(CTX->IsTSOEnabled(), Size,
+        DstSegment ?: InvalidNode,
+        SrcSegment ?: InvalidNode,
+        DstAddr, SrcAddr, Counter, DF);
 
-    // At the time this was written, our RA can't handle accessing nodes across blocks.
-    // So we need to re-load and re-calculate essential values each iteration of the loop.
+    OrderedNode *Result_Dst = _ExtractElementPair(Result, 0);
+    OrderedNode *Result_Src = _ExtractElementPair(Result, 1);
 
-    // First thing we need to do is finish this block and jump to the start of the loop.
-
-    _Jump(LoopHead);
-
-    SetCurrentCodeBlock(LoopHead);
-    {
-      OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
-      _CondJump(Counter, LoopEnd, LoopTail, {COND_EQ});
-    }
-
-    SetCurrentCodeBlock(LoopTail);
-    {
-      OrderedNode *Src = LoadGPRRegister(X86State::REG_RSI);
-      OrderedNode *Dest = LoadGPRRegister(X86State::REG_RDI);
-      Dest = AppendSegmentOffset(Dest, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
-      Src = AppendSegmentOffset(Src, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
-
-      Src = _LoadMemAutoTSO(GPRClass, Size, Src, Size);
-
-      // Store to memory where RDI points
-      _StoreMemAutoTSO(GPRClass, Size, Dest, Src, Size);
-
-      OrderedNode *TailCounter = LoadGPRRegister(X86State::REG_RCX);
-
-      // Decrement counter
-      TailCounter = _Sub(TailCounter, _Constant(1));
-
-      // Store the counter so we don't have to deal with PHI here
-      StoreGPRRegister(X86State::REG_RCX, TailCounter);
-
-
-      // Offset the pointer
-      OrderedNode *TailSrc = LoadGPRRegister(X86State::REG_RSI);
-      OrderedNode *TailDest = LoadGPRRegister(X86State::REG_RDI);
-
-      TailSrc = _Add(TailSrc, PtrDir);
-      TailDest = _Add(TailDest, PtrDir);
-      StoreGPRRegister(X86State::REG_RSI, TailSrc);
-      StoreGPRRegister(X86State::REG_RDI, TailDest);
-
-      // Jump back to the start, we have more work to do
-      _Jump(LoopHead);
-    }
-
-    // Make sure to start a new block after ending this one
-
-    SetCurrentCodeBlock(LoopEnd);
+    StoreGPRRegister(X86State::REG_RCX, _Constant(0));
+    StoreGPRRegister(X86State::REG_RDI, Result_Dst);
+    StoreGPRRegister(X86State::REG_RSI, Result_Src);
   }
   else {
+    auto SizeConst = _Constant(Size);
+    auto NegSizeConst = _Constant(-Size);
+    auto PtrDir = _Select(FEXCore::IR::COND_EQ, DF,  _Constant(0), SizeConst, NegSizeConst);
+
     OrderedNode *RSI = LoadGPRRegister(X86State::REG_RSI);
     OrderedNode *RDI = LoadGPRRegister(X86State::REG_RDI);
     RDI= AppendSegmentOffset(RDI, 0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
