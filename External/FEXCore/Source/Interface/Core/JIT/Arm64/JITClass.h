@@ -350,6 +350,7 @@ private:
   DEF_OP(LoadMemTSO);
   DEF_OP(StoreMemTSO);
   DEF_OP(MemSet);
+  DEF_OP(MemCpy);
   DEF_OP(ParanoidLoadMemTSO);
   DEF_OP(ParanoidStoreMemTSO);
   DEF_OP(CacheLineClear);

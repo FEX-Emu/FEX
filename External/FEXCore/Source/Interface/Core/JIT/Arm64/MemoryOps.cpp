@@ -1503,6 +1503,265 @@ DEF_OP(MemSet) {
   // Destination already set to the final pointer.
 }
 
+DEF_OP(MemCpy) {
+  // TODO: A future looking task would be to support this with ARM's MOPS instructions.
+  // The 8-bit non-atomic path directly matches ARM's CPYP/CPYM/CPYE instruction,
+  //
+  // Assuming non-atomicity and non-faulting behaviour, this can accelerate this implementation.
+  const auto Op = IROp->C<IR::IROp_MemCpy>();
+
+  const int32_t Size = Op->Size;
+  const auto MemRegDest = GetReg(Op->AddrDest.ID());
+  const auto MemRegSrc = GetReg(Op->AddrSrc.ID());
+
+  const auto Length = GetReg(Op->Length.ID());
+  const auto Direction = GetReg(Op->Direction.ID());
+
+  auto Dst = GetRegPair(Node);
+  // If Direction == 0 then:
+  //   MemRegDest is incremented (by size)
+  //   MemRegSrc is incremented (by size)
+  // else:
+  //   MemRegDest is decremented (by size)
+  //   MemRegSrc is decremented (by size)
+  //
+  // Counter is decremented regardless.
+
+  ARMEmitter::ForwardLabel BackwardImpl{};
+  ARMEmitter::ForwardLabel Done{};
+
+  mov(TMP1, Length.X());
+  if (Op->PrefixDest.IsInvalid()) {
+    mov(TMP2, MemRegDest.X());
+  }
+  else {
+    const auto Prefix = GetReg(Op->PrefixDest.ID());
+    add(TMP2, Prefix.X(), MemRegDest.X());
+  }
+
+  if (Op->PrefixSrc.IsInvalid()) {
+    mov(TMP3, MemRegSrc.X());
+  }
+  else {
+    const auto Prefix = GetReg(Op->PrefixSrc.ID());
+    add(TMP3, Prefix.X(), MemRegSrc.X());
+  }
+
+  // TMP1 = Length
+  // TMP2 = Dest
+  // TMP3 = Src
+  // TMP4 = load+store temp value
+
+  // Backward or forwards implementation depends on flag
+  cbnz(ARMEmitter::Size::i64Bit, Direction, &BackwardImpl);
+
+  auto MemCpy = [this](uint32_t OpSize, int32_t Size) {
+    switch (OpSize) {
+      case 1:
+        ldrb<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
+        strb<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
+        break;
+      case 2:
+        ldrh<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
+        strh<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
+        break;
+      case 4:
+        ldr<ARMEmitter::IndexType::POST>(TMP4.W(), TMP3, Size);
+        str<ARMEmitter::IndexType::POST>(TMP4.W(), TMP2, Size);
+        break;
+      case 8:
+        ldr<ARMEmitter::IndexType::POST>(TMP4, TMP3, Size);
+        str<ARMEmitter::IndexType::POST>(TMP4, TMP2, Size);
+        break;
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+        break;
+    }
+  };
+
+  auto MemCpyTSO = [this](uint32_t OpSize, int32_t Size) {
+    if (CTX->HostFeatures.SupportsRCPC) {
+      if (OpSize == 1) {
+        // 8bit load is always aligned to natural alignment
+        ldaprb(TMP4.W(), TMP3);
+        stlrb(TMP4.W(), TMP2);
+      }
+      else {
+        nop();
+        switch (OpSize) {
+          case 2:
+            ldaprh(TMP4.W(), TMP3);
+            break;
+          case 4:
+            ldapr(TMP4.W(), TMP3);
+            break;
+          case 8:
+            ldapr(TMP4, TMP3);
+            break;
+          default:
+            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+            break;
+        }
+        nop();
+
+        nop();
+        switch (OpSize) {
+          case 2:
+            stlrh(TMP4.W(), TMP2);
+            break;
+          case 4:
+            stlr(TMP4.W(), TMP2);
+            break;
+          case 8:
+            stlr(TMP4, TMP2);
+            break;
+          default:
+            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+            break;
+        }
+        nop();
+      }
+    }
+    else {
+      if (OpSize == 1) {
+        // 8bit load is always aligned to natural alignment
+        ldarb(TMP4.W(), TMP3);
+        stlrb(TMP4.W(), TMP2);
+      }
+      else {
+        nop();
+        switch (OpSize) {
+          case 2:
+            ldarh(TMP4.W(), TMP3);
+            break;
+          case 4:
+            ldar(TMP4.W(), TMP3);
+            break;
+          case 8:
+            ldar(TMP4, TMP3);
+            break;
+          default:
+            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+            break;
+        }
+        nop();
+
+        nop();
+        switch (OpSize) {
+          case 2:
+            stlrh(TMP4.W(), TMP2);
+            break;
+          case 4:
+            stlr(TMP4.W(), TMP2);
+            break;
+          case 8:
+            stlr(TMP4, TMP2);
+            break;
+          default:
+            LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
+            break;
+        }
+        nop();
+      }
+    }
+
+    if (Size >= 0) {
+      add(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
+      add(ARMEmitter::Size::i64Bit, TMP3, TMP3, OpSize);
+    }
+    else {
+      sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, OpSize);
+      sub(ARMEmitter::Size::i64Bit, TMP3, TMP3, OpSize);
+    }
+  };
+
+  // Emit forward direction memset then backward direction memset.
+  for (int32_t Direction :  { 1, -1 }) {
+    const int32_t OpSize = Size;
+    const int32_t SizeDirection = Size * Direction;
+
+    ARMEmitter::BackwardLabel AgainInternal{};
+    ARMEmitter::ForwardLabel DoneInternal{};
+
+    // Early exit if zero count.
+    cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+
+    Bind(&AgainInternal);
+    if (Op->IsAtomic) {
+      MemCpyTSO(OpSize, SizeDirection);
+    }
+    else {
+      MemCpy(OpSize, SizeDirection);
+    }
+    sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
+    cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
+
+    Bind(&DoneInternal);
+
+    // Needs to use temporaries just in case of overwrite
+    mov(TMP1, MemRegDest.X());
+    mov(TMP2, MemRegSrc.X());
+    mov(TMP3, Length.X());
+
+    if (SizeDirection >= 0) {
+      switch (OpSize) {
+        case 1:
+          add(Dst.first.X(), TMP1, TMP3);
+          add(Dst.second.X(), TMP2, TMP3);
+          break;
+        case 2:
+          add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+          add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+          break;
+        case 4:
+          add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+          add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+          break;
+        case 8:
+          add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+          add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+          break;
+      }
+    }
+    else {
+      switch (OpSize) {
+        case 1:
+          sub(Dst.first.X(), TMP1, TMP3);
+          sub(Dst.second.X(), TMP2, TMP3);
+          break;
+        case 2:
+          sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+          sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+          break;
+        case 4:
+          sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+          sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+          break;
+        case 8:
+          sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+          sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize);
+          break;
+      }
+    }
+
+    if (Direction == 1) {
+      b(&Done);
+      Bind(&BackwardImpl);
+    }
+  }
+
+  Bind(&Done);
+  // Destination already set to the final pointer.
+}
+
+
+
 DEF_OP(ParanoidLoadMemTSO) {
   const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
   const auto OpSize = IROp->Size;
