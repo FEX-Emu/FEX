@@ -8,8 +8,75 @@
 #include <cstddef>
 #include <stdint.h>
 #include <string_view>
+#include <type_traits>
 
 namespace FEXCore::Core {
+  // This is defined here instead of a helper because it is a massive footgun in behaviour.
+  // Don't use this instead of std::atomic unless you really know what you're doing.
+  // Increment and decrement can visibily tear and only uses relaxed atomic behaviour internally.
+  // In particular decrement and increment can tear if a signal is received half-way through
+  // and you need to be aware of that when using this.
+  //
+  // Primarily this ensure program ordering when signals are concerned.
+  //
+  // This casts its internal object to std::atomic internally so that compilers can't reorder operations around it.
+  // This is necessary with how it is used with deferring signals.
+  template<typename T>
+  class MoveableNonatomicRefCounter {
+    public:
+      void Increment(T Value) {
+        // Specifically avoiding fetch_add here because that will turn in to ldxr+stxr or lock xadd.
+        // FEX very specifically wants to use simple loadstore instructions for this
+        //
+        // ARM64 ex:
+        // ldr x0, [x1];
+        // add x0, x0, #1;
+        // str x0, [x1];
+        //
+        // x86-64 ex:
+        // inc qword [rax];
+        auto AtomicVariable = std::atomic_ref<T>(Variable);
+        auto Current = AtomicVariable.load(std::memory_order_relaxed);
+        AtomicVariable.store(Current + Value, std::memory_order_relaxed);
+      }
+
+      // Returns original value.
+      // x86-64 needs to know the result on decrement.
+      T Decrement(T Value) {
+        // Specifically avoiding fetch_sub here because that will turn in to ldxr+stxr or lock xadd.
+        // FEX very specifically wants to use simple loadstore instructions for this
+        //
+        // ARM64 ex:
+        // ldr x0, [x1];
+        // sub x0, x0, #1;
+        // str x0, [x1];
+        //
+        // x86-64 ex:
+        // dec qword [rax];
+        auto AtomicVariable = std::atomic_ref<T>(Variable);
+        auto Current = AtomicVariable.load(std::memory_order_relaxed);
+        AtomicVariable.store(Current - Value, std::memory_order_relaxed);
+        return Current;
+      }
+
+      T Load() const {
+        auto AtomicVariable = std::atomic_ref<const T>(Variable);
+        return AtomicVariable.load(std::memory_order_relaxed);
+      }
+
+      void Store(T Value) {
+        auto AtomicVariable = std::atomic_ref<T>(Variable);
+        AtomicVariable.store(Value, std::memory_order_relaxed);
+      }
+
+    private:
+      // Internal variable can't be std::atomic because that doesn't have a move constructor and is non-pod.
+      T Variable;
+  };
+  static_assert(std::is_standard_layout_v<MoveableNonatomicRefCounter<uint64_t>>, "Needs to be standard layout");
+  static_assert(std::is_trivially_copyable_v<MoveableNonatomicRefCounter<uint64_t>>, "needs to be trivially copyable");
+  static_assert(sizeof(MoveableNonatomicRefCounter<uint64_t>) == sizeof(uint64_t), "Needs to be correct size");
+
   struct FEX_PACKED CPUState {
     // Allows more efficient handling of the register
     // file in the event AVX is not supported.
@@ -49,6 +116,12 @@ namespace FEXCore::Core {
     uint16_t FCW;
     uint16_t FTW;
 
+    uint32_t _pad2[1];
+    // Reference counter for FEX's per-thread deferred signals.
+    MoveableNonatomicRefCounter<uint64_t> DeferredSignalRefCount;
+    // Since this memory region is thread local, it should only be accessed with relaxed atomics.
+    MoveableNonatomicRefCounter<uint64_t> *DeferredSignalFaultAddress;
+
     static constexpr size_t FLAG_SIZE = sizeof(flags[0]);
     static constexpr size_t GDT_SIZE = sizeof(gdt[0]);
     static constexpr size_t GPR_REG_SIZE = sizeof(gregs[0]);
@@ -66,6 +139,7 @@ namespace FEXCore::Core {
   };
   static_assert(offsetof(CPUState, xmm) % 32 == 0, "xmm needs to be 256-bit aligned!");
   static_assert(offsetof(CPUState, mm) % 16 == 0, "mm needs to be 128-bit aligned!");
+  static_assert(offsetof(CPUState, DeferredSignalRefCount) % 8 == 0, "Needs to be 8-byte aligned");
 
   struct InternalThreadState;
 
