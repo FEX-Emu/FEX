@@ -791,6 +791,10 @@ DEF_OP(MemSet) {
   mov(rcx, Length);
   mov(rdi, MemReg);
 
+  if (!Op->Prefix.IsInvalid()) {
+    add(rdi, GetSrc<RA_64>(Op->Prefix.ID()));
+  }
+
   {
     mov(TMP3, Length);
     auto CalculateDest = [&]() {

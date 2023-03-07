@@ -293,6 +293,11 @@ DEF_OP(MemSet) {
   const int32_t Size = Op->Size;
 
   char *MemData = *GetSrc<char **>(Data->SSAData, Op->Addr);
+  uint64_t MemPrefix{};
+  if (!Op->Prefix.IsInvalid()) {
+    MemPrefix = *GetSrc<uint64_t*>(Data->SSAData, Op->Prefix);
+  }
+
   const auto Value = *GetSrc<uint64_t*>(Data->SSAData, Op->Value);
   const auto Length = *GetSrc<uint64_t*>(Data->SSAData, Op->Length);
   const auto Direction = *GetSrc<uint8_t*>(Data->SSAData, Op->Direction);
@@ -313,16 +318,16 @@ DEF_OP(MemSet) {
     if (Op->IsAtomic) {
       switch (Size) {
         case 1:
-          MemSetElements(reinterpret_cast<std::atomic<uint8_t>*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<std::atomic<uint8_t>*>(MemData + MemPrefix), Value, Length);
           break;
         case 2:
-          MemSetElements(reinterpret_cast<std::atomic<uint16_t>*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<std::atomic<uint16_t>*>(MemData + MemPrefix), Value, Length);
           break;
         case 4:
-          MemSetElements(reinterpret_cast<std::atomic<uint32_t>*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<std::atomic<uint32_t>*>(MemData + MemPrefix), Value, Length);
           break;
         case 8:
-          MemSetElements(reinterpret_cast<std::atomic<uint64_t>*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<std::atomic<uint64_t>*>(MemData + MemPrefix), Value, Length);
           break;
         default:
           LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
@@ -332,16 +337,16 @@ DEF_OP(MemSet) {
     else {
       switch (Size) {
         case 1:
-          MemSetElements(reinterpret_cast<uint8_t*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<uint8_t*>(MemData + MemPrefix), Value, Length);
           break;
         case 2:
-          MemSetElements(reinterpret_cast<uint16_t*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<uint16_t*>(MemData + MemPrefix), Value, Length);
           break;
         case 4:
-          MemSetElements(reinterpret_cast<uint32_t*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<uint32_t*>(MemData + MemPrefix), Value, Length);
           break;
         case 8:
-          MemSetElements(reinterpret_cast<uint64_t*>(MemData), Value, Length);
+          MemSetElements(reinterpret_cast<uint64_t*>(MemData + MemPrefix), Value, Length);
           break;
         default:
           LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
@@ -354,16 +359,16 @@ DEF_OP(MemSet) {
     if (Op->IsAtomic) {
       switch (Size) {
         case 1:
-          MemSetElementsInverse(reinterpret_cast<std::atomic<uint8_t>*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint8_t>*>(MemData + MemPrefix), Value, Length);
           break;
         case 2:
-          MemSetElementsInverse(reinterpret_cast<std::atomic<uint16_t>*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint16_t>*>(MemData + MemPrefix), Value, Length);
           break;
         case 4:
-          MemSetElementsInverse(reinterpret_cast<std::atomic<uint32_t>*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint32_t>*>(MemData + MemPrefix), Value, Length);
           break;
         case 8:
-          MemSetElementsInverse(reinterpret_cast<std::atomic<uint64_t>*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<std::atomic<uint64_t>*>(MemData + MemPrefix), Value, Length);
           break;
         default:
           LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
@@ -373,16 +378,16 @@ DEF_OP(MemSet) {
     else {
       switch (Size) {
         case 1:
-          MemSetElementsInverse(reinterpret_cast<uint8_t*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<uint8_t*>(MemData + MemPrefix), Value, Length);
           break;
         case 2:
-          MemSetElementsInverse(reinterpret_cast<uint16_t*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<uint16_t*>(MemData + MemPrefix), Value, Length);
           break;
         case 4:
-          MemSetElementsInverse(reinterpret_cast<uint32_t*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<uint32_t*>(MemData + MemPrefix), Value, Length);
           break;
         case 8:
-          MemSetElementsInverse(reinterpret_cast<uint64_t*>(MemData), Value, Length);
+          MemSetElementsInverse(reinterpret_cast<uint64_t*>(MemData + MemPrefix), Value, Length);
           break;
         default:
           LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size);
