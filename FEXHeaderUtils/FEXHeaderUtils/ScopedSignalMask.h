@@ -1,8 +1,8 @@
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/LogManager.h>
 
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include <shared_mutex>
