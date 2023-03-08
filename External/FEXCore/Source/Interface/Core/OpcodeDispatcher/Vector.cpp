@@ -3415,6 +3415,7 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs,
   // This can be seen with `abs(0 - 0xFF)` returning a different result depending
   // on bit length
   const auto Size = GetSrcSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
@@ -3430,6 +3431,7 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs,
     return _VAddV(Size * 2, 2, AbsResult);
   }
 
+
   OrderedNode *Src1_Low = _VUXTL(Size, 1, Src1);
   OrderedNode *Src1_High = _VUXTL2(Size, 1, Src1);
 
@@ -3442,15 +3444,34 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs,
   OrderedNode *AbsResult_Low = _VAbs(Size, 2, SubResult_Low);
   OrderedNode *AbsResult_High = _VAbs(Size, 2, SubResult_High);
 
-  // Now vector pairwise add all four of these
-  OrderedNode * Result_Low = _VAddV(Size, 2, AbsResult_Low);
-  OrderedNode * Result_High = _VAddV(Size, 2, AbsResult_High);
+  OrderedNode *Result_Low = _VAddV(16, 2, AbsResult_Low);
+  OrderedNode *Result_High = _VAddV(16, 2, AbsResult_High);
 
-  return _VInsElement(Size, 8, 1, 0, Result_Low, Result_High);
+  OrderedNode *Low = _VInsElement(Size, 8, 1, 0, Result_Low, Result_High);
+  if (Is128Bit) {
+    return Low;
+  }
+
+  OrderedNode *HighSrc1 = _VDupElement(Size, 16, AbsResult_Low, 1);
+  OrderedNode *HighSrc2 = _VDupElement(Size, 16, AbsResult_High, 1);
+
+  OrderedNode *HighResult_Low = _VAddV(16, 2, HighSrc1);
+  OrderedNode *HighResult_High = _VAddV(16, 2, HighSrc2);
+
+  OrderedNode *High = _VInsElement(Size, 8, 1, 0, HighResult_Low, HighResult_High);
+  OrderedNode *Full = _VInsElement(Size, 16, 1, 0, Low, High);
+
+  OrderedNode *Tmp = _VInsElement(Size, 8, 2, 1, Full, Full);
+  return _VInsElement(Size, 8, 1, 2, Tmp, Full);
 }
 
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
   OrderedNode *Result = PSADBWOpImpl(Op, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPSADBWOp(OpcodeArgs) {
+  OrderedNode *Result = PSADBWOpImpl(Op, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
