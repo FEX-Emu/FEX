@@ -24,6 +24,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
+#include "Utils/Allocator/HostAllocator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -1151,6 +1152,7 @@ namespace FEXCore::Context {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     InitializeThreadTLSData(Thread);
+    Alloc::OSAllocator::RegisterTLSData(Thread);
 
     ++IdleWaitRefCount;
 
@@ -1195,6 +1197,7 @@ namespace FEXCore::Context {
     --IdleWaitRefCount;
     IdleWaitCV.notify_all();
 
+    Alloc::OSAllocator::UninstallTLSData(Thread);
     SignalDelegation->UninstallTLSState(Thread);
 
     // If the parent thread is waiting to join, then we can't destroy our thread object
