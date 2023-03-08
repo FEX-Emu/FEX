@@ -1,0 +1,71 @@
+%ifdef CONFIG
+{
+  "HostFeatures": ["AVX"],
+  "RegData": {
+    "RAX": "0x0",
+    "RBX": "0x0",
+    "RCX": "0xFFFF",
+    "RSI": "0xF0F0",
+    "RDI": "0x55AA",
+    "R8":  "0x0",
+    "R9":  "0x0",
+    "R10": "0xFFFFFFFF",
+    "R11": "0xF0F0F0F0",
+    "R12": "0x55AA55AA",
+    "XMM0": ["0x4142434445464748", "0x5152535455565758", "0x6162636465666768", "0x7172737475767778"],
+    "XMM1": ["0x0000000000000000", "0x0000000000000000", "0x0000000000000000", "0x0000000000000000"],
+    "XMM2": ["0xFFFFFFFFFFFFFFFF", "0xFFFFFFFFFFFFFFFF", "0xFFFFFFFFFFFFFFFF", "0xFFFFFFFFFFFFFFFF"],
+    "XMM3": ["0x8080808000000000", "0x8080808000000000", "0x8080808000000000", "0x8080808000000000"],
+    "XMM4": ["0x8000800080008000", "0x0080008000800080", "0x8000800080008000", "0x0080008000800080"]
+  }
+}
+%endif
+
+lea rdx, [rel .data]
+
+vmovapd ymm0, [rdx]
+vmovapd ymm1, [rdx + 32]
+vmovapd ymm2, [rdx + 32 * 2]
+vmovapd ymm3, [rdx + 32 * 3]
+vmovapd ymm4, [rdx + 32 * 4]
+
+vpmovmskb eax, xmm0
+vpmovmskb ebx, xmm1
+vpmovmskb ecx, xmm2
+vpmovmskb esi, xmm3
+vpmovmskb edi, xmm4
+
+vpmovmskb r8,  ymm0
+vpmovmskb r9,  ymm1
+vpmovmskb r10, ymm2
+vpmovmskb r11, ymm3
+vpmovmskb r12, ymm4
+
+hlt
+
+align 32
+.data:
+dq 0x4142434445464748
+dq 0x5152535455565758
+dq 0x6162636465666768
+dq 0x7172737475767778
+
+dq 0x0000000000000000
+dq 0x0000000000000000
+dq 0x0000000000000000
+dq 0x0000000000000000
+
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xFFFFFFFFFFFFFFFF
+dq 0xFFFFFFFFFFFFFFFF
+
+dq 0x8080808000000000
+dq 0x8080808000000000
+dq 0x8080808000000000
+dq 0x8080808000000000
+
+dq 0x8000800080008000
+dq 0x0080008000800080
+dq 0x8000800080008000
+dq 0x0080008000800080
