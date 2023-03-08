@@ -754,52 +754,23 @@ public:
   }
 
   // SVE bitwise shift by vector (predicated)
-  void asr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEBitwiseShiftbyVector(0, 0, 0, size, pg, zm, zd);
+  void asr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftbyVector(0, 0, 0, size, pg, zd, zn, zm);
   }
-
-  void lsr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEBitwiseShiftbyVector(0, 0, 1, size, pg, zm, zd);
+  void lsr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftbyVector(0, 0, 1, size, pg, zd, zn, zm);
   }
-  void lsl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEBitwiseShiftbyVector(0, 1, 1, size, pg, zm, zd);
+  void lsl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftbyVector(0, 1, 1, size, pg, zd, zn, zm);
   }
-
-  void asrr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEBitwiseShiftbyVector(1, 0, 0, size, pg, zm, zd);
+  void asrr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftbyVector(1, 0, 0, size, pg, zd, zn, zm);
   }
-  void lsrr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEBitwiseShiftbyVector(1, 0, 1, size, pg, zm, zd);
+  void lsrr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftbyVector(1, 0, 1, size, pg, zd, zn, zm);
   }
-
-  void lslr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEBitwiseShiftbyVector(1, 1, 1, size, pg, zm, zd);
-  }
-
-  void SVEBitwiseShiftbyVector(uint32_t R, uint32_t L, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'100 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= R << 18;
-    Instr |= L << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
+  void lslr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEBitwiseShiftbyVector(1, 1, 1, size, pg, zd, zn, zm);
   }
 
   // SVE bitwise shift by wide elements (predicated)
@@ -2990,6 +2961,23 @@ private:
     Instr |= pv.Idx() << 10;
     Instr |= Encode_rn(zn);
     Instr |= Encode_rd(zd);
+    dc32(Instr);
+  }
+
+  void SVEBitwiseShiftbyVector(uint32_t R, uint32_t L, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(zd == zn, "Dest needs to equal zn");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0000'0100'0001'0000'1000'0000'0000'0000;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= R << 18;
+    Instr |= L << 17;
+    Instr |= U << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
