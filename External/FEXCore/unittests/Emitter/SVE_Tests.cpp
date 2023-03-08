@@ -1789,11 +1789,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by predic
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE FFR write from predicate") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(wrffr(PReg::p7),  "wrffr p7.b");
+  TEST_SINGLE(wrffr(PReg::p15), "wrffr p15.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE FFR initialise") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(setffr(), "setffr  ");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Integer Multiply-Add - Unpredicated") {
