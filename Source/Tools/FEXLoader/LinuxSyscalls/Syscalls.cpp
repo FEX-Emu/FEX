@@ -729,9 +729,7 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::Signal
   GuestKernelVersion = CalculateGuestKernelVersion();
   Alloc32Handler = FEX::HLE::Create32BitAllocator();
 
-  if (SMCChecks == FEXCore::Config::CONFIG_SMC_MTRACK) {
-    SignalDelegation->RegisterHostSignalHandler(SIGSEGV, HandleSegfault, true);
-  }
+  SignalDelegation->RegisterHostSignalHandler(SIGSEGV, HandleSegfault, true);
 }
 
 SyscallHandler::~SyscallHandler() {
