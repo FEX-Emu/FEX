@@ -3013,6 +3013,11 @@ void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
+  OrderedNode * Result = PMADDUBSWOpImpl(Op, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 OrderedNode* OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed,
                                              OrderedNode *Src1, OrderedNode *Src2) {
   const auto Size = GetSrcSize(Op);
