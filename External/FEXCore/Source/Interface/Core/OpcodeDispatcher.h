@@ -496,6 +496,7 @@ public:
   void VPHSUBOp(OpcodeArgs);
   void VPHSUBSWOp(OpcodeArgs);
 
+  void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
 
   void VPMULHRSWOp(OpcodeArgs);
@@ -836,6 +837,9 @@ private:
 
   OrderedNode* PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                              const X86Tables::DecodedOperand& Src2);
+
+  OrderedNode* PMADDUBSWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                               const X86Tables::DecodedOperand& Src2Op);
 
   OrderedNode* PMULHRSWOpImpl(OpcodeArgs, OrderedNode *Src1, OrderedNode *Src2);
 

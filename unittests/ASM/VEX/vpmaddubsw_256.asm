@@ -1,0 +1,66 @@
+%ifdef CONFIG
+{
+  "HostFeatures": ["AVX"],
+  "RegData": {
+    "XMM5":  ["0x0000000000000000", "0x0000000000000000", "0x0000000000000000", "0x0000000000000000"],
+    "XMM6":  ["0xFE02FE02FE02FE02", "0xFE02FE02FE02FE02", "0xFE02FE02FE02FE02", "0xFE02FE02FE02FE02"],
+    "XMM7":  ["0x7E027E027E027E02", "0x7E027E027E027E02", "0x7E027E027E027E02", "0x7E027E027E027E02"],
+    "XMM8":  ["0x7FFF7FFF7FFF7FFF", "0x7FFF7FFF7FFF7FFF", "0x7FFF7FFF7FFF7FFF", "0x7FFF7FFF7FFF7FFF"],
+    "XMM9":  ["0x057306BC07B808B8", "0xBC53BC0EBAE5BA2E", "0x282026EC08D41910", "0x33B92A54171B2224"],
+    "XMM10": ["0xA473A5BCA6B8A7B8", "0x0553070E07E5092E", "0xF02026EC0CD41910", "0xEBB92A54171BDF24"]
+  }
+}
+%endif
+
+lea rdx, [rel .data]
+
+vmovaps ymm0, [rdx]
+vmovaps ymm1, [rdx + 32]
+vmovaps ymm2, [rdx + 32 * 2]
+vmovaps ymm3, [rdx + 32 * 3]
+vmovaps ymm4, [rdx + 32 * 4]
+
+; Zero
+vpmaddubsw ymm5, ymm0, [rdx]
+
+; -1
+vpmaddubsw ymm6, ymm1, [rdx + 32]
+
+; 127
+vpmaddubsw ymm7, ymm2, [rdx + 32 * 2]
+
+; 255 and 127
+vpmaddubsw ymm8, ymm1, [rdx + 32 * 2]
+
+; Mixture
+vpmaddubsw ymm9,  ymm3, [rdx + 32 * 4]
+vpmaddubsw ymm10, ymm4, [rdx + 32 * 3]
+
+hlt
+
+align 32
+.data:
+dq 0x0000000000000000
+dq 0x0000000000000000
+dq 0x0000000000000000
+dq 0x0000000000000000
+
+dq -1
+dq -1
+dq -1
+dq -1
+
+dq 0x7F7F7F7F7F7F7F7F
+dq 0x7F7F7F7F7F7F7F7F
+dq 0x7F7F7F7F7F7F7F7F
+dq 0x7F7F7F7F7F7F7F7F
+
+dq 0x8141824383448445
+dq 0x21F223F323F424F5
+dq 0x3289435639045828
+dq 0x7380543834230480
+
+dq 0xE251E352E453E554
+dq 0x71A972A873A774A6
+dq 0x3438404230894802
+dq 0x2348337523752943
