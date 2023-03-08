@@ -1489,8 +1489,6 @@ public:
     fdup(size, zd, Value);
   }
 
-  // XXX:
-
   // SVE Predicate Count
   // SVE predicate count
   // XXX:
@@ -1507,9 +1505,13 @@ public:
 
   // SVE Write FFR
   // SVE FFR write from predicate
-  // XXX:
+  void wrffr(PRegister pn) {
+    SVEWriteFFR(0, 0b00, 0b000, pn.Idx(), 0b00000);
+  }
   // SVE FFR initialise
-  // XXX:
+  void setffr() {
+    SVEWriteFFR(1, 0b00, 0b000, 0b0000, 0b00000);
+  }
 
   // SVE Integer Multiply-Add - Unpredicated
   // XXX: CDOT
@@ -4065,5 +4067,15 @@ private:
     Instr |= rn.Idx() << 5;
     Instr |= b4 << 4;
     Instr |= op2;
+    dc32(Instr);
+  }
+
+  void SVEWriteFFR(uint32_t op0, uint32_t op1, uint32_t op2, uint32_t op3, uint32_t op4) {
+    uint32_t Instr = 0b0010'0101'0010'1000'1001'0000'0000'0000;
+    Instr |= op0 << 18;
+    Instr |= op1 << 16;
+    Instr |= op2 << 9;
+    Instr |= op3 << 5;
+    Instr |= op4;
     dc32(Instr);
   }
