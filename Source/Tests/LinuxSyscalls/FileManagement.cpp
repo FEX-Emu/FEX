@@ -513,19 +513,10 @@ uint64_t FileManager::Open(const char *pathname, int flags, uint32_t mode) {
     fd = ::open(SelfPath, flags, mode);
   }
 
-  if (fd != -1) {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
-    FDToNameMap.insert_or_assign(fd, SelfPath);
-  }
-
   return fd;
 }
 
 uint64_t FileManager::Close(int fd) {
-  {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
-    FDToNameMap.erase(fd);
-  }
   return ::close(fd);
 }
 
@@ -533,15 +524,6 @@ uint64_t FileManager::CloseRange(unsigned int first, unsigned int last, unsigned
 #ifndef CLOSE_RANGE_CLOEXEC
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
-  if (!(flags & CLOSE_RANGE_CLOEXEC)) {
-    // If the flag was set then it doesn't actually close the FDs
-    // Just sets the flag on a range
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
-    auto Lower = FDToNameMap.lower_bound(first);
-    auto Upper = FDToNameMap.upper_bound(last);
-    // We remove from first to last inclusive
-    FDToNameMap.erase(Lower, Upper);
-  }
   return ::syscall(SYSCALL_DEF(close_range), first, last, flags);
 }
 
@@ -748,11 +730,6 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char *pathname, i
     fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
   }
 
-  if (fd != -1) {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
-    FDToNameMap.insert_or_assign(fd, SelfPath);
-  }
-
   return fd;
 }
 
@@ -775,11 +752,6 @@ uint64_t FileManager::Openat2(int dirfs, const char *pathname, FEX::HLE::open_ho
 
   if (fd == -1) {
     fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
-  }
-
-  if (fd != -1) {
-    FHU::ScopedSignalMaskWithMutex lk(FDLock);
-    FDToNameMap.insert_or_assign(fd, SelfPath);
   }
 
   return fd;
@@ -852,15 +824,6 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
     }
   }
   return ::fstatat64(dirfd, SelfPath, buf, flag);
-}
-
-std::string *FileManager::FindFDName(int fd) {
-  FHU::ScopedSignalMaskWithMutex lk(FDLock);
-  auto it = FDToNameMap.find(fd);
-  if (it == FDToNameMap.end()) {
-    return nullptr;
-  }
-  return &it->second;
 }
 
 }
