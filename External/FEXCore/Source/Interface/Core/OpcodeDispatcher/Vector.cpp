@@ -865,17 +865,28 @@ template
 void OpDispatchBuilder::MOVMSKOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ExtractSize = Is256Bit ? 4 : 2;
+
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *VMask = _VDupFromGPR(16, 8, _Constant(0x80'40'20'10'08'04'02'01ULL));
+  OrderedNode *VMask = _VDupFromGPR(SrcSize, 8, _Constant(0x80'40'20'10'08'04'02'01ULL));
 
-  auto VCMP = _VCMPLTZ(16, 1, Src);
-  auto VAnd = _VAnd(16, 1, VCMP, VMask);
+  auto VCMP = _VCMPLTZ(SrcSize, 1, Src);
+  auto VAnd = _VAnd(SrcSize, 1, VCMP, VMask);
 
-  auto VAdd1 = _VAddP(16, 1, VAnd, VAnd);
-  auto VAdd2 = _VAddP(8, 1, VAdd1, VAdd1);
+  // Since we also handle the MM MOVMSKB here too,
+  // we need to clamp the lower bound.
+  const auto VAdd1Size = std::max(SrcSize, uint8_t{16});
+  const auto VAdd2Size = std::max(SrcSize / 2, 8);
+
+  auto VAdd1 = _VAddP(VAdd1Size, 1, VAnd, VAnd);
+  auto VAdd2 = _VAddP(VAdd2Size, 1, VAdd1, VAdd1);
   auto VAdd3 = _VAddP(8, 1, VAdd2, VAdd2);
 
-  StoreResult(GPRClass, Op, _VExtractToGPR(16, 2, VAdd3, 0), -1);
+  auto Result = _VExtractToGPR(SrcSize, ExtractSize, VAdd3, 0);
+
+  StoreResult(GPRClass, Op, Result, -1);
 }
 
 template<size_t ElementSize>
