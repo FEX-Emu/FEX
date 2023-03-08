@@ -3773,6 +3773,50 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(ZeroConst);
 }
 
+void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
+  InvalidateDeferredFlags();
+
+  const auto SrcSize = GetSrcSize(Op);
+  const auto ElementSizeInBits = ElementSize * 8;
+  const auto MaskConstant = uint64_t{1} << (ElementSizeInBits - 1);
+
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+
+  OrderedNode *Mask = _VDupFromGPR(SrcSize, ElementSize, _Constant(MaskConstant));
+
+  OrderedNode *AndTest = _VAnd(SrcSize, 1, Src2, Src1);
+  OrderedNode *AndNotTest = _VBic(SrcSize, 1, Src2, Src1);
+
+  OrderedNode *MaskedAnd = _VAnd(SrcSize, 1, AndTest, Mask);
+  OrderedNode *MaskedAndNot = _VAnd(SrcSize, 1, AndNotTest, Mask);
+
+  OrderedNode *AndPopCount = _VPopcount(SrcSize, 1, MaskedAnd);
+  OrderedNode *AndNotPopCount = _VPopcount(SrcSize, 1, MaskedAndNot);
+
+  OrderedNode *SummedAnd = _VAddV(SrcSize, 2, AndPopCount);
+  OrderedNode *SummedAndNot = _VAddV(SrcSize, 2, AndNotPopCount);
+
+  OrderedNode *AndGPR = _VExtractToGPR(SrcSize, 2, SummedAnd, 0);
+  OrderedNode *AndNotGPR = _VExtractToGPR(SrcSize, 2, SummedAndNot, 0);
+
+  OrderedNode *ZeroConst = _Constant(0);
+  OrderedNode *OneConst = _Constant(1);
+
+  OrderedNode *ZFResult = _Select(IR::COND_EQ, AndGPR, ZeroConst,
+                                  OneConst, ZeroConst);
+  OrderedNode *CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst,
+                                  OneConst, ZeroConst);
+
+  SetRFLAG<X86State::RFLAG_ZF_LOC>(ZFResult);
+  SetRFLAG<X86State::RFLAG_CF_LOC>(CFResult);
+
+  SetRFLAG<X86State::RFLAG_AF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_SF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_OF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
+}
+
 OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
