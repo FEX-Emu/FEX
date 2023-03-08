@@ -5867,6 +5867,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::VPMULHRSWOp},
     {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
     {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
+    {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::VTESTPOp<4>},
+    {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::VTESTPOp<8>},
 
     {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::PTestOp},
