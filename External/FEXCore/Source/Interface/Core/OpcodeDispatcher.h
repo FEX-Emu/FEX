@@ -542,6 +542,9 @@ public:
   template <size_t ElementSize>
   void VSHUFOp(OpcodeArgs);
 
+  template <size_t ElementSize>
+  void VTESTPOp(OpcodeArgs);
+
   void VZEROOp(OpcodeArgs);
 
   // X87 Ops

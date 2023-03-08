@@ -3817,6 +3817,13 @@ void OpDispatchBuilder::VTESTOpImpl(OpcodeArgs, size_t ElementSize) {
   SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
 }
 
+template <size_t ElementSize>
+void OpDispatchBuilder::VTESTPOp(OpcodeArgs) {
+  VTESTOpImpl(Op, ElementSize);
+}
+template
+void OpDispatchBuilder::VTESTPOp<4>(OpcodeArgs);
+
 OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
 
