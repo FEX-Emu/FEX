@@ -361,7 +361,6 @@ DEF_OP(VAddP) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE ADDP is a destructive operation, so we need a temporary
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     movprfx(VTMP1.Z(), VectorLower.Z());
 
     // Unlike Adv. SIMD's version of ADDP, which acts like it concats the
@@ -609,7 +608,6 @@ DEF_OP(VFAddP) {
     const auto Pred = PRED_TMP_32B.Merging();
 
     // SVE FADDP is a destructive operation, so we need a temporary
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     movprfx(VTMP1.Z(), VectorLower.Z());
 
     // Unlike Adv. SIMD's version of FADDP, which acts like it concats the
