@@ -3823,6 +3823,8 @@ void OpDispatchBuilder::VTESTPOp(OpcodeArgs) {
 }
 template
 void OpDispatchBuilder::VTESTPOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VTESTPOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
