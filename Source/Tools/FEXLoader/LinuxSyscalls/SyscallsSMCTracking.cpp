@@ -15,6 +15,7 @@ $end_info$
 #include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXHeaderUtils/TypeDefines.h>
+#include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
@@ -164,7 +165,7 @@ void SyscallHandler::MarkGuestExecutableRange(uint64_t Start, uint64_t Length) {
 // Used for AOT
 FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(uint64_t GuestAddr) {
   FHU::ScopedSignalMaskWithSharedLock lk(_SyscallHandler->VMATracking.Mutex);
-  auto rv = FEXCore::HLE::AOTIRCacheEntryLookupResult(nullptr, 0, std::move(lk));
+  auto rv = FEXCore::HLE::AOTIRCacheEntryLookupResult(nullptr, 0);
 
   // Get the first mapping after GuestAddr, or end
   // GuestAddr is inclusive

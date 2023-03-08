@@ -3,7 +3,6 @@
 #include <shared_mutex>
 
 #include <FEXCore/IR/IR.h>
-#include <FEXHeaderUtils/ScopedSignalMask.h>
 
 namespace FEXCore {
   class CodeLoader;
@@ -52,9 +51,8 @@ namespace FEXCore::HLE {
   class SourcecodeResolver;
 
   struct AOTIRCacheEntryLookupResult {
-    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart, FHU::ScopedSignalMaskWithSharedLock &&lk)
-      : Entry(Entry), VAFileStart(VAFileStart), lk(std::move(lk))
-    {
+    AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart)
+      : Entry(Entry), VAFileStart(VAFileStart) {
 
     }
 
@@ -64,8 +62,6 @@ namespace FEXCore::HLE {
     uintptr_t VAFileStart;
 
     friend class SyscallHandler;
-    protected:
-    FHU::ScopedSignalMaskWithSharedLock lk;
   };
 
   class SyscallHandler {
