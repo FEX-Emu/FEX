@@ -788,20 +788,6 @@ public:
     SVEBitwiseShiftbyVector(1, 1, 1, size, pg, zm, zd);
   }
 
-  void SVEBitwiseShiftbyVector(uint32_t R, uint32_t L, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'100 << 13;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= R << 18;
-    Instr |= L << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   // SVE bitwise shift by wide elements (predicated)
   void asr_wide(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     SVEBitwiseShiftByWideElementPredicated(size, 0b000, zd, pg, zn, zm);
@@ -2990,6 +2976,19 @@ private:
     Instr |= pv.Idx() << 10;
     Instr |= Encode_rn(zn);
     Instr |= Encode_rd(zd);
+    dc32(Instr);
+  }
+
+  void SVEBitwiseShiftbyVector(uint32_t R, uint32_t L, uint32_t U, SubRegSize size, PRegister pg, ZRegister zm, ZRegister zd) {
+    uint32_t Instr = 0b0000'0100'0001'0000'1000'0000'0000'0000;
+
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= R << 18;
+    Instr |= L << 17;
+    Instr |= U << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 
