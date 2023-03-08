@@ -847,7 +847,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
 
   for (unsigned i = 0; i < NumElements; ++i) {
     // Extract the top bit of the element
-    OrderedNode *Tmp = _VExtractToGPR(16, ElementSize, Src, i);
+    OrderedNode *Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
     Tmp = _Bfe(1, ElementSize * 8 - 1, Tmp);
 
     // Shift it to the correct location
