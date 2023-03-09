@@ -2239,12 +2239,14 @@ public:
   // XXX:
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
-  void ldr(FEXCore::ARMEmitter::PRegister pt, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
+  void ldr(PRegister pt, Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
-    constexpr uint32_t Op = 0b1000'0101'10 << 22;
-    SVEGatherAndUnsizedContiguous(Op, Imm & 0b1'1111'1111, pt, rn);
+    SVEGatherAndUnsizedContiguous(0b11, 0b000, Imm & 0b1'1111'1111, pt, rn);
   }
-  // XXX: LDR (vector)
+  void ldr(ZRegister zt, XRegister rn, int32_t Imm = 0) {
+    LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
+    SVEGatherAndUnsizedContiguous(0b11, 0b010, Imm & 0b1'1111'1111, PRegister{zt.Idx()}, rn);
+  }
 
   // SVE 32-bit gather prefetch (scalar plus 32-bit scaled offsets)
   // XXX:
@@ -3596,10 +3598,12 @@ private:
   }
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
-  void SVEGatherAndUnsizedContiguous(uint32_t Op, uint32_t imm9, FEXCore::ARMEmitter::PRegister pt, FEXCore::ARMEmitter::Register rn) {
-    uint32_t Instr = Op;
+  void SVEGatherAndUnsizedContiguous(uint32_t op0, uint32_t op2, uint32_t imm9, PRegister pt, Register rn) {
+    uint32_t Instr = 0b1000'0100'0000'0000'0000'0000'0000'0000;
 
+    Instr |= op0 << 23;
     Instr |= (imm9 >> 3) << 16;
+    Instr |= op2 << 13;
     Instr |= (imm9 & 0b111) << 10;
     Instr |= rn.Idx() << 5;
     Instr |= pt.Idx();
