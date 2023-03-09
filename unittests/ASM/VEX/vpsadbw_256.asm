@@ -39,7 +39,7 @@ vpsadbw ymm14, ymm7, [rdx + 32 * 14]
 
 hlt
 
-align 16
+align 32
 
 .reg_data:
 dq 0x4142434445464748
