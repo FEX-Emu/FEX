@@ -2557,10 +2557,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic 
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and Unsized Contiguous") {
-  TEST_SINGLE(ldr(PReg::p6, Reg::r29, 0), "ldr p6, [x29]");
-  TEST_SINGLE(ldr(PReg::p6, Reg::r29, -256), "ldr p6, [x29, #-256, mul vl]");
-  TEST_SINGLE(ldr(PReg::p6, Reg::r29, 255), "ldr p6, [x29, #255, mul vl]");
-  // XXX: LDR (vector)
+  TEST_SINGLE(ldr(PReg::p6, XReg::x29, 0), "ldr p6, [x29]");
+  TEST_SINGLE(ldr(PReg::p6, XReg::x29, -256), "ldr p6, [x29, #-256, mul vl]");
+  TEST_SINGLE(ldr(PReg::p6, XReg::x29, 255), "ldr p6, [x29, #255, mul vl]");
+
+  TEST_SINGLE(ldr(ZReg::z30, XReg::x29, 0), "ldr z30, [x29]");
+  TEST_SINGLE(ldr(ZReg::z30, XReg::x29, -256), "ldr z30, [x29, #-256, mul vl]");
+  TEST_SINGLE(ldr(ZReg::z30, XReg::x29, 255), "ldr z30, [x29, #255, mul vl]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load multiple structures (scalar plus immediate)") {
   TEST_SINGLE(ld2b(ZReg::z31, ZReg::z0,  PReg::p6.Zeroing(), Reg::r29, 0), "ld2b {z31.b, z0.b}, p6/z, [x29]");
