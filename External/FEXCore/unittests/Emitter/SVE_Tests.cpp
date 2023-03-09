@@ -2471,6 +2471,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-ad
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic (predicated)") {
+  TEST_SINGLE(ftmad(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, ZReg::z28, 7), "ftmad z30.h, z30.h, z28.h, #7");
+  TEST_SINGLE(ftmad(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, ZReg::z28, 7), "ftmad z30.s, z30.s, z28.s, #7");
+  TEST_SINGLE(ftmad(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, ZReg::z28, 7), "ftmad z30.d, z30.d, z28.d, #7");
+
   //TEST_SINGLE(fadd(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28),   "fadd z30.b, p6/m, z30.b, z28.b");
   TEST_SINGLE(fadd(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28),  "fadd z30.h, p6/m, z30.h, z28.h");
   TEST_SINGLE(fadd(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28),  "fadd z30.s, p6/m, z30.s, z28.s");
