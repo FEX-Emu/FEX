@@ -2557,9 +2557,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic 
   // TODO: Implement in emitter.
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and Unsized Contiguous") {
-  TEST_SINGLE(ldr(PReg::p6, Reg::r29, 0), "ldr p6, [x29]");
-  TEST_SINGLE(ldr(PReg::p6, Reg::r29, -256), "ldr p6, [x29, #-256, mul vl]");
-  TEST_SINGLE(ldr(PReg::p6, Reg::r29, 255), "ldr p6, [x29, #255, mul vl]");
+  TEST_SINGLE(ldr(PReg::p6, XReg::x29, 0), "ldr p6, [x29]");
+  TEST_SINGLE(ldr(PReg::p6, XReg::x29, -256), "ldr p6, [x29, #-256, mul vl]");
+  TEST_SINGLE(ldr(PReg::p6, XReg::x29, 255), "ldr p6, [x29, #255, mul vl]");
 
   TEST_SINGLE(ldr(ZReg::z30, XReg::x29, 0), "ldr z30, [x29]");
   TEST_SINGLE(ldr(ZReg::z30, XReg::x29, -256), "ldr z30, [x29, #-256, mul vl]");

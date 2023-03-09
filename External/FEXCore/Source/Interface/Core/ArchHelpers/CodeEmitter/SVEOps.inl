@@ -2239,7 +2239,7 @@ public:
   // XXX:
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
-  void ldr(PRegister pt, Register rn, int32_t Imm = 0) {
+  void ldr(PRegister pt, XRegister rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
     SVEGatherAndUnsizedContiguous(0b11, 0b000, Imm & 0b1'1111'1111, pt, rn);
   }
