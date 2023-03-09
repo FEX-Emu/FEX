@@ -1945,9 +1945,12 @@ public:
   // XXX:
   // SVE floating-point multiply-add long
   // XXX:
-  //
+
   // SVE Floating Point Arithmetic - Predicated
-  // XXX: FTMAD
+  void ftmad(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, uint32_t imm) {
+    LOGMAN_THROW_AA_FMT(imm <= 7, "ftmad immediate must be within 0-7");
+    SVEFloatArithmeticPredicated(0b10000 | imm, size, PReg::p0, zd, zn, zm);
+  }
   // SVE floating-point arithmetic (predicated)
   void fadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     SVEFloatArithmeticPredicated(0b0000, size, pg, zd, zn, zm);
