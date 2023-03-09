@@ -1949,84 +1949,46 @@ public:
   // SVE Floating Point Arithmetic - Predicated
   // XXX: FTMAD
   // SVE floating-point arithmetic (predicated)
-  void fadd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0000, size, pg, zm, zd);
+  void fadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0000, size, pg, zd, zn, zm);
   }
-  void fsub(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0001, size, pg, zm, zd);
+  void fsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0001, size, pg, zd, zn, zm);
   }
-  void fmul(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0010, size, pg, zm, zd);
+  void fmul(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0010, size, pg, zd, zn, zm);
   }
-  void fsubr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0011, size, pg, zm, zd);
+  void fsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0011, size, pg, zd, zn, zm);
   }
-  void fmaxnm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0100, size, pg, zm, zd);
+  void fmaxnm(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0100, size, pg, zd, zn, zm);
   }
-  void fminnm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0101, size, pg, zm, zd);
+  void fminnm(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0101, size, pg, zd, zn, zm);
   }
-  void fmax(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0110, size, pg, zm, zd);
+  void fmax(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0110, size, pg, zd, zn, zm);
   }
-  void fmin(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b0111, size, pg, zm, zd);
+  void fmin(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b0111, size, pg, zd, zn, zm);
   }
-  void fabd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b1000, size, pg, zm, zd);
+  void fabd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b1000, size, pg, zd, zn, zm);
   }
-  void fscale(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b1001, size, pg, zm, zd);
+  void fscale(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b1001, size, pg, zd, zn, zm);
   }
-  void fmulx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b1010, size, pg, zm, zd);
+  void fmulx(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b1010, size, pg, zd, zn, zm);
   }
-  void fdivr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b1100, size, pg, zm, zd);
+  void fdivr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b1100, size, pg, zd, zn, zm);
   }
-  void fdiv(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'100 << 13;
-    SVEFloatArithmeticPredicated(Op, 0b1101, size, pg, zm, zd);
+  void fdiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticPredicated(0b1101, size, pg, zd, zn, zm);
   }
+
   // SVE floating-point arithmetic with immediate (predicated)
   // XXX:
 
@@ -3195,8 +3157,12 @@ private:
   }
 
   // SVE floating-point arithmetic (predicated)
-  void SVEFloatArithmeticPredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEFloatArithmeticPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid float size");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0110'0101'0000'0000'1000'0000'0000'0000;
 
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
