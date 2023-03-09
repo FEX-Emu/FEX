@@ -2850,6 +2850,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point reciprocal 
   TEST_SINGLE(frsqrte(SubRegSize::i64Bit, ZReg::z30, ZReg::z29), "frsqrte z30.d, z29.d");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point serial reduction (predicated)") {
+  TEST_SINGLE(fadda(SubRegSize::i16Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "fadda h30, p7, h30, z29.h");
+  TEST_SINGLE(fadda(SubRegSize::i32Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "fadda s30, p7, s30, z29.s");
+  TEST_SINGLE(fadda(SubRegSize::i64Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "fadda d30, p7, d30, z29.d");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
   TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");

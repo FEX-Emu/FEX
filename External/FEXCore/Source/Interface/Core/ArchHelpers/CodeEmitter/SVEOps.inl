@@ -2235,7 +2235,9 @@ public:
 
   // SVE Floating Point Accumulating Reduction
   // SVE floating-point serial reduction (predicated)
-  // XXX:
+  void fadda(SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
+    SVEFPSerialReductionPredicated(0b00, size, vd, pg, vn, zm);
+  }
 
   // SVE Floating Point Multiply-Add
   // SVE floating-point multiply-accumulate writing addend
@@ -4067,5 +4069,20 @@ private:
     Instr |= opc << 16;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPSerialReductionPredicated(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(vd == vn, "vn must be the same as vd");
+
+    uint32_t Instr = 0b0110'0101'0001'1000'0010'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= vd.Idx();
     dc32(Instr);
   }
