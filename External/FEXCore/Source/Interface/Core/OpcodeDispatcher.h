@@ -507,6 +507,8 @@ public:
   template <size_t ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
+  void VPSADBWOp(OpcodeArgs);
+
   void VPSHUFBOp(OpcodeArgs);
 
   template <size_t ElementSize, bool Low>
@@ -851,6 +853,9 @@ private:
 
   OrderedNode* PMULLOpImpl(OpcodeArgs, size_t ElementSize, bool Signed,
                            OrderedNode *Src1, OrderedNode *Src2);
+
+  OrderedNode* PSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                            const X86Tables::DecodedOperand& Src2Op);
 
   OrderedNode* PSHUFBOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                             const X86Tables::DecodedOperand& Src2);
