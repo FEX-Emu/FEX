@@ -2231,7 +2231,24 @@ public:
 
   // SVE Floating Point Compare - with Zero
   // SVE floating-point compare with zero
-  // XXX:
+  void fcmge(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn) {
+    SVEFPCompareWithZero(0b00, 0, size, pd, pg, zn);
+  }
+  void fcmgt(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn) {
+    SVEFPCompareWithZero(0b00, 1, size, pd, pg, zn);
+  }
+  void fcmlt(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn) {
+    SVEFPCompareWithZero(0b01, 0, size, pd, pg, zn);
+  }
+  void fcmle(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn) {
+    SVEFPCompareWithZero(0b01, 1, size, pd, pg, zn);
+  }
+  void fcmeq(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn) {
+    SVEFPCompareWithZero(0b10, 0, size, pd, pg, zn);
+  }
+  void fcmne(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn) {
+    SVEFPCompareWithZero(0b11, 0, size, pd, pg, zn);
+  }
 
   // SVE Floating Point Accumulating Reduction
   // SVE floating-point serial reduction (predicated)
@@ -4084,5 +4101,20 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
     Instr |= vd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPCompareWithZero(uint32_t eqlt, uint32_t ne, SubRegSize size, PRegister pd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0110'0101'0001'0000'0010'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= eqlt << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= ne << 4;
+    Instr |= pd.Idx();
     dc32(Instr);
   }
