@@ -2222,7 +2222,12 @@ public:
 
   // SVE Floating Point Unary Operations - Unpredicated
   // SVE floating-point reciprocal estimate (unpredicated)
-  // XXX:
+  void frecpe(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVEFPUnaryOpsUnpredicated(0b110, size, zd, zn);
+  }
+  void frsqrte(SubRegSize size, ZRegister zd, ZRegister zn) {
+    SVEFPUnaryOpsUnpredicated(0b111, size, zd, zn);
+  }
 
   // SVE Floating Point Compare - with Zero
   // SVE floating-point compare with zero
@@ -4050,5 +4055,17 @@ private:
     Instr |= op2 << 9;
     Instr |= op3 << 5;
     Instr |= op4;
+    dc32(Instr);
+  }
+
+  void SVEFPUnaryOpsUnpredicated(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+
+    uint32_t Instr = 0b0110'0101'0000'1000'0011'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }

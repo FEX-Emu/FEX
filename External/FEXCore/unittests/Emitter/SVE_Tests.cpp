@@ -2840,6 +2840,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert to 
   TEST_SINGLE(fcvtzu(ZReg::z30, SubRegSize::i64Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i64Bit), "fcvtzu z30.d, p6/m, z29.d");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point reciprocal estimate (unpredicated)") {
+  TEST_SINGLE(frecpe(SubRegSize::i16Bit, ZReg::z30, ZReg::z29), "frecpe z30.h, z29.h");
+  TEST_SINGLE(frecpe(SubRegSize::i32Bit, ZReg::z30, ZReg::z29), "frecpe z30.s, z29.s");
+  TEST_SINGLE(frecpe(SubRegSize::i64Bit, ZReg::z30, ZReg::z29), "frecpe z30.d, z29.d");
+
+  TEST_SINGLE(frsqrte(SubRegSize::i16Bit, ZReg::z30, ZReg::z29), "frsqrte z30.h, z29.h");
+  TEST_SINGLE(frsqrte(SubRegSize::i32Bit, ZReg::z30, ZReg::z29), "frsqrte z30.s, z29.s");
+  TEST_SINGLE(frsqrte(SubRegSize::i64Bit, ZReg::z30, ZReg::z29), "frsqrte z30.d, z29.d");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
   TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");
