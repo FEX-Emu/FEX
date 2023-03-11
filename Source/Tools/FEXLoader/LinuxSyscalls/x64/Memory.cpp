@@ -37,7 +37,7 @@ namespace FEX::HLE::x64 {
     }
 
     if (Result != -1) {
-      FEX::HLE::_SyscallHandler->TrackMmap((uintptr_t)Result, length, prot, flags, fd, offset);
+      FEX::HLE::_SyscallHandler->TrackMmap(nullptr, (uintptr_t)Result, length, prot, flags, fd, offset);
     }
 
     return reinterpret_cast<void*>(Result);
@@ -57,7 +57,7 @@ namespace FEX::HLE::x64 {
     }
 
     if (Result != -1) {
-      FEX::HLE::_SyscallHandler->TrackMunmap(reinterpret_cast<uintptr_t>(addr), length);
+      FEX::HLE::_SyscallHandler->TrackMunmap(nullptr, reinterpret_cast<uintptr_t>(addr), length);
     }
 
     return Result;
@@ -87,7 +87,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
 
       if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMremap((uintptr_t)old_address, old_size, new_size, flags, Result);
+        FEX::HLE::_SyscallHandler->TrackMremap(Frame->Thread, (uintptr_t)old_address, old_size, new_size, flags, Result);
       }
       SYSCALL_ERRNO();
     });
@@ -97,7 +97,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::mprotect(addr, len, prot);
 
       if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMprotect((uintptr_t)addr, len, prot);
+        FEX::HLE::_SyscallHandler->TrackMprotect(Frame->Thread, (uintptr_t)addr, len, prot);
       }
       SYSCALL_ERRNO();
     });
@@ -119,7 +119,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result = reinterpret_cast<uint64_t>(shmat(shmid, shmaddr, shmflg));
 
       if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackShmat(shmid, Result, shmflg);
+        FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, shmid, Result, shmflg);
       }
       SYSCALL_ERRNO();
     });
@@ -129,7 +129,7 @@ namespace FEX::HLE::x64 {
       uint64_t Result = ::shmdt(shmaddr);
 
       if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackShmdt((uintptr_t)shmaddr);
+        FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, (uintptr_t)shmaddr);
       }
       SYSCALL_ERRNO();
     });

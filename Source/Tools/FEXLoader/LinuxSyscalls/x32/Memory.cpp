@@ -28,7 +28,7 @@ namespace FEX::HLE::x32 {
     LOGMAN_THROW_AA_FMT((Result >> 32) == 0|| (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
 
     if (!FEX::HLE::HasSyscallError(Result)) {
-      FEX::HLE::_SyscallHandler->TrackMmap(Result, length, prot, flags, fd, offset);
+      FEX::HLE::_SyscallHandler->TrackMmap(nullptr, Result, length, prot, flags, fd, offset);
       return (void *)Result;
     } else {
       errno = -Result;
@@ -43,7 +43,7 @@ namespace FEX::HLE::x32 {
     auto Result = GetAllocator()->Munmap(addr, length);
 
     if (Result == 0) {
-      FEX::HLE::_SyscallHandler->TrackMunmap((uintptr_t)addr, length);
+      FEX::HLE::_SyscallHandler->TrackMunmap(nullptr, (uintptr_t)addr, length);
       return Result;
     } else {
       errno = -Result;
@@ -84,7 +84,7 @@ namespace FEX::HLE::x32 {
     REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame *Frame, void *addr, uint32_t len, int prot) -> uint64_t {
       uint64_t Result = ::mprotect(addr, len, prot);
       if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMprotect((uintptr_t)addr, len, prot);
+        FEX::HLE::_SyscallHandler->TrackMprotect(Frame->Thread, (uintptr_t)addr, len, prot);
       }
 
       SYSCALL_ERRNO();
@@ -95,7 +95,7 @@ namespace FEX::HLE::x32 {
         Mremap(old_address, old_size, new_size, flags, new_address));
 
       if (!FEX::HLE::HasSyscallError(Result)) {
-        FEX::HLE::_SyscallHandler->TrackMremap((uintptr_t)old_address, old_size, new_size, flags, Result);
+        FEX::HLE::_SyscallHandler->TrackMremap(Frame->Thread, (uintptr_t)old_address, old_size, new_size, flags, Result);
       }
 
       return Result;
@@ -118,7 +118,7 @@ namespace FEX::HLE::x32 {
           Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
 
       if (!FEX::HLE::HasSyscallError(Result)) {
-        FEX::HLE::_SyscallHandler->TrackShmat(shmid, ResultAddr, shmflg);
+        FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, shmid, ResultAddr, shmflg);
         return ResultAddr;
       }
       else {
@@ -132,7 +132,7 @@ namespace FEX::HLE::x32 {
         Shmdt(shmaddr);
 
       if (!FEX::HLE::HasSyscallError(Result)) {
-        FEX::HLE::_SyscallHandler->TrackShmdt((uintptr_t)shmaddr);
+        FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, (uintptr_t)shmaddr);
       }
 
       return Result;

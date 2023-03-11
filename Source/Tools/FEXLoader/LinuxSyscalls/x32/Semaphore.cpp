@@ -10,6 +10,7 @@ $end_info$
 
 #include "LinuxSyscalls/x64/Syscalls.h"
 
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -283,7 +284,7 @@ namespace FEX::HLE::x32 {
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
           Shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
         if (!FEX::HLE::HasSyscallError(Result)) {
-          FEX::HLE::_SyscallHandler->TrackShmat(first, *reinterpret_cast<uint32_t*>(third), second);
+          FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, first, *reinterpret_cast<uint32_t*>(third), second);
         }
         break;
       }
@@ -292,7 +293,7 @@ namespace FEX::HLE::x32 {
         Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->
           Shmdt(reinterpret_cast<void*>(ptr));
         if (!FEX::HLE::HasSyscallError(Result)) {
-          FEX::HLE::_SyscallHandler->TrackShmdt(ptr);
+          FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, ptr);
         }
         break;
       }

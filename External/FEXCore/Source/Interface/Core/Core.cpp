@@ -1228,14 +1228,16 @@ namespace FEXCore::Context {
     }
   }
 
-  void ContextImpl::InvalidateGuestCodeRange(uint64_t Start, uint64_t Length) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex);
+  void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+    // Potential deferred since Thread might not be valid.
+    ScopedPotentialDeferredSignalWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
   }
 
-  void ContextImpl::InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex);
+  void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
+    // Potential deferred since Thread might not be valid.
+    ScopedPotentialDeferredSignalWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
     CallAfter(Start, Length);
@@ -1298,7 +1300,7 @@ namespace FEXCore::Context {
 
     std::scoped_lock lk(CustomIRMutex);
 
-    InvalidateGuestCodeRange(Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
+    InvalidateGuestCodeRange(nullptr, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
       CustomIRHandlers.erase(Entrypoint);
     });
   }

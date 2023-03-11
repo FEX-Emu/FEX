@@ -204,12 +204,12 @@ public:
   virtual int GuestMunmap(void *addr, uint64_t length) = 0;
 
   ///// Memory Manager tracking /////
-  void TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
-  void TrackMunmap(uintptr_t Base, uintptr_t Size);
-  void TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot);
-  void TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
-  void TrackShmat(int shmid, uintptr_t Base, int shmflg);
-  void TrackShmdt(uintptr_t Base);
+  void TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
+  void TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size);
+  void TrackMprotect(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot);
+  void TrackMremap(FEXCore::Core::InternalThreadState *Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
+  void TrackShmat(FEXCore::Core::InternalThreadState *Thread, int shmid, uintptr_t Base, int shmflg);
+  void TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base);
   void TrackMadvise(uintptr_t Base, uintptr_t Size, int advice);
 
   ///// VMA (Virtual Memory Area) tracking /////

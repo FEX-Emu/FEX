@@ -181,8 +181,8 @@ namespace FEXCore::Context {
       void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) override {
         IRCaptureCache.WriteFilesWithCode(Writer);
       }
-      void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length) override;
-      void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) override;
+      void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
+      void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) override;
       void MarkMemoryShared() override;
 
       void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;

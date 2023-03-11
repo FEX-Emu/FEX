@@ -80,17 +80,17 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
           auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
 
           if (VMA->Prot.Writable) {
-            CTX->InvalidateGuestCodeRange(FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+            CTX->InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
               auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
               LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
             });
           } else {
-            CTX->InvalidateGuestCodeRange(FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
+            CTX->InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FHU::FEX_PAGE_SIZE);
           }
         }
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
-      CTX->InvalidateGuestCodeRange(FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
+      CTX->InvalidateGuestCodeRange(Thread, FaultBase, FHU::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
         auto rv = mprotect((void *)Start, Length, PROT_READ | PROT_WRITE);
         LogMan::Throw::AAFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
       });
@@ -181,8 +181,8 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
 }
 
 // MMan Tracking
-void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
-	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset) {
+  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   if (Flags & MAP_SHARED) {
     CTX->MarkMemoryShared();
@@ -228,12 +228,12 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange((uintptr_t)Base, Size);
+    CTX->InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
   }
 }
 
-void SyscallHandler::TrackMunmap(uintptr_t Base, uintptr_t Size) {
-	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size) {
+  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   {
     FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
@@ -242,12 +242,12 @@ void SyscallHandler::TrackMunmap(uintptr_t Base, uintptr_t Size) {
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange((uintptr_t)Base, Size);
+    CTX->InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
   }
 }
 
-void SyscallHandler::TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot) {
-	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot) {
+  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   {
     FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
@@ -256,11 +256,11 @@ void SyscallHandler::TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot) {
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange(Base, Size);
+    CTX->InvalidateGuestCodeRange(Thread, Base, Size);
   }
 }
 
-void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress) {
+void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress) {
   OldSize = FEXCore::AlignUp(OldSize, FHU::FEX_PAGE_SIZE);
   NewSize = FEXCore::AlignUp(NewSize, FHU::FEX_PAGE_SIZE);
 
@@ -302,18 +302,18 @@ void SyscallHandler::TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t Ne
     if (OldAddress != NewAddress) {
       if (OldSize != 0) {
         // This also handles the MREMAP_DONTUNMAP case
-        CTX->InvalidateGuestCodeRange(OldAddress, OldSize);
+        CTX->InvalidateGuestCodeRange(Thread, OldAddress, OldSize);
       }
     } else {
       // If mapping shrunk, flush the unmapped region
       if (OldSize > NewSize) {
-        CTX->InvalidateGuestCodeRange(OldAddress + NewSize, OldSize - NewSize);
+        CTX->InvalidateGuestCodeRange(Thread, OldAddress + NewSize, OldSize - NewSize);
       }
     }
   }
 }
 
-void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
+void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int shmid, uintptr_t Base, int shmflg) {
   CTX->MarkMemoryShared();
 
   shmid_ds stat;
@@ -339,11 +339,11 @@ void SyscallHandler::TrackShmat(int shmid, uintptr_t Base, int shmflg) {
     );
   }
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    CTX->InvalidateGuestCodeRange(Base, Length);
+    CTX->InvalidateGuestCodeRange(Thread, Base, Length);
   }
 }
 
-void SyscallHandler::TrackShmdt(uintptr_t Base) {
+void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base) {
   uintptr_t Length = 0;
   {
     FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
@@ -353,16 +353,16 @@ void SyscallHandler::TrackShmdt(uintptr_t Base) {
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     // This might over flush if the shm has holes in it
-    CTX->InvalidateGuestCodeRange(Base, Length);
+    CTX->InvalidateGuestCodeRange(Thread, Base, Length);
   }
 }
 
 void SyscallHandler::TrackMadvise(uintptr_t Base, uintptr_t Size, int advice) {
-	Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
-	{
-		FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
-  	// TODO
-	}
+  Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
+  {
+    FHU::ScopedSignalMaskWithUniqueLock lk(_SyscallHandler->VMATracking.Mutex);
+    // TODO
+  }
 }
 
 }
