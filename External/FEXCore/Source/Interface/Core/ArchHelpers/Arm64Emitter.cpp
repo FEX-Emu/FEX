@@ -25,6 +25,26 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
   : Emitter(size ? (uint8_t*)FEXCore::Allocator::mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) : nullptr, size)
   , EmitterCTX {ctx} {
   CPU.SetUp();
+
+  // Number of register available is dependent on what operating mode the proccess is in.
+  if (EmitterCTX->Config.Is64BitMode()) {
+    ConfiguredGPRs = NumGPRs64;
+    ConfiguredSRAGPRs = NumSRAGPRs64;
+    ConfiguredGPRPairs = NumGPRPairs64;
+    ConfiguredFPRs = NumFPRs64;
+    ConfiguredSRAFPRs = NumSRAFPRs64;
+    ConfiguredDynamicGPRs = NumGPRs64 - NumGPRs64; // Will be zero, just to be consistent with 32-bit side
+    ConfiguredDynamicRegisterBase = nullptr;
+  }
+  else {
+    ConfiguredGPRs = NumGPRs32;
+    ConfiguredSRAGPRs = NumSRAGPRs32;
+    ConfiguredGPRPairs = NumGPRPairs32;
+    ConfiguredFPRs = NumFPRs32;
+    ConfiguredSRAFPRs = NumSRAFPRs32;
+    ConfiguredDynamicGPRs = NumGPRs32 - NumGPRs64; // Will be 8
+    ConfiguredDynamicRegisterBase = &RA64[9];
+  }
 }
 
 Arm64Emitter::~Arm64Emitter() {
@@ -195,7 +215,7 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
     return;
   }
 
-  for (size_t i = 0; i < SRA64.size(); i+=2) {
+  for (size_t i = 0; i < ConfiguredSRAGPRs; i+=2) {
     auto Reg1 = SRA64[i];
     auto Reg2 = SRA64[i+1];
     if (((1U << Reg1.Idx()) & GPRSpillMask) &&
@@ -212,7 +232,7 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
 
   if (FPRs) {
     if (EmitterCTX->HostFeatures.SupportsAVX) {
-      for (size_t i = 0; i < SRAFPR.size(); i++) {
+      for (size_t i = 0; i < ConfiguredSRAFPRs; i++) {
         const auto Reg = SRAFPR[i];
 
         if (((1U << Reg.Idx()) & FPRSpillMask) != 0) {
@@ -227,7 +247,7 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
 
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
-        for (size_t i = 0; i < SRAFPR.size(); i += 4) {
+        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 4) {
           const auto Reg1 = SRAFPR[i];
           const auto Reg2 = SRAFPR[i + 1];
           const auto Reg3 = SRAFPR[i + 2];
@@ -236,7 +256,7 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
         }
       }
       else {
-        for (size_t i = 0; i < SRAFPR.size(); i += 2) {
+        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 2) {
           const auto Reg1 = SRAFPR[i];
           const auto Reg2 = SRAFPR[i + 1];
 
@@ -270,7 +290,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
       ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
       ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
 
-      for (size_t i = 0; i < SRAFPR.size(); i++) {
+      for (size_t i = 0; i < ConfiguredSRAFPRs; i++) {
         const auto Reg = SRAFPR[i];
         if (((1U << Reg.Idx()) & FPRFillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
@@ -285,7 +305,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
-        for (size_t i = 0; i < SRAFPR.size(); i += 4) {
+        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 4) {
           const auto Reg1 = SRAFPR[i];
           const auto Reg2 = SRAFPR[i + 1];
           const auto Reg3 = SRAFPR[i + 2];
@@ -294,7 +314,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
         }
       }
       else {
-        for (size_t i = 0; i < SRAFPR.size(); i += 2) {
+        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 2) {
           const auto Reg1 = SRAFPR[i];
           const auto Reg2 = SRAFPR[i + 1];
 
@@ -313,7 +333,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     }
   }
 
-  for (size_t i = 0; i < SRA64.size(); i+=2) {
+  for (size_t i = 0; i < ConfiguredSRAGPRs; i+=2) {
     auto Reg1 = SRA64[i];
     auto Reg2 = SRA64[i+1];
     if (((1U << Reg1.Idx()) & GPRFillMask) &&
@@ -331,10 +351,10 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
 void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
-  const auto GPRSize = 1 * Core::CPUState::GPR_REG_SIZE;
+  const auto GPRSize = (ConfiguredDynamicGPRs + 1) * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
                                     : Core::CPUState::XMM_SSE_REG_SIZE;
-  const auto FPRSize = RAFPR.size() * FPRRegSize;
+  const auto FPRSize = ConfiguredFPRs * FPRRegSize;
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
@@ -343,7 +363,7 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   add(ARMEmitter::Size::i64Bit, TmpReg, ARMEmitter::Reg::rsp, 0);
 
   if (CanUseSVE) {
-    for (size_t i = 0; i < RAFPR.size(); i += 4) {
+    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
@@ -352,13 +372,21 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
       add(ARMEmitter::Size::i64Bit, TmpReg, TmpReg, 32 * 4);
     }
   } else {
-    static_assert(RAFPR.size() % 4 == 0, "Needs to have multiple of 4 FPRs for RA");
-    for (size_t i = 0; i < RAFPR.size(); i += 4) {
+    LOGMAN_THROW_AA_FMT(ConfiguredFPRs % 4 == 0, "Needs to have multiple of 4 FPRs for RA");
+    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
       st1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
+    }
+  }
+
+  if (ConfiguredDynamicRegisterBase) {
+    for (size_t i = 0; i < ConfiguredDynamicGPRs; i += 2) {
+      const auto Reg1 = ConfiguredDynamicRegisterBase[i];
+      const auto Reg2 = ConfiguredDynamicRegisterBase[i + 1];
+      stp<ARMEmitter::IndexType::POST>(Reg1.X(), Reg2.X(), TmpReg, 16);
     }
   }
 
@@ -369,7 +397,7 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
 
   if (CanUseSVE) {
-    for (size_t i = 0; i < RAFPR.size(); i += 4) {
+    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
@@ -378,12 +406,20 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 32 * 4);
     }
   } else {
-    for (size_t i = 0; i < RAFPR.size(); i += 4) {
+    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
       const auto Reg1 = RAFPR[i];
       const auto Reg2 = RAFPR[i + 1];
       const auto Reg3 = RAFPR[i + 2];
       const auto Reg4 = RAFPR[i + 3];
       ld1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), ARMEmitter::Reg::rsp, 64);
+    }
+  }
+
+  if (ConfiguredDynamicRegisterBase) {
+    for (size_t i = 0; i < ConfiguredDynamicGPRs; i += 2) {
+      const auto Reg1 = ConfiguredDynamicRegisterBase[i];
+      const auto Reg2 = ConfiguredDynamicRegisterBase[i + 1];
+      ldp<ARMEmitter::IndexType::POST>(Reg1.X(), Reg2.X(), ARMEmitter::Reg::rsp, 16);
     }
   }
 

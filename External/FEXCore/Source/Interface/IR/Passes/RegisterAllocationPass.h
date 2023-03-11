@@ -19,7 +19,7 @@ class RegisterAllocationPass : public FEXCore::IR::Pass {
   public:
     bool HasFullRA() const { return HadFullRA; }
 
-    virtual void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) = 0;
+    virtual void AllocateRegisterSet(uint32_t ClassCount) = 0;
     virtual void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) = 0;
 
     /**

@@ -349,7 +349,7 @@ X86JITCore::X86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::Intern
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
-  RAPass->AllocateRegisterSet(RegisterCount, RegisterClasses);
+  RAPass->AllocateRegisterSet(RegisterClasses);
   RAPass->AddRegisters(FEXCore::IR::GPRClass, NumGPRs);
   RAPass->AddRegisters(FEXCore::IR::FPRClass, NumXMMs);
   RAPass->AddRegisters(FEXCore::IR::GPRPairClass, NumGPRPairs);
