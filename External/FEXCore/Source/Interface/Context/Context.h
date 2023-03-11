@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common/JitSymbols.h"
-#include "FEXHeaderUtils/ScopedSignalMask.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
@@ -14,6 +13,7 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/DeferredSignalMutex.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
@@ -290,7 +290,8 @@ namespace FEXCore::Context {
 
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
-      FHU::ScopedSignalMaskWithSharedLock lk(static_cast<ContextImpl*>(Frame->Thread->CTX)->CodeInvalidationMutex);
+      auto Thread = Frame->Thread;
+      ScopedDeferredSignalWithSharedLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       return Fn(Frame, record);
     }
@@ -302,7 +303,7 @@ namespace FEXCore::Context {
 
       LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == FHU::Syscalls::gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), FHU::Syscalls::gettid());
 
-      FHU::ScopedSignalMaskWithUniqueLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex);
+      ScopedDeferredSignalWithUniqueLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       ThreadRemoveCodeEntry(Thread, GuestRIP);
     }
