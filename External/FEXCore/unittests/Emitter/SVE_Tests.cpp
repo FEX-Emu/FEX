@@ -2856,6 +2856,32 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point serial redu
   TEST_SINGLE(fadda(SubRegSize::i64Bit, VReg::v30, PReg::p7, VReg::v30, ZReg::z29), "fadda d30, p7, d30, z29.d");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point compare with zero") {
+  TEST_SINGLE(fcmge(SubRegSize::i16Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmge p15.h, p7/z, z30.h, #0.0");
+  TEST_SINGLE(fcmge(SubRegSize::i32Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmge p15.s, p7/z, z30.s, #0.0");
+  TEST_SINGLE(fcmge(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmge p15.d, p7/z, z30.d, #0.0");
+
+  TEST_SINGLE(fcmgt(SubRegSize::i16Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmgt p15.h, p7/z, z30.h, #0.0");
+  TEST_SINGLE(fcmgt(SubRegSize::i32Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmgt p15.s, p7/z, z30.s, #0.0");
+  TEST_SINGLE(fcmgt(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmgt p15.d, p7/z, z30.d, #0.0");
+
+  TEST_SINGLE(fcmlt(SubRegSize::i16Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmlt p15.h, p7/z, z30.h, #0.0");
+  TEST_SINGLE(fcmlt(SubRegSize::i32Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmlt p15.s, p7/z, z30.s, #0.0");
+  TEST_SINGLE(fcmlt(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmlt p15.d, p7/z, z30.d, #0.0");
+
+  TEST_SINGLE(fcmle(SubRegSize::i16Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmle p15.h, p7/z, z30.h, #0.0");
+  TEST_SINGLE(fcmle(SubRegSize::i32Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmle p15.s, p7/z, z30.s, #0.0");
+  TEST_SINGLE(fcmle(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmle p15.d, p7/z, z30.d, #0.0");
+
+  TEST_SINGLE(fcmeq(SubRegSize::i16Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmeq p15.h, p7/z, z30.h, #0.0");
+  TEST_SINGLE(fcmeq(SubRegSize::i32Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmeq p15.s, p7/z, z30.s, #0.0");
+  TEST_SINGLE(fcmeq(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmeq p15.d, p7/z, z30.d, #0.0");
+
+  TEST_SINGLE(fcmne(SubRegSize::i16Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmne p15.h, p7/z, z30.h, #0.0");
+  TEST_SINGLE(fcmne(SubRegSize::i32Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmne p15.s, p7/z, z30.s, #0.0");
+  TEST_SINGLE(fcmne(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmne p15.d, p7/z, z30.d, #0.0");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
   TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");
