@@ -38,6 +38,13 @@ set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" 
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
+string(FIND ${CMAKE_BASE_NAME} mingw CONTAINS_MINGW)
+if (NOT CONTAINS_MINGW EQUAL -1)
+  message (STATUS "Mingw build")
+  set (MINGW_BUILD TRUE)
+  set (ENABLE_JEMALLOC FALSE)
+endif()
+
 if (ENABLE_FEXCORE_PROFILER)
   add_definitions(-DENABLE_FEXCORE_PROFILER=1)
   string(TOUPPER "${FEXCORE_PROFILER_BACKEND}" FEXCORE_PROFILER_BACKEND)
