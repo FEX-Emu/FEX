@@ -394,10 +394,12 @@ AddObject(${PROJECT_NAME}_object OBJECT)
 AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
-install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_shared
-  LIBRARY
-    DESTINATION lib
-    COMPONENT Libraries
-  ARCHIVE
-    DESTINATION lib
-    COMPONENT Libraries)
+if (NOT MINGW_BUILD)
+  install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_shared
+    LIBRARY
+      DESTINATION lib
+      COMPONENT Libraries
+    ARCHIVE
+      DESTINATION lib
+      COMPONENT Libraries)
+endif()

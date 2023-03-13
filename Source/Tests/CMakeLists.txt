@@ -39,11 +39,13 @@ function(GenerateInterpreter NAME AsInterpreter)
     )
   endif()
 
-  install(TARGETS ${NAME}
-    RUNTIME
-      DESTINATION bin
-      COMPONENT runtime
-  )
+  if (NOT MINGW_BUILD)
+    install(TARGETS ${NAME}
+      RUNTIME
+        DESTINATION bin
+        COMPONENT runtime
+    )
+  endif()
 endfunction()
 
 GenerateInterpreter(FEXLoader 0)
