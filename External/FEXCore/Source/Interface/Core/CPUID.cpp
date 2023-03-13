@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include "git_version.h"
@@ -74,16 +75,6 @@ static uint32_t GetCPUID() {
   return CPU;
 }
 
-static uint32_t CalculateNumberOfCPUs() {
-  size_t CPUs = 1;
-
-  while(std::filesystem::exists("/sys/devices/system/cpu/cpu" + std::to_string(CPUs))) {
-    CPUs++;
-  }
-
-  return CPUs;
-}
-
 // TODO: Replace usages with CTX->HostFeatures.EnableAVX
 //       when AVX implementations are further along.
 constexpr uint32_t SUPPORTS_AVX = 0;
@@ -115,7 +106,7 @@ static uint32_t GetCycleCounterFrequency() {
 }
 
 void CPUIDEmu::SetupHostHybridFlag() {
-  size_t CPUs = CalculateNumberOfCPUs();
+  size_t CPUs = FEXCore::CPUInfo::CalculateNumberOfCPUs();
   PerCPUData.resize(CPUs);
 
   uint64_t MIDR{};
@@ -375,7 +366,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
     Hybrid = (edx & (1U << 15)) != 0;
   }
 
-  size_t CPUs = CalculateNumberOfCPUs();
+  size_t CPUs = FEXCore::CPUInfo::CalculateNumberOfCPUs();
   PerCPUData.resize(CPUs);
   for (size_t i = 0; i < CPUs; ++i) {
     PerCPUData[i].IsBig = true;
