@@ -12,56 +12,6 @@ namespace FEXCore {
 
   thread_local ThreadState ThreadData{};
 
-  static bool IsSynchronous(int Signal) {
-    switch (Signal) {
-    case SIGBUS:
-    case SIGFPE:
-    case SIGILL:
-    case SIGSEGV:
-    case SIGTRAP:
-      return true;
-    default: break;
-    };
-    return false;
-  }
-
-  /**
-   * @brief Masks signals from the signal mask
-   *
-   * @param how Argument to sigmask. SIG_{BLOCK, SETMASK, UNBLOCK}
-   * @param Signal Which signal to set or -1 to sweep through them all
-   */
-  static void MaskSignals(int how, int Signal = -1) {
-    // If we have a helper thread, we need to mask a significant amount of signals so the an errant thread doesn't receive a signal that it shouldn't
-    sigset_t SignalSet{};
-    sigemptyset(&SignalSet);
-
-    if (Signal == -1) {
-      for (int i = 0; i <= SignalDelegator::MAX_SIGNALS; ++i) {
-        // If it is a synchronous signal then don't ignore it
-        if (IsSynchronous(i)) {
-          continue;
-        }
-
-        // Add this signal to the ignore list
-        sigaddset(&SignalSet, i);
-      }
-    }
-    else {
-      sigaddset(&SignalSet, Signal);
-    }
-
-    // Be warned, a thread will inherit the signal mask if created from this thread
-    int Result = pthread_sigmask(how, &SignalSet, nullptr);
-    if (Result != 0) {
-      LogMan::Msg::EFmt("Couldn't register thread to mask signals");
-    }
-  }
-
-  void SignalDelegator::MaskThreadSignals() {
-    MaskSignals(SIG_BLOCK);
-  }
-
   FEXCore::Core::InternalThreadState *SignalDelegator::GetTLSThread() {
     return ThreadData.Thread;
   }
@@ -92,7 +42,7 @@ namespace FEXCore {
     HostSignalHandler &Handler = HostHandlers[Signal];
 
     if (!Thread) {
-      LogMan::Msg::EFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
+      LogMan::Msg::AFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!", FHU::Syscalls::gettid());
     }
     else {
       for (auto &Handler : Handler.Handlers) {

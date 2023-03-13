@@ -45,13 +45,6 @@ namespace Core {
     void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread);
 
     /**
-     * @brief Masks a thread from receiving any signals that aren't synchronous
-     *
-     * Any helper thread that is generated needs to call this routine to ensure it doesn't receive errant signals to handle
-     */
-    void MaskThreadSignals();
-
-    /**
      * @brief Registers a signal handler for the host to handle a signal
      *
      * It's a process level signal handler so one must be careful
