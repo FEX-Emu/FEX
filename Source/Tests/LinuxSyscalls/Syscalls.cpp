@@ -847,8 +847,6 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t 
 }
 
 void SyscallHandler::LockBeforeFork() {
-  FM.GetFDLock()->lock();
-
   // XXX shared_mutex has issues with locking and forks
   // VMATracking.Mutex.lock();
 
@@ -860,8 +858,6 @@ void SyscallHandler::UnlockAfterFork() {
 
   // XXX shared_mutex has issues with locking and forks
   // VMATracking.Mutex.unlock();
-
-  FM.GetFDLock()->unlock();
 }
 
 static bool isHEX(char c) {

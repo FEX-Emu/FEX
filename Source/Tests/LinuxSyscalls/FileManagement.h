@@ -73,8 +73,6 @@ public:
   // vfs
   uint64_t Statfs(const char *path, void *buf);
 
-  std::string *FindFDName(int fd);
-
   std::optional<std::string> GetSelf(const char *Pathname);
 
   void UpdatePID(uint32_t PID) { CurrentPID = PID; }
@@ -83,13 +81,9 @@ public:
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
 
-  std::mutex *GetFDLock() { return &FDLock; }
-
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
-  std::mutex FDLock;
-  std::map<uint32_t, std::string> FDToNameMap;
   std::map<std::string, std::string, std::less<>> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
