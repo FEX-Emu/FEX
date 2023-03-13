@@ -698,7 +698,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) {
       (0 <<  1) | // Reserved
       (0 <<  2) | // AVX512_4VNNIW
       (0 <<  3) | // AVX512_4FMAPS
-      (0 <<  4) | // Fast Short Rep Mov
+      (1 <<  4) | // Fast Short Rep Mov
       (0 <<  5) | // Reserved
       (0 <<  6) | // Reserved
       (0 <<  7) | // Reserved
