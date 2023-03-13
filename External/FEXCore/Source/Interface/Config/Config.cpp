@@ -4,6 +4,7 @@
 #include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <array>
@@ -20,7 +21,6 @@
 #include <stdint.h>
 #include <string>
 #include <string_view>
-#include <sys/sysinfo.h>
 #include <system_error>
 #include <type_traits>
 #include <unordered_map>
@@ -424,7 +424,7 @@ namespace JSON {
       FEX_CONFIG_OPT(Cores, THREADS);
       if (Cores == 0) {
         // When the number of emulated CPU cores is zero then auto detect
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, std::to_string(get_nprocs_conf()));
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, std::to_string(FEXCore::CPUInfo::CalculateNumberOfCPUs()));
       }
     }
 
