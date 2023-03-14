@@ -421,6 +421,9 @@ public:
   template <size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
+  template <size_t DstElementSize>
+  void AVXCVTGPR_To_FPR(OpcodeArgs);
+
   template <size_t ElementSize, bool Scalar>
   void AVXVFCMPOp(OpcodeArgs);
 
@@ -807,6 +810,10 @@ private:
 
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
   OrderedNode* AESIMCImpl(OpcodeArgs);
+
+  OrderedNode* CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize,
+                                 const X86Tables::DecodedOperand& Src1Op,
+                                 const X86Tables::DecodedOperand& Src2Op);
 
   OrderedNode* DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                          const X86Tables::DecodedOperand& Src2,
