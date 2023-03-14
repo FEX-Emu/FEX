@@ -8,7 +8,9 @@ namespace FEXCore::IR {
 union PhysicalRegister {
   uint8_t Raw;
   struct {
+    // 32 maximum physical registers
     uint8_t Reg: 5;
+    // 8 Maximum classes
     uint8_t Class: 3;
   };
 

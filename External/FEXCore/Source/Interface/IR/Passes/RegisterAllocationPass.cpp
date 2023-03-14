@@ -273,7 +273,7 @@ namespace {
       ~ConstrainedRAPass();
       bool Run(IREmitter *IREmit) override;
 
-      void AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) override;
+      void AllocateRegisterSet(uint32_t ClassCount) override;
       void AddRegisters(FEXCore::IR::RegisterClassType Class, uint32_t RegisterCount) override;
       void AddRegisterConflict(FEXCore::IR::RegisterClassType ClassConflict, uint32_t RegConflict, FEXCore::IR::RegisterClassType Class, uint32_t Reg) override;
 
@@ -351,8 +351,7 @@ namespace {
     FreeRegisterGraph(Graph);
   }
 
-  void ConstrainedRAPass::AllocateRegisterSet(uint32_t RegisterCount, uint32_t ClassCount) {
-    LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+  void ConstrainedRAPass::AllocateRegisterSet(uint32_t ClassCount) {
     LOGMAN_THROW_AA_FMT(ClassCount <= INVALID_CLASS, "Up to {} classes supported", INVALID_CLASS);
 
     Graph = AllocateRegisterGraph(ClassCount);

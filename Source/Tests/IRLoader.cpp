@@ -174,6 +174,10 @@ int main(int argc, char **argv, char **const envp)
   FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
   FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
+  // Ensure the IRLoader runs in 64-bit mode.
+  // This is to ensure that static register allocation in the JIT
+  // is configured correctly for accesses to the top 8 GPRs and 8 XMM registers.
+  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
 
   auto Args = FEX::ArgLoader::Get();
   auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();

@@ -83,6 +83,7 @@
     "constexpr FEXCore::IR::RegisterClassType ComplexClass {5}",
     "constexpr FEXCore::IR::RegisterClassType InvalidClass {7}",
     "",
+    "// Only up to 30 registers per register class",
     "constexpr uint8_t InvalidReg {31}",
     "",
     "constexpr FEXCore::IR::TypeDefinition i8    {TypeDefinition::Create(1, 0)}",

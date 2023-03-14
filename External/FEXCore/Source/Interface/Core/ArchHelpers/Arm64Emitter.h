@@ -31,32 +31,47 @@ namespace FEXCore::CPU {
 // All but x29 are caller saved
 constexpr std::array<FEXCore::ARMEmitter::Register, 16> SRA64 = {
   FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5, FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7, FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9, FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
-  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r18, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r15, FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r13, FEXCore::ARMEmitter::Reg::r29
+  // Registers that don't exist on 32-bit
+  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13, FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r18, FEXCore::ARMEmitter::Reg::r29
 };
 
-// All are callee saved
-constexpr std::array<FEXCore::ARMEmitter::Register, 9> RA64 = {
+// All are callee saved (except additional registers from 32-bit)
+constexpr std::array<FEXCore::ARMEmitter::Register, 9 + 8> RA64 = {
   FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21, FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23, FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
-  FEXCore::ARMEmitter::Reg::r19
+  FEXCore::ARMEmitter::Reg::r19,
+
+  // Registers only available on 32-bit
+  // All these are caller saved.
+  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13, FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r18, FEXCore::ARMEmitter::Reg::r29
 };
 
-constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 4>  RA64Pair = {{
+constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 4 + 3> RA64Pair = {{
   {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
   {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
   {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
   {FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27},
+
+  // Registers only available on 32-bit
+  {FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13},
+  {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
+  {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17}
 }};
 
 // All are caller saved
 constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
   FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17, FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19, FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21, FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+
+  // Registers that don't exist on 32-bit
   FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27, FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
 };
 
 //  v8..v15 = (lower 64bits) Callee saved
-constexpr std::array<FEXCore::ARMEmitter::VRegister, 12> RAFPR = {
+constexpr std::array<FEXCore::ARMEmitter::VRegister, 12 + 8> RAFPR = {
 /*FEXCore::ARMEmitter::VReg::v0,  FEXCore::ARMEmitter::VReg::v1,  FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,*/FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,  FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  // FEXCore::ARMEmitter::VReg::v0 ~ FEXCore::ARMEmitter::VReg::v3 are used as temps
-  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,  FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13, FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15
+  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,  FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13, FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+
+  // Registers only available on 32-bit
+  FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27, FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
 };
 
 // Contains the address to the currently available CPU state
@@ -90,6 +105,45 @@ protected:
 
   FEXCore::Context::ContextImpl *EmitterCTX;
   vixl::aarch64::CPU CPU;
+
+  uint32_t ConfiguredGPRs;
+  uint32_t ConfiguredSRAGPRs;
+  uint32_t ConfiguredGPRPairs;
+  uint32_t ConfiguredFPRs;
+  uint32_t ConfiguredSRAFPRs;
+  uint32_t ConfiguredDynamicGPRs;
+  const FEXCore::ARMEmitter::Register *ConfiguredDynamicRegisterBase{};
+
+  /**
+   * @name Register Allocation
+   * @{ */
+  // 64-bit gets removal of additional pairs
+  constexpr static uint32_t NumGPRs64       = RA64.size() - 8;
+  constexpr static uint32_t NumSRAGPRs64    = SRA64.size();
+  constexpr static uint32_t NumFPRs64       = RAFPR.size() - 8;
+  constexpr static uint32_t NumSRAFPRs64    = SRAFPR.size();
+  constexpr static uint32_t NumGPRPairs64   = RA64Pair.size() - 3;
+
+  // 32-bit gets full array of GPR registers
+  // SRA registers remove the additional 8
+  constexpr static uint32_t NumGPRs32       = RA64.size();
+  constexpr static uint32_t NumSRAGPRs32    = SRA64.size() - 8;
+  constexpr static uint32_t NumFPRs32       = RAFPR.size();
+  constexpr static uint32_t NumSRAFPRs32    = SRAFPR.size() - 8;
+  constexpr static uint32_t NumGPRPairs32   = RA64Pair.size();
+
+  constexpr static uint32_t RegisterClasses = 6;
+
+  constexpr static uint64_t GPRBase = (0ULL << 32);
+  constexpr static uint64_t FPRBase = (1ULL << 32);
+  constexpr static uint64_t GPRPairBase = (2ULL << 32);
+
+  /**  @} */
+
+  constexpr static uint8_t RA_32 = 0;
+  constexpr static uint8_t RA_64 = 1;
+  constexpr static uint8_t RA_FPR = 2;
+
   void LoadConstant(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
 
 
@@ -99,7 +153,8 @@ protected:
   void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
 
-  static constexpr uint32_t CALLER_GPR_MASK = 0b0011'1111'1111'1111'1111;
+  // Register 0-18 + 29 + 30 are caller saved
+  static constexpr uint32_t CALLER_GPR_MASK = 0b0110'0000'0000'0111'1111'1111'1111'1111U;
 
   // This isn't technically true because the lower 64-bits of v8..v15 are callee saved
   // We can't guarantee only the lower 64bits are used so flush everything

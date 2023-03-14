@@ -64,27 +64,6 @@ private:
 
   std::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
-  /**
-   * @name Register Allocation
-   * @{ */
-  constexpr static uint32_t NumGPRs = RA64.size();
-  constexpr static uint32_t NumFPRs = RAFPR.size();
-  constexpr static uint32_t NumGPRPairs = RA64Pair.size();
-  constexpr static uint32_t NumCalleeGPRs = 10;
-  constexpr static uint32_t NumCalleeGPRPairs = 5;
-  constexpr static uint32_t RegisterCount = NumGPRs + NumFPRs + NumGPRPairs;
-  constexpr static uint32_t RegisterClasses = 6;
-
-  constexpr static uint64_t GPRBase = (0ULL << 32);
-  constexpr static uint64_t FPRBase = (1ULL << 32);
-  constexpr static uint64_t GPRPairBase = (2ULL << 32);
-
-  /**  @} */
-
-  constexpr static uint8_t RA_32 = 0;
-  constexpr static uint8_t RA_64 = 1;
-  constexpr static uint8_t RA_FPR = 2;
-
   [[nodiscard]] FEXCore::ARMEmitter::Register GetReg(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);
 
