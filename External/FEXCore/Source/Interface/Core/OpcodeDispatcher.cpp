@@ -5952,6 +5952,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::VPINSRBOp},
     {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
+    {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::VPINSRDQOp},
 
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::VINSERTOp},
     {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::VEXTRACT128Op},

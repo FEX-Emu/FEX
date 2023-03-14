@@ -1331,6 +1331,14 @@ void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Final, -1);
 }
 
+void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
+  const auto SrcSize = GetSrcSize(Op);
+  OrderedNode *Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
+  OrderedNode *Final = _VMov(16, Result);
+
+  StoreResult(FPRClass, Op, Final, -1);
+}
+
 void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
   OrderedNode *Result = PINSROpImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
   OrderedNode *Final = _VMov(16, Result);
