@@ -21,6 +21,7 @@ using namespace Xbyak;
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -142,7 +143,7 @@ private:
   uint64_t Entry;
   CPUBackend::CompiledCode CodeData{};
 
-  std::unordered_map<IR::NodeID, Label> JumpTargets;
+  fextl::unordered_map<IR::NodeID, Label> JumpTargets;
   Xbyak::util::Cpu Features{};
 
   bool MemoryDebug = false;
