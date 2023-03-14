@@ -428,25 +428,11 @@ public:
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
                         "SubRegSize must be 16-bit or 32-bit");
 
-    const auto IsHalfPrecision = size == SubRegSize::i16Bit;
+    // 16 -> 32, 32 -> 64, since fcmla (indexed)'s restrictions and encodings
+    // are essentially as if 16-bit were 32-bit and 32-bit were 64-bit.
+    const auto DoubledSize = static_cast<SubRegSize>(FEXCore::ToUnderlying(size) + 1);
 
-    if (IsHalfPrecision) {
-      LOGMAN_THROW_AA_FMT(index <= 3, "Index for half-precision fcmla must be within 0-3. Index={}", index);
-      LOGMAN_THROW_A_FMT(zm.Idx() <= 7, "zm must be within z0-z7. zm=z{}", zm.Idx());
-    } else {
-      LOGMAN_THROW_AA_FMT(index <= 1, "Index for single-precision fcmla must be within 0-1. Index={}", index);
-      LOGMAN_THROW_A_FMT(zm.Idx() <= 15, "zm must be within z0-z15. zm=z{}", zm.Idx());
-    }
-
-    uint32_t Op = 0b0110'0100'1010'0000'0001'0000'0000'0000;
-    Op |= (IsHalfPrecision ? 0 : 1) << 22;
-    Op |= index << (19 + int(!IsHalfPrecision));
-    Op |= zm.Idx() << 16;
-    Op |= FEXCore::ToUnderlying(rot) << 10;
-    Op |= zn.Idx() << 5;
-    Op |= zda.Idx();
-
-    dc32(Op);
+    SVEFPMultiplyAddIndexed(0b100 | FEXCore::ToUnderlying(rot), DoubledSize, zda, zn, zm, index);
   }
 
   // SVE floating-point multiply (indexed)
