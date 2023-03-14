@@ -2258,9 +2258,32 @@ public:
 
   // SVE Floating Point Multiply-Add
   // SVE floating-point multiply-accumulate writing addend
-  // XXX:
+  void fmla(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFPMultiplyAdd(0b000, size, zda, pg, zn, zm);
+  }
+  void fmls(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFPMultiplyAdd(0b001, size, zda, pg, zn, zm);
+  }
+  void fnmla(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFPMultiplyAdd(0b010, size, zda, pg, zn, zm);
+  }
+  void fnmls(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVEFPMultiplyAdd(0b011, size, zda, pg, zn, zm);
+  }
+
   // SVE floating-point multiply-accumulate writing multiplicand
-  // XXX:
+  void fmad(SubRegSize size, ZRegister zdn, PRegisterMerge pg, ZRegister zm, ZRegister za) {
+    SVEFPMultiplyAdd(0b100, size, zdn, pg, zm, za);
+  }
+  void fmsb(SubRegSize size, ZRegister zdn, PRegisterMerge pg, ZRegister zm, ZRegister za) {
+    SVEFPMultiplyAdd(0b101, size, zdn, pg, zm, za);
+  }
+  void fnmad(SubRegSize size, ZRegister zdn, PRegisterMerge pg, ZRegister zm, ZRegister za) {
+    SVEFPMultiplyAdd(0b110, size, zdn, pg, zm, za);
+  }
+  void fnmsb(SubRegSize size, ZRegister zdn, PRegisterMerge pg, ZRegister zm, ZRegister za) {
+    SVEFPMultiplyAdd(0b111, size, zdn, pg, zm, za);
+  }
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
   void ldr(PRegister pt, XRegister rn, int32_t Imm = 0) {
@@ -4116,5 +4139,21 @@ private:
     Instr |= zn.Idx() << 5;
     Instr |= ne << 4;
     Instr |= pd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPMultiplyAdd(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
+    // NOTE: opc also includes the op0 bit (bit 15) like op0:opc, since the fields are adjacent
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0110'0101'0010'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= opc << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }

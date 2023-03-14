@@ -2882,6 +2882,42 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point compare wit
   TEST_SINGLE(fcmne(SubRegSize::i64Bit, PReg::p15, PReg::p7.Zeroing(), ZReg::z30), "fcmne p15.d, p7/z, z30.d, #0.0");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-accumulate writing addend") {
+  TEST_SINGLE(fmla(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmla z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fmla(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmla z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fmla(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmla z30.d, p7/m, z29.d, z28.d");
+
+  TEST_SINGLE(fmls(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmls z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fmls(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmls z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fmls(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmls z30.d, p7/m, z29.d, z28.d");
+
+  TEST_SINGLE(fnmla(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmla z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fnmla(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmla z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fnmla(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmla z30.d, p7/m, z29.d, z28.d");
+
+  TEST_SINGLE(fnmls(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmls z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fnmls(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmls z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fnmls(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmls z30.d, p7/m, z29.d, z28.d");
+}
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-accumulate writing multiplicand") {
+  TEST_SINGLE(fmad(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmad z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fmad(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmad z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fmad(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmad z30.d, p7/m, z29.d, z28.d");
+
+  TEST_SINGLE(fmsb(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmsb z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fmsb(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmsb z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fmsb(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fmsb z30.d, p7/m, z29.d, z28.d");
+
+  TEST_SINGLE(fnmad(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmad z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fnmad(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmad z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fnmad(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmad z30.d, p7/m, z29.d, z28.d");
+
+  TEST_SINGLE(fnmsb(SubRegSize::i16Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmsb z30.h, p7/m, z29.h, z28.h");
+  TEST_SINGLE(fnmsb(SubRegSize::i32Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmsb z30.s, p7/m, z29.s, z28.s");
+  TEST_SINGLE(fnmsb(SubRegSize::i64Bit, ZReg::z30, PReg::p7.Merging(), ZReg::z29, ZReg::z28), "fnmsb z30.d, p7/m, z29.d, z28.d");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE store multiple structures (scalar plus immediate)") {
   TEST_SINGLE(st2b(ZReg::z31, ZReg::z0,  PReg::p6, Reg::r29, 0), "st2b {z31.b, z0.b}, p6, [x29]");
   TEST_SINGLE(st2b(ZReg::z26, ZReg::z27, PReg::p6, Reg::r29, 0), "st2b {z26.b, z27.b}, p6, [x29]");
