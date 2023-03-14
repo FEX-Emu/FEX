@@ -208,8 +208,8 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
   if (Hybrid) {
     // Walk the MIDRs and calculate big little designs
-    std::vector<const CPUMIDR*> BigCores;
-    std::vector<const CPUMIDR*> LittleCores;
+    fextl::vector<const CPUMIDR*> BigCores;
+    fextl::vector<const CPUMIDR*> LittleCores;
 
     // Separate CPU cores out to big or little selected
     for (size_t i = 0; i < CPUs; ++i) {
