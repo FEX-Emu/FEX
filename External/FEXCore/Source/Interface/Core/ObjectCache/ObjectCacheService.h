@@ -6,6 +6,7 @@
 
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <map>
 #include <memory>
@@ -160,7 +161,7 @@ namespace FEXCore::CodeSerialize {
 
         // These are the reolocations for this serialization job
         // Relatively small number of entries most of the time
-        std::vector<FEXCore::CPU::Relocation> Relocations;
+        fextl::vector<FEXCore::CPU::Relocation> Relocations;
 
         /**
          * @name Objects filled in from the Code Object Serialization service when a job is added

@@ -21,6 +21,8 @@ using namespace Xbyak;
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/vector.h>
+
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include <tuple>
@@ -123,7 +125,7 @@ private:
 
     void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair &Lit);
 
-    std::vector<FEXCore::CPU::Relocation> Relocations;
+    fextl::vector<FEXCore::CPU::Relocation> Relocations;
 
     ///< Relocation code loading
     bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
