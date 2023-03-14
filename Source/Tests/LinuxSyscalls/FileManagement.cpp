@@ -15,6 +15,7 @@ $end_info$
 
 #include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -59,7 +60,7 @@ namespace JSON {
 namespace FEX::HLE {
   struct open_how;
 
-static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
+static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
   std::fstream File(Filename, std::ios::in);
 
   if (!File.is_open()) {
@@ -98,13 +99,13 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
 struct ThunkDBObject {
   std::string LibraryName;
   std::unordered_set<std::string> Depends;
-  std::vector<std::string> Overlays;
+  fextl::vector<std::string> Overlays;
   bool Enabled{};
 };
 
 static void LoadThunkDatabase(std::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
-  std::vector<char> FileData;
+  fextl::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
     FileData.push_back(0);
 
@@ -228,7 +229,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   // This doesn't support the classic thunks interface.
 
   auto AppName = AppConfigName();
-  std::vector<std::string> ConfigPaths {
+  fextl::vector<std::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
     ThunkConfigFile,
@@ -256,7 +257,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
 
   for (const auto &Path : ConfigPaths) {
-    std::vector<char> FileData;
+    fextl::vector<char> FileData;
     if (LoadFile(FileData, Path)) {
       JSON::JsonAllocator Pool {
         .PoolObject = {

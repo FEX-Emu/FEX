@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <errno.h>
 #include <grp.h>
@@ -315,8 +316,8 @@ namespace FEX::HLE::x32 {
     // launch a new process under fex
     // currently does not propagate argv[0] correctly
     REGISTER_SYSCALL_IMPL_X32(execve, [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, uint32_t *argv, uint32_t *envp) -> uint64_t {
-      std::vector<const char*> Args;
-      std::vector<const char*> Envp;
+      fextl::vector<const char*> Args;
+      fextl::vector<const char*> Envp;
 
       if (argv) {
         for (int i = 0; argv[i]; i++) {
@@ -342,8 +343,8 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(execveat, ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, uint32_t *argv, uint32_t *envp, int flags) -> uint64_t {
-      std::vector<const char*> Args;
-      std::vector<const char*> Envp;
+      fextl::vector<const char*> Args;
+      fextl::vector<const char*> Envp;
 
       if (argv) {
         for (int i = 0; argv[i]; i++) {

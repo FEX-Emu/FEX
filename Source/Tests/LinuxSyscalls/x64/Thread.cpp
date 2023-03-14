@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <sched.h>
 #include <signal.h>
@@ -20,7 +21,6 @@ $end_info$
 #include <syscall.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <vector>
 
 namespace FEX::HLE::x64 {
   uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame *Frame, void *tls) {
@@ -98,8 +98,8 @@ namespace FEX::HLE::x64 {
     // currently does not propagate argv[0] correctly
     REGISTER_SYSCALL_IMPL_X64_FLAGS(execve, SyscallFlags::DEFAULT,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *pathname, char *const argv[], char *const envp[]) -> uint64_t {
-      std::vector<const char*> Args;
-      std::vector<const char*> Envp;
+      fextl::vector<const char*> Args;
+      fextl::vector<const char*> Envp;
 
       if (argv) {
         for (int i = 0; argv[i]; i++) {
@@ -127,8 +127,8 @@ namespace FEX::HLE::x64 {
 
     REGISTER_SYSCALL_IMPL_X64_FLAGS(execveat, SyscallFlags::DEFAULT,
       ([](FEXCore::Core::CpuStateFrame *Frame, int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags) -> uint64_t {
-      std::vector<const char*> Args;
-      std::vector<const char*> Envp;
+      fextl::vector<const char*> Args;
+      fextl::vector<const char*> Envp;
 
       if (argv) {
         for (int i = 0; argv[i]; i++) {
