@@ -41,7 +41,7 @@
 #define PAGE_OFFSET(x) ((x) & 4095)
 #define PAGE_ALIGN(x) (((x) + 4095) & ~(uintptr_t)(4095))
 
-class ELFCodeLoader2 final : public FEXCore::CodeLoader {
+class ELFCodeLoader final : public FEXCore::CodeLoader {
   ELFParser MainElf;
   ELFParser InterpElf;
 
@@ -228,7 +228,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   std::vector<LoadedSection> Sections;
 
-  ELFCodeLoader2(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
+  ELFCodeLoader(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
     bool LoadedWithFD = false;

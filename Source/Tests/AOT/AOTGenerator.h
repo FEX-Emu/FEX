@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ELFCodeLoader2.h"
+#include "ELFCodeLoader.h"
 
 namespace FEX::AOT {
-  void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section);
+  void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection &Section);
 }

@@ -8,7 +8,7 @@ $end_info$
 #include "AOT/AOTGenerator.h"
 #include "Common/ArgumentLoader.h"
 #include "Common/FEXServerClient.h"
-#include "ELFCodeLoader2.h"
+#include "ELFCodeLoader.h"
 #include "VDSO_Emulation.h"
 #include "Tests/LinuxSyscalls/LinuxAllocator.h"
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -175,7 +175,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
 }
 
 void RootFSRedirect(std::string *Filename, std::string const &RootFS) {
-  auto RootFSLink = ELFCodeLoader2::ResolveRootfsFile(*Filename, RootFS);
+  auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
   std::error_code ec{};
   if (std::filesystem::exists(RootFSLink, ec)) {
@@ -313,8 +313,7 @@ int main(int argc, char **argv, char **const envp) {
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader2 Loader{Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
-  //FEX::HarnessHelper::ELFCodeLoader Loader{Program.first, LDPath(), Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader Loader{Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason

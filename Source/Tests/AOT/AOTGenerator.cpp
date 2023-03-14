@@ -1,4 +1,4 @@
-#include "ELFCodeLoader2.h"
+#include "ELFCodeLoader.h"
 #include "Linux/Utils/ELFContainer.h"
 
 #include <FEXCore/Core/Context.h>
@@ -13,7 +13,7 @@
 #include <queue>
 
 namespace FEX::AOT {
-void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section) {
+void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection &Section) {
   // Make sure this section is executable and big enough
   if (!Section.Executable || Section.Size < 16)
     return;
