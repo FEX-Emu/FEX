@@ -21,7 +21,6 @@ $end_info$
 #include <unistd.h>
 #include <vector>
 
-#include <unordered_map>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
