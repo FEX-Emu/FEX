@@ -12,12 +12,12 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <functional>
 #include <memory>
-#include <set>
 #include <stdint.h>
 #include <string>
 #include <sstream>
@@ -148,7 +148,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // ...
 
           // We need to walk the predecessors to see if the value comes from there
-          std::set<IR::OrderedNode *> Predecessors { BlockNode };
+          fextl::set<IR::OrderedNode *> Predecessors { BlockNode };
           // Recursively gather all predecessors of BlockNode
           for (auto NodeIt = Predecessors.begin(); NodeIt != Predecessors.end();) {
             auto PredBlock = &OffsetToBlockMap.try_emplace(CurrentIR.GetID(*NodeIt)).first->second;

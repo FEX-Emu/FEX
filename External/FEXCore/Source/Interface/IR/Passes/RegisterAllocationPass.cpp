@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/fextl/vector.h>
@@ -27,7 +28,6 @@ $end_info$
 #include <cstdint>
 #include <cstring>
 #include <optional>
-#include <set>
 #include <strings.h>
 #include <sys/user.h>
 #include <utility>
@@ -96,8 +96,8 @@ namespace {
     fextl::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
     fextl::vector<SpillStackUnit> SpillStack;
-    fextl::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> BlockPredecessors;
-    fextl::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> VisitedNodePredecessors;
+    fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> BlockPredecessors;
+    fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> VisitedNodePredecessors;
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
@@ -1287,7 +1287,7 @@ namespace {
     // Heuristics failed to spill ?
     if (InterferenceIdToSpill.IsInvalid()) {
       // Panic spill: Spill any value not used by the current op
-      std::set<IR::NodeID> CurrentNodes;
+      fextl::set<IR::NodeID> CurrentNodes;
 
       // Get all used nodes for current IR op
       {
