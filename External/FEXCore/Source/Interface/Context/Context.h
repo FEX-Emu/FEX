@@ -15,9 +15,9 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <stdint.h>
-
 
 #include <atomic>
 #include <condition_variable>
@@ -29,7 +29,6 @@
 #include <shared_mutex>
 #include <stddef.h>
 #include <string>
-#include <unordered_map>
 #include <queue>
 #include <vector>
 
@@ -416,7 +415,7 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;
-    std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    fextl::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
