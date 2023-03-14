@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -28,7 +29,6 @@ $end_info$
 #include <set>
 #include <strings.h>
 #include <unordered_map>
-#include <unordered_set>
 #include <sys/user.h>
 #include <utility>
 
@@ -96,8 +96,8 @@ namespace {
     fextl::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
     fextl::vector<SpillStackUnit> SpillStack;
-    std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> BlockPredecessors;
-    std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> VisitedNodePredecessors;
+    std::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> BlockPredecessors;
+    std::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> VisitedNodePredecessors;
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
@@ -327,8 +327,8 @@ namespace {
       void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR,
                                        IR::NodeID Node, IR::NodeID DefiningBlockID,
                                        LiveRange *LiveRange,
-                                       const std::unordered_set<IR::NodeID> &Predecessors,
-                                       std::unordered_set<IR::NodeID> &VisitedPredecessors);
+                                       const fextl::unordered_set<IR::NodeID> &Predecessors,
+                                       fextl::unordered_set<IR::NodeID> &VisitedPredecessors);
 
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
       FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
@@ -385,8 +385,8 @@ namespace {
   void ConstrainedRAPass::RecursiveLiveRangeExpansion(IR::IRListView *IR,
                                                       IR::NodeID Node, IR::NodeID DefiningBlockID,
                                                       LiveRange *LiveRange,
-                                                      const std::unordered_set<IR::NodeID> &Predecessors,
-                                                      std::unordered_set<IR::NodeID> &VisitedPredecessors) {
+                                                      const fextl::unordered_set<IR::NodeID> &Predecessors,
+                                                      fextl::unordered_set<IR::NodeID> &VisitedPredecessors) {
     for (auto PredecessorId: Predecessors) {
       if (DefiningBlockID != PredecessorId && !VisitedPredecessors.contains(PredecessorId)) {
         // do the magic
