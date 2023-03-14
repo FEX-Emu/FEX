@@ -1932,19 +1932,22 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Res, -1);
 }
 
+OrderedNode* OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize,
+                                                  const X86Tables::DecodedOperand& Src1Op,
+                                                  const X86Tables::DecodedOperand& Src2Op) {
+  const auto GPRSize = GetSrcSize(Op);
+
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags, -1);
+  OrderedNode *Converted = _Float_FromGPR_S(DstElementSize, GPRSize, Src2);
+
+  return _VInsElement(16, DstElementSize, 0, 0, Src1, Converted);
+}
+
 template<size_t DstElementSize>
 void OpDispatchBuilder::CVTGPR_To_FPR(OpcodeArgs) {
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  size_t GPRSize = GetSrcSize(Op);
-
-  Src = _Float_FromGPR_S(DstElementSize, GPRSize, Src);
-
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
-
-  Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
-
-  StoreResult(FPRClass, Op, Src, -1);
+  OrderedNode *Result = CVTGPR_To_FPRImpl(Op, DstElementSize, Op->Dest, Op->Src[0]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template

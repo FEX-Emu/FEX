@@ -808,6 +808,10 @@ private:
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
   OrderedNode* AESIMCImpl(OpcodeArgs);
 
+  OrderedNode* CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize,
+                                 const X86Tables::DecodedOperand& Src1Op,
+                                 const X86Tables::DecodedOperand& Src2Op);
+
   OrderedNode* DPPOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                          const X86Tables::DecodedOperand& Src2,
                          const X86Tables::DecodedOperand& Imm, size_t ElementSize);
