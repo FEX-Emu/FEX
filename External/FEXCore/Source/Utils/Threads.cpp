@@ -1,6 +1,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/deque.h>
 
 #include <alloca.h>
 #include <cstring>
@@ -12,7 +13,6 @@
 #include <sys/mman.h>
 #include <sys/signal.h>
 #include <sys/syscall.h>
-#include <deque>
 #include <unistd.h>
 
 namespace FEXCore::Threads {
@@ -24,8 +24,8 @@ namespace FEXCore::Threads {
   std::mutex DeadStackPoolMutex{};
   std::mutex LiveStackPoolMutex{};
 
-  static std::deque<StackPoolItem> DeadStackPool{};
-  static std::deque<StackPoolItem> LiveStackPool{};
+  static fextl::deque<StackPoolItem> DeadStackPool{};
+  static fextl::deque<StackPoolItem> LiveStackPool{};
 
   void *AllocateStackObject(size_t Size) {
     std::lock_guard lk{DeadStackPoolMutex};
