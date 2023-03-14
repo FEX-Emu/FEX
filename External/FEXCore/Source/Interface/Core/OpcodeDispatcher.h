@@ -496,6 +496,10 @@ public:
   void VPHSUBOp(OpcodeArgs);
   void VPHSUBSWOp(OpcodeArgs);
 
+  void VPINSRBOp(OpcodeArgs);
+  void VPINSRDQOp(OpcodeArgs);
+  void VPINSRWOp(OpcodeArgs);
+
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
 
@@ -839,6 +843,11 @@ private:
 
   OrderedNode* PHSUBSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op);
+
+  OrderedNode* PINSROpImpl(OpcodeArgs, size_t ElementSize,
+                           const X86Tables::DecodedOperand& Src1Op,
+                           const X86Tables::DecodedOperand& Src2Op,
+                           const X86Tables::DecodedOperand& Imm);
 
   OrderedNode* PMADDWDOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                              const X86Tables::DecodedOperand& Src2);

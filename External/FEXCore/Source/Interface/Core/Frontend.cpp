@@ -304,18 +304,19 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
                                        (Options.w && CTX->Config.Is64BitMode);
   const bool HasNarrowingDisplacement = (FEXCore::X86Tables::DecodeFlags::GetOpAddr(DecodeInst->Flags, 0) & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST) != 0;
 
-  bool HasXMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
-  bool HasXMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
-  bool HasMMSrc = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_SRC_GPR) &&
-    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_SRC);
-  bool HasMMDst = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_XMM_FLAGS) &&
-    !HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_GPR) &&
-    HAS_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_MMX_DST);
+  const bool HasXMMFlags = (Info->Flags & InstFlags::FLAGS_XMM_FLAGS) != 0;
+  bool HasXMMSrc = HasXMMFlags &&
+    !HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_SRC_GPR) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_MMX_SRC);
+  bool HasXMMDst = HasXMMFlags &&
+    !HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_DST_GPR) &&
+    !HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_MMX_DST);
+  bool HasMMSrc = HasXMMFlags &&
+    !HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_SRC_GPR) &&
+    HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_MMX_SRC);
+  bool HasMMDst = HasXMMFlags &&
+    !HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_DST_GPR) &&
+    HAS_XMM_SUBFLAG(Info->Flags, InstFlags::FLAGS_SF_MMX_DST);
 
   // Is ModRM present via explicit instruction encoded or REX?
   const bool HasMODRM = !!(Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_MODRM);
@@ -502,7 +503,12 @@ bool Decoder::NormalOp(FEXCore::X86Tables::X86InstInfo const *Info, uint16_t Op,
   if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_1ST_SRC) != 0) {
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
-    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMSrc);
+
+    // If we have XMM flags at all, then SRC 1 cannot be a GPR. The only case where
+    // this is possible is with BMI1 and BMI2 instructions (which are all GPR-based
+    // and don't use XMM flags)
+    DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMFlags);
+
     ++CurrentSrc;
   }
 
