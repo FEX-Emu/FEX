@@ -1955,6 +1955,14 @@ void OpDispatchBuilder::CVTGPR_To_FPR<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::CVTGPR_To_FPR<8>(OpcodeArgs);
 
+template <size_t DstElementSize>
+void OpDispatchBuilder::AVXCVTGPR_To_FPR(OpcodeArgs) {
+  OrderedNode *Result = CVTGPR_To_FPRImpl(Op, DstElementSize, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+template
+void OpDispatchBuilder::AVXCVTGPR_To_FPR<4>(OpcodeArgs);
+
 template<size_t SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);

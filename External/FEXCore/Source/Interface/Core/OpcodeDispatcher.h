@@ -421,6 +421,9 @@ public:
   template <size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
+  template <size_t DstElementSize>
+  void AVXCVTGPR_To_FPR(OpcodeArgs);
+
   template <size_t ElementSize, bool Scalar>
   void AVXVFCMPOp(OpcodeArgs);
 
