@@ -3,11 +3,11 @@
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <cstdint>
-#include <set>
 #include <stddef.h>
 
 namespace FEXCore::Context {
@@ -37,7 +37,7 @@ public:
   uint64_t DecodedMaxAddress {~0ULL};
 
   void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
-  void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
+  void SetExternalBranches(fextl::set<uint64_t> *v) { ExternalBranches = v; }
 
   void DelayedDisownBuffer() {
     PoolObject.DelayedDisownBuffer();
@@ -90,9 +90,9 @@ private:
   uint64_t SectionMaxAddress {~0ULL};
 
   fextl::vector<DecodedBlocks> Blocks;
-  std::set<uint64_t> BlocksToDecode;
-  std::set<uint64_t> HasBlocks;
-  std::set<uint64_t> *ExternalBranches {nullptr};
+  fextl::set<uint64_t> BlocksToDecode;
+  fextl::set<uint64_t> HasBlocks;
+  fextl::set<uint64_t> *ExternalBranches {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);

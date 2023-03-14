@@ -3,10 +3,10 @@
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstddef>
-#include <set>
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <thread>
@@ -18,7 +18,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
   if (!Section.Executable || Section.Size < 16)
     return;
 
-  std::set<uintptr_t> InitialBranchTargets;
+  fextl::set<uintptr_t> InitialBranchTargets;
 
   // Load the ELF again with symbol parsing this time
   ELFLoader::ELFContainer container{Section.Filename, "", true};
@@ -77,7 +77,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
   uint64_t SectionMaxAddress = Section.Base + Section.Size;
 
-  std::set<uint64_t> Compiled;
+  fextl::set<uint64_t> Compiled;
   std::atomic<int> counter = 0;
 
   std::queue<uint64_t> BranchTargets;
@@ -103,7 +103,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
       // Setup thread - Each compilation thread uses its own backing FEX thread
       FEXCore::Core::CPUState state;
       auto Thread = CTX->CreateThread(&state, FHU::Syscalls::gettid());
-      std::set<uint64_t> ExternalBranchesLocal;
+      fextl::set<uint64_t> ExternalBranchesLocal;
       CTX->ConfigureAOTGen(Thread, &ExternalBranchesLocal, SectionMaxAddress);
 
       for (;;) {

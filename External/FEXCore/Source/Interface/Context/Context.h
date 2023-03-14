@@ -15,6 +15,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -186,7 +187,7 @@ namespace FEXCore::Context {
       void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) override;
       void MarkMemoryShared() override;
 
-      void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
+      void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
       // returns false if a handler was already registered
       CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
