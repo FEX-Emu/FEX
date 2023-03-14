@@ -102,7 +102,7 @@ struct ThunkDBObject {
   bool Enabled{};
 };
 
-static void LoadThunkDatabase(std::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
+static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   std::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
@@ -251,7 +251,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
-  std::unordered_map<std::string, ThunkDBObject> ThunkDB;
+  fextl::unordered_map<std::string, ThunkDBObject> ThunkDB;
   LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
   LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
 

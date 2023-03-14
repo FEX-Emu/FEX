@@ -16,7 +16,6 @@ $end_info$
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <unordered_map>
 
 namespace FEX::HLE {
 class SignalDelegator;

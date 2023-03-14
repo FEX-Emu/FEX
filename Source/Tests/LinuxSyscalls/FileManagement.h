@@ -20,7 +20,6 @@ $end_info$
 #include <unistd.h>
 #include <vector>
 
-#include <unordered_map>
 #include <unordered_set>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
