@@ -6,6 +6,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <aarch64/assembler-aarch64.h>
 
@@ -503,7 +504,7 @@ namespace FEXCore::ARMEmitter {
       uint8_t *Location{};
       InstType Type;
     };
-    std::vector<Instructions> Insts{};
+    fextl::vector<Instructions> Insts{};
   };
 
   /* This `BiDirectionalLabel` struct used for retaining a location for PC-Relative instructions.
