@@ -8,6 +8,7 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <functional>
 #include <memory>
@@ -87,7 +88,7 @@ protected:
 
 private:
   std::vector<std::unique_ptr<Pass>> Passes;
-  std::unordered_map<std::string, Pass*> NameToPassMaping;
+  fextl::unordered_map<std::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   std::vector<std::unique_ptr<Pass>> ValidationPasses;

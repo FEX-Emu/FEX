@@ -12,6 +12,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <functional>
@@ -20,7 +21,6 @@ $end_info$
 #include <stdint.h>
 #include <string>
 #include <sstream>
-#include <unordered_map>
 #include <utility>
 
 namespace {
@@ -43,7 +43,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   auto CurrentIR = IREmit->ViewIR();
 
   std::ostringstream Errors;
-  std::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
+  fextl::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
 
@@ -98,7 +98,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
       for (uint32_t i = 0; i < NumArgs; ++i) {
         if (IROp->Args[i].IsInvalid()) continue;
         if (CurrentIR.GetOp<IROp_Header>(IROp->Args[i])->Op == OP_IRHEADER) continue;
-        
+
         OrderedNodeWrapper Arg = IROp->Args[i];
 
         // We must ensure domininance of all SSA arguments

@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <array>
@@ -412,7 +413,7 @@ private:
   std::unique_ptr<FEXCore::IR::Pass> DCE;
 
   ContextInfo ClassifiedStruct;
-  std::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
+  fextl::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
 
   bool SupportsAVX;
 
