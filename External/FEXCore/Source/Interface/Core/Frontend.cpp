@@ -20,8 +20,8 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXHeaderUtils/TypeDefines.h>
-#include <set>
 #include <sys/mman.h>
 
 namespace FEXCore::Frontend {
@@ -1114,7 +1114,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
 
   uint64_t CurrentCodePage = PC & FHU::FEX_PAGE_MASK;
 
-  std::set<uint64_t> CodePages = { CurrentCodePage };
+  fextl::set<uint64_t> CodePages = { CurrentCodePage };
 
   AddContainedCodePage(PC, CurrentCodePage, FHU::FEX_PAGE_SIZE);
 

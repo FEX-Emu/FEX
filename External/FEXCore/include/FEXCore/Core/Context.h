@@ -7,11 +7,11 @@
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/set.h>
 
 #include <istream>
 #include <ostream>
 #include <memory>
-#include <set>
 #include <mutex>
 #include <shared_mutex>
 
@@ -271,7 +271,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) = 0;
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
       FEX_DEFAULT_VISIBILITY virtual CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) = 0;
 
       /**
