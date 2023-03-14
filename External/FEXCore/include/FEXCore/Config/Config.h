@@ -3,9 +3,9 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/unordered_map.h>
 
-#include <list>
 #include <memory>
 #include <optional>
 #include <stdint.h>
@@ -106,7 +106,7 @@ namespace Type {
   FEX_DEFAULT_VISIBILITY std::string GetConfigFileLocation(bool Global = false);
   FEX_DEFAULT_VISIBILITY std::string GetApplicationConfig(const std::string &Filename, bool Global);
 
-  using LayerValue = std::list<std::string>;
+  using LayerValue = fextl::list<std::string>;
   using LayerOptions = fextl::unordered_map<ConfigOption, LayerValue>;
 
   class FEX_DEFAULT_VISIBILITY Layer {
@@ -226,18 +226,18 @@ namespace Type {
     operator T() const { return ValueData; }
     T operator()() const { return ValueData; }
     Value<T>(T Value) { ValueData = std::move(Value); }
-    std::list<T> &All() { return AppendList; }
+    fextl::list<T> &All() { return AppendList; }
 
   private:
     FEXCore::Config::ConfigOption Option;
     T ValueData;
-    std::list<T> AppendList;
+    fextl::list<T> AppendList;
 
     static T Get(FEXCore::Config::ConfigOption Option);
     static T GetIfExists(FEXCore::Config::ConfigOption Option, T Default);
     static T GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default);
 
-    static void GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
+    static void GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<std::string> *List);
   };
 
   // Application loaders
