@@ -436,7 +436,10 @@ public:
   }
 
   // SVE floating-point multiply (indexed)
-  // XXX:
+  void fmul(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddIndexed(0b1000, size, zd, zn, zm, index);
+  }
+
   // SVE floating point matrix multiply accumulate
   // XXX:
 

@@ -375,7 +375,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point complex mul
               "fcmla z30.h, z10.h, z7.h[3], #270");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply (indexed)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fmul(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z7,  7), "fmul z30.h, z29.h, z7.h[7]");
+  TEST_SINGLE(fmul(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7,  3), "fmul z30.s, z29.s, z7.s[3]");
+  TEST_SINGLE(fmul(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z15, 1), "fmul z30.d, z29.d, z15.d[1]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating point matrix multiply accumulate") {
   // TODO: Implement in emitter.
