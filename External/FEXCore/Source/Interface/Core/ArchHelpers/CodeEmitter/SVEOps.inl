@@ -87,31 +87,6 @@ public:
     dc32(Op);
   }
 
-  void fcmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index, Rotation rot) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
-                        "SubRegSize must be 16-bit or 32-bit");
-
-    const auto IsHalfPrecision = size == SubRegSize::i16Bit;
-
-    if (IsHalfPrecision) {
-      LOGMAN_THROW_AA_FMT(index <= 3, "Index for half-precision fcmla must be within 0-3. Index={}", index);
-      LOGMAN_THROW_A_FMT(zm.Idx() <= 7, "zm must be within z0-z7. zm=z{}", zm.Idx());
-    } else {
-      LOGMAN_THROW_AA_FMT(index <= 1, "Index for single-precision fcmla must be within 0-1. Index={}", index);
-      LOGMAN_THROW_A_FMT(zm.Idx() <= 15, "zm must be within z0-z15. zm=z{}", zm.Idx());
-    }
-
-    uint32_t Op = 0b0110'0100'1010'0000'0001'0000'0000'0000;
-    Op |= (IsHalfPrecision ? 0 : 1) << 22;
-    Op |= index << (19 + int(!IsHalfPrecision));
-    Op |= zm.Idx() << 16;
-    Op |= FEXCore::ToUnderlying(rot) << 10;
-    Op |= zn.Idx() << 5;
-    Op |= zda.Idx();
-
-    dc32(Op);
-  }
-
   void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
@@ -441,13 +416,35 @@ public:
   }
 
   // SVE floating-point multiply-add (indexed)
-  // XXX:
+  void fmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddIndexed(0, size, zda, zn, zm, index);
+  }
+  void fmls(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddIndexed(1, size, zda, zn, zm, index);
+  }
+
   // SVE floating-point complex multiply-add (indexed)
-  // XXX:
+  void fcmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index, Rotation rot) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+                        "SubRegSize must be 16-bit or 32-bit");
+
+    // 16 -> 32, 32 -> 64, since fcmla (indexed)'s restrictions and encodings
+    // are essentially as if 16-bit were 32-bit and 32-bit were 64-bit.
+    const auto DoubledSize = static_cast<SubRegSize>(FEXCore::ToUnderlying(size) + 1);
+
+    SVEFPMultiplyAddIndexed(0b100 | FEXCore::ToUnderlying(rot), DoubledSize, zda, zn, zm, index);
+  }
+
   // SVE floating-point multiply (indexed)
-  // XXX:
+  void fmul(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddIndexed(0b1000, size, zd, zn, zm, index);
+  }
+
   // SVE floating point matrix multiply accumulate
-  // XXX:
+  // XXX: BFMMLA
+  void fmmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEFPMatrixMultiplyAccumulate(size, zda, zn, zm);
+  }
 
   // SVE floating-point compare vectors
   void fcmeq(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
@@ -4155,5 +4152,42 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPMultiplyAddIndexed(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT((size <= SubRegSize::i32Bit && zm <= ZReg::z7) || (size == SubRegSize::i64Bit && zm <= ZReg::z15),
+                        "16-bit and 32-bit indexed variants may only use Zm between z0-z7\n"
+                        "64-bit variants may only use Zm between z0-z15");
+
+    const auto Underlying = FEXCore::ToUnderlying(size);
+    [[maybe_unused]] const uint32_t IndexMax = (16 / (1U << Underlying)) - 1;
+    LOGMAN_THROW_AA_FMT(index <= IndexMax, "Index must be within 0-{}", IndexMax);
+
+    // Can be bit 20 or 19 depending on whether or not the element size is 64-bit.
+    const auto IndexShift = 19 + static_cast<uint32_t>(size == SubRegSize::i64Bit);
+
+    uint32_t Instr = 0b0110'0100'0010'0000'0000'0000'0000'0000;
+    Instr |= Underlying << 22;
+    Instr |= (index & 0b1000) << 19;
+    Instr |= (index & 0b0111) << IndexShift;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPMatrixMultiplyAccumulate(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 32-bit or 64-bit");
+
+    uint32_t Instr = 0b0110'0100'0010'0000'1110'0100'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }
