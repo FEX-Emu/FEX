@@ -8,11 +8,11 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <functional>
 #include <memory>
 #include <utility>
-#include <vector>
 
 namespace FEXCore::Context {
   class ContextImpl;
@@ -86,11 +86,11 @@ protected:
   FEXCore::HLE::SyscallHandler *SyscallHandler;
 
 private:
-  std::vector<std::unique_ptr<Pass>> Passes;
+  fextl::vector<std::unique_ptr<Pass>> Passes;
   std::unordered_map<std::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  std::vector<std::unique_ptr<Pass>> ValidationPasses;
+  fextl::vector<std::unique_ptr<Pass>> ValidationPasses;
   void InsertValidationPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
     Pass->RegisterPassManager(this);
     auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
