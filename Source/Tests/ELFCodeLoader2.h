@@ -15,7 +15,6 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <list>
 #include <random>
 #include <string>
 
@@ -25,6 +24,7 @@
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
@@ -624,7 +624,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
     uint64_t EnvpOffset,
     const std::vector<std::string> &Args,
     const std::vector<std::string> &EnvironmentVariables,
-    const std::list<auxv_t> &AuxVariables,
+    const fextl::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
     uint64_t *AuxTabSize,
     PointerType RandomNumberOffset,
@@ -907,7 +907,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   std::vector<std::string> EnvironmentVariables;
   std::vector<char const*> LoaderArgs;
 
-  std::list<auxv_t> AuxVariables;
+  fextl::list<auxv_t> AuxVariables;
   uint64_t AuxTabBase, AuxTabSize;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};
