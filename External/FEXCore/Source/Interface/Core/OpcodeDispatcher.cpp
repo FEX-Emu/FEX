@@ -5788,6 +5788,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<4, true>},
     {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<8, true>},
 
+    {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
     {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::PExtrOp<2>},
 
     {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},

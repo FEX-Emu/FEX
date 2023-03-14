@@ -1331,6 +1331,13 @@ void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Final, -1);
 }
 
+void OpDispatchBuilder::VPINSRWOp(OpcodeArgs) {
+  OrderedNode *Result = PINSROpImpl(Op, 2, Op->Src[0], Op->Src[1], Op->Src[2]);
+  OrderedNode *Final = _VMov(16, Result);
+
+  StoreResult(FPRClass, Op, Final, -1);
+}
+
 OrderedNode* OpDispatchBuilder::InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                                                const X86Tables::DecodedOperand& Src2,
                                                const X86Tables::DecodedOperand& Imm) {

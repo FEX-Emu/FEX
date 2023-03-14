@@ -497,6 +497,7 @@ public:
   void VPHSUBSWOp(OpcodeArgs);
 
   void VPINSRBOp(OpcodeArgs);
+  void VPINSRWOp(OpcodeArgs);
 
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
