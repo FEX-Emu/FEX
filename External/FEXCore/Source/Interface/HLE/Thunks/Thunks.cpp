@@ -347,7 +347,7 @@ namespace FEXCore {
             ::Thread = Thread;
         }
 
-        void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override {
+        void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override {
           for (auto & Definition : Definitions) {
             Thunks.emplace(Definition.Sum, Definition.ThunkFunction);
           }

@@ -7,6 +7,7 @@
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <istream>
 #include <ostream>
@@ -280,7 +281,7 @@ namespace FEXCore::Context {
        * @param CTX A valid non-null context instance.
        * @param Definitions A vector of thunk definitions that the frontend controls
        */
-      FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void SetVDSOSigReturn(const VDSOSigReturn &Pointers) = 0;
     private:
