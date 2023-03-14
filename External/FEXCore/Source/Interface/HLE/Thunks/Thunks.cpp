@@ -11,7 +11,8 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
-#include "FEXCore/Utils/CompilerDefs.h"
+#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/set.h>
 #include "Thunks.h"
 
 #include <cstdint>
@@ -144,7 +145,7 @@ namespace FEXCore {
 
         // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
         // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
-        std::set<std::string> Libs;
+        fextl::set<std::string> Libs;
 
         std::unordered_map<GuestcallInfo, HostToGuestTrampolinePtr*, GuestcallInfoHash> GuestcallToHostTrampoline;
 
