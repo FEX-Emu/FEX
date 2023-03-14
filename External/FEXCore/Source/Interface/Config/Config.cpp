@@ -6,6 +6,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
 
 #include <array>
 #include <assert.h>
@@ -15,7 +16,6 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <list>
 #include <optional>
 #include <stddef.h>
 #include <stdint.h>
@@ -45,13 +45,13 @@ namespace DefaultValues {
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
-    std::unique_ptr<std::list<json_t>> json_objects;
+    std::unique_ptr<fextl::list<json_t>> json_objects;
   };
   static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    alloc->json_objects = std::make_unique<fextl::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
@@ -609,14 +609,14 @@ namespace JSON {
   template Value<uint64_t>::Value(FEXCore::Config::ConfigOption _Option, uint64_t Default);
 
   template<typename T>
-  void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List) {
+  void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<std::string> *List) {
     auto Value = FEXCore::Config::All(Option);
     List->clear();
     if (Value) {
       *List = **Value;
     }
   }
-  template void Value<std::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
+  template void Value<std::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<std::string> *List);
 
   // Application loaders
   class MainLoader final : public FEXCore::Config::OptionMapper {
