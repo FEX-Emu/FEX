@@ -4644,7 +4644,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   SetCurrentCodeBlock(NextJumpTarget);
 }
 
-void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
+void OpDispatchBuilder::CreateJumpBlocks(fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   OrderedNode *PrevCodeBlock{};
   for (auto &Target : *Blocks) {
     auto CodeNode = CreateCodeNode();
@@ -4659,7 +4659,7 @@ void OpDispatchBuilder::CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder:
   }
 }
 
-void OpDispatchBuilder::BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
+void OpDispatchBuilder::BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks) {
   Entry = RIP;
   auto IRHeader = _IRHeader(InvalidNode, 0);
   Current_Header = IRHeader.first;
