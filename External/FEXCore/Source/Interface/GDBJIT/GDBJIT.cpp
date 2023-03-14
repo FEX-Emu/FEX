@@ -3,6 +3,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #if defined(GDB_SYMBOLS_ENABLED)
 
@@ -53,7 +54,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart,
     std::string SymName = HLE::SourcecodeSymbolMapping::SymName(
         Sym, Entry->Filename, HostEntry, FileOffset);
 
-    std::vector<gdb_line_mapping> Lines;
+    fextl::vector<gdb_line_mapping> Lines;
     for (const auto &GuestOpcode : DebugData->GuestOpcodes) {
       auto Line = map->FindLineMapping(GuestRIP + GuestOpcode.GuestEntryOffset -
                                        VAFileStart);
