@@ -1,12 +1,12 @@
 #pragma once
 
+#include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/vector.h>
+
 #include <cstdint>
 #include <unordered_map>
 #include <utility>
-#include <vector>
-
-#include <FEXCore/Core/CPUID.h>
-#include <FEXCore/Config/Config.h>
 
 namespace FEXCore {
 namespace Context {
@@ -77,7 +77,7 @@ private:
 #endif
     bool IsBig{};
   };
-  std::vector<CPUData> PerCPUData{};
+  fextl::vector<CPUData> PerCPUData{};
 
   // Functions
   FEXCore::CPUID::FunctionResults Function_0h(uint32_t Leaf);
