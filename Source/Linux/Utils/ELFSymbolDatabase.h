@@ -1,5 +1,6 @@
 #pragma once
 
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include "Linux/Utils/ELFContainer.h"
@@ -8,7 +9,6 @@
 #include <functional>
 #include <map>
 #include <string>
-#include <unordered_map>
 #include <utility>
 
 namespace ELFLoader {
@@ -49,12 +49,12 @@ private:
   bool FixedNoReplace {true};
   void *ELFBase{};
 
-  std::unordered_map<std::string, ELFInfo*> NameToELF;
+  fextl::unordered_map<std::string, ELFInfo*> NameToELF;
   fextl::vector<std::string> LibrarySearchPaths;
 
   // Symbols
   fextl::vector<ELFLoader::ELFSymbol*> Symbols;
-  using SymbolTableType = std::unordered_map<std::string, ELFLoader::ELFSymbol *>;
+  using SymbolTableType = fextl::unordered_map<std::string, ELFLoader::ELFSymbol *>;
   SymbolTableType SymbolMap;
   SymbolTableType SymbolMapGlobalOnly;
   SymbolTableType SymbolMapNoWeak;
@@ -70,7 +70,7 @@ private:
 
   void HandleRelocations();
 
-  ::ELFLoader::ELFSymbol const *GetSymbolFromTable(RangeType Address, std::unordered_map<std::string, ELFLoader::ELFSymbol *> &Table);
+  ::ELFLoader::ELFSymbol const *GetSymbolFromTable(RangeType Address, fextl::unordered_map<std::string, ELFLoader::ELFSymbol *> &Table);
 };
 }
 
