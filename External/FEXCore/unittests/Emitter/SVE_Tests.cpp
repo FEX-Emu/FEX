@@ -1778,7 +1778,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast floating-point i
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cntp(SubRegSize::i8Bit,  XReg::x30, PReg::p15, PReg::p7), "cntp x30, p15, p7.b");
+  TEST_SINGLE(cntp(SubRegSize::i16Bit, XReg::x30, PReg::p15, PReg::p7), "cntp x30, p15, p7.h");
+  TEST_SINGLE(cntp(SubRegSize::i32Bit, XReg::x30, PReg::p15, PReg::p7), "cntp x30, p15, p7.s");
+  TEST_SINGLE(cntp(SubRegSize::i64Bit, XReg::x30, PReg::p15, PReg::p7), "cntp x30, p15, p7.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec vector by predicate count") {
