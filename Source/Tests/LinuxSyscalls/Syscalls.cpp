@@ -29,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -60,7 +61,7 @@ SyscallHandler *_SyscallHandler{};
 
 template<bool IncrementOffset, typename T>
 uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
-  std::vector<uint8_t> TmpVector(count);
+  fextl::vector<uint8_t> TmpVector(count);
   void *TmpPtr = reinterpret_cast<void*>(&TmpVector.at(0));
 
   uint64_t Offset = 0;
@@ -176,7 +177,7 @@ static bool IsShebangFile(std::span<char> Data) {
         Data.begin() + 2, // strip off "#!" prefix
         std::find(Data.begin(), Data.end(), '\n')
     };
-    std::vector<std::string> ShebangArguments{};
+    fextl::vector<std::string> ShebangArguments{};
 
     // Shebang line can have a single argument
     std::istringstream InterpreterSS(InterpreterLine);
@@ -323,8 +324,8 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
   // We don't have an interpreter installed or we are executing a non-ELF executable
   // We now need to munge the arguments
-  std::vector<const char *> ExecveArgs{};
-  std::vector<const char *> EnvpArgs{};
+  fextl::vector<const char *> ExecveArgs{};
+  fextl::vector<const char *> EnvpArgs{};
   char *const *EnvpPtr = envp;
   const char NullString[] = "";
   FEX::HLE::_SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);

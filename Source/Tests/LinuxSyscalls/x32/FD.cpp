@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -303,13 +304,13 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(readv, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
       uint64_t Result = ::readv(fd, Host_iovec.data(), iovcnt);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(writev, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, int iovcnt) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
       uint64_t Result = ::writev(fd, Host_iovec.data(), iovcnt);
       SYSCALL_ERRNO();
     });
@@ -511,7 +512,7 @@ namespace FEX::HLE::x32 {
       uint32_t iovcnt,
       uint32_t pos_low,
       uint32_t pos_high) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(preadv), fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
       SYSCALL_ERRNO();
@@ -523,23 +524,23 @@ namespace FEX::HLE::x32 {
       uint32_t iovcnt,
       uint32_t pos_low,
       uint32_t pos_high) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(pwritev), fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(process_vm_readv, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec32 *local_iov, unsigned long liovcnt, const struct iovec32 *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
-      std::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
-      std::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
+      fextl::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
+      fextl::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
 
       uint64_t Result = ::process_vm_readv(pid, Host_local_iovec.data(), liovcnt, Host_remote_iovec.data(), riovcnt, flags);
       SYSCALL_ERRNO();
     });
 
     REGISTER_SYSCALL_IMPL_X32(process_vm_writev, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, const struct iovec32 *local_iov, unsigned long liovcnt, const struct iovec32 *remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
-      std::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
-      std::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
+      fextl::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
+      fextl::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
 
       uint64_t Result = ::process_vm_writev(pid, Host_local_iovec.data(), liovcnt, Host_remote_iovec.data(), riovcnt, flags);
       SYSCALL_ERRNO();
@@ -552,7 +553,7 @@ namespace FEX::HLE::x32 {
       uint32_t pos_low,
       uint32_t pos_high,
       int flags) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(preadv2), fd, Host_iovec.data(), iovcnt, pos_low, pos_high, flags);
       SYSCALL_ERRNO();
@@ -565,7 +566,7 @@ namespace FEX::HLE::x32 {
       uint32_t pos_low,
       uint32_t pos_high,
       int flags) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
+      fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(pwritev2), fd, Host_iovec.data(),iovcnt, pos_low, pos_high, flags);
       SYSCALL_ERRNO();
@@ -959,7 +960,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(vmsplice, [](FEXCore::Core::CpuStateFrame *Frame, int fd, const struct iovec32 *iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
-      std::vector<iovec> Host_iovec(iov, iov + nr_segs);
+      fextl::vector<iovec> Host_iovec(iov, iov + nr_segs);
       uint64_t Result = ::vmsplice(fd, Host_iovec.data(), nr_segs, flags);
       SYSCALL_ERRNO();
     });

@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <mutex>
 #include <shared_mutex>
@@ -224,7 +225,7 @@ public:
 protected:
   SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
 
-  std::vector<SyscallFunctionDefinition> Definitions{};
+  fextl::vector<SyscallFunctionDefinition> Definitions{};
   std::mutex MMapMutex;
 
   // BRK management

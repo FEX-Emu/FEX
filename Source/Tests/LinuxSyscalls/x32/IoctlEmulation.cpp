@@ -15,6 +15,7 @@
 #undef _CUSTOM_META_OFFSET
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <functional>
@@ -704,13 +705,13 @@ namespace FEX::HLE::x32 {
     std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)> Handler;
   };
 
-  static std::vector<std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> Handlers;
+  static fextl::vector<std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> Handlers;
 
   void InitializeStaticIoctlHandlers() {
     using namespace DRM;
     using namespace sockios;
 
-    const std::vector<IoctlHandler> LocalHandlers = {{
+    const fextl::vector<IoctlHandler> LocalHandlers = {{
 #define _BASIC_META(x) IoctlHandler{_IOC_TYPE(x), FEX::HLE::x32::BasicHandler::BasicHandler},
 #define _BASIC_META_VAR(x, args...) IoctlHandler{_IOC_TYPE(x(args)), FEX::HLE::x32::BasicHandler::BasicHandler},
 #define _CUSTOM_META(name, ioctl_num) IoctlHandler{_IOC_TYPE(FEX_##name), FEX::HLE::x32::BasicHandler::BasicHandler},

@@ -10,6 +10,8 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 #include "Tests/LinuxSyscalls/x64/Types.h"
 
+#include <FEXCore/fextl/vector.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <stddef.h>
@@ -26,7 +28,7 @@ namespace FEXCore::Core {
 namespace FEX::HLE::x64 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *Handler) {
     REGISTER_SYSCALL_IMPL_X64(epoll_wait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevents, int timeout) -> uint64_t {
-      std::vector<struct epoll_event> Events(std::max(0, maxevents));
+      fextl::vector<struct epoll_event> Events(std::max(0, maxevents));
       uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevents, timeout, nullptr, 8);
 
       if (Result != -1) {
@@ -52,7 +54,7 @@ namespace FEX::HLE::x64 {
     });
 
     REGISTER_SYSCALL_IMPL_X64(epoll_pwait, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevent, int timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
-      std::vector<struct epoll_event> Events(std::max(0, maxevent));
+      fextl::vector<struct epoll_event> Events(std::max(0, maxevent));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait),
         epfd,
@@ -73,7 +75,7 @@ namespace FEX::HLE::x64 {
 
     if (Handler->IsHostKernelVersionAtLeast(5, 11, 0)) {
       REGISTER_SYSCALL_IMPL_X64(epoll_pwait2, [](FEXCore::Core::CpuStateFrame *Frame, int epfd, FEX::HLE::epoll_event_x86 *events, int maxevent, timespec *timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
-        std::vector<struct epoll_event> Events(std::max(0, maxevent));
+        fextl::vector<struct epoll_event> Events(std::max(0, maxevent));
 
         uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait2),
           epfd,

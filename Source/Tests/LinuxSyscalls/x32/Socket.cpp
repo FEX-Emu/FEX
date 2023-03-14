@@ -10,6 +10,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <alloca.h>
 #include <cstdint>
@@ -123,7 +124,7 @@ namespace FEX::HLE::x32 {
 
   static uint64_t SendMsg(int sockfd, const struct msghdr32 *msg, int flags) {
     struct msghdr HostHeader{};
-    std::vector<iovec> Host_iovec(msg->msg_iovlen);
+    fextl::vector<iovec> Host_iovec(msg->msg_iovlen);
     for (size_t i = 0; i < msg->msg_iovlen; ++i) {
       Host_iovec[i] = msg->msg_iov[i];
     }
@@ -179,7 +180,7 @@ namespace FEX::HLE::x32 {
 
   static uint64_t RecvMsg(int sockfd, struct msghdr32 *msg, int flags) {
     struct msghdr HostHeader{};
-    std::vector<iovec> Host_iovec(msg->msg_iovlen);
+    fextl::vector<iovec> Host_iovec(msg->msg_iovlen);
     for (size_t i = 0; i < msg->msg_iovlen; ++i) {
       Host_iovec[i] = msg->msg_iov[i];
     }
@@ -238,7 +239,7 @@ namespace FEX::HLE::x32 {
     SYSCALL_ERRNO();
   }
 
-  void ConvertHeaderToHost(std::vector<iovec> &iovec, struct msghdr *Host, const struct msghdr32 *Guest) {
+  void ConvertHeaderToHost(fextl::vector<iovec> &iovec, struct msghdr *Host, const struct msghdr32 *Guest) {
     size_t CurrentIOVecSize = iovec.size();
     iovec.resize(CurrentIOVecSize + Guest->msg_iovlen);
     for (size_t i = 0; i < Guest->msg_iovlen; ++i) {
@@ -299,8 +300,8 @@ namespace FEX::HLE::x32 {
   }
 
   static uint64_t RecvMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, struct timespec *timeout_ts) {
-    std::vector<iovec> Host_iovec;
-    std::vector<struct mmsghdr> HostMHeader(vlen);
+    fextl::vector<iovec> Host_iovec;
+    fextl::vector<struct mmsghdr> HostMHeader(vlen);
     for (size_t i = 0; i < vlen; ++i) {
       ConvertHeaderToHost(Host_iovec, &HostMHeader[i].msg_hdr, &msgvec[i].msg_hdr);
       HostMHeader[i].msg_len = msgvec[i].msg_len;
@@ -697,8 +698,8 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(sendmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
-      std::vector<iovec> Host_iovec;
-      std::vector<struct mmsghdr> HostMmsg(vlen);
+      fextl::vector<iovec> Host_iovec;
+      fextl::vector<struct mmsghdr> HostMmsg(vlen);
 
       // Walk the iovec and convert them
       // Calculate controllen at the same time
@@ -713,7 +714,7 @@ namespace FEX::HLE::x32 {
         }
       }
 
-      std::vector<uint8_t> Controllen(Controllen_size);
+      fextl::vector<uint8_t> Controllen(Controllen_size);
 
       size_t current_iov{};
       size_t current_controllen_offset{};

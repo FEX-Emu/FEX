@@ -807,7 +807,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   }
 
   std::vector<std::string> const *GetApplicationArguments() override { return &Args; }
-  void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
+  void GetExecveArguments(fextl::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {
     addr = AuxTabBase;
@@ -905,7 +905,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
 
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
-  std::vector<char const*> LoaderArgs;
+  fextl::vector<char const*> LoaderArgs;
 
   std::list<auxv_t> AuxVariables;
   uint64_t AuxTabBase, AuxTabSize;
