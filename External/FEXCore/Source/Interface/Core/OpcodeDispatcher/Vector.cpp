@@ -1287,28 +1287,32 @@ void OpDispatchBuilder::VBROADCASTOp<8>(OpcodeArgs);
 template
 void OpDispatchBuilder::VBROADCASTOp<16>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize,
+                                            const X86Tables::DecodedOperand& Src1Op,
+                                            const X86Tables::DecodedOperand& Src2Op,
+                                            const X86Tables::DecodedOperand& Imm) {
+  const auto Size = GetDstSize(Op);
+  const auto NumElements = Size / ElementSize;
+
+  OrderedNode *Src2{};
+  if (Src2Op.IsGPR()) {
+    Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags, -1);
+  } else {
+    // If loading from memory then we only load the element size
+    Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, ElementSize, Op->Flags, -1);
+  }
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, Size, Op->Flags, -1);
+
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be literal here");
+  const uint64_t Index = Imm.Data.Literal.Value & (NumElements - 1);
+
+  return _VInsGPR(Size, ElementSize, Index, Src1, Src2);
+}
+
 template<size_t ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
-  auto Size = GetDstSize(Op);
-
-  OrderedNode *Src{};
-  if (Op->Src[0].IsGPR()) {
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  }
-  else {
-    // If loading from memory then we only load the element size
-    Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ElementSize, Op->Flags, -1);
-  }
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetDstSize(Op), Op->Flags, -1);
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint64_t Index = Op->Src[1].Data.Literal.Value;
-
-  uint8_t NumElements = Size / ElementSize;
-  Index &= NumElements - 1;
-
-  // This maps 1:1 to an AArch64 NEON Op
-  auto ALUOp = _VInsGPR(Size, ElementSize, Index, Dest, Src);
-  StoreResult(FPRClass, Op, ALUOp, -1);
+  OrderedNode *Result = PINSROpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
 }
 
 template
