@@ -98,7 +98,7 @@ static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
 
 struct ThunkDBObject {
   std::string LibraryName;
-  std::unordered_set<std::string> Depends;
+  fextl::unordered_set<std::string> Depends;
   fextl::vector<std::string> Overlays;
   bool Enabled{};
 };
@@ -316,7 +316,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
           }
       };
 
-      void InsertDependencies(const std::unordered_set<std::string> &Depends) {
+      void InsertDependencies(const fextl::unordered_set<std::string> &Depends) {
         for (auto const &Depend : Depends) {
           auto& DBDepend = ThunkDB.at(Depend);
           if (DBDepend.Enabled) {

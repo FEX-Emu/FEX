@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/unordered_set.h>
 
 #include <cstdint>
 #include <fcntl.h>
@@ -21,7 +22,6 @@ $end_info$
 #include <vector>
 
 #include <unordered_map>
-#include <unordered_set>
 
 #include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
