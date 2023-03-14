@@ -441,7 +441,10 @@ public:
   }
 
   // SVE floating point matrix multiply accumulate
-  // XXX:
+  // XXX: BFMMLA
+  void fmmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEFPMatrixMultiplyAccumulate(size, zda, zn, zm);
+  }
 
   // SVE floating-point compare vectors
   void fcmeq(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
@@ -4172,6 +4175,18 @@ private:
     Instr |= (index & 0b0111) << IndexShift;
     Instr |= zm.Idx() << 16;
     Instr |= op << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPMatrixMultiplyAccumulate(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 32-bit or 64-bit");
+
+    uint32_t Instr = 0b0110'0100'0010'0000'1110'0100'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
     Instr |= zn.Idx() << 5;
     Instr |= zda.Idx();
     dc32(Instr);

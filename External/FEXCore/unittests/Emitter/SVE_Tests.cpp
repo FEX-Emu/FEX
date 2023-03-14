@@ -380,7 +380,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply (i
   TEST_SINGLE(fmul(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z15, 1), "fmul z30.d, z29.d, z15.d[1]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating point matrix multiply accumulate") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fmmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "fmmla z30.s, z29.s, z28.s");
+  TEST_SINGLE(fmmla(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "fmmla z30.d, z29.d, z28.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point compare vectors") {
   TEST_SINGLE(fcmeq(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, ZReg::z29), "fcmeq p6.h, p5/z, z30.h, z29.h");
