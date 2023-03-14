@@ -1962,6 +1962,8 @@ void OpDispatchBuilder::AVXCVTGPR_To_FPR(OpcodeArgs) {
 }
 template
 void OpDispatchBuilder::AVXCVTGPR_To_FPR<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXCVTGPR_To_FPR<8>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
