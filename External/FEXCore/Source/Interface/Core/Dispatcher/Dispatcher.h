@@ -155,7 +155,6 @@ protected:
   };
 
   void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
-  std::stack<uint64_t, std::vector<uint64_t>> SignalFrames;
 
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
 
