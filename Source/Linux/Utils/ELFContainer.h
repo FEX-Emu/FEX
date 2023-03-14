@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/fextl/unordered_map.h>
+
 #include <cstdint>
 #include <elf.h>
 #include <functional>
@@ -7,7 +9,6 @@
 #include <stddef.h>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -160,7 +161,7 @@ private:
   std::vector<ProgramHeader> ProgramHeaders;
   std::vector<ELFSymbol> Symbols;
   std::vector<uintptr_t> UnwindEntries;
-  std::unordered_map<std::string, ELFSymbol *> SymbolMap;
+  fextl::unordered_map<std::string, ELFSymbol *> SymbolMap;
   std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
 
   std::vector<char const*> NecessaryLibs;
