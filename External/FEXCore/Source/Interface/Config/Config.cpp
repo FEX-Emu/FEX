@@ -6,6 +6,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <array>
 #include <assert.h>
@@ -23,7 +24,6 @@
 #include <string_view>
 #include <system_error>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -268,7 +268,7 @@ namespace JSON {
     }
 
     // If an environment variable exists in both current meta and in the incoming layer then the meta layer value is overwritten
-    std::unordered_map<std::string, std::string> LookupMap;
+    fextl::unordered_map<std::string, std::string> LookupMap;
     const auto AddToMap = [&LookupMap](FEXCore::Config::LayerValue const &Value) {
       for (const auto &EnvVar : Value) {
         const auto ItEq = EnvVar.find_first_of('=');
@@ -705,7 +705,7 @@ namespace JSON {
   }
 
   void EnvLoader::Load() {
-    std::unordered_map<std::string_view, std::string_view> EnvMap;
+    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
 
     for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
       std::string_view Var(*pvar);

@@ -3,12 +3,12 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <list>
 #include <memory>
 #include <optional>
 #include <stdint.h>
-#include <unordered_map>
 
 namespace FEXCore::Config {
 namespace Handler {
@@ -107,7 +107,7 @@ namespace Type {
   FEX_DEFAULT_VISIBILITY std::string GetApplicationConfig(const std::string &Filename, bool Global);
 
   using LayerValue = std::list<std::string>;
-  using LayerOptions = std::unordered_map<ConfigOption, LayerValue>;
+  using LayerOptions = fextl::unordered_map<ConfigOption, LayerValue>;
 
   class FEX_DEFAULT_VISIBILITY Layer {
   public:

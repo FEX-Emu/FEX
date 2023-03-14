@@ -10,7 +10,6 @@
 #include <map>
 #include <linux/limits.h>
 #include <list>
-#include <unordered_map>
 #include <utility>
 #include <json-maker.h>
 
