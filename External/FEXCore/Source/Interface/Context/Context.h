@@ -15,9 +15,10 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/vector.h>
+
 #include <FEXHeaderUtils/Syscalls.h>
 #include <stdint.h>
-
 
 #include <atomic>
 #include <condition_variable>
@@ -246,7 +247,7 @@ namespace FEXCore::Context {
 
     std::mutex ThreadCreationMutex;
     FEXCore::Core::InternalThreadState* ParentThread{};
-    std::vector<FEXCore::Core::InternalThreadState*> Threads;
+    fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
     bool NeedToCheckXID{true};
 
@@ -354,7 +355,7 @@ namespace FEXCore::Context {
 
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
 
-    std::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
+    fextl::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
 
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
