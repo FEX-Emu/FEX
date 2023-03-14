@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <FEXHeaderUtils/TypeDefines.h>
 
@@ -30,7 +31,6 @@ $end_info$
 #include <unordered_set>
 #include <sys/user.h>
 #include <utility>
-#include <vector>
 
 #define SRA_DEBUG(...) // fmt::print(__VA_ARGS__)
 
@@ -68,7 +68,7 @@ namespace {
   constexpr size_t REGISTER_NODES_PER_PAGE = FHU::FEX_PAGE_SIZE / sizeof(RegisterNode);
 
   struct RegisterSet {
-    std::vector<RegisterClass> Classes;
+    fextl::vector<RegisterClass> Classes;
     uint32_t ClassCount;
     uint32_t Conflicts[ 8 * 8 * 32 * 32];
   };
@@ -93,9 +93,9 @@ namespace {
   struct RegisterGraph {
     IR::RegisterAllocationData::UniquePtr AllocData;
     RegisterSet Set;
-    std::vector<RegisterNode> Nodes{};
+    fextl::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
-    std::vector<SpillStackUnit> SpillStack;
+    fextl::vector<SpillStackUnit> SpillStack;
     std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> BlockPredecessors;
     std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> VisitedNodePredecessors;
   };
@@ -189,7 +189,7 @@ namespace {
   /**
    * @brief Node set walking for PHI node interference checking
    */
-    bool DoesNodeSetInterfereWithRegister(RegisterGraph *Graph, std::vector<RegisterNode*> const &Nodes, PhysicalRegister RegAndClass) {
+    bool DoesNodeSetInterfereWithRegister(RegisterGraph *Graph, fextl::vector<RegisterNode*> const &Nodes, PhysicalRegister RegAndClass) {
     for (auto it : Nodes) {
       if (DoesNodeInterfereWithRegister(Graph, it, RegAndClass)) {
         return true;
@@ -285,19 +285,19 @@ namespace {
       RegisterAllocationData::UniquePtr PullAllocationData() override;
 
     private:
-      using BlockInterferences = std::vector<IR::NodeID>;
+      using BlockInterferences = fextl::vector<IR::NodeID>;
 
       IR::NodeID SpillPointId;
 
-      std::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanStart;
-      std::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanEnd;
+      fextl::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanStart;
+      fextl::vector<BucketList<DEFAULT_INTERFERENCE_SPAN_COUNT, uint32_t>> SpanEnd;
 
       RegisterGraph *Graph;
       FEXCore::IR::Pass* CompactionPass;
       bool OptimizeSRA;
       bool SupportsAVX;
 
-      std::vector<LiveRange> LiveRanges;
+      fextl::vector<LiveRange> LiveRanges;
 
       std::unordered_map<IR::NodeID, BlockInterferences> LocalBlockInterferences;
       BlockInterferences GlobalBlockInterferences;
@@ -846,7 +846,7 @@ namespace {
     for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
       BlockInterferences *BlockInterferenceVector = &LocalBlockInterferences.try_emplace(IR->GetID(BlockNode)).first->second;
 
-      std::vector<IR::NodeID> Interferences;
+      fextl::vector<IR::NodeID> Interferences;
       Interferences.reserve(BlockInterferenceVector->size() + GlobalBlockInterferences.size());
 
       for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
@@ -966,7 +966,7 @@ namespace {
         #if 0
         // In the case that we have a list of nodes that need the same register allocated we need to do something special
         // We need to gather the data from the forward linked list and make sure they all match the virtual register
-        std::vector<RegisterNode *> Nodes;
+        fextl::vector<RegisterNode *> Nodes;
         auto CurrentPartner = CurrentNode;
         while (CurrentPartner) {
           Nodes.emplace_back(CurrentPartner);

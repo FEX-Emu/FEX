@@ -2,6 +2,7 @@
 
 #include "Common/BitSet.h"
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::IR::Validation {
 
@@ -9,8 +10,8 @@ struct BlockInfo {
   bool HasExit;
   OrderedNode const *BlockNode;
 
-  std::vector<OrderedNode*> Predecessors;
-  std::vector<OrderedNode*> Successors;
+  fextl::vector<OrderedNode*> Predecessors;
+  fextl::vector<OrderedNode*> Successors;
 };
 
 class RAValidation;

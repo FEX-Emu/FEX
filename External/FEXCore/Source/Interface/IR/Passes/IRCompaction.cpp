@@ -14,12 +14,12 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <vector>
 
 namespace FEXCore::IR {
 
@@ -38,13 +38,13 @@ public:
 private:
   static constexpr size_t AlignSize = 0x2000;
   OpDispatchBuilder LocalBuilder;
-  std::vector<RemapNode> OldToNewRemap;
+  fextl::vector<RemapNode> OldToNewRemap;
   struct CodeBlockData {
     OrderedNode *OldNode;
     OrderedNode *NewNode;
   };
 
-  std::vector<CodeBlockData> GeneratedCodeBlocks{};
+  fextl::vector<CodeBlockData> GeneratedCodeBlocks{};
 };
 
 IRCompaction::IRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator)

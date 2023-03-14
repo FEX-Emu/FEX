@@ -12,6 +12,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <functional>
 #include <memory>
@@ -21,12 +22,11 @@ $end_info$
 #include <sstream>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace {
   struct BlockInfo {
-    std::vector<FEXCore::IR::OrderedNode *> Predecessors;
-    std::vector<FEXCore::IR::OrderedNode *> Successors;
+    fextl::vector<FEXCore::IR::OrderedNode *> Predecessors;
+    fextl::vector<FEXCore::IR::OrderedNode *> Successors;
   };
 }
 

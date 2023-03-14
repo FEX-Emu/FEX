@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <memory>
@@ -23,7 +24,6 @@ $end_info$
 #include <sstream>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace FEXCore::IR::Validation {
 
@@ -50,7 +50,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
     NodeIsLive.Realloc(CurrentIR.GetSSACount());
   }
 
-  std::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
+  fextl::vector<uint32_t> Uses(CurrentIR.GetSSACount(), 0);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   auto HeaderOp = CurrentIR.GetHeader();
