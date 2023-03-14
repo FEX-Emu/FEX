@@ -37,12 +37,24 @@ namespace FEXCore::Allocator {
   MUNMAP_Hook munmap {::munmap};
 #ifdef ENABLE_JEMALLOC
   MALLOC_Hook malloc {::je_malloc};
+  CALLOC_Hook calloc {::je_calloc};
+  MEMALIGN_Hook memalign {::je_memalign};
+  VALLOC_Hook valloc {::je_valloc};
+  POSIX_MEMALIGN_Hook posix_memalign {::je_posix_memalign};
   REALLOC_Hook realloc {::je_realloc};
   FREE_Hook free {::je_free};
+  MALLOC_USABLE_SIZE_Hook malloc_usable_size {::je_malloc_usable_size};
+  ALIGNED_ALLOC_Hook aligned_alloc {::je_aligned_alloc};
 #else
   MALLOC_Hook malloc {::malloc};
+  CALLOC_Hook calloc {::calloc};
+  MEMALIGN_Hook memalign {::memalign};
+  VALLOC_Hook valloc {::valloc};
+  POSIX_MEMALIGN_Hook posix_memalign {::posix_memalign};
   REALLOC_Hook realloc {::realloc};
   FREE_Hook free {::free};
+  MALLOC_USABLE_SIZE_Hook malloc_usable_size {::malloc_usable_size};
+  ALIGNED_ALLOC_Hook aligned_alloc {::aligned_alloc};
 #endif
 
   uint64_t HostVASize{};
