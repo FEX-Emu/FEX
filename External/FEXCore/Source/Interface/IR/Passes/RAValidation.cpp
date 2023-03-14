@@ -7,10 +7,10 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/deque.h>
 #include <FEXCore/fextl/unordered_map.h>
 
 #include <algorithm>
-#include <deque>
 
 namespace FEXCore::IR::Validation {
 
@@ -184,7 +184,7 @@ private:
   fextl::unordered_map<IR::NodeID, RegState> BlockExitState;
 
   // A queue of blocks we need to visit (or revisit)
-  std::deque<OrderedNode*> BlocksToVisit;
+  fextl::deque<OrderedNode*> BlocksToVisit;
 };
 
 
