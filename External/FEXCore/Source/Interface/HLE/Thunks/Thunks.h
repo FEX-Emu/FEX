@@ -7,8 +7,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/IR/IR.h>
-
-#include <vector>
+#include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::Context {
   class ContextImpl;
@@ -33,6 +32,6 @@ namespace FEXCore {
 
         static ThunkHandler* Create();
 
-        virtual void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
+        virtual void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
     };
 };

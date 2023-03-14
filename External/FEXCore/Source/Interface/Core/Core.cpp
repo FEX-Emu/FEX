@@ -45,6 +45,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TodoDefines.h>
 
@@ -74,7 +75,6 @@ $end_info$
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 #include <xxhash.h>
 
 
@@ -1353,7 +1353,7 @@ namespace FEXCore::Context {
     }
   }
 
-  void ContextImpl::AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
+  void ContextImpl::AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
     ThunkHandler->AppendThunkDefinitions(Definitions);
   }
 

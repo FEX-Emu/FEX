@@ -15,6 +15,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <stdint.h>
 
@@ -31,7 +32,6 @@
 #include <string>
 #include <unordered_map>
 #include <queue>
-#include <vector>
 
 namespace FEXCore {
 class CodeLoader;
@@ -191,7 +191,7 @@ namespace FEXCore::Context {
       // returns false if a handler was already registered
       CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
-      void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
+      void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
 
     public:
     friend class FEXCore::HLE::SyscallHandler;
