@@ -441,7 +441,13 @@ public:
   }
 
   // SVE floating-point multiply-add (indexed)
-  // XXX:
+  void fmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddIndexed(0, size, zda, zn, zm, index);
+  }
+  void fmls(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddIndexed(1, size, zda, zn, zm, index);
+  }
+
   // SVE floating-point complex multiply-add (indexed)
   // XXX:
   // SVE floating-point multiply (indexed)
@@ -4155,5 +4161,30 @@ private:
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPMultiplyAddIndexed(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT((size <= SubRegSize::i32Bit && zm <= ZReg::z7) || (size == SubRegSize::i64Bit && zm <= ZReg::z15),
+                        "16-bit and 32-bit indexed variants may only use Zm between z0-z7\n"
+                        "64-bit variants may only use Zm between z0-z15");
+
+    const auto Underlying = FEXCore::ToUnderlying(size);
+    [[maybe_unused]] const uint32_t IndexMax = (16 / (1U << Underlying)) - 1;
+    LOGMAN_THROW_AA_FMT(index <= IndexMax, "Index must be within 0-{}", IndexMax);
+
+    // Can be bit 20 or 19 depending on whether or not the element size is 64-bit.
+    const auto IndexShift = 19 + static_cast<uint32_t>(size == SubRegSize::i64Bit);
+
+    uint32_t Instr = 0b0110'0100'0010'0000'0000'0000'0000'0000;
+    Instr |= Underlying << 22;
+    Instr |= (index & 0b1000) << 19;
+    Instr |= (index & 0b0111) << IndexShift;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zda.Idx();
     dc32(Instr);
   }

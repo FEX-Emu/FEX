@@ -346,7 +346,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-ad
               "fcmla z30.d, p6/m, z10.d, z28.d, #270");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point multiply-add (indexed)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z7,  7), "fmla z30.h, z29.h, z7.h[7]");
+  TEST_SINGLE(fmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7,  3), "fmla z30.s, z29.s, z7.s[3]");
+  TEST_SINGLE(fmla(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z15, 1), "fmla z30.d, z29.d, z15.d[1]");
+
+  TEST_SINGLE(fmls(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z7,  7), "fmls z30.h, z29.h, z7.h[7]");
+  TEST_SINGLE(fmls(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z7,  3), "fmls z30.s, z29.s, z7.s[3]");
+  TEST_SINGLE(fmls(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z15, 1), "fmls z30.d, z29.d, z15.d[1]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point complex multiply-add (indexed)") {
   TEST_SINGLE(fcmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z10, ZReg::z7, 0, Rotation::ROTATE_0),
