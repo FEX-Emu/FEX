@@ -10,6 +10,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -70,8 +71,8 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
     return;
   }
 
-  std::vector<std::string> UnfilledDependencies;
-  std::vector<ELFInfo*> NewLibraries;
+  fextl::vector<std::string> UnfilledDependencies;
+  fextl::vector<ELFInfo*> NewLibraries;
 
   auto FillDependencies = [&UnfilledDependencies, this](ELFInfo *ELF) {
     for (auto &Lib : *ELF->Container->GetNecessaryLibs()) {
@@ -104,7 +105,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
   NewLibraries.emplace_back(&LocalInfo);
 
   do {
-    std::vector<ELFInfo*> PreviousLibs;
+    fextl::vector<ELFInfo*> PreviousLibs;
     PreviousLibs.swap(NewLibraries);
     for (auto ELF : PreviousLibs) {
       FillDependencies(ELF);
@@ -345,7 +346,7 @@ ELFSymbol const *ELFSymbolDatabase::GetSymbolInRange(RangeType Address) {
   return Sym->second;
 }
 
-void ELFSymbolDatabase::GetInitLocations(std::vector<uint64_t> *Locations) {
+void ELFSymbolDatabase::GetInitLocations(fextl::vector<uint64_t> *Locations) {
   // Walk the initialization order and fill the locations for initializations
   for (auto ELF : InitializationOrder) {
     ELF->Container->GetInitLocations(ELF->GuestBase, Locations);

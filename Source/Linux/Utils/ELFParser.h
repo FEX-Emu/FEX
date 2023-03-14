@@ -1,12 +1,12 @@
 #pragma once
-#include <vector>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
+
 #include <string>
 #include <elf.h>
 #include <fstream>
 #include <fcntl.h>
 #include <unistd.h>
-
-#include <FEXCore/Utils/LogManager.h>
 
 #include "Linux/Utils/ELFContainer.h"
 
@@ -18,7 +18,7 @@
 
 struct ELFParser {
   Elf64_Ehdr ehdr;
-  std::vector<Elf64_Phdr> phdrs;
+  fextl::vector<Elf64_Phdr> phdrs;
   ::ELFLoader::ELFContainer::ELFType type {::ELFLoader::ELFContainer::TYPE_NONE};
 
   std::string InterpreterElf;
