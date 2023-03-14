@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -25,7 +26,6 @@ $end_info$
 #include <cstdint>
 #include <cstring>
 #include <optional>
-#include <set>
 #include <strings.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -1287,7 +1287,7 @@ namespace {
     // Heuristics failed to spill ?
     if (InterferenceIdToSpill.IsInvalid()) {
       // Panic spill: Spill any value not used by the current op
-      std::set<IR::NodeID> CurrentNodes;
+      fextl::set<IR::NodeID> CurrentNodes;
 
       // Get all used nodes for current IR op
       {
