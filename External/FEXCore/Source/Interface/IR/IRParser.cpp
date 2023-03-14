@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <array>
@@ -319,13 +320,13 @@ class IRParser: public FEXCore::IR::IREmitter {
     std::string IROp{};
     FEXCore::IR::IROps OpEnum;
     bool HasArgs{};
-    std::vector<std::string> Args;
+    fextl::vector<std::string> Args;
     OrderedNode *Node{};
   };
 
-  std::vector<std::string> Lines;
+  fextl::vector<std::string> Lines;
   std::unordered_map<std::string, OrderedNode*> SSANameMapper;
-  std::vector<LineDefinition> Defs;
+  fextl::vector<LineDefinition> Defs;
   LineDefinition *CurrentDef{};
   std::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
 
