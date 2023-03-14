@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/fextl/vector.h>
+
 #include "Linux/Utils/ELFContainer.h"
 
 #include <cstdint>
@@ -8,7 +10,6 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace ELFLoader {
 class ELFSymbolDatabase final {
@@ -28,7 +29,7 @@ public:
   ::ELFLoader::ELFSymbol const *GetGlobalSymbolInRange(RangeType Address);
   ::ELFLoader::ELFSymbol const *GetNoWeakSymbolInRange(RangeType Address);
 
-  void GetInitLocations(std::vector<uint64_t> *Locations);
+  void GetInitLocations(fextl::vector<uint64_t> *Locations);
 
 private:
   ::ELFLoader::ELFContainer *File;
@@ -42,17 +43,17 @@ private:
   };
 
   ELFInfo LocalInfo;
-  std::vector<ELFInfo*> DynamicELFInfo;
-  std::vector<ELFInfo*> InitializationOrder;
+  fextl::vector<ELFInfo*> DynamicELFInfo;
+  fextl::vector<ELFInfo*> InitializationOrder;
   uint64_t ELFMemorySize{};
   bool FixedNoReplace {true};
   void *ELFBase{};
 
   std::unordered_map<std::string, ELFInfo*> NameToELF;
-  std::vector<std::string> LibrarySearchPaths;
+  fextl::vector<std::string> LibrarySearchPaths;
 
   // Symbols
-  std::vector<ELFLoader::ELFSymbol*> Symbols;
+  fextl::vector<ELFLoader::ELFSymbol*> Symbols;
   using SymbolTableType = std::unordered_map<std::string, ELFLoader::ELFSymbol *>;
   SymbolTableType SymbolMap;
   SymbolTableType SymbolMapGlobalOnly;

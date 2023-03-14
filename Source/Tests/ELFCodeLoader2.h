@@ -25,6 +25,7 @@
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
@@ -54,7 +55,7 @@ class ELFCodeLoader2 final : public FEXCore::CodeLoader {
   uintptr_t BrkStart;
   uintptr_t StackPointer;
 
-  size_t CalculateTotalElfSize(const std::vector<Elf64_Phdr> &headers)
+  size_t CalculateTotalElfSize(const fextl::vector<Elf64_Phdr> &headers)
   {
     auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });
     auto last = std::find_if(headers.rbegin(), headers.rend(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });

@@ -8,6 +8,7 @@ $end_info$
 #include "Linux/Utils/ELFContainer.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <cstring>
@@ -1295,7 +1296,7 @@ void ELFContainer::PrintDynamicTable() const {
   }
 }
 
-void ELFContainer::GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations) {
+void ELFContainer::GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_t> *Locations) {
   if (Mode == MODE_32BIT) {
     // If INIT exists then add that first
     for (uint32_t i = 0; i < SectionHeaders.size(); ++i) {
