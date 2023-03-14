@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <memory>
@@ -21,7 +22,6 @@ $end_info$
 #include <stdint.h>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace {
   struct ContextMemberClassification {
@@ -73,8 +73,8 @@ namespace {
   };
 
   struct ContextInfo {
-    std::vector<ContextMemberInfo*> Lookup;
-    std::vector<ContextMemberInfo> ClassificationInfo;
+    fextl::vector<ContextMemberInfo*> Lookup;
+    fextl::vector<ContextMemberInfo> ClassificationInfo;
   };
 
   static void ClassifyContextStruct(ContextInfo *ContextClassificationInfo, bool SupportsAVX) {
@@ -395,8 +395,8 @@ namespace {
   }
 
   struct BlockInfo {
-    std::vector<FEXCore::IR::OrderedNode *> Predecessors;
-    std::vector<FEXCore::IR::OrderedNode *> Successors;
+    fextl::vector<FEXCore::IR::OrderedNode *> Predecessors;
+    fextl::vector<FEXCore::IR::OrderedNode *> Successors;
     ContextInfo IncomingClassifiedStruct;
     ContextInfo OutgoingClassifiedStruct;
   };
