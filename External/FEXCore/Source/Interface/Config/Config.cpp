@@ -6,6 +6,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <assert.h>
@@ -61,7 +62,7 @@ namespace JSON {
   }
 
   static void LoadJSonConfig(const std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
-    std::vector<char> Data;
+    fextl::vector<char> Data;
     if (!FEXCore::FileLoading::LoadFile(Data, Config)) {
       return;
     }
@@ -384,7 +385,7 @@ namespace JSON {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
-      std::vector<char> Manager{};
+      fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
         std::string ManagerStr = Manager.data();
@@ -399,7 +400,7 @@ namespace JSON {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
-      std::vector<char> Manager{};
+      fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
         std::string ManagerStr = Manager.data();
@@ -651,7 +652,7 @@ namespace JSON {
 #define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
-  static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+  static const fextl::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
