@@ -21,6 +21,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <bit>
 #include <cstdint>
@@ -28,7 +29,6 @@ $end_info$
 #include <memory>
 #include <string.h>
 #include <tuple>
-#include <unordered_map>
 #include <tsl/robin_map.h>
 #include <utility>
 
@@ -197,7 +197,7 @@ private:
       OrderedNode* CodeNode, IROp_Header* IROp);
   bool ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR);
 
-  std::unordered_map<uint64_t, OrderedNode*> ConstPool;
+  fextl::unordered_map<uint64_t, OrderedNode*> ConstPool;
   std::map<OrderedNode*, uint64_t> AddressgenConsts;
 
   // Pool inline constant generation. These are typically very small and pool efficiently.

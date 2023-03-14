@@ -7,10 +7,10 @@
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <algorithm>
 #include <deque>
-#include <unordered_map>
 
 namespace FEXCore::IR::Validation {
 
@@ -168,7 +168,7 @@ private:
   std::array<IR::NodeID, 32> GPRs = {};
   std::array<IR::NodeID, 32> FPRs = {};
 
-  std::unordered_map<uint32_t, IR::NodeID> Spills;
+  fextl::unordered_map<uint32_t, IR::NodeID> Spills;
 
 public:
   uint32_t Version{}; // Used to force regeneration of RegStates after following backward edges
@@ -181,7 +181,7 @@ public:
 
 private:
   // Holds the calculated RegState at the exit of each block
-  std::unordered_map<IR::NodeID, RegState> BlockExitState;
+  fextl::unordered_map<IR::NodeID, RegState> BlockExitState;
 
   // A queue of blocks we need to visit (or revisit)
   std::deque<OrderedNode*> BlocksToVisit;
