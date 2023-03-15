@@ -122,7 +122,7 @@ namespace FEXServerLogging {
   }
 }
 
-void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::vector<std::string> *args) {
+void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl::vector<std::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
   std::fstream File(*Filename, std::fstream::in | std::fstream::binary);
 
@@ -144,7 +144,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, std::v
       File.get() == '!') {
     std::string InterpreterLine;
     std::getline(File, InterpreterLine);
-    std::vector<std::string> ShebangArguments{};
+    fextl::vector<std::string> ShebangArguments{};
 
     // Shebang line can have a single argument
     std::istringstream InterpreterSS(InterpreterLine);

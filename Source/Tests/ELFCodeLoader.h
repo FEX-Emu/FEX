@@ -227,9 +227,9 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     bool Executable;
   };
 
-  std::vector<LoadedSection> Sections;
+  fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] std::vector<std::string> const &args, std::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
+  ELFCodeLoader(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] fextl::vector<std::string> const &args, fextl::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
     bool LoadedWithFD = false;
@@ -623,8 +623,8 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t AuxVOffset,
     uint64_t ArgumentOffset,
     uint64_t EnvpOffset,
-    const std::vector<std::string> &Args,
-    const std::vector<std::string> &EnvironmentVariables,
+    const fextl::vector<std::string> &Args,
+    const fextl::vector<std::string> &EnvironmentVariables,
     const fextl::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
     uint64_t *AuxTabSize,
@@ -807,7 +807,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     }
   }
 
-  std::vector<std::string> const *GetApplicationArguments() override { return &Args; }
+  fextl::vector<std::string> const *GetApplicationArguments() override { return &Args; }
   void GetExecveArguments(fextl::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {
@@ -904,8 +904,8 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
   constexpr static uint64_t STACK_HINT_32 = 0xFFFFE000 - FULL_STACK_SIZE;
   constexpr static uint64_t STACK_HINT_64 = 0x7FFFFFFFF000 - FULL_STACK_SIZE;
 
-  std::vector<std::string> Args;
-  std::vector<std::string> EnvironmentVariables;
+  fextl::vector<std::string> Args;
+  fextl::vector<std::string> EnvironmentVariables;
   fextl::vector<char const*> LoaderArgs;
 
   fextl::list<auxv_t> AuxVariables;
