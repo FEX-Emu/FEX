@@ -3,6 +3,7 @@
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/queue.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstddef>
@@ -10,7 +11,6 @@
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <thread>
-#include <queue>
 
 namespace FEX::AOT {
 void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection &Section) {
@@ -80,7 +80,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader2::LoadedSection
   std::set<uint64_t> Compiled;
   std::atomic<int> counter = 0;
 
-  std::queue<uint64_t> BranchTargets;
+  fextl::queue<uint64_t> BranchTargets;
 
   // Setup BranchTargets, Compiled sets from InitiaBranchTargets
 
