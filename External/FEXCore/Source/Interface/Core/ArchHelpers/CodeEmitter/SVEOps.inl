@@ -1488,7 +1488,9 @@ public:
 
   // SVE Predicate Count
   // SVE predicate count
-  // XXX:
+  void cntp(SubRegSize size, XRegister rd, PRegister pg, PRegister pn) {
+    SVEPredicateCount(0b000, size, rd, pg, pn);
+  }
 
   // SVE Inc/Dec by Predicate Count
   // SVE saturating inc/dec vector by predicate count
@@ -4189,5 +4191,18 @@ private:
     Instr |= zm.Idx() << 16;
     Instr |= zn.Idx() << 5;
     Instr |= zda.Idx();
+    dc32(Instr);
+  }
+
+  void SVEPredicateCount(uint32_t opc, SubRegSize size, XRegister rd, PRegister pg, PRegister pn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+
+    uint32_t Instr = 0b0010'0101'0010'0000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= pn.Idx() << 5;
+    Instr |= rd.Idx();
+
     dc32(Instr);
   }
