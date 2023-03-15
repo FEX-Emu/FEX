@@ -1,5 +1,7 @@
 #pragma once
-#include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/AllocatorHooks.h>
+
+#include <memory>
 
 namespace fextl {
   /**
