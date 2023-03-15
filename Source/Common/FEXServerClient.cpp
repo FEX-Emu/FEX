@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/NetStream.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <fcntl.h>
 #include <filesystem>
@@ -312,7 +313,7 @@ namespace FEXServerClient {
     int Result = write(ServerSocket, &Req, sizeof(Req.BasicRequest));
     if (Result != -1) {
       // Wait for success response with data
-      std::vector<char> Data(PATH_MAX + sizeof(FEXServerResultPacket));
+      fextl::vector<char> Data(PATH_MAX + sizeof(FEXServerResultPacket));
 
       ssize_t DataResult = recv(ServerSocket, Data.data(), Data.size(), 0);
       if (DataResult >= sizeof(FEXServerResultPacket)) {
