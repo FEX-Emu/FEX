@@ -332,7 +332,7 @@ function(AddDefaultOptionsToTarget Name)
   target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
 
   target_compile_definitions(${Name} PRIVATE ${DEFINES})
-  add_dependencies(${Name} CONFIG_INC)
+  add_dependencies(${Name} CONFIG_INC IR_INC)
 
   target_compile_options(${Name}
     PRIVATE
@@ -374,7 +374,6 @@ AddDefaultOptionsToTarget(FEXCore_Base)
 
 function(AddObject Name Type)
   add_library(${Name} ${Type} ${SRCS})
-  add_dependencies(${Name} IR_INC)
 
   target_link_libraries(${Name} FEXCore_Base)
   AddDefaultOptionsToTarget(${Name})
