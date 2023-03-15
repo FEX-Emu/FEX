@@ -8,11 +8,11 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <string>
 #include <memory>
-#include <vector>
 
 namespace FEXCore {
 
@@ -179,7 +179,7 @@ namespace CPU {
 
     // This is the array of code buffers. Unless signals force us to keep more than
     // buffer, there will be only one entry here
-    std::vector<CodeBuffer> CodeBuffers{};
+    fextl::vector<CodeBuffer> CodeBuffers{};
   };
 
 }

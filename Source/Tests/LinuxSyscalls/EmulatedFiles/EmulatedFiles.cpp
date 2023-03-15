@@ -26,7 +26,6 @@ $end_info$
 #include <system_error>
 #include <unistd.h>
 #include <utility>
-#include <vector>
 
 using string = std::string;
 

@@ -12,7 +12,6 @@ $end_info$
 #include <string>
 #include <memory>
 #include <optional>
-#include <vector>
 #include "Common/SoftFloat.h"
 #include "Common/StringUtils.h"
 #include "Interface/Context/Context.h"

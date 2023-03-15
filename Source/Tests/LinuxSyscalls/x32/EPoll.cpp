@@ -19,7 +19,6 @@ $end_info$
 #include <syscall.h>
 #include <time.h>
 #include <unistd.h>
-#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::epoll_event32>, "%lx")
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::timespec32>, "%lx")

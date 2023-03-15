@@ -2,7 +2,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <string>
-#include <vector>
 #include <filesystem>
 #include <fstream>
 #include <span>
@@ -16,8 +15,6 @@ namespace FEXCore::FileLoading {
    *
    * @return true on file loaded, false on failure
    */
-  // TODO: Delete once all uses of std::vector LoadFile is removed.
-  bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t FixedSize = 0);
   bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t FixedSize = 0);
 
   /**

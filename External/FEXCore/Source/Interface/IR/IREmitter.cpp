@@ -14,7 +14,6 @@ $end_info$
 #include <array>
 #include <stdint.h>
 #include <string.h>
-#include <vector>
 
 namespace FEXCore::IR {
 

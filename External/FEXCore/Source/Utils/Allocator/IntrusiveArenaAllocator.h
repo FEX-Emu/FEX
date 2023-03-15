@@ -24,7 +24,6 @@ namespace fex_pmr = std::pmr;
 #include <sys/user.h>
 
 #include <mutex>
-#include <vector>
 
 namespace Alloc {
   class ForwardOnlyIntrusiveArenaAllocator final : public fex_pmr::memory_resource {

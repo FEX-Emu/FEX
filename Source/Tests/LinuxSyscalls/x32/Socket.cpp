@@ -19,7 +19,6 @@ $end_info$
 #include <stddef.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::mmsghdr_32>, "%lx")
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<void>, "%lx")

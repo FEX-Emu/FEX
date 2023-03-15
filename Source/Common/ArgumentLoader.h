@@ -4,7 +4,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <string>
-#include <vector>
 
 namespace FEX::ArgLoader {
   class ArgLoader final : public FEXCore::Config::Layer {

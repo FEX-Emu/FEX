@@ -29,7 +29,6 @@ $end_info$
 #include <syscall.h>
 #include <time.h>
 #include <unistd.h>
-#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::stack_t32>, "%x")
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEXCore::x86::siginfo_t>, "%x")

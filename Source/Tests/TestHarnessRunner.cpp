@@ -31,7 +31,6 @@ $end_info$
 #include <signal.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <vector>
 #include <utility>
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {

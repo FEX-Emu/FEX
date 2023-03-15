@@ -3,7 +3,6 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 
 #include <stdint.h>
-#include <vector>
 
 namespace FEXCore::Core {
   struct RuntimeStats;

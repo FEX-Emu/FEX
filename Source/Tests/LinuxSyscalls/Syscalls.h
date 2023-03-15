@@ -24,7 +24,6 @@ $end_info$
 #include <fcntl.h>
 #include <stdint.h>
 #include <type_traits>
-#include <vector>
 #include <list>
 #include <map>
 #ifdef _M_X86_64

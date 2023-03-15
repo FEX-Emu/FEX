@@ -4,12 +4,12 @@
 #include <FEXCore/IR/IR.h>
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <new>
 #include <stdint.h>
 #include <string.h>
-#include <vector>
 
 namespace FEXCore::IR {
 class Pass;
@@ -355,7 +355,7 @@ friend class FEXCore::IR::PassManager;
 
     OrderedNode *InvalidNode;
     OrderedNode *CurrentCodeBlock{};
-    std::vector<OrderedNode*> CodeBlocks;
+    fextl::vector<OrderedNode*> CodeBlocks;
     uint64_t Entry;
 };
 

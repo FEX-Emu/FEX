@@ -13,7 +13,6 @@
 #include <memory>
 #include <shared_mutex>
 #include <string>
-#include <vector>
 #include <tsl/robin_map.h>
 
 namespace FEXCore::CodeSerialize {
@@ -107,7 +106,7 @@ namespace FEXCore::CodeSerialize {
         char *CodeData{};
         size_t FileSize{};
 
-        std::vector<CodeObjectFileSection> FileCodeSections;
+        fextl::vector<CodeObjectFileSection> FileCodeSections;
       /**  @} */
 
       // This per section map takes the most time to load and needs to be quick

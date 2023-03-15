@@ -23,7 +23,6 @@ $end_info$
 #include <cstdint>
 #include <map>
 #include <utility>
-#include <vector>
 
 namespace FEXCore::Core {
   struct InternalThreadState;

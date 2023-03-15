@@ -21,7 +21,6 @@ $end_info$
 #include <sys/mman.h>
 #include <sys/shm.h>
 #include <utility>
-#include <vector>
 
 namespace FEX::HLE::x32 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *Handler);
