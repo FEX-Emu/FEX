@@ -6,6 +6,7 @@
 
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <map>
@@ -322,7 +323,7 @@ namespace FEXCore::CodeSerialize {
       // The job queue itself
       // Jobs get consumed as a FIFO
       // Jobs always get appended to the end
-      std::queue<std::unique_ptr<AsyncJobHandler::NamedRegionWorkItem>> WorkQueue{};
+      fextl::queue<std::unique_ptr<AsyncJobHandler::NamedRegionWorkItem>> WorkQueue{};
 
       /**
        * @name Named Region object handling

@@ -2,6 +2,7 @@
 
 #include "FEXCore/IR/RegisterAllocationData.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/unordered_map.h>
 
 #include <atomic>
@@ -11,7 +12,6 @@
 #include <memory>
 #include <map>
 #include <shared_mutex>
-#include <queue>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
 namespace FEXCore::Core {
@@ -140,7 +140,7 @@ namespace FEXCore::IR {
       std::shared_mutex AOTIRCaptureCacheWriteoutLock;
       std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
 
-      std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
+      fextl::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
 
       FEXCore::IR::AOTCacheType AOTIRCache;
 
