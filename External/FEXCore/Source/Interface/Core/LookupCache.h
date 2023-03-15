@@ -1,11 +1,11 @@
 #pragma once
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <memory_resource>
 #include <stddef.h>
 #include <utility>
@@ -67,7 +67,7 @@ public:
     return 0;
   }
 
-  std::map<uint64_t, fextl::vector<uint64_t>> CodePages;
+  fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
 
   // Appends Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code

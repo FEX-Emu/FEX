@@ -12,11 +12,11 @@
 #include <FEXCore/IR/IREmitter.h>
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <fmt/format.h>
-#include <map>
 #include <stddef.h>
 #include <utility>
 
@@ -85,7 +85,7 @@ public:
     bool HaveEmitted;
   };
 
-  std::map<uint64_t, JumpTargetInfo> JumpTargets;
+  fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
 
   OrderedNode* GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);

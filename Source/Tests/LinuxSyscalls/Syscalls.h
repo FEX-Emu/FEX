@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <mutex>
@@ -25,7 +26,6 @@ $end_info$
 #include <stdint.h>
 #include <type_traits>
 #include <list>
-#include <map>
 #ifdef _M_X86_64
 #define SYSCALL_ARCH_NAME x64
 #elif _M_ARM_64
@@ -208,7 +208,7 @@ public:
   void TrackShmat(int shmid, uintptr_t Base, int shmflg);
   void TrackShmdt(uintptr_t Base);
   void TrackMadvise(uintptr_t Base, uintptr_t Size, int advice);
-  
+
   ///// VMA (Virtual Memory Area) tracking /////
   static bool HandleSegfault(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
   void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) override;
@@ -220,7 +220,7 @@ public:
   void UnlockAfterFork();
 
   SourcecodeResolver *GetSourcecodeResolver() override { return this; }
-  
+
 protected:
   SyscallHandler(FEXCore::Context::Context *_CTX, FEX::HLE::SignalDelegator *_SignalDelegation);
 
@@ -254,7 +254,7 @@ private:
   std::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler{};
 
   std::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
-  
+
   ///// VMA (Virtual Memory Area) tracking /////
 
 
@@ -279,7 +279,7 @@ private:
 
   // Used to all MAP_SHARED VMAs of a system resource.
   struct MappedResource {
-    using ContainerType = std::map<MRID, MappedResource>;
+    using ContainerType = fextl::map<MRID, MappedResource>;
 
     FEXCore::IR::AOTIRCacheEntry *AOTIRCacheEntry;
     VMAEntry *FirstVMA;
@@ -294,7 +294,7 @@ private:
       bool Executable: 1;
     };
     uint8_t All: 3;
-    
+
 
     static VMAProt fromProt(int Prot);
     static VMAProt fromSHM(int SHMFlg);
@@ -325,9 +325,9 @@ private:
     using VMAEntry = SyscallHandler::VMAEntry;
     // Held while reading/writing this struct
     std::shared_mutex Mutex;
-    
+
     // Memory ranges indexed by page aligned starting address
-    std::map<uint64_t, VMAEntry> VMAs;
+    fextl::map<uint64_t, VMAEntry> VMAs;
 
     using VMACIterator = decltype(VMAs)::const_iterator;
 
@@ -338,7 +338,7 @@ private:
 
     // Mutex must be unique_locked before calling
     void SetUnsafe(FEXCore::Context::Context *Ctx, MappedResource *MappedResource, uintptr_t Base, uintptr_t Offset, uintptr_t Length, VMAFlags Flags, VMAProt Prot);
-    
+
     // Mutex must be unique_locked before calling
     void ClearUnsafe(FEXCore::Context::Context *Ctx, uintptr_t Base, uintptr_t Length, MappedResource *PreservedMappedResource = nullptr);
 

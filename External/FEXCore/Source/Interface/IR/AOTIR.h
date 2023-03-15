@@ -2,6 +2,7 @@
 
 #include "FEXCore/IR/RegisterAllocationData.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/unordered_map.h>
 
@@ -10,7 +11,6 @@
 #include <functional>
 #include <fstream>
 #include <memory>
-#include <map>
 #include <shared_mutex>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
@@ -70,7 +70,7 @@ namespace FEXCore::IR {
 
   struct AOTIRCaptureCacheEntry {
     std::unique_ptr<std::ofstream> Stream;
-    std::map<uint64_t, uint64_t> Index;
+    fextl::map<uint64_t, uint64_t> Index;
 
     void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData);
   };

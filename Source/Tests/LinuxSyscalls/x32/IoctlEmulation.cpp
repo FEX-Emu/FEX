@@ -15,6 +15,7 @@
 #undef _CUSTOM_META_OFFSET
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
@@ -131,7 +132,7 @@ namespace FEX::HLE::x32 {
       }
       // With four elements total (3 + 1) then this is a single cacheline in size
       std::pair<uint32_t, HandlerType> LRUCache[LRUSize + 1];
-      std::map<uint32_t, HandlerType> FDToHandler;
+      fextl::map<uint32_t, HandlerType> FDToHandler;
     };
 
     static LRUCacheFDCache<3> FDToHandler;

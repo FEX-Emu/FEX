@@ -17,11 +17,11 @@ $end_info$
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <cstdint>
-#include <map>
 #include <utility>
 
 namespace FEXCore::Core {
@@ -62,7 +62,7 @@ private:
   uint64_t Entry;
   CPUBackend::CompiledCode CodeData{};
 
-  std::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
+  fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
   [[nodiscard]] FEXCore::ARMEmitter::Register GetReg(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);

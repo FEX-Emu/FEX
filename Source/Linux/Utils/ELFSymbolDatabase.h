@@ -1,5 +1,6 @@
 #pragma once
 
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -7,7 +8,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <string>
 #include <utility>
 
@@ -60,7 +60,7 @@ private:
   SymbolTableType SymbolMapNoWeak;
   SymbolTableType SymbolMapNoMain;
   SymbolTableType SymbolMapNoMainNoWeak;
-  std::map<uint64_t, ELFLoader::ELFSymbol *> SymbolMapByAddress;
+  fextl::map<uint64_t, ELFLoader::ELFSymbol *> SymbolMapByAddress;
 
   bool FindLibraryFile(std::string *Result, const char *Library);
   void FillLibrarySearchPaths();

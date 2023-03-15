@@ -21,6 +21,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -350,8 +351,8 @@ namespace FEX::HarnessHelper {
       return Matches;
     }
 
-    std::map<uintptr_t, size_t> GetMemoryRegions() {
-      std::map<uintptr_t, size_t> regions;
+    fextl::map<uintptr_t, size_t> GetMemoryRegions() {
+      fextl::map<uintptr_t, size_t> regions;
 
       uintptr_t DataOffset = BaseConfig.OptionMemoryRegionOffset;
       for (unsigned i = 0; i < BaseConfig.OptionMemoryRegionCount; ++i) {

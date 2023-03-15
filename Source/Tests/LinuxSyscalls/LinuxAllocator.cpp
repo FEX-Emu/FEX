@@ -4,9 +4,9 @@
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
+#include <FEXCore/fextl/map.h>
 
 #include <bitset>
-#include <map>
 #include <linux/mman.h>
 #include <unistd.h>
 #include <sys/user.h>
@@ -73,7 +73,7 @@ private:
   // Set that contains 4k mapped pages
   // This is the full 32bit memory range
   std::bitset<0x10'0000> MappedPages;
-  std::map<uint32_t, int> PageToShm{};
+  fextl::map<uint32_t, int> PageToShm{};
   uint64_t LastScanLocation{};
   uint64_t LastKeyLocation{};
   uint64_t LastKeyLocation32Bit{};

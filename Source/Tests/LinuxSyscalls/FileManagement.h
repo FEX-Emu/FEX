@@ -6,12 +6,12 @@ $end_info$
 
 #pragma once
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_set.h>
 
 #include <cstdint>
 #include <fcntl.h>
 #include <functional>
-#include <map>
 #include <mutex>
 #include <linux/limits.h>
 #include <optional>
@@ -81,7 +81,7 @@ public:
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
-  std::map<std::string, std::string, std::less<>> ThunkOverlays;
+  fextl::map<std::string, std::string, std::less<>> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
