@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <atomic>
 #include <cerrno>
@@ -49,7 +50,6 @@ $end_info$
 #include <thread>
 #include <unistd.h>
 #include <utility>
-#include <vector>
 
 #include <fmt/format.h>
 #include <sys/sysinfo.h>
@@ -348,7 +348,7 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-  std::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
+  fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
 
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists
