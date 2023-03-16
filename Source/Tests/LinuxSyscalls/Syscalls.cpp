@@ -243,7 +243,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
   // AT_EMPTY_PATH is only used if the pathname is empty.
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
-  std::string FDExecEnv;
+  fextl::string FDExecEnv;
 
   bool IsShebang{};
 
@@ -993,7 +993,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     IndexStream.write("fexsrcindex0", strlen("fexsrcindex0"));
 
     // objdump parsing
-    std::string Line;
+    fextl::string Line;
     int LineNum = 0;
 
     bool PreviousLineWasEmpty = false;
@@ -1040,7 +1040,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
         // LogMan::Msg::DFmt("Line: '{}'", Line);
 
         if (isHEX(Line[0])) {
-          std::string addr;
+          fextl::string addr;
           int offs = 1;
           for (; !isspace(Line[offs]) && offs < Line.size(); offs++)
             ;

@@ -1,9 +1,8 @@
 #pragma once
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
-
-#include <string>
 
 namespace FEX::ArgLoader {
   class ArgLoader final : public FEXCore::Config::Layer {

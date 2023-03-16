@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <stdint.h>
-#include <string>
 
 namespace FEX::FormatCheck {
   bool IsSquashFS(fextl::string const &Filename) {

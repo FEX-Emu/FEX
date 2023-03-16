@@ -11,6 +11,7 @@ $end_info$
 
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/string.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -41,7 +42,7 @@ class x64SyscallHandler final : public FEX::HLE::SyscallHandler {
     int32_t HostSyscallNumber,
     FEXCore::IR::SyscallFlags Flags,
 #ifdef DEBUG_STRACE
-    const std::string& TraceFormatString,
+    const fextl::string& TraceFormatString,
 #endif
     void* SyscallHandler, int ArgumentCount) override {
     auto &Def = Definitions.at(SyscallNumber);
@@ -83,7 +84,7 @@ std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Contex
 template<typename R, typename ...Args>
 void RegisterSyscall(SyscallHandler *Handler, int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
 #ifdef DEBUG_STRACE
-  auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
+  auto TraceFormatString = fextl::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif
   Handler->RegisterSyscall_64(SyscallNumber,
     HostSyscallNumber,

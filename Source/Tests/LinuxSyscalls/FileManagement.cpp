@@ -29,7 +29,6 @@ $end_info$
 #include <fstream>
 #include <optional>
 #include <stdio.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <syscall.h>
@@ -151,7 +150,7 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
           }
         }
         else if (ItemName == "Overlay") {
-          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, std::string LibraryItem) {
+          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, fextl::string LibraryItem) {
             constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
@@ -171,16 +170,16 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
             const std::pair PrefixHome { "@HOME@"sv, LibraryItem.find("@HOME@") };
             const std::pair PrefixLib { "@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@") };
 
-            std::string::size_type PrefixPositions[] = {
+            fextl::string::size_type PrefixPositions[] = {
               PrefixArch.second, PrefixHome.second, PrefixLib.second,
             };
             // Sort offsets in descending order to enable safe in-place replacement
             std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<>{});
 
             for (auto& LibPrefix : LibPrefixes) {
-              std::string Replacement = LibraryItem;
+              fextl::string Replacement = LibraryItem;
               for (auto PrefixPos : PrefixPositions) {
-                if (PrefixPos == std::string::npos) {
+                if (PrefixPos == fextl::string::npos) {
                   continue;
                 } else if (PrefixPos == PrefixArch.second) {
                   Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode]);
@@ -192,7 +191,7 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
               }
               DBObject.Overlays.emplace_back(std::move(Replacement));
 
-              if (PrefixLib.second == std::string::npos) {
+              if (PrefixLib.second == fextl::string::npos) {
                 // Don't repeat for other LibPrefixes entries if the prefix wasn't used
                 break;
               }
@@ -657,7 +656,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   // Can't use `GetSelf` directly here since readlink{at,} returns EINVAL if it isn't a symlink
   // Self is always a symlink and isn't expected to fail
 
-  std::string Path{};
+  fextl::string Path{};
   if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
         !pathname) &&
         dirfd != AT_FDCWD) {

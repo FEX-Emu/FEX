@@ -3,7 +3,6 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <string>
 #include <elf.h>
 #include <fstream>
 #include <fcntl.h>

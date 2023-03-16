@@ -4,8 +4,6 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
-#include <string>
-
 namespace FEXServerClient {
   enum class PacketType {
     // Request and Result

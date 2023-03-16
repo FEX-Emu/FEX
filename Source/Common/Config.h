@@ -2,8 +2,6 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/string.h>
 
-#include <string>
-
 /**
  * @brief This is a singleton for storing global configuration state
  */

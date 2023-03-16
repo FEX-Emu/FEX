@@ -6,6 +6,8 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/fextl/string.h>
+
 #include "Tests/LinuxSyscalls/Syscalls.h"
 
 #include <memory>
@@ -41,7 +43,7 @@ public:
     int32_t HostSyscallNumber,
     FEXCore::IR::SyscallFlags Flags,
 #ifdef DEBUG_STRACE
-    const std::string& TraceFormatString,
+    const fextl::string& TraceFormatString,
 #endif
     void* SyscallHandler, int ArgumentCount) override {
     auto &Def = Definitions.at(SyscallNumber);
@@ -85,7 +87,7 @@ std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Contex
 template<typename R, typename ...Args>
 void RegisterSyscall(SyscallHandler *Handler, int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags, const char *Name, R(*fn)(FEXCore::Core::CpuStateFrame *Frame, Args...)) {
 #ifdef DEBUG_STRACE
-  auto TraceFormatString = std::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
+  auto TraceFormatString = fextl::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif
   Handler->RegisterSyscall_32(SyscallNumber,
     HostSyscallNumber,

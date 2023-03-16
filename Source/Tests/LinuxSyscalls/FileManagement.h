@@ -7,6 +7,7 @@ $end_info$
 #pragma once
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_set.h>
 
 #include <cstdint>
@@ -16,7 +17,6 @@ $end_info$
 #include <linux/limits.h>
 #include <optional>
 #include <stddef.h>
-#include <string>
 #include <sys/stat.h>
 #include <unistd.h>
 

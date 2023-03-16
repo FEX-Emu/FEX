@@ -624,7 +624,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t ArgumentOffset,
     uint64_t EnvpOffset,
     const fextl::vector<fextl::string> &Args,
-    const fextl::vector<std::string> &EnvironmentVariables,
+    const fextl::vector<fextl::string> &EnvironmentVariables,
     const fextl::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
     uint64_t *AuxTabSize,
@@ -905,7 +905,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
   constexpr static uint64_t STACK_HINT_64 = 0x7FFFFFFFF000 - FULL_STACK_SIZE;
 
   fextl::vector<fextl::string> Args;
-  fextl::vector<std::string> EnvironmentVariables;
+  fextl::vector<fextl::string> EnvironmentVariables;
   fextl::vector<char const*> LoaderArgs;
 
   fextl::list<auxv_t> AuxVariables;

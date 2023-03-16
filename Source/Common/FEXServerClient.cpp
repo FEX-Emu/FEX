@@ -11,7 +11,6 @@
 #include <filesystem>
 #include <linux/limits.h>
 #include <unistd.h>
-#include <string>
 #include <sys/poll.h>
 #include <sys/prctl.h>
 #include <sys/signal.h>
