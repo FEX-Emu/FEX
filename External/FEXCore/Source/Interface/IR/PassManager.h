@@ -8,6 +8,7 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -47,7 +48,7 @@ class PassManager final {
 public:
   void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
-  Pass* InsertPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
+  Pass* InsertPass(std::unique_ptr<Pass> Pass, fextl::string Name = "") {
     Pass->RegisterPassManager(this);
     auto PassPtr = Passes.emplace_back(std::move(Pass)).get();
 
@@ -65,16 +66,16 @@ public:
     ExitHandler = std::move(Handler);
   }
 
-  bool HasPass(std::string Name) const {
+  bool HasPass(fextl::string Name) const {
     return NameToPassMaping.contains(Name);
   }
 
   template<typename T>
-  T* GetPass(std::string Name) {
+  T* GetPass(fextl::string Name) {
     return dynamic_cast<T*>(NameToPassMaping[Name]);
   }
 
-  Pass* GetPass(std::string Name) {
+  Pass* GetPass(fextl::string Name) {
     return NameToPassMaping[Name];
   }
 
@@ -88,11 +89,11 @@ protected:
 
 private:
   fextl::vector<std::unique_ptr<Pass>> Passes;
-  fextl::unordered_map<std::string, Pass*> NameToPassMaping;
+  fextl::unordered_map<fextl::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   fextl::vector<std::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(std::unique_ptr<Pass> Pass, std::string Name = "") {
+  void InsertValidationPass(std::unique_ptr<Pass> Pass, fextl::string Name = "") {
     Pass->RegisterPassManager(this);
     auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
 
