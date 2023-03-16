@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/CPUInfo.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include "git_version.h"
@@ -112,7 +113,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
   uint64_t MIDR{};
   for (size_t i = 0; i < CPUs; ++i) {
     std::error_code ec{};
-    std::string MIDRPath = fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i);
+    fextl::string MIDRPath = fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i).c_str();
 
     std::array<char, 18> Data;
     // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
