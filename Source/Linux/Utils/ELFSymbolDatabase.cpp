@@ -11,13 +11,13 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/sstream.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdlib>
 #include <cstring>
 #include <elf.h>
 #include <set>
-#include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <tuple>
@@ -40,9 +40,9 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
   // At least we can scan LD_LIBRARY_PATH
   auto EnvVar = getenv("LD_LIBRARY_PATH");
   if (EnvVar) {
-    std::string Env = EnvVar;
+    fextl::string Env = EnvVar;
     fextl::stringstream EnvStream(Env);
-    std::string Token;
+    fextl::string Token;
     while (std::getline(EnvStream, Token, ';')) {
       LibrarySearchPaths.emplace_back(Token);
     }
@@ -51,7 +51,7 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
 
 bool ELFSymbolDatabase::FindLibraryFile(fextl::string *Result, const char *Library) {
   for (auto &Path : LibrarySearchPaths) {
-    std::string TmpPath = Path + "/" + Library;
+    fextl::string TmpPath = Path + "/" + Library;
     struct stat buf;
     // XXX: std::filesystem::exists was crashing in std::filesystem::path's destructor?
     if (stat(TmpPath.c_str(), &buf) == 0) {
@@ -71,7 +71,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
     return;
   }
 
-  fextl::vector<std::string> UnfilledDependencies;
+  fextl::vector<fextl::string> UnfilledDependencies;
   fextl::vector<ELFInfo*> NewLibraries;
 
   auto FillDependencies = [&UnfilledDependencies, this](ELFInfo *ELF) {
@@ -203,7 +203,7 @@ void ELFSymbolDatabase::FillMemoryLayouts(uint64_t DefinedBase) {
 }
 
 void ELFSymbolDatabase::FillInitializationOrder() {
-  std::set<std::string> AlreadyInList;
+  std::set<fextl::string> AlreadyInList;
 
   while (true) {
     if (InitializationOrder.size() == DynamicELFInfo.size())

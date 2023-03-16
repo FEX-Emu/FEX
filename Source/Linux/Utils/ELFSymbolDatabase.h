@@ -2,13 +2,13 @@
 
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include "Linux/Utils/ELFContainer.h"
 
 #include <cstdint>
 #include <functional>
-#include <string>
 #include <utility>
 
 namespace ELFLoader {
@@ -35,7 +35,7 @@ private:
   ::ELFLoader::ELFContainer *File;
 
   struct ELFInfo {
-    std::string Name;
+    fextl::string Name;
     ::ELFLoader::ELFContainer* Container;
     ::ELFLoader::ELFContainer::MemoryLayout CustomLayout;
     void *ELFBase;
@@ -49,12 +49,12 @@ private:
   bool FixedNoReplace {true};
   void *ELFBase{};
 
-  fextl::unordered_map<std::string, ELFInfo*> NameToELF;
-  fextl::vector<std::string> LibrarySearchPaths;
+  fextl::unordered_map<fextl::string, ELFInfo*> NameToELF;
+  fextl::vector<fextl::string> LibrarySearchPaths;
 
   // Symbols
   fextl::vector<ELFLoader::ELFSymbol*> Symbols;
-  using SymbolTableType = fextl::unordered_map<std::string, ELFLoader::ELFSymbol *>;
+  using SymbolTableType = fextl::unordered_map<fextl::string, ELFLoader::ELFSymbol *>;
   SymbolTableType SymbolMap;
   SymbolTableType SymbolMapGlobalOnly;
   SymbolTableType SymbolMapNoWeak;
@@ -70,7 +70,7 @@ private:
 
   void HandleRelocations();
 
-  ::ELFLoader::ELFSymbol const *GetSymbolFromTable(RangeType Address, fextl::unordered_map<std::string, ELFLoader::ELFSymbol *> &Table);
+  ::ELFLoader::ELFSymbol const *GetSymbolFromTable(RangeType Address, fextl::unordered_map<fextl::string, ELFLoader::ELFSymbol *> &Table);
 };
 }
 
