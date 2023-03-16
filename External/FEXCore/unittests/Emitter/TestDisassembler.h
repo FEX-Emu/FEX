@@ -1,4 +1,6 @@
 #pragma once
+#include <FEXCore/fextl/string.h>
+
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 
 #include <aarch64/cpu-aarch64.h>
@@ -21,7 +23,7 @@ public:
     fclose(fp);
   }
 
-  std::string DisassembleSingle() {
+  fextl::string DisassembleSingle() {
     HandleDisasm();
     char Tmp[512];
     uint64_t Addr;
@@ -42,9 +44,9 @@ public:
     return Values[Offset];
   }
 
-  std::string DisassembleString() {
+  fextl::string DisassembleString() {
     HandleDisasm();
-    std::string Decoded{};
+    fextl::string Decoded{};
     char Tmp[512];
     uint64_t Addr;
     uint32_t Encoding;
