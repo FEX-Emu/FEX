@@ -9,3 +9,10 @@ namespace fextl {
 
   using string = fextl::basic_string<char>;
 }
+
+template<>
+ struct std::hash<fextl::string> {
+  std::size_t operator()(fextl::string const& s) const noexcept {
+    return std::hash<std::string_view>{}(s);
+  };
+};
