@@ -1,9 +1,10 @@
 #pragma once
+#include <FEXCore/fextl/string.h>
+
 #include <algorithm>
-#include <string>
 
 namespace FEX::StringUtil {
-void ltrim(std::string &s);
-void rtrim(std::string &s);
-void trim(std::string &s);
+void ltrim(fextl::string &s);
+void rtrim(fextl::string &s);
+void trim(fextl::string &s);
 }

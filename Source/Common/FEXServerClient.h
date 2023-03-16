@@ -51,8 +51,8 @@ namespace FEXServerClient {
   fextl::string GetServerLockFolder();
   fextl::string GetServerLockFile();
   fextl::string GetServerRootFSLockFile();
-  std::string GetServerMountFolder();
-  std::string GetServerSocketName();
+  fextl::string GetServerMountFolder();
+  fextl::string GetServerSocketName();
   int GetServerFD();
 
   bool SetupClient(char *InterpreterPath);
@@ -94,7 +94,7 @@ namespace FEXServerClient {
    */
   int RequestLogFD(int ServerSocket);
 
-  std::string RequestRootFSPath(int ServerSocket);
+  fextl::string RequestRootFSPath(int ServerSocket);
 
   /**
    * @brief Request a FEXServer to give us a pidfd of the process
