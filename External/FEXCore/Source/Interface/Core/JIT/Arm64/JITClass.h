@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <array>
@@ -35,7 +36,7 @@ public:
                         FEXCore::Core::InternalThreadState *Thread);
   ~Arm64JITCore() override;
 
-  [[nodiscard]] std::string GetName() override { return "JIT"; }
+  [[nodiscard]] fextl::string GetName() override { return "JIT"; }
 
   [[nodiscard]] CPUBackend::CompiledCode CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,

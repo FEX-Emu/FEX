@@ -8,10 +8,10 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
-#include <string>
 #include <memory>
 
 namespace FEXCore {
@@ -54,7 +54,7 @@ namespace CPU {
     /**
      * @return The name of this backend
      */
-    [[nodiscard]] virtual std::string GetName() = 0;
+    [[nodiscard]] virtual fextl::string GetName() = 0;
 
     struct CompiledCode {
       // Where this code block begins.
