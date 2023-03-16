@@ -4,12 +4,12 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <tuple>
-#include <vector>
 #include <istream>
 #include <ostream>
 

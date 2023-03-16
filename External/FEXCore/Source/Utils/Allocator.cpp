@@ -156,10 +156,10 @@ namespace FEXCore::Allocator {
 
   #define STEAL_LOG(...) // fprintf(stderr, __VA_ARGS__)
 
-  std::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
+  fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
     void * const StackLocation = alloca(0);
     const uintptr_t StackLocation_u64 = reinterpret_cast<uintptr_t>(StackLocation);
-    std::vector<MemoryRegion> Regions;
+    fextl::vector<MemoryRegion> Regions;
 
     int MapsFD = open("/proc/self/maps", O_RDONLY);
     LogMan::Throw::AFmt(MapsFD != -1, "Failed to open /proc/self/maps");
@@ -287,7 +287,7 @@ namespace FEXCore::Allocator {
     ERROR_AND_DIE_FMT("unreachable");
   }
 
-  std::vector<MemoryRegion> Steal48BitVA() {
+  fextl::vector<MemoryRegion> Steal48BitVA() {
     size_t Bits = FEXCore::Allocator::DetermineVASize();
     if (Bits < 48) {
       return {};
@@ -298,7 +298,7 @@ namespace FEXCore::Allocator {
     return StealMemoryRegion(Begin48BitVA, End48BitVA);
   }
 
-  void ReclaimMemoryRegion(const std::vector<MemoryRegion> &Regions) {
+  void ReclaimMemoryRegion(const fextl::vector<MemoryRegion> &Regions) {
     for (const auto &Region: Regions) {
       ::munmap(Region.Ptr, Region.Size);
     }

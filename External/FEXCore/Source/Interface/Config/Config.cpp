@@ -7,6 +7,7 @@
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -16,7 +17,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <map>
 #include <memory>
 #include <optional>
 #include <stddef.h>
@@ -26,7 +26,6 @@
 #include <system_error>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include <tiny-json.h>
 
@@ -209,7 +208,7 @@ namespace JSON {
     return 0;
   }
 
-  static std::map<FEXCore::Config::LayerType, std::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
+  static fextl::map<FEXCore::Config::LayerType, std::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
   static FEXCore::Config::Layer *Meta{};
 
   constexpr std::array<FEXCore::Config::LayerType, 9> LoadOrder = {
@@ -648,7 +647,7 @@ namespace JSON {
     char *const *envp;
   };
 
-  static const std::map<std::string, FEXCore::Config::ConfigOption, std::less<>> ConfigLookup = {{
+  static const fextl::map<std::string, FEXCore::Config::ConfigOption, std::less<>> ConfigLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};

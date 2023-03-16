@@ -12,7 +12,6 @@
 #include <fstream>
 #include <sys/mman.h>
 #include <sys/user.h>
-#include <vector>
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
@@ -22,6 +21,8 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
@@ -156,7 +157,7 @@ namespace FEX::HarnessHelper {
     return Matches;
   }
 
-  inline void ReadFile(std::string const &Filename, std::vector<char> *Data) {
+  inline void ReadFile(std::string const &Filename, fextl::vector<char> *Data) {
     std::fstream TestFile(Filename, std::fstream::in | std::fstream::binary);
     LOGMAN_THROW_A_FMT(TestFile.is_open(), "Failed to open file");
 
@@ -177,8 +178,8 @@ namespace FEX::HarnessHelper {
       GetEnvironmentOptions();
     }
 
-    std::vector<std::pair<std::string_view, std::string_view>> GetEnvironmentOptions() {
-      std::vector<std::pair<std::string_view, std::string_view>> Env{};
+    fextl::vector<std::pair<std::string_view, std::string_view>> GetEnvironmentOptions() {
+      fextl::vector<std::pair<std::string_view, std::string_view>> Env{};
 
       uintptr_t DataOffset = BaseConfig.OptionEnvOptionOffset;
       for (unsigned i = 0; i < BaseConfig.OptionEnvOptionCount; ++i) {
@@ -350,8 +351,8 @@ namespace FEX::HarnessHelper {
       return Matches;
     }
 
-    std::map<uintptr_t, size_t> GetMemoryRegions() {
-      std::map<uintptr_t, size_t> regions;
+    fextl::map<uintptr_t, size_t> GetMemoryRegions() {
+      fextl::map<uintptr_t, size_t> regions;
 
       uintptr_t DataOffset = BaseConfig.OptionMemoryRegionOffset;
       for (unsigned i = 0; i < BaseConfig.OptionMemoryRegionCount; ++i) {
@@ -437,7 +438,7 @@ namespace FEX::HarnessHelper {
       uint8_t data[];
     } FEX_PACKED;
 
-    std::vector<char> RawConfigFile;
+    fextl::vector<char> RawConfigFile;
     ConfigStructBase BaseConfig;
   };
 
@@ -519,7 +520,7 @@ namespace FEX::HarnessHelper {
       Config.LoadMemory();
     }
 
-    std::vector<std::pair<std::string_view, std::string_view>> GetEnvironmentOptions() {
+    fextl::vector<std::pair<std::string_view, std::string_view>> GetEnvironmentOptions() {
       return Config.GetEnvironmentOptions();
     }
 

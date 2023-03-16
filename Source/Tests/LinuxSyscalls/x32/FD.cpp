@@ -37,7 +37,6 @@ $end_info$
 #include <time.h>
 #include <type_traits>
 #include <unistd.h>
-#include <vector>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::sigset_argpack32>, "%lx")
 

@@ -10,8 +10,6 @@ $end_info$
 
 #include <FEXCore/HLE/SyscallHandler.h>
 
-#include <map>
-
 namespace FEX::HLE::x64 {
   void RegisterEpoll(FEX::HLE::SyscallHandler *Handler);
   void RegisterFD(FEX::HLE::SyscallHandler *Handler);

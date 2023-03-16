@@ -13,7 +13,6 @@
 #include <cstdint>
 #include <utility>
 #include <type_traits>
-#include <vector>
 
 /*
  * Welcome to FEX-Emu's custom AArch64 emitter.

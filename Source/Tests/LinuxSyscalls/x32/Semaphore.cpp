@@ -22,7 +22,6 @@ $end_info$
 #include <sys/shm.h>
 #include <time.h>
 #include <type_traits>
-#include <vector>
 
 namespace FEXCore::Core {
   struct CpuStateFrame;

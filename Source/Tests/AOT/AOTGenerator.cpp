@@ -5,6 +5,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstddef>
@@ -93,7 +94,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
 
   std::mutex QueueMutex;
-  std::vector<std::thread> ThreadPool;
+  fextl::vector<std::thread> ThreadPool;
 
   for (int i = 0; i < get_nprocs_conf(); i++) {
     std::thread thd([&BranchTargets, CTX, &counter, &Compiled, &Section, &QueueMutex, SectionMaxAddress]() {

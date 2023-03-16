@@ -14,7 +14,6 @@ $end_info$
 
 #include <sys/mman.h>
 #include <sys/shm.h>
-#include <map>
 #include <unistd.h>
 
 #include <FEXCore/Core/Context.h>

@@ -59,8 +59,8 @@ namespace FEXCore::Core {
    */
   struct DebugData {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
-    std::vector<DebugDataSubblock> Subblocks;
-    std::vector<DebugDataGuestOpcode> GuestOpcodes;
+    fextl::vector<DebugDataSubblock> Subblocks;
+    fextl::vector<DebugDataGuestOpcode> GuestOpcodes;
     fextl::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 

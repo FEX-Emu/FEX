@@ -7,6 +7,7 @@
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <array>
@@ -157,9 +158,9 @@ namespace Alloc::OSAllocator {
       }
 
       // 32-bit old kernel workarounds
-      std::vector<FEXCore::Allocator::MemoryRegion> Steal32BitIfOldKernel();
+      fextl::vector<FEXCore::Allocator::MemoryRegion> Steal32BitIfOldKernel();
 
-      void AllocateMemoryRegions(std::vector<FEXCore::Allocator::MemoryRegion> const &Ranges);
+      void AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::MemoryRegion> const &Ranges);
       LiveVMARegion *FindLiveRegionForAddress(uintptr_t Addr, uintptr_t AddrEnd);
   };
 
@@ -482,7 +483,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   return 0;
 }
 
-std::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfOldKernel() {
+fextl::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfOldKernel() {
   // First calculate kernel version
   struct utsname buf{};
   if (uname(&buf) == -1) {
@@ -513,7 +514,7 @@ std::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfOld
   return FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND_32, UPPER_BOUND_32);
 }
 
-void OSAllocator_64Bit::AllocateMemoryRegions(std::vector<FEXCore::Allocator::MemoryRegion> const &Ranges) {
+void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::MemoryRegion> const &Ranges) {
   for (auto [Ptr, AllocationSize]: Ranges) {
     if (!ObjectAlloc) {
       auto MaxSize = std::min(size_t(64) * 1024 * 1024, AllocationSize);

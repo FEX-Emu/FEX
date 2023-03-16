@@ -39,7 +39,6 @@ $end_info$
 #include <tuple>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 #include <xbyak/xbyak.h>
 
 // #define DEBUG_RA 1

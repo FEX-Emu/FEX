@@ -1,7 +1,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <string>
-#include <vector>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -9,37 +8,6 @@
 #include <unistd.h>
 
 namespace FEXCore::FileLoading {
-// TODO: Delete once all uses of std::vector LoadFile is removed.
-bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t FixedSize) {
-  int FD = open(Filepath.c_str(), O_RDONLY);
-
-  if (FD == -1) {
-    return false;
-  }
-
-  size_t FileSize{};
-  if (FixedSize == 0) {
-    struct stat buf;
-    if (fstat(FD, &buf) != 0) {
-      close(FD);
-      return false;
-    }
-
-    FileSize = buf.st_size;
-  }
-  else {
-    FileSize = FixedSize;
-  }
-
-  ssize_t Read = -1;
-  if (FileSize > 0) {
-    Data.resize(FileSize);
-    Read = pread(FD, &Data.at(0), FileSize, 0);
-  }
-  close(FD);
-  return Read == FileSize;
-}
-
 bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t FixedSize) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 

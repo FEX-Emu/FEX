@@ -1,5 +1,6 @@
 #include "Common/ArgumentLoader.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/vector.h>
 
 #include "OptionParser.h"
 #include "git_version.h"
@@ -7,8 +8,8 @@
 #include <stdint.h>
 
 namespace FEX::ArgLoader {
-  std::vector<std::string> RemainingArgs;
-  std::vector<std::string> ProgramArguments;
+  fextl::vector<std::string> RemainingArgs;
+  fextl::vector<std::string> ProgramArguments;
 
   static std::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
   void FEX::ArgLoader::ArgLoader::Load() {
@@ -37,8 +38,12 @@ namespace FEX::ArgLoader {
     using uint32 = uint32_t;
 #define AFTER_PARSE
 #include <FEXCore/Config/ConfigOptions.inl>
-    RemainingArgs = Parser.args();
-    ProgramArguments = Parser.parsed_args();
+    // TODO: Convert cpp-optparse over to fextl::vector
+    auto ParserArgs = Parser.args();
+    auto ParsedArgs = Parser.parsed_args();
+
+    RemainingArgs.insert(RemainingArgs.begin(), ParserArgs.begin(), ParserArgs.end());
+    ProgramArguments.insert(ProgramArguments.begin(), ParsedArgs.begin(), ParsedArgs.end());
   }
 
   void LoadWithoutArguments(int _argc, char **_argv) {
@@ -51,10 +56,10 @@ namespace FEX::ArgLoader {
     ProgramArguments.emplace_back(_argv[0]);
   }
 
-  std::vector<std::string> Get() {
+  fextl::vector<std::string> Get() {
     return RemainingArgs;
   }
-  std::vector<std::string> GetParsedArgs() {
+  fextl::vector<std::string> GetParsedArgs() {
     return ProgramArguments;
   }
 

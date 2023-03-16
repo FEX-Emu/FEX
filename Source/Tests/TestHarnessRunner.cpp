@@ -22,6 +22,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <csetjmp>
 #include <cstdint>
@@ -30,7 +31,6 @@ $end_info$
 #include <signal.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <vector>
 #include <utility>
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
@@ -67,7 +67,7 @@ void AssertHandler(char const *Message) {
 }
 
 namespace {
-static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+static const fextl::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
 }};
@@ -75,7 +75,7 @@ static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> 
 // Claims to be a local application config layer
 class TestEnvLoader final : public FEXCore::Config::Layer {
 public:
-  explicit TestEnvLoader(std::vector<std::pair<std::string_view, std::string_view>> _Env)
+  explicit TestEnvLoader(fextl::vector<std::pair<std::string_view, std::string_view>> _Env)
     : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_LOCAL_APP)
     , Env {std::move(_Env)} {
     Load();
@@ -109,7 +109,7 @@ public:
   }
 
 private:
-  std::vector<std::pair<std::string_view, std::string_view>> Env;
+  fextl::vector<std::pair<std::string_view, std::string_view>> Env;
 };
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <cstdint>
@@ -8,7 +9,6 @@
 #include <utility>
 #include <signal.h>
 #include <stddef.h>
-#include <vector>
 
 namespace FEXCore {
 namespace Core {
@@ -98,7 +98,7 @@ namespace Core {
 
   private:
     struct HostSignalHandler {
-      std::vector<FEXCore::HostSignalDelegatorFunction> Handlers{};
+      fextl::vector<FEXCore::HostSignalDelegatorFunction> Handlers{};
       FEXCore::HostSignalDelegatorFunction FrontendHandler{};
     };
     std::array<HostSignalHandler, MAX_SIGNALS + 1> HostHandlers{};

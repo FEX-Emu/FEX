@@ -2,19 +2,19 @@
 #include "Common/Config.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <map>
 #include <linux/limits.h>
 #include <list>
 #include <utility>
 #include <json-maker.h>
 
 namespace FEX::Config {
-  static const std::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
+  static const fextl::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
 #include <FEXCore/Config/ConfigValues.inl>
   }};

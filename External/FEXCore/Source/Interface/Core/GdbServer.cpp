@@ -12,7 +12,6 @@ $end_info$
 #include <string>
 #include <memory>
 #include <optional>
-#include <vector>
 #include "Common/SoftFloat.h"
 #include "Common/StringUtils.h"
 #include "Interface/Context/Context.h"
@@ -30,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <atomic>
@@ -550,7 +550,7 @@ void GdbServer::buildLibraryMap() {
     uint64_t Begin;
   };
 
-  std::map<std::string, fextl::vector<FileData>> SegmentMaps;
+  fextl::map<std::string, fextl::vector<FileData>> SegmentMaps;
 
   // 7ff5dd6d2000-7ff5dd6d3000 rw-p 0000a000 103:0b 1881447                   /usr/lib/x86_64-linux-gnu/libnss_compat.so.2
   std::string const &RuntimeExecutable = Filename();

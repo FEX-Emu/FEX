@@ -6,14 +6,13 @@
 
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <map>
 #include <memory>
 #include <shared_mutex>
 #include <string>
-#include <vector>
 #include <tsl/robin_map.h>
 
 namespace FEXCore::CodeSerialize {
@@ -107,7 +106,7 @@ namespace FEXCore::CodeSerialize {
         char *CodeData{};
         size_t FileSize{};
 
-        std::vector<CodeObjectFileSection> FileCodeSections;
+        fextl::vector<CodeObjectFileSection> FileCodeSections;
       /**  @} */
 
       // This per section map takes the most time to load and needs to be quick
@@ -133,8 +132,8 @@ namespace FEXCore::CodeSerialize {
   };
 
   // Map type must use an interator that isn't invalidation on erase/insert
-  using CodeRegionMapType = std::map<uint64_t, std::unique_ptr<CodeRegionEntry>>;
-  using CodeRegionPtrMapType = std::map<uint64_t, CodeRegionEntry*>;
+  using CodeRegionMapType = fextl::map<uint64_t, std::unique_ptr<CodeRegionEntry>>;
+  using CodeRegionPtrMapType = fextl::map<uint64_t, CodeRegionEntry*>;
 
   class NamedRegionObjectHandler;
   class CodeObjectSerializeService;

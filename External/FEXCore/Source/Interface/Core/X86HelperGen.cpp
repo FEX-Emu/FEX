@@ -13,7 +13,6 @@ $end_info$
 
 #include <cstdint>
 #include <cstring>
-#include <vector>
 #include <sys/mman.h>
 
 namespace FEXCore {

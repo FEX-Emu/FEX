@@ -2,7 +2,6 @@
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <tuple>
-#include <vector>
 
 namespace FEXCore::X86Tables::X86InstDebugInfo {
 void InstallDebugInfo() {

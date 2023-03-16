@@ -20,7 +20,6 @@ $end_info$
 #include <system_error>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <vector>
 
 namespace ELFLoader {
 

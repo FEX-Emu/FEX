@@ -18,7 +18,6 @@ $end_info$
 #include <sys/epoll.h>
 #include <syscall.h>
 #include <unistd.h>
-#include <vector>
 
 struct timespec;
 namespace FEXCore::Core {

@@ -8,7 +8,6 @@
 #include <stddef.h>
 #include <stack>
 #include <tuple>
-#include <vector>
 
 namespace FEXCore {
 struct GuestSigAction;

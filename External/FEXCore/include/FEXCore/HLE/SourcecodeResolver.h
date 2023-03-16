@@ -1,7 +1,8 @@
 #pragma once
+#include <FEXCore/fextl/vector.h>
+
 #include <algorithm>
 #include <string>
-#include <vector>
 #include <memory>
 #include <filesystem>
 
@@ -45,8 +46,8 @@ struct SourcecodeSymbolMapping {
 
 struct SourcecodeMap {
   std::string SourceFile;
-  std::vector<SourcecodeLineMapping> SortedLineMappings;
-  std::vector<SourcecodeSymbolMapping> SortedSymbolMappings;
+  fextl::vector<SourcecodeLineMapping> SortedLineMappings;
+  fextl::vector<SourcecodeSymbolMapping> SortedSymbolMappings;
 
   template<typename F>
   void IterateLineMappings(uintptr_t FileBegin, uintptr_t Size, const F &Callback) const {

@@ -42,7 +42,7 @@ public:
    */
   virtual bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) { return false; }
 
-  virtual std::vector<std::string> const *GetApplicationArguments() { return nullptr; }
+  virtual fextl::vector<std::string> const *GetApplicationArguments() { return nullptr; }
   virtual void GetExecveArguments(fextl::vector<char const*> *Args) {}
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
