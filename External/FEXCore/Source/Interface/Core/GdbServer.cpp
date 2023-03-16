@@ -8,7 +8,6 @@ $end_info$
 #include <cstdlib>
 #include <cstdio>
 #include <iomanip>
-#include <sstream>
 #include <string>
 #include <memory>
 #include <optional>
@@ -30,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -110,8 +110,8 @@ static int calculateChecksum(const fextl::string &packet) {
   return checksum;
 }
 
-static std::string hexstring(std::istringstream &ss, int delm) {
-  std::string ret;
+static fextl::string hexstring(fextl::istringstream &ss, int delm) {
+  fextl::string ret;
 
   char hexString[3] = {0, 0, 0};
   while (ss.peek() != delm) {
@@ -127,21 +127,20 @@ static std::string hexstring(std::istringstream &ss, int delm) {
 }
 
 static fextl::string encodeHex(const unsigned char *data, size_t length) {
-  std::ostringstream ss;
+  fextl::ostringstream ss;
 
   for (size_t i=0; i < length; i++) {
     ss << std::setfill('0') << std::setw(2) << std::hex << int(data[i]);
   }
-  // TODO: No need to convert once stream is converted to fextl.
-  return ss.str().c_str();
+  return ss.str();
 }
 
-static std::string getThreadName(uint32_t ThreadID) {
+static fextl::string getThreadName(uint32_t ThreadID) {
   const auto ThreadFile = fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
   std::fstream fs(ThreadFile, std::fstream::in | std::fstream::binary);
 
   if (fs.is_open()) {
-    std::string ThreadName;
+    fextl::string ThreadName;
     fs >> ThreadName;
     fs.close();
     return ThreadName;
@@ -174,7 +173,7 @@ fextl::string GdbServer::ReadPacket(std::iostream &stream) {
           LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
 
         // clear any existing data, must have been a mistake.
-        packet = std::string();
+        packet = fextl::string();
         break;
       case '}': // escape char
       {
@@ -206,7 +205,7 @@ fextl::string GdbServer::ReadPacket(std::iostream &stream) {
 }
 
 static fextl::string escapePacket(const fextl::string& packet) {
-  std::ostringstream ss;
+  fextl::ostringstream ss;
 
   for(const auto &c : packet) {
     switch (c) {
@@ -224,8 +223,7 @@ static fextl::string escapePacket(const fextl::string& packet) {
     }
   }
 
-  // TODO: No need to convert once stream is converted to fextl.
-  return ss.str().c_str();
+  return ss.str();
 }
 
 void GdbServer::SendPacket(std::ostream &stream, const fextl::string& packet) {
@@ -316,7 +314,7 @@ fextl::string GdbServer::readRegs() {
 
 GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   size_t addr;
-  auto ss = std::istringstream(packet);
+  auto ss = fextl::istringstream(packet);
   ss.get(); // Drop first letter
   ss >> std::hex >> addr;
 
@@ -399,7 +397,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
 }
 
 fextl::string buildTargetXML() {
-  std::ostringstream xml;
+  fextl::ostringstream xml;
 
   xml << "<?xml version='1.0'?>\n";
   xml << "<!DOCTYPE target SYSTEM 'gdb-target.dtd'>\n";
@@ -520,12 +518,11 @@ fextl::string buildTargetXML() {
   xml << "</target>";
   xml << std::flush;
 
-  // TODO: No need to convert once stream is converted to fextl.
-  return xml.str().c_str();
+  return xml.str();
 }
 
-std::string buildOSData() {
-  std::ostringstream xml;
+fextl::string buildOSData() {
+  fextl::ostringstream xml;
 
   xml << "<?xml version='1.0'?>\n";
 
@@ -545,10 +542,10 @@ void GdbServer::buildLibraryMap() {
     return;
   }
 
-  std::ostringstream xml;
+  fextl::ostringstream xml;
 
   std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
-  std::string Line;
+  fextl::string Line;
 
   struct FileData {
     uint64_t Begin;
@@ -559,7 +556,7 @@ void GdbServer::buildLibraryMap() {
   // 7ff5dd6d2000-7ff5dd6d3000 rw-p 0000a000 103:0b 1881447                   /usr/lib/x86_64-linux-gnu/libnss_compat.so.2
   fextl::string const &RuntimeExecutable = Filename();
   while (std::getline(fs, Line)) {
-    auto ss = std::istringstream(Line);
+    auto ss = fextl::istringstream(Line);
     fextl::string Tmp;
     fextl::string Begin;
     fextl::string Name;
@@ -614,17 +611,17 @@ void GdbServer::buildLibraryMap() {
 }
 
 GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) {
-  std::string object;
-  std::string rw;
-  std::string annex;
+  fextl::string object;
+  fextl::string rw;
+  fextl::string annex;
   int annex_pid;
   int offset;
   int length;
 
   // Parse Xfer message
   {
-    auto ss = std::istringstream(packet);
-    std::string expectXfer;
+    auto ss = fextl::istringstream(packet);
+    fextl::string expectXfer;
     char expectComma;
 
     std::getline(ss, expectXfer, ':');
@@ -635,7 +632,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
       annex_pid = getpid();
     }
     else {
-      auto ss_pid = std::istringstream(annex);
+      auto ss_pid = fextl::istringstream(annex);
       ss_pid >> std::hex >> annex_pid;
     }
     ss >> std::hex >> offset;
@@ -678,7 +675,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
       auto Threads = CTX->GetThreads();
 
       ThreadString.clear();
-      std::ostringstream ss;
+      fextl::ostringstream ss;
       ss << "<?xml version=\"1.0\"?>\n";
       ss << "<threads>\n";
       for (auto &Thread : *Threads) {
@@ -741,7 +738,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
 static size_t CheckMemMapping(uint64_t Address, size_t Size) {
   uint64_t AddressEnd = Address + Size;
   std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
-  std::string Line;
+  fextl::string Line;
 
   while (std::getline(fs, Line)) {
     if (fs.eof()) break;
@@ -773,9 +770,9 @@ GdbServer::HandledPacketType GdbServer::handleMemory(const fextl::string &packet
   bool write;
   size_t addr;
   size_t length;
-  std::string data;
+  fextl::string data;
 
-  auto ss = std::istringstream(packet);
+  auto ss = fextl::istringstream(packet);
   write = ss.get() == 'M';
   ss >> std::hex >> addr;
   ss.get(); // discard comma
@@ -816,7 +813,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
 
   const auto split = [](const fextl::string &Str, char deliminator) -> fextl::vector<fextl::string> {
     fextl::vector<fextl::string> Elements;
-    std::istringstream Input(Str);
+    fextl::istringstream Input(Str);
     for (fextl::string line;
          std::getline(Input, line);
          Elements.emplace_back(line));
@@ -824,8 +821,8 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
   };
 
   if (match("QNonStop:")) {
-    auto ss = std::istringstream(packet);
-    ss.seekg(std::string("QNonStop:").size());
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(fextl::string("QNonStop:").size());
     ss.get(); // discard colon
     ss >> NonStopMode;
     return {"OK", HandledPacketType::TYPE_ACK};
@@ -905,7 +902,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
   if (match("qfThreadInfo")) {
     auto Threads = CTX->GetThreads();
 
-    std::ostringstream ss;
+    fextl::ostringstream ss;
     ss << "m";
     for (size_t i = 0; i < Threads->size(); ++i) {
       auto Thread = Threads->at(i);
@@ -914,15 +911,14 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
         ss << ",";
       }
     }
-    // TODO: No need to convert once stream is converted to fextl.
-    return {ss.str().c_str(), HandledPacketType::TYPE_ACK};
+    return {ss.str(), HandledPacketType::TYPE_ACK};
   }
   if (match("qsThreadInfo")) {
     return {"l", HandledPacketType::TYPE_ACK};
   }
   if (match("qThreadExtraInfo")) {
-    auto ss = std::istringstream(packet);
-    ss.seekg(std::string("qThreadExtraInfo").size());
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(fextl::string("qThreadExtraInfo").size());
     ss.get(); // discard comma
     uint32_t ThreadID;
     ss >> std::hex >> ThreadID;
@@ -931,20 +927,19 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
   }
   if (match("qC")) {
     // Returns the current Thread ID
-    std::ostringstream ss;
+    fextl::ostringstream ss;
     ss << "m" <<  std::hex << CTX->ParentThread->ThreadManager.TID;
-    // TODO: No need to convert once stream is converted to fextl.
-    return {ss.str().c_str(), HandledPacketType::TYPE_ACK};
+    return {ss.str(), HandledPacketType::TYPE_ACK};
   }
   if (match("QStartNoAckMode")) {
     SettingNoAckMode = true;
     return {"OK", HandledPacketType::TYPE_ACK};
   }
   if (match("qSymbol")) {
-    auto ss = std::istringstream(packet);
-    ss.seekg(std::string("qSymbol").size());
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(fextl::string("qSymbol").size());
     ss.get(); // discard colon
-    std::string Symbol_Val, Symbol_name;
+    fextl::string Symbol_Val, Symbol_name;
     std::getline(ss, Symbol_Val, ':');
     std::getline(ss, Symbol_name, ':');
 
@@ -961,13 +956,13 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string &packet)
     std::fill(PassSignals.begin(), PassSignals.end(), false);
 
     // eg: QPassSignals:e;10;14;17;1a;1b;1c;21;24;25;2c;4c;97;
-    auto ss = std::istringstream(packet);
-    ss.seekg(std::string("QPassSignals").size());
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(fextl::string("QPassSignals").size());
     ss.get(); // discard colon
 
     // We now have a semi-colon deliminated list of signals to pass to the guest process
-    for (std::string tmp; std::getline(ss, tmp, ';'); ) {
-      uint32_t Signal = std::stoi(tmp, nullptr, 16);
+    for (fextl::string tmp; std::getline(ss, tmp, ';'); ) {
+      uint32_t Signal = std::stoi(tmp.c_str(), nullptr, 16);
       if (Signal < SignalDelegator::MAX_SIGNALS) {
         PassSignals[Signal] = true;
       }
@@ -1009,9 +1004,9 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
 }
 
 GdbServer::HandledPacketType GdbServer::handleV(const fextl::string& packet) {
-  const auto match = [&](const std::string& str) -> std::optional<std::istringstream> {
+  const auto match = [&](const fextl::string& str) -> std::optional<fextl::istringstream> {
     if (packet.rfind(str, 0) == 0) {
-      auto ss = std::istringstream(packet);
+      auto ss = fextl::istringstream(packet);
       ss.seekg(str.size());
       return ss;
     }
@@ -1025,9 +1020,9 @@ GdbServer::HandledPacketType GdbServer::handleV(const fextl::string& packet) {
     return fextl::string(fmt::format("F{:#x};", result).c_str()) + data;
   };
 
-  std::optional<std::istringstream> ss;
+  std::optional<fextl::istringstream> ss;
   if((ss = match("vFile:open:"))) {
-    std::string filename;
+    fextl::string filename;
     int flags;
     int mode;
 
@@ -1105,8 +1100,8 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(const fextl::string &pack
   if (match("Hc")) {
     // Sets thread to this ID for stepping
     // This is deprecated and vCont should be used instead
-    auto ss = std::istringstream(packet);
-    ss.seekg(std::string("Hc").size());
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(fextl::string("Hc").size());
     ss >> std::hex >> CurrentDebuggingThread;
 
     CTX->Pause();
@@ -1115,7 +1110,7 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(const fextl::string &pack
 
   if (match("Hg")) {
     // Sets thread for "other" operations
-    auto ss = std::istringstream(packet);
+    auto ss = fextl::istringstream(packet);
     ss.seekg(std::string_view("Hg").size());
     ss >> std::hex >> CurrentDebuggingThread;
 
@@ -1128,7 +1123,7 @@ GdbServer::HandledPacketType GdbServer::handleThreadOp(const fextl::string &pack
 }
 
 GdbServer::HandledPacketType GdbServer::handleBreakpoint(const fextl::string &packet) {
-  auto ss = std::istringstream(packet);
+  auto ss = fextl::istringstream(packet);
 
   // Don't do anything with set breakpoints yet
   [[maybe_unused]] bool Set{};
