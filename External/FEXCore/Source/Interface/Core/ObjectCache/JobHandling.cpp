@@ -2,21 +2,21 @@
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>
 #include <filesystem>
 #include <memory>
-#include <string>
 #include <sys/uio.h>
 #include <sys/mman.h>
 #include <xxhash.h>
 
 namespace FEXCore::CodeSerialize {
-  void AsyncJobHandler::AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
+  void AsyncJobHandler::AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const fextl::string &filename) {
     // This function adds a named region *JOB* to our named region handler
     // This needs to be as fast as possible to keep out of the way of the JIT
 
-    auto BaseFilename = std::filesystem::path(filename).filename().string();
+    fextl::string BaseFilename = std::filesystem::path(filename).filename().string().c_str();
 
     if (!BaseFilename.empty()) {
       // Create a new entry that once set up will be put in to our section object map
