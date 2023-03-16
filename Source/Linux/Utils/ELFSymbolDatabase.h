@@ -62,7 +62,7 @@ private:
   SymbolTableType SymbolMapNoMainNoWeak;
   fextl::map<uint64_t, ELFLoader::ELFSymbol *> SymbolMapByAddress;
 
-  bool FindLibraryFile(std::string *Result, const char *Library);
+  bool FindLibraryFile(fextl::string *Result, const char *Library);
   void FillLibrarySearchPaths();
   void FillMemoryLayouts(uint64_t DefinedBase);
   void FillInitializationOrder();

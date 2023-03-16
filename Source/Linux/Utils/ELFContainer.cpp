@@ -47,7 +47,7 @@ namespace ELFLoader {
     return ELFContainer::ELFType::TYPE_OTHER_ELF;
   }
 
-ELFContainer::ELFType ELFContainer::GetELFType(std::string const &Filename) {
+ELFContainer::ELFType ELFContainer::GetELFType(fextl::string const &Filename) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
@@ -91,7 +91,7 @@ ELFContainer::ELFType ELFContainer::GetELFType(int FD) {
   return CheckELFType(reinterpret_cast<uint8_t*>(&RawFile.at(0)));
 }
 
-ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter) {
+ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &RootFS, bool CustomInterpreter) {
   Loaded = true;
   if (!LoadELF(Filename)) {
     LogMan::Msg::EFmt("Couldn't Load ELF file");
@@ -110,7 +110,7 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
     else {
       RawString = &RawFile.at(InterpreterHeader._64->p_offset);
     }
-    std::string RootFSLink = RootFS + RawString;
+    fextl::string RootFSLink = RootFS + RawString;
     std::error_code ec{};
     while (std::filesystem::is_symlink(RootFSLink, ec)) {
       // Do some special handling if the RootFS's linker is a symlink
@@ -118,7 +118,8 @@ ELFContainer::ELFContainer(std::string const &Filename, std::string const &RootF
       // Resolve this around back to the rootfs
       auto SymlinkTarget = std::filesystem::read_symlink(RootFSLink, ec);
       if (SymlinkTarget.is_absolute()) {
-        RootFSLink = RootFS + SymlinkTarget.string();
+        RootFSLink = RootFS;
+        RootFSLink += SymlinkTarget.string();
       }
       else {
         break;
@@ -164,8 +165,8 @@ ELFContainer::~ELFContainer() {
   RawFile.clear();
 }
 
-bool ELFContainer::LoadELF(std::string const &Filename) {
-  std::fstream ELFFile(Filename, std::fstream::in | std::fstream::binary);
+bool ELFContainer::LoadELF(fextl::string const &Filename) {
+  std::fstream ELFFile(Filename.c_str(), std::fstream::in | std::fstream::binary);
 
   if (!ELFFile.is_open())
     return false;

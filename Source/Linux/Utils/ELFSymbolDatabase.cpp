@@ -49,7 +49,7 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
   }
 }
 
-bool ELFSymbolDatabase::FindLibraryFile(std::string *Result, const char *Library) {
+bool ELFSymbolDatabase::FindLibraryFile(fextl::string *Result, const char *Library) {
   for (auto &Path : LibrarySearchPaths) {
     std::string TmpPath = Path + "/" + Library;
     struct stat buf;
@@ -85,7 +85,7 @@ ELFSymbolDatabase::ELFSymbolDatabase(::ELFLoader::ELFContainer *file)
   auto LoadDependencies = [&UnfilledDependencies, &NewLibraries, this]() {
     for (auto &Lib : UnfilledDependencies) {
       if (NameToELF.find(Lib) == NameToELF.end()) {
-        std::string LibraryPath;
+        fextl::string LibraryPath;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
         bool Found =
 #endif

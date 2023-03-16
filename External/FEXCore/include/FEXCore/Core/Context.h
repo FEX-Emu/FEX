@@ -1,13 +1,13 @@
 #pragma once
 #include <functional>
 #include <stdint.h>
-#include <string>
 
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <istream>
@@ -259,15 +259,15 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) = 0;
       FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const std::string& Name) = 0;
+      FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) = 0;
       FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(std::function<int(const std::string&)> CacheReader) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(std::function<void(const std::string&)> CacheRenamer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> CacheWriter) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
-      FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) = 0;
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;

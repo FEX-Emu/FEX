@@ -224,7 +224,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uintptr_t Base;
     size_t Size;
     off_t Offs;
-    std::string Filename;
+    fextl::string Filename;
     bool Executable;
   };
 

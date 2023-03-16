@@ -28,7 +28,7 @@ struct SourcecodeSymbolMapping {
 
   fextl::string Name;
 
-  static fextl::string SymName(const SourcecodeSymbolMapping *Sym, const std::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
+  static fextl::string SymName(const SourcecodeSymbolMapping *Sym, const fextl::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
     if (Sym) {
       auto SymOffset = FileBegin - Sym->FileGuestBegin;
       if (SymOffset) {

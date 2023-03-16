@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>
 #include <filesystem>
@@ -11,12 +12,12 @@
 namespace FEX {
 [[maybe_unused]]
 static
-std::optional<std::string> get_fdpath(int fd) {
+std::optional<fextl::string> get_fdpath(int fd) {
   char SymlinkPath[PATH_MAX];
   std::filesystem::path Path = std::filesystem::path("/proc/self/fd") / std::to_string(fd);
   int Result = readlinkat(AT_FDCWD, Path.c_str(), SymlinkPath, sizeof(SymlinkPath));
   if (Result != -1) {
-    return std::string(SymlinkPath, Result);
+    return fextl::string(SymlinkPath, Result);
   }
 
   // Not fatal if an FD doesn't point to a file

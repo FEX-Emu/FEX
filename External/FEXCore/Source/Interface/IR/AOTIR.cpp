@@ -5,6 +5,8 @@
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/fextl/string.h>
+
 #include <Interface/Core/LookupCache.h>
 #include <Interface/GDBJIT/GDBJIT.h>
 
@@ -87,7 +89,7 @@ namespace FEXCore::IR {
     if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != FEXCore::IR::AOTIR_COOKIE)
       return false;
 
-    std::string Module;
+    fextl::string Module;
     uint64_t ModSize;
     uint64_t IndexSize;
 
@@ -233,7 +235,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void AOTIRCaptureCache::WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) {
+  void AOTIRCaptureCache::WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) {
     std::shared_lock lk(AOTIRCacheLock);
     for( const auto &Entry: AOTIRCache) {
       if (Entry.second.ContainsCode) {
@@ -327,7 +329,7 @@ namespace FEXCore::IR {
 
             // It is guaranteed via AOTIRCaptureCacheWriteoutLock and AOTIRCaptureCacheWriteoutFlusing that this will not run concurrently
             // Memory coherency is guaranteed via AOTIRCaptureCacheWriteoutLock
-            
+
             auto *AotFile = &AOTIRCaptureCacheMap[FileId];
 
             if (!AotFile->Stream) {
@@ -353,7 +355,7 @@ namespace FEXCore::IR {
         if (CTX->GetGdbServerStatus()) {
           // Add to thread local ir cache
           Core::LocalIREntry Entry = {StartAddr, Length, decltype(Entry.IR)(IRList), std::move(RAData), decltype(Entry.DebugData)(DebugData)};
-          
+
           std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
           Thread->DebugStore.insert({GuestRIP, std::move(Entry)});
         }
@@ -368,13 +370,14 @@ namespace FEXCore::IR {
     return false;
   }
 
-  AOTIRCacheEntry *AOTIRCaptureCache::LoadAOTIRCacheEntry(const std::string &filename) {
-    auto base_filename = std::filesystem::path(filename).filename().string();
+  AOTIRCacheEntry *AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string &filename) {
+    fextl::string base_filename = std::filesystem::path(filename).filename().string().c_str();
 
     if (!base_filename.empty()) {
       auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
 
-      auto fileid = base_filename + "-" + std::to_string(filename_hash) + "-";
+      auto fileid = base_filename + "-";
+      fileid += std::to_string(filename_hash) + "-";
 
       // append optimization flags to the fileid
       fileid += (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? "S" : "s";

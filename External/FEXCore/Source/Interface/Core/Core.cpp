@@ -1337,7 +1337,7 @@ namespace FEXCore::Context {
     return Result;
   }
 
-  IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const std::string &filename) {
+  IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const fextl::string &filename) {
     auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();

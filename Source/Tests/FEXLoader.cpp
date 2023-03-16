@@ -448,13 +448,13 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
                       "Capture doesn't work with programs that fork.");
 
-    CTX->SetAOTIRLoader([](const std::string &fileid) -> int {
+    CTX->SetAOTIRLoader([](const fextl::string &fileid) -> int {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
       return open(filepath.c_str(), O_RDONLY);
     });
 
-    CTX->SetAOTIRWriter([](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> std::unique_ptr<std::ofstream> {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
@@ -467,7 +467,7 @@ int main(int argc, char **argv, char **const envp) {
       return AOTWrite;
     });
 
-    CTX->SetAOTIRRenamer([](const std::string& fileid) -> void {
+    CTX->SetAOTIRRenamer([](const fextl::string& fileid) -> void {
       auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
       auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
@@ -487,7 +487,7 @@ int main(int argc, char **argv, char **const envp) {
   if (AOTEnabled) {
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
     if (!ec) {
-      CTX->WriteFilesWithCode([](const std::string& fileid, const std::string& filename) {
+      CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
         auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
         int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
         if (fd != -1) {

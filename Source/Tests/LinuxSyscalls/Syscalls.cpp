@@ -221,7 +221,7 @@ static bool IsShebangFD(int FD) {
   return IsShebangFile(std::span<char>(Header.data(), ReadSize));
 }
 
-static bool IsShebangFilename(std::string const &Filename) {
+static bool IsShebangFilename(fextl::string const &Filename) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
@@ -234,7 +234,7 @@ static bool IsShebangFilename(std::string const &Filename) {
 }
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
-  std::string Filename{};
+  fextl::string Filename{};
 
   std::error_code ec;
   fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
