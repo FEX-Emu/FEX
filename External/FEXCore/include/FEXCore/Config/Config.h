@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 
 #include <memory>
@@ -91,7 +92,7 @@ namespace DefaultValues {
 
 namespace Type {
 #define OPT_BASE(type, group, enum, json, default) using P(enum) = P(type);
-#define OPT_STR(group, enum, json, default) using P(enum) = std::string;
+#define OPT_STR(group, enum, json, default) using P(enum) = fextl::string;
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
 #include <FEXCore/Config/ConfigValues.inl>
 }
@@ -101,12 +102,12 @@ namespace Type {
 #undef P
 }
 
-  FEX_DEFAULT_VISIBILITY std::string GetDataDirectory();
-  FEX_DEFAULT_VISIBILITY std::string GetConfigDirectory(bool Global);
-  FEX_DEFAULT_VISIBILITY std::string GetConfigFileLocation(bool Global = false);
-  FEX_DEFAULT_VISIBILITY std::string GetApplicationConfig(const std::string &Filename, bool Global);
+  FEX_DEFAULT_VISIBILITY fextl::string GetDataDirectory();
+  FEX_DEFAULT_VISIBILITY fextl::string GetConfigDirectory(bool Global);
+  FEX_DEFAULT_VISIBILITY fextl::string GetConfigFileLocation(bool Global = false);
+  FEX_DEFAULT_VISIBILITY fextl::string GetApplicationConfig(const fextl::string &Filename, bool Global);
 
-  using LayerValue = fextl::list<std::string>;
+  using LayerValue = fextl::list<fextl::string>;
   using LayerOptions = fextl::unordered_map<ConfigOption, LayerValue>;
 
   class FEX_DEFAULT_VISIBILITY Layer {
@@ -130,7 +131,7 @@ namespace Type {
       return &it->second;
     }
 
-    std::optional<std::string*>
+    std::optional<fextl::string*>
     Get(ConfigOption Option) {
       const auto it = OptionMap.find(Option);
       if (it == OptionMap.end()) {
@@ -141,12 +142,12 @@ namespace Type {
     }
 
     void Set(ConfigOption Option, std::string_view Data) {
-      OptionMap[Option].emplace_back(std::string(Data));
+      OptionMap[Option].emplace_back(fextl::string(Data));
     }
 
     void EraseSet(ConfigOption Option, std::string_view Data) {
       Erase(Option);
-      Set(Option, std::string(Data));
+      Set(Option, fextl::string(Data));
     }
 
     void Erase(ConfigOption Option) {
@@ -166,14 +167,14 @@ namespace Type {
 
   FEX_DEFAULT_VISIBILITY void Load();
   FEX_DEFAULT_VISIBILITY void ReloadMetaLayer();
-  FEX_DEFAULT_VISIBILITY std::string FindContainer();
-  FEX_DEFAULT_VISIBILITY std::string FindContainerPrefix();
+  FEX_DEFAULT_VISIBILITY fextl::string FindContainer();
+  FEX_DEFAULT_VISIBILITY fextl::string FindContainerPrefix();
 
   FEX_DEFAULT_VISIBILITY void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
 
   FEX_DEFAULT_VISIBILITY bool Exists(ConfigOption Option);
   FEX_DEFAULT_VISIBILITY std::optional<LayerValue*> All(ConfigOption Option);
-  FEX_DEFAULT_VISIBILITY std::optional<std::string*> Get(ConfigOption Option);
+  FEX_DEFAULT_VISIBILITY std::optional<fextl::string*> Get(ConfigOption Option);
 
   FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string_view Data);
   FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
@@ -182,27 +183,27 @@ namespace Type {
   template<typename T>
   class FEX_DEFAULT_VISIBILITY Value {
   public:
-    template <typename TT = T> requires (!std::is_same_v<TT, std::string>)
+    template <typename TT = T> requires (!std::is_same_v<TT, fextl::string>)
     Value(FEXCore::Config::ConfigOption _Option, TT Default)
       : Option {_Option} {
       ValueData = GetIfExists(Option, Default);
     }
 
-    template <typename TT = T> requires (std::is_same_v<TT, std::string>)
+    template <typename TT = T> requires (std::is_same_v<TT, fextl::string>)
     Value(FEXCore::Config::ConfigOption _Option, TT Default)
       : Option {_Option} {
       ValueData = GetIfExists(Option, Default);
       GetListIfExists(Option, &AppendList);
     }
 
-    template <typename TT = T> requires (std::is_same_v<TT, std::string>)
+    template <typename TT = T> requires (std::is_same_v<TT, fextl::string>)
     Value(FEXCore::Config::ConfigOption _Option, std::string_view Default)
       : Option {_Option} {
       ValueData = GetIfExists(Option, Default);
       GetListIfExists(Option, &AppendList);
     }
 
-    template <typename TT = T> requires (!std::is_same_v<TT, std::string>)
+    template <typename TT = T> requires (!std::is_same_v<TT, fextl::string>)
     Value(FEXCore::Config::ConfigOption _Option)
       : Option {_Option} {
       if (!FEXCore::Config::Exists(Option)) {
@@ -212,7 +213,7 @@ namespace Type {
       ValueData = Get(Option);
     }
 
-    template <typename TT = T> requires (std::is_same_v<TT, std::string>)
+    template <typename TT = T> requires (std::is_same_v<TT, fextl::string>)
     Value(FEXCore::Config::ConfigOption _Option)
       : Option {_Option} {
       if (!FEXCore::Config::Exists(Option)) {
@@ -237,7 +238,7 @@ namespace Type {
     static T GetIfExists(FEXCore::Config::ConfigOption Option, T Default);
     static T GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default);
 
-    static void GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<std::string> *List);
+    static void GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<fextl::string> *List);
   };
 
   // Application loaders
@@ -264,7 +265,7 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(std::string const *File = nullptr);
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File = nullptr);
 
   /**
    * @brief Create an application configuration loader
@@ -274,7 +275,7 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const std::string& Filename, FEXCore::Config::LayerType Type);
+  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type);
 
   /**
    * @brief iCreate an environment configuration loader

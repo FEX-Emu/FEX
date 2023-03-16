@@ -4,6 +4,7 @@
 #include "Tools/CommonGUI/IMGui.h"
 
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/string.h>
 
 #include <map>
 #include <memory>
@@ -24,7 +25,7 @@ namespace {
   static int HostEnvironmentVariableSelected{};
   static int NamedRootFSSelected{-1};
 
-  static std::string ConfigFilename{};
+  static fextl::string ConfigFilename{};
   static std::unique_ptr<FEXCore::Config::Layer> LoadedConfig{};
 
   static const char EnvironmentPopupName[] = "#New Environment Variable";
@@ -52,7 +53,7 @@ namespace {
   static std::thread INotifyThreadHandle{};
   static std::atomic_bool INotifyShutdown{};
 
-  void OpenMsgMessagePopup(std::string Message) {
+  void OpenMsgMessagePopup(fextl::string Message) {
     OpenMsgPopup = true;
     MsgMessage = Message;
     MsgTimerStart = std::chrono::high_resolution_clock::now();
@@ -78,7 +79,7 @@ namespace {
     LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS64BIT_MODE);
   }
 
-  bool OpenFile(std::string Filename,  bool LoadDefault = false) {
+  bool OpenFile(fextl::string Filename,  bool LoadDefault = false) {
     std::error_code ec{};
     if (!std::filesystem::exists(Filename, ec)) {
       if (LoadDefault) {
@@ -116,7 +117,7 @@ namespace {
   void LoadNamedRootFSFolder() {
     std::scoped_lock<std::mutex> lk{NamedRootFSUpdator};
     NamedRootFS.clear();
-    std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
     std::error_code ec{};
     if (!std::filesystem::exists(RootFS, ec)) {
       // Doesn't exist, create the the folder as a user convenience
@@ -132,11 +133,11 @@ namespace {
       else if (it.is_regular_file()) {
         // If it is a regular file then we need to check if it is a valid archive
         if (it.path().extension() == ".sqsh" &&
-            FEX::FormatCheck::IsSquashFS(it.path().string())) {
+            FEX::FormatCheck::IsSquashFS(it.path().string().c_str())) {
           NamedRootFS.emplace_back(it.path().filename());
         }
         else if (it.path().extension() == ".ero" &&
-            FEX::FormatCheck::IsEroFS(it.path().string())) {
+            FEX::FormatCheck::IsEroFS(it.path().string().c_str())) {
           NamedRootFS.emplace_back(it.path().filename());
         }
       }
@@ -184,7 +185,7 @@ namespace {
     INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
     INotifyShutdown = false;
 
-    std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
     INotifyFolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
     if (INotifyFolderFD != -1) {
       INotifyThreadHandle = std::thread(INotifyThread);
@@ -199,7 +200,7 @@ namespace {
     }
   }
 
-  void SaveFile(std::string Filename) {
+  void SaveFile(fextl::string Filename) {
     if (SaveMsgIsOpen) {
       // Don't try saving a file while the message is already open.
       // Stops us from spam saving the file to the filesystem.
@@ -233,7 +234,7 @@ namespace {
     char EmulatedCPUCores[32]{};
 
     if (ImGui::BeginTabItem("CPU")) {
-      std::optional<std::string*> Value{};
+      std::optional<fextl::string*> Value{};
 #ifdef INTERPRETER_ENABLED
       ImGui::Text("Core:");
       Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_CORE);
@@ -838,8 +839,8 @@ namespace {
       if (ImGui::BeginPopupModal(SavedPopupAppName)) {
         ImGui::SetKeyboardFocusHere();
         if (ImGui::InputText("App name", AppName, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-          std::string AppNameString = AppName;
-          std::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
+          fextl::string AppNameString = AppName;
+          fextl::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
           SaveFile(Filename);
           ImGui::CloseCurrentPopup();
         }
@@ -883,8 +884,8 @@ namespace {
 
       ImGui::SetKeyboardFocusHere();
       if (ImGui::InputText("App name", AppName, 256, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        std::string AppNameString = AppName;
-        std::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
+        fextl::string AppNameString = AppName;
+        fextl::string Filename = FEXCore::Config::GetApplicationConfig(AppNameString, false);
         OpenFile(Filename, false);
         ImGui::CloseCurrentPopup();
       }
@@ -959,7 +960,7 @@ namespace {
 }
 
 int main(int argc, char **argv) {
-  std::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
+  fextl::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
   auto [window, gl_context] = FEX::GUI::SetupIMGui("#FEXConfig", ImGUIConfig);
 
   GlobalTime = std::chrono::high_resolution_clock::now();

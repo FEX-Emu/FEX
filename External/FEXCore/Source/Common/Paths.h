@@ -1,5 +1,5 @@
 #pragma once
-#include <string>
+#include <FEXCore/fextl/string.h>
 
 namespace FEXCore::Paths {
   void InitializePaths();
@@ -7,6 +7,6 @@ namespace FEXCore::Paths {
 
   const char *GetHomeDirectory();
 
-  std::string GetCachePath();
-  std::string GetEntryCachePath();
+  fextl::string GetCachePath();
+  fextl::string GetEntryCachePath();
 }

@@ -77,7 +77,7 @@ namespace ProcessPipe {
   }
 
   bool InitializeServerPipe() {
-    std::string ServerFolder = FEXServerClient::GetServerLockFolder();
+    auto ServerFolder = FEXServerClient::GetServerLockFolder();
 
     std::error_code ec{};
     if (!std::filesystem::exists(ServerFolder, ec)) {

@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -60,8 +61,8 @@ namespace JSON {
 namespace FEX::HLE {
   struct open_how;
 
-static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
-  std::fstream File(Filename, std::ios::in);
+static bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filename) {
+  std::fstream File(Filename.c_str(), std::ios::in);
 
   if (!File.is_open()) {
     return false;
@@ -97,13 +98,13 @@ static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
 }
 
 struct ThunkDBObject {
-  std::string LibraryName;
-  fextl::unordered_set<std::string> Depends;
-  fextl::vector<std::string> Overlays;
+  fextl::string LibraryName;
+  fextl::unordered_set<fextl::string> Depends;
+  fextl::vector<fextl::string> Overlays;
   bool Enabled{};
 };
 
-static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
+static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   fextl::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
@@ -229,7 +230,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   // This doesn't support the classic thunks interface.
 
   auto AppName = AppConfigName();
-  fextl::vector<std::string> ConfigPaths {
+  fextl::vector<fextl::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
     ThunkConfigFile,
@@ -239,7 +240,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   if (SteamID) {
     // If a SteamID exists then let's search for Steam application configs as well.
     // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-    auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, AppName);
+    fextl::string SteamAppName = fmt::format("Steam_{}_{}", SteamID, AppName).c_str();
 
     // Steam application configs interleaved with non-steam for priority sorting.
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, true));
@@ -252,7 +253,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
-  fextl::unordered_map<std::string, ThunkDBObject> ThunkDB;
+  fextl::unordered_map<fextl::string, ThunkDBObject> ThunkDB;
   LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
   LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
 
@@ -312,11 +313,11 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
           for (const auto& Overlay : DBDepend.Overlays) {
             // Direct full path in guest RootFS to our overlay file
-            ThunkOverlays.emplace(Overlay, ThunkPath);
+            ThunkOverlays.emplace(Overlay, ThunkPath.c_str());
           }
       };
 
-      void InsertDependencies(const fextl::unordered_set<std::string> &Depends) {
+      void InsertDependencies(const fextl::unordered_set<fextl::string> &Depends) {
         for (auto const &Depend : Depends) {
           auto& DBDepend = ThunkDB.at(Depend);
           if (DBDepend.Enabled) {
@@ -360,7 +361,7 @@ FileManager::~FileManager() {
   close(RootFSFD);
 }
 
-std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
+fextl::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
   if (!pathname || // If no pathname
       pathname[0] != '/' || // If relative
       strcmp(pathname, "/") == 0) { // If we are getting root
@@ -377,7 +378,7 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
     return {};
   }
 
-  std::string Path = RootFSPath + pathname;
+  fextl::string Path = RootFSPath + pathname;
   if (FollowSymlink) {
     char Filename[PATH_MAX];
     while(FEX::HLE::IsSymlink(AT_FDCWD, Path.c_str())) {
@@ -458,7 +459,7 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   return std::make_pair(RootFSFD, &SubPath[1]);
 }
 
-std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
+std::optional<fextl::string> FileManager::GetSelf(const char *Pathname) {
   if (!Pathname) {
     return std::nullopt;
   }

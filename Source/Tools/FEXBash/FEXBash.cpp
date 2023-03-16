@@ -11,6 +11,7 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 
 #include <filesystem>
 #include <iterator>
@@ -41,8 +42,8 @@ int main(int argc, char **argv, char **const envp) {
 
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   std::vector<const char*> Argv;
-  std::string BinShPath = RootFSPath() + "/bin/sh";
-  std::string BinBashPath = RootFSPath() + "/bin/bash";
+  fextl::string BinShPath = RootFSPath() + "/bin/sh";
+  fextl::string BinBashPath = RootFSPath() + "/bin/bash";
 
   std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "FEXInterpreter";
   // Check if a local FEXInterpreter to FEXBash exists

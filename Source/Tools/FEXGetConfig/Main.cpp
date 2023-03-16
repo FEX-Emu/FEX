@@ -3,6 +3,7 @@
 #include "Common/FEXServerClient.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 
 #include <filesystem>
 #include <stdio.h>
@@ -40,16 +41,16 @@ int main(int argc, char **argv, char **envp) {
   if (Options.is_set_by_user("app")) {
     // Load the application config if one was provided
     auto ProgramName = std::filesystem::path(Options["app"]).filename();
-    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
-    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName.c_str(), FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName.c_str(), FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
     auto SteamID = getenv("SteamAppId");
     if (SteamID) {
       // If a SteamID exists then let's search for Steam application configs as well.
       // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
       auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, ProgramName.string());
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName.c_str(), FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName.c_str(), FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
     }
   }
 

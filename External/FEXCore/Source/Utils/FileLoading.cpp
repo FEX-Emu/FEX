@@ -1,3 +1,4 @@
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <string>
@@ -38,6 +39,36 @@ bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t Fix
   return Read == FileSize;
 }
 
+bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize) {
+  int FD = open(Filepath.c_str(), O_RDONLY);
+
+  if (FD == -1) {
+    return false;
+  }
+
+  size_t FileSize{};
+  if (FixedSize == 0) {
+    struct stat buf;
+    if (fstat(FD, &buf) != 0) {
+      close(FD);
+      return false;
+    }
+
+    FileSize = buf.st_size;
+  }
+  else {
+    FileSize = FixedSize;
+  }
+
+  ssize_t Read = -1;
+  if (FileSize > 0) {
+    Data.resize(FileSize);
+    Read = pread(FD, &Data.at(0), FileSize, 0);
+  }
+  close(FD);
+  return Read == FileSize;
+}
+
 ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
@@ -49,5 +80,18 @@ ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer) {
   close(FD);
   return Read;
 }
+
+ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
+  int FD = open(Filepath.c_str(), O_RDONLY);
+
+  if (FD == -1) {
+    return -1;
+  }
+
+  ssize_t Read = pread(FD, Buffer.data(), Buffer.size(), 0);
+  close(FD);
+  return Read;
+}
+
 
 }

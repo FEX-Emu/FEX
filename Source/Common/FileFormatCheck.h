@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
+#include <FEXCore/fextl/string.h>
 
 namespace FEX::FormatCheck {
-  bool IsSquashFS(std::string const &Filename);
-  bool IsEroFS(std::string const &Filename);
+  bool IsSquashFS(fextl::string const &Filename);
+  bool IsEroFS(fextl::string const &Filename);
 }

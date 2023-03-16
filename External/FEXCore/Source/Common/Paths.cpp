@@ -1,5 +1,6 @@
 #include "Common/Paths.h"
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 
 #include <cstdlib>
 #include <filesystem>
@@ -9,8 +10,8 @@
 #include <unistd.h>
 
 namespace FEXCore::Paths {
-  std::unique_ptr<std::string> CachePath;
-  std::unique_ptr<std::string> EntryCache;
+  std::unique_ptr<fextl::string> CachePath;
+  std::unique_ptr<fextl::string> EntryCache;
 
   char const* FindUserHomeThroughUID() {
     auto passwd = getpwuid(geteuid());
@@ -42,8 +43,8 @@ namespace FEXCore::Paths {
   }
 
   void InitializePaths() {
-    CachePath = std::make_unique<std::string>();
-    EntryCache = std::make_unique<std::string>();
+    CachePath = std::make_unique<fextl::string>();
+    EntryCache = std::make_unique<fextl::string>();
 
     char const *HomeDir = getenv("HOME");
 
@@ -81,11 +82,11 @@ namespace FEXCore::Paths {
     EntryCache.reset();
   }
 
-  std::string GetCachePath() {
+  fextl::string GetCachePath() {
     return *CachePath;
   }
 
-  std::string GetEntryCachePath() {
+  fextl::string GetEntryCachePath() {
     return *EntryCache;
   }
 }

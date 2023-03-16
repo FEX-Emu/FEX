@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <string>
@@ -47,9 +48,9 @@ namespace FEXServerClient {
 
   constexpr size_t MAXIMUM_REQUEST_PACKET_SIZE = sizeof(FEXServerRequestPacket);
 
-  std::string GetServerLockFolder();
-  std::string GetServerLockFile();
-  std::string GetServerRootFSLockFile();
+  fextl::string GetServerLockFolder();
+  fextl::string GetServerLockFile();
+  fextl::string GetServerRootFSLockFile();
   std::string GetServerMountFolder();
   std::string GetServerSocketName();
   int GetServerFD();

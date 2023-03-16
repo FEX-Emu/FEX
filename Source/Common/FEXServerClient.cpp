@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/NetStream.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <fcntl.h>
@@ -89,15 +90,15 @@ namespace FEXServerClient {
 
   static int ServerFD {-1};
 
-  std::string GetServerLockFolder() {
+  fextl::string GetServerLockFolder() {
     return FEXCore::Config::GetDataDirectory() + "Server/";
   }
 
-  std::string GetServerLockFile() {
+  fextl::string GetServerLockFile() {
     return GetServerLockFolder() + "Server.lock";
   }
 
-  std::string GetServerRootFSLockFile() {
+  fextl::string GetServerRootFSLockFile() {
     return GetServerLockFolder() + "RootFS.lock";
   }
 

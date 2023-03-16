@@ -174,15 +174,15 @@ static bool IsShebangFile(std::span<char> Data) {
   // Handle shebang files.
   if (Data[0] == '#' &&
       Data[1] == '!') {
-    std::string InterpreterLine {
+    fextl::string InterpreterLine {
         Data.begin() + 2, // strip off "#!" prefix
         std::find(Data.begin(), Data.end(), '\n')
     };
-    fextl::vector<std::string> ShebangArguments{};
+    fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
     std::istringstream InterpreterSS(InterpreterLine);
-    std::string Argument;
+    fextl::string Argument;
     while (std::getline(InterpreterSS, Argument, ' ')) {
       if (Argument.empty()) {
         continue;
@@ -191,7 +191,7 @@ static bool IsShebangFile(std::span<char> Data) {
     }
 
     // Executable argument
-    std::string &ShebangProgram = ShebangArguments[0];
+    fextl::string &ShebangProgram = ShebangArguments[0];
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -237,7 +237,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
   std::string Filename{};
 
   std::error_code ec;
-  std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+  fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
   ELFLoader::ELFContainer::ELFType Type{};
 
   // AT_EMPTY_PATH is only used if the pathname is empty.

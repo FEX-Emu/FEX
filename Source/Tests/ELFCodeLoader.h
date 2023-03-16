@@ -230,7 +230,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
   fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(fextl::string const &Filename, const std::string_view FEXFDString, fextl::string const &RootFS, [[maybe_unused]] fextl::vector<std::string> const &args, fextl::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
+  ELFCodeLoader(fextl::string const &Filename, const std::string_view FEXFDString, fextl::string const &RootFS, [[maybe_unused]] fextl::vector<std::string> const &args, fextl::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<fextl::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
     bool LoadedWithFD = false;

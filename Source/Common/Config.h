@@ -18,7 +18,7 @@ namespace FEX::Config {
   protected:
   };
 
-  void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer);
+  void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer *const Layer);
 
   struct ApplicationNames {
     // This is the full path to the program (if it exists).

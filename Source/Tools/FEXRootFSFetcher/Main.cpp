@@ -1,3 +1,5 @@
+#include <FEXCore/fextl/string.h>
+
 #include "OptionParser.h"
 #include "XXFileHash.h"
 
@@ -34,7 +36,7 @@ namespace ArgOptions {
 
   ListQueryOption DistroListOption {ListQueryOption::OPTION_ASK};
 
-  std::vector<std::string> RemainingArgs;
+  std::vector<fextl::string> RemainingArgs;
 
   std::string DistroName{};
   std::string DistroVersion{};
@@ -92,7 +94,10 @@ namespace ArgOptions {
       DistroVersion = Options["distro_version"];
     }
 
-    RemainingArgs = Parser.args();
+
+    // TODO: Convert cpp-optparse over to fextl::vector
+    auto ParserArgs = Parser.args();
+    RemainingArgs.insert(RemainingArgs.begin(), ParserArgs.begin(), ParserArgs.end());
   }
 }
 
@@ -442,7 +447,7 @@ namespace WebFileFetcher {
     std::string DistroName;
 
     // This is the URL
-    std::string URL;
+    fextl::string URL;
 
     // This is the hash of the file
     std::string Hash;
@@ -471,7 +476,7 @@ namespace WebFileFetcher {
     return Exec::ExecAndWaitForResponseText(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()));
   }
 
-  bool DownloadToPath(const std::string &URL, const std::string &Path) {
+  bool DownloadToPath(const fextl::string &URL, const fextl::string &Path) {
     auto filename = URL.substr(URL.find_last_of('/') + 1);
     auto PathName = Path + filename;
 
@@ -487,7 +492,7 @@ namespace WebFileFetcher {
     return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
   }
 
-  bool DownloadToPathWithZenityProgress(const std::string &URL, const std::string &Path) {
+  bool DownloadToPathWithZenityProgress(const fextl::string &URL, const fextl::string &Path) {
     auto filename = URL.substr(URL.find_last_of('/') + 1);
     auto PathName = Path + filename;
 
@@ -611,8 +616,8 @@ namespace WebFileFetcher {
 }
 
 namespace Zenity {
-  bool ExecWithQuestion(const std::string &Question) {
-    std::string TextArg = "--text=" + Question;
+  bool ExecWithQuestion(const fextl::string &Question) {
+    fextl::string TextArg = "--text=" + Question;
     const char *Args[] = {
       "zenity",
       "--question",
@@ -625,8 +630,8 @@ namespace Zenity {
     return Result == 0;
   }
 
-  void ExecWithInfo(const std::string &Text) {
-    std::string TextArg = "--text=" + Text;
+  void ExecWithInfo(const fextl::string &Text) {
+    fextl::string TextArg = "--text=" + Text;
     const char *Args[] = {
       "zenity",
       "--info",
@@ -637,12 +642,12 @@ namespace Zenity {
     Exec::ExecAndWaitForResponse(Args[0], const_cast<char* const*>(Args));
   }
 
-  bool AskForConfirmation(const std::string &Question) {
+  bool AskForConfirmation(const fextl::string &Question) {
     return ArgOptions::AssumeYes || ExecWithQuestion(Question);
   }
 
-  int32_t AskForConfirmationList(const std::string &Text, const std::vector<std::string> &Arguments) {
-    std::string TextArg = "--text=" + Text;
+  int32_t AskForConfirmationList(const fextl::string &Text, const std::vector<fextl::string> &Arguments) {
+    fextl::string TextArg = "--text=" + Text;
 
     std::vector<const char*> ExecveArgs = {
       "zenity",
@@ -654,7 +659,7 @@ namespace Zenity {
       "--hide-column=1",
     };
 
-    std::vector<std::string> NumberArgs;
+    std::vector<fextl::string> NumberArgs;
     for (size_t i = 0; i < Arguments.size(); ++i) {
       NumberArgs.emplace_back(std::to_string(i));
     }
@@ -704,7 +709,7 @@ namespace Zenity {
         bool ExactMatch = Target.DistroMatch == Info.DistroName &&
             Target.VersionMatch == Info.DistroVersion;
         if (ExactMatch) {
-          std::string Question = fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName);
+          fextl::string Question = fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName).c_str();
           if (ExecWithQuestion(Question)) {
             DistroIndex = i;
             break;
@@ -738,18 +743,18 @@ namespace Zenity {
   }
 
   bool ValidateCheckExists(const WebFileFetcher::FileTargets &Target) {
-    std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
     auto filename = Target.URL.substr(Target.URL.find_last_of('/') + 1);
     auto PathName = RootFS + filename;
     uint64_t ExpectedHash = std::stoul(Target.Hash, nullptr, 16);
 
     std::error_code ec;
     if (std::filesystem::exists(PathName, ec)) {
-      const std::vector<std::string> Args {
+      const std::vector<fextl::string> Args {
         "Overwrite",
         "Validate",
       };
-      std::string Text = filename + " already exists. What do you want to do?";
+      fextl::string Text = filename + " already exists. What do you want to do?";
       int Result = AskForConfirmationList(Text, Args);
       if (Result == -1) {
         return false;
@@ -759,7 +764,7 @@ namespace Zenity {
       if (Result == 0) {
         if (Res.first == true &&
             Res.second == ExpectedHash) {
-          std::string Text = fmt::format("{} matches expected hash. Skipping download", filename);
+          fextl::string Text = fmt::format("{} matches expected hash. Skipping download", filename).c_str();
           ExecWithInfo(Text);
           return false;
         }
@@ -770,7 +775,7 @@ namespace Zenity {
           return AskForConfirmation("RootFS doesn't match hash!\nDo you want to redownload?");
         }
         else {
-          std::string Text = fmt::format("{} matches expected hash", filename);
+          fextl::string Text = fmt::format("{} matches expected hash", filename).c_str();
           ExecWithInfo(Text);
           return false;
         }
@@ -781,12 +786,12 @@ namespace Zenity {
   }
 
   bool ValidateDownloadSelection(const WebFileFetcher::FileTargets &Target) {
-    std::string Text = fmt::format("Selected Rootfs: {}\n", Target.DistroName);
+    fextl::string Text = fmt::format("Selected Rootfs: {}\n", Target.DistroName).c_str();
     Text += fmt::format("\tURL: {}\n", Target.URL);
     Text += fmt::format("Are you sure that you want to download this image");
 
     if (AskForConfirmation(Text)) {
-      std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+      fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
       std::error_code ec{};
       if (!std::filesystem::exists(RootFS, ec)) {
         // Doesn't exist, create the the folder as a user convenience
@@ -809,7 +814,7 @@ namespace Zenity {
 }
 
 namespace TTY {
-  bool AskForConfirmation(const std::string &Question) {
+  bool AskForConfirmation(const fextl::string &Question) {
     if (ArgOptions::AssumeYes) {
       return true;
     }
@@ -841,11 +846,11 @@ namespace TTY {
     }
   }
 
-  void ExecWithInfo(const std::string &Text) {
+  void ExecWithInfo(const fextl::string &Text) {
     std::cout << Text << std::endl;
   }
 
-  int32_t AskForConfirmationList(const std::string &Text, const std::vector<std::string> &List) {
+  int32_t AskForConfirmationList(const fextl::string &Text, const std::vector<fextl::string> &List) {
     fmt::print("{}\n", Text);
     fmt::print("Options:\n");
     fmt::print("\t0: Cancel\n");
@@ -855,10 +860,10 @@ namespace TTY {
     }
 
     fmt::print("\t\nResponse {{1-{}}} or 0 to cancel\n", List.size());
-    std::string Response;
+    fextl::string Response;
     std::cin >> Response;
 
-    int32_t ResponseInt = std::stoi(Response);
+    int32_t ResponseInt = std::stoi(Response.c_str());
     if (ResponseInt == 0) {
       return -1;
     }
@@ -882,7 +887,7 @@ namespace TTY {
         bool ExactMatch = Target.DistroMatch == Info.DistroName &&
             Target.VersionMatch == Info.DistroVersion;
         if (ExactMatch) {
-          std::string Question = fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName);
+          fextl::string Question = fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName).c_str();
           if (AskForConfirmation(Question)) {
             DistroIndex = i;
             break;
@@ -900,29 +905,29 @@ namespace TTY {
       return 0;
     }
 
-    std::vector<std::string> Args;
+    std::vector<fextl::string> Args;
     for (size_t i = 0; i < Targets.size(); ++i) {
       const auto &Target = Targets[i];
       Args.emplace_back(Target.DistroName);
     }
 
-    std::string Text = "RootFS list selection";
+    fextl::string Text = "RootFS list selection";
     return AskForConfirmationList(Text, Args);
   }
 
   bool ValidateCheckExists(const WebFileFetcher::FileTargets &Target) {
-    std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+    fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
     auto filename = Target.URL.substr(Target.URL.find_last_of('/') + 1);
     auto PathName = RootFS + filename;
     uint64_t ExpectedHash = std::stoul(Target.Hash, nullptr, 16);
 
     std::error_code ec;
     if (std::filesystem::exists(PathName, ec)) {
-      const std::vector<std::string> Args {
+      const std::vector<fextl::string> Args {
         "Overwrite",
         "Validate",
       };
-      std::string Text = filename + " already exists. What do you want to do?";
+      fextl::string Text = filename + " already exists. What do you want to do?";
       int Result = AskForConfirmationList(Text, Args);
       if (Result == -1) {
         return false;
@@ -957,7 +962,7 @@ namespace TTY {
     fmt::print("\tURL: {}\n", Target.URL);
 
     if (AskForConfirmation("Are you sure that you want to download this image")) {
-      std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+      fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
       std::error_code ec{};
       if (!std::filesystem::exists(RootFS, ec)) {
         // Doesn't exist, create the the folder as a user convenience
@@ -995,9 +1000,9 @@ namespace TTY {
 namespace {
   bool IsTTY{};
 
-  std::function<bool(const std::string &Question)> _AskForConfirmation;
-  std::function<void(const std::string &Text)> _ExecWithInfo;
-  std::function<int32_t(const std::string &Text, const std::vector<std::string> &List)> _AskForConfirmationList;
+  std::function<bool(const fextl::string &Question)> _AskForConfirmation;
+  std::function<void(const fextl::string &Text)> _ExecWithInfo;
+  std::function<int32_t(const fextl::string &Text, const std::vector<fextl::string> &List)> _AskForConfirmationList;
   std::function<int32_t(DistroQuery::DistroInfo &Info, std::vector<WebFileFetcher::FileTargets> &Targets)> _AskForDistroSelection;
   std::function<bool(const WebFileFetcher::FileTargets &Target)> _ValidateCheckExists;
   std::function<bool(const WebFileFetcher::FileTargets &Target)> _ValidateDownloadSelection;
@@ -1023,15 +1028,15 @@ namespace {
     }
   }
 
-  bool AskForConfirmation(const std::string &Question) {
+  bool AskForConfirmation(const fextl::string &Question) {
     return _AskForConfirmation(Question);
   }
 
-  void ExecWithInfo(const std::string &Text) {
+  void ExecWithInfo(const fextl::string &Text) {
     _ExecWithInfo(Text);
   }
 
-  int32_t AskForConfirmationList(const std::string &Text, const std::vector<std::string> &Arguments) {
+  int32_t AskForConfirmationList(const fextl::string &Text, const std::vector<fextl::string> &Arguments) {
     return _AskForConfirmationList(Text, Arguments);
   }
 
@@ -1058,8 +1063,8 @@ namespace {
 }
 
 namespace ConfigSetter {
-  void SetRootFSAsDefault(const std::string &RootFS) {
-    std::string Filename = FEXCore::Config::GetConfigFileLocation();
+  void SetRootFSAsDefault(const fextl::string &RootFS) {
+    fextl::string Filename = FEXCore::Config::GetConfigFileLocation();
     auto LoadedConfig = FEXCore::Config::CreateMainLayer(&Filename);
     LoadedConfig->Load();
     LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ROOTFS, RootFS);
@@ -1068,13 +1073,13 @@ namespace ConfigSetter {
 }
 
 namespace UnSquash {
-  bool UnsquashRootFS(const std::string &Path, const std::string &RootFS, const std::string &FolderName) {
+  bool UnsquashRootFS(const fextl::string &Path, const fextl::string &RootFS, const fextl::string &FolderName) {
     auto TargetFolder = Path + FolderName;
 
     bool Extract = true;
     std::error_code ec;
     if (std::filesystem::exists(TargetFolder, ec)) {
-      std::string Question = FolderName + " Already exists. Overwrite?";
+      fextl::string Question = FolderName + " Already exists. Overwrite?";
       if (AskForConfirmation(Question)) {
         if (std::filesystem::remove_all(TargetFolder, ec) != ~0ULL) {
           Extract = true;
@@ -1141,7 +1146,7 @@ int main(int argc, char **argv, char **const envp) {
   FEX_CONFIG_OPT(LDPath, ROOTFS);
 
   std::error_code ec;
-  std::string Question{};
+  fextl::string Question{};
   if (LDPath().empty() ||
       std::filesystem::exists(LDPath(), ec) == false) {
     Question = "RootFS not found. Do you want to try and download one?";
@@ -1167,7 +1172,7 @@ int main(int argc, char **argv, char **const envp) {
     int32_t DistroIndex = AskForDistroSelection(Targets);
     if (DistroIndex != -1) {
       const auto &Target = Targets[DistroIndex];
-      std::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+      fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
       auto filename = Target.URL.substr(Target.URL.find_last_of('/') + 1);
       auto PathName = RootFS + filename;
 
@@ -1184,7 +1189,7 @@ int main(int argc, char **argv, char **const envp) {
               auto Res = XXFileHash::HashFile(PathName);
               if (Res.first == false ||
                   Res.second != ExpectedHash) {
-                std::string Text = fmt::format("Couldn't hash the rootfs or hash didn't match\n");
+                fextl::string Text = fmt::format("Couldn't hash the rootfs or hash didn't match\n").c_str();
                 Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
                 ExecWithInfo(Text);
                 return std::make_pair(-1, true);
@@ -1223,7 +1228,7 @@ int main(int argc, char **argv, char **const envp) {
         }
       }
 
-      std::vector<std::string> Args = {
+      std::vector<fextl::string> Args = {
         "Extract",
         "As-Is",
       };
@@ -1283,7 +1288,7 @@ int main(int argc, char **argv, char **const envp) {
 
       if (AskForConfirmation("Do you wish to set this RootFS as default?")) {
         ConfigSetter::SetRootFSAsDefault(filename);
-        auto Text = fmt::format("{} set as default RootFS\n", filename);
+        fextl::string Text = fmt::format("{} set as default RootFS\n", filename).c_str();
         ExecWithInfo(Text);
       }
     }

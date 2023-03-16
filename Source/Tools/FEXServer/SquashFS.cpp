@@ -3,6 +3,7 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>
 #include <filesystem>
@@ -15,7 +16,7 @@ namespace SquashFS {
   constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
   int ServerRootFSLockFD {-1};
   int FuseMountPID{};
-  std::string MountFolder{};
+  fextl::string MountFolder{};
 
   void ShutdownImagePID() {
     if (FuseMountPID) {
@@ -24,7 +25,7 @@ namespace SquashFS {
   }
 
   bool InitializeSquashFSPipe() {
-    std::string RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
+    auto RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
 
     int Ret = open(RootFSLockFile.c_str(), O_CREAT | O_RDWR | O_TRUNC | O_EXCL | O_CLOEXEC, USER_PERMS);
     ServerRootFSLockFD = Ret;
@@ -104,7 +105,7 @@ namespace SquashFS {
     return true;
   }
 
-  bool MountRootFSImagePath(std::string SquashFS, bool EroFS) {
+  bool MountRootFSImagePath(const fextl::string &SquashFS, bool EroFS) {
     pid_t ParentTID = ::getpid();
     MountFolder = fmt::format("{}/.FEXMount{}-XXXXXX", FEXServerClient::GetServerMountFolder(), ParentTID);
     char *MountFolderStr = MountFolder.data();
@@ -222,7 +223,7 @@ namespace SquashFS {
       rmdir(MountFolder.c_str());
 
       // Remove the rootfs lock file
-      std::string RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
+      auto RootFSLockFile = FEXServerClient::GetServerRootFSLockFile();
       unlink(RootFSLockFile.c_str());
     }
   }
@@ -267,7 +268,7 @@ namespace SquashFS {
     return true;
   }
 
-  std::string GetMountFolder() {
+  fextl::string GetMountFolder() {
     return MountFolder;
   }
 }

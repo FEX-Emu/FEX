@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/fextl/string.h>
+
 #include <chrono>
 #include <imgui.h>
 #define YES_IMGUIFILESYSTEM
@@ -18,7 +20,7 @@
 namespace FEX::GUI {
 
   using TupleReturn = std::tuple<SDL_Window*, SDL_GLContext>;
-  static TupleReturn SetupIMGui(const char *Name, const std::string &Config) {
+  static TupleReturn SetupIMGui(const char *Name, const fextl::string &Config) {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {

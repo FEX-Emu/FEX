@@ -290,10 +290,8 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
-  // TODO: No need for conversion once Config uses fextl.
-  fextl::string LDPathFextl = LDPath().c_str();
-  RootFSRedirect(&Program.ProgramPath, LDPathFextl);
-  InterpreterHandler(&Program.ProgramPath, LDPathFextl, &Args);
+  RootFSRedirect(&Program.ProgramPath, LDPath());
+  InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
   std::error_code ec{};
   if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
@@ -316,7 +314,7 @@ int main(int argc, char **argv, char **const envp) {
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader Loader{Program.ProgramPath, FEXFDView, LDPathFextl, Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader Loader{Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason

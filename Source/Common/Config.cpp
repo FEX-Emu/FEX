@@ -15,12 +15,12 @@
 #include <json-maker.h>
 
 namespace FEX::Config {
-  static const fextl::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
+  static const fextl::map<FEXCore::Config::ConfigOption, fextl::string> ConfigToNameLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 
-  void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer) {
+  void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer *const Layer) {
     char Buffer[4096];
     char *Dest{};
     Dest = json_objOpen(Buffer, nullptr);
@@ -35,7 +35,7 @@ namespace FEX::Config {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    std::ofstream Output (Filename, std::ios::out | std::ios::binary);
+    std::ofstream Output (Filename.c_str(), std::ios::out | std::ios::binary);
     if (Output.is_open()) {
       Output.write(Buffer, strlen(Buffer));
       Output.close();
@@ -175,14 +175,14 @@ namespace FEX::Config {
         }
       }
 
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName.string().c_str(), FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName.string().c_str(), FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
       auto SteamID = getenv("SteamAppId");
       if (SteamID) {
         // If a SteamID exists then let's search for Steam application configs as well.
         // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-        auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, ProgramName.string());
+        fextl::string SteamAppName = fmt::format("Steam_{}_{}", SteamID, ProgramName.string()).c_str();
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
       }
