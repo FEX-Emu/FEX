@@ -12,7 +12,6 @@ $end_info$
 #include <fmt/format.h>
 #include <cstdarg>
 #include <cstdio>
-#include <string>
 
 namespace LogMan {
 

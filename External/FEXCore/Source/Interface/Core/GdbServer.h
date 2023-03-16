@@ -15,7 +15,6 @@ $end_info$
 #include <memory>
 #include <mutex>
 #include <stdint.h>
-#include <string>
 
 namespace FEXCore {
 

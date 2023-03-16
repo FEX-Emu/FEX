@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include "Thunks.h"
 
@@ -26,7 +27,6 @@ $end_info$
 #include <memory>
 #include <shared_mutex>
 #include <stdint.h>
-#include <string>
 #include <utility>
 
 #ifdef ENABLE_JEMALLOC
@@ -145,7 +145,7 @@ namespace FEXCore {
 
         // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
         // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
-        fextl::set<std::string> Libs;
+        fextl::set<fextl::string> Libs;
 
         fextl::unordered_map<GuestcallInfo, HostToGuestTrampolinePtr*, GuestcallInfoHash> GuestcallToHostTrampoline;
 
@@ -283,7 +283,7 @@ namespace FEXCore {
                 ERROR_AND_DIE_FMT("LoadLib: Failed to dlopen thunk library {}: {}", SOName, dlerror());
             }
 
-            const auto InitSym = std::string("fexthunks_exports_") + Name;
+            const auto InitSym = fextl::string("fexthunks_exports_") + Name;
 
             ExportEntry* (*InitFN)();
             (void*&)InitFN = dlsym(Handle, InitSym.c_str());

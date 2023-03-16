@@ -1,6 +1,5 @@
 #pragma once
 #include <FEXCore/fextl/string.h>
-#include <string>
 
 namespace FEXCore::StringUtils {
   // Trim the left side of the string of whitespace and new lines

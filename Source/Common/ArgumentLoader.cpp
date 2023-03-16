@@ -1,5 +1,6 @@
 #include "Common/ArgumentLoader.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include "OptionParser.h"
@@ -8,8 +9,8 @@
 #include <stdint.h>
 
 namespace FEX::ArgLoader {
-  fextl::vector<std::string> RemainingArgs;
-  fextl::vector<std::string> ProgramArguments;
+  fextl::vector<fextl::string> RemainingArgs;
+  fextl::vector<fextl::string> ProgramArguments;
 
   static std::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
   void FEX::ArgLoader::ArgLoader::Load() {
@@ -56,10 +57,10 @@ namespace FEX::ArgLoader {
     ProgramArguments.emplace_back(_argv[0]);
   }
 
-  fextl::vector<std::string> Get() {
+  fextl::vector<fextl::string> Get() {
     return RemainingArgs;
   }
-  fextl::vector<std::string> GetParsedArgs() {
+  fextl::vector<fextl::string> GetParsedArgs() {
     return ProgramArguments;
   }
 

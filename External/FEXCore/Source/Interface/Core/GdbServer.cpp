@@ -8,7 +8,6 @@ $end_info$
 #include <cstdlib>
 #include <cstdio>
 #include <iomanip>
-#include <string>
 #include <memory>
 #include <optional>
 #include "Common/SoftFloat.h"

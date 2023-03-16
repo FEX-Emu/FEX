@@ -3,7 +3,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
-#include <string>
 #include <memory>
 #include <filesystem>
 

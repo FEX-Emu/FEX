@@ -15,7 +15,6 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 
 #include <memory>
-#include <string>
 
 namespace FEXCore::IR::Validation {
 

@@ -20,7 +20,6 @@ $end_info$
 #include <functional>
 #include <memory>
 #include <stdint.h>
-#include <string>
 #include <utility>
 
 namespace {

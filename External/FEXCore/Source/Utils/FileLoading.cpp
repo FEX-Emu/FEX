@@ -1,7 +1,6 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <string>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>

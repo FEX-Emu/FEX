@@ -21,7 +21,6 @@ $end_info$
 #include <cstdint>
 #include <memory>
 #include <stddef.h>
-#include <string>
 #include <unordered_map>
 #include <utility>
 

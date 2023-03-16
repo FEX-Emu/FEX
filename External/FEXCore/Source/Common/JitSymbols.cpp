@@ -1,7 +1,6 @@
 #include "Common/JitSymbols.h"
 
 #include <fcntl.h>
-#include <string>
 #include <unistd.h>
 
 #include <fmt/format.h>

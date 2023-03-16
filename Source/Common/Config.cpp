@@ -42,7 +42,7 @@ namespace FEX::Config {
     }
   }
 
-  std::string RecoverGuestProgramFilename(std::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
+  fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
     // If executed with a FEX FD then the Program argument might be empty.
     // In this case we need to scan the FD node to recover the application binary that exists on disk.
     // Only do this if the Program argument is empty, since we would prefer the application's expectation
@@ -95,7 +95,7 @@ namespace FEX::Config {
           // This file was executed through an FD.
           // Remove the ` (deleted)` text if the file was deleted after the fact.
           // Otherwise just get the symlink without the deleted text.
-          return std::string{SymlinkPath.substr(0, SymlinkPath.rfind(" (deleted)"))};
+          return fextl::string{SymlinkPath.substr(0, SymlinkPath.rfind(" (deleted)"))};
         }
       }
     }
@@ -134,7 +134,7 @@ namespace FEX::Config {
       }
 
       Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
-      std::string& Program = Args[0];
+      fextl::string& Program = Args[0];
 
       bool Wine = false;
       std::filesystem::path ProgramName;
