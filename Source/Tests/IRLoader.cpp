@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/fextl/sstream.h>
 
 #include <csetjmp>
 #include <functional>
@@ -81,9 +82,9 @@ void AssertHandler(char const *Message)
 using namespace FEXCore::IR;
 class IRCodeLoader final {
 public:
-  IRCodeLoader(std::string const &Filename, std::string const &ConfigFilename) {
+  IRCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
     Config.Init(ConfigFilename);
-    std::fstream fp(Filename, std::fstream::binary | std::fstream::in);
+    std::fstream fp(Filename.c_str(), std::fstream::binary | std::fstream::in);
 
     if (!fp.is_open()) {
       LogMan::Msg::EFmt("Couldn't open IR file '{}'", Filename);
@@ -95,7 +96,7 @@ public:
     if (ParsedCode) {
       EntryRIP = 0x40000;
 
-      std::stringstream out;
+      fextl::stringstream out;
       auto IR = ParsedCode->ViewIR();
       FEXCore::IR::Dump(&out, &IR, nullptr);
       fmt::print("IR:\n{}\n@@@@@\n", out.str());
