@@ -36,11 +36,6 @@ namespace FEXCore::StrConv {
     *Result = std::stoull(std::string(Value), nullptr, 0);
     return true;
   }
-  // TODO: Remove once fextl is universally used.
-  [[maybe_unused]] static bool Conv(std::string_view Value, std::string *Result) {
-    *Result = Value;
-    return true;
-  }
   template <typename T,
     typename = std::enable_if<std::is_enum<T>::value, T>>
   [[maybe_unused]] static bool Conv(std::string_view Value, T *Result) {
