@@ -1,4 +1,5 @@
 #pragma once
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
@@ -25,27 +26,27 @@ struct SourcecodeSymbolMapping {
   uintptr_t FileGuestBegin;
   uintptr_t FileGuestEnd;
 
-  std::string Name;
+  fextl::string Name;
 
-  static std::string SymName(const SourcecodeSymbolMapping *Sym, const std::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
+  static fextl::string SymName(const SourcecodeSymbolMapping *Sym, const std::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
     if (Sym) {
       auto SymOffset = FileBegin - Sym->FileGuestBegin;
       if (SymOffset) {
         return fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
-                              SymOffset, HostEntry);
+                              SymOffset, HostEntry).c_str();
       } else {
         return fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
-                              HostEntry);
+                              HostEntry).c_str();
       }
     } else {
       return fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
-                            HostEntry);
+                            HostEntry).c_str();
     }
   }
 };
 
 struct SourcecodeMap {
-  std::string SourceFile;
+  fextl::string SourceFile;
   fextl::vector<SourcecodeLineMapping> SortedLineMappings;
   fextl::vector<SourcecodeSymbolMapping> SortedSymbolMappings;
 

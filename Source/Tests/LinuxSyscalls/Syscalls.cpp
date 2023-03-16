@@ -29,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
@@ -998,7 +999,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
     uintptr_t LastSymbolOffset{};
     uintptr_t CurrentSymbolOffset{};
-    std::string LastSymbolName;
+    fextl::string LastSymbolName;
 
     uintptr_t LastOffset{};
     uintptr_t CurrentOffset{};
