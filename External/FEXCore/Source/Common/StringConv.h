@@ -1,4 +1,6 @@
 #pragma once
+#include <FEXCore/fextl/string.h>
+
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -34,6 +36,7 @@ namespace FEXCore::StrConv {
     *Result = std::stoull(std::string(Value), nullptr, 0);
     return true;
   }
+  // TODO: Remove once fextl is universally used.
   [[maybe_unused]] static bool Conv(std::string_view Value, std::string *Result) {
     *Result = Value;
     return true;
@@ -45,4 +48,8 @@ namespace FEXCore::StrConv {
     return true;
   }
 
+  [[maybe_unused]] static bool Conv(std::string_view Value, fextl::string *Result) {
+    *Result = Value;
+    return true;
+  }
 }
