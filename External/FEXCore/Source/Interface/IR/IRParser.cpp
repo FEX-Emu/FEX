@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -21,7 +22,6 @@ $end_info$
 #include <memory>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string>
 #include <string_view>
 #include <utility>
 #include <istream>
@@ -45,7 +45,7 @@ enum class DecodeFailure {
 
 };
 
-std::string DecodeErrorToString(DecodeFailure Failure) {
+fextl::string DecodeErrorToString(DecodeFailure Failure) {
   switch (Failure) {
     case DecodeFailure::DECODE_OKAY: return "Okay";
     case DecodeFailure::DECODE_UNKNOWN_TYPE: return "Unknown Type";
@@ -65,13 +65,12 @@ std::string DecodeErrorToString(DecodeFailure Failure) {
 class IRParser: public FEXCore::IR::IREmitter {
   public:
   template<typename Type>
-  std::pair<DecodeFailure, Type> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, Type> DecodeValue(const fextl::string &Arg) {
     return {DecodeFailure::DECODE_UNKNOWN_TYPE, {}};
   }
 
-
   template<>
-  std::pair<DecodeFailure, uint8_t> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, uint8_t> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint8_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -80,7 +79,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, bool> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, bool> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint8_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -89,7 +88,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint16_t> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, uint16_t> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint16_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -98,7 +97,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint32_t> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, uint32_t> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint32_t Result = strtoul(&Arg.at(1), nullptr, 0);
@@ -107,7 +106,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, uint64_t> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, uint64_t> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     uint64_t Result = strtoull(&Arg.at(1), nullptr, 0);
@@ -116,7 +115,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, int64_t> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, int64_t> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '#') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     int64_t Result = (int64_t)strtoull(&Arg.at(1), nullptr, 0);
@@ -125,13 +124,13 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, IR::SHA256Sum> DecodeValue(const fextl::string &Arg) {
     IR::SHA256Sum Result;
 
     if (Arg.at(0) != 's' || Arg.at(1) != 'h' || Arg.at(2) != 'a' || Arg.at(3) != '2' || Arg.at(4) != '5' || Arg.at(5) != '6' || Arg.at(6) != ':')
       return {DecodeFailure::DECODE_INVALIDCHAR, Result};
 
-    auto GetDigit = [](const std::string &Arg, int pos, uint8_t *val) {
+    auto GetDigit = [](const fextl::string &Arg, int pos, uint8_t *val) {
       auto chr = Arg.at(pos);
       if (chr >= '0' && chr <= '9') {
         *val = chr - '0';
@@ -156,7 +155,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::RegisterClassType> DecodeValue(const fextl::string &Arg) {
     if (Arg == "GPR") {
       return {DecodeFailure::DECODE_OKAY, FEXCore::IR::GPRClass};
     }
@@ -180,7 +179,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::TypeDefinition> DecodeValue(const fextl::string &Arg) {
     uint8_t Size{}, Elements{1};
     int NumArgs = sscanf(Arg.c_str(), "i%hhdv%hhd", &Size, &Elements);
 
@@ -192,7 +191,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::CondClassType> DecodeValue(const fextl::string &Arg) {
     static constexpr std::array<std::string_view, 22> CondNames = {
       "EQ",
       "NEQ",
@@ -227,7 +226,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::MemOffsetType> DecodeValue(const fextl::string &Arg) {
     static constexpr std::array<std::string_view, 3> Names = {
       "SXTX",
       "UXTW",
@@ -243,7 +242,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::FenceType> DecodeValue(const fextl::string &Arg) {
     static constexpr std::array<std::string_view, 3> Names = {
       "Loads",
       "Stores",
@@ -259,7 +258,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, FEXCore::IR::BreakDefinition> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, FEXCore::IR::BreakDefinition> DecodeValue(const fextl::string &Arg) {
     uint32_t tmp{};
     std::stringstream ss{Arg};
     BreakDefinition Reason{};
@@ -292,14 +291,14 @@ class IRParser: public FEXCore::IR::IREmitter {
   }
 
   template<>
-  std::pair<DecodeFailure, OrderedNode*> DecodeValue(const std::string &Arg) {
+  std::pair<DecodeFailure, OrderedNode*> DecodeValue(const fextl::string &Arg) {
     if (Arg.at(0) != '%') return {DecodeFailure::DECODE_INVALIDCHAR, 0};
 
     // Strip off the type qualifier from the ssa value
-    std::string SSAName = FEXCore::StringUtils::Trim(Arg);
+    fextl::string SSAName = FEXCore::StringUtils::Trim(Arg);
     const size_t ArgEnd = SSAName.find_first_of(' ');
 
-    if (ArgEnd != std::string::npos) {
+    if (ArgEnd != fextl::string::npos) {
       SSAName = SSAName.substr(0, ArgEnd);
     }
 
@@ -315,17 +314,17 @@ class IRParser: public FEXCore::IR::IREmitter {
   struct LineDefinition {
     size_t LineNumber;
     bool HasDefinition{};
-    std::string Definition{};
+    fextl::string Definition{};
     FEXCore::IR::TypeDefinition Size{};
-    std::string IROp{};
+    fextl::string IROp{};
     FEXCore::IR::IROps OpEnum;
     bool HasArgs{};
-    fextl::vector<std::string> Args;
+    fextl::vector<fextl::string> Args;
     OrderedNode *Node{};
   };
 
-  fextl::vector<std::string> Lines;
-  fextl::unordered_map<std::string, OrderedNode*> SSANameMapper;
+  fextl::vector<fextl::string> Lines;
+  fextl::unordered_map<fextl::string, OrderedNode*> SSANameMapper;
   fextl::vector<LineDefinition> Defs;
   LineDefinition *CurrentDef{};
   fextl::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
@@ -334,7 +333,7 @@ class IRParser: public FEXCore::IR::IREmitter {
     : IREmitter {ThreadAllocator} {
     InitializeNameMap();
 
-    std::string TmpLine;
+    fextl::string TmpLine;
     while (!text->eof()) {
       std::getline(*text, TmpLine);
       if (text->eof()) {
@@ -379,7 +378,7 @@ class IRParser: public FEXCore::IR::IREmitter {
 
     // String parse every line for our definitions
     for (size_t i = 0; i < Lines.size(); ++i) {
-      std::string Line = Lines[i];
+      fextl::string Line = Lines[i];
       LineDefinition Def{};
       CurrentDef = &Def;
       Def.LineNumber = i;
@@ -400,8 +399,8 @@ class IRParser: public FEXCore::IR::IREmitter {
       size_t CurrentPos{};
       // Let's see if this node is assigning something first
       if (Line[0] == '%') {
-        size_t DefinitionEnd = std::string::npos;
-        if ((DefinitionEnd = Line.find_first_of('=', CurrentPos)) != std::string::npos) {
+        size_t DefinitionEnd = fextl::string::npos;
+        if ((DefinitionEnd = Line.find_first_of('=', CurrentPos)) != fextl::string::npos) {
           Def.Definition = Line.substr(0, DefinitionEnd);
           Def.Definition = FEXCore::StringUtils::Trim(Def.Definition);
           Def.HasDefinition = true;
@@ -418,11 +417,11 @@ class IRParser: public FEXCore::IR::IREmitter {
       // Check if we are pulling in some IR from the IR Printer
       // Prints (%ssa%d) at the start of lines without a definition
       if (Line[0] == '(') {
-        size_t DefinitionEnd = std::string::npos;
-        if ((DefinitionEnd = Line.find_first_of(')', CurrentPos)) != std::string::npos) {
-          size_t SSAEnd = std::string::npos;
-          if ((SSAEnd = Line.find_last_of(' ', DefinitionEnd)) != std::string::npos) {
-            std::string Type = Line.substr(SSAEnd + 1, DefinitionEnd - SSAEnd - 1);
+        size_t DefinitionEnd = fextl::string::npos;
+        if ((DefinitionEnd = Line.find_first_of(')', CurrentPos)) != fextl::string::npos) {
+          size_t SSAEnd = fextl::string::npos;
+          if ((SSAEnd = Line.find_last_of(' ', DefinitionEnd)) != fextl::string::npos) {
+            fextl::string Type = Line.substr(SSAEnd + 1, DefinitionEnd - SSAEnd - 1);
             Type = FEXCore::StringUtils::Trim(Type);
 
             auto DefinitionSize = DecodeValue<FEXCore::IR::TypeDefinition>(Type);
@@ -446,9 +445,9 @@ class IRParser: public FEXCore::IR::IREmitter {
 
       if (Def.HasDefinition) {
         // Let's check if we have a size declared with this variable
-        size_t NameEnd = std::string::npos;
-        if ((NameEnd = Def.Definition.find_first_of(' ')) != std::string::npos) {
-          std::string Type = Def.Definition.substr(NameEnd + 1);
+        size_t NameEnd = fextl::string::npos;
+        if ((NameEnd = Def.Definition.find_first_of(' ')) != fextl::string::npos) {
+          fextl::string Type = Def.Definition.substr(NameEnd + 1);
           Type = FEXCore::StringUtils::Trim(Type);
           Def.Definition = FEXCore::StringUtils::Trim(Def.Definition.substr(0, NameEnd));
 
@@ -466,10 +465,10 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
 
       // Let's get the IR op
-      size_t OpNameEnd = std::string::npos;
-      std::string RemainingLine = FEXCore::StringUtils::Trim(Line.substr(CurrentPos));
+      size_t OpNameEnd = fextl::string::npos;
+      fextl::string RemainingLine = FEXCore::StringUtils::Trim(Line.substr(CurrentPos));
       CurrentPos = 0;
-      if ((OpNameEnd = RemainingLine.find_first_of(" \t\n\r\0", CurrentPos)) != std::string::npos) {
+      if ((OpNameEnd = RemainingLine.find_first_of(" \t\n\r\0", CurrentPos)) != fextl::string::npos) {
         Def.IROp = RemainingLine.substr(CurrentPos, OpNameEnd);
         Def.IROp = FEXCore::StringUtils::Trim(Def.IROp);
         Def.HasArgs = true;
@@ -497,12 +496,12 @@ class IRParser: public FEXCore::IR::IREmitter {
         else {
           while (!RemainingLine.empty()) {
             const size_t ArgEnd = RemainingLine.find(',');
-            std::string Arg = FEXCore::StringUtils::Trim(RemainingLine.substr(0, ArgEnd));
+            fextl::string Arg = FEXCore::StringUtils::Trim(RemainingLine.substr(0, ArgEnd));
 
             Def.Args.emplace_back(std::move(Arg));
 
             RemainingLine.erase(0, ArgEnd+1); // +1 to ensure we go past the ','
-            if (ArgEnd == std::string::npos)
+            if (ArgEnd == fextl::string::npos)
               break;
           }
         }
