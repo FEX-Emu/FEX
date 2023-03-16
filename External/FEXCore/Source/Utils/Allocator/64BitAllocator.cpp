@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -19,7 +20,6 @@
 #include <memory>
 #include <mutex>
 #include <new>
-#include <sstream>
 #include <sys/mman.h>
 #include <sys/utsname.h>
 #include <sys/user.h>
@@ -494,7 +494,7 @@ fextl::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfO
   int32_t Minor{};
   int32_t Patch{};
   char Tmp{};
-  std::istringstream ss{buf.release};
+  fextl::istringstream ss{buf.release};
   ss >> Major;
   ss.read(&Tmp, 1);
   ss >> Minor;

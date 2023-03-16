@@ -8,6 +8,7 @@
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/deque.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/unordered_map.h>
 
 #include <algorithm>
@@ -207,7 +208,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
   BlocksToVisit.push_front(ValidationPass->EntryBlock); // Currently only a single entry point
 
   bool HadError = false;
-  std::ostringstream Errors;
+  fextl::ostringstream Errors;
 
   auto CurrentIR = IREmit->ViewIR();
   uint32_t CurrentVersion = 1; // Incremented every backwards edge
@@ -439,7 +440,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
   }
 
   if (HadError) {
-    std::stringstream IrDump;
+    fextl::stringstream IrDump;
     FEXCore::IR::Dump(&IrDump, &CurrentIR, RAData);
 
     LogMan::Msg::EFmt("RA Validation Error\n{}\nErrors:\n{}\n", IrDump.str(), Errors.str());

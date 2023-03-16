@@ -15,13 +15,13 @@ $end_info$
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <memory>
 #include <stddef.h>
 #include <string>
-#include <sstream>
 #include <unordered_map>
 #include <utility>
 
@@ -38,8 +38,8 @@ bool IRValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   bool HadWarning = false;
 
-  std::ostringstream Errors;
-  std::ostringstream Warnings;
+  fextl::ostringstream Errors;
+  fextl::ostringstream Warnings;
 
   auto CurrentIR = IREmit->ViewIR();
 
@@ -250,7 +250,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
   HadWarning = false;
   if (HadError || HadWarning) {
-    std::stringstream Out;
+    fextl::stringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR, RAData);
 
     if (HadError) {

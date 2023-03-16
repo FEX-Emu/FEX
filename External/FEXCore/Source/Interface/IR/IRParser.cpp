@@ -11,6 +11,7 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
@@ -260,7 +261,7 @@ class IRParser: public FEXCore::IR::IREmitter {
   template<>
   std::pair<DecodeFailure, FEXCore::IR::BreakDefinition> DecodeValue(const fextl::string &Arg) {
     uint32_t tmp{};
-    std::stringstream ss{Arg};
+    fextl::stringstream ss{Arg};
     BreakDefinition Reason{};
 
     // Seek past '{'

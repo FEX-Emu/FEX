@@ -2,12 +2,12 @@
 
 #include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 
 #include <cmath>
 #include <cstring>
 #include <stdint.h>
-#include <sstream>
 
 extern "C" {
 #include "SoftFloat-3e/platform.h"
@@ -47,12 +47,12 @@ struct X80SoftFloat {
   }
 
   fextl::string str() const {
-    std::ostringstream string;
+    fextl::ostringstream string;
     string << std::hex << Sign;
     string << "_" << Exponent;
     string << "_" << (Significand >> 63);
     string << "_" << (Significand & ((1ULL << 63) - 1));
-    return string.str().c_str();
+    return string.str();
   }
 
   // Ops
