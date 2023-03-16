@@ -1,4 +1,6 @@
 #pragma once
+#include <FEXCore/fextl/vector.h>
+
 #include <string>
 #include <vector>
 #include <filesystem>
@@ -14,7 +16,9 @@ namespace FEXCore::FileLoading {
    *
    * @return true on file loaded, false on failure
    */
+  // TODO: Delete once all uses of std::vector LoadFile is removed.
   bool LoadFile(std::vector<char> &Data, const std::string &Filepath, size_t FixedSize = 0);
+  bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t FixedSize = 0);
 
   /**
    * @brief Loads a filepath in to a buffer of data with a fixed size

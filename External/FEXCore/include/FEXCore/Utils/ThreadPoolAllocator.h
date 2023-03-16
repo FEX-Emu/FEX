@@ -3,10 +3,10 @@
 #include <atomic>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
 
 #include <chrono>
 #include <cstddef>
-#include <list>
 #include <mutex>
 #include <sys/mman.h>
 
@@ -44,10 +44,10 @@ namespace FEXCore::Utils {
       /**
        * @brief Container for tracking the buffers
        *
-       * We're using std::list explicitly because its iterators aren't invalidated when the list is adjusted.
+       * We're using fextl::list explicitly because its iterators aren't invalidated when the list is adjusted.
        * if we had list types that we can atomically erase and append elements then unclaiming could be made cheaper.
        */
-      using ContainerType = std::list<MemoryBuffer*>;
+      using ContainerType = fextl::list<MemoryBuffer*>;
       /**
        * @brief steady_clock to ensure long running applications don't hit any timeskip problems.
        */
@@ -397,11 +397,11 @@ namespace FEXCore::Utils {
    *
    *  - Unclaiming is fairly costly
    *    - Requires owning a mutex, shared between all threads using the `Allocator`
-   *    - Updating two std::list containers to give the ownership back to the `Allocator`
+   *    - Updating two fextl::list containers to give the ownership back to the `Allocator`
    *
    *  - Claiming is very costly
    *    - Requires owning a mutex, shared between all threads using the `Allocator`
-   *    - Scans two std::list containers to find the best fit buffer
+   *    - Scans two fextl::list containers to find the best fit buffer
    *    - Or allocates another buffer when that fails
    *    - Frees stale buffers opportunistically
    */

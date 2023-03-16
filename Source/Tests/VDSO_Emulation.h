@@ -1,5 +1,6 @@
 #pragma once
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::Context {
 struct VDSOSigReturn;
@@ -11,6 +12,6 @@ namespace FEX::VDSO {
 
   uint64_t GetVSyscallEntry(const void* VDSOBase);
 
-  std::vector<FEXCore::IR::ThunkDefinition> const& GetVDSOThunkDefinitions();
+  fextl::vector<FEXCore::IR::ThunkDefinition> const& GetVDSOThunkDefinitions();
   FEXCore::Context::VDSOSigReturn const& GetVDSOSymbols();
 }

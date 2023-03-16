@@ -11,7 +11,9 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
-#include "FEXCore/Utils/CompilerDefs.h"
+#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include "Thunks.h"
 
 #include <cstdint>
@@ -21,7 +23,6 @@ $end_info$
 #include "FEXCore/Core/X86Enums.h"
 #include <malloc.h>
 #include <mutex>
-#include <unordered_map>
 #include <memory>
 #include <shared_mutex>
 #include <stdint.h>
@@ -97,7 +98,7 @@ namespace FEXCore {
     struct GuestcallInfoHash {
       size_t operator()(const GuestcallInfo& x) const noexcept {
         // Hash only the target address, which is generally unique.
-        // For the unlikely case of a hash collision, std::unordered_map still picks the correct bucket entry.
+        // For the unlikely case of a hash collision, fextl::unordered_map still picks the correct bucket entry.
         return std::hash<uintptr_t>{}(x.GuestTarget);
       }
     };
@@ -114,7 +115,7 @@ namespace FEXCore {
     struct ThunkHandler_impl final: public ThunkHandler {
         std::shared_mutex ThunksMutex;
 
-        std::unordered_map<IR::SHA256Sum, ThunkedFunction*, TruncatingSHA256Hash> Thunks = {
+        fextl::unordered_map<IR::SHA256Sum, ThunkedFunction*, TruncatingSHA256Hash> Thunks = {
             {
                 // sha256(fex:loadlib)
                 { 0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44, 0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80 },
@@ -144,9 +145,9 @@ namespace FEXCore {
 
         // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
         // Ideally we track when a library has been unloaded and remove it from this set before the memory backing goes away.
-        std::set<std::string> Libs;
+        fextl::set<std::string> Libs;
 
-        std::unordered_map<GuestcallInfo, HostToGuestTrampolinePtr*, GuestcallInfoHash> GuestcallToHostTrampoline;
+        fextl::unordered_map<GuestcallInfo, HostToGuestTrampolinePtr*, GuestcallInfoHash> GuestcallToHostTrampoline;
 
         uint8_t *HostTrampolineInstanceDataPtr;
         size_t HostTrampolineInstanceDataAvailable = 0;
@@ -347,7 +348,7 @@ namespace FEXCore {
             ::Thread = Thread;
         }
 
-        void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override {
+        void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override {
           for (auto & Definition : Definitions) {
             Thunks.emplace(Definition.Sum, Definition.ThunkFunction);
           }

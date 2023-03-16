@@ -1,5 +1,8 @@
 #pragma once
 
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/vector.h>
+
 #include <cstdint>
 #include <elf.h>
 #include <functional>
@@ -7,9 +10,7 @@
 #include <stddef.h>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
 // Add macros which are missing in some versions of <elf.h>
 #ifndef ELF32_ST_VISIBILITY
@@ -76,7 +77,7 @@ public:
   bool WasLoaded() const { return Loaded; }
   std::string &InterpreterLocation() { return DynamicLinker; }
 
-  std::vector<char const*> const *GetNecessaryLibs() const { return &NecessaryLibs; }
+  fextl::vector<char const*> const *GetNecessaryLibs() const { return &NecessaryLibs; }
 
   void PrintRelocationTable() const;
 
@@ -89,7 +90,7 @@ public:
   using UnwindAdder = std::function<void(uintptr_t)>;
   void AddUnwindEntries(UnwindAdder Adder);
 
-  void GetInitLocations(uint64_t GuestELFBase, std::vector<uint64_t> *Locations);
+  void GetInitLocations(uint64_t GuestELFBase, fextl::vector<uint64_t> *Locations);
 
 
   bool HasTLS() const { return TLSHeader._64 != nullptr; }
@@ -139,7 +140,7 @@ private:
   void PrintInitArray() const;
   void PrintDynamicTable() const;
 
-  std::vector<char> RawFile;
+  fextl::vector<char> RawFile;
   union {
     Elf32_Ehdr _32;
     Elf64_Ehdr _64;
@@ -156,14 +157,14 @@ private:
   };
 
   ELFMode Mode;
-  std::vector<SectionHeader> SectionHeaders;
-  std::vector<ProgramHeader> ProgramHeaders;
-  std::vector<ELFSymbol> Symbols;
-  std::vector<uintptr_t> UnwindEntries;
-  std::unordered_map<std::string, ELFSymbol *> SymbolMap;
+  fextl::vector<SectionHeader> SectionHeaders;
+  fextl::vector<ProgramHeader> ProgramHeaders;
+  fextl::vector<ELFSymbol> Symbols;
+  fextl::vector<uintptr_t> UnwindEntries;
+  fextl::unordered_map<std::string, ELFSymbol *> SymbolMap;
   std::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
 
-  std::vector<char const*> NecessaryLibs;
+  fextl::vector<char const*> NecessaryLibs;
 
   uint64_t MinPhysicalMemoryLocation{0};
   uint64_t MaxPhysicalMemoryLocation{0};

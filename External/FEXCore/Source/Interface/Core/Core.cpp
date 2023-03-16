@@ -45,6 +45,8 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TodoDefines.h>
 
@@ -60,7 +62,6 @@ $end_info$
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <set>
 #include <shared_mutex>
 #include <signal.h>
 #include <stdio.h>
@@ -74,7 +75,6 @@ $end_info$
 #include <unistd.h>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 #include <xxhash.h>
 
 
@@ -1353,11 +1353,11 @@ namespace FEXCore::Context {
     }
   }
 
-  void ContextImpl::AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
+  void ContextImpl::AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
     ThunkHandler->AppendThunkDefinitions(Definitions);
   }
 
-  void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
+  void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
     Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
     Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);
   }

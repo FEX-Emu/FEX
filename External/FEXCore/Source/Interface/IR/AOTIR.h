@@ -2,6 +2,8 @@
 
 #include "FEXCore/IR/RegisterAllocationData.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/queue.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <atomic>
 #include <cstdint>
@@ -9,9 +11,7 @@
 #include <fstream>
 #include <memory>
 #include <map>
-#include <unordered_map>
 #include <shared_mutex>
-#include <queue>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
 namespace FEXCore::Core {
@@ -85,7 +85,7 @@ namespace FEXCore::IR {
     bool ContainsCode;
   };
 
-  using AOTCacheType = std::unordered_map<std::string, FEXCore::IR::AOTIRCacheEntry>;
+  using AOTCacheType = fextl::unordered_map<std::string, FEXCore::IR::AOTIRCacheEntry>;
 
   class AOTIRCaptureCache final {
     public:
@@ -140,13 +140,13 @@ namespace FEXCore::IR {
       std::shared_mutex AOTIRCaptureCacheWriteoutLock;
       std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
 
-      std::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
+      fextl::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
 
       FEXCore::IR::AOTCacheType AOTIRCache;
 
       std::function<int(const std::string&)> AOTIRLoader;
       std::function<std::unique_ptr<std::ofstream>(const std::string&)> AOTIRWriter;
       std::function<void(const std::string&)> AOTIRRenamer;
-      std::unordered_map<std::string, FEXCore::IR::AOTIRCaptureCacheEntry> AOTIRCaptureCacheMap;
+      fextl::unordered_map<std::string, FEXCore::IR::AOTIRCaptureCacheEntry> AOTIRCaptureCacheMap;
   };
 }

@@ -3,6 +3,8 @@ set (MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man CACHE PATH "MAN_DIR")
 set (FEXCORE_BASE_SRCS
   Common/Paths.cpp
   Interface/Config/Config.cpp
+  Utils/Allocator.cpp
+  Utils/Allocator/64BitAllocator.cpp
   Utils/CPUInfo.cpp
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
@@ -138,8 +140,6 @@ set (SRCS
   Interface/IR/Passes/DeadStoreElimination.cpp
   Interface/IR/Passes/RegisterAllocationPass.cpp
   Interface/IR/Passes/SyscallOptimization.cpp
-  Utils/Allocator.cpp
-  Utils/Allocator/64BitAllocator.cpp
   Utils/NetStream.cpp
   Utils/Telemetry.cpp
   Utils/Threads.cpp

@@ -7,6 +7,7 @@
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <tsl/robin_map.h>
 
@@ -60,7 +61,7 @@ namespace FEXCore::Core {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     std::vector<DebugDataSubblock> Subblocks;
     std::vector<DebugDataGuestOpcode> GuestOpcodes;
-    std::vector<FEXCore::CPU::Relocation> *Relocations;
+    fextl::vector<FEXCore::CPU::Relocation> *Relocations;
   };
 
   enum class SignalEvent {

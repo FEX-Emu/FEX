@@ -6,10 +6,10 @@ $end_info$
 
 #pragma once
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <cstdint>
 #include <functional>
-#include <unordered_map>
 #include <string>
 #include <sys/types.h>
 
@@ -30,7 +30,7 @@ namespace FEX::EmulatedFile {
       std::once_flag cpu_info_initialized{};
       std::string cpu_info{};
       using FDReadStringFunc = std::function<int32_t(FEXCore::Context::Context *ctx, int32_t fd, const char *pathname, int32_t flags, mode_t mode)>;
-      std::unordered_map<std::string, FDReadStringFunc> FDReadCreators;
+      fextl::unordered_map<std::string, FDReadStringFunc> FDReadCreators;
 
       static int32_t ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode);
       FEX_CONFIG_OPT(ThreadsConfig, THREADS);

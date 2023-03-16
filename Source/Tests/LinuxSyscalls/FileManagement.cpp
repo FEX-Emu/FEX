@@ -15,6 +15,8 @@ $end_info$
 
 #include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -40,13 +42,13 @@ $end_info$
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
-    std::unique_ptr<std::list<json_t>> json_objects;
+    std::unique_ptr<fextl::list<json_t>> json_objects;
   };
   static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    alloc->json_objects = std::make_unique<fextl::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
@@ -59,7 +61,7 @@ namespace JSON {
 namespace FEX::HLE {
   struct open_how;
 
-static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
+static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
   std::fstream File(Filename, std::ios::in);
 
   if (!File.is_open()) {
@@ -97,14 +99,14 @@ static bool LoadFile(std::vector<char> &Data, const std::string &Filename) {
 
 struct ThunkDBObject {
   std::string LibraryName;
-  std::unordered_set<std::string> Depends;
-  std::vector<std::string> Overlays;
+  fextl::unordered_set<std::string> Depends;
+  fextl::vector<std::string> Overlays;
   bool Enabled{};
 };
 
-static void LoadThunkDatabase(std::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
+static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
-  std::vector<char> FileData;
+  fextl::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
     FileData.push_back(0);
 
@@ -228,7 +230,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   // This doesn't support the classic thunks interface.
 
   auto AppName = AppConfigName();
-  std::vector<std::string> ConfigPaths {
+  fextl::vector<std::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
     ThunkConfigFile,
@@ -251,12 +253,12 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
-  std::unordered_map<std::string, ThunkDBObject> ThunkDB;
+  fextl::unordered_map<std::string, ThunkDBObject> ThunkDB;
   LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
   LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
 
   for (const auto &Path : ConfigPaths) {
-    std::vector<char> FileData;
+    fextl::vector<char> FileData;
     if (LoadFile(FileData, Path)) {
       JSON::JsonAllocator Pool {
         .PoolObject = {
@@ -315,7 +317,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
           }
       };
 
-      void InsertDependencies(const std::unordered_set<std::string> &Depends) {
+      void InsertDependencies(const fextl::unordered_set<std::string> &Depends) {
         for (auto const &Depend : Depends) {
           auto& DBDepend = ThunkDB.at(Depend);
           if (DBDepend.Enabled) {

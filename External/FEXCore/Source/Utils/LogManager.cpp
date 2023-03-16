@@ -6,18 +6,18 @@ $end_info$
 
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <alloca.h>
 #include <fmt/format.h>
 #include <cstdarg>
 #include <cstdio>
 #include <string>
-#include <vector>
 
 namespace LogMan {
 
 namespace Throw {
-std::vector<ThrowHandler> Handlers;
+fextl::vector<ThrowHandler> Handlers;
 void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 void UnInstallHandlers() { Handlers.clear(); }
 
@@ -33,7 +33,7 @@ void MFmt(const char *fmt, const fmt::format_args& args) {
 } // namespace Throw
 
 namespace Msg {
-std::vector<MsgHandler> Handlers;
+fextl::vector<MsgHandler> Handlers;
 void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
 void UnInstallHandlers() { Handlers.clear(); }
 

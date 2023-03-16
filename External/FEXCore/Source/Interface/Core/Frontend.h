@@ -3,12 +3,12 @@
 #include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <cstdint>
-#include <set>
 #include <stddef.h>
-#include <vector>
 
 namespace FEXCore::Context {
 class ContextImpl;
@@ -29,7 +29,7 @@ public:
   ~Decoder();
   void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
-  std::vector<DecodedBlocks> const *GetDecodedBlocks() const {
+  fextl::vector<DecodedBlocks> const *GetDecodedBlocks() const {
     return &Blocks;
   }
 
@@ -37,7 +37,7 @@ public:
   uint64_t DecodedMaxAddress {~0ULL};
 
   void SetSectionMaxAddress(uint64_t v) { SectionMaxAddress = v; }
-  void SetExternalBranches(std::set<uint64_t> *v) { ExternalBranches = v; }
+  void SetExternalBranches(fextl::set<uint64_t> *v) { ExternalBranches = v; }
 
   void DelayedDisownBuffer() {
     PoolObject.DelayedDisownBuffer();
@@ -89,10 +89,10 @@ private:
   uint64_t SymbolMinAddress {~0ULL};
   uint64_t SectionMaxAddress {~0ULL};
 
-  std::vector<DecodedBlocks> Blocks;
-  std::set<uint64_t> BlocksToDecode;
-  std::set<uint64_t> HasBlocks;
-  std::set<uint64_t> *ExternalBranches {nullptr};
+  fextl::vector<DecodedBlocks> Blocks;
+  fextl::set<uint64_t> BlocksToDecode;
+  fextl::set<uint64_t> HasBlocks;
+  fextl::set<uint64_t> *ExternalBranches {nullptr};
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand *Operand, X86Tables::ModRMDecoded ModRM);

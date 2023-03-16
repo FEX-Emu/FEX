@@ -12,13 +12,13 @@
 #include <FEXCore/IR/IREmitter.h>
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <fmt/format.h>
 #include <map>
 #include <stddef.h>
 #include <utility>
-#include <vector>
 
 namespace FEXCore::IR {
 class Pass;
@@ -157,7 +157,7 @@ public:
   bool HadDecodeFailure() const { return DecodeFailure; }
   bool NeedsBlockEnder() const { return NeedsBlockEnd; }
 
-  void BeginFunction(uint64_t RIP, std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
+  void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   void Finalize();
 
   // Dispatch builder functions
@@ -1514,7 +1514,7 @@ private:
     return !Op->Dest.IsGPR();
   }
 
-  void CreateJumpBlocks(std::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
+  void CreateJumpBlocks(fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   bool BlockSetRIP {false};
 
   bool Multiblock{};

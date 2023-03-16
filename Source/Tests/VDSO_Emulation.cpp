@@ -410,7 +410,7 @@ namespace FEX::VDSO {
     dlclose(vdso);
   }
 
-  static std::vector<FEXCore::IR::ThunkDefinition> VDSODefinitions = {
+  static fextl::vector<FEXCore::IR::ThunkDefinition> VDSODefinitions = {
     {
         // sha256(libVDSO:time)
         { 0x37, 0x63, 0x46, 0xb0, 0x79, 0x06, 0x5f, 0x9d, 0x00, 0xb6, 0x8d, 0xfd, 0x9e, 0x4a, 0x62, 0xcd, 0x1e, 0x6c, 0xcc, 0x22, 0xcd, 0xb2, 0xc0, 0x17, 0x7d, 0x42, 0x6a, 0x40, 0xd1, 0xeb, 0xfa, 0xe0 },
@@ -571,7 +571,7 @@ namespace FEX::VDSO {
     return 0;
   }
 
-  std::vector<FEXCore::IR::ThunkDefinition> const& GetVDSOThunkDefinitions() {
+  fextl::vector<FEXCore::IR::ThunkDefinition> const& GetVDSOThunkDefinitions() {
     return VDSODefinitions;
   }
 

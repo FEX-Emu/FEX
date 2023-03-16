@@ -16,6 +16,9 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -25,10 +28,7 @@ $end_info$
 #include <cstdint>
 #include <cstring>
 #include <optional>
-#include <set>
 #include <strings.h>
-#include <unordered_map>
-#include <unordered_set>
 #include <sys/user.h>
 #include <utility>
 
@@ -96,8 +96,8 @@ namespace {
     fextl::vector<RegisterNode> Nodes{};
     uint32_t NodeCount{};
     fextl::vector<SpillStackUnit> SpillStack;
-    std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> BlockPredecessors;
-    std::unordered_map<IR::NodeID, std::unordered_set<IR::NodeID>> VisitedNodePredecessors;
+    fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> BlockPredecessors;
+    fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> VisitedNodePredecessors;
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
@@ -299,7 +299,7 @@ namespace {
 
       fextl::vector<LiveRange> LiveRanges;
 
-      std::unordered_map<IR::NodeID, BlockInterferences> LocalBlockInterferences;
+      fextl::unordered_map<IR::NodeID, BlockInterferences> LocalBlockInterferences;
       BlockInterferences GlobalBlockInterferences;
 
       [[nodiscard]] static constexpr uint32_t InfoMake(uint32_t id, uint32_t Class) {
@@ -327,8 +327,8 @@ namespace {
       void RecursiveLiveRangeExpansion(FEXCore::IR::IRListView *IR,
                                        IR::NodeID Node, IR::NodeID DefiningBlockID,
                                        LiveRange *LiveRange,
-                                       const std::unordered_set<IR::NodeID> &Predecessors,
-                                       std::unordered_set<IR::NodeID> &VisitedPredecessors);
+                                       const fextl::unordered_set<IR::NodeID> &Predecessors,
+                                       fextl::unordered_set<IR::NodeID> &VisitedPredecessors);
 
       FEXCore::IR::AllNodesIterator FindFirstUse(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
       FEXCore::IR::AllNodesIterator FindLastUseBefore(FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode* Node, FEXCore::IR::AllNodesIterator Begin, FEXCore::IR::AllNodesIterator End);
@@ -385,8 +385,8 @@ namespace {
   void ConstrainedRAPass::RecursiveLiveRangeExpansion(IR::IRListView *IR,
                                                       IR::NodeID Node, IR::NodeID DefiningBlockID,
                                                       LiveRange *LiveRange,
-                                                      const std::unordered_set<IR::NodeID> &Predecessors,
-                                                      std::unordered_set<IR::NodeID> &VisitedPredecessors) {
+                                                      const fextl::unordered_set<IR::NodeID> &Predecessors,
+                                                      fextl::unordered_set<IR::NodeID> &VisitedPredecessors) {
     for (auto PredecessorId: Predecessors) {
       if (DefiningBlockID != PredecessorId && !VisitedPredecessors.contains(PredecessorId)) {
         // do the magic
@@ -1287,7 +1287,7 @@ namespace {
     // Heuristics failed to spill ?
     if (InterferenceIdToSpill.IsInvalid()) {
       // Panic spill: Spill any value not used by the current op
-      std::set<IR::NodeID> CurrentNodes;
+      fextl::set<IR::NodeID> CurrentNodes;
 
       // Get all used nodes for current IR op
       {

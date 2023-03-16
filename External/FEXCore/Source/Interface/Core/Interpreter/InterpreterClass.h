@@ -6,18 +6,14 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::CPU {
 class Dispatcher;
 class X86DispatchGenerator;
 class Arm64DispatchGenerator;
 
-#define DESTMAP_AS_MAP 0
-#if DESTMAP_AS_MAP
-using DestMapType = std::unordered_map<uint32_t, uint32_t>;
-#else
-using DestMapType = std::vector<uint32_t>;
-#endif
+using DestMapType = fextl::vector<uint32_t>;
 
 class InterpreterCore final : public CPUBackend {
 public:
@@ -36,7 +32,7 @@ public:
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   static void InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX);
-  
+
   void ClearCache() override;
 
 private:

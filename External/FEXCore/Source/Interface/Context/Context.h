@@ -15,9 +15,11 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <stdint.h>
-
 
 #include <atomic>
 #include <condition_variable>
@@ -29,9 +31,7 @@
 #include <shared_mutex>
 #include <stddef.h>
 #include <string>
-#include <unordered_map>
 #include <queue>
-#include <vector>
 
 namespace FEXCore {
 class CodeLoader;
@@ -187,11 +187,11 @@ namespace FEXCore::Context {
       void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) override;
       void MarkMemoryShared() override;
 
-      void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, std::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
+      void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
       // returns false if a handler was already registered
       CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
-      void AppendThunkDefinitions(std::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
+      void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
 
     public:
     friend class FEXCore::HLE::SyscallHandler;
@@ -246,7 +246,7 @@ namespace FEXCore::Context {
 
     std::mutex ThreadCreationMutex;
     FEXCore::Core::InternalThreadState* ParentThread{};
-    std::vector<FEXCore::Core::InternalThreadState*> Threads;
+    fextl::vector<FEXCore::Core::InternalThreadState*> Threads;
     std::atomic_bool CoreShuttingDown{false};
     bool NeedToCheckXID{true};
 
@@ -354,7 +354,7 @@ namespace FEXCore::Context {
 
     void CopyMemoryMapping(FEXCore::Core::InternalThreadState *ParentThread, FEXCore::Core::InternalThreadState *ChildThread);
 
-    std::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
+    fextl::vector<FEXCore::Core::InternalThreadState*>* GetThreads() { return &Threads; }
 
     uint8_t GetGPRSize() const { return Config.Is64BitMode ? 8 : 4; }
 
@@ -416,7 +416,7 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;
-    std::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    fextl::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };

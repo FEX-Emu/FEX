@@ -15,7 +15,6 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <list>
 #include <random>
 #include <string>
 
@@ -25,6 +24,8 @@
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
@@ -54,7 +55,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
   uintptr_t BrkStart;
   uintptr_t StackPointer;
 
-  size_t CalculateTotalElfSize(const std::vector<Elf64_Phdr> &headers)
+  size_t CalculateTotalElfSize(const fextl::vector<Elf64_Phdr> &headers)
   {
     auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });
     auto last = std::find_if(headers.rbegin(), headers.rend(), [](const Elf64_Phdr &Header) { return Header.p_type == PT_LOAD; });
@@ -624,7 +625,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t EnvpOffset,
     const std::vector<std::string> &Args,
     const std::vector<std::string> &EnvironmentVariables,
-    const std::list<auxv_t> &AuxVariables,
+    const fextl::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
     uint64_t *AuxTabSize,
     PointerType RandomNumberOffset,
@@ -807,7 +808,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
   }
 
   std::vector<std::string> const *GetApplicationArguments() override { return &Args; }
-  void GetExecveArguments(std::vector<char const*> *Args) override { *Args = LoaderArgs; }
+  void GetExecveArguments(fextl::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {
     addr = AuxTabBase;
@@ -905,9 +906,9 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
   std::vector<std::string> Args;
   std::vector<std::string> EnvironmentVariables;
-  std::vector<char const*> LoaderArgs;
+  fextl::vector<char const*> LoaderArgs;
 
-  std::list<auxv_t> AuxVariables;
+  fextl::list<auxv_t> AuxVariables;
   uint64_t AuxTabBase, AuxTabSize;
   uint64_t ArgumentBackingSize{};
   uint64_t EnvironmentBackingSize{};

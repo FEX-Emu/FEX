@@ -2,6 +2,7 @@
 
 #include "Common/BitSet.h"
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::IR::Validation {
@@ -25,7 +26,7 @@ private:
 
   BitSet<uint64_t> NodeIsLive;
   OrderedNode *EntryBlock;
-  std::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
+  fextl::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
   size_t MaxNodes{};
 
   friend class RAValidation;

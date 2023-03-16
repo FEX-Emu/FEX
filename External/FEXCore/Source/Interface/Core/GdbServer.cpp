@@ -30,6 +30,7 @@ $end_info$
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <atomic>
 #include <cstring>
@@ -46,7 +47,6 @@ $end_info$
 #include <sys/stat.h>
 #include <unistd.h>
 #include <utility>
-#include <vector>
 
 #include "GdbServer.h"
 
@@ -550,7 +550,7 @@ void GdbServer::buildLibraryMap() {
     uint64_t Begin;
   };
 
-  std::map<std::string, std::vector<FileData>> SegmentMaps;
+  std::map<std::string, fextl::vector<FileData>> SegmentMaps;
 
   // 7ff5dd6d2000-7ff5dd6d3000 rw-p 0000a000 103:0b 1881447                   /usr/lib/x86_64-linux-gnu/libnss_compat.so.2
   std::string const &RuntimeExecutable = Filename();
@@ -810,8 +810,8 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const std::string &packet) {
   const auto match = [&](const char *str) -> bool { return packet.rfind(str, 0) == 0; };
   const auto MatchStr = [](const std::string &Str, const char *str) -> bool { return Str.rfind(str, 0) == 0; };
 
-  const auto split = [](const std::string &Str, char deliminator) -> std::vector<std::string> {
-    std::vector<std::string> Elements;
+  const auto split = [](const std::string &Str, char deliminator) -> fextl::vector<std::string> {
+    fextl::vector<std::string> Elements;
     std::istringstream Input(Str);
     for (std::string line;
          std::getline(Input, line);

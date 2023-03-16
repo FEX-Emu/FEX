@@ -6,6 +6,9 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <assert.h>
@@ -15,7 +18,6 @@
 #include <functional>
 #include <map>
 #include <memory>
-#include <list>
 #include <optional>
 #include <stddef.h>
 #include <stdint.h>
@@ -23,7 +25,6 @@
 #include <string_view>
 #include <system_error>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -45,13 +46,13 @@ namespace DefaultValues {
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
-    std::unique_ptr<std::list<json_t>> json_objects;
+    std::unique_ptr<fextl::list<json_t>> json_objects;
   };
   static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = std::make_unique<std::list<json_t>>();
+    alloc->json_objects = std::make_unique<fextl::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
@@ -61,7 +62,7 @@ namespace JSON {
   }
 
   static void LoadJSonConfig(const std::string &Config, std::function<void(const char *Name, const char *ConfigSring)> Func) {
-    std::vector<char> Data;
+    fextl::vector<char> Data;
     if (!FEXCore::FileLoading::LoadFile(Data, Config)) {
       return;
     }
@@ -268,7 +269,7 @@ namespace JSON {
     }
 
     // If an environment variable exists in both current meta and in the incoming layer then the meta layer value is overwritten
-    std::unordered_map<std::string, std::string> LookupMap;
+    fextl::unordered_map<std::string, std::string> LookupMap;
     const auto AddToMap = [&LookupMap](FEXCore::Config::LayerValue const &Value) {
       for (const auto &EnvVar : Value) {
         const auto ItEq = EnvVar.find_first_of('=');
@@ -384,7 +385,7 @@ namespace JSON {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
-      std::vector<char> Manager{};
+      fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
         std::string ManagerStr = Manager.data();
@@ -399,7 +400,7 @@ namespace JSON {
     // We only support pressure-vessel at the moment
     const static std::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
-      std::vector<char> Manager{};
+      fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
         std::string ManagerStr = Manager.data();
@@ -609,14 +610,14 @@ namespace JSON {
   template Value<uint64_t>::Value(FEXCore::Config::ConfigOption _Option, uint64_t Default);
 
   template<typename T>
-  void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List) {
+  void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<std::string> *List) {
     auto Value = FEXCore::Config::All(Option);
     List->clear();
     if (Value) {
       *List = **Value;
     }
   }
-  template void Value<std::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, std::list<std::string> *List);
+  template void Value<std::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<std::string> *List);
 
   // Application loaders
   class MainLoader final : public FEXCore::Config::OptionMapper {
@@ -651,7 +652,7 @@ namespace JSON {
 #define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
-  static const std::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
+  static const fextl::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
@@ -705,7 +706,7 @@ namespace JSON {
   }
 
   void EnvLoader::Load() {
-    std::unordered_map<std::string_view, std::string_view> EnvMap;
+    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
 
     for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
       std::string_view Var(*pvar);

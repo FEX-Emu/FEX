@@ -11,6 +11,7 @@ $end_info$
 #include "Tests/LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstdint>
@@ -185,7 +186,7 @@ namespace FEX::HLE::x32 {
       }
       case OP_MSGSND: {
         // Requires a temporary buffer
-        std::vector<uint8_t> Tmp(second + sizeof(size_t));
+        fextl::vector<uint8_t> Tmp(second + sizeof(size_t));
         struct msgbuf *TmpMsg = reinterpret_cast<struct msgbuf *>(&Tmp.at(0));
         msgbuf_32 *src = reinterpret_cast<msgbuf_32*>(ptr);
         TmpMsg->mtype = src->mtype;
@@ -195,7 +196,7 @@ namespace FEX::HLE::x32 {
         break;
       }
       case OP_MSGRCV: {
-        std::vector<uint8_t> Tmp(second + sizeof(size_t));
+        fextl::vector<uint8_t> Tmp(second + sizeof(size_t));
         struct msgbuf *TmpMsg = reinterpret_cast<struct msgbuf *>(&Tmp.at(0));
 
         if (call >> 16) {
