@@ -29,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -181,7 +182,7 @@ static bool IsShebangFile(std::span<char> Data) {
     fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
-    std::istringstream InterpreterSS(InterpreterLine);
+    fextl::istringstream InterpreterSS(InterpreterLine);
     fextl::string Argument;
     while (std::getline(InterpreterSS, Argument, ' ')) {
       if (Argument.empty()) {
@@ -781,7 +782,7 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
   int32_t Minor{};
   int32_t Patch{};
   char Tmp{};
-  std::istringstream ss{buf.release};
+  fextl::istringstream ss{buf.release};
   ss >> Major;
   ss.read(&Tmp, 1);
   ss >> Minor;

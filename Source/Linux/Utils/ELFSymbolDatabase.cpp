@@ -10,13 +10,13 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdlib>
 #include <cstring>
 #include <elf.h>
 #include <set>
-#include <sstream>
 #include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -41,7 +41,7 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
   auto EnvVar = getenv("LD_LIBRARY_PATH");
   if (EnvVar) {
     std::string Env = EnvVar;
-    std::stringstream EnvStream(Env);
+    fextl::stringstream EnvStream(Env);
     std::string Token;
     while (std::getline(EnvStream, Token, ';')) {
       LibrarySearchPaths.emplace_back(Token);

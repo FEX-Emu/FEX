@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -42,7 +43,6 @@ $end_info$
 #include <mutex>
 #include <queue>
 #include <set>
-#include <sstream>
 #include <string>
 #include <sys/auxv.h>
 #include <sys/resource.h>
@@ -148,7 +148,7 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
     fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
-    std::istringstream InterpreterSS(InterpreterLine);
+    fextl::istringstream InterpreterSS(InterpreterLine);
     fextl::string Argument;
     while (std::getline(InterpreterSS, Argument, ' ')) {
       if (Argument.empty()) {

@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/sstream.h>
 
 #include <git_version.h>
 
@@ -21,7 +22,6 @@ $end_info$
 #include <fcntl.h>
 #include <filesystem>
 #include <ostream>
-#include <sstream>
 #include <stdio.h>
 #include <system_error>
 #include <unistd.h>
@@ -49,8 +49,8 @@ namespace FEX::EmulatedFile {
     return fd;
   }
 
-  std::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
-    std::ostringstream cpu_stream{};
+  fextl::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
+    fextl::ostringstream cpu_stream{};
     auto res_0  = ctx->RunCPUIDFunction(0, 0);
     auto res_1  = ctx->RunCPUIDFunction(1, 0);
     auto res_6  = ctx->RunCPUIDFunction(6, 0);
@@ -106,7 +106,7 @@ namespace FEX::EmulatedFile {
     Info info {res_1};
 
     uint32_t Family = info.FamilyID + (info.FamilyID == 0xF ? info.ExFamilyID : 0);
-    std::ostringstream flags_data{};
+    fextl::ostringstream flags_data{};
     // Generate the flags data up front
     // This is the same per core
     {
