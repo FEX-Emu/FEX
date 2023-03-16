@@ -16,8 +16,6 @@ namespace FEXCore::FileLoading {
    *
    * @return true on file loaded, false on failure
    */
-  // TODO: Remove duplicate once converted to fextl.
-  bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t FixedSize = 0);
   bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize = 0);
 
   /**
@@ -28,7 +26,6 @@ namespace FEXCore::FileLoading {
    *
    * @return The amount of data read or -1 on error.
    */
-  ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer);
   ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer);
 }
 
