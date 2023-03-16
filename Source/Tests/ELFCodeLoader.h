@@ -25,6 +25,7 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -192,20 +193,20 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
   public:
 
-  static std::string ResolveRootfsFile(std::string const &File, std::string RootFS) {
+  static fextl::string ResolveRootfsFile(fextl::string const &File, fextl::string RootFS) {
     // If the path is relative then just run that
     if (File[0] != '/') {
       return File;
     }
 
-    std::string RootFSLink = RootFS + File;
+    fextl::string RootFSLink = RootFS + File;
 
     char Filename[PATH_MAX];
-    while(FHU::Symlinks::IsSymlink(RootFSLink)) {
+    while(FHU::Symlinks::IsSymlink(RootFSLink.c_str())) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
-      auto SymlinkPath = FHU::Symlinks::ResolveSymlink(RootFSLink, Filename);
+      auto SymlinkPath = FHU::Symlinks::ResolveSymlink(RootFSLink.c_str(), Filename);
       if (SymlinkPath.starts_with('/')) {
         RootFSLink = RootFS;
         RootFSLink += SymlinkPath;
@@ -229,7 +230,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
   fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] fextl::vector<std::string> const &args, fextl::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
+  ELFCodeLoader(fextl::string const &Filename, const std::string_view FEXFDString, fextl::string const &RootFS, [[maybe_unused]] fextl::vector<std::string> const &args, fextl::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
     bool LoadedWithFD = false;

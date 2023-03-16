@@ -3,6 +3,7 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
@@ -87,9 +88,9 @@ namespace FEX::Config {
       // This symlink will be in the style of `/dev/fd/<FD>`.
       //
       // If the argument /is/ a symlink then resolve its path to get the original application name.
-      if (FHU::Symlinks::IsSymlink(Program)) {
+      if (FHU::Symlinks::IsSymlink(Program.c_str())) {
         char Filename[PATH_MAX];
-        auto SymlinkPath = FHU::Symlinks::ResolveSymlink(Program, Filename);
+        auto SymlinkPath = FHU::Symlinks::ResolveSymlink(Program.c_str(), Filename);
         if (SymlinkPath.starts_with('/')) {
           // This file was executed through an FD.
           // Remove the ` (deleted)` text if the file was deleted after the fact.
@@ -186,7 +187,8 @@ namespace FEX::Config {
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
       }
 
-      return ApplicationNames{std::move(Program), std::move(ProgramName)};
+      // TODO: No need for conversion once Config uses fextl.
+      return ApplicationNames{std::move(Program.c_str()), std::move(ProgramName.c_str())};
     }
     return {};
   }

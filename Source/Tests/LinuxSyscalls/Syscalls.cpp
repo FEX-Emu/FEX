@@ -870,7 +870,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
   ELFParser GuestELF;
 
-  if (!GuestELF.ReadElf(std::string(GuestBinaryFile))) {
+  if (!GuestELF.ReadElf(fextl::string(GuestBinaryFile))) {
     LogMan::Msg::DFmt("GenerateMap: '{}' is not an elf file?", GuestBinaryFile);
     return {};
   }

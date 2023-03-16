@@ -2,6 +2,7 @@
 
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
@@ -75,7 +76,7 @@ public:
   bool WasDynamic() const { return DynamicProgram; }
   bool HasDynamicLinker() const { return !DynamicLinker.empty(); }
   bool WasLoaded() const { return Loaded; }
-  std::string &InterpreterLocation() { return DynamicLinker; }
+  fextl::string &InterpreterLocation() { return DynamicLinker; }
 
   fextl::vector<char const*> const *GetNecessaryLibs() const { return &NecessaryLibs; }
 
@@ -174,7 +175,7 @@ private:
   uint64_t BRKSize{};
   ProgramHeader InterpreterHeader{};
   bool DynamicProgram{false};
-  std::string DynamicLinker;
+  fextl::string DynamicLinker;
   ProgramHeader TLSHeader{};
   bool Loaded {false};
 };

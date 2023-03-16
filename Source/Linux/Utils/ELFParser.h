@@ -1,5 +1,6 @@
 #pragma once
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <string>
@@ -21,7 +22,7 @@ struct ELFParser {
   fextl::vector<Elf64_Phdr> phdrs;
   ::ELFLoader::ELFContainer::ELFType type {::ELFLoader::ELFContainer::TYPE_NONE};
 
-  std::string InterpreterElf;
+  fextl::string InterpreterElf;
   int fd {-1};
 
   bool ReadElf(int NewFD) {
@@ -213,7 +214,7 @@ struct ELFParser {
       if (phdr.p_vaddr <= VAOffset && (phdr.p_vaddr + phdr.p_memsz) > VAOffset) {
 
         auto SectionVAOffset = VAOffset - phdr.p_vaddr;
-        
+
         if (SectionVAOffset < phdr.p_filesz) {
           return SectionVAOffset + phdr.p_offset;
         }
@@ -222,8 +223,8 @@ struct ELFParser {
 
     return {};
   }
-  
-  bool ReadElf(const std::string &file) {
+
+  bool ReadElf(const fextl::string &file) {
     int NewFD = ::open(file.c_str(), O_RDONLY);
 
     return ReadElf(NewFD);

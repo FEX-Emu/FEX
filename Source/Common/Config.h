@@ -1,5 +1,6 @@
 #pragma once
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 
 #include <string>
 
@@ -21,9 +22,9 @@ namespace FEX::Config {
 
   struct ApplicationNames {
     // This is the full path to the program (if it exists).
-    std::string ProgramPath;
+    fextl::string ProgramPath;
     // This is the program executable name (if it exists).
-    std::string ProgramName;
+    fextl::string ProgramName;
   };
 
   /**

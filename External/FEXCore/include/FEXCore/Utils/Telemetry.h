@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/string.h>
 
 #include <atomic>
 #include <stdint.h>
@@ -42,7 +43,7 @@ namespace FEXCore::Telemetry {
   Value &GetObject(TelemetryType Type);
 
   FEX_DEFAULT_VISIBILITY void Initialize();
-  FEX_DEFAULT_VISIBILITY void Shutdown(std::string const &ApplicationName);
+  FEX_DEFAULT_VISIBILITY void Shutdown(fextl::string const &ApplicationName);
 
 // Telemetry object declaration
 // This returns the internal structure to the telemetry data structures
@@ -61,7 +62,7 @@ namespace FEXCore::Telemetry {
 #define FEXCORE_TELEMETRY_Addr(Name) Name->GetAddr()
 #else
   static inline void Initialize() {}
-  static inline void Shutdown(std::string const &ApplicationName) {}
+  static inline void Shutdown(fextl::string const &ApplicationName) {}
 
 #define FEXCORE_TELEMETRY_STATIC_INIT(Name, Type)
 #define FEXCORE_TELEMETRY_INIT(Name, Type)

@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <atomic>
@@ -122,9 +123,9 @@ namespace FEXServerLogging {
   }
 }
 
-void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl::vector<std::string> *args) {
+void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<std::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File(*Filename, std::fstream::in | std::fstream::binary);
+  std::fstream File(Filename->c_str(), std::fstream::in | std::fstream::binary);
 
   if (!File.is_open()) {
     return;
@@ -142,13 +143,13 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl:
   // Handle shebang files
   if (File.get() == '#' &&
       File.get() == '!') {
-    std::string InterpreterLine;
+    fextl::string InterpreterLine;
     std::getline(File, InterpreterLine);
-    fextl::vector<std::string> ShebangArguments{};
+    fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
     std::istringstream InterpreterSS(InterpreterLine);
-    std::string Argument;
+    fextl::string Argument;
     while (std::getline(InterpreterSS, Argument, ' ')) {
       if (Argument.empty()) {
         continue;
@@ -157,7 +158,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl:
     }
 
     // Executable argument
-    std::string &ShebangProgram = ShebangArguments[0];
+    fextl::string &ShebangProgram = ShebangArguments[0];
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -174,7 +175,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl:
   }
 }
 
-void RootFSRedirect(std::string *Filename, std::string const &RootFS) {
+void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
   std::error_code ec{};
@@ -289,8 +290,10 @@ int main(int argc, char **argv, char **const envp) {
   FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
-  RootFSRedirect(&Program.ProgramPath, LDPath());
-  InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
+  // TODO: No need for conversion once Config uses fextl.
+  fextl::string LDPathFextl = LDPath().c_str();
+  RootFSRedirect(&Program.ProgramPath, LDPathFextl);
+  InterpreterHandler(&Program.ProgramPath, LDPathFextl, &Args);
 
   std::error_code ec{};
   if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
@@ -313,7 +316,7 @@ int main(int argc, char **argv, char **const envp) {
     putenv(HostEnv.data());
   }
 
-  ELFCodeLoader Loader{Program.ProgramPath, FEXFDView, LDPath(), Args, ParsedArgs, envp, &Environment};
+  ELFCodeLoader Loader{Program.ProgramPath, FEXFDView, LDPathFextl, Args, ParsedArgs, envp, &Environment};
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
