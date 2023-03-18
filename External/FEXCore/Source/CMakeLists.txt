@@ -146,6 +146,11 @@ set (SRCS
   Utils/Profiler.cpp
   )
 
+if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
+  list(APPEND FEXCORE_BASE_SRCS
+    Utils/AllocatorOverride.cpp)
+endif()
+
 if (ENABLE_INTERPRETER)
   list(APPEND SRCS
     Interface/Core/Interpreter/InterpreterCore.cpp

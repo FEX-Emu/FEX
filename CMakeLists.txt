@@ -33,6 +33,7 @@ option(ENABLE_VIXL_DISASSEMBLER "Enables debug disassembler output with VIXL" FA
 option(COMPILE_VIXL_DISASSEMBLER "Compiles the vixl disassembler in to vixl" FALSE)
 option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling capabilities" FALSE)
 set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend you want to use for the FEXCore profiler")
+option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
@@ -54,6 +55,10 @@ if (ENABLE_FEXCORE_PROFILER)
   else()
     message(FATAL_ERROR "Unknown FEXCore profiler backend ${FEXCORE_PROFILER_BACKEND}")
   endif()
+endif()
+
+if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
+  add_definitions(-DGLIBC_ALLOCATOR_FAULT=1)
 endif()
 
 # uninstall target
