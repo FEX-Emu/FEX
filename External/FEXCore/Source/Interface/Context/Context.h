@@ -15,6 +15,7 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
@@ -71,6 +72,14 @@ namespace FEXCore::Context {
 
   class ContextImpl final : public FEXCore::Context::Context {
     public:
+      void *operator new(size_t size) {
+        return FEXCore::Allocator::malloc(size);
+      }
+
+      void operator delete(void *ptr) {
+        return FEXCore::Allocator::free(ptr);
+      }
+
       // Context base class implementation.
       bool InitializeContext() override;
 
@@ -261,14 +270,14 @@ namespace FEXCore::Context {
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
     FEXCore::HLE::SourcecodeResolver *SourcecodeResolver{};
-    std::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
-    std::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
+    fextl::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+    fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
     CustomCPUFactoryType CustomCPUFactory;
     FEXCore::Context::ExitHandler CustomExitHandler;
 
 #ifdef BLOCKSTATS
-    std::unique_ptr<FEXCore::BlockSamplingData> BlockData;
+    fextl::unique_ptr<FEXCore::BlockSamplingData> BlockData;
 #endif
 
     SignalDelegator *SignalDelegation{};
@@ -405,10 +414,10 @@ namespace FEXCore::Context {
 
     // Entry Cache
     std::mutex ExitMutex;
-    std::unique_ptr<GdbServer> DebugServer;
+    fextl::unique_ptr<GdbServer> DebugServer;
 
     IR::AOTIRCaptureCache IRCaptureCache;
-    std::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
+    fextl::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
 
     bool StartPaused = false;
     bool IsMemoryShared = false;

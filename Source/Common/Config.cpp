@@ -122,7 +122,7 @@ namespace FEX::Config {
       FEX::ArgLoader::LoadWithoutArguments(argc, argv);
     }
     else {
-      FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+      FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
     }
 
     FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));

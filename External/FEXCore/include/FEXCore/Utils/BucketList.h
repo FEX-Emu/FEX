@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstddef>
-#include <memory>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/memory.h>
 
 namespace FEXCore {
 
@@ -17,7 +17,7 @@ namespace FEXCore {
     static constexpr size_t Size = _Size;
 
     T Items[Size];
-    std::unique_ptr<BucketList<Size, T>> Next;
+    fextl::unique_ptr<BucketList<Size, T>> Next;
 
     void Clear() {
       Items[0] = T{};
@@ -96,7 +96,7 @@ namespace FEXCore {
       if (i < (Size-1)) {
         that->Items[i+1] = T{};
       } else {
-        that->Next = std::make_unique<BucketList<Size, T>>();
+        that->Next = fextl::make_unique<BucketList<Size, T>>();
       }
     }
     void Erase(T Val) {

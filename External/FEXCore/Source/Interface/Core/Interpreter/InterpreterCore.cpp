@@ -10,8 +10,8 @@
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/memory.h>
 
-#include <memory>
 #include <signal.h>
 #include <stdint.h>
 #include <utility>
@@ -103,8 +103,8 @@ void InterpreterCore::ClearCache() {
   BufferUsed = 0;
 }
 
-std::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return std::make_unique<InterpreterCore>(ctx->Dispatcher.get(), Thread);
+fextl::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return fextl::make_unique<InterpreterCore>(ctx->Dispatcher.get(), Thread);
 }
 
 void InitializeInterpreterSignalHandlers(FEXCore::Context::ContextImpl *CTX) {

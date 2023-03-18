@@ -1,12 +1,12 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/deque.h>
 
 #include <alloca.h>
 #include <cstring>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <pthread.h>
 #include <stdint.h>
@@ -167,10 +167,10 @@ namespace FEXCore::Threads {
     return Result;
   }
 
-  std::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(
+  fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(
     ThreadFunc Func,
     void* Arg) {
-    return std::make_unique<PThread>(Func, Arg);
+    return fextl::make_unique<PThread>(Func, Arg);
   }
 
   void CleanupAfterFork_PThread() {
@@ -208,7 +208,7 @@ namespace FEXCore::Threads {
     .CleanupAfterFork = CleanupAfterFork_PThread,
   };
 
-  std::unique_ptr<FEXCore::Threads::Thread> FEXCore::Threads::Thread::Create(
+  fextl::unique_ptr<FEXCore::Threads::Thread> FEXCore::Threads::Thread::Create(
     ThreadFunc Func,
     void* Arg) {
     return Ptrs.CreateThread(Func, Arg);

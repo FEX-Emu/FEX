@@ -5,6 +5,7 @@
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 
 #include <bitset>
 #include <linux/mman.h>
@@ -44,6 +45,7 @@ public:
       FindPageRangePtr = &MemAllocator32Bit::FindPageRange;
     }
   }
+
   void *Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
   int Munmap(void *addr, size_t length) override;
   void *Mremap(void *old_address, size_t old_size, size_t new_size, int flags, void *new_address) override;
@@ -603,12 +605,12 @@ public:
   }
 };
 
-std::unique_ptr<FEX::HLE::MemAllocator> Create32BitAllocator() {
-  return std::make_unique<MemAllocator32Bit>();
+fextl::unique_ptr<FEX::HLE::MemAllocator> Create32BitAllocator() {
+  return fextl::make_unique<MemAllocator32Bit>();
 }
 
-std::unique_ptr<FEX::HLE::MemAllocator> CreatePassthroughAllocator() {
-  return std::make_unique<MemAllocatorPassThrough>();
+fextl::unique_ptr<FEX::HLE::MemAllocator> CreatePassthroughAllocator() {
+  return fextl::make_unique<MemAllocatorPassThrough>();
 }
 
 }

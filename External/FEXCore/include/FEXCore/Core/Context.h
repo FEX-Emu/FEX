@@ -6,13 +6,13 @@
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <istream>
 #include <ostream>
-#include <memory>
 #include <mutex>
 #include <shared_mutex>
 
@@ -75,7 +75,7 @@ namespace FEXCore::Context {
     void *VDSO_kernel_rt_sigreturn;
   };
 
-  using CustomCPUFactoryType = std::function<std::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
+  using CustomCPUFactoryType = std::function<fextl::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
 
   using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
 

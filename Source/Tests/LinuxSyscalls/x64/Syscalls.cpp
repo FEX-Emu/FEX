@@ -113,7 +113,7 @@ namespace FEX::HLE::x64 {
 #endif
   }
 
-  std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
-    return std::make_unique<x64SyscallHandler>(ctx, _SignalDelegation);
+  fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation) {
+    return fextl::make_unique<x64SyscallHandler>(ctx, _SignalDelegation);
   }
 }

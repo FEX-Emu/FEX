@@ -220,8 +220,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
   return true;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator) {
-  return std::make_unique<IRCompaction>(Allocator);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator) {
+  return fextl::make_unique<IRCompaction>(Allocator);
 }
 
 }

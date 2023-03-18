@@ -11,6 +11,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -500,8 +501,8 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
-  return std::make_unique<X86Dispatcher>(CTX, Config);
+fextl::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
+  return fextl::make_unique<X86Dispatcher>(CTX, Config);
 }
 
 }

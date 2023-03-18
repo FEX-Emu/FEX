@@ -9,6 +9,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
@@ -19,7 +20,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <stddef.h>
 #include <stdint.h>
@@ -46,13 +46,13 @@ namespace DefaultValues {
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
-    std::unique_ptr<fextl::list<json_t>> json_objects;
+    fextl::unique_ptr<fextl::list<json_t>> json_objects;
   };
   static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = std::make_unique<fextl::list<json_t>>();
+    alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
@@ -213,7 +213,7 @@ namespace JSON {
     return 0;
   }
 
-  static fextl::map<FEXCore::Config::LayerType, std::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
+  static fextl::map<FEXCore::Config::LayerType, fextl::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
   static FEXCore::Config::Layer *Meta{};
 
   constexpr std::array<FEXCore::Config::LayerType, 9> LoadOrder = {
@@ -316,7 +316,7 @@ namespace JSON {
   }
 
   void Initialize() {
-    AddLayer(std::make_unique<MetaLayer>(FEXCore::Config::LayerType::LAYER_TOP));
+    AddLayer(fextl::make_unique<MetaLayer>(FEXCore::Config::LayerType::LAYER_TOP));
     Meta = ConfigLayers.begin()->second.get();
   }
 
@@ -338,6 +338,7 @@ namespace JSON {
     if (PathName.empty()) {
       return {};
     }
+
 
     std::filesystem::path Path{PathName};
 
@@ -479,7 +480,7 @@ namespace JSON {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
       FEX_CONFIG_OPT(PathName, ROOTFS);
-      auto ExpandedString = ExpandPath(ContainerPrefix, PathName());
+      auto ExpandedString = ExpandPath(ContainerPrefix,PathName());
       if (!ExpandedString.empty()) {
         // Adjust the path if it ended up being relative
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
@@ -530,7 +531,7 @@ namespace JSON {
     }
   }
 
-  void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer) {
+  void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer) {
     ConfigLayers.emplace(_Layer->GetLayerType(), std::move(_Layer));
   }
 
@@ -758,25 +759,25 @@ namespace JSON {
     }
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer() {
-    return std::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer() {
+    return fextl::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN);
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File) {
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File) {
     if (File) {
-      return std::make_unique<FEXCore::Config::MainLoader>(*File);
+      return fextl::make_unique<FEXCore::Config::MainLoader>(*File);
     }
     else {
-      return std::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_MAIN);
+      return fextl::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_MAIN);
     }
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
-    return std::make_unique<FEXCore::Config::AppLoader>(Filename, Type);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
+    return fextl::make_unique<FEXCore::Config::AppLoader>(Filename, Type);
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]) {
-    return std::make_unique<FEXCore::Config::EnvLoader>(_envp);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]) {
+    return fextl::make_unique<FEXCore::Config::EnvLoader>(_envp);
   }
 }
 

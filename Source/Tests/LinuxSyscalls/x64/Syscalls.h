@@ -11,6 +11,7 @@ $end_info$
 
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
 #include <atomic>
@@ -70,7 +71,7 @@ class x64SyscallHandler final : public FEX::HLE::SyscallHandler {
     void RegisterSyscallHandlers();
 };
 
-std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
+fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
 
 //////
 // REGISTER_SYSCALL_IMPL implementation

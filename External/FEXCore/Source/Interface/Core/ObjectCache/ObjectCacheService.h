@@ -8,12 +8,12 @@
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/queue.h>
+#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <memory>
 #include <shared_mutex>
-#include <tsl/robin_map.h>
 
 namespace FEXCore::CodeSerialize {
   // XXX: Does this need to be signal safe?
@@ -111,7 +111,7 @@ namespace FEXCore::CodeSerialize {
 
       // This per section map takes the most time to load and needs to be quick
       // This is the map of all code segments for this entry
-      tsl::robin_map<uint64_t, CodeObjectFileSection*> SectionLookupMap{};
+      fextl::robin_map<uint64_t, CodeObjectFileSection*> SectionLookupMap{};
     /**  @} */
 
     // Default initialization

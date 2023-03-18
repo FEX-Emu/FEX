@@ -118,7 +118,7 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
   FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
@@ -132,14 +132,14 @@ int main(int argc, char **argv, char **const envp) {
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
 
   // Adds in environment options from the test harness config
-  FEXCore::Config::AddLayer(std::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
+  FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
   FEXCore::Config::ReloadMetaLayer();
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   FEX_CONFIG_OPT(Core, CORE);
 
-  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+  fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 
   if (!Loader.Is64BitMode()) {
     // Setup our userspace allocator

@@ -1,8 +1,9 @@
 #pragma once
+#include <FEXCore/fextl/allocator.h>
+#include <FEXCore/fextl/memory.h>
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <sys/types.h>
 
 namespace Alloc {
@@ -35,5 +36,5 @@ namespace Alloc {
 }
 
 namespace Alloc::OSAllocator {
-std::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
+fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
 }

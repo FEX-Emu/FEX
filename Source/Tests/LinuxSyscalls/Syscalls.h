@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -94,6 +95,14 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver {
 public:
+  void *operator new(size_t size) {
+    return FEXCore::Allocator::malloc(size);
+  }
+
+  void operator delete(void *ptr) {
+    return FEXCore::Allocator::free(ptr);
+  }
+
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here
@@ -252,9 +261,9 @@ private:
     void Strace(FEXCore::HLE::SyscallArguments *Args, uint64_t Ret);
   #endif
 
-  std::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler{};
+  fextl::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler{};
 
-  std::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
+  fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
 
   ///// VMA (Virtual Memory Area) tracking /////
 

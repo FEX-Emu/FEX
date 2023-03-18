@@ -98,6 +98,14 @@ namespace {
     fextl::vector<SpillStackUnit> SpillStack;
     fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> BlockPredecessors;
     fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> VisitedNodePredecessors;
+
+    void *operator new(size_t size) {
+      return FEXCore::Allocator::malloc(size);
+    }
+
+    void operator delete(void *ptr) {
+      return FEXCore::Allocator::free(ptr);
+    }
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);
@@ -1559,7 +1567,7 @@ namespace {
     return Changed;
   }
 
-  std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA, bool SupportsAVX) {
-    return std::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA, SupportsAVX);
+  fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA, bool SupportsAVX) {
+    return fextl::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA, SupportsAVX);
   }
 }

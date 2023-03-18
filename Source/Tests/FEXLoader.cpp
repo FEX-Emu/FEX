@@ -357,7 +357,7 @@ int main(int argc, char **argv, char **const envp) {
   }
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+  fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
   fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
 
   if (Loader.Is64BitMode()) {

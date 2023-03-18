@@ -3,11 +3,11 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 
-#include <memory>
 #include <optional>
 #include <stdint.h>
 
@@ -170,7 +170,7 @@ namespace Type {
   FEX_DEFAULT_VISIBILITY fextl::string FindContainer();
   FEX_DEFAULT_VISIBILITY fextl::string FindContainerPrefix();
 
-  FEX_DEFAULT_VISIBILITY void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer);
+  FEX_DEFAULT_VISIBILITY void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer);
 
   FEX_DEFAULT_VISIBILITY bool Exists(ConfigOption Option);
   FEX_DEFAULT_VISIBILITY std::optional<LayerValue*> All(ConfigOption Option);
@@ -255,7 +255,7 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer();
+  FEX_DEFAULT_VISIBILITY fextl::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer();
 
   /**
    * @brief Loads the main application config
@@ -265,7 +265,7 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File = nullptr);
+  FEX_DEFAULT_VISIBILITY fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File = nullptr);
 
   /**
    * @brief Create an application configuration loader
@@ -275,7 +275,7 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type);
+  FEX_DEFAULT_VISIBILITY fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type);
 
   /**
    * @brief iCreate an environment configuration loader
@@ -284,6 +284,6 @@ namespace Type {
    *
    * @return unique_ptr for that layer
    */
-  FEX_DEFAULT_VISIBILITY std::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]);
+  FEX_DEFAULT_VISIBILITY fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]);
 
 }

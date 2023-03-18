@@ -1,5 +1,6 @@
 #pragma once
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -91,6 +92,6 @@ private:
 
 class SourcecodeResolver {
 public:
-  virtual std::unique_ptr<SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) = 0;
+  virtual fextl::unique_ptr<SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) = 0;
 };
 }

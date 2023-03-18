@@ -7,6 +7,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::Context {
@@ -26,12 +27,12 @@ namespace FEXCore {
 
     class ThunkHandler {
     public:
-        virtual ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) = 0;
-        virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
-        virtual ~ThunkHandler() { }
+      virtual ThunkedFunction* LookupThunk(const IR::SHA256Sum &sha256) = 0;
+      virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
+      virtual ~ThunkHandler() { }
 
-        static ThunkHandler* Create();
+      static fextl::unique_ptr<ThunkHandler> Create();
 
-        virtual void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
+      virtual void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
     };
 };

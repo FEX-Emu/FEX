@@ -867,7 +867,7 @@ static bool isHEX(char c) {
   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
 }
 
-std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
+fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
 
   ELFParser GuestELF;
 
@@ -929,7 +929,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
       goto DoGenerate;
     }
 
-    auto rv = std::make_unique<FEXCore::HLE::SourcecodeMap>();
+    auto rv = fextl::make_unique<FEXCore::HLE::SourcecodeMap>();
 
     {
       auto len = rv->SourceFile.size();
@@ -1006,7 +1006,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     uintptr_t CurrentOffset{};
     int LastOffsetLine;
 
-    auto rv = std::make_unique<FEXCore::HLE::SourcecodeMap>();
+    auto rv = fextl::make_unique<FEXCore::HLE::SourcecodeMap>();
 
     rv->SourceFile = GuestSourceFile;
 
