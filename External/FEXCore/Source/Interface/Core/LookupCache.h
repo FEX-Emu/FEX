@@ -2,6 +2,7 @@
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
@@ -10,13 +11,11 @@
 #include <stddef.h>
 #include <utility>
 #include <mutex>
-#include <tsl/robin_map.h>
 
 namespace FEXCore {
 
 class LookupCache {
 public:
-
   struct LookupCacheEntry {
     uintptr_t HostCode;
     uintptr_t GuestCode;
@@ -248,7 +247,7 @@ private:
   std::pmr::polymorphic_allocator<std::byte> BlockLinks_pma {&BlockLinks_mbr};
   BlockLinksMapType *BlockLinks;
 
-  tsl::robin_map<uint64_t, uint64_t> BlockList;
+  fextl::robin_map<uint64_t, uint64_t> BlockList;
 
   size_t TotalCacheSize;
 
