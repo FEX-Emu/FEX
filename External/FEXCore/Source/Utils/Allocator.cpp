@@ -2,6 +2,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/memory_resource.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
@@ -30,6 +31,13 @@ extern "C" {
   extern mmap_hook_type __mmap_hook;
   extern munmap_hook_type __munmap_hook;
 #endif
+}
+
+namespace fextl::pmr {
+  static fextl::pmr::default_resource FEXDefaultResource;
+  std::pmr::memory_resource* get_default_resource() {
+    return &FEXDefaultResource;
+  }
 }
 
 namespace FEXCore::Allocator {
@@ -63,7 +71,7 @@ namespace FEXCore::Allocator {
   using GLIBC_REALLOC_Hook = void*(*)(void*, size_t, const void *caller);
   using GLIBC_FREE_Hook = void(*)(void*, const void *caller);
 
-  std::unique_ptr<Alloc::HostAllocator> Alloc64{};
+  fextl::unique_ptr<Alloc::HostAllocator> Alloc64{};
 
   void *FEX_mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
     void *Result = Alloc64->Mmap(addr, length, prot, flags, fd, offset);
