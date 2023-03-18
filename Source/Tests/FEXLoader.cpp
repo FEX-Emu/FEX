@@ -199,6 +199,7 @@ bool IsInterpreterInstalled() {
 }
 
 int main(int argc, char **argv, char **const envp) {
+  FEXCore::Allocator::SetupFaultEvaluate();
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
@@ -217,6 +218,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Program.ProgramPath.empty() && !FEXFD) {
     // Early exit if we weren't passed an argument
+    FEXCore::Allocator::ClearFaultEvaluate();
     return 0;
   }
 
@@ -241,6 +243,7 @@ int main(int argc, char **argv, char **const envp) {
   // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
   if (!FEXServerClient::SetupClient(argv[0])) {
     LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
+    FEXCore::Allocator::ClearFaultEvaluate();
     return -1;
   }
 
@@ -335,6 +338,7 @@ int main(int argc, char **argv, char **const envp) {
       fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
     }
 #endif
+    FEXCore::Allocator::ClearFaultEvaluate();
     return -ENOEXEC;
   }
 
@@ -538,6 +542,8 @@ int main(int argc, char **argv, char **const envp) {
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
+  FEXCore::Allocator::ClearFaultEvaluate();
+
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
   }
