@@ -6,10 +6,10 @@ $end_info$
 
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <alloca.h>
-#include <fmt/format.h>
 #include <cstdarg>
 #include <cstdio>
 
@@ -21,7 +21,7 @@ void InstallHandler(ThrowHandler Handler) { Handlers.emplace_back(Handler); }
 void UnInstallHandlers() { Handlers.clear(); }
 
 void MFmt(const char *fmt, const fmt::format_args& args) {
-  auto msg = fmt::vformat(fmt, args);
+  auto msg = fextl::fmt::vformat(fmt, args);
 
   for (auto& Handler : Handlers) {
     Handler(msg.c_str());
@@ -69,7 +69,7 @@ void D(const char *fmt, ...) {
 }
 
 void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {
-  const auto msg = fmt::vformat(fmt, args);
+  const auto msg = fextl::fmt::vformat(fmt, args);
 
   for (auto& Handler : Handlers) {
     Handler(level, msg.c_str());
