@@ -371,6 +371,7 @@ namespace FEXCore::IR {
   }
 
   AOTIRCacheEntry *AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string &filename) {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     fextl::string base_filename = fextl::string_from_path(std::filesystem::path(filename).filename());
 
     if (!base_filename.empty()) {

@@ -62,6 +62,7 @@ namespace FEX::HLE {
   struct open_how;
 
 static bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filename) {
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
   if (!File.is_open()) {
@@ -216,6 +217,7 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
 
   auto ThunkConfigFile = ThunkConfig();
 

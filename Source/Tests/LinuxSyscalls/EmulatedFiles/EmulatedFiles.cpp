@@ -764,6 +764,7 @@ namespace FEX::EmulatedFile {
       }
 
       if (!RealPathExists) {
+        FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
         Creator = FDReadCreators.find(fextl::string_from_path(std::filesystem::path(Path).lexically_normal()));
       }
 

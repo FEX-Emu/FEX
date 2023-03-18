@@ -211,6 +211,7 @@ namespace FEXServerClient {
         return -1;
       }
 
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       fextl::string FEXServerPath = fextl::string_from_path(std::filesystem::path(InterpreterPath).parent_path()) + "/FEXServer";
       // Check if a local FEXServer next to FEXInterpreter exists
       // If it does then it takes priority over the installed one

@@ -4,6 +4,7 @@
 #include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
@@ -144,6 +145,8 @@ namespace JSON {
 
       // Ensure the folder structure is created for our configuration
       std::error_code ec{};
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
       if (!std::filesystem::exists(ConfigDir, ec) &&
           !std::filesystem::create_directories(ConfigDir, ec)) {
         // Let's go local in this case
@@ -176,6 +179,8 @@ namespace JSON {
     fextl::string ConfigFile = GetConfigDirectory(Global);
 
     std::error_code ec{};
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
     if (!Global &&
         !std::filesystem::exists(ConfigFile, ec) &&
         !std::filesystem::create_directories(ConfigFile, ec)) {
@@ -346,8 +351,11 @@ namespace JSON {
         return PathName;
       }
 
-      // Expand relative path to absolute
-      Path = std::filesystem::absolute(Path);
+      {
+        FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+        // Expand relative path to absolute
+        Path = std::filesystem::absolute(Path);
+      }
 
       // Only return if it exists
       std::error_code ec{};
@@ -379,8 +387,9 @@ namespace JSON {
     return {};
   }
 
-
   fextl::string FindContainer() {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
     // We only support pressure-vessel at the moment
     const static fextl::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
@@ -396,6 +405,8 @@ namespace JSON {
   }
 
   fextl::string FindContainerPrefix() {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
     // We only support pressure-vessel at the moment
     const static fextl::string ContainerManager = "/run/host/container-manager";
     if (std::filesystem::exists(ContainerManager)) {
@@ -459,6 +470,7 @@ namespace JSON {
 
     fextl::string ContainerPrefix { FindContainerPrefix() };
     auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, fextl::string PathName) {
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       auto NewPath = ExpandPath(ContainerPrefix, PathName);
       if (!NewPath.empty()) {
         FEXCore::Config::EraseSet(Config, NewPath);
@@ -722,6 +734,7 @@ namespace JSON {
       EnvMap[Key]=Value;
     }
 
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     std::function GetVar = [=](const std::string_view id)  -> std::optional<std::string_view> {
       if (EnvMap.find(id) != EnvMap.end())
         return EnvMap.at(id);

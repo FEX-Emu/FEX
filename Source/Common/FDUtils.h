@@ -1,5 +1,6 @@
 #pragma once
 
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/string.h>
 
@@ -13,6 +14,7 @@ namespace FEX {
 [[maybe_unused]]
 static
 std::optional<fextl::string> get_fdpath(int fd) {
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   char SymlinkPath[PATH_MAX];
   std::filesystem::path Path = std::filesystem::path("/proc/self/fd") / std::to_string(fd);
   int Result = readlinkat(AT_FDCWD, Path.c_str(), SymlinkPath, sizeof(SymlinkPath));

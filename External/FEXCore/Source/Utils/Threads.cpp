@@ -97,9 +97,14 @@ namespace FEXCore::Threads {
       , UserArg {Arg} {
       pthread_attr_t Attr{};
       Stack = AllocateStackObject(STACK_SIZE);
+      // pthreads allocates its dtv region behind our back and there is nothing we can do about it.
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       AddStackToLivePool(Stack, STACK_SIZE);
       pthread_attr_init(&Attr);
       pthread_attr_setstack(&Attr, Stack, STACK_SIZE);
+      // TODO: Thread creation should be using this instead.
+      // Causes Steam to crash early though.
+      // pthread_create(&Thread, &Attr, InitializeThread, this);
       pthread_create(&Thread, &Attr, Func, Arg);
 
       pthread_attr_destroy(&Attr);
@@ -155,6 +160,10 @@ namespace FEXCore::Threads {
 
     // Put the stack back in to the stack pool
     Thread->FreeStack();
+
+    // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
+
     return Result;
   }
 

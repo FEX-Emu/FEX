@@ -29,6 +29,7 @@ namespace FEXCore::Telemetry {
 
     // Ensure the folder structure is created for our configuration
     std::error_code ec{};
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     if (!std::filesystem::exists(DataDirectory, ec) &&
         !std::filesystem::create_directories(DataDirectory, ec)) {
       LogMan::Msg::IFmt("Couldn't create telemetry Folder");
@@ -40,6 +41,7 @@ namespace FEXCore::Telemetry {
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
     std::error_code ec{};
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     if (std::filesystem::exists(DataDirectory, ec)) {
       // If the file exists, retain a single backup
       auto Backup = DataDirectory + ".1";

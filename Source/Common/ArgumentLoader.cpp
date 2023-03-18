@@ -14,6 +14,7 @@ namespace FEX::ArgLoader {
 
   static std::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
   void FEX::ArgLoader::ArgLoader::Load() {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     optparse::OptionParser Parser{};
     Parser.version(Version);
     optparse::OptionGroup CPUGroup(Parser, "CPU Core options");

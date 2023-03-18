@@ -44,6 +44,8 @@ namespace FEX::Config {
   }
 
   fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
     // If executed with a FEX FD then the Program argument might be empty.
     // In this case we need to scan the FD node to recover the application binary that exists on disk.
     // Only do this if the Program argument is empty, since we would prefer the application's expectation
@@ -137,6 +139,7 @@ namespace FEX::Config {
       Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
       fextl::string& Program = Args[0];
 
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       bool Wine = false;
       std::filesystem::path ProgramName;
       for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {

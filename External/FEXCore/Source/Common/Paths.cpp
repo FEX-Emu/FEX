@@ -70,6 +70,7 @@ namespace FEXCore::Paths {
     *EntryCache = *CachePath + "/EntryCache/";
 
     std::error_code ec{};
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     // Ensure the folder structure is created for our Data
     if (!std::filesystem::exists(*EntryCache, ec) &&
         !std::filesystem::create_directories(*EntryCache, ec)) {

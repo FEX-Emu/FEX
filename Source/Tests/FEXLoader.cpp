@@ -123,6 +123,7 @@ namespace FEXServerLogging {
 }
 
 void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   // Open the file pointer to the filename and see if we need to find an interpreter
   std::fstream File(fextl::string_from_string(*Filename), std::fstream::in | std::fstream::binary);
 
@@ -178,6 +179,7 @@ void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
   std::error_code ec{};
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   if (std::filesystem::exists(RootFSLink, ec)) {
     *Filename = RootFSLink;
   }
@@ -293,11 +295,16 @@ int main(int argc, char **argv, char **const envp) {
   InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
   std::error_code ec{};
-  if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
-    // Early exit if the program passed in doesn't exist
-    // Will prevent a crash later
-    fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
-    return -ENOEXEC;
+
+  {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+    if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
+      // Early exit if the program passed in doesn't exist
+      // Will prevent a crash later
+      fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
+      FEXCore::Allocator::ClearFaultEvaluate();
+      return -ENOEXEC;
+    }
   }
 
   uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
@@ -342,7 +349,10 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
   }
   else {
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.ProgramPath).string());
+    {
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.ProgramPath).string());
+    }
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   }
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
@@ -402,18 +412,23 @@ int main(int argc, char **argv, char **const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
-  auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-  auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
+  {
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
 
-  // Load VDSO in to memory prior to mapping our ELFs.
-  void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), Mapper);
-  Loader.SetVDSOBase(VDSOBase);
-  Loader.CalculateHWCaps(CTX);
+    auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
+    auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
 
-  if (!Loader.MapMemory(Mapper, Unmapper)) {
-    // failed to map
-    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-    return -ENOEXEC;
+    // Load VDSO in to memory prior to mapping our ELFs.
+    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), Mapper);
+    Loader.SetVDSOBase(VDSOBase);
+    Loader.CalculateHWCaps(CTX);
+
+    if (!Loader.MapMemory(Mapper, Unmapper)) {
+      // failed to map
+      LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      FEXCore::Allocator::ClearFaultEvaluate();
+      return -ENOEXEC;
+    }
   }
 
   SyscallHandler->SetCodeLoader(&Loader);
