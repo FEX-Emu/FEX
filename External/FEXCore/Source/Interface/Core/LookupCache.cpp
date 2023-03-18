@@ -18,8 +18,10 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl *CTX)
   : ctx {CTX} {
 
   TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
+  BlockLinks_mbr = fextl::make_unique<std::pmr::monotonic_buffer_resource>(fextl::pmr::get_default_resource());
+  BlockLinks_pma = fextl::make_unique<std::pmr::polymorphic_allocator<std::byte>>(BlockLinks_mbr.get());
   // Setup our PMR map.
-  BlockLinks = BlockLinks_pma.new_object<BlockLinksMapType>();
+  BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
 
   // Block cache ends up looking like this
   // PageMemoryMap[VirtualMemoryRegion >> 12]
@@ -72,9 +74,9 @@ void LookupCache::ClearCache() {
   // Clear L1 and L2 by clearing the full cache.
   madvise(reinterpret_cast<void*>(PagePointer), TotalCacheSize, MADV_DONTNEED);
   // Clear the BlockLinks allocator which frees the BlockLinks map implicitly.
-  BlockLinks_mbr.release();
+  BlockLinks_mbr->release();
   // Allocate a new pointer from the BlockLinks pma again.
-  BlockLinks = BlockLinks_pma.new_object<BlockLinksMapType>();
+  BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
   // All code is gone, clear the block list
   BlockList.clear();
 }
