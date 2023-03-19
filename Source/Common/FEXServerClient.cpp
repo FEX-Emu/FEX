@@ -7,6 +7,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <fcntl.h>
 #include <filesystem>
@@ -211,11 +212,10 @@ namespace FEXServerClient {
         return -1;
       }
 
-      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-      fextl::string FEXServerPath = fextl::string_from_path(std::filesystem::path(InterpreterPath).parent_path()) + "/FEXServer";
+      fextl::string FEXServerPath = FHU::Filesystem::ParentPath(InterpreterPath) + "/FEXServer";
       // Check if a local FEXServer next to FEXInterpreter exists
       // If it does then it takes priority over the installed one
-      if (!std::filesystem::exists(FEXServerPath)) {
+      if (!FHU::Filesystem::Exists(FEXServerPath.c_str())) {
         FEXServerPath = "FEXServer";
       }
 
