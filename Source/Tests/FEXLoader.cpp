@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <atomic>
 #include <cerrno>
@@ -123,28 +124,31 @@ namespace FEXServerLogging {
 }
 
 void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
-  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-  // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File(fextl::string_from_string(*Filename), std::fstream::in | std::fstream::binary);
-
-  if (!File.is_open()) {
+  // Open the Filename to determine if it is a shebang file.
+  int FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
+  if (FD == -1) {
     return;
   }
 
-  File.seekg(0, std::fstream::end);
-  const auto FileSize = File.tellg();
-  File.seekg(0, std::fstream::beg);
+  std::array<char, 257> Header;
+  const auto ChunkSize = 257l;
+  const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
+
+  const auto Data = std::span<char>(Header.data(), ReadSize);
 
   // Is the file large enough for shebang
-  if (FileSize <= 2) {
+  if (ReadSize <= 2) {
+    close(FD);
     return;
   }
 
   // Handle shebang files
-  if (File.get() == '#' &&
-      File.get() == '!') {
-    fextl::string InterpreterLine;
-    std::getline(File, InterpreterLine);
+  if (Data[0] == '#' &&
+      Data[1] == '!') {
+    fextl::string InterpreterLine {
+        Data.begin() + 2, // strip off "#!" prefix
+        std::find(Data.begin(), Data.end(), '\n')
+    };
     fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
@@ -169,18 +173,14 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
 
     // Insert all the arguments at the start
     args->insert(args->begin(), ShebangArguments.begin(), ShebangArguments.end());
-
-    // Done here
-    return;
   }
+  close(FD);
 }
 
 void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
-  std::error_code ec{};
-  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-  if (std::filesystem::exists(RootFSLink, ec)) {
+  if (FHU::Filesystem::Exists(RootFSLink.c_str())) {
     *Filename = RootFSLink;
   }
 }
@@ -297,17 +297,12 @@ int main(int argc, char **argv, char **const envp) {
   RootFSRedirect(&Program.ProgramPath, LDPath());
   InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
-  std::error_code ec{};
-
-  {
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-    if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
-      // Early exit if the program passed in doesn't exist
-      // Will prevent a crash later
-      fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
-      FEXCore::Allocator::ClearFaultEvaluate();
-      return -ENOEXEC;
-    }
+  if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath.c_str())) {
+    // Early exit if the program passed in doesn't exist
+    // Will prevent a crash later
+    fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
+    FEXCore::Allocator::ClearFaultEvaluate();
+    return -ENOEXEC;
   }
 
   uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
@@ -354,8 +349,11 @@ int main(int argc, char **argv, char **const envp) {
   }
   else {
     {
-      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.ProgramPath).string());
+      char ExistsTempPath[PATH_MAX];
+      char *RealPath = realpath(Program.ProgramPath.c_str(), ExistsTempPath);
+      if (RealPath) {
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, fextl::string(RealPath));
+      }
     }
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   }
@@ -503,6 +501,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTEnabled) {
+    std::error_code ec{};
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
     if (!ec) {
       CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
