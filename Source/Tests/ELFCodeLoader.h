@@ -87,9 +87,10 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       LogMan::Msg::EFmt("MapFile: Some elf mapping failed, {}, fd: {}\n", errno, file.fd);
       return false;
     } else {
-      auto Filename = FEX::get_fdpath(file.fd);
-      if (Filename.has_value()) {
-        Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, Filename.value(), (prot & PROT_EXEC) != 0});
+      char Tmp[PATH_MAX];
+      auto PathLength = FEX::get_fdpath(file.fd, Tmp);
+      if (PathLength != -1) {
+        Sections.push_back({Base, (uintptr_t)rv, size, (off_t)off, fextl::string(Tmp, PathLength), (prot & PROT_EXEC) != 0});
       }
 
       return true;
