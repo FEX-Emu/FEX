@@ -5,6 +5,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
@@ -44,8 +45,6 @@ namespace FEX::Config {
   }
 
   fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-
     // If executed with a FEX FD then the Program argument might be empty.
     // In this case we need to scan the FD node to recover the application binary that exists on disk.
     // Only do this if the Program argument is empty, since we would prefer the application's expectation
@@ -60,7 +59,11 @@ namespace FEX::Config {
     // If the program name isn't resolved to an absolute path then glibc breaks inside it's `_dl_get_origin` function.
     // This is because we rewrite `/proc/self/exe` to the absolute program path calculated in here.
     if (!Program.starts_with('/')) {
-      Program = std::filesystem::canonical(std::move(Program)).string();
+      char ExistsTempPath[PATH_MAX];
+      char *RealPath = realpath(Program.c_str(), ExistsTempPath);
+      if (RealPath) {
+        Program = RealPath;
+      }
     }
 
     // If FEX was invoked through an FD path (either binfmt_misc or execveat) then we need to check the
@@ -139,11 +142,10 @@ namespace FEX::Config {
       Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
       fextl::string& Program = Args[0];
 
-      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       bool Wine = false;
-      std::filesystem::path ProgramName;
+      fextl::string ProgramName;
       for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {
-        auto CurrentProgramName = std::filesystem::path(Args[CurrentProgramNameIndex]).filename();
+        auto CurrentProgramName = FHU::Filesystem::GetFilename(Args[CurrentProgramNameIndex]);
 
         if (CurrentProgramName == "wine-preloader" ||
             CurrentProgramName == "wine64-preloader") {
@@ -165,10 +167,10 @@ namespace FEX::Config {
         else {
           if (Wine == true) {
             // If this was path separated with '\' then we need to check that.
-            auto WinSeparator = CurrentProgramName.string().find_last_of('\\');
-            if (WinSeparator != CurrentProgramName.string().npos) {
+            auto WinSeparator = CurrentProgramName.find_last_of('\\');
+            if (WinSeparator != CurrentProgramName.npos) {
               // Used windows separators
-              CurrentProgramName = CurrentProgramName.string().substr(WinSeparator + 1);
+              CurrentProgramName = CurrentProgramName.substr(WinSeparator + 1);
             }
           }
 
@@ -179,8 +181,8 @@ namespace FEX::Config {
         }
       }
 
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(fextl::string_from_path(ProgramName), FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(fextl::string_from_path(ProgramName), FEXCore::Config::LayerType::LAYER_LOCAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
       auto SteamID = getenv("SteamAppId");
       if (SteamID) {
@@ -191,8 +193,7 @@ namespace FEX::Config {
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
       }
 
-      // TODO: No need for conversion once Config uses fextl.
-      return ApplicationNames{std::move(Program), fextl::string_from_path(ProgramName)};
+      return ApplicationNames{std::move(Program), std::move(ProgramName)};
     }
     return {};
   }
