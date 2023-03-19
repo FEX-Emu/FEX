@@ -17,6 +17,7 @@ $end_info$
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/sstream.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <git_version.h>
 
@@ -759,13 +760,12 @@ namespace FEX::EmulatedFile {
         char *RealPath = realpath(Path, ExistsTempPath);
         if (RealPath) {
           RealPathExists = true;
-          Creator = FDReadCreators.find(realpath(Path, Tmp));
+          Creator = FDReadCreators.find(RealPath);
         }
       }
 
       if (!RealPathExists) {
-        FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-        Creator = FDReadCreators.find(fextl::string_from_path(std::filesystem::path(Path).lexically_normal()));
+        Creator = FDReadCreators.find(FHU::Filesystem::LexicallyNormal(Path));
       }
 
       if (Creator == FDReadCreators.end()) {
