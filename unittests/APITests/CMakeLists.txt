@@ -1,5 +1,7 @@
 set (TESTS
-  InterruptableConditionVariable)
+  InterruptableConditionVariable
+  LexicallyNormal
+  )
 
 list(APPEND LIBS FEXCore)
 
