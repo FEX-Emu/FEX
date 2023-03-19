@@ -13,6 +13,7 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
 #include <assert.h>
@@ -20,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <linux/limits.h>
 #include <optional>
 #include <stddef.h>
 #include <stdint.h>
@@ -144,11 +146,8 @@ namespace JSON {
       }
 
       // Ensure the folder structure is created for our configuration
-      std::error_code ec{};
-      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-
-      if (!std::filesystem::exists(ConfigDir, ec) &&
-          !std::filesystem::create_directories(ConfigDir, ec)) {
+      if (!FHU::Filesystem::Exists(ConfigDir.c_str()) &&
+          !FHU::Filesystem::CreateDirectories(ConfigDir)) {
         // Let's go local in this case
         return "./";
       }
@@ -178,12 +177,9 @@ namespace JSON {
   fextl::string GetApplicationConfig(const fextl::string &Filename, bool Global) {
     fextl::string ConfigFile = GetConfigDirectory(Global);
 
-    std::error_code ec{};
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-
     if (!Global &&
-        !std::filesystem::exists(ConfigFile, ec) &&
-        !std::filesystem::create_directories(ConfigFile, ec)) {
+        !FHU::Filesystem::Exists(ConfigFile.c_str()) &&
+        !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       LogMan::Msg::DFmt("Couldn't create config directory: '{}'", ConfigFile);
       // Let's go local in this case
       return "./" + Filename + ".json";
@@ -193,8 +189,8 @@ namespace JSON {
 
     // Attempt to create the local folder if it doesn't exist
     if (!Global &&
-        !std::filesystem::exists(ConfigFile, ec) &&
-        !std::filesystem::create_directories(ConfigFile, ec)) {
+        !FHU::Filesystem::Exists(ConfigFile.c_str()) &&
+        !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       // Let's go local in this case
       return "./" + Filename + ".json";
     }
@@ -340,10 +336,8 @@ namespace JSON {
     }
 
 
-    std::filesystem::path Path{PathName};
-
     // Expand home if it exists
-    if (Path.is_relative()) {
+    if (FHU::Filesystem::IsRelative(PathName)) {
       fextl::string Home = getenv("HOME") ?: "";
       // Home expansion only works if it is the first character
       // This matches bash behaviour
@@ -352,16 +346,16 @@ namespace JSON {
         return PathName;
       }
 
-      {
-        FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-        // Expand relative path to absolute
-        Path = std::filesystem::absolute(Path);
+      // Expand relative path to absolute
+      char ExistsTempPath[PATH_MAX];
+      char *RealPath = realpath(PathName.c_str(), ExistsTempPath);
+      if (RealPath) {
+        PathName = RealPath;
       }
 
       // Only return if it exists
-      std::error_code ec{};
-      if (std::filesystem::exists(Path, ec)) {
-        return fextl::string_from_path(Path);
+      if (FHU::Filesystem::Exists(PathName.c_str())) {
+        return PathName;
       }
     }
     else {
@@ -377,9 +371,9 @@ namespace JSON {
       // HostThunks: $CMAKE_INSTALL_PREFIX/lib/fex-emu/HostThunks/
       // GuestThunks: $CMAKE_INSTALL_PREFIX/share/fex-emu/GuestThunks/
       if (!ContainerPrefix.empty() && !PathName.empty()) {
-        if (!std::filesystem::exists(PathName)) {
+        if (!FHU::Filesystem::Exists(PathName.c_str())) {
           auto ContainerPath = ContainerPrefix + PathName;
-          if (std::filesystem::exists(ContainerPath)) {
+          if (FHU::Filesystem::Exists(ContainerPath.c_str())) {
             return ContainerPath;
           }
         }
@@ -389,11 +383,9 @@ namespace JSON {
   }
 
   fextl::string FindContainer() {
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-
     // We only support pressure-vessel at the moment
     const static fextl::string ContainerManager = "/run/host/container-manager";
-    if (std::filesystem::exists(ContainerManager)) {
+    if (FHU::Filesystem::Exists(ContainerManager.c_str())) {
       fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -406,11 +398,9 @@ namespace JSON {
   }
 
   fextl::string FindContainerPrefix() {
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-
     // We only support pressure-vessel at the moment
     const static fextl::string ContainerManager = "/run/host/container-manager";
-    if (std::filesystem::exists(ContainerManager)) {
+    if (FHU::Filesystem::Exists(ContainerManager.c_str())) {
       fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -471,7 +461,6 @@ namespace JSON {
 
     fextl::string ContainerPrefix { FindContainerPrefix() };
     auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, fextl::string PathName) {
-      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       auto NewPath = ExpandPath(ContainerPrefix, PathName);
       if (!NewPath.empty()) {
         FEXCore::Config::EraseSet(Config, NewPath);
@@ -718,7 +707,8 @@ namespace JSON {
   }
 
   void EnvLoader::Load() {
-    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
+    using EnvMapType = fextl::unordered_map<std::string_view, std::string_view>;
+    EnvMapType EnvMap;
 
     for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
       std::string_view Var(*pvar);
@@ -732,11 +722,10 @@ namespace JSON {
 #define ENVLOADER
 #include <FEXCore/Config/ConfigOptions.inl>
 
-      EnvMap[Key]=Value;
+      EnvMap[Key] = Value;
     }
 
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-    std::function GetVar = [=](const std::string_view id)  -> std::optional<std::string_view> {
+    std::function GetVar = [](EnvMapType &EnvMap, const std::string_view id)  -> std::optional<std::string_view> {
       if (EnvMap.find(id) != EnvMap.end())
         return EnvMap.at(id);
 
@@ -753,7 +742,7 @@ namespace JSON {
     std::optional<std::string_view> Value;
 
     for (auto &it : EnvConfigLookup) {
-      if ((Value = GetVar(it.first)).has_value()) {
+      if ((Value = GetVar(EnvMap, it.first)).has_value()) {
         Set(it.second, fextl::string(*Value));
       }
     }
