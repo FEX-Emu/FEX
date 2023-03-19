@@ -6,6 +6,7 @@ desc: Glue logic, brk allocations
 $end_info$
 */
 
+#include "FEXHeaderUtils/Filesystem.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFParser.h"
 
@@ -237,7 +238,6 @@ static bool IsShebangFilename(fextl::string const &Filename) {
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   fextl::string Filename{};
 
-  std::error_code ec;
   fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
   ELFLoader::ELFContainer::ELFType Type{};
 
@@ -257,7 +257,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
     // For absolute paths, check the rootfs first (if available)
     if (pathname[0] == '/') {
       auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
-      if (!Path.empty() && std::filesystem::exists(Path, ec)) {
+      if (!Path.empty() && FHU::Filesystem::Exists(Path.c_str())) {
         Filename = Path;
       }
       else {
@@ -268,8 +268,8 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
       Filename = pathname;
     }
 
-    bool exists = std::filesystem::exists(Filename, ec);
-    if (ec || !exists) {
+    bool exists = FHU::Filesystem::Exists(Filename.c_str());
+    if (!exists) {
       return -ENOENT;
     }
 
