@@ -3,12 +3,14 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <pwd.h>
 #include <system_error>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace FEXCore::Paths {
@@ -71,11 +73,9 @@ namespace FEXCore::Paths {
     *CachePath += "/.fex-emu/";
     *EntryCache = *CachePath + "/EntryCache/";
 
-    std::error_code ec{};
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
     // Ensure the folder structure is created for our Data
-    if (!std::filesystem::exists(*EntryCache, ec) &&
-        !std::filesystem::create_directories(*EntryCache, ec)) {
+    if (!FHU::Filesystem::Exists(EntryCache->c_str()) &&
+        !FHU::Filesystem::CreateDirectories(*EntryCache)) {
       LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", *EntryCache);
     }
   }
