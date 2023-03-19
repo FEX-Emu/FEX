@@ -11,20 +11,6 @@
 #include <unistd.h>
 
 namespace FEX {
-[[maybe_unused]]
-static
-std::optional<fextl::string> get_fdpath(int fd) {
-  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-  char SymlinkPath[PATH_MAX];
-  std::filesystem::path Path = std::filesystem::path("/proc/self/fd") / std::to_string(fd);
-  int Result = readlinkat(AT_FDCWD, Path.c_str(), SymlinkPath, sizeof(SymlinkPath));
-  if (Result != -1) {
-    return fextl::string(SymlinkPath, Result);
-  }
-
-  // Not fatal if an FD doesn't point to a file
-  return std::nullopt;
-}
 
 inline
 int get_fdpath(int fd, char *SymlinkPath) {
