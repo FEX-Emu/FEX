@@ -382,10 +382,11 @@ namespace JSON {
     return {};
   }
 
+  constexpr char ContainerManager[] = "/run/host/container-manager";
+
   fextl::string FindContainer() {
     // We only support pressure-vessel at the moment
-    const static fextl::string ContainerManager = "/run/host/container-manager";
-    if (FHU::Filesystem::Exists(ContainerManager.c_str())) {
+    if (FHU::Filesystem::Exists(ContainerManager)) {
       fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -399,8 +400,7 @@ namespace JSON {
 
   fextl::string FindContainerPrefix() {
     // We only support pressure-vessel at the moment
-    const static fextl::string ContainerManager = "/run/host/container-manager";
-    if (FHU::Filesystem::Exists(ContainerManager.c_str())) {
+    if (FHU::Filesystem::Exists(ContainerManager)) {
       fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
