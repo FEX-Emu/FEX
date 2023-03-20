@@ -6,6 +6,7 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <dlfcn.h>
@@ -501,14 +502,14 @@ namespace FEX::VDSO {
     }
   }
 
-  void* LoadVDSOThunks(bool Is64Bit, MapperFn Mapper) {
+  void* LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler *const Handler) {
     void* VDSOBase{};
     FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
     FEX_CONFIG_OPT(ThunkGuestLibs32, THUNKGUESTLIBS32);
 
-    std::filesystem::path ThunkGuestPath{};
+    fextl::string ThunkGuestPath{};
     if (Is64Bit) {
-      ThunkGuestPath = std::filesystem::path(ThunkGuestLibs()) / "libVDSO-guest.so";
+      ThunkGuestPath = fextl::fmt::format("{}/libVDSO-guest.so", ThunkGuestLibs());
 
       // Set the Thunk definition pointers for x86-64
       VDSODefinitions[0].ThunkFunction = FEX::VDSO::x64::Handler_time;
@@ -519,7 +520,7 @@ namespace FEX::VDSO {
       VDSODefinitions[5].ThunkFunction = FEX::VDSO::x64::Handler_getcpu;
     }
     else {
-      ThunkGuestPath = std::filesystem::path(ThunkGuestLibs32()) / "libVDSO-guest.so";
+      ThunkGuestPath = fextl::fmt::format("{}/libVDSO-guest.so", ThunkGuestLibs32());
 
       // Set the Thunk definition pointers for x86
       VDSODefinitions[0].ThunkFunction = FEX::VDSO::x32::Handler_time;
@@ -531,7 +532,7 @@ namespace FEX::VDSO {
     }
 
     // Load VDSO if we can
-    int VDSOFD = ::open(ThunkGuestPath.string().c_str(), O_RDONLY);
+    int VDSOFD = ::open(ThunkGuestPath.c_str(), O_RDONLY);
 
     if (VDSOFD != -1) {
       // Get file size
@@ -543,7 +544,7 @@ namespace FEX::VDSO {
         VDSOSize = FEXCore::AlignUp(VDSOSize, 4096);
 
         // Map the VDSO file to memory
-        VDSOBase = Mapper(nullptr, VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
+        VDSOBase = Handler->GuestMmap(nullptr, VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
 
         // Since we found our VDSO thunk library, find our host VDSO function implementations.
         LoadHostVDSO();

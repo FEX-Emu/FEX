@@ -415,17 +415,12 @@ int main(int argc, char **argv, char **const envp) {
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
   {
-    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-
-    auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-    auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
-
     // Load VDSO in to memory prior to mapping our ELFs.
-    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), Mapper);
+    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
     Loader.SetVDSOBase(VDSOBase);
     Loader.CalculateHWCaps(CTX);
 
-    if (!Loader.MapMemory(Mapper, Unmapper)) {
+    if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       FEXCore::Allocator::ClearFaultEvaluate();

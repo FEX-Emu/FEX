@@ -475,7 +475,9 @@ namespace FEX::HarnessHelper {
       return RIP;
     }
 
-    bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override {
+    using MapperFn = std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)>;
+    using UnmapperFn = std::function<int(void *addr, size_t length)>;
+    bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) {
       bool LimitedSize = true;
       auto DoMMap = [&Mapper](uint64_t Address, size_t Size) -> void* {
         void *Result = Mapper(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

@@ -66,8 +66,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     return PAGE_ALIGN(last->p_vaddr + last->p_memsz);
   }
 
-  template<typename T>
-  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags, T Mapper) {
+  bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr &Header, int prot, int flags, FEX::HLE::SyscallHandler *const Handler) {
 
     auto addr = Base + PAGE_START(Header.p_vaddr);
     auto size = Header.p_filesz + PAGE_OFFSET(Header.p_vaddr);
@@ -80,7 +79,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       return true;
     }
 
-    void *rv = Mapper((void*)addr, size, prot, flags, file.fd, off);
+    void *rv = Handler->GuestMmap((void*)addr, size, prot, flags, file.fd, off);
 
     if (rv == MAP_FAILED) {
       // uhoh, something went wrong
@@ -112,8 +111,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     return rv;
   }
 
-  template <typename TMap, typename TUnmap>
-  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, TMap Mapper, TUnmap Unmapper, uint64_t LoadHint = 0) {
+  std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t *BrkBase, FEX::HLE::SyscallHandler *const Handler, uint64_t LoadHint = 0) {
 
     uintptr_t LoadBase = 0;
 
@@ -124,7 +122,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
-      LoadBase = (uintptr_t)Mapper(reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      LoadBase = (uintptr_t)Handler->GuestMmap(reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if ((void*)LoadBase == MAP_FAILED) {
         return {};
       }
@@ -142,7 +140,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       int MapProt = MapFlags(Header);
       int MapType = MAP_PRIVATE | MAP_DENYWRITE | MAP_FIXED;
 
-      if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Mapper)) {
+      if (!MapFile(Elf, LoadBase, Header, MapProt, MapType, Handler)) {
         return {};
       }
 
@@ -158,7 +156,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
         }
 
         if (BSSPageStart != BSSPageEnd) {
-          auto bss = Mapper((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
+          auto bss = Handler->GuestMmap((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
           if ((void*)bss == MAP_FAILED) {
             LogMan::Msg::EFmt("Failed to allocate BSS @ {}, {}\n", fmt::ptr(bss), errno);
             return {};
@@ -354,7 +352,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t val;
   };
 
-  bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) override {
+  bool MapMemory(FEX::HLE::SyscallHandler *const Handler) {
     for (auto Header: MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
         if (Header.p_flags & PF_X)
@@ -408,7 +406,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t StackHint = Is64BitMode() ? STACK_HINT_64 : STACK_HINT_32;
 
     // Allocate the base of the full 128MB stack range.
-    StackPointerBase = Mapper(reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+    StackPointerBase = Handler->GuestMmap(reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 
     if (StackPointerBase == reinterpret_cast<void*>(~0ULL)) {
       LogMan::Msg::EFmt("Allocating stack failed");
@@ -416,7 +414,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     }
 
     // Allocate with permissions the 8MB of regular stack size.
-    StackPointer = reinterpret_cast<uintptr_t>(Mapper(
+    StackPointer = reinterpret_cast<uintptr_t>(Handler->GuestMmap(
       reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
       StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
@@ -465,7 +463,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
     if (!MainElf.InterpreterElf.empty()) {
       uint64_t InterpLoadBase = 0;
-      if (auto elf = LoadElfFile(InterpElf, nullptr, Mapper, Unmapper)) {
+      if (auto elf = LoadElfFile(InterpElf, nullptr, Handler)) {
         InterpLoadBase = *elf;
       } else {
         LogMan::Msg::EFmt("Failed to load interpreter elf file");
@@ -531,7 +529,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
     uintptr_t LoadBase = 0;
 
-    if (auto elf = LoadElfFile(MainElf, &BrkBase, Mapper, Unmapper, ELFLoadHint)) {
+    if (auto elf = LoadElfFile(MainElf, &BrkBase, Handler, ELFLoadHint)) {
       LoadBase = *elf;
       if (MainElf.ehdr.e_type == ET_DYN) {
         BaseOffset = LoadBase;
@@ -543,7 +541,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
     // XXX Randomise brk?
 
-    BrkStart = (uint64_t)Mapper((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    BrkStart = (uint64_t)Handler->GuestMmap((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
     if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
@@ -586,7 +584,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       if (!VSyscallEntry) [[unlikely]] {
         // If the VDSO thunk doesn't exist then we might not have a vsyscall entry.
         // Newer glibc requires vsyscall to exist now. So let's allocate a buffer and stick a vsyscall in to it.
-        auto VSyscallPage = Mapper(nullptr, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        auto VSyscallPage = Handler->GuestMmap(nullptr, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         constexpr static uint8_t VSyscallCode[] = {
           0xcd, 0x80, // int 0x80
           0xc3,       // ret
