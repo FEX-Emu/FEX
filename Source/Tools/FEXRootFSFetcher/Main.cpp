@@ -1,7 +1,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
-#include "OptionParser.h"
+#include "Common/cpp-optparse/OptionParser.h"
 #include "XXFileHash.h"
 
 #include "Common/ArgumentLoader.h"
@@ -37,7 +37,7 @@ namespace ArgOptions {
 
   ListQueryOption DistroListOption {ListQueryOption::OPTION_ASK};
 
-  std::vector<fextl::string> RemainingArgs;
+  fextl::vector<fextl::string> RemainingArgs;
 
   std::string DistroName{};
   std::string DistroVersion{};
@@ -95,10 +95,7 @@ namespace ArgOptions {
       DistroVersion = Options["distro_version"];
     }
 
-
-    // TODO: Convert cpp-optparse over to fextl::vector
-    auto ParserArgs = Parser.args();
-    RemainingArgs.insert(RemainingArgs.begin(), ParserArgs.begin(), ParserArgs.end());
+    RemainingArgs = Parser.args();
   }
 }
 

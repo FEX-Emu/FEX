@@ -242,9 +242,6 @@ if (BUILD_TESTS)
   include(Catch)
 endif()
 
-add_subdirectory(External/cpp-optparse/)
-include_directories(External/cpp-optparse/)
-
 add_subdirectory(External/fmt/)
 
 add_subdirectory(External/imgui/)

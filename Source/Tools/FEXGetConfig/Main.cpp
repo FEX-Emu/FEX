@@ -1,5 +1,5 @@
 #include "ConfigDefines.h"
-#include "OptionParser.h"
+#include "Common/cpp-optparse/OptionParser.h"
 #include "Common/FEXServerClient.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
