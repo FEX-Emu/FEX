@@ -112,7 +112,7 @@ namespace FEXCore::Core {
     fextl::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
     fextl::unique_ptr<FEXCore::LookupCache> LookupCache;
 
-    tsl::robin_map<uint64_t, LocalIREntry> DebugStore;
+    fextl::robin_map<uint64_t, LocalIREntry> DebugStore;
 
     fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
