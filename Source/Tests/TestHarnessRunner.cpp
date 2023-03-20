@@ -57,11 +57,11 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     CharLevel = "???";
     break;
   }
-  fmt::print("[{}] {}\n", CharLevel, Message);
+  fextl::fmt::print("[{}] {}\n", CharLevel, Message);
 }
 
 void AssertHandler(char const *Message) {
-  fmt::print("[ASSERT] {}\n", Message);
+  fextl::fmt::print("[ASSERT] {}\n", Message);
 
   // make sure buffers are flushed
   fflush(nullptr);
@@ -83,7 +83,7 @@ public:
   }
 
   void Load() override {
-    std::unordered_map<std::string_view, std::string_view> EnvMap;
+    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
     for (auto &Option : Env) {
       std::string_view Key = Option.first;
       std::string_view Value = Option.second;
@@ -115,6 +115,7 @@ private:
 }
 
 int main(int argc, char **argv, char **const envp) {
+  FEXCore::Allocator::SetupFaultEvaluate();
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
@@ -126,6 +127,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Args.size() < 2) {
     LogMan::Msg::EFmt("Not enough arguments");
+    FEXCore::Allocator::ClearFaultEvaluate();
     return -1;
   }
 
@@ -184,6 +186,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (TestUnsupported) {
     FEXCore::Context::Context::DestroyContext(CTX);
+    FEXCore::Allocator::ClearFaultEvaluate();
     return 0;
   }
 
@@ -202,16 +205,14 @@ int main(int argc, char **argv, char **const envp) {
       return false;
     }, true);
 
-    // Run through FEX
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                                : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
-    auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-    auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
-
-    if (!Loader.MapMemory(Mapper, Unmapper)) {
+    // Run through FEX
+    if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      FEXCore::Allocator::ClearFaultEvaluate();
       return -ENOEXEC;
     }
 
@@ -221,6 +222,7 @@ int main(int argc, char **argv, char **const envp) {
     bool Result1 = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
     if (!Result1) {
+      FEXCore::Allocator::ClearFaultEvaluate();
       return 1;
     }
 
@@ -237,9 +239,10 @@ int main(int argc, char **argv, char **const envp) {
     // Run as host
     SupportsAVX = true;
     SignalDelegation->RegisterTLSState((FEXCore::Core::InternalThreadState*)UINTPTR_MAX);
-    if (!Loader.MapMemory(mmap, munmap)) {
+    if (!Loader.MapMemory()) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      FEXCore::Allocator::ClearFaultEvaluate();
       return -ENOEXEC;
     }
 
@@ -263,7 +266,7 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::UnInstallHandlers();
 
   FEXCore::Allocator::ClearHooks();
-
+  FEXCore::Allocator::ClearFaultEvaluate();
   return Passed ? 0 : -1;
 }
 

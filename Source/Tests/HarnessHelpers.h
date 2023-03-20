@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common/Config.h"
+#include "Tests/LinuxSyscalls/Syscalls.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
@@ -21,6 +22,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -37,7 +39,7 @@ namespace FEX::HarnessHelper {
                             bool SupportsAVX) {
     bool Matches = true;
 
-    const auto DumpGPRs = [OutputGPRs](const std::string& Name, uint64_t A, uint64_t B) {
+    const auto DumpGPRs = [OutputGPRs](const fextl::string& Name, uint64_t A, uint64_t B) {
       if (!OutputGPRs) {
         return;
       }
@@ -48,7 +50,7 @@ namespace FEX::HarnessHelper {
       fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
     };
 
-    const auto DumpFLAGs = [OutputGPRs](const std::string& Name, uint64_t A, uint64_t B) {
+    const auto DumpFLAGs = [OutputGPRs](const fextl::string& Name, uint64_t A, uint64_t B) {
       if (!OutputGPRs) {
         return;
       }
@@ -85,12 +87,12 @@ namespace FEX::HarnessHelper {
       }
     };
 
-    const auto CheckGPRs = [&Matches, DumpGPRs](const std::string& Name, uint64_t A, uint64_t B){
+    const auto CheckGPRs = [&Matches, DumpGPRs](const fextl::string& Name, uint64_t A, uint64_t B){
       DumpGPRs(Name, A, B);
       Matches &= A == B;
     };
 
-    const auto CheckFLAGS = [&Matches, DumpFLAGs](const std::string& Name, uint64_t A, uint64_t B){
+    const auto CheckFLAGS = [&Matches, DumpFLAGs](const fextl::string& Name, uint64_t A, uint64_t B){
       DumpFLAGs(Name, A, B);
       Matches &= A == B;
     };
@@ -106,7 +108,7 @@ namespace FEX::HarnessHelper {
     // GPRS
     for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i, MatchMask >>= 1) {
       if (MatchMask & 1) {
-        CheckGPRs("GPR" + std::to_string(i), State1.gregs[i], State2.gregs[i]);
+        CheckGPRs(fextl::fmt::format("GPR{}", std::to_string(i)), State1.gregs[i], State2.gregs[i]);
       }
     }
 
@@ -114,15 +116,15 @@ namespace FEX::HarnessHelper {
     if (SupportsAVX) {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
         if (MatchMask & 1) {
-          CheckGPRs("XMM0_" + std::to_string(i), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
-          CheckGPRs("XMM1_" + std::to_string(i), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
+          CheckGPRs(fextl::fmt::format("XMM0_{}", std::to_string(i)), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
+          CheckGPRs(fextl::fmt::format("XMM1_{}", std::to_string(i)), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
         }
       }
     } else {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
         if (MatchMask & 1) {
-          CheckGPRs("XMM0_" + std::to_string(i), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
-          CheckGPRs("XMM1_" + std::to_string(i), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
+          CheckGPRs(fextl::fmt::format("XMM0_{}", std::to_string(i)), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
+          CheckGPRs(fextl::fmt::format("XMM1_{}", std::to_string(i)), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
         }
       }
     }
@@ -159,16 +161,29 @@ namespace FEX::HarnessHelper {
   }
 
   inline void ReadFile(fextl::string const &Filename, fextl::vector<char> *Data) {
-    std::fstream TestFile(fextl::string_from_string(Filename), std::fstream::in | std::fstream::binary);
-    LOGMAN_THROW_A_FMT(TestFile.is_open(), "Failed to open file");
+    int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd == -1) {
+      LogMan::Msg::AFmt("Failed to open file");
+    }
 
-    TestFile.seekg(0, std::fstream::end);
-    const size_t FileSize = TestFile.tellg();
-    TestFile.seekg(0, std::fstream::beg);
+    struct stat buf;
+    if (fstat(fd, &buf) != 0) {
+      close(fd);
+      LogMan::Msg::AFmt("Failed to open file");
+    }
+
+    auto FileSize = buf.st_size;
+
+    if (FileSize <= 0) {
+      close(fd);
+      LogMan::Msg::AFmt("Failed to open file");
+    }
 
     Data->resize(FileSize);
+    const auto ReadSize = pread(fd, Data->data(), FileSize, 0);
 
-    TestFile.read(Data->data(), FileSize);
+    close(fd);
+    LOGMAN_THROW_AA_FMT(ReadSize == FileSize, "Failed to open file");
   }
 
   class ConfigLoader final {
@@ -307,15 +322,15 @@ namespace FEX::HarnessHelper {
           uint64_t *State1Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State1) + Offset);
           uint64_t *State2Data = reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(State2) + Offset);
 
-          const auto DumpGPRs = [this](const std::string& Name, uint64_t A, uint64_t B) {
+          const auto DumpGPRs = [this](const fextl::string& Name, uint64_t A, uint64_t B) {
             if (!ConfigDumpGPRs()) {
               return;
             }
 
-            fmt::print("{}: 0x{:016x} {} 0x{:016x} (Expected)\n", Name, A, A==B ? "==" : "!=", B);
+            fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x} (Expected)\n", Name, A, A==B ? "==" : "!=", B);
           };
 
-          const auto CheckGPRs = [&Matches, DumpGPRs](const std::string& Name, uint64_t A, uint64_t B) {
+          const auto CheckGPRs = [&Matches, DumpGPRs](const fextl::string& Name, uint64_t A, uint64_t B) {
             DumpGPRs(Name, A, B);
             Matches &= A == B;
           };
@@ -325,9 +340,9 @@ namespace FEX::HarnessHelper {
             if (NameIndex == 0) // RIP
               Name = "RIP";
             else if (NameIndex >= 1 && NameIndex < 17)
-              Name = fmt::format("GPR{}", NameIndex - 1);
+              Name = fextl::fmt::format("GPR{}", NameIndex - 1);
             else if (NameIndex >= 17 && NameIndex < 33)
-              Name = fmt::format("XMM[{}][{}]", NameIndex - 17, j);
+              Name = fextl::fmt::format("XMM[{}][{}]", NameIndex - 17, j);
             else if (NameIndex == 33)
               Name = "gs";
             else if (NameIndex == 34)
@@ -335,13 +350,13 @@ namespace FEX::HarnessHelper {
             else if (NameIndex == 35)
               Name = "rflags";
             else if (NameIndex >= 36 && NameIndex < 45)
-              Name = fmt::format("MM[{}][{}]", NameIndex - 36, j);
+              Name = fextl::fmt::format("MM[{}][{}]", NameIndex - 36, j);
 
             if (State1) {
-              CheckGPRs(fmt::format("Core1: {}: ", Name), State1Data[j], RegData->RegValues[j]);
+              CheckGPRs(fextl::fmt::format("Core1: {}: ", Name), State1Data[j], RegData->RegValues[j]);
             }
             if (State2) {
-              CheckGPRs(fmt::format("Core2: {}: ", Name), State2Data[j], RegData->RegValues[j]);
+              CheckGPRs(fextl::fmt::format("Core2: {}: ", Name), State2Data[j], RegData->RegValues[j]);
             }
           }
 
@@ -475,46 +490,53 @@ namespace FEX::HarnessHelper {
       return RIP;
     }
 
-    using MapperFn = std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)>;
-    using UnmapperFn = std::function<int(void *addr, size_t length)>;
-    bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) {
+    bool MapMemoryInternal(auto Mapper, auto Munmap) {
       bool LimitedSize = true;
-      auto DoMMap = [&Mapper](uint64_t Address, size_t Size) -> void* {
-        void *Result = Mapper(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      auto DoMMap = [](auto This, auto Mapper, uint64_t Address, size_t Size) -> void* {
+        void *Result = (This->*Mapper)(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         LOGMAN_THROW_AA_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
         return Result;
       };
 
       if (LimitedSize) {
-        DoMMap(0xe000'0000, FHU::FEX_PAGE_SIZE * 10);
+        DoMMap(this, Mapper, 0xe000'0000, FHU::FEX_PAGE_SIZE * 10);
 
         // SIB8
         // We test [-128, -126] (Bottom)
         // We test [-8, 8] (Middle)
         // We test [120, 127] (Top)
         // Can fit in two pages
-        DoMMap(0xe800'0000 - FHU::FEX_PAGE_SIZE, FHU::FEX_PAGE_SIZE * 2);
+        DoMMap(this, Mapper, 0xe800'0000 - FHU::FEX_PAGE_SIZE, FHU::FEX_PAGE_SIZE * 2);
       }
       else {
         // This is scratch memory location and SIB8 location
-        DoMMap(0xe000'0000, 0x1000'0000);
+        DoMMap(this, Mapper, 0xe000'0000, 0x1000'0000);
         // This is for large SIB 32bit displacement testing
-        DoMMap(0x2'0000'0000, 0x1'0000'1000);
+        DoMMap(this, Mapper, 0x2'0000'0000, 0x1'0000'1000);
       }
 
       // Map in the memory region for the test file
       size_t Length = FEXCore::AlignUp(TestFileSize, FHU::FEX_PAGE_SIZE);
-      Mapper(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE, TestFD, 0);
+      (this->*Mapper)(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE, TestFD, 0);
       RIP = Code_start_page;
 
       // Map the memory regions the test file asks for
       for (auto& [region, size] : Config.GetMemoryRegions()) {
-        DoMMap(region, size);
+        DoMMap(this, Mapper, region, size);
       }
 
       LoadMemory();
 
       return true;
+    }
+
+    bool MapMemory(FEX::HLE::SyscallHandler *const Handler) {
+      SyscallHandler = Handler;
+      return MapMemoryInternal(&FEX::HarnessHelper::HarnessCodeLoader::SyscallMMap, &FEX::HarnessHelper::HarnessCodeLoader::SyscallMunmap);
+    }
+
+    bool MapMemory() {
+      return MapMemoryInternal(&FEX::HarnessHelper::HarnessCodeLoader::MMap, &FEX::HarnessHelper::HarnessCodeLoader::Munmap);
     }
 
     void LoadMemory() {
@@ -542,7 +564,23 @@ namespace FEX::HarnessHelper {
     bool RequiresBMI2()   const { return Config.RequiresBMI2(); }
     bool RequiresCLWB()   const { return Config.RequiresCLWB(); }
 
+  protected:
+    void *SyscallMMap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return SyscallHandler->GuestMmap(addr, length, prot, flags, fd, offset);
+    }
+    int SyscallMunmap(void *addr, size_t length) {
+      return SyscallHandler->GuestMunmap(addr, length);
+    }
+
+    void *MMap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+      return mmap(addr, length, prot, flags, fd, offset);
+    }
+    int Munmap(void *addr, size_t length) {
+      return munmap(addr, length);
+    }
   private:
+    FEX::HLE::SyscallHandler *SyscallHandler{};
+
     constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;
     constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
     // Zero is special case to know when we are done
