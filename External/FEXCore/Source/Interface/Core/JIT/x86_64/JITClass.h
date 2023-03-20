@@ -9,11 +9,8 @@ $end_info$
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include "Interface/Core/BlockSamplingData.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
-
-#define XBYAK64
-#include <xbyak/xbyak.h>
-#include <xbyak/xbyak_util.h>
 
 using namespace Xbyak;
 

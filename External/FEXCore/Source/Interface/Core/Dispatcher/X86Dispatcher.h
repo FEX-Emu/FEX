@@ -1,5 +1,6 @@
 #pragma once
 
+#include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/unordered_set.h>
 
@@ -16,6 +17,7 @@
 #define XBYAK_STD_LIST fextl::list
 
 #include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
 
 namespace FEXCore::Core {
   struct InternalThreadState;

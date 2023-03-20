@@ -5,14 +5,13 @@ $end_info$
 */
 
 #include "Interface/Core/JIT/x86_64/JITClass.h"
-
+#include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <array>
 #include <stddef.h>
 #include <stdint.h>
-#include <xbyak/xbyak.h>
 
 namespace FEXCore::CPU {
 
