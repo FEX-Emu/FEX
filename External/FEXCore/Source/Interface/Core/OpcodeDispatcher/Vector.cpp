@@ -1911,6 +1911,10 @@ void OpDispatchBuilder::AVXVariableShiftImpl(OpcodeArgs, IROps IROp) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPSLLVOp(OpcodeArgs) {
+  AVXVariableShiftImpl(Op, IROps::OP_VUSHL);
+}
+
 void OpDispatchBuilder::VPSRAVDOp(OpcodeArgs) {
   AVXVariableShiftImpl(Op, IROps::OP_VSSHR);
 }

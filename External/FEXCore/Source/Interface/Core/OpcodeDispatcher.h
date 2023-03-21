@@ -526,6 +526,7 @@ public:
   void VPSLLDQOp(OpcodeArgs);
   template <size_t ElementSize>
   void VPSLLIOp(OpcodeArgs);
+  void VPSLLVOp(OpcodeArgs);
 
   template <size_t ElementSize>
   void VPSRAOp(OpcodeArgs);
