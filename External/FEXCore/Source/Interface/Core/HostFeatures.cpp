@@ -17,12 +17,12 @@ namespace FEXCore {
 // Data Zero Prohibited flag
 // 0b0 = ZVA/GVA/GZVA permitted
 // 0b1 = ZVA/GVA/GZVA prohibited
-constexpr uint32_t DCZID_DZP_MASK = 0b1'0000;
+[[maybe_unused]] constexpr uint32_t DCZID_DZP_MASK = 0b1'0000;
 // Log2 of the blocksize in 32-bit words
-constexpr uint32_t DCZID_BS_MASK = 0b0'1111;
+[[maybe_unused]] constexpr uint32_t DCZID_BS_MASK = 0b0'1111;
 
 #ifdef _M_ARM_64
-static uint32_t GetDCZID() {
+[[maybe_unused]] static uint32_t GetDCZID() {
   uint64_t Result{};
   __asm("mrs %[Res], DCZID_EL0"
       : [Res] "=r" (Result));
