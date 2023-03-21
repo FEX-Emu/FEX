@@ -1891,21 +1891,7 @@ void OpDispatchBuilder::VPSRAIOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPSRAIOp<4>(OpcodeArgs);
 
-void OpDispatchBuilder::VPSRAVDOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
-
-  OrderedNode *Vector = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *ShiftVector = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags, -1);
-  OrderedNode *Result = _VSShr(SrcSize, 4, Vector, ShiftVector);
-  if (Is128Bit) {
-    Result = _VMov(16, Result);
-  }
-
-  StoreResult(FPRClass, Op, Result, -1);
-}
-
-void OpDispatchBuilder::VPSRLVOp(OpcodeArgs) {
+void OpDispatchBuilder::AVXVariableShiftImpl(OpcodeArgs, IROps IROp) {
   const auto DstSize = GetDstSize(Op);
   const auto SrcSize = GetSrcSize(Op);
 
@@ -1913,12 +1899,24 @@ void OpDispatchBuilder::VPSRLVOp(OpcodeArgs) {
 
   OrderedNode *Vector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
   OrderedNode *ShiftVector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], DstSize, Op->Flags, -1);
-  OrderedNode *Result = _VUShr(DstSize, SrcSize, Vector, ShiftVector);
+
+  auto Shift = _VUShr(DstSize, SrcSize, Vector, ShiftVector);
+  Shift.first->Header.Op = IROp;
+
+  OrderedNode *Result = Shift;
   if (Is128Bit) {
     Result = _VMov(16, Result);
   }
 
   StoreResult(FPRClass, Op, Result, -1);
+}
+
+void OpDispatchBuilder::VPSRAVDOp(OpcodeArgs) {
+  AVXVariableShiftImpl(Op, IROps::OP_VSSHR);
+}
+
+void OpDispatchBuilder::VPSRLVOp(OpcodeArgs) {
+  AVXVariableShiftImpl(Op, IROps::OP_VUSHR);
 }
 
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {

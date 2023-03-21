@@ -809,6 +809,8 @@ private:
   template <size_t ElementSize>
   void AVXVectorVariableBlend(OpcodeArgs);
 
+  void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
+
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
   OrderedNode* AESIMCImpl(OpcodeArgs);
 
