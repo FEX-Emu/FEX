@@ -1020,7 +1020,43 @@ public:
 
   // SVE Element Count
   // SVE saturating inc/dec vector by element count
-  // XXX:
+  void sqinch(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0000, SubRegSize::i16Bit, zdn, pattern, imm4);
+  }
+  void uqinch(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0001, SubRegSize::i16Bit, zdn, pattern, imm4);
+  }
+  void sqdech(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0010, SubRegSize::i16Bit, zdn, pattern, imm4);
+  }
+  void uqdech(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0011, SubRegSize::i16Bit, zdn, pattern, imm4);
+  }
+  void sqincw(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0000, SubRegSize::i32Bit, zdn, pattern, imm4);
+  }
+  void uqincw(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0001, SubRegSize::i32Bit, zdn, pattern, imm4);
+  }
+  void sqdecw(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0010, SubRegSize::i32Bit, zdn, pattern, imm4);
+  }
+  void uqdecw(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0011, SubRegSize::i32Bit, zdn, pattern, imm4);
+  }
+  void sqincd(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0000, SubRegSize::i64Bit, zdn, pattern, imm4);
+  }
+  void uqincd(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0001, SubRegSize::i64Bit, zdn, pattern, imm4);
+  }
+  void sqdecd(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0010, SubRegSize::i64Bit, zdn, pattern, imm4);
+  }
+  void uqdecd(ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    SVEElementCount(0, 0b0011, SubRegSize::i64Bit, zdn, pattern, imm4);
+  }
+
   // SVE element count
   // XXX:
   // SVE inc/dec vector by element count
@@ -4204,5 +4240,19 @@ private:
     Instr |= pn.Idx() << 5;
     Instr |= rd.Idx();
 
+    dc32(Instr);
+  }
+
+  void SVEElementCount(uint32_t b20, uint32_t op1, SubRegSize size, ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    LOGMAN_THROW_AA_FMT(imm4 >= 1 && imm4 <= 16, "Immediate must be between 1-16 inclusive");
+
+    uint32_t Instr = 0b0000'0100'0010'0000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= b20 << 20;
+    Instr |= (imm4 - 1) << 16;
+    Instr |= op1 << 10;
+    Instr |= FEXCore::ToUnderlying(pattern) << 5;
+    Instr |= zdn.Idx();
     dc32(Instr);
   }
