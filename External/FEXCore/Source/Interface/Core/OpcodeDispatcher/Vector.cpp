@@ -1905,6 +1905,22 @@ void OpDispatchBuilder::VPSRAVDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
+void OpDispatchBuilder::VPSRLVOp(OpcodeArgs) {
+  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = GetSrcSize(Op);
+
+  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  OrderedNode *Vector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags, -1);
+  OrderedNode *ShiftVector = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], DstSize, Op->Flags, -1);
+  OrderedNode *Result = _VUShr(DstSize, SrcSize, Vector, ShiftVector);
+  if (Is128Bit) {
+    Result = _VMov(16, Result);
+  }
+
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
 void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
   OrderedNode *Res = _VDupElement(16, GetSrcSize(Op), Src, 0);
