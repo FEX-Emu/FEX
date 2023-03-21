@@ -2084,7 +2084,50 @@ DEF_OP(VUShl) {
 }
 
 DEF_OP(VUShr) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
+  const auto Op = IROp->C<IR::IROp_VUShr>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto MaxShift = ElementSize * 8;
+
+  const auto Dst = GetVReg(Node);
+  const auto ShiftVector = GetVReg(Op->ShiftVector.ID());
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE && Is256Bit) {
+    const auto Mask = PRED_TMP_32B.Merging();
+
+    dup_imm(SubRegSize, VTMP2.Z(), MaxShift);
+    umin(SubRegSize, VTMP2.Z(), Mask, VTMP2.Z(), ShiftVector.Z());
+
+    movprfx(Dst.Z(), Vector.Z());
+    lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP2.Z());
+  } else {
+    if (ElementSize < 8) {
+      movi(SubRegSize, VTMP1.Q(), MaxShift);
+      umin(SubRegSize, VTMP1.Q(), VTMP1.Q(), ShiftVector.Q());
+    } else {
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift);
+      dup(SubRegSize, VTMP1.Q(), TMP1.R());
+
+      // UMIN is silly on Adv.SIMD and doesn't have a variant that handles 64-bit elements
+      cmhi(SubRegSize, VTMP2.Q(), ShiftVector.Q(), VTMP1.Q());
+      bif(VTMP1.Q(), ShiftVector.Q(), VTMP2.Q());
+    }
+
+    // Need to invert shift values to perform a right shift with SSHL
+    // (USHR only has an immediate variant).
+    neg(SubRegSize, VTMP1.Q(), VTMP1.Q());
+    ushl(SubRegSize, Dst.Q(), Vector.Q(), VTMP1.Q());
+  }
 }
 
 DEF_OP(VSShr) {
