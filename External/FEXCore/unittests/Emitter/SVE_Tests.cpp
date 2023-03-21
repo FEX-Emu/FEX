@@ -2023,7 +2023,21 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate count") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec vector by predicate count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sqincp(SubRegSize::i16Bit, ZReg::z30, PReg::p15), "sqincp z30.h, p15");
+  TEST_SINGLE(sqincp(SubRegSize::i32Bit, ZReg::z30, PReg::p15), "sqincp z30.s, p15");
+  TEST_SINGLE(sqincp(SubRegSize::i64Bit, ZReg::z30, PReg::p15), "sqincp z30.d, p15");
+
+  TEST_SINGLE(uqincp(SubRegSize::i16Bit, ZReg::z30, PReg::p15), "uqincp z30.h, p15");
+  TEST_SINGLE(uqincp(SubRegSize::i32Bit, ZReg::z30, PReg::p15), "uqincp z30.s, p15");
+  TEST_SINGLE(uqincp(SubRegSize::i64Bit, ZReg::z30, PReg::p15), "uqincp z30.d, p15");
+
+  TEST_SINGLE(sqdecp(SubRegSize::i16Bit, ZReg::z30, PReg::p15), "sqdecp z30.h, p15");
+  TEST_SINGLE(sqdecp(SubRegSize::i32Bit, ZReg::z30, PReg::p15), "sqdecp z30.s, p15");
+  TEST_SINGLE(sqdecp(SubRegSize::i64Bit, ZReg::z30, PReg::p15), "sqdecp z30.d, p15");
+
+  TEST_SINGLE(uqdecp(SubRegSize::i16Bit, ZReg::z30, PReg::p15), "uqdecp z30.h, p15");
+  TEST_SINGLE(uqdecp(SubRegSize::i32Bit, ZReg::z30, PReg::p15), "uqdecp z30.s, p15");
+  TEST_SINGLE(uqdecp(SubRegSize::i64Bit, ZReg::z30, PReg::p15), "uqdecp z30.d, p15");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec register by predicate count") {
