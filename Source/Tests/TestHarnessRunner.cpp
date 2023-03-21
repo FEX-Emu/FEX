@@ -250,7 +250,6 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Context::Context::DestroyContext(CTX);
-  FEXCore::Context::ShutdownStaticTables();
 
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 

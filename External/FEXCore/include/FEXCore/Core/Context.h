@@ -291,5 +291,4 @@ namespace FEXCore::Context {
    * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup
    */
   FEX_DEFAULT_VISIBILITY void InitializeStaticTables(OperatingMode Mode = MODE_64BIT);
-  FEX_DEFAULT_VISIBILITY void ShutdownStaticTables();
 }

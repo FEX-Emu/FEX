@@ -521,7 +521,6 @@ int main(int argc, char **argv, char **const envp) {
   SignalDelegation.reset();
   FEXCore::Context::Context::DestroyContext(CTX);
 
-  FEXCore::Context::ShutdownStaticTables();
   FEXCore::Threads::Shutdown();
 
   Loader.FreeSections();

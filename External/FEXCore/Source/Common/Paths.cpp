@@ -14,8 +14,8 @@
 #include <unistd.h>
 
 namespace FEXCore::Paths {
-  fextl::unique_ptr<fextl::string> CachePath;
-  fextl::unique_ptr<fextl::string> EntryCache;
+  fextl::string CachePath{};
+  fextl::string EntryCache{};
 
   char const* FindUserHomeThroughUID() {
     auto passwd = getpwuid(geteuid());
@@ -47,9 +47,6 @@ namespace FEXCore::Paths {
   }
 
   void InitializePaths() {
-    CachePath = fextl::make_unique<fextl::string>();
-    EntryCache = fextl::make_unique<fextl::string>();
-
     char const *HomeDir = getenv("HOME");
 
     if (!HomeDir) {
@@ -62,34 +59,29 @@ namespace FEXCore::Paths {
 
     char *XDGDataDir = getenv("XDG_DATA_DIR");
     if (XDGDataDir) {
-      *CachePath = XDGDataDir;
+      CachePath = XDGDataDir;
     }
     else {
       if (HomeDir) {
-        *CachePath = HomeDir;
+        CachePath = HomeDir;
       }
     }
 
-    *CachePath += "/.fex-emu/";
-    *EntryCache = *CachePath + "/EntryCache/";
+    CachePath += "/.fex-emu/";
+    EntryCache = CachePath + "/EntryCache/";
 
     // Ensure the folder structure is created for our Data
-    if (!FHU::Filesystem::Exists(EntryCache->c_str()) &&
-        !FHU::Filesystem::CreateDirectories(*EntryCache)) {
-      LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", *EntryCache);
+    if (!FHU::Filesystem::Exists(EntryCache.c_str()) &&
+        !FHU::Filesystem::CreateDirectories(EntryCache)) {
+      LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", EntryCache);
     }
   }
 
-  void ShutdownPaths() {
-    CachePath.reset();
-    EntryCache.reset();
-  }
-
   fextl::string GetCachePath() {
-    return *CachePath;
+    return CachePath;
   }
 
   fextl::string GetEntryCachePath() {
-    return *EntryCache;
+    return EntryCache;
   }
 }
