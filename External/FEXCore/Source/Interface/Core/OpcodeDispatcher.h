@@ -526,6 +526,7 @@ public:
   void VPSLLDQOp(OpcodeArgs);
   template <size_t ElementSize>
   void VPSLLIOp(OpcodeArgs);
+  void VPSLLVOp(OpcodeArgs);
 
   template <size_t ElementSize>
   void VPSRAOp(OpcodeArgs);
@@ -808,6 +809,8 @@ private:
 
   template <size_t ElementSize>
   void AVXVectorVariableBlend(OpcodeArgs);
+
+  void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
   OrderedNode* AESKeyGenAssistImpl(OpcodeArgs);
   OrderedNode* AESIMCImpl(OpcodeArgs);

@@ -2726,17 +2726,47 @@ DEF_OP(VFCMPUNO) {
 }
 
 DEF_OP(VUShl) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
-}
-
-DEF_OP(VUShr) {
-  const auto Op = IROp->C<IR::IROp_VSShr>();
+  const auto Op = IROp->C<IR::IROp_VUShl>();
   const auto OpSize = IROp->Size;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const auto ElementSize = IROp->ElementSize;
   LOGMAN_THROW_AA_FMT(ElementSize == 4 || ElementSize == 8,
-                      "VSShr only supports 32-bit and 64-bit elements");
+                      "VUShl only supports 32-bit and 64-bit elements");
+
+  const auto Dst = GetDst(Node);
+  const auto ShiftVector = GetSrc(Op->ShiftVector.ID());
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
+  case 4:
+    if (Is256Bit) {
+      vpsllvd(ToYMM(Dst), ToYMM(Vector), ToYMM(ShiftVector));
+    } else {
+      vpsllvd(Dst, Vector, ShiftVector);
+    }
+    return;
+  case 8:
+    if (Is256Bit) {
+      vpsllvq(ToYMM(Dst), ToYMM(Vector), ToYMM(ShiftVector));
+    } else {
+      vpsllvq(Dst, Vector, ShiftVector);
+    }
+    return;
+  default:
+    LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+    return;
+  }
+}
+
+DEF_OP(VUShr) {
+  const auto Op = IROp->C<IR::IROp_VUShr>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto ElementSize = IROp->ElementSize;
+  LOGMAN_THROW_AA_FMT(ElementSize == 4 || ElementSize == 8,
+                      "VUShr only supports 32-bit and 64-bit elements");
 
   const auto Dst = GetDst(Node);
   const auto ShiftVector = GetSrc(Op->ShiftVector.ID());
