@@ -2093,7 +2093,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by predicat
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by predicate count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(incp(SubRegSize::i8Bit,  XReg::x30, PReg::p15), "incp x30, p15.b");
+  TEST_SINGLE(incp(SubRegSize::i16Bit, XReg::x30, PReg::p15), "incp x30, p15.h");
+  TEST_SINGLE(incp(SubRegSize::i32Bit, XReg::x30, PReg::p15), "incp x30, p15.s");
+  TEST_SINGLE(incp(SubRegSize::i64Bit, XReg::x30, PReg::p15), "incp x30, p15.d");
+
+  TEST_SINGLE(decp(SubRegSize::i8Bit,  XReg::x30, PReg::p15), "decp x30, p15.b");
+  TEST_SINGLE(decp(SubRegSize::i16Bit, XReg::x30, PReg::p15), "decp x30, p15.h");
+  TEST_SINGLE(decp(SubRegSize::i32Bit, XReg::x30, PReg::p15), "decp x30, p15.s");
+  TEST_SINGLE(decp(SubRegSize::i64Bit, XReg::x30, PReg::p15), "decp x30, p15.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE FFR write from predicate") {

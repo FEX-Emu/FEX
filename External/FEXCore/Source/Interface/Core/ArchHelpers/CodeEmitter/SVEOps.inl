@@ -1732,7 +1732,12 @@ public:
   }
 
   // SVE inc/dec register by predicate count
-  // XXX:
+  void incp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(1, 1, 0b00, 0b00, size, rdn, pm);
+  }
+  void decp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(1, 1, 0b00, 0b01, size, rdn, pm);
+  }
 
   // SVE Write FFR
   // SVE FFR write from predicate
