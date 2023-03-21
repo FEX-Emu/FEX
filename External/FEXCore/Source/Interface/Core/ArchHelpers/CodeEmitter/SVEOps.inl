@@ -1058,7 +1058,19 @@ public:
   }
 
   // SVE element count
-  // XXX:
+  void cntb(XRegister rd, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1000, SubRegSize::i8Bit, ZRegister{rd.Idx()}, pattern, imm);
+  }
+  void cnth(XRegister rd, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1000, SubRegSize::i16Bit, ZRegister{rd.Idx()}, pattern, imm);
+  }
+  void cntw(XRegister rd, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1000, SubRegSize::i32Bit, ZRegister{rd.Idx()}, pattern, imm);
+  }
+  void cntd(XRegister rd, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1000, SubRegSize::i64Bit, ZRegister{rd.Idx()}, pattern, imm);
+  }
+
   // SVE inc/dec vector by element count
   // XXX:
   // SVE inc/dec register by element count

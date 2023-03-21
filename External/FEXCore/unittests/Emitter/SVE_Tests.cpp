@@ -1117,7 +1117,21 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec vector 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cntb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cntb x30, pow2");
+  TEST_SINGLE(cntb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cntb x30, vl256, mul #7");
+  TEST_SINGLE(cntb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cntb x30, all, mul #16");
+
+  TEST_SINGLE(cnth(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cnth x30, pow2");
+  TEST_SINGLE(cnth(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cnth x30, vl256, mul #7");
+  TEST_SINGLE(cnth(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cnth x30, all, mul #16");
+
+  TEST_SINGLE(cntw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cntw x30, pow2");
+  TEST_SINGLE(cntw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cntw x30, vl256, mul #7");
+  TEST_SINGLE(cntw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cntw x30, all, mul #16");
+
+  TEST_SINGLE(cntd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cntd x30, pow2");
+  TEST_SINGLE(cntd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cntd x30, vl256, mul #7");
+  TEST_SINGLE(cntd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cntd x30, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element count") {
