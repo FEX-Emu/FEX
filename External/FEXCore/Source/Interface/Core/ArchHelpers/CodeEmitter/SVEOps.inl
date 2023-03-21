@@ -1072,7 +1072,25 @@ public:
   }
 
   // SVE inc/dec vector by element count
-  // XXX:
+  void inch(ZRegister zdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b0000, SubRegSize::i16Bit, zdn, pattern, imm);
+  }
+  void dech(ZRegister zdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b0001, SubRegSize::i16Bit, zdn, pattern, imm);
+  }
+  void incw(ZRegister zdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b0000, SubRegSize::i32Bit, zdn, pattern, imm);
+  }
+  void decw(ZRegister zdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b0001, SubRegSize::i32Bit, zdn, pattern, imm);
+  }
+  void incd(ZRegister zdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b0000, SubRegSize::i64Bit, zdn, pattern, imm);
+  }
+  void decd(ZRegister zdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b0001, SubRegSize::i64Bit, zdn, pattern, imm);
+  }
+
   // SVE inc/dec register by element count
   // XXX:
   // SVE saturating inc/dec register by element count

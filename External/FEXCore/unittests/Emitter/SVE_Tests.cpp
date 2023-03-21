@@ -1135,7 +1135,29 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE element count") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "inch z30.h, pow2");
+  TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "inch z30.h, vl256, mul #7");
+  TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "inch z30.h, all, mul #16");
+  
+  TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "dech z30.h, pow2");
+  TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "dech z30.h, vl256, mul #7");
+  TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "dech z30.h, all, mul #16");
+
+  TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "incw z30.s, pow2");
+  TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "incw z30.s, vl256, mul #7");
+  TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "incw z30.s, all, mul #16");
+  
+  TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "decw z30.s, pow2");
+  TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "decw z30.s, vl256, mul #7");
+  TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "decw z30.s, all, mul #16");
+
+  TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "incd z30.d, pow2");
+  TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "incd z30.d, vl256, mul #7");
+  TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "incd z30.d, all, mul #16");
+  
+  TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "decd z30.d, pow2");
+  TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "decd z30.d, vl256, mul #7");
+  TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "decd z30.d, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by element count") {
