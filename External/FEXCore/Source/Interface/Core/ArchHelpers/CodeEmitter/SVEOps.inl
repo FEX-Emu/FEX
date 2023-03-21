@@ -1118,7 +1118,105 @@ public:
   }
 
   // SVE saturating inc/dec register by element count
-  // XXX:
+  void sqincb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1100, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqincb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1100, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqincb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1101, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqincb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1101, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdecb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1110, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdecb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1110, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdecb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1111, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdecb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1111, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+
+  void sqinch(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1100, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqinch(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1100, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqinch(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1101, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqinch(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1101, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdech(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1110, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdech(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1110, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdech(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1111, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdech(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1111, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+
+  void sqincw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1100, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqincw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1100, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqincw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1101, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqincw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1101, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdecw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1110, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdecw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1110, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdecw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1111, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdecw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1111, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+
+  void sqincd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1100, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqincd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1100, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqincd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1101, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqincd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1101, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdecd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1110, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void sqdecd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1110, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdecd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1111, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void uqdecd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(0, 0b1111, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
 
   // SVE Bitwise Immediate
   // XXX: DUPM
