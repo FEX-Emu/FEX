@@ -2152,12 +2152,11 @@ DEF_OP(VSShr) {
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    dup_imm(SubRegSize, VTMP2.Z(), MaxShift);
-    umin(SubRegSize, VTMP2.Z(), Mask, VTMP2.Z(), ShiftVector.Z());
+    dup_imm(SubRegSize, VTMP1.Z(), MaxShift);
+    umin(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), ShiftVector.Z());
 
-    movprfx(VTMP1.Z(), Vector.Z());
-    asr(SubRegSize, VTMP1.Z(), Mask, VTMP1.Z(), VTMP2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(Dst.Z(), Vector.Z());
+    asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
     LOGMAN_THROW_AA_FMT(ElementSize != 8, "Adv. SIMD UMIN doesn't handle 64-bit values");
 
