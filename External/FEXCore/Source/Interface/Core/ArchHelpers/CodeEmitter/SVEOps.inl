@@ -1092,7 +1092,31 @@ public:
   }
 
   // SVE inc/dec register by element count
-  // XXX:
+  void incb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1000, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void decb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1001, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void inch(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1000, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void dech(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1001, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void incw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1000, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void decw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1001, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void incd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1000, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+  void decd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
+    SVEElementCount(1, 0b1001, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+  }
+
   // SVE saturating inc/dec register by element count
   // XXX:
 

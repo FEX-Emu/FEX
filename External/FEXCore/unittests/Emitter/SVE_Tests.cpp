@@ -1161,7 +1161,37 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incb x30, pow2");
+  TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incb x30, vl256, mul #7");
+  TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incb x30, all, mul #16");
+  
+  TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decb x30, pow2");
+  TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decb x30, vl256, mul #7");
+  TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decb x30, all, mul #16");
+
+  TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "inch x30, pow2");
+  TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_VL256, 7),  "inch x30, vl256, mul #7");
+  TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_ALL  , 16), "inch x30, all, mul #16");
+  
+  TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "dech x30, pow2");
+  TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_VL256, 7),  "dech x30, vl256, mul #7");
+  TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_ALL  , 16), "dech x30, all, mul #16");
+
+  TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incw x30, pow2");
+  TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incw x30, vl256, mul #7");
+  TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incw x30, all, mul #16");
+  
+  TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decw x30, pow2");
+  TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decw x30, vl256, mul #7");
+  TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decw x30, all, mul #16");
+
+  TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incd x30, pow2");
+  TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incd x30, vl256, mul #7");
+  TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incd x30, all, mul #16");
+  
+  TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decd x30, pow2");
+  TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decd x30, vl256, mul #7");
+  TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decd x30, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec register by element count") {
