@@ -2083,7 +2083,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec registe
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by predicate count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(incp(SubRegSize::i16Bit, ZReg::z30, PReg::p15), "incp z30.h, p15");
+  TEST_SINGLE(incp(SubRegSize::i32Bit, ZReg::z30, PReg::p15), "incp z30.s, p15");
+  TEST_SINGLE(incp(SubRegSize::i64Bit, ZReg::z30, PReg::p15), "incp z30.d, p15");
+
+  TEST_SINGLE(decp(SubRegSize::i16Bit, ZReg::z30, PReg::p15), "decp z30.h, p15");
+  TEST_SINGLE(decp(SubRegSize::i32Bit, ZReg::z30, PReg::p15), "decp z30.s, p15");
+  TEST_SINGLE(decp(SubRegSize::i64Bit, ZReg::z30, PReg::p15), "decp z30.d, p15");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by predicate count") {

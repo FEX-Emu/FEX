@@ -1724,7 +1724,13 @@ public:
   }
 
   // SVE inc/dec vector by predicate count
-  // XXX:
+  void incp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(1, 0, 0b00, 0b00, size, zdn, pm);
+  }
+  void decp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(1, 0, 0b00, 0b01, size, zdn, pm);
+  }
+
   // SVE inc/dec register by predicate count
   // XXX:
 
