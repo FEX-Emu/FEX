@@ -2730,7 +2730,37 @@ DEF_OP(VUShl) {
 }
 
 DEF_OP(VUShr) {
-  LOGMAN_MSG_A_FMT("Unimplemented");
+  const auto Op = IROp->C<IR::IROp_VSShr>();
+  const auto OpSize = IROp->Size;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto ElementSize = IROp->ElementSize;
+  LOGMAN_THROW_AA_FMT(ElementSize == 4 || ElementSize == 8,
+                      "VSShr only supports 32-bit and 64-bit elements");
+
+  const auto Dst = GetDst(Node);
+  const auto ShiftVector = GetSrc(Op->ShiftVector.ID());
+  const auto Vector = GetSrc(Op->Vector.ID());
+
+  switch (ElementSize) {
+  case 4:
+    if (Is256Bit) {
+      vpsrlvd(ToYMM(Dst), ToYMM(Vector), ToYMM(ShiftVector));
+    } else {
+      vpsrlvd(Dst, Vector, ShiftVector);
+    }
+    return;
+  case 8:
+    if (Is256Bit) {
+      vpsrlvq(ToYMM(Dst), ToYMM(Vector), ToYMM(ShiftVector));
+    } else {
+      vpsrlvq(Dst, Vector, ShiftVector);
+    }
+    return;
+  default:
+    LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+    return;
+  }
 }
 
 DEF_OP(VSShr) {
