@@ -1067,23 +1067,261 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE constructive prefix (unpre
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec vector by element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sqinch(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "sqinch z30.h, pow2");
+  TEST_SINGLE(sqinch(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "sqinch z30.h, vl256, mul #7");
+  TEST_SINGLE(sqinch(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "sqinch z30.h, all, mul #16");
+
+  TEST_SINGLE(uqinch(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "uqinch z30.h, pow2");
+  TEST_SINGLE(uqinch(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "uqinch z30.h, vl256, mul #7");
+  TEST_SINGLE(uqinch(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "uqinch z30.h, all, mul #16");
+
+  TEST_SINGLE(sqdech(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "sqdech z30.h, pow2");
+  TEST_SINGLE(sqdech(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "sqdech z30.h, vl256, mul #7");
+  TEST_SINGLE(sqdech(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "sqdech z30.h, all, mul #16");
+
+  TEST_SINGLE(uqdech(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "uqdech z30.h, pow2");
+  TEST_SINGLE(uqdech(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "uqdech z30.h, vl256, mul #7");
+  TEST_SINGLE(uqdech(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "uqdech z30.h, all, mul #16");
+
+  TEST_SINGLE(sqincw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "sqincw z30.s, pow2");
+  TEST_SINGLE(sqincw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "sqincw z30.s, vl256, mul #7");
+  TEST_SINGLE(sqincw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "sqincw z30.s, all, mul #16");
+
+  TEST_SINGLE(uqincw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "uqincw z30.s, pow2");
+  TEST_SINGLE(uqincw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "uqincw z30.s, vl256, mul #7");
+  TEST_SINGLE(uqincw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "uqincw z30.s, all, mul #16");
+
+  TEST_SINGLE(sqdecw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "sqdecw z30.s, pow2");
+  TEST_SINGLE(sqdecw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "sqdecw z30.s, vl256, mul #7");
+  TEST_SINGLE(sqdecw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "sqdecw z30.s, all, mul #16");
+
+  TEST_SINGLE(uqdecw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "uqdecw z30.s, pow2");
+  TEST_SINGLE(uqdecw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "uqdecw z30.s, vl256, mul #7");
+  TEST_SINGLE(uqdecw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "uqdecw z30.s, all, mul #16");
+
+  TEST_SINGLE(sqincd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "sqincd z30.d, pow2");
+  TEST_SINGLE(sqincd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "sqincd z30.d, vl256, mul #7");
+  TEST_SINGLE(sqincd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "sqincd z30.d, all, mul #16");
+
+  TEST_SINGLE(uqincd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "uqincd z30.d, pow2");
+  TEST_SINGLE(uqincd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "uqincd z30.d, vl256, mul #7");
+  TEST_SINGLE(uqincd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "uqincd z30.d, all, mul #16");
+
+  TEST_SINGLE(sqdecd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "sqdecd z30.d, pow2");
+  TEST_SINGLE(sqdecd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "sqdecd z30.d, vl256, mul #7");
+  TEST_SINGLE(sqdecd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "sqdecd z30.d, all, mul #16");
+
+  TEST_SINGLE(uqdecd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "uqdecd z30.d, pow2");
+  TEST_SINGLE(uqdecd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "uqdecd z30.d, vl256, mul #7");
+  TEST_SINGLE(uqdecd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "uqdecd z30.d, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cntb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cntb x30, pow2");
+  TEST_SINGLE(cntb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cntb x30, vl256, mul #7");
+  TEST_SINGLE(cntb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cntb x30, all, mul #16");
+
+  TEST_SINGLE(cnth(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cnth x30, pow2");
+  TEST_SINGLE(cnth(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cnth x30, vl256, mul #7");
+  TEST_SINGLE(cnth(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cnth x30, all, mul #16");
+
+  TEST_SINGLE(cntw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cntw x30, pow2");
+  TEST_SINGLE(cntw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cntw x30, vl256, mul #7");
+  TEST_SINGLE(cntw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cntw x30, all, mul #16");
+
+  TEST_SINGLE(cntd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "cntd x30, pow2");
+  TEST_SINGLE(cntd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "cntd x30, vl256, mul #7");
+  TEST_SINGLE(cntd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "cntd x30, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "inch z30.h, pow2");
+  TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "inch z30.h, vl256, mul #7");
+  TEST_SINGLE(inch(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "inch z30.h, all, mul #16");
+  
+  TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "dech z30.h, pow2");
+  TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "dech z30.h, vl256, mul #7");
+  TEST_SINGLE(dech(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "dech z30.h, all, mul #16");
+
+  TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "incw z30.s, pow2");
+  TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "incw z30.s, vl256, mul #7");
+  TEST_SINGLE(incw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "incw z30.s, all, mul #16");
+  
+  TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "decw z30.s, pow2");
+  TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "decw z30.s, vl256, mul #7");
+  TEST_SINGLE(decw(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "decw z30.s, all, mul #16");
+
+  TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "incd z30.d, pow2");
+  TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "incd z30.d, vl256, mul #7");
+  TEST_SINGLE(incd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "incd z30.d, all, mul #16");
+  
+  TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_POW2 , 1),  "decd z30.d, pow2");
+  TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_VL256, 7),  "decd z30.d, vl256, mul #7");
+  TEST_SINGLE(decd(ZReg::z30, PredicatePattern::SVE_ALL  , 16), "decd z30.d, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec register by element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incb x30, pow2");
+  TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incb x30, vl256, mul #7");
+  TEST_SINGLE(incb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incb x30, all, mul #16");
+  
+  TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decb x30, pow2");
+  TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decb x30, vl256, mul #7");
+  TEST_SINGLE(decb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decb x30, all, mul #16");
+
+  TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "inch x30, pow2");
+  TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_VL256, 7),  "inch x30, vl256, mul #7");
+  TEST_SINGLE(inch(XReg::x30, PredicatePattern::SVE_ALL  , 16), "inch x30, all, mul #16");
+  
+  TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "dech x30, pow2");
+  TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_VL256, 7),  "dech x30, vl256, mul #7");
+  TEST_SINGLE(dech(XReg::x30, PredicatePattern::SVE_ALL  , 16), "dech x30, all, mul #16");
+
+  TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incw x30, pow2");
+  TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incw x30, vl256, mul #7");
+  TEST_SINGLE(incw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incw x30, all, mul #16");
+  
+  TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decw x30, pow2");
+  TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decw x30, vl256, mul #7");
+  TEST_SINGLE(decw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decw x30, all, mul #16");
+
+  TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "incd x30, pow2");
+  TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "incd x30, vl256, mul #7");
+  TEST_SINGLE(incd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "incd x30, all, mul #16");
+  
+  TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "decd x30, pow2");
+  TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "decd x30, vl256, mul #7");
+  TEST_SINGLE(decd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "decd x30, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec register by element count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sqincb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqincb x30, pow2");
+  TEST_SINGLE(sqincb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqincb x30, vl256, mul #7");
+  TEST_SINGLE(sqincb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqincb x30, all, mul #16");
+
+  TEST_SINGLE(sqincb(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqincb x30, w30, pow2");
+  TEST_SINGLE(sqincb(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqincb x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqincb(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqincb x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqincb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqincb x30, pow2");
+  TEST_SINGLE(uqincb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqincb x30, vl256, mul #7");
+  TEST_SINGLE(uqincb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqincb x30, all, mul #16");
+
+  TEST_SINGLE(uqincb(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqincb w30, pow2");
+  TEST_SINGLE(uqincb(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqincb w30, vl256, mul #7");
+  TEST_SINGLE(uqincb(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqincb w30, all, mul #16");
+
+  TEST_SINGLE(sqdecb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqdecb x30, pow2");
+  TEST_SINGLE(sqdecb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqdecb x30, vl256, mul #7");
+  TEST_SINGLE(sqdecb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqdecb x30, all, mul #16");
+
+  TEST_SINGLE(sqdecb(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqdecb x30, w30, pow2");
+  TEST_SINGLE(sqdecb(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqdecb x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqdecb(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqdecb x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqdecb(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqdecb x30, pow2");
+  TEST_SINGLE(uqdecb(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqdecb x30, vl256, mul #7");
+  TEST_SINGLE(uqdecb(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqdecb x30, all, mul #16");
+
+  TEST_SINGLE(uqdecb(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqdecb w30, pow2");
+  TEST_SINGLE(uqdecb(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqdecb w30, vl256, mul #7");
+  TEST_SINGLE(uqdecb(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqdecb w30, all, mul #16");
+
+  TEST_SINGLE(sqinch(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqinch x30, pow2");
+  TEST_SINGLE(sqinch(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqinch x30, vl256, mul #7");
+  TEST_SINGLE(sqinch(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqinch x30, all, mul #16");
+
+  TEST_SINGLE(sqinch(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqinch x30, w30, pow2");
+  TEST_SINGLE(sqinch(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqinch x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqinch(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqinch x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqinch(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqinch x30, pow2");
+  TEST_SINGLE(uqinch(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqinch x30, vl256, mul #7");
+  TEST_SINGLE(uqinch(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqinch x30, all, mul #16");
+
+  TEST_SINGLE(uqinch(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqinch w30, pow2");
+  TEST_SINGLE(uqinch(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqinch w30, vl256, mul #7");
+  TEST_SINGLE(uqinch(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqinch w30, all, mul #16");
+
+  TEST_SINGLE(sqdech(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqdech x30, pow2");
+  TEST_SINGLE(sqdech(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqdech x30, vl256, mul #7");
+  TEST_SINGLE(sqdech(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqdech x30, all, mul #16");
+
+  TEST_SINGLE(sqdech(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqdech x30, w30, pow2");
+  TEST_SINGLE(sqdech(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqdech x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqdech(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqdech x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqdech(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqdech x30, pow2");
+  TEST_SINGLE(uqdech(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqdech x30, vl256, mul #7");
+  TEST_SINGLE(uqdech(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqdech x30, all, mul #16");
+
+  TEST_SINGLE(uqdech(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqdech w30, pow2");
+  TEST_SINGLE(uqdech(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqdech w30, vl256, mul #7");
+  TEST_SINGLE(uqdech(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqdech w30, all, mul #16");
+
+  TEST_SINGLE(sqincw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqincw x30, pow2");
+  TEST_SINGLE(sqincw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqincw x30, vl256, mul #7");
+  TEST_SINGLE(sqincw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqincw x30, all, mul #16");
+
+  TEST_SINGLE(sqincw(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqincw x30, w30, pow2");
+  TEST_SINGLE(sqincw(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqincw x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqincw(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqincw x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqincw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqincw x30, pow2");
+  TEST_SINGLE(uqincw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqincw x30, vl256, mul #7");
+  TEST_SINGLE(uqincw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqincw x30, all, mul #16");
+
+  TEST_SINGLE(uqincw(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqincw w30, pow2");
+  TEST_SINGLE(uqincw(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqincw w30, vl256, mul #7");
+  TEST_SINGLE(uqincw(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqincw w30, all, mul #16");
+
+  TEST_SINGLE(sqdecw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqdecw x30, pow2");
+  TEST_SINGLE(sqdecw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqdecw x30, vl256, mul #7");
+  TEST_SINGLE(sqdecw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqdecw x30, all, mul #16");
+
+  TEST_SINGLE(sqdecw(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqdecw x30, w30, pow2");
+  TEST_SINGLE(sqdecw(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqdecw x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqdecw(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqdecw x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqdecw(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqdecw x30, pow2");
+  TEST_SINGLE(uqdecw(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqdecw x30, vl256, mul #7");
+  TEST_SINGLE(uqdecw(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqdecw x30, all, mul #16");
+
+  TEST_SINGLE(uqdecw(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqdecw w30, pow2");
+  TEST_SINGLE(uqdecw(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqdecw w30, vl256, mul #7");
+  TEST_SINGLE(uqdecw(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqdecw w30, all, mul #16");
+
+  TEST_SINGLE(sqincd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqincd x30, pow2");
+  TEST_SINGLE(sqincd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqincd x30, vl256, mul #7");
+  TEST_SINGLE(sqincd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqincd x30, all, mul #16");
+
+  TEST_SINGLE(sqincd(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqincd x30, w30, pow2");
+  TEST_SINGLE(sqincd(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqincd x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqincd(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqincd x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqincd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqincd x30, pow2");
+  TEST_SINGLE(uqincd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqincd x30, vl256, mul #7");
+  TEST_SINGLE(uqincd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqincd x30, all, mul #16");
+
+  TEST_SINGLE(uqincd(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqincd w30, pow2");
+  TEST_SINGLE(uqincd(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqincd w30, vl256, mul #7");
+  TEST_SINGLE(uqincd(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqincd w30, all, mul #16");
+
+  TEST_SINGLE(sqdecd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "sqdecd x30, pow2");
+  TEST_SINGLE(sqdecd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "sqdecd x30, vl256, mul #7");
+  TEST_SINGLE(sqdecd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "sqdecd x30, all, mul #16");
+
+  TEST_SINGLE(sqdecd(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "sqdecd x30, w30, pow2");
+  TEST_SINGLE(sqdecd(WReg::w30, PredicatePattern::SVE_VL256, 7),  "sqdecd x30, w30, vl256, mul #7");
+  TEST_SINGLE(sqdecd(WReg::w30, PredicatePattern::SVE_ALL  , 16), "sqdecd x30, w30, all, mul #16");
+
+  TEST_SINGLE(uqdecd(XReg::x30, PredicatePattern::SVE_POW2 , 1),  "uqdecd x30, pow2");
+  TEST_SINGLE(uqdecd(XReg::x30, PredicatePattern::SVE_VL256, 7),  "uqdecd x30, vl256, mul #7");
+  TEST_SINGLE(uqdecd(XReg::x30, PredicatePattern::SVE_ALL  , 16), "uqdecd x30, all, mul #16");
+
+  TEST_SINGLE(uqdecd(WReg::w30, PredicatePattern::SVE_POW2 , 1),  "uqdecd w30, pow2");
+  TEST_SINGLE(uqdecd(WReg::w30, PredicatePattern::SVE_VL256, 7),  "uqdecd w30, vl256, mul #7");
+  TEST_SINGLE(uqdecd(WReg::w30, PredicatePattern::SVE_ALL  , 16), "uqdecd w30, all, mul #16");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Bitwise Immediate") {
