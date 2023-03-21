@@ -2041,7 +2041,45 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec vector 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE saturating inc/dec register by predicate count") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sqincp(SubRegSize::i8Bit,  XReg::x30, PReg::p15), "sqincp x30, p15.b");
+  TEST_SINGLE(sqincp(SubRegSize::i16Bit, XReg::x30, PReg::p15), "sqincp x30, p15.h");
+  TEST_SINGLE(sqincp(SubRegSize::i32Bit, XReg::x30, PReg::p15), "sqincp x30, p15.s");
+  TEST_SINGLE(sqincp(SubRegSize::i64Bit, XReg::x30, PReg::p15), "sqincp x30, p15.d");
+
+  TEST_SINGLE(sqincp(SubRegSize::i8Bit,  XReg::x30, PReg::p15, WReg::w30), "sqincp x30, p15.b, w30");
+  TEST_SINGLE(sqincp(SubRegSize::i16Bit, XReg::x30, PReg::p15, WReg::w30), "sqincp x30, p15.h, w30");
+  TEST_SINGLE(sqincp(SubRegSize::i32Bit, XReg::x30, PReg::p15, WReg::w30), "sqincp x30, p15.s, w30");
+  TEST_SINGLE(sqincp(SubRegSize::i64Bit, XReg::x30, PReg::p15, WReg::w30), "sqincp x30, p15.d, w30");
+
+  TEST_SINGLE(uqincp(SubRegSize::i8Bit,  XReg::x30, PReg::p15), "uqincp x30, p15.b");
+  TEST_SINGLE(uqincp(SubRegSize::i16Bit, XReg::x30, PReg::p15), "uqincp x30, p15.h");
+  TEST_SINGLE(uqincp(SubRegSize::i32Bit, XReg::x30, PReg::p15), "uqincp x30, p15.s");
+  TEST_SINGLE(uqincp(SubRegSize::i64Bit, XReg::x30, PReg::p15), "uqincp x30, p15.d");
+
+  TEST_SINGLE(uqincp(SubRegSize::i8Bit,  WReg::w30, PReg::p15), "uqincp w30, p15.b");
+  TEST_SINGLE(uqincp(SubRegSize::i16Bit, WReg::w30, PReg::p15), "uqincp w30, p15.h");
+  TEST_SINGLE(uqincp(SubRegSize::i32Bit, WReg::w30, PReg::p15), "uqincp w30, p15.s");
+  TEST_SINGLE(uqincp(SubRegSize::i64Bit, WReg::w30, PReg::p15), "uqincp w30, p15.d");
+
+  TEST_SINGLE(sqdecp(SubRegSize::i8Bit,  XReg::x30, PReg::p15), "sqdecp x30, p15.b");
+  TEST_SINGLE(sqdecp(SubRegSize::i16Bit, XReg::x30, PReg::p15), "sqdecp x30, p15.h");
+  TEST_SINGLE(sqdecp(SubRegSize::i32Bit, XReg::x30, PReg::p15), "sqdecp x30, p15.s");
+  TEST_SINGLE(sqdecp(SubRegSize::i64Bit, XReg::x30, PReg::p15), "sqdecp x30, p15.d");
+
+  TEST_SINGLE(sqdecp(SubRegSize::i8Bit,  XReg::x30, PReg::p15, WReg::w30), "sqdecp x30, p15.b, w30");
+  TEST_SINGLE(sqdecp(SubRegSize::i16Bit, XReg::x30, PReg::p15, WReg::w30), "sqdecp x30, p15.h, w30");
+  TEST_SINGLE(sqdecp(SubRegSize::i32Bit, XReg::x30, PReg::p15, WReg::w30), "sqdecp x30, p15.s, w30");
+  TEST_SINGLE(sqdecp(SubRegSize::i64Bit, XReg::x30, PReg::p15, WReg::w30), "sqdecp x30, p15.d, w30");
+
+  TEST_SINGLE(uqdecp(SubRegSize::i8Bit,  XReg::x30, PReg::p15), "uqdecp x30, p15.b");
+  TEST_SINGLE(uqdecp(SubRegSize::i16Bit, XReg::x30, PReg::p15), "uqdecp x30, p15.h");
+  TEST_SINGLE(uqdecp(SubRegSize::i32Bit, XReg::x30, PReg::p15), "uqdecp x30, p15.s");
+  TEST_SINGLE(uqdecp(SubRegSize::i64Bit, XReg::x30, PReg::p15), "uqdecp x30, p15.d");
+
+  TEST_SINGLE(uqdecp(SubRegSize::i8Bit,  WReg::w30, PReg::p15), "uqdecp w30, p15.b");
+  TEST_SINGLE(uqdecp(SubRegSize::i16Bit, WReg::w30, PReg::p15), "uqdecp w30, p15.h");
+  TEST_SINGLE(uqdecp(SubRegSize::i32Bit, WReg::w30, PReg::p15), "uqdecp w30, p15.s");
+  TEST_SINGLE(uqdecp(SubRegSize::i64Bit, WReg::w30, PReg::p15), "uqdecp w30, p15.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE inc/dec vector by predicate count") {

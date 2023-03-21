@@ -1696,7 +1696,33 @@ public:
   }
 
   // SVE saturating inc/dec register by predicate count
-  // XXX:
+  void sqincp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b00, size, rdn, pm);
+  }
+  void sqincp(SubRegSize size, XRegister rdn, PRegister pm, [[maybe_unused]] WRegister wn) {
+    LOGMAN_THROW_A_FMT(rdn.Idx() == wn.Idx(), "rdn and wn must be the same");
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b00, size, rdn, pm);
+  }
+  void uqincp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b01, size, rdn, pm);
+  }
+  void uqincp(SubRegSize size, WRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b01, size, rdn, pm);
+  }
+  void sqdecp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b10, size, rdn, pm);
+  }
+  void sqdecp(SubRegSize size, XRegister rdn, PRegister pm, [[maybe_unused]] WRegister wn) {
+    LOGMAN_THROW_A_FMT(rdn.Idx() == wn.Idx(), "rdn and wn must be the same");
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b10, size, rdn, pm);
+  }
+  void uqdecp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b11, size, rdn, pm);
+  }
+  void uqdecp(SubRegSize size, WRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b11, size, rdn, pm);
+  }
+
   // SVE inc/dec vector by predicate count
   // XXX:
   // SVE inc/dec register by predicate count
