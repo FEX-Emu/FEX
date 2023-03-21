@@ -1682,13 +1682,62 @@ public:
 
   // SVE Inc/Dec by Predicate Count
   // SVE saturating inc/dec vector by predicate count
-  // XXX:
+  void sqincp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(0, 0, 0b00, 0b00, size, zdn, pm);
+  }
+  void uqincp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(0, 0, 0b00, 0b01, size, zdn, pm);
+  }
+  void sqdecp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(0, 0, 0b00, 0b10, size, zdn, pm);
+  }
+  void uqdecp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(0, 0, 0b00, 0b11, size, zdn, pm);
+  }
+
   // SVE saturating inc/dec register by predicate count
-  // XXX:
+  void sqincp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b00, size, rdn, pm);
+  }
+  void sqincp(SubRegSize size, XRegister rdn, PRegister pm, [[maybe_unused]] WRegister wn) {
+    LOGMAN_THROW_A_FMT(rdn.Idx() == wn.Idx(), "rdn and wn must be the same");
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b00, size, rdn, pm);
+  }
+  void uqincp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b01, size, rdn, pm);
+  }
+  void uqincp(SubRegSize size, WRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b01, size, rdn, pm);
+  }
+  void sqdecp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b10, size, rdn, pm);
+  }
+  void sqdecp(SubRegSize size, XRegister rdn, PRegister pm, [[maybe_unused]] WRegister wn) {
+    LOGMAN_THROW_A_FMT(rdn.Idx() == wn.Idx(), "rdn and wn must be the same");
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b10, size, rdn, pm);
+  }
+  void uqdecp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b11, size, rdn, pm);
+  }
+  void uqdecp(SubRegSize size, WRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b11, size, rdn, pm);
+  }
+
   // SVE inc/dec vector by predicate count
-  // XXX:
+  void incp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(1, 0, 0b00, 0b00, size, zdn, pm);
+  }
+  void decp(SubRegSize size, ZRegister zdn, PRegister pm) {
+    SVEIncDecPredicateCountVector(1, 0, 0b00, 0b01, size, zdn, pm);
+  }
+
   // SVE inc/dec register by predicate count
-  // XXX:
+  void incp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(1, 1, 0b00, 0b00, size, rdn, pm);
+  }
+  void decp(SubRegSize size, XRegister rdn, PRegister pm) {
+    SVEIncDecPredicateCountScalar(1, 1, 0b00, 0b01, size, rdn, pm);
+  }
 
   // SVE Write FFR
   // SVE FFR write from predicate
@@ -4407,4 +4456,22 @@ private:
     Instr |= FEXCore::ToUnderlying(pattern) << 5;
     Instr |= zdn.Idx();
     dc32(Instr);
+  }
+
+  void SVEIncDecPredicateCountScalar(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, Register rdn, PRegister pm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+
+    uint32_t Instr = 0b0010'0101'0010'1000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= op0 << 18;
+    Instr |= b16 << 16;
+    Instr |= op1 << 11;
+    Instr |= opc << 9;
+    Instr |= pm.Idx() << 5;
+    Instr |= rdn.Idx();
+    dc32(Instr);
+  }
+  void SVEIncDecPredicateCountVector(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, ZRegister zdn, PRegister pm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Cannot use 8-bit element size");
+    SVEIncDecPredicateCountScalar(op0, op1, opc, b16, size, Register{zdn.Idx()}, pm);
   }
