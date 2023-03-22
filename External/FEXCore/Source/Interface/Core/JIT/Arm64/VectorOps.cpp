@@ -2163,7 +2163,7 @@ DEF_OP(VUShr) {
       bif(VTMP1.Q(), ShiftVector.Q(), VTMP2.Q());
     }
 
-    // Need to invert shift values to perform a right shift with SSHL
+    // Need to invert shift values to perform a right shift with USHL
     // (USHR only has an immediate variant).
     neg(SubRegSize, VTMP1.Q(), VTMP1.Q());
     ushl(SubRegSize, Dst.Q(), Vector.Q(), VTMP1.Q());
