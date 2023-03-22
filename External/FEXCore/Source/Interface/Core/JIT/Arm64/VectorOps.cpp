@@ -2198,10 +2198,17 @@ DEF_OP(VSShr) {
     movprfx(Dst.Z(), Vector.Z());
     asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), VTMP1.Z());
   } else {
-    LOGMAN_THROW_AA_FMT(ElementSize != 8, "Adv. SIMD UMIN doesn't handle 64-bit values");
+    if (ElementSize < 8) {
+      movi(SubRegSize, VTMP1.Q(), MaxShift);
+      umin(SubRegSize, VTMP1.Q(), VTMP1.Q(), ShiftVector.Q());
+    } else {
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, MaxShift);
+      dup(SubRegSize, VTMP1.Q(), TMP1.R());
 
-    movi(SubRegSize, VTMP1.Q(), MaxShift);
-    umin(SubRegSize, VTMP1.Q(), VTMP1.Q(), ShiftVector.Q());
+      // UMIN is silly on Adv.SIMD and doesn't have a variant that handles 64-bit elements
+      cmhi(SubRegSize, VTMP2.Q(), ShiftVector.Q(), VTMP1.Q());
+      bif(VTMP1.Q(), ShiftVector.Q(), VTMP2.Q());
+    }
 
     // Need to invert shift values to perform a right shift with SSHL
     // (SSHR only has an immediate variant).
