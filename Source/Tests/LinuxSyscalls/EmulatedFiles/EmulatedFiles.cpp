@@ -14,6 +14,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/sstream.h>
 
@@ -672,9 +673,7 @@ namespace FEX::EmulatedFile {
     FDReadCreators["/sys/devices/system/cpu/online"] = NumCPUCores;
     FDReadCreators["/sys/devices/system/cpu/present"] = NumCPUCores;
 
-    fextl::string procAuxv = "/proc/";
-    procAuxv += std::to_string(getpid());
-    procAuxv += "/auxv";
+    fextl::string procAuxv = fextl::fmt::format("/proc/{}/auxv", getpid());
 
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
     FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
@@ -698,9 +697,7 @@ namespace FEX::EmulatedFile {
     };
 
     FDReadCreators["/proc/self/cmdline"] = cmdline_handler;
-    fextl::string procCmdLine = "/proc/";
-    procCmdLine += std::to_string(::getpid());
-    procCmdLine += "/cmdline";
+    fextl::string procCmdLine = fextl::fmt::format("/proc/{}/cmdline", getpid());
     FDReadCreators[procCmdLine] = cmdline_handler;
 
     cpus_online = "0";
