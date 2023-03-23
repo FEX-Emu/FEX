@@ -166,7 +166,7 @@ ELFContainer::~ELFContainer() {
 }
 
 bool ELFContainer::LoadELF(fextl::string const &Filename) {
-  std::fstream ELFFile(Filename.c_str(), std::fstream::in | std::fstream::binary);
+  std::fstream ELFFile(fextl::string_from_string(Filename), std::fstream::in | std::fstream::binary);
 
   if (!ELFFile.is_open())
     return false;

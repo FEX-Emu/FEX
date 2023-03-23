@@ -371,7 +371,7 @@ namespace FEXCore::IR {
   }
 
   AOTIRCacheEntry *AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string &filename) {
-    fextl::string base_filename = std::filesystem::path(filename).filename().string().c_str();
+    fextl::string base_filename = fextl::string_from_path(std::filesystem::path(filename).filename());
 
     if (!base_filename.empty()) {
       auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());

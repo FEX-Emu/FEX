@@ -1,3 +1,4 @@
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
 #include "OptionParser.h"
@@ -709,7 +710,7 @@ namespace Zenity {
         bool ExactMatch = Target.DistroMatch == Info.DistroName &&
             Target.VersionMatch == Info.DistroVersion;
         if (ExactMatch) {
-          fextl::string Question = fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName).c_str();
+          fextl::string Question = fextl::fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName);
           if (ExecWithQuestion(Question)) {
             DistroIndex = i;
             break;
@@ -764,7 +765,7 @@ namespace Zenity {
       if (Result == 0) {
         if (Res.first == true &&
             Res.second == ExpectedHash) {
-          fextl::string Text = fmt::format("{} matches expected hash. Skipping download", filename).c_str();
+          fextl::string Text = fextl::fmt::format("{} matches expected hash. Skipping download", filename);
           ExecWithInfo(Text);
           return false;
         }
@@ -775,7 +776,7 @@ namespace Zenity {
           return AskForConfirmation("RootFS doesn't match hash!\nDo you want to redownload?");
         }
         else {
-          fextl::string Text = fmt::format("{} matches expected hash", filename).c_str();
+          fextl::string Text = fextl::fmt::format("{} matches expected hash", filename);
           ExecWithInfo(Text);
           return false;
         }
@@ -786,7 +787,7 @@ namespace Zenity {
   }
 
   bool ValidateDownloadSelection(const WebFileFetcher::FileTargets &Target) {
-    fextl::string Text = fmt::format("Selected Rootfs: {}\n", Target.DistroName).c_str();
+    fextl::string Text = fextl::fmt::format("Selected Rootfs: {}\n", Target.DistroName);
     Text += fmt::format("\tURL: {}\n", Target.URL);
     Text += fmt::format("Are you sure that you want to download this image");
 
@@ -863,7 +864,7 @@ namespace TTY {
     fextl::string Response;
     std::cin >> Response;
 
-    int32_t ResponseInt = std::stoi(Response.c_str());
+    int32_t ResponseInt = std::stoi(fextl::string_from_string(Response));
     if (ResponseInt == 0) {
       return -1;
     }
@@ -887,7 +888,7 @@ namespace TTY {
         bool ExactMatch = Target.DistroMatch == Info.DistroName &&
             Target.VersionMatch == Info.DistroVersion;
         if (ExactMatch) {
-          fextl::string Question = fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName).c_str();
+          fextl::string Question = fextl::fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName);
           if (AskForConfirmation(Question)) {
             DistroIndex = i;
             break;
@@ -1189,7 +1190,7 @@ int main(int argc, char **argv, char **const envp) {
               auto Res = XXFileHash::HashFile(PathName);
               if (Res.first == false ||
                   Res.second != ExpectedHash) {
-                fextl::string Text = fmt::format("Couldn't hash the rootfs or hash didn't match\n").c_str();
+                fextl::string Text = fextl::fmt::format("Couldn't hash the rootfs or hash didn't match\n");
                 Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
                 ExecWithInfo(Text);
                 return std::make_pair(-1, true);
@@ -1288,7 +1289,7 @@ int main(int argc, char **argv, char **const envp) {
 
       if (AskForConfirmation("Do you wish to set this RootFS as default?")) {
         ConfigSetter::SetRootFSAsDefault(filename);
-        fextl::string Text = fmt::format("{} set as default RootFS\n", filename).c_str();
+        fextl::string Text = fextl::fmt::format("{} set as default RootFS\n", filename);
         ExecWithInfo(Text);
       }
     }

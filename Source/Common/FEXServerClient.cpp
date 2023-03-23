@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/NetStream.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -141,7 +142,7 @@ namespace FEXServerClient {
   }
 
   fextl::string GetServerSocketName() {
-    return fmt::format("{}.FEXServer.Socket", ::geteuid()).c_str();
+    return fextl::fmt::format("{}.FEXServer.Socket", ::geteuid());
   }
 
   int GetServerFD() {
@@ -210,8 +211,7 @@ namespace FEXServerClient {
         return -1;
       }
 
-      fextl::string FEXServerPath = std::filesystem::path(InterpreterPath).parent_path().string().c_str();
-      FEXServerPath += "/FEXServer";
+      fextl::string FEXServerPath = fextl::string_from_path(std::filesystem::path(InterpreterPath).parent_path()) + "/FEXServer";
       // Check if a local FEXServer next to FEXInterpreter exists
       // If it does then it takes priority over the installed one
       if (!std::filesystem::exists(FEXServerPath)) {

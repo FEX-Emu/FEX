@@ -8,6 +8,7 @@
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
 #define BACKEND_OFF 0
@@ -49,7 +50,7 @@ namespace GPUVis {
   void Init() {
     for (auto Path : TraceFSDirectories) {
       if (IsTraceFS(Path)) {
-        fextl::string FilePath = fmt::format("{}/trace_marker", Path).c_str();
+        fextl::string FilePath = fextl::fmt::format("{}/trace_marker", Path);
         TraceFD = open(FilePath.c_str(), O_WRONLY | O_CLOEXEC);
         if (TraceFD != -1) {
           // Opened TraceFD, early exit
@@ -69,14 +70,14 @@ namespace GPUVis {
   void TraceObject(std::string_view const Format, uint64_t Duration) {
     if (TraceFD != -1) {
       // Print the duration as something that began negative duration ago
-      fextl::string Event = fmt::format("{} (lduration=-{})\n", Format, Duration).c_str();
+      fextl::string Event = fextl::fmt::format("{} (lduration=-{})\n", Format, Duration);
       write(TraceFD, Event.c_str(), Event.size());
     }
   }
 
   void TraceObject(std::string_view const Format) {
     if (TraceFD != -1) {
-      fextl::string Event = fmt::format("{}\n", Format).c_str();
+      fextl::string Event = fextl::fmt::format("{}\n", Format);
       write(TraceFD, Format.data(), Format.size());
     }
   }

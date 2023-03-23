@@ -16,7 +16,7 @@ namespace FEXCore::CodeSerialize {
     // This function adds a named region *JOB* to our named region handler
     // This needs to be as fast as possible to keep out of the way of the JIT
 
-    fextl::string BaseFilename = std::filesystem::path(filename).filename().string().c_str();
+    fextl::string BaseFilename = fextl::string_from_path(std::filesystem::path(filename).filename());
 
     if (!BaseFilename.empty()) {
       // Create a new entry that once set up will be put in to our section object map

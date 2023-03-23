@@ -159,7 +159,7 @@ namespace FEX::HarnessHelper {
   }
 
   inline void ReadFile(fextl::string const &Filename, fextl::vector<char> *Data) {
-    std::fstream TestFile(Filename.c_str(), std::fstream::in | std::fstream::binary);
+    std::fstream TestFile(fextl::string_from_string(Filename), std::fstream::in | std::fstream::binary);
     LOGMAN_THROW_A_FMT(TestFile.is_open(), "Failed to open file");
 
     TestFile.seekg(0, std::fstream::end);

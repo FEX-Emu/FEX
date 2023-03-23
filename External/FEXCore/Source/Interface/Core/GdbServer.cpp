@@ -27,6 +27,7 @@ $end_info$
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
@@ -59,7 +60,7 @@ void GdbServer::Break(int signal) {
     return;
   }
 
-  const fextl::string str = fmt::format("S{:02x}", signal).c_str();
+  const fextl::string str = fextl::fmt::format("S{:02x}", signal);
   SendPacket(*CommsStream, str);
 }
 
@@ -761,7 +762,7 @@ static size_t CheckMemMapping(uint64_t Address, size_t Size) {
 GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
   auto CodeLoader = CTX->SyscallHandler->GetCodeLoader();
   uint64_t BaseOffset = CodeLoader->GetBaseOffset();
-  fextl::string str = fmt::format("Text={:x};Data={:x};Bss={:x}", BaseOffset, BaseOffset, BaseOffset).c_str();
+  fextl::string str = fextl::fmt::format("Text={:x};Data={:x};Bss={:x}", BaseOffset, BaseOffset, BaseOffset);
   return {std::move(str), HandledPacketType::TYPE_ACK};
 }
 
@@ -1012,11 +1013,11 @@ GdbServer::HandledPacketType GdbServer::handleV(const fextl::string& packet) {
     return std::nullopt;
   };
 
-  const auto F       = [](int result) -> fextl::string { return fmt::format("F{:x}", result).c_str(); };
-  const auto F_error = []() -> fextl::string { return fmt::format("F-1,{:x}", errno).c_str(); };
+  const auto F       = [](int result) -> fextl::string { return fextl::fmt::format("F{:x}", result); };
+  const auto F_error = []() -> fextl::string { return fextl::fmt::format("F-1,{:x}", errno); };
   const auto F_data  = [](int result, const fextl::string& data) -> fextl::string {
     // Binary encoded data is raw appended to the end
-    return fextl::string(fmt::format("F{:#x};", result).c_str()) + data;
+    return fextl::fmt::format("F{:#x};", result) + data;
   };
 
   std::optional<fextl::istringstream> ss;
@@ -1144,7 +1145,7 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string &packe
       // Indicates the reason that the thread has stopped
       // Behaviour changes if the target is in non-stop mode
       // Binja doesn't support S response here
-      fextl::string str = fmt::format("T00thread:{:x};", getpid()).c_str();
+      fextl::string str = fextl::fmt::format("T00thread:{:x};", getpid());
       return {std::move(str), HandledPacketType::TYPE_ACK};
     }
     case 'c':
@@ -1245,7 +1246,7 @@ void GdbServer::GdbServerLoop() {
             break;
         case '\x03': { // ASCII EOT
             CTX->Pause();
-            fextl::string str = fmt::format("T02thread:{:02x};", getpid()).c_str();
+            fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
             if (LibraryMapChanged) {
               // If libraries have changed then let gdb know
               str += "library:1;";

@@ -133,11 +133,11 @@ namespace {
       else if (it.is_regular_file()) {
         // If it is a regular file then we need to check if it is a valid archive
         if (it.path().extension() == ".sqsh" &&
-            FEX::FormatCheck::IsSquashFS(it.path().string().c_str())) {
+            FEX::FormatCheck::IsSquashFS(fextl::string_from_path(it.path()))) {
           NamedRootFS.emplace_back(it.path().filename());
         }
         else if (it.path().extension() == ".ero" &&
-            FEX::FormatCheck::IsEroFS(it.path().string().c_str())) {
+            FEX::FormatCheck::IsEroFS(fextl::string_from_path(it.path()))) {
           NamedRootFS.emplace_back(it.path().filename());
         }
       }

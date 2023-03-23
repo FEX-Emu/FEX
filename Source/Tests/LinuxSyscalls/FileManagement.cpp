@@ -15,6 +15,7 @@ $end_info$
 
 #include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -61,7 +62,7 @@ namespace FEX::HLE {
   struct open_how;
 
 static bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filename) {
-  std::fstream File(Filename.c_str(), std::ios::in);
+  std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
   if (!File.is_open()) {
     return false;
@@ -239,7 +240,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   if (SteamID) {
     // If a SteamID exists then let's search for Steam application configs as well.
     // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-    fextl::string SteamAppName = fmt::format("Steam_{}_{}", SteamID, AppName).c_str();
+    fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, AppName);
 
     // Steam application configs interleaved with non-steam for priority sorting.
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, true));
@@ -312,7 +313,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
           for (const auto& Overlay : DBDepend.Overlays) {
             // Direct full path in guest RootFS to our overlay file
-            ThunkOverlays.emplace(Overlay, ThunkPath.c_str());
+            ThunkOverlays.emplace(Overlay, fextl::string_from_string(ThunkPath));
           }
       };
 

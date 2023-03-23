@@ -22,7 +22,7 @@ namespace FEX::FormatCheck {
     };
 
     SquashFSHeader Header{};
-    std::fstream File(Filename.c_str(), std::ios::in);
+    std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
     if (!File.is_open()) {
       return false;
@@ -80,7 +80,7 @@ namespace FEX::FormatCheck {
     constexpr uint32_t COOKIE_MAGIC_V1 = 0xE0F5E1E2;
 
     EroFSHeader Header{};
-    std::fstream File(Filename.c_str(), std::ios::in);
+    std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
     if (!File.is_open()) {
       return false;

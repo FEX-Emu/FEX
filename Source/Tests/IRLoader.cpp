@@ -84,7 +84,7 @@ class IRCodeLoader final {
 public:
   IRCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
     Config.Init(ConfigFilename);
-    std::fstream fp(Filename.c_str(), std::fstream::binary | std::fstream::in);
+    std::fstream fp(fextl::string_from_string(Filename), std::fstream::binary | std::fstream::in);
 
     if (!fp.is_open()) {
       LogMan::Msg::EFmt("Couldn't open IR file '{}'", Filename);

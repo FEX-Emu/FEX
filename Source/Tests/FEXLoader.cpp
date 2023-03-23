@@ -124,7 +124,7 @@ namespace FEXServerLogging {
 
 void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File(Filename->c_str(), std::fstream::in | std::fstream::binary);
+  std::fstream File(fextl::string_from_string(*Filename), std::fstream::in | std::fstream::binary);
 
   if (!File.is_open()) {
     return;

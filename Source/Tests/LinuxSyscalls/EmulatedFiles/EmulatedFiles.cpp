@@ -764,7 +764,7 @@ namespace FEX::EmulatedFile {
       }
 
       if (!RealPathExists) {
-        Creator = FDReadCreators.find(std::filesystem::path(Path).lexically_normal().string().c_str());
+        Creator = FDReadCreators.find(fextl::string_from_path(std::filesystem::path(Path).lexically_normal()));
       }
 
       if (Creator == FDReadCreators.end()) {

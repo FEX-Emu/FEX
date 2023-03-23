@@ -352,7 +352,7 @@ namespace JSON {
       // Only return if it exists
       std::error_code ec{};
       if (std::filesystem::exists(Path, ec)) {
-        return Path.c_str();
+        return fextl::string_from_path(Path);
       }
     }
     else {
