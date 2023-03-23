@@ -1,12 +1,11 @@
 #pragma once
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
 #include <memory>
 #include <filesystem>
-
-#include <fmt/format.h>
 
 namespace FEXCore::IR {
   struct AOTIRCacheEntry;
@@ -17,7 +16,7 @@ namespace FEXCore::HLE {
 struct SourcecodeLineMapping {
   uintptr_t FileGuestBegin;
   uintptr_t FileGuestEnd;
-  
+
   int LineNumber;
 };
 
@@ -31,15 +30,15 @@ struct SourcecodeSymbolMapping {
     if (Sym) {
       auto SymOffset = FileBegin - Sym->FileGuestBegin;
       if (SymOffset) {
-        return fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
-                              SymOffset, HostEntry).c_str();
+        return fextl::fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
+                              SymOffset, HostEntry);
       } else {
-        return fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
-                              HostEntry).c_str();
+        return fextl::fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
+                              HostEntry);
       }
     } else {
-      return fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
-                            HostEntry).c_str();
+      return fextl::fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
+                            HostEntry);
     }
   }
 };
