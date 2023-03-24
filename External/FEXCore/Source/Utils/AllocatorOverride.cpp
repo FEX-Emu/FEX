@@ -94,6 +94,8 @@ namespace FEXCore::Allocator {
     auto Res = fmt::format_to_n(Tmp, 512, "Allocation from 0x{:x}\n", reinterpret_cast<uint64_t>(Return));
     Tmp[Res.size] = 0;
     write(STDERR_FILENO, Tmp, Res.size);
+
+    // Fault the execution to stop it in its tracks.
     FEX_TRAP_EXECUTION;
   }
 }

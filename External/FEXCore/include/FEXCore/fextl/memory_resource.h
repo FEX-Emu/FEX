@@ -37,7 +37,7 @@ namespace fextl {
      */
     class fixed_size_monotonic_buffer_resource final : public std::pmr::memory_resource {
     public:
-        fixed_size_monotonic_buffer_resource(void* Base, size_t Size)
+        fixed_size_monotonic_buffer_resource(void* Base, [[maybe_unused]] size_t Size)
             : Ptr {reinterpret_cast<uint64_t>(Base)}
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
             , PtrEnd {reinterpret_cast<uint64_t>(Base) + Size}

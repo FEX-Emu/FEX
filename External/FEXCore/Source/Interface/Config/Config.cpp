@@ -146,7 +146,7 @@ namespace JSON {
       }
 
       // Ensure the folder structure is created for our configuration
-      if (!FHU::Filesystem::Exists(ConfigDir.c_str()) &&
+      if (!FHU::Filesystem::Exists(ConfigDir) &&
           !FHU::Filesystem::CreateDirectories(ConfigDir)) {
         // Let's go local in this case
         return "./";
@@ -178,7 +178,7 @@ namespace JSON {
     fextl::string ConfigFile = GetConfigDirectory(Global);
 
     if (!Global &&
-        !FHU::Filesystem::Exists(ConfigFile.c_str()) &&
+        !FHU::Filesystem::Exists(ConfigFile) &&
         !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       LogMan::Msg::DFmt("Couldn't create config directory: '{}'", ConfigFile);
       // Let's go local in this case
@@ -189,7 +189,7 @@ namespace JSON {
 
     // Attempt to create the local folder if it doesn't exist
     if (!Global &&
-        !FHU::Filesystem::Exists(ConfigFile.c_str()) &&
+        !FHU::Filesystem::Exists(ConfigFile) &&
         !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       // Let's go local in this case
       return "./" + Filename + ".json";
@@ -354,7 +354,7 @@ namespace JSON {
       }
 
       // Only return if it exists
-      if (FHU::Filesystem::Exists(PathName.c_str())) {
+      if (FHU::Filesystem::Exists(PathName)) {
         return PathName;
       }
     }
@@ -371,9 +371,9 @@ namespace JSON {
       // HostThunks: $CMAKE_INSTALL_PREFIX/lib/fex-emu/HostThunks/
       // GuestThunks: $CMAKE_INSTALL_PREFIX/share/fex-emu/GuestThunks/
       if (!ContainerPrefix.empty() && !PathName.empty()) {
-        if (!FHU::Filesystem::Exists(PathName.c_str())) {
+        if (!FHU::Filesystem::Exists(PathName)) {
           auto ContainerPath = ContainerPrefix + PathName;
-          if (FHU::Filesystem::Exists(ContainerPath.c_str())) {
+          if (FHU::Filesystem::Exists(ContainerPath)) {
             return ContainerPath;
           }
         }
@@ -725,7 +725,7 @@ namespace JSON {
       EnvMap[Key] = Value;
     }
 
-    std::function GetVar = [](EnvMapType &EnvMap, const std::string_view id)  -> std::optional<std::string_view> {
+    auto GetVar = [](EnvMapType &EnvMap, const std::string_view id)  -> std::optional<std::string_view> {
       if (EnvMap.find(id) != EnvMap.end())
         return EnvMap.at(id);
 

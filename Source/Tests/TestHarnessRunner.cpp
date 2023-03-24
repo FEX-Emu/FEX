@@ -115,7 +115,7 @@ private:
 }
 
 int main(int argc, char **argv, char **const envp) {
-  FEXCore::Allocator::SetupFaultEvaluate();
+  FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
@@ -127,7 +127,6 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Args.size() < 2) {
     LogMan::Msg::EFmt("Not enough arguments");
-    FEXCore::Allocator::ClearFaultEvaluate();
     return -1;
   }
 
@@ -186,7 +185,6 @@ int main(int argc, char **argv, char **const envp) {
 
   if (TestUnsupported) {
     FEXCore::Context::Context::DestroyContext(CTX);
-    FEXCore::Allocator::ClearFaultEvaluate();
     return 0;
   }
 
@@ -212,7 +210,6 @@ int main(int argc, char **argv, char **const envp) {
     if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-      FEXCore::Allocator::ClearFaultEvaluate();
       return -ENOEXEC;
     }
 
@@ -222,7 +219,6 @@ int main(int argc, char **argv, char **const envp) {
     bool Result1 = CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
     if (!Result1) {
-      FEXCore::Allocator::ClearFaultEvaluate();
       return 1;
     }
 
@@ -242,7 +238,6 @@ int main(int argc, char **argv, char **const envp) {
     if (!Loader.MapMemory()) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-      FEXCore::Allocator::ClearFaultEvaluate();
       return -ENOEXEC;
     }
 
@@ -265,7 +260,6 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::UnInstallHandlers();
 
   FEXCore::Allocator::ClearHooks();
-  FEXCore::Allocator::ClearFaultEvaluate();
   return Passed ? 0 : -1;
 }
 

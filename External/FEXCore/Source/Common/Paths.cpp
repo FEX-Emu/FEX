@@ -71,7 +71,7 @@ namespace FEXCore::Paths {
     EntryCache = CachePath + "/EntryCache/";
 
     // Ensure the folder structure is created for our Data
-    if (!FHU::Filesystem::Exists(EntryCache.c_str()) &&
+    if (!FHU::Filesystem::Exists(EntryCache) &&
         !FHU::Filesystem::CreateDirectories(EntryCache)) {
       LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", EntryCache);
     }

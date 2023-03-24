@@ -257,7 +257,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
     // For absolute paths, check the rootfs first (if available)
     if (pathname[0] == '/') {
       auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
-      if (!Path.empty() && FHU::Filesystem::Exists(Path.c_str())) {
+      if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
         Filename = Path;
       }
       else {
@@ -268,7 +268,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
       Filename = pathname;
     }
 
-    bool exists = FHU::Filesystem::Exists(Filename.c_str());
+    bool exists = FHU::Filesystem::Exists(Filename);
     if (!exists) {
       return -ENOENT;
     }

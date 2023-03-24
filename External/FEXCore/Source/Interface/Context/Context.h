@@ -72,14 +72,6 @@ namespace FEXCore::Context {
 
   class ContextImpl final : public FEXCore::Context::Context {
     public:
-      void *operator new(size_t size) {
-        return FEXCore::Allocator::malloc(size);
-      }
-
-      void operator delete(void *ptr) {
-        return FEXCore::Allocator::free(ptr);
-      }
-
       // Context base class implementation.
       bool InitializeContext() override;
 

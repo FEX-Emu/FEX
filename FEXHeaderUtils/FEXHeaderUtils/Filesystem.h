@@ -23,6 +23,10 @@ namespace FHU::Filesystem {
     return access(Path, F_OK) == 0;
   }
 
+  inline bool Exists(const fextl::string &Path) {
+    return access(Path.c_str(), F_OK) == 0;
+  }
+
   /**
    * @brief Creates a directory at the provided path.
    *

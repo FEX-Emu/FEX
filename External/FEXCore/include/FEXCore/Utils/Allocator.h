@@ -27,6 +27,16 @@ namespace FEXCore::Allocator {
       FEX_DEFAULT_VISIBILITY ~YesIKnowImNotSupposedToUseTheGlibcAllocator();
       FEX_DEFAULT_VISIBILITY static void HardDisable();
   };
+
+  class FEX_DEFAULT_VISIBILITY GLIBCScopedFault final {
+    public:
+      GLIBCScopedFault() {
+        FEXCore::Allocator::SetupFaultEvaluate();
+      }
+      ~GLIBCScopedFault() {
+        FEXCore::Allocator::ClearFaultEvaluate();
+      }
+  };
 #else
   FEX_DEFAULT_VISIBILITY inline void SetupFaultEvaluate() {}
   FEX_DEFAULT_VISIBILITY inline void ClearFaultEvaluate() {}
@@ -36,6 +46,16 @@ namespace FEXCore::Allocator {
     FEX_DEFAULT_VISIBILITY YesIKnowImNotSupposedToUseTheGlibcAllocator() {}
     FEX_DEFAULT_VISIBILITY ~YesIKnowImNotSupposedToUseTheGlibcAllocator() {}
     FEX_DEFAULT_VISIBILITY static inline void HardDisable() {}
+  };
+
+  class FEX_DEFAULT_VISIBILITY GLIBCScopedFault final {
+    public:
+      GLIBCScopedFault() {
+        // nop
+      }
+      ~GLIBCScopedFault() {
+        // nop
+      }
   };
 #endif
 

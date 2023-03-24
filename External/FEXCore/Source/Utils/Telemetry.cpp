@@ -30,7 +30,7 @@ namespace FEXCore::Telemetry {
     DataDirectory += "Telemetry/";
 
     // Ensure the folder structure is created for our configuration
-    if (!FHU::Filesystem::Exists(DataDirectory.c_str()) &&
+    if (!FHU::Filesystem::Exists(DataDirectory) &&
         !FHU::Filesystem::CreateDirectories(DataDirectory)) {
       LogMan::Msg::IFmt("Couldn't create telemetry Folder");
     }
@@ -40,7 +40,7 @@ namespace FEXCore::Telemetry {
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
-    if (FHU::Filesystem::Exists(DataDirectory.c_str())) {
+    if (FHU::Filesystem::Exists(DataDirectory)) {
       // If the file exists, retain a single backup
       auto Backup = DataDirectory + ".1";
       FHU::Filesystem::CopyFile(DataDirectory, Backup, FHU::Filesystem::CopyOptions::OVERWRITE_EXISTING);

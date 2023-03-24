@@ -215,7 +215,7 @@ namespace FEXServerClient {
       fextl::string FEXServerPath = FHU::Filesystem::ParentPath(InterpreterPath) + "/FEXServer";
       // Check if a local FEXServer next to FEXInterpreter exists
       // If it does then it takes priority over the installed one
-      if (!FHU::Filesystem::Exists(FEXServerPath.c_str())) {
+      if (!FHU::Filesystem::Exists(FEXServerPath)) {
         FEXServerPath = "FEXServer";
       }
 

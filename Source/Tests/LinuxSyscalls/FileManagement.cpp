@@ -295,7 +295,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
       void SetupOverlay(const ThunkDBObject& DBDepend) {
           auto ThunkPath = fextl::fmt::format("{}/{}", ThunkGuestPath, DBDepend.LibraryName);
-          if (!FHU::Filesystem::Exists(ThunkPath.c_str())) {
+          if (!FHU::Filesystem::Exists(ThunkPath)) {
             if (!Is64BitMode) {
               // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
               return;
@@ -655,13 +655,10 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
         dirfd != AT_FDCWD) {
     // Passed in a dirfd that isn't magic FDCWD
     // We need to get the path from the fd now
-    char Tmp[PATH_MAX];
+    char Tmp[PATH_MAX] = "";
     auto PathLength = FEX::get_fdpath(dirfd, Tmp);
     if (PathLength != -1) {
       Path = fextl::string(Tmp, PathLength);
-    }
-    else {
-      Path = "";
     }
 
     if (pathname) {

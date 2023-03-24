@@ -180,7 +180,7 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
 void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
-  if (FHU::Filesystem::Exists(RootFSLink.c_str())) {
+  if (FHU::Filesystem::Exists(RootFSLink)) {
     *Filename = RootFSLink;
   }
 }
@@ -199,7 +199,7 @@ bool IsInterpreterInstalled() {
 }
 
 int main(int argc, char **argv, char **const envp) {
-  FEXCore::Allocator::SetupFaultEvaluate();
+  FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
@@ -218,7 +218,6 @@ int main(int argc, char **argv, char **const envp) {
 
   if (Program.ProgramPath.empty() && !FEXFD) {
     // Early exit if we weren't passed an argument
-    FEXCore::Allocator::ClearFaultEvaluate();
     return 0;
   }
 
@@ -243,7 +242,6 @@ int main(int argc, char **argv, char **const envp) {
   // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
   if (!FEXServerClient::SetupClient(argv[0])) {
     LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
-    FEXCore::Allocator::ClearFaultEvaluate();
     return -1;
   }
 
@@ -297,11 +295,10 @@ int main(int argc, char **argv, char **const envp) {
   RootFSRedirect(&Program.ProgramPath, LDPath());
   InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
-  if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath.c_str())) {
+  if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
-    FEXCore::Allocator::ClearFaultEvaluate();
     return -ENOEXEC;
   }
 
@@ -333,7 +330,6 @@ int main(int argc, char **argv, char **const envp) {
       fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
     }
 #endif
-    FEXCore::Allocator::ClearFaultEvaluate();
     return -ENOEXEC;
   }
 
@@ -423,7 +419,6 @@ int main(int argc, char **argv, char **const envp) {
     if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-      FEXCore::Allocator::ClearFaultEvaluate();
       return -ENOEXEC;
     }
   }
@@ -535,7 +530,6 @@ int main(int argc, char **argv, char **const envp) {
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
-  FEXCore::Allocator::ClearFaultEvaluate();
 
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
