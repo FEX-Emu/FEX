@@ -12,10 +12,12 @@
 
 extern "C" {
 #ifdef GLIBC_ALLOCATOR_FAULT
-  // glibc allocator faulting. If anything uses a glibc allocator symbol then cause a fault.
-  // Ensures that FEX only ever allocates memory through its allocator routines.
-  // If thunks are enabled then this should crash immediately. Thunks should still go through glibc allocator.
-  // These need to be symbol definitions /only/, don't let their visibility to the rest of the source happen.
+  // The majority of FEX internal code should avoid using the glibc allocator. To ensure glibc allocations don't accidentally slip
+  // in, FEX overrides these glibc functions with faulting variants.
+  //
+  // A notable exception is thunks, which should still use glibc allocations and avoid using `fextl::` namespace.
+  //
+  // Other minor exceptions throughout FEX use the `YesIKnowImNotSupposedToUseTheGlibcAllocator` helper to temporarily disable faulting.
 #define GLIBC_ALIAS_FUNCTION(func) __attribute__((alias(#func), visibility("default")))
   extern void *__libc_calloc(size_t, size_t);
   void *calloc(size_t, size_t) GLIBC_ALIAS_FUNCTION(fault_calloc);
@@ -46,9 +48,13 @@ extern "C" {
 }
 
 namespace FEXCore::Allocator {
-  static bool Evaluate{};
+  // Enable or disable allocation faulting globally.
+  static bool GlobalEvaluate{};
+
+  // Enable or disable allocation faulting per-thread.
   thread_local uint64_t SkipEvalForThread{};
 
+  // Internal memory allocation hooks to allow non-faulting allocations through.
   CALLOC_Hook calloc_ptr = __libc_calloc;
   FREE_Hook free_ptr = __libc_free;
   MALLOC_Hook malloc_ptr = __libc_malloc;
@@ -59,48 +65,60 @@ namespace FEXCore::Allocator {
   MALLOC_USABLE_SIZE_Hook malloc_usable_size_ptr  = ::malloc_usable_size;
   ALIGNED_ALLOC_Hook aligned_alloc_ptr = __libc_memalign;
 
+  // Constructor for per-thread allocation faulting check.
   YesIKnowImNotSupposedToUseTheGlibcAllocator::YesIKnowImNotSupposedToUseTheGlibcAllocator() {
     ++SkipEvalForThread;
   }
 
+  // Destructor for per-thread allocation faulting check.
   YesIKnowImNotSupposedToUseTheGlibcAllocator::~YesIKnowImNotSupposedToUseTheGlibcAllocator() {
     --SkipEvalForThread;
   }
 
+  // Hard disabling of per-thread allocation fault checking.
+  // No coming back from this, used on thread destruction.
   FEX_DEFAULT_VISIBILITY void YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable() {
     // Just set it to half of its maximum value so it never wraps back around.
     SkipEvalForThread = std::numeric_limits<decltype(SkipEvalForThread)>::max() / 2;
   }
 
+  // Enable global fault checking.
   void SetupFaultEvaluate() {
-    Evaluate = true;
+    GlobalEvaluate = true;
   }
 
+  // Disable global fault checking.
   void ClearFaultEvaluate() {
-    Evaluate = false;
+    GlobalEvaluate = false;
   }
 
+  // Evaluate if a glibc hooked allocation should fault.
   void EvaluateReturnAddress(void* Return) {
-    if (!Evaluate) {
+    if (!GlobalEvaluate) {
+      // Fault evaluation disabled globally.
       return;
     }
 
     if (SkipEvalForThread) {
+      // Fault evaluation disabled for this thread.
       return;
     }
 
     // We don't know where we are when allocating. Make sure to be safe and generate the string on the stack.
+    // Print an error message to let a developer know that an allocation faulted.
     char Tmp[512];
     auto Res = fmt::format_to_n(Tmp, 512, "Allocation from 0x{:x}\n", reinterpret_cast<uint64_t>(Return));
     Tmp[Res.size] = 0;
     write(STDERR_FILENO, Tmp, Res.size);
 
-    // Fault the execution to stop it in its tracks.
+    // Trap the execution to stop FEX in its tracks.
     FEX_TRAP_EXECUTION;
   }
 }
 
 extern "C" {
+  // These are the glibc allocator override symbols.
+  // These will override the glibc allocators and then check if the allocation should fault.
   void *fault_calloc(size_t n, size_t size) {
     FEXCore::Allocator::EvaluateReturnAddress(__builtin_extract_return_addr (__builtin_return_address (0)));
     return FEXCore::Allocator::calloc_ptr(n, size);
