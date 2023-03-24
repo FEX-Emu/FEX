@@ -136,8 +136,8 @@ static fextl::string encodeHex(const unsigned char *data, size_t length) {
 }
 
 static fextl::string getThreadName(uint32_t ThreadID) {
-  const auto ThreadFile = fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
-  std::fstream fs(ThreadFile, std::fstream::in | std::fstream::binary);
+  const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
+  std::fstream fs(ThreadFile.c_str(), std::fstream::in | std::fstream::binary);
 
   if (fs.is_open()) {
     fextl::string ThreadName;
@@ -228,7 +228,7 @@ static fextl::string escapePacket(const fextl::string& packet) {
 
 void GdbServer::SendPacket(std::ostream &stream, const fextl::string& packet) {
   const auto escaped = escapePacket(packet);
-  const auto str = fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
+  const auto str = fextl::fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
 
   stream << str << std::flush;
 }
@@ -985,7 +985,7 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
     case 's': {
       CTX->Step();
       SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
-      fextl::string str = fmt::format("T05thread:{:02x};", getpid()).c_str();
+      fextl::string str = fextl::fmt::format("T05thread:{:02x};", getpid());
       if (LibraryMapChanged) {
         // If libraries have changed then let gdb know
         str += "library:1;";
