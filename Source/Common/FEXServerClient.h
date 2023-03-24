@@ -1,9 +1,8 @@
 #pragma once
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
-
-#include <string>
 
 namespace FEXServerClient {
   enum class PacketType {
@@ -47,11 +46,11 @@ namespace FEXServerClient {
 
   constexpr size_t MAXIMUM_REQUEST_PACKET_SIZE = sizeof(FEXServerRequestPacket);
 
-  std::string GetServerLockFolder();
-  std::string GetServerLockFile();
-  std::string GetServerRootFSLockFile();
-  std::string GetServerMountFolder();
-  std::string GetServerSocketName();
+  fextl::string GetServerLockFolder();
+  fextl::string GetServerLockFile();
+  fextl::string GetServerRootFSLockFile();
+  fextl::string GetServerMountFolder();
+  fextl::string GetServerSocketName();
   int GetServerFD();
 
   bool SetupClient(char *InterpreterPath);
@@ -93,7 +92,7 @@ namespace FEXServerClient {
    */
   int RequestLogFD(int ServerSocket);
 
-  std::string RequestRootFSPath(int ServerSocket);
+  fextl::string RequestRootFSPath(int ServerSocket);
 
   /**
    * @brief Request a FEXServer to give us a pidfd of the process

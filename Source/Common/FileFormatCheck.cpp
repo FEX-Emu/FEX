@@ -1,9 +1,10 @@
+#include <FEXCore/fextl/string.h>
+
 #include <fstream>
 #include <stdint.h>
-#include <string>
 
 namespace FEX::FormatCheck {
-  bool IsSquashFS(std::string const &Filename) {
+  bool IsSquashFS(fextl::string const &Filename) {
     // If it is a regular file then we need to check if it is a valid archive
     struct SquashFSHeader {
       uint32_t magic;
@@ -21,7 +22,7 @@ namespace FEX::FormatCheck {
     };
 
     SquashFSHeader Header{};
-    std::fstream File(Filename, std::ios::in);
+    std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
     if (!File.is_open()) {
       return false;
@@ -64,7 +65,7 @@ namespace FEX::FormatCheck {
     return false;
   }
 
-  bool IsEroFS(std::string const &Filename) {
+  bool IsEroFS(fextl::string const &Filename) {
     // v1 of EroFS has a 128byte header
     // This lives within a fixed offset inside of the first superblock of the file
     // Each superblock is 4096bytes
@@ -79,7 +80,7 @@ namespace FEX::FormatCheck {
     constexpr uint32_t COOKIE_MAGIC_V1 = 0xE0F5E1E2;
 
     EroFSHeader Header{};
-    std::fstream File(Filename, std::ios::in);
+    std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
     if (!File.is_open()) {
       return false;

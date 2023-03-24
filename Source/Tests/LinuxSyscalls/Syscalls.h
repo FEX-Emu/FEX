@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <mutex>
@@ -123,7 +124,7 @@ public:
     };
     int32_t HostSyscallNumber;
 #ifdef DEBUG_STRACE
-    std::string StraceFmt;
+    fextl::string StraceFmt;
 #endif
   };
 
@@ -145,7 +146,7 @@ public:
     int32_t HostSyscallNumber,
     FEXCore::IR::SyscallFlags Flags,
 #ifdef DEBUG_STRACE
-    const std::string& TraceFormatString,
+    const fextl::string& TraceFormatString,
 #endif
     void* SyscallHandler, int ArgumentCount) {
   }
@@ -154,7 +155,7 @@ public:
     int32_t HostSyscallNumber,
     FEXCore::IR::SyscallFlags Flags,
 #ifdef DEBUG_STRACE
-    const std::string& TraceFormatString,
+    const fextl::string& TraceFormatString,
 #endif
     void* SyscallHandler, int ArgumentCount) {
   }
@@ -392,7 +393,7 @@ struct ArgToFmtString<T*> {
 
 // Use ArgToFmtString and variadic template to create a format string from an args list
 template<typename ...Args>
-std::string CollectArgsFmtString() {
+fextl::string CollectArgsFmtString() {
   std::array<const char*, sizeof...(Args)> array = { ArgToFmtString<Args>::Format... };
   return fmt::format("{}", fmt::join(array, ", "));
 }

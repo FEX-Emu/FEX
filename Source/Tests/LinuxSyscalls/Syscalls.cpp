@@ -29,6 +29,8 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/sstream.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
@@ -173,15 +175,15 @@ static bool IsShebangFile(std::span<char> Data) {
   // Handle shebang files.
   if (Data[0] == '#' &&
       Data[1] == '!') {
-    std::string InterpreterLine {
+    fextl::string InterpreterLine {
         Data.begin() + 2, // strip off "#!" prefix
         std::find(Data.begin(), Data.end(), '\n')
     };
-    fextl::vector<std::string> ShebangArguments{};
+    fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
-    std::istringstream InterpreterSS(InterpreterLine);
-    std::string Argument;
+    fextl::istringstream InterpreterSS(InterpreterLine);
+    fextl::string Argument;
     while (std::getline(InterpreterSS, Argument, ' ')) {
       if (Argument.empty()) {
         continue;
@@ -190,7 +192,7 @@ static bool IsShebangFile(std::span<char> Data) {
     }
 
     // Executable argument
-    std::string &ShebangProgram = ShebangArguments[0];
+    fextl::string &ShebangProgram = ShebangArguments[0];
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -220,7 +222,7 @@ static bool IsShebangFD(int FD) {
   return IsShebangFile(std::span<char>(Header.data(), ReadSize));
 }
 
-static bool IsShebangFilename(std::string const &Filename) {
+static bool IsShebangFilename(fextl::string const &Filename) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
@@ -233,15 +235,15 @@ static bool IsShebangFilename(std::string const &Filename) {
 }
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
-  std::string Filename{};
+  fextl::string Filename{};
 
   std::error_code ec;
-  std::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
+  fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
   ELFLoader::ELFContainer::ELFType Type{};
 
   // AT_EMPTY_PATH is only used if the pathname is empty.
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
-  std::string FDExecEnv;
+  fextl::string FDExecEnv;
 
   bool IsShebang{};
 
@@ -780,7 +782,7 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
   int32_t Minor{};
   int32_t Patch{};
   char Tmp{};
-  std::istringstream ss{buf.release};
+  fextl::istringstream ss{buf.release};
   ss >> Major;
   ss.read(&Tmp, 1);
   ss >> Minor;
@@ -869,7 +871,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
 
   ELFParser GuestELF;
 
-  if (!GuestELF.ReadElf(std::string(GuestBinaryFile))) {
+  if (!GuestELF.ReadElf(fextl::string(GuestBinaryFile))) {
     LogMan::Msg::DFmt("GenerateMap: '{}' is not an elf file?", GuestBinaryFile);
     return {};
   }
@@ -991,14 +993,14 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     IndexStream.write("fexsrcindex0", strlen("fexsrcindex0"));
 
     // objdump parsing
-    std::string Line;
+    fextl::string Line;
     int LineNum = 0;
 
     bool PreviousLineWasEmpty = false;
 
     uintptr_t LastSymbolOffset{};
     uintptr_t CurrentSymbolOffset{};
-    std::string LastSymbolName;
+    fextl::string LastSymbolName;
 
     uintptr_t LastOffset{};
     uintptr_t CurrentOffset{};
@@ -1038,7 +1040,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
         // LogMan::Msg::DFmt("Line: '{}'", Line);
 
         if (isHEX(Line[0])) {
-          std::string addr;
+          fextl::string addr;
           int offs = 1;
           for (; !isspace(Line[offs]) && offs < Line.size(); offs++)
             ;

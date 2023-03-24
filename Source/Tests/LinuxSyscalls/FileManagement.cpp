@@ -15,7 +15,9 @@ $end_info$
 
 #include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -28,7 +30,6 @@ $end_info$
 #include <fstream>
 #include <optional>
 #include <stdio.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <syscall.h>
@@ -60,8 +61,8 @@ namespace JSON {
 namespace FEX::HLE {
   struct open_how;
 
-static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
-  std::fstream File(Filename, std::ios::in);
+static bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filename) {
+  std::fstream File(fextl::string_from_string(Filename), std::ios::in);
 
   if (!File.is_open()) {
     return false;
@@ -97,13 +98,13 @@ static bool LoadFile(fextl::vector<char> &Data, const std::string &Filename) {
 }
 
 struct ThunkDBObject {
-  std::string LibraryName;
-  fextl::unordered_set<std::string> Depends;
-  fextl::vector<std::string> Overlays;
+  fextl::string LibraryName;
+  fextl::unordered_set<fextl::string> Depends;
+  fextl::vector<fextl::string> Overlays;
   bool Enabled{};
 };
 
-static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
+static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   fextl::vector<char> FileData;
   if (LoadFile(FileData, ThunkDBPath)) {
@@ -150,7 +151,7 @@ static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& 
           }
         }
         else if (ItemName == "Overlay") {
-          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, std::string LibraryItem) {
+          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, fextl::string LibraryItem) {
             constexpr static std::array<std::string_view, 4> LibPrefixes = {
               "/usr/lib",
               "/usr/local/lib",
@@ -170,16 +171,16 @@ static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& 
             const std::pair PrefixHome { "@HOME@"sv, LibraryItem.find("@HOME@") };
             const std::pair PrefixLib { "@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@") };
 
-            std::string::size_type PrefixPositions[] = {
+            fextl::string::size_type PrefixPositions[] = {
               PrefixArch.second, PrefixHome.second, PrefixLib.second,
             };
             // Sort offsets in descending order to enable safe in-place replacement
             std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<>{});
 
             for (auto& LibPrefix : LibPrefixes) {
-              std::string Replacement = LibraryItem;
+              fextl::string Replacement = LibraryItem;
               for (auto PrefixPos : PrefixPositions) {
-                if (PrefixPos == std::string::npos) {
+                if (PrefixPos == fextl::string::npos) {
                   continue;
                 } else if (PrefixPos == PrefixArch.second) {
                   Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode]);
@@ -191,7 +192,7 @@ static void LoadThunkDatabase(fextl::unordered_map<std::string, ThunkDBObject>& 
               }
               DBObject.Overlays.emplace_back(std::move(Replacement));
 
-              if (PrefixLib.second == std::string::npos) {
+              if (PrefixLib.second == fextl::string::npos) {
                 // Don't repeat for other LibPrefixes entries if the prefix wasn't used
                 break;
               }
@@ -229,7 +230,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   // This doesn't support the classic thunks interface.
 
   auto AppName = AppConfigName();
-  fextl::vector<std::string> ConfigPaths {
+  fextl::vector<fextl::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
     ThunkConfigFile,
@@ -239,7 +240,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   if (SteamID) {
     // If a SteamID exists then let's search for Steam application configs as well.
     // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-    auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, AppName);
+    fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, AppName);
 
     // Steam application configs interleaved with non-steam for priority sorting.
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(SteamAppName, true));
@@ -252,7 +253,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
-  fextl::unordered_map<std::string, ThunkDBObject> ThunkDB;
+  fextl::unordered_map<fextl::string, ThunkDBObject> ThunkDB;
   LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
   LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
 
@@ -312,11 +313,11 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
           for (const auto& Overlay : DBDepend.Overlays) {
             // Direct full path in guest RootFS to our overlay file
-            ThunkOverlays.emplace(Overlay, ThunkPath);
+            ThunkOverlays.emplace(Overlay, fextl::string_from_string(ThunkPath));
           }
       };
 
-      void InsertDependencies(const fextl::unordered_set<std::string> &Depends) {
+      void InsertDependencies(const fextl::unordered_set<fextl::string> &Depends) {
         for (auto const &Depend : Depends) {
           auto& DBDepend = ThunkDB.at(Depend);
           if (DBDepend.Enabled) {
@@ -360,7 +361,7 @@ FileManager::~FileManager() {
   close(RootFSFD);
 }
 
-std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
+fextl::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlink) {
   if (!pathname || // If no pathname
       pathname[0] != '/' || // If relative
       strcmp(pathname, "/") == 0) { // If we are getting root
@@ -377,7 +378,7 @@ std::string FileManager::GetEmulatedPath(const char *pathname, bool FollowSymlin
     return {};
   }
 
-  std::string Path = RootFSPath + pathname;
+  fextl::string Path = RootFSPath + pathname;
   if (FollowSymlink) {
     char Filename[PATH_MAX];
     while(FEX::HLE::IsSymlink(AT_FDCWD, Path.c_str())) {
@@ -458,7 +459,7 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   return std::make_pair(RootFSFD, &SubPath[1]);
 }
 
-std::optional<std::string> FileManager::GetSelf(const char *Pathname) {
+std::optional<fextl::string> FileManager::GetSelf(const char *Pathname) {
   if (!Pathname) {
     return std::nullopt;
   }
@@ -656,7 +657,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
   // Can't use `GetSelf` directly here since readlink{at,} returns EINVAL if it isn't a symlink
   // Self is always a symlink and isn't expected to fail
 
-  std::string Path{};
+  fextl::string Path{};
   if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
         !pathname) &&
         dirfd != AT_FDCWD) {

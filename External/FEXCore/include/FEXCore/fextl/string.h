@@ -1,6 +1,7 @@
 #pragma once
 #include <FEXCore/fextl/allocator.h>
 
+#include <filesystem>
 #include <string>
 
 namespace fextl {
@@ -8,4 +9,25 @@ namespace fextl {
   using basic_string = std::basic_string<CharT, Traits, Allocator>;
 
   using string = fextl::basic_string<char>;
+  // Helper to be removed.
+  inline fextl::string string_from_path(std::filesystem::path const &Path) {
+    return Path.string().c_str();
+  }
+
+  // Helper to be removed
+  inline fextl::string string_from_string(std::string const &Str) {
+    return Str.c_str();
+  }
+
+  // Helper to be removed
+  inline std::string string_from_string(fextl::string const &Str) {
+    return Str.c_str();
+  }
 }
+
+template<>
+ struct std::hash<fextl::string> {
+  std::size_t operator()(fextl::string const& s) const noexcept {
+    return std::hash<std::string_view>{}(s);
+  };
+};

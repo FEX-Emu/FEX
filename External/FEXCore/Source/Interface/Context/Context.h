@@ -16,6 +16,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
@@ -29,7 +30,6 @@
 #include <mutex>
 #include <shared_mutex>
 #include <stddef.h>
-#include <string>
 #include <queue>
 
 namespace FEXCore {
@@ -163,23 +163,23 @@ namespace FEXCore::Context {
       FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) override;
       FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) override;
 
-      FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const std::string& Name) override;
+      FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) override;
       void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) override;
 
-      void SetAOTIRLoader(std::function<int(const std::string&)> CacheReader) override {
+      void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) override {
         IRCaptureCache.SetAOTIRLoader(CacheReader);
       }
-      void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) override {
+      void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> CacheWriter) override {
         IRCaptureCache.SetAOTIRWriter(CacheWriter);
       }
-      void SetAOTIRRenamer(std::function<void(const std::string&)> CacheRenamer) override {
+      void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) override {
         IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
       }
 
       void FinalizeAOTIRCache() override {
         IRCaptureCache.FinalizeAOTIRCache();
       }
-      void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer) override {
+      void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) override {
         IRCaptureCache.WriteFilesWithCode(Writer);
       }
       void InvalidateGuestCodeRange(uint64_t Start, uint64_t Length) override;

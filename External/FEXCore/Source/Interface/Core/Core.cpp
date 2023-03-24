@@ -46,6 +46,7 @@ $end_info$
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TodoDefines.h>
@@ -64,8 +65,6 @@ $end_info$
 #include <shared_mutex>
 #include <signal.h>
 #include <stdio.h>
-#include <string.h>
-#include <string>
 #include <string_view>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -727,7 +726,7 @@ namespace FEXCore::Context {
     }
 
     if (f) {
-      std::stringstream out;
+      fextl::stringstream out;
       auto NewIR = IREmitter->ViewIR();
       FEXCore::IR::Dump(&out, &NewIR, RA);
       fmt::print(f,"IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
@@ -740,7 +739,7 @@ namespace FEXCore::Context {
 
   static void ValidateIR(ContextImpl *ctx, IR::IREmitter *IREmitter) {
     // Convert to text, Parse, Convert to text again and make sure the texts match
-    std::stringstream out;
+    fextl::stringstream out;
     static auto compaction = IR::CreateIRCompaction(ctx->OpDispatcherAllocator);
     compaction->Run(IREmitter);
     auto NewIR = IREmitter->ViewIR();
@@ -751,7 +750,7 @@ namespace FEXCore::Context {
     if (reparsed == nullptr) {
       LOGMAN_MSG_A_FMT("Failed to parse IR\n");
     } else {
-      std::stringstream out2;
+      fextl::stringstream out2;
       auto NewIR2 = reparsed->ViewIR();
       Dump(&out2, &NewIR2, nullptr);
       if (out.str() != out2.str()) {
@@ -1337,7 +1336,7 @@ namespace FEXCore::Context {
     return Result;
   }
 
-  IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const std::string &filename) {
+  IR::AOTIRCacheEntry *ContextImpl::LoadAOTIRCacheEntry(const fextl::string &filename) {
     auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
     if (DebugServer) {
       DebugServer->AlertLibrariesChanged();

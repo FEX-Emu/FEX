@@ -16,7 +16,6 @@
 #include <filesystem>
 #include <fstream>
 #include <random>
-#include <string>
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
@@ -25,6 +24,7 @@
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -192,20 +192,20 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
   public:
 
-  static std::string ResolveRootfsFile(std::string const &File, std::string RootFS) {
+  static fextl::string ResolveRootfsFile(fextl::string const &File, fextl::string RootFS) {
     // If the path is relative then just run that
     if (File[0] != '/') {
       return File;
     }
 
-    std::string RootFSLink = RootFS + File;
+    fextl::string RootFSLink = RootFS + File;
 
     char Filename[PATH_MAX];
-    while(FHU::Symlinks::IsSymlink(RootFSLink)) {
+    while(FHU::Symlinks::IsSymlink(RootFSLink.c_str())) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
-      auto SymlinkPath = FHU::Symlinks::ResolveSymlink(RootFSLink, Filename);
+      auto SymlinkPath = FHU::Symlinks::ResolveSymlink(RootFSLink.c_str(), Filename);
       if (SymlinkPath.starts_with('/')) {
         RootFSLink = RootFS;
         RootFSLink += SymlinkPath;
@@ -223,13 +223,13 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uintptr_t Base;
     size_t Size;
     off_t Offs;
-    std::string Filename;
+    fextl::string Filename;
     bool Executable;
   };
 
   fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(std::string const &Filename, const std::string_view FEXFDString, std::string const &RootFS, [[maybe_unused]] fextl::vector<std::string> const &args, fextl::vector<std::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<std::string> *AdditionalEnvp = nullptr) :
+  ELFCodeLoader(fextl::string const &Filename, const std::string_view FEXFDString, fextl::string const &RootFS, [[maybe_unused]] fextl::vector<fextl::string> const &args, fextl::vector<fextl::string> const &ParsedArgs, char **const envp = nullptr, FEXCore::Config::Value<fextl::string> *AdditionalEnvp = nullptr) :
     Args {args} {
 
     bool LoadedWithFD = false;
@@ -623,8 +623,8 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t AuxVOffset,
     uint64_t ArgumentOffset,
     uint64_t EnvpOffset,
-    const fextl::vector<std::string> &Args,
-    const fextl::vector<std::string> &EnvironmentVariables,
+    const fextl::vector<fextl::string> &Args,
+    const fextl::vector<fextl::string> &EnvironmentVariables,
     const fextl::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
     uint64_t *AuxTabSize,
@@ -807,7 +807,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     }
   }
 
-  fextl::vector<std::string> const *GetApplicationArguments() override { return &Args; }
+  fextl::vector<fextl::string> const *GetApplicationArguments() override { return &Args; }
   void GetExecveArguments(fextl::vector<char const*> *Args) override { *Args = LoaderArgs; }
 
   void GetAuxv(uint64_t& addr, uint64_t& size) override {
@@ -904,8 +904,8 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
   constexpr static uint64_t STACK_HINT_32 = 0xFFFFE000 - FULL_STACK_SIZE;
   constexpr static uint64_t STACK_HINT_64 = 0x7FFFFFFFF000 - FULL_STACK_SIZE;
 
-  fextl::vector<std::string> Args;
-  fextl::vector<std::string> EnvironmentVariables;
+  fextl::vector<fextl::string> Args;
+  fextl::vector<fextl::string> EnvironmentVariables;
   fextl::vector<char const*> LoaderArgs;
 
   fextl::list<auxv_t> AuxVariables;

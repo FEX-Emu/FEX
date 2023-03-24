@@ -3,6 +3,7 @@
 #include "FEXCore/IR/RegisterAllocationData.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/unordered_map.h>
 
@@ -80,12 +81,12 @@ namespace FEXCore::IR {
     void *FilePtr;
     size_t Size;
     std::unique_ptr<FEXCore::HLE::SourcecodeMap> SourcecodeMap;
-    std::string FileId;
-    std::string Filename;
+    fextl::string FileId;
+    fextl::string Filename;
     bool ContainsCode;
   };
 
-  using AOTCacheType = fextl::unordered_map<std::string, FEXCore::IR::AOTIRCacheEntry>;
+  using AOTCacheType = fextl::unordered_map<fextl::string, FEXCore::IR::AOTIRCacheEntry>;
 
   class AOTIRCaptureCache final {
     public:
@@ -95,7 +96,7 @@ namespace FEXCore::IR {
       void FinalizeAOTIRCache();
       void AOTIRCaptureCacheWriteoutQueue_Flush();
       void AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn);
-      void WriteFilesWithCode(std::function<void(const std::string& fileid, const std::string& filename)> Writer);
+      void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer);
 
       struct PreGenerateIRFetchResult {
         FEXCore::IR::IRListView *IRList {};
@@ -117,19 +118,19 @@ namespace FEXCore::IR {
         FEXCore::Core::DebugData *DebugData,
         bool GeneratedIR);
 
-      AOTIRCacheEntry *LoadAOTIRCacheEntry(const std::string &filename);
+      AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string &filename);
       void UnloadAOTIRCacheEntry(AOTIRCacheEntry *Entry);
 
       // Callbacks
-      void SetAOTIRLoader(std::function<int(const std::string&)> CacheReader) {
+      void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) {
         AOTIRLoader = CacheReader;
       }
 
-      void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const std::string&)> CacheWriter) {
+      void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> CacheWriter) {
         AOTIRWriter = CacheWriter;
       }
 
-      void SetAOTIRRenamer(std::function<void(const std::string&)> CacheRenamer) {
+      void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) {
         AOTIRRenamer = CacheRenamer;
       }
 
@@ -144,9 +145,9 @@ namespace FEXCore::IR {
 
       FEXCore::IR::AOTCacheType AOTIRCache;
 
-      std::function<int(const std::string&)> AOTIRLoader;
-      std::function<std::unique_ptr<std::ofstream>(const std::string&)> AOTIRWriter;
-      std::function<void(const std::string&)> AOTIRRenamer;
-      fextl::unordered_map<std::string, FEXCore::IR::AOTIRCaptureCacheEntry> AOTIRCaptureCacheMap;
+      std::function<int(const fextl::string&)> AOTIRLoader;
+      std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> AOTIRWriter;
+      std::function<void(const fextl::string&)> AOTIRRenamer;
+      fextl::unordered_map<fextl::string, FEXCore::IR::AOTIRCaptureCacheEntry> AOTIRCaptureCacheMap;
   };
 }

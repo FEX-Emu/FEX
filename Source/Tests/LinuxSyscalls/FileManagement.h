@@ -7,6 +7,7 @@ $end_info$
 #pragma once
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_set.h>
 
 #include <cstdint>
@@ -16,7 +17,6 @@ $end_info$
 #include <linux/limits.h>
 #include <optional>
 #include <stddef.h>
-#include <string>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -70,18 +70,18 @@ public:
   // vfs
   uint64_t Statfs(const char *path, void *buf);
 
-  std::optional<std::string> GetSelf(const char *Pathname);
+  std::optional<fextl::string> GetSelf(const char *Pathname);
 
   void UpdatePID(uint32_t PID) { CurrentPID = PID; }
 
-  std::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
+  fextl::string GetEmulatedPath(const char *pathname, bool FollowSymlink = false);
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
 
 private:
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
-  fextl::map<std::string, std::string, std::less<>> ThunkOverlays;
+  fextl::map<fextl::string, fextl::string, std::less<>> ThunkOverlays;
 
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(LDPath, ROOTFS);

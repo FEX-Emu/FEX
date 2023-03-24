@@ -11,6 +11,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <cmath>
@@ -407,7 +408,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
   End = Start + getSize();
 
   if (CTX->Config.BlockJITNaming()) {
-    std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
+    fextl::string Name = fextl::fmt::format("Dispatch_{}", FHU::Syscalls::gettid());
     CTX->Symbols.Register(reinterpret_cast<void*>(Start), End-Start, Name);
   }
   if (CTX->Config.GlobalJITNaming()) {
@@ -424,7 +425,7 @@ size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestR
   using namespace Xbyak::util;
 
   emit.setNewBuffer(CodeBuffer, MaxGDBPauseCheckSize);
-  
+
   Label RunBlock;
 
   // If we have a gdb server running then run in a less efficient mode that checks if we need to exit
@@ -460,7 +461,7 @@ size_t X86Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   emit.setNewBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
 
   Label InlineIRData;
-  
+
   emit.mov(rdi, STATE);
   emit.lea(rsi, ptr[rip + InlineIRData]);
   emit.call(qword STATE_PTR(CpuStateFrame, Pointers.Interpreter.FragmentExecuter));

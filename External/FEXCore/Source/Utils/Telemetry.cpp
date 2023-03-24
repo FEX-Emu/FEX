@@ -1,12 +1,12 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/fextl/string.h>
 
 #include <array>
 #include <filesystem>
 #include <fstream>
 #include <stddef.h>
-#include <string>
 #include <string_view>
 #include <system_error>
 
@@ -35,7 +35,7 @@ namespace FEXCore::Telemetry {
     }
   }
 
-  void Shutdown(std::string const &ApplicationName) {
+  void Shutdown(fextl::string const &ApplicationName) {
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
@@ -46,7 +46,7 @@ namespace FEXCore::Telemetry {
       std::filesystem::copy_file(DataDirectory, Backup, std::filesystem::copy_options::overwrite_existing, ec);
     }
 
-    std::fstream fs(DataDirectory, std::ios_base::out | std::ios_base::trunc);
+    std::fstream fs(fextl::string_from_string(DataDirectory), std::ios_base::out | std::ios_base::trunc);
     if (fs.is_open()) {
       for (size_t i = 0; i < TelemetryType::TYPE_LAST; ++i) {
         auto &Name = TelemetryNames.at(i);

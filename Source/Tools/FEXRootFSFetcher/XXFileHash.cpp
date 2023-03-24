@@ -10,7 +10,7 @@
 namespace XXFileHash {
   // 32MB blocks
   constexpr static size_t BLOCK_SIZE = 32 * 1024 * 1024;
-  std::pair<bool, uint64_t> HashFile(const std::string &Filepath) {
+  std::pair<bool, uint64_t> HashFile(const fextl::string &Filepath) {
     int fd = open(Filepath.c_str(), O_RDONLY);
     if (fd == -1) {
       return {false, 0};

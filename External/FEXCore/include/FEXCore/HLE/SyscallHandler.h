@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <string>
 #include <shared_mutex>
 
 #include <FEXCore/IR/IR.h>

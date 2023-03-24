@@ -1,9 +1,8 @@
 #pragma once
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
-
-#include <string>
 
 namespace FEX::ArgLoader {
   class ArgLoader final : public FEXCore::Config::Layer {
@@ -21,6 +20,6 @@ namespace FEX::ArgLoader {
   };
 
   void LoadWithoutArguments(int _argc, char **_argv);
-  fextl::vector<std::string> Get();
-  fextl::vector<std::string> GetParsedArgs();
+  fextl::vector<fextl::string> Get();
+  fextl::vector<fextl::string> GetParsedArgs();
 }

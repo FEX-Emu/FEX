@@ -25,6 +25,8 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/sstream.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <atomic>
@@ -41,8 +43,6 @@ $end_info$
 #include <mutex>
 #include <queue>
 #include <set>
-#include <sstream>
-#include <string>
 #include <sys/auxv.h>
 #include <sys/resource.h>
 #include <sys/select.h>
@@ -122,9 +122,9 @@ namespace FEXServerLogging {
   }
 }
 
-void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl::vector<std::string> *args) {
+void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
   // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File(*Filename, std::fstream::in | std::fstream::binary);
+  std::fstream File(fextl::string_from_string(*Filename), std::fstream::in | std::fstream::binary);
 
   if (!File.is_open()) {
     return;
@@ -142,13 +142,13 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl:
   // Handle shebang files
   if (File.get() == '#' &&
       File.get() == '!') {
-    std::string InterpreterLine;
+    fextl::string InterpreterLine;
     std::getline(File, InterpreterLine);
-    fextl::vector<std::string> ShebangArguments{};
+    fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
-    std::istringstream InterpreterSS(InterpreterLine);
-    std::string Argument;
+    fextl::istringstream InterpreterSS(InterpreterLine);
+    fextl::string Argument;
     while (std::getline(InterpreterSS, Argument, ' ')) {
       if (Argument.empty()) {
         continue;
@@ -157,7 +157,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl:
     }
 
     // Executable argument
-    std::string &ShebangProgram = ShebangArguments[0];
+    fextl::string &ShebangProgram = ShebangArguments[0];
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -174,7 +174,7 @@ void InterpreterHandler(std::string *Filename, std::string const &RootFS, fextl:
   }
 }
 
-void RootFSRedirect(std::string *Filename, std::string const &RootFS) {
+void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
   std::error_code ec{};
@@ -447,13 +447,13 @@ int main(int argc, char **argv, char **const envp) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
                       "Capture doesn't work with programs that fork.");
 
-    CTX->SetAOTIRLoader([](const std::string &fileid) -> int {
+    CTX->SetAOTIRLoader([](const fextl::string &fileid) -> int {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
       return open(filepath.c_str(), O_RDONLY);
     });
 
-    CTX->SetAOTIRWriter([](const std::string& fileid) -> std::unique_ptr<std::ofstream> {
+    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> std::unique_ptr<std::ofstream> {
       auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
       auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
       if (*AOTWrite) {
@@ -466,7 +466,7 @@ int main(int argc, char **argv, char **const envp) {
       return AOTWrite;
     });
 
-    CTX->SetAOTIRRenamer([](const std::string& fileid) -> void {
+    CTX->SetAOTIRRenamer([](const fextl::string& fileid) -> void {
       auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
       auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
 
@@ -486,7 +486,7 @@ int main(int argc, char **argv, char **const envp) {
   if (AOTEnabled) {
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
     if (!ec) {
-      CTX->WriteFilesWithCode([](const std::string& fileid, const std::string& filename) {
+      CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
         auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
         int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
         if (fd != -1) {

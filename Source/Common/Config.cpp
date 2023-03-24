@@ -2,7 +2,9 @@
 #include "Common/Config.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
@@ -14,12 +16,12 @@
 #include <json-maker.h>
 
 namespace FEX::Config {
-  static const fextl::map<FEXCore::Config::ConfigOption, std::string> ConfigToNameLookup = {{
+  static const fextl::map<FEXCore::Config::ConfigOption, fextl::string> ConfigToNameLookup = {{
 #define OPT_BASE(type, group, enum, json, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
 #include <FEXCore/Config/ConfigValues.inl>
   }};
 
-  void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer) {
+  void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer *const Layer) {
     char Buffer[4096];
     char *Dest{};
     Dest = json_objOpen(Buffer, nullptr);
@@ -34,14 +36,14 @@ namespace FEX::Config {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    std::ofstream Output (Filename, std::ios::out | std::ios::binary);
+    std::ofstream Output (fextl::string_from_string(Filename), std::ios::out | std::ios::binary);
     if (Output.is_open()) {
       Output.write(Buffer, strlen(Buffer));
       Output.close();
     }
   }
 
-  std::string RecoverGuestProgramFilename(std::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
+  fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInterp, const std::string_view ProgramFDFromEnv) {
     // If executed with a FEX FD then the Program argument might be empty.
     // In this case we need to scan the FD node to recover the application binary that exists on disk.
     // Only do this if the Program argument is empty, since we would prefer the application's expectation
@@ -87,14 +89,14 @@ namespace FEX::Config {
       // This symlink will be in the style of `/dev/fd/<FD>`.
       //
       // If the argument /is/ a symlink then resolve its path to get the original application name.
-      if (FHU::Symlinks::IsSymlink(Program)) {
+      if (FHU::Symlinks::IsSymlink(fextl::string_from_string(Program))) {
         char Filename[PATH_MAX];
-        auto SymlinkPath = FHU::Symlinks::ResolveSymlink(Program, Filename);
+        auto SymlinkPath = FHU::Symlinks::ResolveSymlink(fextl::string_from_string(Program), Filename);
         if (SymlinkPath.starts_with('/')) {
           // This file was executed through an FD.
           // Remove the ` (deleted)` text if the file was deleted after the fact.
           // Otherwise just get the symlink without the deleted text.
-          return std::string{SymlinkPath.substr(0, SymlinkPath.rfind(" (deleted)"))};
+          return fextl::string{SymlinkPath.substr(0, SymlinkPath.rfind(" (deleted)"))};
         }
       }
     }
@@ -133,7 +135,7 @@ namespace FEX::Config {
       }
 
       Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
-      std::string& Program = Args[0];
+      fextl::string& Program = Args[0];
 
       bool Wine = false;
       std::filesystem::path ProgramName;
@@ -174,19 +176,20 @@ namespace FEX::Config {
         }
       }
 
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(fextl::string_from_path(ProgramName), FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(fextl::string_from_path(ProgramName), FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
       auto SteamID = getenv("SteamAppId");
       if (SteamID) {
         // If a SteamID exists then let's search for Steam application configs as well.
         // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-        auto SteamAppName = fmt::format("Steam_{}_{}", SteamID, ProgramName.string());
+        fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, fextl::string_from_path(ProgramName));
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
       }
 
-      return ApplicationNames{std::move(Program), std::move(ProgramName)};
+      // TODO: No need for conversion once Config uses fextl.
+      return ApplicationNames{std::move(Program), fextl::string_from_path(ProgramName)};
     }
     return {};
   }

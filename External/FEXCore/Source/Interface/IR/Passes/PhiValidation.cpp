@@ -10,12 +10,11 @@ $end_info$
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/sstream.h>
 
 #include "Interface/IR/PassManager.h"
 
 #include <memory>
-#include <sstream>
-#include <string>
 
 namespace FEXCore::IR::Validation {
 
@@ -30,7 +29,7 @@ bool PhiValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   auto CurrentIR = IREmit->ViewIR();
 
-  std::ostringstream Errors;
+  fextl::ostringstream Errors;
 
   // Walk the list and calculate the control flow
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -62,7 +61,7 @@ bool PhiValidation::Run(IREmitter *IREmit) {
   }
 
   if (HadError) {
-    std::stringstream Out;
+    fextl::stringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
     LogMan::Msg::EFmt("{}", Out.str());

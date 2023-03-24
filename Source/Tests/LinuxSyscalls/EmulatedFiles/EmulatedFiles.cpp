@@ -14,6 +14,9 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/sstream.h>
 
 #include <git_version.h>
 
@@ -21,13 +24,10 @@ $end_info$
 #include <fcntl.h>
 #include <filesystem>
 #include <ostream>
-#include <sstream>
 #include <stdio.h>
 #include <system_error>
 #include <unistd.h>
 #include <utility>
-
-using string = std::string;
 
 namespace FEX::EmulatedFile {
   /**
@@ -49,8 +49,8 @@ namespace FEX::EmulatedFile {
     return fd;
   }
 
-  std::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
-    std::ostringstream cpu_stream{};
+  fextl::string GenerateCPUInfo(FEXCore::Context::Context *ctx, uint32_t CPUCores) {
+    fextl::ostringstream cpu_stream{};
     auto res_0  = ctx->RunCPUIDFunction(0, 0);
     auto res_1  = ctx->RunCPUIDFunction(1, 0);
     auto res_6  = ctx->RunCPUIDFunction(6, 0);
@@ -106,7 +106,7 @@ namespace FEX::EmulatedFile {
     Info info {res_1};
 
     uint32_t Family = info.FamilyID + (info.FamilyID == 0xF ? info.ExFamilyID : 0);
-    std::ostringstream flags_data{};
+    fextl::ostringstream flags_data{};
     // Generate the flags data up front
     // This is the same per core
     {
@@ -673,7 +673,7 @@ namespace FEX::EmulatedFile {
     FDReadCreators["/sys/devices/system/cpu/online"] = NumCPUCores;
     FDReadCreators["/sys/devices/system/cpu/present"] = NumCPUCores;
 
-    string procAuxv = string("/proc/") + std::to_string(getpid()) + string("/auxv");
+    fextl::string procAuxv = fextl::fmt::format("/proc/{}/auxv", getpid());
 
     FDReadCreators[procAuxv] = &EmulatedFDManager::ProcAuxv;
     FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
@@ -697,7 +697,8 @@ namespace FEX::EmulatedFile {
     };
 
     FDReadCreators["/proc/self/cmdline"] = cmdline_handler;
-    FDReadCreators["/proc/" + std::to_string(::getpid()) + "/cmdline"] = cmdline_handler;
+    fextl::string procCmdLine = fextl::fmt::format("/proc/{}/cmdline", getpid());
+    FDReadCreators[procCmdLine] = cmdline_handler;
 
     cpus_online = "0";
     uint64_t CPUCores = ThreadsConfig();
@@ -763,7 +764,7 @@ namespace FEX::EmulatedFile {
       }
 
       if (!RealPathExists) {
-        Creator = FDReadCreators.find(std::filesystem::path(Path).lexically_normal().string());
+        Creator = FDReadCreators.find(fextl::string_from_path(std::filesystem::path(Path).lexically_normal()));
       }
 
       if (Creator == FDReadCreators.end()) {

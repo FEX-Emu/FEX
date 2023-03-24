@@ -13,14 +13,13 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/set.h>
+#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <functional>
 #include <memory>
 #include <stdint.h>
-#include <string>
-#include <sstream>
 #include <utility>
 
 namespace {
@@ -42,7 +41,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   bool HadError = false;
   auto CurrentIR = IREmit->ViewIR();
 
-  std::ostringstream Errors;
+  fextl::ostringstream Errors;
   fextl::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
@@ -198,7 +197,7 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
   }
 
   if (HadError) {
-    std::stringstream Out;
+    fextl::stringstream Out;
     FEXCore::IR::Dump(&Out, &CurrentIR, nullptr);
     Out << "Errors:" << std::endl << Errors.str() << std::endl;
     LogMan::Msg::EFmt("{}", Out.str());

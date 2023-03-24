@@ -4,13 +4,14 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/NetStream.h>
+#include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <fcntl.h>
 #include <filesystem>
 #include <linux/limits.h>
 #include <unistd.h>
-#include <string>
 #include <sys/poll.h>
 #include <sys/prctl.h>
 #include <sys/signal.h>
@@ -89,19 +90,19 @@ namespace FEXServerClient {
 
   static int ServerFD {-1};
 
-  std::string GetServerLockFolder() {
+  fextl::string GetServerLockFolder() {
     return FEXCore::Config::GetDataDirectory() + "Server/";
   }
 
-  std::string GetServerLockFile() {
+  fextl::string GetServerLockFile() {
     return GetServerLockFolder() + "Server.lock";
   }
 
-  std::string GetServerRootFSLockFile() {
+  fextl::string GetServerRootFSLockFile() {
     return GetServerLockFolder() + "RootFS.lock";
   }
 
-  std::string GetServerMountFolder() {
+  fextl::string GetServerMountFolder() {
     // We need a FEXServer mount directory that has some tricky requirements.
     // - We don't want to use `/tmp/` if possible.
     //   - systemd services use `PrivateTmp` feature to gives services their own tmp.
@@ -116,7 +117,7 @@ namespace FEXServerClient {
     //   - If this path doesn't exist then fallback to `/tmp/` as a last resort.
     //   - pressure-vessel explicitly creates an internal XDG_RUNTIME_DIR inside its chroot.
     //     - This is okay since pressure-vessel rbinds the FEX rootfs from the host to `/run/pressure-vessel/interpreter-root`.
-    std::string Folder{};
+    fextl::string Folder{};
     auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
     if (XDGRuntimeEnv) {
       // If the XDG runtime directory works then use that.
@@ -140,8 +141,8 @@ namespace FEXServerClient {
     return Folder;
   }
 
-  std::string GetServerSocketName() {
-    return fmt::format("{}.FEXServer.Socket", ::geteuid());
+  fextl::string GetServerSocketName() {
+    return fextl::fmt::format("{}.FEXServer.Socket", ::geteuid());
   }
 
   int GetServerFD() {
@@ -189,7 +190,7 @@ namespace FEXServerClient {
     // If we were started in a container then we want to use the rootfs that they provided.
     // In the pressure-vessel case this is a combination of our rootfs and the steam soldier runtime.
     if (FEXCore::Config::FindContainer() != "pressure-vessel") {
-      std::string RootFSPath = FEXServerClient::RequestRootFSPath(ServerFD);
+      fextl::string RootFSPath = FEXServerClient::RequestRootFSPath(ServerFD);
 
       //// If everything has passed then we can now update the rootfs path
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, RootFSPath);
@@ -210,7 +211,7 @@ namespace FEXServerClient {
         return -1;
       }
 
-      std::string FEXServerPath = std::filesystem::path(InterpreterPath).parent_path().string() + "/FEXServer";
+      fextl::string FEXServerPath = fextl::string_from_path(std::filesystem::path(InterpreterPath).parent_path()) + "/FEXServer";
       // Check if a local FEXServer next to FEXInterpreter exists
       // If it does then it takes priority over the installed one
       if (!std::filesystem::exists(FEXServerPath)) {
@@ -303,7 +304,7 @@ namespace FEXServerClient {
     return RequestPIDFDPacket(ServerSocket, PacketType::TYPE_GET_LOG_FD);
   }
 
-  std::string RequestRootFSPath(int ServerSocket) {
+  fextl::string RequestRootFSPath(int ServerSocket) {
     FEXServerRequestPacket Req {
       .Header {
         .Type = PacketType::TYPE_GET_ROOTFS_PATH,
@@ -320,7 +321,7 @@ namespace FEXServerClient {
         FEXServerResultPacket *ResultPacket = reinterpret_cast<FEXServerResultPacket*>(Data.data());
         if (ResultPacket->Header.Type == PacketType::TYPE_GET_ROOTFS_PATH &&
             ResultPacket->MountPath.Length > 0) {
-          return std::string(ResultPacket->MountPath.Mount);
+          return fextl::string(ResultPacket->MountPath.Mount);
         }
       }
     }

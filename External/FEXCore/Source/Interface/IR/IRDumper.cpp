@@ -8,12 +8,12 @@ $end_info$
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
+#include <FEXCore/fextl/sstream.h>
 
 #include <algorithm>
 #include <array>
 #include <ostream>
 #include <stdint.h>
-#include <string>
 #include <string_view>
 #include  <iomanip>
 
@@ -27,22 +27,22 @@ namespace FEXCore::IR {
 
 #include <FEXCore/IR/IRDefines.inc>
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, const SHA256Sum &Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, const SHA256Sum &Arg) {
   *out << "sha256:";
   for(auto byte: Arg.data)
     *out << std::hex << std::setfill('0') << std::setw(2) << (unsigned int)byte;
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, uint64_t Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, uint64_t Arg) {
   *out << "#0x" << std::hex << Arg;
 }
 
 [[maybe_unused]]
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, const char* Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, const char* Arg) {
   *out <<  Arg;
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, CondClassType Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, CondClassType Arg) {
   static constexpr std::array<std::string_view, 22> CondNames = {
     "EQ",
     "NEQ",
@@ -71,7 +71,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   *out << CondNames[Arg];
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, MemOffsetType Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, MemOffsetType Arg) {
   static constexpr std::array<std::string_view, 3> Names = {
     "SXTX",
     "UXTW",
@@ -81,7 +81,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   *out << Names[Arg];
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, RegisterClassType Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, RegisterClassType Arg) {
   if (Arg == GPRClass.Val)
     *out << "GPR";
   else if (Arg == GPRFixedClass.Val)
@@ -96,7 +96,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
     *out << "Unknown Registerclass " << Arg;
 }
 
-static void PrintArg(std::stringstream *out, IRListView const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationData *RAData) {
+static void PrintArg(fextl::stringstream *out, IRListView const* IR, OrderedNodeWrapper Arg, IR::RegisterAllocationData *RAData) {
   auto [CodeNode, IROp] = IR->at(Arg)();
   const auto ArgID = Arg.ID();
 
@@ -146,7 +146,7 @@ static void PrintArg(std::stringstream *out, IRListView const* IR, OrderedNodeWr
   }
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::FenceType Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::FenceType Arg) {
   if (Arg == IR::Fence_Load) {
     *out << "Loads";
   }
@@ -161,7 +161,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   }
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::RoundType Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::RoundType Arg) {
   switch (Arg) {
     case FEXCore::IR::Round_Nearest: *out << "Nearest"; break;
     case FEXCore::IR::Round_Negative_Infinity: *out << "-Inf"; break;
@@ -172,7 +172,7 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   }
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::SyscallFlags Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::SyscallFlags Arg) {
   switch (Arg) {
     case FEXCore::IR::SyscallFlags::DEFAULT: *out << "Default"; break;
     case FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH: *out << "Optimize Through"; break;
@@ -183,14 +183,14 @@ static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* 
   }
 }
 
-static void PrintArg(std::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::BreakDefinition Arg) {
+static void PrintArg(fextl::stringstream *out, [[maybe_unused]] IRListView const* IR, FEXCore::IR::BreakDefinition Arg) {
   *out << "{" << Arg.ErrorRegister << ".";
   *out << static_cast<uint32_t>(Arg.Signal) << ".";
   *out << static_cast<uint32_t>(Arg.TrapNumber) << ".";
   *out << static_cast<uint32_t>(Arg.si_code) << "}";
 }
 
-void Dump(std::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
+void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData) {
   auto HeaderOp = IR->GetHeader();
 
   int8_t CurrentIndent = 0;

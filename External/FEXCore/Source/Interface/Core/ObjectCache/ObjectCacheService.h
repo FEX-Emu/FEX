@@ -8,11 +8,11 @@
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/queue.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <memory>
 #include <shared_mutex>
-#include <string>
 #include <tsl/robin_map.h>
 
 namespace FEXCore::CodeSerialize {
@@ -67,13 +67,13 @@ namespace FEXCore::CodeSerialize {
       uint64_t Offset{};
 
       // Filename of the object
-      std::string Filename{};
+      fextl::string Filename{};
 
       CodeObjectSerializationHeader EntryHeader{};
     /**  @} */
 
     // The filename of the object cache for this entry
-    std::string ObjectEntrySourceFilename{};
+    fextl::string ObjectEntrySourceFilename{};
 
     // In the case of file corruption that we can detect, we can disable serialization early for an entry
     // We should be resiliant to corruption but things happen
@@ -121,7 +121,7 @@ namespace FEXCore::CodeSerialize {
     CodeRegionEntry(uint64_t Base,
       uint64_t Size,
       uint64_t Offset,
-      std::string const &Filename,
+      fextl::string const &Filename,
       CodeObjectSerializationHeader const &DefaultHeader)
       : Base {Base}
       , Size {Size}
@@ -187,7 +187,7 @@ namespace FEXCore::CodeSerialize {
       /**
        * @name Async job submission functions
        * @{ */
-        void AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename);
+        void AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const fextl::string &filename);
         void AsyncRemoveNamedRegionJob(uintptr_t Base, uintptr_t Size);
         void AsyncAddSerializationJob(std::unique_ptr<SerializationJobData> Data);
       /**  @} */
@@ -220,15 +220,15 @@ namespace FEXCore::CodeSerialize {
 
         class WorkItemAddNamedRegion : public NamedRegionWorkItem {
           public:
-            WorkItemAddNamedRegion(const std::string &base, const std::string &filename, bool executable, CodeRegionMapType::iterator entry)
+            WorkItemAddNamedRegion(const fextl::string &base, const fextl::string &filename, bool executable, CodeRegionMapType::iterator entry)
               : NamedRegionWorkItem {NamedRegionJobType::JOB_ADD_NAMED_REGION}
               , BaseFilename {base}
               , Filename {filename}
               , Executable {executable}
               , Entry {entry}
               {}
-            const std::string BaseFilename;
-            const std::string Filename;
+            const fextl::string BaseFilename;
+            const fextl::string Filename;
             bool Executable;
             CodeRegionMapType::iterator Entry;
         };
@@ -282,7 +282,7 @@ namespace FEXCore::CodeSerialize {
        *
        * This adds the job that will do the loading of file resources and data tracking.
        */
-      void AsyncAddNamedRegionWorkItem(const std::string &base, const std::string &filename, bool executable, CodeRegionMapType::iterator entry) {
+      void AsyncAddNamedRegionWorkItem(const fextl::string &base, const fextl::string &filename, bool executable, CodeRegionMapType::iterator entry) {
         std::unique_lock lk {NamedWorkQueueMutex};
         WorkQueue.emplace(std::make_unique<AsyncJobHandler::WorkItemAddNamedRegion> (
           base,
@@ -327,7 +327,7 @@ namespace FEXCore::CodeSerialize {
       /**
        * @name Named Region object handling
        * @{ */
-        void AddNamedRegionObject(CodeRegionMapType::iterator Entry, const std::string &base_filename, const std::string &filename, bool Executable);
+        void AddNamedRegionObject(CodeRegionMapType::iterator Entry, const fextl::string &base_filename, const fextl::string &filename, bool Executable);
         void RemoveNamedRegionObject(uintptr_t Base, uintptr_t Size, std::unique_ptr<CodeRegionEntry> Entry);
       /**  @} */
   };
@@ -366,7 +366,7 @@ namespace FEXCore::CodeSerialize {
          * @param Offset - The offset from the file
          * @param filename - The filename itself
          */
-        void AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const std::string &filename) {
+        void AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const fextl::string &filename) {
           AsyncHandler.AsyncAddNamedRegionJob(Base, Size, Offset, filename);
         }
 

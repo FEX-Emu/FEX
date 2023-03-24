@@ -21,6 +21,7 @@ using namespace Xbyak;
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -58,7 +59,7 @@ public:
                       FEXCore::Core::InternalThreadState *Thread);
   ~X86JITCore() override;
 
-  [[nodiscard]] std::string GetName() override { return "JIT"; }
+  [[nodiscard]] fextl::string GetName() override { return "JIT"; }
 
   [[nodiscard]] CPUBackend::CompiledCode CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,

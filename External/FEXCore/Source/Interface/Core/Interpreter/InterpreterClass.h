@@ -6,6 +6,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 namespace FEXCore::CPU {
@@ -20,7 +21,7 @@ public:
   explicit InterpreterCore(Dispatcher *Dispatch,
                            FEXCore::Core::InternalThreadState *Thread);
 
-  [[nodiscard]] std::string GetName() override { return "Interpreter"; }
+  [[nodiscard]] fextl::string GetName() override { return "Interpreter"; }
 
   [[nodiscard]] CPUBackend::CompiledCode CompileCode(uint64_t Entry,
                                   FEXCore::IR::IRListView const *IR,

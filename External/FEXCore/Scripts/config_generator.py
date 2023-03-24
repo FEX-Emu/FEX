@@ -22,10 +22,10 @@ def print_header():
 #define OPT_UINT64(group, enum, json, default) OPT_BASE(uint64_t, group, enum, json, default)
 #endif
 #ifndef OPT_STR
-#define OPT_STR(group, enum, json, default) OPT_BASE(std::string, group, enum, json, default)
+#define OPT_STR(group, enum, json, default) OPT_BASE(fextl::string, group, enum, json, default)
 #endif
 #ifndef OPT_STRARRAY
-#define OPT_STRARRAY(group, enum, json, default) OPT_BASE(std::string, group, enum, json, default)
+#define OPT_STRARRAY(group, enum, json, default) OPT_BASE(fextl::string, group, enum, json, default)
 #endif
 
 '''
@@ -387,7 +387,7 @@ def print_parse_argloader_options(options):
                 output_argloader.write("\t}\n")
             else:
                 if (NeedsString):
-                    output_argloader.write("\tstd::string UserValue = Options[\"{0}\"];\n".format(op_key))
+                    output_argloader.write("\tfextl::string UserValue = fextl::string_from_string(Options[\"{0}\"]);\n".format(op_key))
                 else:
                     output_argloader.write("\t{0} UserValue = Options.get(\"{1}\");\n".format(value_type, op_key))
 

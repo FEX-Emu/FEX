@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/sstream.h>
 
 #include <algorithm>
 #include <array>
@@ -705,7 +706,7 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
       if (IROp->Op != IR::OP_BEGINBLOCK &&
           IROp->Op != IR::OP_CONDJUMP &&
           IROp->Op != IR::OP_JUMP) {
-        std::stringstream Inst;
+        fextl::stringstream Inst;
         auto Name = FEXCore::IR::GetName(IROp->Op);
 
         if (IROp->HasDest) {

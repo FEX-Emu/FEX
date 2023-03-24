@@ -22,6 +22,7 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -157,8 +158,8 @@ namespace FEX::HarnessHelper {
     return Matches;
   }
 
-  inline void ReadFile(std::string const &Filename, fextl::vector<char> *Data) {
-    std::fstream TestFile(Filename, std::fstream::in | std::fstream::binary);
+  inline void ReadFile(fextl::string const &Filename, fextl::vector<char> *Data) {
+    std::fstream TestFile(fextl::string_from_string(Filename), std::fstream::in | std::fstream::binary);
     LOGMAN_THROW_A_FMT(TestFile.is_open(), "Failed to open file");
 
     TestFile.seekg(0, std::fstream::end);
@@ -172,7 +173,7 @@ namespace FEX::HarnessHelper {
 
   class ConfigLoader final {
   public:
-    void Init(std::string const &ConfigFilename) {
+    void Init(fextl::string const &ConfigFilename) {
       ReadFile(ConfigFilename, &RawConfigFile);
       memcpy(&BaseConfig, RawConfigFile.data(), sizeof(ConfigStructBase));
       GetEnvironmentOptions();
@@ -320,7 +321,7 @@ namespace FEX::HarnessHelper {
           };
 
           for (size_t j = 0; j < RegData->RegDataCount; ++j) {
-            std::string Name;
+            fextl::string Name;
             if (NameIndex == 0) // RIP
               Name = "RIP";
             else if (NameIndex >= 1 && NameIndex < 17)
@@ -445,7 +446,7 @@ namespace FEX::HarnessHelper {
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
   public:
 
-    HarnessCodeLoader(std::string const &Filename, const char *ConfigFilename) {
+    HarnessCodeLoader(fextl::string const &Filename, const char *ConfigFilename) {
       TestFD = open(Filename.c_str(), O_CLOEXEC | O_RDONLY);
       TestFileSize = lseek(TestFD, 0, SEEK_END);
       lseek(TestFD, 0, SEEK_SET);

@@ -51,7 +51,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry *Entry, uintptr_t VAFileStart,
 
     auto Sym = map->FindSymbolMapping(FileOffset);
 
-    std::string SymName = HLE::SourcecodeSymbolMapping::SymName(
+    auto SymName = HLE::SourcecodeSymbolMapping::SymName(
         Sym, Entry->Filename, HostEntry, FileOffset);
 
     fextl::vector<gdb_line_mapping> Lines;

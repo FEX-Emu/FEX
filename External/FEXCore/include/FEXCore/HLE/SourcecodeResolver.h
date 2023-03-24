@@ -1,12 +1,11 @@
 #pragma once
+#include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
-#include <string>
 #include <memory>
 #include <filesystem>
-
-#include <fmt/format.h>
 
 namespace FEXCore::IR {
   struct AOTIRCacheEntry;
@@ -17,7 +16,7 @@ namespace FEXCore::HLE {
 struct SourcecodeLineMapping {
   uintptr_t FileGuestBegin;
   uintptr_t FileGuestEnd;
-  
+
   int LineNumber;
 };
 
@@ -25,27 +24,27 @@ struct SourcecodeSymbolMapping {
   uintptr_t FileGuestBegin;
   uintptr_t FileGuestEnd;
 
-  std::string Name;
+  fextl::string Name;
 
-  static std::string SymName(const SourcecodeSymbolMapping *Sym, const std::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
+  static fextl::string SymName(const SourcecodeSymbolMapping *Sym, const fextl::string &GuestFilename, uintptr_t HostEntry, uintptr_t FileBegin) {
     if (Sym) {
       auto SymOffset = FileBegin - Sym->FileGuestBegin;
       if (SymOffset) {
-        return fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
+        return fextl::fmt::format("{}: {}+{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
                               SymOffset, HostEntry);
       } else {
-        return fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
+        return fextl::fmt::format("{}: {} @{:x}", std::filesystem::path(GuestFilename).stem().string(), Sym->Name,
                               HostEntry);
       }
     } else {
-      return fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
+      return fextl::fmt::format("{}: +{} @{:x}", std::filesystem::path(GuestFilename).stem().string(), FileBegin,
                             HostEntry);
     }
   }
 };
 
 struct SourcecodeMap {
-  std::string SourceFile;
+  fextl::string SourceFile;
   fextl::vector<SourcecodeLineMapping> SortedLineMappings;
   fextl::vector<SourcecodeSymbolMapping> SortedSymbolMappings;
 

@@ -2,6 +2,7 @@
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/string.h>
 
 namespace FEXCore::CodeSerialize {
   NamedRegionObjectHandler::NamedRegionObjectHandler(FEXCore::Context::ContextImpl *ctx) {
@@ -23,7 +24,7 @@ namespace FEXCore::CodeSerialize {
     DefaultSerializationConfig.x87ReducedPrecision = ctx->Config.x87ReducedPrecision;
   }
 
-  void NamedRegionObjectHandler::AddNamedRegionObject(CodeRegionMapType::iterator Entry, const std::string &base_filename, const std::string &filename, bool Executable) {
+  void NamedRegionObjectHandler::AddNamedRegionObject(CodeRegionMapType::iterator Entry, const fextl::string &base_filename, const fextl::string &filename, bool Executable) {
     // XXX: Add named region objects
 
     // XXX: Until entry loading is complete just claim it is loaded

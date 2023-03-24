@@ -1,12 +1,11 @@
 #pragma once
 #include <FEXCore/Utils/CompilerDefs.h>
-
-#include <string>
+#include <FEXCore/fextl/string.h>
 
 namespace FEXCore::Paths {
   FEX_DEFAULT_VISIBILITY const char *GetHomeDirectory();
 
-  FEX_DEFAULT_VISIBILITY std::string GetCachePath();
+  FEX_DEFAULT_VISIBILITY fextl::string GetCachePath();
 
-  FEX_DEFAULT_VISIBILITY std::string GetEntryCachePath();
+  FEX_DEFAULT_VISIBILITY fextl::string GetEntryCachePath();
 }

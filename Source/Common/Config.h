@@ -1,7 +1,6 @@
 #pragma once
 #include <FEXCore/Config/Config.h>
-
-#include <string>
+#include <FEXCore/fextl/string.h>
 
 /**
  * @brief This is a singleton for storing global configuration state
@@ -17,13 +16,13 @@ namespace FEX::Config {
   protected:
   };
 
-  void SaveLayerToJSON(const std::string& Filename, FEXCore::Config::Layer *const Layer);
+  void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer *const Layer);
 
   struct ApplicationNames {
     // This is the full path to the program (if it exists).
-    std::string ProgramPath;
+    fextl::string ProgramPath;
     // This is the program executable name (if it exists).
-    std::string ProgramName;
+    fextl::string ProgramName;
   };
 
   /**

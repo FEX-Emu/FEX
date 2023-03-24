@@ -1,9 +1,9 @@
 #pragma once
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <functional>
-#include <string>
 
 namespace FEXCore {
 namespace IR {
@@ -42,7 +42,7 @@ public:
    */
   virtual bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) { return false; }
 
-  virtual fextl::vector<std::string> const *GetApplicationArguments() { return nullptr; }
+  virtual fextl::vector<fextl::string> const *GetApplicationArguments() { return nullptr; }
   virtual void GetExecveArguments(fextl::vector<char const*> *Args) {}
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}

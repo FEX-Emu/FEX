@@ -543,7 +543,7 @@ void Arm64Dispatcher::EmitDispatcher() {
   ClearICache(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr));
 
   if (CTX->Config.BlockJITNaming()) {
-    std::string Name = "Dispatch_" + std::to_string(FHU::Syscalls::gettid());
+    fextl::string Name = fextl::fmt::format("Dispatch_{}", FHU::Syscalls::gettid());
     CTX->Symbols.Register(reinterpret_cast<void*>(DispatchPtr), End - reinterpret_cast<uint64_t>(DispatchPtr), Name);
   }
   if (CTX->Config.GlobalJITNaming()) {

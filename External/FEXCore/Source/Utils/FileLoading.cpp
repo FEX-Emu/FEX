@@ -1,6 +1,6 @@
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <string>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -8,7 +8,8 @@
 #include <unistd.h>
 
 namespace FEXCore::FileLoading {
-bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t FixedSize) {
+
+bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
   if (FD == -1) {
@@ -38,7 +39,7 @@ bool LoadFile(fextl::vector<char> &Data, const std::string &Filepath, size_t Fix
   return Read == FileSize;
 }
 
-ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer) {
+ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
   if (FD == -1) {
@@ -49,5 +50,6 @@ ssize_t LoadFileToBuffer(const std::string &Filepath, std::span<char> Buffer) {
   close(FD);
   return Read;
 }
+
 
 }

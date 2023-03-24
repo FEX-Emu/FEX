@@ -2,13 +2,13 @@
 
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
 #include <elf.h>
 #include <functional>
 #include <stddef.h>
-#include <string>
 #include <tuple>
 #include <utility>
 
@@ -34,7 +34,7 @@ struct ELFSymbol {
 
 class ELFContainer {
 public:
-  ELFContainer(std::string const &Filename, std::string const &RootFS, bool CustomInterpreter);
+  ELFContainer(fextl::string const &Filename, fextl::string const &RootFS, bool CustomInterpreter);
   ~ELFContainer();
 
   uint64_t GetEntryPoint() const {
@@ -75,7 +75,7 @@ public:
   bool WasDynamic() const { return DynamicProgram; }
   bool HasDynamicLinker() const { return !DynamicLinker.empty(); }
   bool WasLoaded() const { return Loaded; }
-  std::string &InterpreterLocation() { return DynamicLinker; }
+  fextl::string &InterpreterLocation() { return DynamicLinker; }
 
   fextl::vector<char const*> const *GetNecessaryLibs() const { return &NecessaryLibs; }
 
@@ -117,15 +117,15 @@ public:
     TYPE_X86_32,
     TYPE_OTHER_ELF,
   };
-  static ELFType GetELFType(std::string const &Filename);
+  static ELFType GetELFType(fextl::string const &Filename);
   static ELFType GetELFType(int FD);
-  static bool IsSupportedELF(std::string const &Filename) {
+  static bool IsSupportedELF(fextl::string const &Filename) {
     ELFType Type = GetELFType(Filename);
     return Type == TYPE_X86_64 || Type == TYPE_X86_32;
   }
 
 private:
-  bool LoadELF(std::string const &Filename);
+  bool LoadELF(fextl::string const &Filename);
   bool LoadELF_32();
   bool LoadELF_64();
   void CalculateMemoryLayouts();
@@ -161,7 +161,7 @@ private:
   fextl::vector<ProgramHeader> ProgramHeaders;
   fextl::vector<ELFSymbol> Symbols;
   fextl::vector<uintptr_t> UnwindEntries;
-  fextl::unordered_map<std::string, ELFSymbol *> SymbolMap;
+  fextl::unordered_map<fextl::string, ELFSymbol *> SymbolMap;
   fextl::map<uint64_t, ELFSymbol *> SymbolMapByAddress;
 
   fextl::vector<char const*> NecessaryLibs;
@@ -174,7 +174,7 @@ private:
   uint64_t BRKSize{};
   ProgramHeader InterpreterHeader{};
   bool DynamicProgram{false};
-  std::string DynamicLinker;
+  fextl::string DynamicLinker;
   ProgramHeader TLSHeader{};
   bool Loaded {false};
 };
