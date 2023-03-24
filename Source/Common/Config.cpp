@@ -94,9 +94,9 @@ namespace FEX::Config {
       // This symlink will be in the style of `/dev/fd/<FD>`.
       //
       // If the argument /is/ a symlink then resolve its path to get the original application name.
-      if (FHU::Symlinks::IsSymlink(fextl::string_from_string(Program))) {
+      if (FHU::Symlinks::IsSymlink(Program)) {
         char Filename[PATH_MAX];
-        auto SymlinkPath = FHU::Symlinks::ResolveSymlink(fextl::string_from_string(Program), Filename);
+        auto SymlinkPath = FHU::Symlinks::ResolveSymlink(Program, Filename);
         if (SymlinkPath.starts_with('/')) {
           // This file was executed through an FD.
           // Remove the ` (deleted)` text if the file was deleted after the fact.
