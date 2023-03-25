@@ -1,3 +1,4 @@
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/NetStream.h>
 
 #include <array>
@@ -8,7 +9,7 @@
 
 namespace FEXCore::Utils {
 namespace {
-class NetBuf final : public std::streambuf {
+class NetBuf final : public std::streambuf, public FEXCore::Allocator::FEXAllocOperators {
 public:
     explicit NetBuf(int socketfd) : socket{socketfd} {
         reset_output_buffer();
