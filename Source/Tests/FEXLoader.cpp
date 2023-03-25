@@ -408,14 +408,14 @@ int main(int argc, char **argv, char **const envp) {
     return false;
   }, true);
 
-  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
-                                             : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
+                                             : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
   {
     // Load VDSO in to memory prior to mapping our ELFs.
     void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
     Loader.SetVDSOBase(VDSOBase);
-    Loader.CalculateHWCaps(CTX);
+    Loader.CalculateHWCaps(CTX.get());
 
     if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
@@ -485,7 +485,7 @@ int main(int argc, char **argv, char **const envp) {
 
   if (AOTIRGenerate()) {
     for(auto &Section: Loader.Sections) {
-      FEX::AOT::AOTGenSection(CTX, Section);
+      FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
     CTX->RunUntilExit();
@@ -515,7 +515,6 @@ int main(int argc, char **argv, char **const envp) {
 
   SyscallHandler.reset();
   SignalDelegation.reset();
-  FEXCore::Context::Context::DestroyContext(CTX);
 
   FEXCore::Threads::Shutdown();
 

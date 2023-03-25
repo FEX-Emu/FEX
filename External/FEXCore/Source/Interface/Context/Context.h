@@ -75,8 +75,6 @@ namespace FEXCore::Context {
       // Context base class implementation.
       bool InitializeContext() override;
 
-      void DestroyContext() override;
-
       FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer) override;
 
       void SetExitHandler(ExitHandler handler) override;

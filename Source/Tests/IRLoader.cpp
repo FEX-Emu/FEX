@@ -199,13 +199,12 @@ int main(int argc, char **argv, char **const envp)
   // Skip tests that require AVX on hosts that don't support it.
   const bool SupportsAVX = CTX->GetHostFeatures().SupportsAVX;
   if (!SupportsAVX && Loader.RequiresAVX()) {
-    FEXCore::Context::Context::DestroyContext(CTX);
     return 0;
   }
 
   int Return{};
 
-  if (Loader.LoadIR(CTX))
+  if (Loader.LoadIR(CTX.get()))
   {
     CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
@@ -254,6 +253,5 @@ int main(int argc, char **argv, char **const envp)
     Return = -1;
   }
 
-  FEXCore::Context::Context::DestroyContext(CTX);
   return Return;
 }

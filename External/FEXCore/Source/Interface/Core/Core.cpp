@@ -171,6 +171,10 @@ namespace FEXCore::Context {
   }
 
   ContextImpl::~ContextImpl() {
+    if (ParentThread) {
+      DestroyThread(ParentThread);
+    }
+
     {
       if (CodeObjectCacheService) {
         CodeObjectCacheService->Shutdown();

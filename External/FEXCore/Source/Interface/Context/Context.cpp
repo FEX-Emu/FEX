@@ -24,23 +24,12 @@ namespace FEXCore::Context {
     IR::InstallOpcodeHandlers(Mode);
   }
 
-  FEXCore::Context::Context *FEXCore::Context::Context::CreateNewContext() {
-    return new FEXCore::Context::ContextImpl{};
-  }
-
-  void FEXCore::Context::Context::DestroyContext(FEXCore::Context::Context *CTX) {
-    CTX->DestroyContext();
-    delete CTX;
+  fextl::unique_ptr<FEXCore::Context::Context> FEXCore::Context::Context::CreateNewContext() {
+    return fextl::make_unique<FEXCore::Context::ContextImpl>();
   }
 
   bool FEXCore::Context::ContextImpl::InitializeContext() {
     return FEXCore::CPU::CreateCPUCore(this);
-  }
-
-  void FEXCore::Context::ContextImpl::DestroyContext() {
-    if (ParentThread) {
-      DestroyThread(ParentThread);
-    }
   }
 
   void FEXCore::Context::ContextImpl::SetExitHandler(ExitHandler handler) {

@@ -185,7 +185,6 @@ int main(int argc, char **argv, char **const envp) {
     (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
 
   if (TestUnsupported) {
-    FEXCore::Context::Context::DestroyContext(CTX);
     return 0;
   }
 
@@ -204,8 +203,8 @@ int main(int argc, char **argv, char **const envp) {
       return false;
     }, true);
 
-    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
-                                               : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
+                                               : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
     // Run through FEX
     if (!Loader.MapMemory(SyscallHandler.get())) {
@@ -244,8 +243,6 @@ int main(int argc, char **argv, char **const envp) {
 
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
-
-  FEXCore::Context::Context::DestroyContext(CTX);
 
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 

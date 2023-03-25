@@ -89,7 +89,7 @@ namespace FEXCore::Context {
        *
        * @return a new context object
        */
-      FEX_DEFAULT_VISIBILITY static FEXCore::Context::Context *CreateNewContext();
+      FEX_DEFAULT_VISIBILITY static fextl::unique_ptr<FEXCore::Context::Context> CreateNewContext();
 
       /**
        * @brief Post creation context initialization
@@ -100,14 +100,6 @@ namespace FEXCore::Context {
        * @return true if we managed to initialize correctly
        */
       FEX_DEFAULT_VISIBILITY virtual bool InitializeContext() = 0;
-
-      /**
-       * @brief Destroy the context object
-       *
-       * @param CTX
-       */
-      FEX_DEFAULT_VISIBILITY static void DestroyContext(FEXCore::Context::Context * CTX);
-      FEX_DEFAULT_VISIBILITY virtual void DestroyContext() = 0;
 
       /**
        * @brief Allows setting up in memory code and other things prior to launchign code execution
