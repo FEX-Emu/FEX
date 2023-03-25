@@ -8,6 +8,7 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
 #include <atomic>
@@ -37,7 +38,7 @@ private:
     void Break(int signal);
 
     void OpenListenSocket();
-    std::unique_ptr<std::iostream> OpenSocket();
+    fextl::unique_ptr<std::iostream> OpenSocket();
     void StartThread();
     fextl::string ReadPacket(std::iostream &stream);
     void SendPacket(std::ostream &stream, const fextl::string& packet);
@@ -76,8 +77,8 @@ private:
     HandledPacketType readReg(const fextl::string& packet);
 
     FEXCore::Context::ContextImpl *CTX;
-    std::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
-    std::unique_ptr<std::iostream> CommsStream;
+    fextl::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
+    fextl::unique_ptr<std::iostream> CommsStream;
     std::mutex sendMutex;
     bool SettingNoAckMode{false};
     bool NoAckMode{false};

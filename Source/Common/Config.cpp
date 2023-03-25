@@ -10,7 +10,6 @@
 
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <linux/limits.h>
 #include <list>
 #include <utility>
@@ -37,10 +36,12 @@ namespace FEX::Config {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    std::ofstream Output (fextl::string_from_string(Filename), std::ios::out | std::ios::binary);
-    if (Output.is_open()) {
-      Output.write(Buffer, strlen(Buffer));
-      Output.close();
+    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+    int FD = open(Filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+
+    if (FD != -1) {
+      write(FD, Buffer, strlen(Buffer));
+      close(FD);
     }
   }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <filesystem>
 #include <fstream>
@@ -15,7 +16,8 @@ namespace FEXCore::FileLoading {
    *
    * @return true on file loaded, false on failure
    */
-  bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize = 0);
+  FEX_DEFAULT_VISIBILITY bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize = 0);
+  FEX_DEFAULT_VISIBILITY bool LoadFile(fextl::string &Data, const fextl::string &Filepath, size_t FixedSize = 0);
 
   /**
    * @brief Loads a filepath in to a buffer of data with a fixed size
@@ -25,6 +27,6 @@ namespace FEXCore::FileLoading {
    *
    * @return The amount of data read or -1 on error.
    */
-  ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer);
+  FEX_DEFAULT_VISIBILITY ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer);
 }
 

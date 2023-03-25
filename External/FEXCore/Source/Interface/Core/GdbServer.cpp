@@ -24,6 +24,7 @@ $end_info$
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/NetStream.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
@@ -137,16 +138,9 @@ static fextl::string encodeHex(const unsigned char *data, size_t length) {
 
 static fextl::string getThreadName(uint32_t ThreadID) {
   const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
-  std::fstream fs(ThreadFile.c_str(), std::fstream::in | std::fstream::binary);
-
-  if (fs.is_open()) {
-    fextl::string ThreadName;
-    fs >> ThreadName;
-    fs.close();
-    return ThreadName;
-  }
-
-  return "<No Name>";
+  fextl::string ThreadName {"<No Name>"};
+  FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
+  return ThreadName;
 }
 
 // Packet parser
@@ -544,7 +538,10 @@ void GdbServer::buildLibraryMap() {
 
   fextl::ostringstream xml;
 
-  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  fextl::string MapsFile;
+  FEXCore::FileLoading::LoadFile(MapsFile, "/proc/self/maps");
+  fextl::istringstream MapsStream(MapsFile);
+
   fextl::string Line;
 
   struct FileData {
@@ -555,7 +552,7 @@ void GdbServer::buildLibraryMap() {
 
   // 7ff5dd6d2000-7ff5dd6d3000 rw-p 0000a000 103:0b 1881447                   /usr/lib/x86_64-linux-gnu/libnss_compat.so.2
   fextl::string const &RuntimeExecutable = Filename();
-  while (std::getline(fs, Line)) {
+  while (std::getline(MapsStream, Line)) {
     auto ss = fextl::istringstream(Line);
     fextl::string Tmp;
     fextl::string Begin;
@@ -737,11 +734,14 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string &packet) 
 
 static size_t CheckMemMapping(uint64_t Address, size_t Size) {
   uint64_t AddressEnd = Address + Size;
-  std::fstream fs("/proc/self/maps", std::fstream::in | std::fstream::binary);
+  fextl::string MapsFile;
+  FEXCore::FileLoading::LoadFile(MapsFile, "/proc/self/maps");
+  fextl::istringstream MapsStream(MapsFile);
+
   fextl::string Line;
 
-  while (std::getline(fs, Line)) {
-    if (fs.eof()) break;
+  while (std::getline(MapsStream, Line)) {
+    if (MapsStream.eof()) break;
     uint64_t Begin, End;
     char r,w,x,p;
     if (sscanf(Line.c_str(), "%lx-%lx %c%c%c%c", &Begin, &End, &r, &w, &x, &p) == 6) {
@@ -1280,7 +1280,7 @@ void GdbServer::StartThread() {
 }
 
 void GdbServer::OpenListenSocket() {
-  // open socket
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   struct addrinfo hints, *res;
 
   memset(&hints, 0, sizeof(hints));
@@ -1309,9 +1309,11 @@ void GdbServer::OpenListenSocket() {
   }
 
   listen(ListenSocket, 1);
+
+  freeaddrinfo(res);
 }
 
-std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
+fextl::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   // Block until a connection arrives
   struct sockaddr_storage their_addr{};
   socklen_t addr_size{};
@@ -1319,7 +1321,7 @@ std::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   LogMan::Msg::IFmt("GdbServer, waiting for connection on localhost:8086");
   int new_fd = accept(ListenSocket, (struct sockaddr *)&their_addr, &addr_size);
 
-  return std::make_unique<FEXCore::Utils::NetStream>(new_fd);
+  return fextl::make_unique<FEXCore::Utils::NetStream>(new_fd);
 }
 
 } // namespace FEXCore
