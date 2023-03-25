@@ -200,6 +200,18 @@ namespace FHU::Filesystem {
     return false;
   }
 
+  /**
+   * @brief Renames a file and overwrites if it already exists.
+   *
+   * @param From
+   * @param To
+   *
+   * @return True if the rename occured, False otherwise.
+   */
+  inline bool RenameFile(const fextl::string &From, const fextl::string &To) {
+    return rename(From.c_str(), To.c_str()) == 0;
+  }
+
   inline fextl::string LexicallyNormal(const fextl::string &Path) {
     const auto PathSize = Path.size();
 
