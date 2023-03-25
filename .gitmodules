@@ -48,7 +48,7 @@
 [submodule "External/robin-map"]
 	shallow = true
 	path = External/robin-map
-	url = https://github.com/Tessil/robin-map.git
+	url = https://github.com/FEX-Emu/robin-map.git
 [submodule "External/Vulkan-Headers"]
 	shallow = true
 	path = External/Vulkan-Headers
