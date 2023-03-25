@@ -30,6 +30,8 @@ $end_info$
 
 static std::thread CBThread{};
 static std::atomic<bool> CBDone{false};
+static std::mutex CBThreadMutex;
+static uint32_t ScreenRefCount;
 
 static CrossArchEvent WaitForWork{};
 static CrossArchEvent WorkDone{};
@@ -72,18 +74,28 @@ static void CallbackThreadFunc() {
 }
 
 extern "C" {
-  static void init_lib() {
+  void CreateCallback() {
+    std::unique_lock lk{CBThreadMutex};
+    ++ScreenRefCount;
+
     // Start a guest side thread that allows us to do callbacks from xcb safely
     if (!CBThread.joinable()) {
       CBThread = std::thread(CallbackThreadFunc);
     }
   }
-  __attribute__((destructor)) static void close_lib() {
-    if (CBThread.joinable()) {
-      CBDone = true;
-      NotifyWorkFunc(&WaitForWork);
-      NotifyWorkFunc(&WorkDone);
-      CBThread.join();
+
+  void RemoveCallback() {
+    std::unique_lock lk{CBThreadMutex};
+    --ScreenRefCount;
+
+    // If the new value is 0 then shutdown the work thread.
+    if (ScreenRefCount == 0) {
+      if (CBThread.joinable()) {
+        CBDone = true;
+        NotifyWorkFunc(&WaitForWork);
+        NotifyWorkFunc(&WorkDone);
+        CBThread.join();
+      }
     }
   }
 
@@ -117,17 +129,33 @@ extern "C" {
 
   xcb_connection_t * xcb_connect(const char * a_0,int * a_1){
     auto ret = fexfn_pack_xcb_connect(a_0, a_1);
+
+    if (xcb_get_file_descriptor(ret) != -1) {
+      // Only create callback on valid xcb connections.
+      // Checking for FD is the easiest way to do this.
+      CreateCallback();
+    }
     InitializeExtensions(ret);
     return ret;
   }
 
   xcb_connection_t * xcb_connect_to_display_with_auth_info(const char * a_0,xcb_auth_info_t * a_1,int * a_2){
     auto ret = fexfn_pack_xcb_connect_to_display_with_auth_info(a_0, a_1, a_2);
+    if (xcb_get_file_descriptor(ret) != -1) {
+      // Only create callback on valid xcb connections.
+      // Checking for FD is the easiest way to do this.
+      CreateCallback();
+    }
     InitializeExtensions(ret);
     return ret;
   }
 
   void xcb_disconnect(xcb_connection_t * a_0){
+    if (a_0 != nullptr && xcb_get_file_descriptor(a_0) != -1) {
+      // Only decrement callback reference on valid displays.
+      // Checking for FD and nullptr is the easiest way to do this.
+      RemoveCallback();
+    }
     fexfn_pack_xcb_disconnect(a_0);
   }
 
@@ -1407,4 +1435,4 @@ extern "C" {
   }
 }
 
-LOAD_LIB_INIT(libxcb, init_lib)
+LOAD_LIB(libxcb)
