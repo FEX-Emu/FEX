@@ -202,9 +202,7 @@ static bool IsShebangFile(std::span<char> Data) {
       ShebangProgram = FEX::HLE::_SyscallHandler->RootFSPath() + ShebangProgram;
     }
 
-    std::error_code ec;
-    bool exists = std::filesystem::exists(ShebangProgram, ec);
-    return !ec && exists;
+    return FHU::Filesystem::Exists(ShebangProgram);
   }
 
   return false;
