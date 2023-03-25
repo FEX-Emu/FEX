@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 
 #include <csetjmp>
@@ -28,8 +29,6 @@ $end_info$
 #include <sys/mman.h>
 #include <vector>
 #include <fstream>
-
-#include <fmt/format.h>
 
 #include "HarnessHelpers.h"
 
@@ -69,13 +68,13 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message)
     break;
   }
 
-  fmt::print("[{}] {}\n", CharLevel, Message);
+  fextl::fmt::print("[{}] {}\n", CharLevel, Message);
   fflush(stdout);
 }
 
 void AssertHandler(char const *Message)
 {
-  fmt::print("[ASSERT] {}\n", Message);
+  fextl::fmt::print("[ASSERT] {}\n", Message);
   fflush(stdout);
 }
 
@@ -99,7 +98,7 @@ public:
       fextl::stringstream out;
       auto IR = ParsedCode->ViewIR();
       FEXCore::IR::Dump(&out, &IR, nullptr);
-      fmt::print("IR:\n{}\n@@@@@\n", out.str());
+      fextl::fmt::print("IR:\n{}\n@@@@@\n", out.str());
 
       for (auto &[region, size] : Config.GetMemoryRegions()) {
         FEXCore::Allocator::mmap(reinterpret_cast<void *>(region), size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

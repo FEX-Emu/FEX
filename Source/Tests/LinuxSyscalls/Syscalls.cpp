@@ -30,6 +30,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -898,7 +899,7 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
   if (stat(GuestSourceFile.data(), &GuestSourceFileStat) != 0 || GuestBinaryFileStat.st_mtime > GuestSourceFileStat.st_mtime) {
     LogMan::Msg::DFmt("GenerateMap: Generating source for '{}'", GuestBinaryFile);
-    auto command = fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);
+    auto command = fextl::fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);
     if (system(command.c_str()) != 0) {
       LogMan::Msg::DFmt("GenerateMap: '{}' failed", command);
       return {};

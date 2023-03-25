@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/unordered_set.h>
@@ -32,7 +33,7 @@ $end_info$
 #include <sys/user.h>
 #include <utility>
 
-#define SRA_DEBUG(...) // fmt::print(__VA_ARGS__)
+#define SRA_DEBUG(...) // fextl::fmt::print(__VA_ARGS__)
 
 namespace FEXCore::IR {
 namespace {

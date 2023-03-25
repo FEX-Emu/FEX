@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -52,7 +53,6 @@ $end_info$
 #include <unistd.h>
 #include <utility>
 
-#include <fmt/format.h>
 #include <sys/sysinfo.h>
 #include <sys/signal.h>
 
@@ -95,7 +95,7 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     break;
   }
 
-  const auto Output = fmt::format("[{}] {}\n", CharLevel, Message);
+  const auto Output = fextl::fmt::format("[{}] {}\n", CharLevel, Message);
   write(OutputFD, Output.c_str(), Output.size());
   fsync(OutputFD);
 }
@@ -105,7 +105,7 @@ void AssertHandler(char const *Message) {
     return;
   }
 
-  const auto Output = fmt::format("[ASSERT] {}\n", Message);
+  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
   write(OutputFD, Output.c_str(), Output.size());
   fsync(OutputFD);
 }
@@ -299,7 +299,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
+    fextl::fmt::print("{}: command not found\n", Program.ProgramPath);
     return -ENOEXEC;
   }
 
@@ -320,15 +320,15 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
-    fmt::print(stderr, "Invalid or Unsupported elf file.\n");
+    fextl::fmt::print("Invalid or Unsupported elf file.\n");
 #ifdef _M_ARM_64
-    fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
-    fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
+    fextl::fmt::print("This is likely due to a misconfigured x86-64 RootFS\n");
+    fextl::fmt::print("Current RootFS path set to '{}'\n", LDPath());
     std::error_code ec;
     if (LDPath().empty() ||
         std::filesystem::exists(LDPath(), ec) == false) {
-      fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
-      fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
+      fextl::fmt::print("RootFS path doesn't exist. This is required on AArch64 hosts\n");
+      fextl::fmt::print("Use FEXRootFSFetcher to download a RootFS\n");
     }
 #endif
     return -ENOEXEC;

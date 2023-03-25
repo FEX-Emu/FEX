@@ -29,8 +29,6 @@
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
-#include <fmt/format.h>
-
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,
                             FEXCore::Core::CPUState const& State2,
@@ -47,7 +45,7 @@ namespace FEX::HarnessHelper {
         return;
       }
 
-      fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
+      fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
     };
 
     const auto DumpFLAGs = [OutputGPRs](const fextl::string& Name, uint64_t A, uint64_t B) {
@@ -78,11 +76,11 @@ namespace FEX::HarnessHelper {
         FEXCore::X86State::RFLAG_ID_LOC,
       };
 
-      fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
+      fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
       for (const auto Flag : Flags) {
         const auto FlagMask = uint64_t{1} << Flag;
         if ((A & FlagMask) != (B & FlagMask)) {
-          fmt::print("\t{}: {} != {}\n", FEXCore::Core::GetFlagName(Flag), (A >> Flag) & 1, (B >> Flag) & 1);
+          fextl::fmt::print("\t{}: {} != {}\n", FEXCore::Core::GetFlagName(Flag), (A >> Flag) & 1, (B >> Flag) & 1);
         }
       }
     };
