@@ -28,7 +28,6 @@ $end_info$
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
-#include <fstream>
 #include <optional>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -305,7 +304,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
 
           for (const auto& Overlay : DBDepend.Overlays) {
             // Direct full path in guest RootFS to our overlay file
-            ThunkOverlays.emplace(Overlay, fextl::string_from_string(ThunkPath));
+            ThunkOverlays.emplace(Overlay, ThunkPath);
           }
       };
 
