@@ -322,9 +322,8 @@ int main(int argc, char **argv, char **const envp) {
 #ifdef _M_ARM_64
     fextl::fmt::print("This is likely due to a misconfigured x86-64 RootFS\n");
     fextl::fmt::print("Current RootFS path set to '{}'\n", LDPath());
-    std::error_code ec;
     if (LDPath().empty() ||
-        std::filesystem::exists(LDPath(), ec) == false) {
+        FHU::Filesystem::Exists(LDPath()) == false) {
       fextl::fmt::print("RootFS path doesn't exist. This is required on AArch64 hosts\n");
       fextl::fmt::print("Use FEXRootFSFetcher to download a RootFS\n");
     }
