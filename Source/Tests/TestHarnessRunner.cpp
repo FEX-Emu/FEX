@@ -131,7 +131,7 @@ int main(int argc, char **argv, char **const envp) {
     return -1;
   }
 
-  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
+  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1]};
 
   // Adds in environment options from the test harness config
   FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));

@@ -459,14 +459,12 @@ namespace FEX::HarnessHelper {
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
   public:
 
-    HarnessCodeLoader(fextl::string const &Filename, const char *ConfigFilename) {
+    HarnessCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
       TestFD = open(Filename.c_str(), O_CLOEXEC | O_RDONLY);
       TestFileSize = lseek(TestFD, 0, SEEK_END);
       lseek(TestFD, 0, SEEK_SET);
 
-      if (ConfigFilename) {
-        Config.Init(ConfigFilename);
-      }
+      Config.Init(ConfigFilename);
     }
 
     uint64_t StackSize() const override {
