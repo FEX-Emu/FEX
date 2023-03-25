@@ -477,8 +477,7 @@ namespace JSON {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         fextl::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
-        std::error_code ec{};
-        if (std::filesystem::exists(NamedRootFS, ec)) {
+        if (FHU::Filesystem::Exists(NamedRootFS)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
         }
       }
@@ -501,8 +500,7 @@ namespace JSON {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         fextl::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + PathName();
-        std::error_code ec{};
-        if (std::filesystem::exists(NamedConfig, ec)) {
+        if (FHU::Filesystem::Exists(NamedConfig)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
         }
       }
