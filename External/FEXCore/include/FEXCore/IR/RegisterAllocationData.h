@@ -1,5 +1,6 @@
 #pragma once
 #include "IR.h"
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <cstring>
 
@@ -57,14 +58,14 @@ class FEX_PACKED RegisterAllocationData {
 
     UniquePtr CreateCopy() const;
 
-    void Serialize(std::ostream& stream) const {
-      stream.write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
-      stream.write((const char*)&MapCount, sizeof(MapCount));
+    void Serialize(FEXCore::Context::AOTIRWriterFD& stream) const {
+      stream.Write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
+      stream.Write((const char*)&MapCount, sizeof(MapCount));
       // RAData (inline)
       // In file, IsShared is always set
       bool _IsShared = true;
-      stream.write((const char*)&_IsShared, sizeof(IsShared));
-      stream.write((const char*)&Map[0], sizeof(Map[0]) * MapCount);
+      stream.Write((const char*)&_IsShared, sizeof(IsShared));
+      stream.Write((const char*)&Map[0], sizeof(Map[0]) * MapCount);
     }
 };
 

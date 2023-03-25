@@ -168,7 +168,7 @@ namespace FEXCore::Context {
       void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) override {
         IRCaptureCache.SetAOTIRLoader(CacheReader);
       }
-      void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> CacheWriter) override {
+      void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriterFD>(const fextl::string&)> CacheWriter) override {
         IRCaptureCache.SetAOTIRWriter(CacheWriter);
       }
       void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) override {

@@ -60,14 +60,14 @@ namespace FEXCore::IR {
   }
 
   void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, FEXCore::IR::IRListView *IRList, FEXCore::IR::RegisterAllocationData *RAData) {
-    auto Inserted = Index.emplace(GuestRIP, Stream->tellp());
+    auto Inserted = Index.emplace(GuestRIP, Stream->Offset());
 
     if (Inserted.second) {
       //GuestHash
-      Stream->write((const char*)&Hash, sizeof(Hash));
+      Stream->Write((const char*)&Hash, sizeof(Hash));
 
       //GuestLength
-      Stream->write((const char*)&Length, sizeof(Length));
+      Stream->Write((const char*)&Length, sizeof(Length));
 
       RAData->Serialize(*Stream);
 
@@ -156,34 +156,34 @@ namespace FEXCore::IR {
 
       // pad to 32 bytes
       constexpr char Zero = 0;
-      while(stream->tellp() & 31)
-        stream->write(&Zero, 1);
+      while(stream->Offset() & 31)
+        stream->Write(&Zero, 1);
 
       // AOTIRInlineIndex
       const auto FnCount = Entry.Index.size();
-      const size_t DataBase = -stream->tellp();
+      const size_t DataBase = -stream->Offset();
 
-      stream->write((const char*)&FnCount, sizeof(FnCount));
-      stream->write((const char*)&DataBase, sizeof(DataBase));
+      stream->Write((const char*)&FnCount, sizeof(FnCount));
+      stream->Write((const char*)&DataBase, sizeof(DataBase));
 
       for (const auto& [GuestStart, DataOffset] : Entry.Index) {
         //AOTIRInlineIndexEntry
 
         // GuestStart
-        stream->write((const char*)&GuestStart, sizeof(GuestStart));
+        stream->Write((const char*)&GuestStart, sizeof(GuestStart));
 
         // DataOffset
-        stream->write((const char*)&DataOffset, sizeof(DataOffset));
+        stream->Write((const char*)&DataOffset, sizeof(DataOffset));
       }
 
       // End of file header
       const auto IndexSize = FnCount * sizeof(FEXCore::IR::AOTIRInlineIndexEntry) + sizeof(DataBase) + sizeof(FnCount);
-      stream->write((const char*)&IndexSize, sizeof(IndexSize));
-      stream->write(String.c_str(), ModSize);
-      stream->write((const char*)&ModSize, sizeof(ModSize));
+      stream->Write((const char*)&IndexSize, sizeof(IndexSize));
+      stream->Write(String.c_str(), ModSize);
+      stream->Write((const char*)&ModSize, sizeof(ModSize));
 
       // Close the stream
-      stream->close();
+      stream->Close();
 
       // Rename the file to atomically update the cache with the temporary file
       AOTIRRenamer(String);
@@ -200,6 +200,9 @@ namespace FEXCore::IR {
     }
 
     for (;;) {
+      // This code is tricky to refactor so it doesn't allocate memory through glibc.
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+
       AOTIRCaptureCacheWriteoutLock.lock();
       std::function<void()> fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
       bool MaybeEmpty = false;
@@ -327,6 +330,9 @@ namespace FEXCore::IR {
           auto RADataCopy = RAData->CreateCopy();
           auto RADataCopyDeleter = RADataCopy.get_deleter();
           auto IRListCopy = IRList->CreateCopy();
+
+          // This code is tricky to refactor so it doesn't allocate memory through glibc.
+          FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
           AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy=RADataCopy.release(), RADataCopyDeleter, FileId]() {
 
             // It is guaranteed via AOTIRCaptureCacheWriteoutLock and AOTIRCaptureCacheWriteoutFlusing that this will not run concurrently
@@ -337,7 +343,7 @@ namespace FEXCore::IR {
             if (!AotFile->Stream) {
               AotFile->Stream = AOTIRWriter(FileId);
               uint64_t tag = FEXCore::IR::AOTIR_COOKIE;
-              AotFile->Stream->write((char*)&tag, sizeof(tag));
+              AotFile->Stream->Write(&tag, sizeof(tag));
             }
             AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy);
             RADataCopyDeleter(RADataCopy);

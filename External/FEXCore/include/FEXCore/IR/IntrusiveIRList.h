@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FEXCore/IR/IR.h"
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
@@ -170,23 +171,23 @@ public:
     }
   }
 
-  void Serialize(std::ostream& stream) const {
+  void Serialize(FEXCore::Context::AOTIRWriterFD& stream) const {
     void *nul = nullptr;
     //void *IRDataInternal;
-    stream.write((const char*)&nul, sizeof(nul));
+    stream.Write((const char*)&nul, sizeof(nul));
     //void *ListDataInternal;
-    stream.write((const char*)&nul, sizeof(nul));
+    stream.Write((const char*)&nul, sizeof(nul));
     //size_t DataSize;
-    stream.write((const char*)&DataSize, sizeof(DataSize));
+    stream.Write((const char*)&DataSize, sizeof(DataSize));
     //size_t ListSize;
-    stream.write((const char*)&ListSize, sizeof(ListSize));
+    stream.Write((const char*)&ListSize, sizeof(ListSize));
     //uint64_t Flags;
     uint64_t WrittenFlags = FLAG_Shared; //on disk format always has the Shared flag
-    stream.write((const char*)&WrittenFlags, sizeof(WrittenFlags));
+    stream.Write((const char*)&WrittenFlags, sizeof(WrittenFlags));
 
     // inline data
-    stream.write((const char*)GetData(), DataSize);
-    stream.write((const char*)GetListData(), ListSize);
+    stream.Write((const char*)GetData(), DataSize);
+    stream.Write((const char*)GetListData(), ListSize);
   }
 
   void Serialize(uint8_t *ptr) const {

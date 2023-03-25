@@ -39,8 +39,6 @@ $end_info$
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
-#include <fstream>
-#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -456,17 +454,48 @@ int main(int argc, char **argv, char **const envp) {
                       "Capture doesn't work with programs that fork.");
 
     CTX->SetAOTIRLoader([](const fextl::string &fileid) -> int {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
+      const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
       return open(filepath.c_str(), O_RDONLY);
     });
 
-    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> std::unique_ptr<std::ofstream> {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+    class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriterFD {
+      public:
+        AOTIRWriterFD(const fextl::string &Path) {
+          // Create and truncate if exists.
+          constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+          FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+        }
+
+        operator bool() const {
+          return FD != -1;
+        }
+
+        void Write(const void* Data, size_t Size) override {
+          write(FD, Data, Size);
+        }
+
+        size_t Offset() override {
+          return lseek(FD, 0, SEEK_CUR);
+        }
+
+        void Close() override {
+          if (FD != -1) {
+            close(FD);
+            FD = -1;
+          }
+        }
+
+        virtual ~AOTIRWriterFD() {
+          Close();
+        }
+      private:
+        int FD{-1};
+    };
+
+    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> fextl::unique_ptr<AOTIRWriterFD> {
+      const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
+      auto AOTWrite = fextl::make_unique<AOTIRWriterFD>(filepath);
       if (*AOTWrite) {
-        std::filesystem::resize_file(filepath, 0);
-        AOTWrite->seekp(0);
         LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
       } else {
         LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
@@ -475,11 +504,11 @@ int main(int argc, char **argv, char **const envp) {
     });
 
     CTX->SetAOTIRRenamer([](const fextl::string& fileid) -> void {
-      auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-      auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+      const auto TmpFilepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
+      const auto NewFilepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
 
       // Rename the temporary file to atomically update the file
-      std::filesystem::rename(TmpFilepath, NewFilepath);
+      FHU::Filesystem::RenameFile(TmpFilepath, NewFilepath);
     });
   }
 
@@ -492,11 +521,9 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTEnabled) {
-    std::error_code ec{};
-    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
-    if (!ec) {
+    if (FHU::Filesystem::CreateDirectories(fextl::fmt::format("{}/aotir", FEXCore::Config::GetDataDirectory()))) {
       CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
-        auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+        const auto filepath = fextl::fmt::format("{}/aotir/{}.path", FEXCore::Config::GetDataDirectory(), fileid);
         int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
         if (fd != -1) {
           write(fd, filename.c_str(), filename.size());
