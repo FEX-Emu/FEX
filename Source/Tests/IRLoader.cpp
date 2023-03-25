@@ -139,16 +139,15 @@ public:
 
 private:
   uint64_t EntryRIP{};
-  std::unique_ptr<IREmitter> ParsedCode;
+  fextl::unique_ptr<IREmitter> ParsedCode;
 
   FEXCore::Utils::PooledAllocatorMalloc Allocator;
   FEX::HarnessHelper::ConfigLoader Config;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
 
-class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
+class DummySyscallHandler: public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
   public:
-
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) override {
     LOGMAN_MSG_A_FMT("Syscalls not implemented");
     return 0;
@@ -168,6 +167,7 @@ class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
 
 int main(int argc, char **argv, char **const envp)
 {
+  FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
@@ -189,7 +189,7 @@ int main(int argc, char **argv, char **const envp)
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
 
-  std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  fextl::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
 
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(new DummySyscallHandler());
