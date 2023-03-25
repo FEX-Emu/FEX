@@ -753,7 +753,7 @@ namespace FEXCore::Context {
     Dump(&out, &NewIR, nullptr);
     out.seekg(0);
     FEXCore::Utils::PooledAllocatorMalloc Allocator;
-    auto reparsed = IR::Parse(Allocator, &out);
+    auto reparsed = IR::Parse(Allocator, out);
     if (reparsed == nullptr) {
       LOGMAN_MSG_A_FMT("Failed to parse IR\n");
     } else {

@@ -330,21 +330,18 @@ class IRParser: public FEXCore::IR::IREmitter {
   LineDefinition *CurrentDef{};
   fextl::unordered_map<std::string_view, FEXCore::IR::IROps> NameToOpMap;
 
-  IRParser(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, std::istream *text)
+  IRParser(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, fextl::stringstream &MapsStream)
     : IREmitter {ThreadAllocator} {
     InitializeNameMap();
 
-    fextl::string TmpLine;
-    while (!text->eof()) {
-      std::getline(*text, TmpLine);
-      if (text->eof()) {
-        break;
-      }
-      if (text->fail()) {
+    fextl::string Line;
+    while (std::getline(MapsStream, Line)) {
+      if (MapsStream.eof()) break;
+      if (MapsStream.fail()) {
         LogMan::Msg::EFmt("Failed to getline on line: {}", Lines.size());
         return;
       }
-      Lines.emplace_back(TmpLine);
+      Lines.emplace_back(Line);
     }
 
     ResetWorkingList();
@@ -682,8 +679,8 @@ class IRParser: public FEXCore::IR::IREmitter {
 
 } // anon namespace
 
-std::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, std::istream *in) {
-    auto parser = std::make_unique<IRParser>(ThreadAllocator, in);
+fextl::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, fextl::stringstream &MapsStream) {
+    auto parser = fextl::make_unique<IRParser>(ThreadAllocator, MapsStream);
 
     if (parser->Loaded) {
       return parser;

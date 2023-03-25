@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/EnumUtils.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IREmitter.h>
@@ -83,14 +84,14 @@ class IRCodeLoader final {
 public:
   IRCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
     Config.Init(ConfigFilename);
-    std::fstream fp(fextl::string_from_string(Filename), std::fstream::binary | std::fstream::in);
 
-    if (!fp.is_open()) {
+    fextl::string IRFile;
+    if (!FEXCore::FileLoading::LoadFile(IRFile, Filename)) {
       LogMan::Msg::EFmt("Couldn't open IR file '{}'", Filename);
       return;
     }
-
-    ParsedCode = FEXCore::IR::Parse(Allocator, &fp);
+    fextl::stringstream IRStream(IRFile);
+    ParsedCode = FEXCore::IR::Parse(Allocator, IRStream);
 
     if (ParsedCode) {
       EntryRIP = 0x40000;
