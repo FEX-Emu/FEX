@@ -26,6 +26,7 @@ $end_info$
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -39,7 +40,6 @@ $end_info$
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
-#include <memory>
 #include <mutex>
 #include <queue>
 #include <set>
@@ -385,7 +385,7 @@ int main(int argc, char **argv, char **const envp) {
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
 
-  auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  auto SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
 
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [&SignalDelegation](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     ucontext_t* _context = (ucontext_t*)ucontext;
