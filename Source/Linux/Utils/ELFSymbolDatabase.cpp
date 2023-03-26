@@ -10,9 +10,11 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -51,10 +53,8 @@ void ELFSymbolDatabase::FillLibrarySearchPaths() {
 
 bool ELFSymbolDatabase::FindLibraryFile(fextl::string *Result, const char *Library) {
   for (auto &Path : LibrarySearchPaths) {
-    fextl::string TmpPath = Path + "/" + Library;
-    struct stat buf;
-    // XXX: std::filesystem::exists was crashing in std::filesystem::path's destructor?
-    if (stat(TmpPath.c_str(), &buf) == 0) {
+    const fextl::string TmpPath = fextl::fmt::format("{}/{}", Path, Library);
+    if (FHU::Filesystem::Exists(TmpPath)) {
       *Result = TmpPath;
       return true;
     }
