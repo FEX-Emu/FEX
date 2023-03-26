@@ -9,7 +9,6 @@
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
-#include <filesystem>
 #include <linux/limits.h>
 #include <list>
 #include <utility>
@@ -189,7 +188,7 @@ namespace FEX::Config {
       if (SteamID) {
         // If a SteamID exists then let's search for Steam application configs as well.
         // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-        fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, fextl::string_from_path(ProgramName));
+        fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, ProgramName);
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
       }
