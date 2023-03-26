@@ -701,10 +701,12 @@ namespace FEX::EmulatedFile {
     fextl::string procCmdLine = fextl::fmt::format("/proc/{}/cmdline", getpid());
     FDReadCreators[procCmdLine] = cmdline_handler;
 
-    cpus_online = "0";
     uint64_t CPUCores = ThreadsConfig();
     if (CPUCores > 1) {
-      cpus_online += "-" + std::to_string(CPUCores - 1);
+      cpus_online = fextl::fmt::format("0-{}", CPUCores - 1);
+    }
+    else {
+      cpus_online = "0";
     }
   }
 

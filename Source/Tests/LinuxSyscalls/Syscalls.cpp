@@ -382,7 +382,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
     // Create the environment variable to pass the FD to our FEX.
     // Needs to stick around until execveat completes.
-    FDExecEnv = "FEX_EXECVEFD=" + std::to_string(Args.dirfd);
+    FDExecEnv = fextl::fmt::format("FEX_EXECVEFD={}", Args.dirfd);
 
     // Insert the FD for FEX to track.
     EnvpArgs.emplace_back(FDExecEnv.data());
