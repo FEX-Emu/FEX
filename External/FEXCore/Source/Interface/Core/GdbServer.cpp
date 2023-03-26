@@ -442,7 +442,7 @@ fextl::string buildTargetXML() {
 
       // x87 stack
       for (int i=0; i < 8; i++) {
-          reg("st" + std::to_string(i), "i387_ext", 80);
+        reg(fextl::fmt::format("st{}", i), "i387_ext", 80);
       }
 
       // x87 control
@@ -478,7 +478,7 @@ fextl::string buildTargetXML() {
 
       // SSE regs
       for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
-          reg("xmm" + std::to_string(i), "vec128", 128);
+          reg(fextl::fmt::format("xmm{}", i), "vec128", 128);
       }
 
       reg("mxcsr", "int", 32);
