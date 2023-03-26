@@ -15,7 +15,6 @@
 #include <asm/ldt.h>
 #include <sys/syscall.h>
 #endif
-#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -272,7 +271,7 @@ private:
   }
 };
 
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
                FEXCore::Core::CPUState *OutputState) {
   x86HostRunner runner;
   SignalDelegation->RegisterHostSignalHandler(
@@ -286,7 +285,7 @@ void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uin
   runner.DispatchPtr(InitialRip, StackPointer);
 }
 #else
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
                FEXCore::Core::CPUState *OutputState) {
   LOGMAN_MSG_A_FMT("RunAsHost doesn't exist for this host");
 }

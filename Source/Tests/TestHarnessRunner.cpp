@@ -22,13 +22,13 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <csetjmp>
 #include <cstdint>
 #include <errno.h>
-#include <memory>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -158,7 +158,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  auto SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
   bool DidFault = false;
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
