@@ -105,7 +105,7 @@ namespace FEX::HarnessHelper {
     // GPRS
     for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i, MatchMask >>= 1) {
       if (MatchMask & 1) {
-        CheckGPRs(fextl::fmt::format("GPR{}", std::to_string(i)), State1.gregs[i], State2.gregs[i]);
+        CheckGPRs(fextl::fmt::format("GPR{}", i), State1.gregs[i], State2.gregs[i]);
       }
     }
 
@@ -113,15 +113,15 @@ namespace FEX::HarnessHelper {
     if (SupportsAVX) {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
         if (MatchMask & 1) {
-          CheckGPRs(fextl::fmt::format("XMM0_{}", std::to_string(i)), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
-          CheckGPRs(fextl::fmt::format("XMM1_{}", std::to_string(i)), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
+          CheckGPRs(fextl::fmt::format("XMM0_{}", i), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
+          CheckGPRs(fextl::fmt::format("XMM1_{}", i), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
         }
       }
     } else {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
         if (MatchMask & 1) {
-          CheckGPRs(fextl::fmt::format("XMM0_{}", std::to_string(i)), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
-          CheckGPRs(fextl::fmt::format("XMM1_{}", std::to_string(i)), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
+          CheckGPRs(fextl::fmt::format("XMM0_{}", i), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
+          CheckGPRs(fextl::fmt::format("XMM1_{}", i), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
         }
       }
     }
