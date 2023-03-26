@@ -1,8 +1,7 @@
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 
 #include <FEXCore/Config/Config.h>
-
-#include <memory>
+#include <FEXCore/fextl/memory.h>
 
 namespace {
   static void* ThreadHandler(void *Arg) {
@@ -38,13 +37,13 @@ namespace FEXCore::CodeSerialize {
 
   void CodeObjectSerializeService::Initialize() {
     // Add a canary so we don't crash on empty map iterator handling
-    auto it = AddressToEntryMap.insert_or_assign(~0ULL, std::make_unique<CodeRegionEntry>());
-		UnrelocatedAddressToEntryMap.insert_or_assign(~0ULL, it.first->second.get());
+    auto it = AddressToEntryMap.insert_or_assign(~0ULL, fextl::make_unique<CodeRegionEntry>());
+    UnrelocatedAddressToEntryMap.insert_or_assign(~0ULL, it.first->second.get());
 
-		uint64_t OldMask = FEXCore::Threads::SetSignalMask(~0ULL);
-		WorkerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
+    uint64_t OldMask = FEXCore::Threads::SetSignalMask(~0ULL);
+    WorkerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
     FEXCore::Threads::SetSignalMask(OldMask);
-	}
+  }
 
   void CodeObjectSerializeService::DoCodeRegionClosure(uint64_t Base, CodeRegionEntry *it) {
     if (Base == ~0ULL) {
@@ -81,5 +80,5 @@ namespace FEXCore::CodeSerialize {
     // Safely clear our maps now
     AddressToEntryMap.clear();
     UnrelocatedAddressToEntryMap.clear();
-	}
+  }
 }

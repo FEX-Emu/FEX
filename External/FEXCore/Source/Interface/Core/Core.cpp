@@ -1102,7 +1102,7 @@ namespace FEXCore::Context {
     if (CodeObjectCacheService &&
         Config.CacheObjectCodeCompilation == FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE &&
         DebugData) {
-      CodeObjectCacheService->AsyncAddSerializationJob(std::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(
+      CodeObjectCacheService->AsyncAddSerializationJob(fextl::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(
         CodeSerialize::AsyncJobHandler::SerializationJobData {
           .GuestRIP = GuestRIP,
           .GuestCodeLength = Length,

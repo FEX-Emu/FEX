@@ -1,7 +1,8 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 
-#include <FEXCore/Config/Config.h>
+
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
 namespace FEXCore::CodeSerialize {
@@ -31,7 +32,7 @@ namespace FEXCore::CodeSerialize {
     Entry->second->NamedJobRefCountMutex.unlock();
   }
 
-  void NamedRegionObjectHandler::RemoveNamedRegionObject(uintptr_t Base, uintptr_t Size, std::unique_ptr<CodeRegionEntry> Entry) {
+  void NamedRegionObjectHandler::RemoveNamedRegionObject(uintptr_t Base, uintptr_t Size, fextl::unique_ptr<CodeRegionEntry> Entry) {
     // XXX: Remove named region objects
 
     // XXX: Until entry loading is complete just claim it is loaded
@@ -41,7 +42,7 @@ namespace FEXCore::CodeSerialize {
   void NamedRegionObjectHandler::HandleNamedRegionObjectJobs() {
     // Walk through all of our jobs sequentially until the work queue is empty
     while (NamedWorkQueueJobs.load()) {
-      std::unique_ptr<AsyncJobHandler::NamedRegionWorkItem> WorkItem;
+      fextl::unique_ptr<AsyncJobHandler::NamedRegionWorkItem> WorkItem;
 
       {
         // Lock the work queue mutex for a short moment and grab an item from the list

@@ -2,11 +2,11 @@
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>
 #include <filesystem>
-#include <memory>
 #include <sys/uio.h>
 #include <sys/mman.h>
 #include <xxhash.h>
@@ -20,7 +20,7 @@ namespace FEXCore::CodeSerialize {
 
     if (!BaseFilename.empty()) {
       // Create a new entry that once set up will be put in to our section object map
-      auto Entry = std::make_unique<CodeRegionEntry>(
+      auto Entry = fextl::make_unique<CodeRegionEntry>(
         Base,
         Size,
         Offset,
@@ -82,7 +82,7 @@ namespace FEXCore::CodeSerialize {
   void AsyncJobHandler::AsyncRemoveNamedRegionJob(uintptr_t Base, uintptr_t Size) {
     // Removing a named region through the job system
     // We need to find the entry that we are deleting first
-    std::unique_ptr<CodeRegionEntry> EntryPointer;
+    fextl::unique_ptr<CodeRegionEntry> EntryPointer;
     {
       std::unique_lock lk {CodeObjectCacheService->GetEntryMapMutex()};
 
@@ -121,7 +121,7 @@ namespace FEXCore::CodeSerialize {
     }
   }
 
-  void AsyncJobHandler::AsyncAddSerializationJob(std::unique_ptr<SerializationJobData> Data) {
+  void AsyncJobHandler::AsyncAddSerializationJob(fextl::unique_ptr<SerializationJobData> Data) {
     // XXX: Actually add serialization job
   }
 }
