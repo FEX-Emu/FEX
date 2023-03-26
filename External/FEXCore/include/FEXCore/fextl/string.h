@@ -13,16 +13,6 @@ namespace fextl {
   inline fextl::string string_from_path(std::filesystem::path const &Path) {
     return Path.string().c_str();
   }
-
-  // Helper to be removed
-  inline fextl::string string_from_string(std::string const &Str) {
-    return Str.c_str();
-  }
-
-  // Helper to be removed
-  inline std::string string_from_string(fextl::string const &Str) {
-    return Str.c_str();
-  }
 }
 
 template<>
