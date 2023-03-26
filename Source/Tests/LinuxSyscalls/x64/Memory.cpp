@@ -19,8 +19,6 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <fstream>
-#include <filesystem>
 
 namespace FEX::HLE::x64 {
 

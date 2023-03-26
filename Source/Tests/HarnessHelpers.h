@@ -10,7 +10,6 @@
 #include <cassert>
 #include <cstring>
 #include <fcntl.h>
-#include <fstream>
 #include <sys/mman.h>
 #include <sys/user.h>
 

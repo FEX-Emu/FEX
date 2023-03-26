@@ -6,8 +6,6 @@
 #include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
-#include <filesystem>
-#include <fstream>
 #include <stddef.h>
 #include <string_view>
 #include <system_error>

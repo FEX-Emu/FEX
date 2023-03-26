@@ -3,8 +3,6 @@
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include <filesystem>
-#include <fstream>
 #include <span>
 
 namespace FEXCore::FileLoading {

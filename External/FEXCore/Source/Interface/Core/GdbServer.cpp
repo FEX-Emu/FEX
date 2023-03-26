@@ -39,7 +39,6 @@ $end_info$
 #include <elf.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <fstream>
 #include <fmt/format.h>
 #include <netdb.h>
 #include <signal.h>

@@ -10,7 +10,6 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <fstream>
 #include <memory>
 #include <shared_mutex>
 #include <FEXCore/HLE/SourcecodeResolver.h>

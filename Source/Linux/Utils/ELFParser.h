@@ -4,7 +4,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <elf.h>
-#include <fstream>
 #include <fcntl.h>
 #include <unistd.h>
 

@@ -15,8 +15,6 @@ $end_info$
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
-#include <filesystem>
-#include <fstream>
 #include <memory>
 #include <system_error>
 #include <sys/stat.h>

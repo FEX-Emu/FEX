@@ -29,7 +29,6 @@ $end_info$
 #include <stdio.h>
 #include <sys/mman.h>
 #include <vector>
-#include <fstream>
 
 #include "HarnessHelpers.h"
 
