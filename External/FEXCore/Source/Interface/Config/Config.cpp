@@ -7,6 +7,7 @@
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
@@ -424,7 +425,7 @@ namespace JSON {
       FEX_CONFIG_OPT(Cores, THREADS);
       if (Cores == 0) {
         // When the number of emulated CPU cores is zero then auto detect
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, std::to_string(FEXCore::CPUInfo::CalculateNumberOfCPUs()));
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, fextl::fmt::format("{}", FEXCore::CPUInfo::CalculateNumberOfCPUs()));
       }
     }
 
@@ -443,7 +444,7 @@ namespace JSON {
 #endif
       if (Core > MaxCoreNumber || Core < MinCoreNumber) {
         // Sanitize the core option by setting the core to the JIT if invalid
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, std::to_string(FEXCore::Config::CONFIG_IRJIT));
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint32_t>(FEXCore::Config::CONFIG_IRJIT)));
       }
     }
 
@@ -512,7 +513,7 @@ namespace JSON {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_SINGLESTEP)) {
       // Single stepping also enforces single instruction size blocks
-      Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, std::to_string(1u));
+      Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, "1");
     }
   }
 

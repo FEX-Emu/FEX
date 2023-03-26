@@ -371,13 +371,16 @@ def print_parse_argloader_options(options):
 
             value_type = op_vals["Type"]
             NeedsString = False
-            conversion_func = "std::to_string"
+            conversion_func = "fextl::fmt::format(\"{}\", "
             if ("ArgumentHandler" in op_vals):
                 NeedsString = True
-                conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
+                conversion_func = "FEXCore::Config::Handler::{0}(".format(op_vals["ArgumentHandler"])
             if (value_type == "str"):
                 NeedsString = True
-                conversion_func = ""
+                conversion_func = "("
+            if (value_type == "bool"):
+                # boolean values need a decimal specifier. Otherwise fmt prints strings.
+                conversion_func = "fextl::fmt::format(\"{:d}\", "
 
             if (value_type == "strarray"):
                 # these need a bit more help
@@ -391,7 +394,7 @@ def print_parse_argloader_options(options):
                 else:
                     output_argloader.write("\t{0} UserValue = Options.get(\"{1}\");\n".format(value_type, op_key))
 
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}(UserValue));\n".format(op_key.upper(), conversion_func))
+                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}UserValue));\n".format(op_key.upper(), conversion_func))
             output_argloader.write("}\n")
 
     output_argloader.write("#endif\n")
