@@ -1776,9 +1776,22 @@ public:
   }
 
   // SVE2 integer unary operations (predicated)
-  // XXX:
+  void urecpe(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b00000, SubRegSize::i32Bit, zd, pg, zn);
+  }
+  void ursqrte(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b00001, SubRegSize::i32Bit, zd, pg, zn);
+  }
+  void sqabs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b01000, size, zd, pg, zn);
+  }
+  void sqneg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b01001, size, zd, pg, zn);
+  }
+
   // SVE2 saturating/rounding bitwise shift left (predicated)
   // XXX
+
   // SVE2 integer halving add/subtract (predicated)
   void shadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     SVE2IntegerHalvingPredicated(0, 0, 0, size, pg, zd, zn, zm);
@@ -4499,4 +4512,9 @@ private:
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     SVE2IntegerPredicated((0b0010 << 1) | U, 0b101, size, zda, pg, zn);
+  }
+
+  void SVE2IntegerUnaryOpsPredicated(uint32_t op0, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    SVE2IntegerPredicated(op0, 0b101, size, zd, pg, zn);
   }

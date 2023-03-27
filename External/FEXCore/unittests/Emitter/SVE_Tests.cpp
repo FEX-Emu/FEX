@@ -2155,7 +2155,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer pairwise add and 
   TEST_SINGLE(uadalp(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "uadalp z30.d, p6/m, z29.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer unary operations (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(urecpe(ZReg::z30, PReg::p6.Merging(), ZReg::z29),  "urecpe z30.s, p6/m, z29.s");
+
+  TEST_SINGLE(ursqrte(ZReg::z30, PReg::p6.Merging(), ZReg::z29), "ursqrte z30.s, p6/m, z29.s");
+
+  TEST_SINGLE(sqabs(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqabs z30.b, p6/m, z29.b");
+  TEST_SINGLE(sqabs(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqabs z30.h, p6/m, z29.h");
+  TEST_SINGLE(sqabs(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqabs z30.s, p6/m, z29.s");
+  TEST_SINGLE(sqabs(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqabs z30.d, p6/m, z29.d");
+
+  TEST_SINGLE(sqneg(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqneg z30.b, p6/m, z29.b");
+  TEST_SINGLE(sqneg(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqneg z30.h, p6/m, z29.h");
+  TEST_SINGLE(sqneg(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqneg z30.s, p6/m, z29.s");
+  TEST_SINGLE(sqneg(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqneg z30.d, p6/m, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating/rounding bitwise shift left (predicated)") {
   // TODO: Implement in emitter.
