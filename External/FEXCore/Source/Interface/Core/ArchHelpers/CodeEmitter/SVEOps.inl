@@ -1768,7 +1768,13 @@ public:
 
   // SVE2 Integer - Predicated
   // SVE2 integer pairwise add and accumulate long
-  // XXX:
+  void sadalp(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerPairwiseAddAccumulateLong(0, size, zda, pg, zn);
+  }
+  void uadalp(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerPairwiseAddAccumulateLong(1, size, zda, pg, zn);
+  }
+
   // SVE2 integer unary operations (predicated)
   // XXX:
   // SVE2 saturating/rounding bitwise shift left (predicated)
@@ -4474,4 +4480,23 @@ private:
   void SVEIncDecPredicateCountVector(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, ZRegister zdn, PRegister pm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Cannot use 8-bit element size");
     SVEIncDecPredicateCountScalar(op0, op1, opc, b16, size, Register{zdn.Idx()}, pm);
+  }
+
+  void SVE2IntegerPredicated(uint32_t op0, uint32_t op1, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= op0 << 16; // Intentionally 16 instead of 17 to handle bit range nicer
+    Instr |= op1 << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerPairwiseAddAccumulateLong(uint32_t U, SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    SVE2IntegerPredicated((0b0010 << 1) | U, 0b101, size, zda, pg, zn);
   }

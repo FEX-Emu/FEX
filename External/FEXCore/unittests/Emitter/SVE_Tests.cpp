@@ -2146,7 +2146,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE mixed sign dot product") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer pairwise add and accumulate long") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sadalp(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sadalp z30.h, p6/m, z29.b");
+  TEST_SINGLE(sadalp(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sadalp z30.s, p6/m, z29.h");
+  TEST_SINGLE(sadalp(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sadalp z30.d, p6/m, z29.s");
+
+  TEST_SINGLE(uadalp(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "uadalp z30.h, p6/m, z29.b");
+  TEST_SINGLE(uadalp(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "uadalp z30.s, p6/m, z29.h");
+  TEST_SINGLE(uadalp(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "uadalp z30.d, p6/m, z29.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer unary operations (predicated)") {
   // TODO: Implement in emitter.
