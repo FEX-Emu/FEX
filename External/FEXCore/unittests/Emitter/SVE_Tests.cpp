@@ -2170,7 +2170,65 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer unary operations 
   TEST_SINGLE(sqneg(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "sqneg z30.d, p6/m, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating/rounding bitwise shift left (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(srshl(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "srshl z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(srshl(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "srshl z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(srshl(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "srshl z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(srshl(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "srshl z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(urshl(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "urshl z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(urshl(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "urshl z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(urshl(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "urshl z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(urshl(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "urshl z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(srshlr(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "srshlr z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(srshlr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "srshlr z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(srshlr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "srshlr z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(srshlr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "srshlr z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(urshlr(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "urshlr z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(urshlr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "urshlr z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(urshlr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "urshlr z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(urshlr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "urshlr z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(sqshl(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "sqshl z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(sqshl(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "sqshl z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(sqshl(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "sqshl z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(sqshl(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "sqshl z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(uqshl(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "uqshl z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(uqshl(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "uqshl z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(uqshl(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "uqshl z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(uqshl(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),   "uqshl z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(sqrshl(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqrshl z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(sqrshl(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqrshl z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(sqrshl(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqrshl z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(sqrshl(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqrshl z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(uqrshl(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqrshl z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(uqrshl(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqrshl z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(uqrshl(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqrshl z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(uqrshl(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqrshl z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(sqshlr(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqshlr z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(sqshlr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqshlr z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(sqshlr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqshlr z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(sqshlr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "sqshlr z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(uqshlr(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqshlr z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(uqshlr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqshlr z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(uqshlr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqshlr z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(uqshlr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29),  "uqshlr z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(sqrshlr(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "sqrshlr z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(sqrshlr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "sqrshlr z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(sqrshlr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "sqrshlr z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(sqrshlr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "sqrshlr z30.d, p6/m, z30.d, z29.d");
+
+  TEST_SINGLE(uqrshlr(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "uqrshlr z30.b, p6/m, z30.b, z29.b");
+  TEST_SINGLE(uqrshlr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "uqrshlr z30.h, p6/m, z30.h, z29.h");
+  TEST_SINGLE(uqrshlr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "uqrshlr z30.s, p6/m, z30.s, z29.s");
+  TEST_SINGLE(uqrshlr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z29), "uqrshlr z30.d, p6/m, z30.d, z29.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer halving add/subtract (predicated)") {
   TEST_SINGLE(shadd(SubRegSize::i8Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28),   "shadd z30.b, p6/m, z30.b, z28.b");

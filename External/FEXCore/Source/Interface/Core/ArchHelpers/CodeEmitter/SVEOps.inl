@@ -1790,7 +1790,42 @@ public:
   }
 
   // SVE2 saturating/rounding bitwise shift left (predicated)
-  // XXX
+  void srshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00010, size, zd, pg, zn, zm);
+  }
+  void urshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00011, size, zd, pg, zn, zm);
+  }
+  void srshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00110, size, zd, pg, zn, zm);
+  }
+  void urshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00111, size, zd, pg, zn, zm);
+  }
+  void sqshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01000, size, zd, pg, zn, zm);
+  }
+  void uqshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01001, size, zd, pg, zn, zm);
+  }
+  void sqrshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01010, size, zd, pg, zn, zm);
+  }
+  void uqrshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01011, size, zd, pg, zn, zm);
+  }
+  void sqshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01100, size, zd, pg, zn, zm);
+  }
+  void uqshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01101, size, zd, pg, zn, zm);
+  }
+  void sqrshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01110, size, zd, pg, zn, zm);
+  }
+  void uqrshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01111, size, zd, pg, zn, zm);
+  }
 
   // SVE2 integer halving add/subtract (predicated)
   void shadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
@@ -4517,4 +4552,10 @@ private:
   void SVE2IntegerUnaryOpsPredicated(uint32_t op0, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
     SVE2IntegerPredicated(op0, 0b101, size, zd, pg, zn);
+  }
+
+  void SVE2SaturatingRoundingBitwiseShiftLeft(uint32_t op0, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    SVE2IntegerPredicated(op0, 0b100, size, zd, pg, zm);
   }
