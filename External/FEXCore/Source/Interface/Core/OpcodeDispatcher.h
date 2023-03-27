@@ -474,6 +474,8 @@ public:
 
   void VMOVVectorNTOp(OpcodeArgs);
 
+  void VMPSADBWOp(OpcodeArgs);
+
   template <size_t ElementSize>
   void VPACKSSOp(OpcodeArgs);
 
