@@ -4029,31 +4029,33 @@ void OpDispatchBuilder::VDPPOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VDPPOp<8>(OpcodeArgs);
 
-void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
-  uint8_t Select = Op->Src[1].Data.Literal.Value;
+OrderedNode* OpDispatchBuilder::MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                                              const X86Tables::DecodedOperand& Src2Op,
+                                              const X86Tables::DecodedOperand& ImmOp) {
+  LOGMAN_THROW_A_FMT(ImmOp.IsLiteral(), "Src1 needs to be literal here");
+  const uint8_t Select = ImmOp.Data.Literal.Value;
 
   // Src1 needs to be in byte offset
-  uint8_t Select_Dest = ((Select & 0b100) >> 2) * 32 / 8;
-  uint8_t Select_Src2 = Select & 0b11;
+  const uint8_t Select_Src1 = ((Select & 0b100) >> 2) * 32 / 8;
+  const uint8_t Select_Src2 = Select & 0b11;
 
-  OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
   // Src2 will grab a 32bit element and duplicate it across the 128bits
-  OrderedNode *DupSrc = _VDupElement(16, 4, Src, Select_Src2);
+  OrderedNode *DupSrc = _VDupElement(16, 4, Src2, Select_Src2);
 
   // Src1/Dest needs a bunch of magic
 
   // Shift right by selected bytes
   // This will give us Dest[15:0], and Dest[79:64]
-  OrderedNode *Dest1 = _VExtr(16, 1, Dest, Dest, Select_Dest + 0);
+  OrderedNode *Dest1 = _VExtr(16, 1, Src1, Src1, Select_Src1 + 0);
   // This will give us Dest[31:16], and Dest[95:80]
-  OrderedNode *Dest2 = _VExtr(16, 1, Dest, Dest, Select_Dest + 1);
+  OrderedNode *Dest2 = _VExtr(16, 1, Src1, Src1, Select_Src1 + 1);
   // This will give us Dest[47:32], and Dest[111:96]
-  OrderedNode *Dest3 = _VExtr(16, 1, Dest, Dest, Select_Dest + 2);
+  OrderedNode *Dest3 = _VExtr(16, 1, Src1, Src1, Select_Src1 + 2);
   // This will give us Dest[63:48], and Dest[127:112]
-  OrderedNode *Dest4 = _VExtr(16, 1, Dest, Dest, Select_Dest + 3);
+  OrderedNode *Dest4 = _VExtr(16, 1, Src1, Src1, Select_Src1 + 3);
 
   // For each shifted section, we now have two 32-bit values per vector that can be used
   // Dest1.S[0] and Dest1.S[1] = Bytes - 0,1,2,3:4,5,6,7
@@ -4111,8 +4113,11 @@ void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
 
   auto Even = _VUnZip(16, 2, FinalCombine, FinalCombine);
   auto Odd = _VUnZip2(16, 2, FinalCombine, FinalCombine);
-  auto Result = _VInsElement(16, 8, 1, 0, Even, Odd);
+  return _VInsElement(16, 8, 1, 0, Even, Odd);
+}
 
+void OpDispatchBuilder::MPSADBWOp(OpcodeArgs) {
+  OrderedNode *Result = MPSADBWOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 

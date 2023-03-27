@@ -834,6 +834,10 @@ private:
                               const X86Tables::DecodedOperand& Src2,
                               const X86Tables::DecodedOperand& Imm);
 
+  OrderedNode* MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                             const X86Tables::DecodedOperand& Src2Op,
+                             const X86Tables::DecodedOperand& ImmOp);
+
   OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
 
