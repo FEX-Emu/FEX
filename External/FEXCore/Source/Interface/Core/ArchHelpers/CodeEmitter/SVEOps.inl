@@ -3465,22 +3465,6 @@ private:
     dc32(Instr);
   }
 
-  // SVE2 integer pairwise arithmetic
-  void SVEIntegerPairwiseArithmetic(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-
-    uint32_t Instr = 0b0100'0100'0001'0000'1010'0000'0000'0000;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   // SVE floating-point arithmetic (predicated)
   void SVEFloatArithmeticPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
@@ -4514,6 +4498,7 @@ private:
   }
 
   void SVE2IntegerPredicated(uint32_t op0, uint32_t op1, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
@@ -4533,7 +4518,6 @@ private:
   }
 
   void SVE2IntegerUnaryOpsPredicated(uint32_t op0, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
     SVE2IntegerPredicated(op0, 0b101, size, zd, pg, zn);
   }
 
@@ -4545,4 +4529,9 @@ private:
   void SVE2IntegerHalvingPredicated(uint32_t RSU, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
     SVE2IntegerPredicated((0b10 << 3) | RSU, 0b100, size, zd, pg, zm);
+  }
+
+  void SVEIntegerPairwiseArithmetic(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    SVE2IntegerPredicated((0b10 << 3) | (opc << 1) | U, 0b101, size, zd, pg, zm);
   }
