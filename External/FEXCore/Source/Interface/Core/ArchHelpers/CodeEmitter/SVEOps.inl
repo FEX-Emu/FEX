@@ -1768,35 +1768,89 @@ public:
 
   // SVE2 Integer - Predicated
   // SVE2 integer pairwise add and accumulate long
-  // XXX:
+  void sadalp(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerPairwiseAddAccumulateLong(0, size, zda, pg, zn);
+  }
+  void uadalp(SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerPairwiseAddAccumulateLong(1, size, zda, pg, zn);
+  }
+
   // SVE2 integer unary operations (predicated)
-  // XXX:
+  void urecpe(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b00000, SubRegSize::i32Bit, zd, pg, zn);
+  }
+  void ursqrte(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b00001, SubRegSize::i32Bit, zd, pg, zn);
+  }
+  void sqabs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b01000, size, zd, pg, zn);
+  }
+  void sqneg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerUnaryOpsPredicated(0b01001, size, zd, pg, zn);
+  }
+
   // SVE2 saturating/rounding bitwise shift left (predicated)
-  // XXX
+  void srshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00010, size, zd, pg, zn, zm);
+  }
+  void urshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00011, size, zd, pg, zn, zm);
+  }
+  void srshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00110, size, zd, pg, zn, zm);
+  }
+  void urshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b00111, size, zd, pg, zn, zm);
+  }
+  void sqshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01000, size, zd, pg, zn, zm);
+  }
+  void uqshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01001, size, zd, pg, zn, zm);
+  }
+  void sqrshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01010, size, zd, pg, zn, zm);
+  }
+  void uqrshl(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01011, size, zd, pg, zn, zm);
+  }
+  void sqshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01100, size, zd, pg, zn, zm);
+  }
+  void uqshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01101, size, zd, pg, zn, zm);
+  }
+  void sqrshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01110, size, zd, pg, zn, zm);
+  }
+  void uqrshlr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingRoundingBitwiseShiftLeft(0b01111, size, zd, pg, zn, zm);
+  }
+
   // SVE2 integer halving add/subtract (predicated)
   void shadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(0, 0, 0, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b000, size, pg, zd, zn, zm);
   }
   void uhadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(0, 0, 1, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b001, size, pg, zd, zn, zm);
   }
   void shsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(0, 1, 0, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b010, size, pg, zd, zn, zm);
   }
   void uhsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(0, 1, 1, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b011, size, pg, zd, zn, zm);
   }
   void srhadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(1, 0, 0, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b100, size, pg, zd, zn, zm);
   }
   void urhadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(1, 0, 1, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b101, size, pg, zd, zn, zm);
   }
   void shsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(1, 1, 0, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b110, size, pg, zd, zn, zm);
   }
   void uhsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerHalvingPredicated(1, 1, 1, size, pg, zd, zn, zm);
+    SVE2IntegerHalvingPredicated(0b111, size, pg, zd, zn, zm);
   }
 
   // SVE2 integer pairwise arithmetic
@@ -1818,28 +1872,28 @@ public:
 
   // SVE2 saturating add/subtract
   void sqadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b000, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b000, size, zd, pg, zn, zm);
   }
   void uqadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b001, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b001, size, zd, pg, zn, zm);
   }
   void sqsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b010, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b010, size, zd, pg, zn, zm);
   }
   void uqsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b011, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b011, size, zd, pg, zn, zm);
   }
   void suqadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b100, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b100, size, zd, pg, zn, zm);
   }
   void usqadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b101, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b101, size, zd, pg, zn, zm);
   }
   void sqsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b110, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b110, size, zd, pg, zn, zm);
   }
   void uqsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    SVE2IntegerSaturatingAddSub(size, 0b111, zd, pg, zn, zm);
+    SVE2IntegerSaturatingAddSub(0b111, size, zd, pg, zn, zm);
   }
 
   // SVE2 Widening Integer Arithmetic
@@ -3411,39 +3465,6 @@ private:
     dc32(Instr);
   }
 
-  // SVE2 integer halving add/subtract (predicated)
-  void SVE2IntegerHalvingPredicated(uint32_t R, uint32_t S, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-
-    uint32_t Instr = 0b0100'0100'0001'0000'1000'0000'0000'0000;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= R << 18;
-    Instr |= S << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
-  // SVE2 integer pairwise arithmetic
-  void SVEIntegerPairwiseArithmetic(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-
-    uint32_t Instr = 0b0100'0100'0001'0000'1010'0000'0000'0000;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 17;
-    Instr |= U << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   // SVE floating-point arithmetic (predicated)
   void SVEFloatArithmeticPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
@@ -3551,20 +3572,6 @@ private:
     Instr |= rn.Idx() << 16;
     Instr |= (static_cast<uint32_t>(imm) & 0b111111) << 5;
     Instr |= rd.Idx();
-    dc32(Instr);
-  }
-
-  void SVE2IntegerSaturatingAddSub(SubRegSize size, uint32_t opc, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
-    LOGMAN_THROW_A_FMT(zd == zn, "zd and zn must be the same register");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7.Merging(), "Saturing add/subtract can only use p0-p7 as a governing predicate");
-
-    uint32_t Instr = 0b0100'0100'0001'1000'1000'0000'0000'0000;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= opc << 16;
-    Instr |= pg.Idx() << 10;
-    Instr |= zm.Idx() << 5;
-    Instr |= zd.Idx();
     dc32(Instr);
   }
 
@@ -4474,4 +4481,48 @@ private:
   void SVEIncDecPredicateCountVector(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, ZRegister zdn, PRegister pm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Cannot use 8-bit element size");
     SVEIncDecPredicateCountScalar(op0, op1, opc, b16, size, Register{zdn.Idx()}, pm);
+  }
+
+  void SVE2IntegerPredicated(uint32_t op0, uint32_t op1, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit size");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= op0 << 16; // Intentionally 16 instead of 17 to handle bit range nicer
+    Instr |= op1 << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerPairwiseAddAccumulateLong(uint32_t U, SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    SVE2IntegerPredicated((0b0010 << 1) | U, 0b101, size, zda, pg, zn);
+  }
+
+  void SVE2IntegerUnaryOpsPredicated(uint32_t op0, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVE2IntegerPredicated(op0, 0b101, size, zd, pg, zn);
+  }
+
+  void SVE2SaturatingRoundingBitwiseShiftLeft(uint32_t op0, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    SVE2IntegerPredicated(op0, 0b100, size, zd, pg, zm);
+  }
+
+  void SVE2IntegerHalvingPredicated(uint32_t RSU, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    SVE2IntegerPredicated((0b10 << 3) | RSU, 0b100, size, zd, pg, zm);
+  }
+
+  void SVEIntegerPairwiseArithmetic(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    SVE2IntegerPredicated((0b10 << 3) | (opc << 1) | U, 0b101, size, zd, pg, zm);
+  }
+
+  void SVE2IntegerSaturatingAddSub(uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
+    SVE2IntegerPredicated((0b11 << 3) | opc, 0b100, size, zd, pg, zm);
   }
