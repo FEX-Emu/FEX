@@ -1182,6 +1182,56 @@ DEF_OP(LoadMemTSO) {
   }
 }
 
+DEF_OP(VLoadVectorMasked) {
+  LOGMAN_THROW_A_FMT(HostSupportsSVE, "Need SVE support in order to use LoadVectorMasked");
+
+  const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto CMPPredicate = ARMEmitter::PReg::p0;
+  const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B : PRED_TMP_16B;
+
+  const auto Dst = GetVReg(Node);
+  const auto MaskReg = GetVReg(Op->Mask.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
+  const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  // Check if the sign bit is set for the given element size.
+  cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+
+  switch (ElementSize) {
+    case 1: {
+      ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    case 2: {
+      ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    case 4: {
+      ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    case 8: {
+      ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled LoadVectorMasked size: {}", ElementSize);
+      break;
+  }
+}
+
 DEF_OP(StoreMem) {
   const auto Op = IROp->C<IR::IROp_StoreMem>();
   const auto OpSize = IROp->Size;

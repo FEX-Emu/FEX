@@ -766,6 +766,42 @@ DEF_OP(StoreMem) {
   }
 }
 
+DEF_OP(VLoadVectorMasked) {
+  const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto Dst = GetDst(Node);
+  const auto Mask = GetSrc(Op->Mask.ID());
+
+  const Xbyak::Reg MemReg = GetSrc<RA_64>(Op->Addr.ID());
+  const auto MemPtr = GenerateModRM(MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+  switch (ElementSize) {
+    case 4: {
+      if (Is256Bit) {
+        vmaskmovps(ToYMM(Dst), ToYMM(Mask), yword [MemPtr]);
+      } else {
+        vmaskmovps(Dst, Mask, xword [MemPtr]);
+      }
+      return;
+    }
+    case 8: {
+      if (Is256Bit) {
+        vmaskmovpd(ToYMM(Dst), ToYMM(Mask), yword [MemPtr]);
+      } else {
+        vmaskmovpd(Dst, Mask, xword [MemPtr]);
+      }
+      return;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VLoadVectorMasked element size: {}", ElementSize);
+      return;
+  }
+}
+
 DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
@@ -1045,6 +1081,7 @@ void X86JITCore::RegisterMemoryHandlers() {
   REGISTER_OP(STOREMEM,            StoreMem);
   REGISTER_OP(LOADMEMTSO,          LoadMem);
   REGISTER_OP(STOREMEMTSO,         StoreMem);
+  REGISTER_OP(VLOADVECTORMASKED,   VLoadVectorMasked);
   REGISTER_OP(MEMSET,              MemSet);
   REGISTER_OP(MEMCPY,              MemCpy);
   REGISTER_OP(CACHELINECLEAR,      CacheLineClear);
