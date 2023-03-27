@@ -1725,12 +1725,10 @@ DEF_OP(VFCMPEQ) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure we have no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     fcmeq(SubRegSize.Vector, ComparePred, Mask, Vector1.Z(), Vector2.Z());
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector1.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
@@ -1774,12 +1772,10 @@ DEF_OP(VFCMPNEQ) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure we have no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     fcmne(SubRegSize.Vector, ComparePred, Mask, Vector1.Z(), Vector2.Z());
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector1.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
@@ -1825,12 +1821,10 @@ DEF_OP(VFCMPLT) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure we have no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     fcmgt(SubRegSize.Vector, ComparePred, Mask, Vector2.Z(), Vector1.Z());
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector2.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector2.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
@@ -1874,12 +1868,10 @@ DEF_OP(VFCMPGT) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure there's no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     fcmgt(SubRegSize.Vector, ComparePred, Mask, Vector1.Z(), Vector2.Z());
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector1.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
@@ -1923,12 +1915,10 @@ DEF_OP(VFCMPLE) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure there's no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
     fcmge(SubRegSize.Vector, ComparePred, Mask, Vector2.Z(), Vector1.Z());
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector2.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector2.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector2.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
@@ -1973,17 +1963,14 @@ DEF_OP(VFCMPORD) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure there's no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
-
     // The idea is like comparing for unordered, but we just
     // invert the predicate from the comparison to instead
     // select all ordered elements in the vector.
     fcmuo(SubRegSize.Vector, ComparePred, Mask, Vector1.Z(), Vector2.Z());
     not_(ComparePred, Mask, ComparePred);
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector1.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
@@ -2034,13 +2021,10 @@ DEF_OP(VFCMPUNO) {
     const auto Mask = PRED_TMP_32B.Zeroing();
     const auto ComparePred = ARMEmitter::PReg::p0;
 
-    // Ensure there's no junk in the temporary.
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
-
     fcmuo(SubRegSize.Vector, ComparePred, Mask, Vector1.Z(), Vector2.Z());
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector1.Z());
-    orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector1.Z());
-    mov(Dst.Z(), VTMP1.Z());
+    movprfx(SubRegSize.Vector, Dst.Z(), ComparePred.Zeroing(), Vector1.Z());
+    orr(SubRegSize.Vector, Dst.Z(), ComparePred.Merging(), Dst.Z(), VTMP1.Z());
   } else {
     if (IsScalar) {
       switch (ElementSize) {
