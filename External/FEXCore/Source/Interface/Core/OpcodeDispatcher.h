@@ -474,6 +474,8 @@ public:
 
   void VMOVVectorNTOp(OpcodeArgs);
 
+  void VMPSADBWOp(OpcodeArgs);
+
   template <size_t ElementSize>
   void VPACKSSOp(OpcodeArgs);
 
@@ -833,6 +835,10 @@ private:
   OrderedNode* InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                               const X86Tables::DecodedOperand& Src2,
                               const X86Tables::DecodedOperand& Imm);
+
+  OrderedNode* MPSADBWOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                             const X86Tables::DecodedOperand& Src2Op,
+                             const X86Tables::DecodedOperand& ImmOp);
 
   OrderedNode* PACKSSOpImpl(OpcodeArgs, size_t ElementSize,
                             OrderedNode *Src1, OrderedNode *Src2);
