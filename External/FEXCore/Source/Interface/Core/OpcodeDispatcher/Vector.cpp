@@ -2261,6 +2261,27 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   }
 }
 
+OrderedNode* OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize,
+                                               const X86Tables::DecodedOperand& MaskOp,
+                                               const X86Tables::DecodedOperand& MemoryOp) {
+  const auto DstSize = GetDstSize(Op);
+
+  OrderedNode *Mask = LoadSource(FPRClass, Op, MaskOp, Op->Flags, -1);
+  OrderedNode *BaseAddr = LoadSource_WithOpSize(GPRClass, Op, MemoryOp, CTX->GetGPRSize(), Op->Flags, -1, false);
+  OrderedNode *CorrectedAddr = AppendSegmentOffset(BaseAddr, Op->Flags);
+  return _VLoadVectorMasked(DstSize, ElementSize, Mask, CorrectedAddr, Invalid(), MEM_OFFSET_SXTX, 1);
+}
+
+template <size_t ElementSize>
+void OpDispatchBuilder::VMASKMOVOp(OpcodeArgs) {
+  OrderedNode *Result = VMASKMOVOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+template
+void OpDispatchBuilder::VMASKMOVOp<4>(OpcodeArgs);
+template
+void OpDispatchBuilder::VMASKMOVOp<8>(OpcodeArgs);
+
 void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.IsGPR() &&
       Op->Dest.Data.GPR.GPR >= FEXCore::X86State::REG_XMM_0) {
