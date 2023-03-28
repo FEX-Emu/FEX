@@ -2937,8 +2937,8 @@ public:
                   size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 1 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0 : -1;
+      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
+      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
 
     SVEContiguousLoadImm(Op, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
   }

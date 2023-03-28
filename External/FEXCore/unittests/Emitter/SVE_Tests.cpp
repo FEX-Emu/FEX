@@ -3038,6 +3038,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous load (scalar pl
   TEST_SINGLE(ld1sw(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, -8), "ld1sw {z26.d}, p6/z, [x29, #-8, mul vl]");
   TEST_SINGLE(ld1sw(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, 7), "ld1sw {z26.d}, p6/z, [x29, #7, mul vl]");
 
+  TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29,  0), "ld1w {z26.s}, p6/z, [x29]");
+  TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29,  0), "ld1w {z26.d}, p6/z, [x29]");
+  TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, -8), "ld1w {z26.s}, p6/z, [x29, #-8, mul vl]");
+  TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, -8), "ld1w {z26.d}, p6/z, [x29, #-8, mul vl]");
+
   //TEST_SINGLE(ld1h<SubRegSize::i8Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, 0), "ld1h {z26.b}, p6/z, [x29]");
   TEST_SINGLE(ld1h<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, 0), "ld1h {z26.h}, p6/z, [x29]");
   TEST_SINGLE(ld1h<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, 0), "ld1h {z26.s}, p6/z, [x29]");
