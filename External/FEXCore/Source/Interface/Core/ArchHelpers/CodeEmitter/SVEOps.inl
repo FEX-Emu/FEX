@@ -1779,7 +1779,31 @@ public:
   }
 
   // SVE2 integer multiply-add long
-  // XXX:
+  void smlalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'000, size, zda, zn, zm);
+  }
+  void smlalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'001, size, zda, zn, zm);
+  }
+  void umlalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'010, size, zda, zn, zm);
+  }
+  void umlalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'011, size, zda, zn, zm);
+  }
+  void smlslb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'100, size, zda, zn, zm);
+  }
+  void smlslt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'101, size, zda, zn, zm);
+  }
+  void umlslb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'110, size, zda, zn, zm);
+  }
+  void umlslt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'111, size, zda, zn, zm);
+  }
+
   // SVE2 saturating multiply-add long
   // XXX:
   // SVE2 saturating multiply-add high
@@ -4575,4 +4599,8 @@ private:
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit,
                        "Element size may only be 16-bit, 32-bit, or 64-bit");
     SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
+  }
+
+  void SVE2IntegerMulAddLong(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingMulAddInterleaved(op0, size, zda, zn, zm);
   }

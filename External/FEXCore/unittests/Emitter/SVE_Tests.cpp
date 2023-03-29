@@ -2186,7 +2186,37 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 complex integer multiply-
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer multiply-add long") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(smlalb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlalb z30.h, z29.b, z28.b");
+  TEST_SINGLE(smlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlalb z30.s, z29.h, z28.h");
+  TEST_SINGLE(smlalb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlalb z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(smlalt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlalt z30.h, z29.b, z28.b");
+  TEST_SINGLE(smlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlalt z30.s, z29.h, z28.h");
+  TEST_SINGLE(smlalt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlalt z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(umlalb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlalb z30.h, z29.b, z28.b");
+  TEST_SINGLE(umlalb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlalb z30.s, z29.h, z28.h");
+  TEST_SINGLE(umlalb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlalb z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(umlalt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlalt z30.h, z29.b, z28.b");
+  TEST_SINGLE(umlalt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlalt z30.s, z29.h, z28.h");
+  TEST_SINGLE(umlalt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlalt z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(smlslb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlslb z30.h, z29.b, z28.b");
+  TEST_SINGLE(smlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlslb z30.s, z29.h, z28.h");
+  TEST_SINGLE(smlslb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlslb z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(smlslt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlslt z30.h, z29.b, z28.b");
+  TEST_SINGLE(smlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlslt z30.s, z29.h, z28.h");
+  TEST_SINGLE(smlslt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "smlslt z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(umlslb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlslb z30.h, z29.b, z28.b");
+  TEST_SINGLE(umlslb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlslb z30.s, z29.h, z28.h");
+  TEST_SINGLE(umlslb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlslb z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(umlslt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlslt z30.h, z29.b, z28.b");
+  TEST_SINGLE(umlslt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlslt z30.s, z29.h, z28.h");
+  TEST_SINGLE(umlslt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "umlslt z30.d, z29.s, z28.s");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add long") {
