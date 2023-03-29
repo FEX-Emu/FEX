@@ -347,6 +347,65 @@ DEF_OP(VLoadVectorMasked) {
   }
 }
 
+DEF_OP(VStoreVectorMasked) {
+  const auto Op = IROp->C<IR::IROp_VStoreVectorMasked>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = IROp->ElementSize;
+  const auto NumElements = OpSize / ElementSize;
+
+  auto *Dst = *GetSrc<uint8_t**>(Data->SSAData, Op->Addr);
+  const auto *RegData = GetSrc<uint8_t const*>(Data->SSAData, Op->Data);
+  const auto *Mask = GetSrc<uint8_t const*>(Data->SSAData, Op->Mask);
+
+  const auto SetElements = [NumElements]<typename T>(void* Dst, const T* MaskValues, const T* DataVals) {
+    const auto SignBit = 1ULL << ((sizeof(T) * 8) - 1);
+    for (size_t i = 0; i < NumElements; i++) {
+      if ((MaskValues[i] & SignBit) != 0) {
+        std::memcpy(static_cast<uint8_t*>(Dst) + (i * sizeof(T)), DataVals + i, sizeof(T));
+      }
+    }
+  };
+
+  if (!Op->Offset.IsInvalid()) {
+    auto Offset = *GetSrc<uintptr_t const*>(Data->SSAData, Op->Offset) * Op->OffsetScale;
+
+    switch(Op->OffsetType.Val) {
+      case IR::MEM_OFFSET_SXTX.Val: Dst +=  Offset; break;
+      case IR::MEM_OFFSET_UXTW.Val: Dst += (uint32_t)Offset; break;
+      case IR::MEM_OFFSET_SXTW.Val: Dst += (int32_t)Offset; break;
+    }
+  }
+
+  switch (ElementSize) {
+    case 1: {
+      SetElements(Dst, Mask, RegData);
+      return;
+    }
+    case 2: {
+      SetElements(Dst,
+                  reinterpret_cast<const uint16_t*>(Mask),
+                  reinterpret_cast<const uint16_t*>(RegData));
+      return;
+    }
+    case 4: {
+      SetElements(Dst,
+                  reinterpret_cast<const uint32_t*>(Mask),
+                  reinterpret_cast<const uint32_t*>(RegData));
+      return;
+    }
+    case 8: {
+      SetElements(Dst,
+                  reinterpret_cast<const uint64_t*>(Mask),
+                  reinterpret_cast<const uint64_t*>(RegData));
+      return;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VStoreVectorMasked element size: {}", ElementSize);
+      return;
+  }
+}
+
 DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
   const int32_t Size = Op->Size;

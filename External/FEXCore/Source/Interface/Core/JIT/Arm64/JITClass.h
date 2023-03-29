@@ -328,8 +328,9 @@ private:
   DEF_OP(LoadMem);
   DEF_OP(StoreMem);
   DEF_OP(LoadMemTSO);
-  DEF_OP(VLoadVectorMasked);
   DEF_OP(StoreMemTSO);
+  DEF_OP(VLoadVectorMasked);
+  DEF_OP(VStoreVectorMasked);
   DEF_OP(MemSet);
   DEF_OP(MemCpy);
   DEF_OP(ParanoidLoadMemTSO);
