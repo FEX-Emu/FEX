@@ -1805,7 +1805,19 @@ public:
   }
 
   // SVE2 saturating multiply-add long
-  // XXX:
+  void sqdmlalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'00, size, zda, zn, zm);
+  }
+  void sqdmlalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'01, size, zda, zn, zm);
+  }
+  void sqdmlslb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'10, size, zda, zn, zm);
+  }
+  void sqdmlslt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'11, size, zda, zn, zm);
+  }
+
   // SVE2 saturating multiply-add high
   // XXX:
   // SVE mixed sign dot product
