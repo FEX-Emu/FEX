@@ -306,6 +306,41 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
       }
       break;
 
+      case FABI_I32_I64_I64_I128_I128_I16: {
+        PushRegs();
+
+        const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
+        const auto Is64Bit = Op->GPRSize == 8;
+
+        const auto LHS = GetSrc(Op->LHS.ID());
+        const auto RHS = GetSrc(Op->RHS.ID());
+        const auto SrcRAX = GetSrc<RA_64>(Op->RAX.ID());
+        const auto SrcRDX = GetSrc<RA_64>(Op->RDX.ID());
+
+        // Encode the size check into the 8th bit to save a parameter
+        const auto Control = Op->Control | (uint16_t(Is64Bit) << 8);
+
+        mov(rdi, SrcRAX);
+        mov(rsi, SrcRDX);
+
+        movq(rdx, LHS);
+        pextrq(rcx, LHS, 1);
+
+        movq(r8, RHS);
+        pextrq(r9, RHS, 1);
+
+        sub(rsp, 16);
+        mov(dword [rsp], Control);
+
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
+
+        add(rsp, 16);
+        PopRegs();
+
+        mov(GetDst<RA_32>(Node), rax);
+        break;
+      }
+
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED

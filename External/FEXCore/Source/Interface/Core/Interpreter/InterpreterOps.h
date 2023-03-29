@@ -36,6 +36,7 @@ namespace FEXCore::CPU {
     FABI_I64_F80_F80,
     FABI_F80_F80,
     FABI_F80_F80_F80,
+    FABI_I32_I64_I64_I128_I128_I16,
   };
 
   struct FallbackInfo {
@@ -291,6 +292,7 @@ namespace FEXCore::CPU {
   DEF_OP(VUABDL);
   DEF_OP(VTBL1);
   DEF_OP(VRev64);
+  DEF_OP(VPCMPESTRX);
 
   ///< Encryption ops
   DEF_OP(AESImc);
