@@ -1963,64 +1963,52 @@ public:
 
   // SVE2 Widening Integer Arithmetic
   // SVE2 integer add/subtract long
-  void saddlb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 0, 0, 0, size, zd, zn, zm);
+  void saddlb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b000, size, zd, zn, zm);
   }
 
-  void saddlt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 0, 0, 1, size, zd, zn, zm);
+  void saddlt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b001, size, zd, zn, zm);
   }
 
-  void uaddlb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 0, 1, 0, size, zd, zn, zm);
+  void uaddlb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b010, size, zd, zn, zm);
   }
 
-  void uaddlt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 0, 1, 1, size, zd, zn, zm);
+  void uaddlt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b011, size, zd, zn, zm);
   }
 
-  void ssublb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 1, 0, 0, size, zd, zn, zm);
+  void ssublb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b100, size, zd, zn, zm);
   }
 
-  void ssublt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 1, 0, 1, size, zd, zn, zm);
+  void ssublt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b101, size, zd, zn, zm);
   }
 
-  void usublb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 1, 1, 0, size, zd, zn, zm);
+  void usublb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b110, size, zd, zn, zm);
   }
 
-  void usublt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(0, 1, 1, 1, size, zd, zn, zm);
+  void usublt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(0, 0b111, size, zd, zn, zm);
   }
 
-  void sabdlb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(1, 1, 0, 0, size, zd, zn, zm);
+  void sabdlb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(1, 0b100, size, zd, zn, zm);
   }
 
-  void sabdlt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(1, 1, 0, 1, size, zd, zn, zm);
+  void sabdlt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(1, 0b101, size, zd, zn, zm);
   }
 
-  void uabdlb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(1, 1, 1, 0, size, zd, zn, zm);
+  void uabdlb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(1, 0b110, size, zd, zn, zm);
   }
 
-  void uabdlt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit && size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Can't use 8/128-bit size");
-    SVE2IntegerAddSubLong(1, 1, 1, 1, size, zd, zn, zm);
+  void uabdlt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubLong(1, 0b111, size, zd, zn, zm);
   }
 
   // SVE2 integer add/subtract wide
@@ -4220,21 +4208,6 @@ private:
     SVEIntegerCompareVector(op, o2, ne, size, zm, pg, zn, pd);
   }
 
-  void SVE2IntegerAddSubLong(uint32_t op, uint32_t S, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0100'0101'0000'0000'00 << 14;
-    uint32_t Instr = Op;
-
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= zm.Idx() << 16;
-    Instr |= op << 13;
-    Instr |= S << 12;
-    Instr |= U << 11;
-    Instr |= T << 10;
-    Instr |= zn.Idx() << 5;
-    Instr |= zd.Idx();
-    dc32(Instr);
-  }
-
   void SVE2IntegerMultiplyLong(uint32_t op, uint32_t U, uint32_t T, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
     constexpr uint32_t Op = 0b0100'0101'0000'0000'011 << 13;
     uint32_t Instr = Op;
@@ -4623,4 +4596,20 @@ private:
 
   void SVE2IntegerMulAddLong(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
     SVE2SaturatingMulAddInterleaved(op0, size, zda, zn, zm);
+  }
+
+  void SVE2WideningIntegerArithmetic(uint32_t op, uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    uint32_t Instr = 0b0100'0101'0000'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 13;
+    Instr |= SUT << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2IntegerAddSubLong(uint32_t op, uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
+    SVE2WideningIntegerArithmetic(op, SUT, size, zd, zn, zm);
   }
