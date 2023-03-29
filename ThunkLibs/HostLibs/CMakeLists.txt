@@ -147,6 +147,9 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp ${GUEST_BITNESS})
   add_host_lib(xcb ${GUEST_BITNESS})
 
+  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
+  add_host_lib(wayland-client ${GUEST_BITNESS})
+
   generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp ${GUEST_BITNESS})
   add_host_lib(xcb-dri2 ${GUEST_BITNESS})
 
