@@ -1750,21 +1750,86 @@ public:
   }
 
   // SVE Integer Multiply-Add - Unpredicated
-  // XXX: CDOT
+  void cdot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVEIntegerDotProduct(0b0001, size, zda, zn, zm, rot);
+  }
+
   // SVE integer dot product (unpredicated)
-  // XXX:
+  void sdot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerDotProduct(0b0000, size, zda, zn, zm, Rotation::ROTATE_0);
+  }
+  void udot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerDotProduct(0b0000, size, zda, zn, zm, Rotation::ROTATE_90);
+  }
+
   // SVE2 saturating multiply-add interleaved long
-  // XXX:
+  void sqdmlalbt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingMulAddInterleaved(0b000010, size, zda, zn, zm);
+  }
+  void sqdmlslbt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingMulAddInterleaved(0b000011, size, zda, zn, zm);
+  }
+
   // SVE2 complex integer multiply-add
-  // XXX:
+  void cmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVEIntegerComplexMulAdd(0b0010, size, zda, zn, zm, rot);
+  }
+  void sqrdcmlah(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVEIntegerComplexMulAdd(0b0011, size, zda, zn, zm, rot);
+  }
+
   // SVE2 integer multiply-add long
-  // XXX:
+  void smlalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'000, size, zda, zn, zm);
+  }
+  void smlalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'001, size, zda, zn, zm);
+  }
+  void umlalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'010, size, zda, zn, zm);
+  }
+  void umlalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'011, size, zda, zn, zm);
+  }
+  void smlslb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'100, size, zda, zn, zm);
+  }
+  void smlslt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'101, size, zda, zn, zm);
+  }
+  void umlslb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'110, size, zda, zn, zm);
+  }
+  void umlslt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b010'111, size, zda, zn, zm);
+  }
+
   // SVE2 saturating multiply-add long
-  // XXX:
+  void sqdmlalb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'00, size, zda, zn, zm);
+  }
+  void sqdmlalt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'01, size, zda, zn, zm);
+  }
+  void sqdmlslb(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'10, size, zda, zn, zm);
+  }
+  void sqdmlslt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2IntegerMulAddLong(0b0110'11, size, zda, zn, zm);
+  }
+
   // SVE2 saturating multiply-add high
-  // XXX:
+  void sqrdmlah(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMultiplyAddUnpredicated(0b011'100, size, zda, zn, zm);
+  }
+  void sqrdmlsh(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMultiplyAddUnpredicated(0b011'101, size, zda, zn, zm);
+  }
+
   // SVE mixed sign dot product
-  // XXX:
+  void usdot(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerDotProduct(0b0111, SubRegSize::i32Bit, zda, zn, zm, Rotation::ROTATE_180);
+  }
 
   // SVE2 Integer - Predicated
   // SVE2 integer pairwise add and accumulate long
@@ -4525,4 +4590,37 @@ private:
   void SVE2IntegerSaturatingAddSub(uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
     SVE2IntegerPredicated((0b11 << 3) | opc, 0b100, size, zd, pg, zm);
+  }
+
+  void SVEIntegerMultiplyAddUnpredicated(uint32_t op0, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op0 << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerDotProduct(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Dot product must only use 32-bit or 64-bit element sizes");
+    SVEIntegerComplexMulAdd(op, size, zda, zn, zm, rot);
+  }
+
+  void SVEIntegerComplexMulAdd(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    const auto op0 = op << 2 | FEXCore::ToUnderlying(rot);
+    SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
+  }
+
+  void SVE2SaturatingMulAddInterleaved(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit,
+                       "Element size may only be 16-bit, 32-bit, or 64-bit");
+    SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
+  }
+
+  void SVE2IntegerMulAddLong(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingMulAddInterleaved(op0, size, zda, zn, zm);
   }
