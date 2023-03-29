@@ -1819,7 +1819,13 @@ public:
   }
 
   // SVE2 saturating multiply-add high
-  // XXX:
+  void sqrdmlah(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMultiplyAddUnpredicated(0b011'100, size, zda, zn, zm);
+  }
+  void sqrdmlsh(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerMultiplyAddUnpredicated(0b011'101, size, zda, zn, zm);
+  }
+
   // SVE mixed sign dot product
   // XXX:
 

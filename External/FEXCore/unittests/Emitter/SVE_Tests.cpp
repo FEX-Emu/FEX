@@ -2238,7 +2238,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add l
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add high") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sqrdmlah(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlah z30.b, z29.b, z28.b");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlah z30.h, z29.h, z28.h");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlah z30.s, z29.s, z28.s");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlah z30.d, z29.d, z28.d");
+
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlsh z30.b, z29.b, z28.b");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlsh z30.h, z29.h, z28.h");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlsh z30.s, z29.s, z28.s");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqrdmlsh z30.d, z29.d, z28.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE mixed sign dot product") {
