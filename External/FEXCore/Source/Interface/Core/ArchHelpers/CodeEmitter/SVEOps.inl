@@ -1827,7 +1827,9 @@ public:
   }
 
   // SVE mixed sign dot product
-  // XXX:
+  void usdot(ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerDotProduct(0b0111, SubRegSize::i32Bit, zda, zn, zm, Rotation::ROTATE_180);
+  }
 
   // SVE2 Integer - Predicated
   // SVE2 integer pairwise add and accumulate long

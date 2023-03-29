@@ -2250,7 +2250,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add h
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE mixed sign dot product") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(usdot(ZReg::z30, ZReg::z29, ZReg::z28), "usdot z30.s, z29.b, z28.b");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer pairwise add and accumulate long") {
