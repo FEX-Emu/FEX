@@ -2522,7 +2522,37 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract long
   TEST_SINGLE(uabdlt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uabdlt z30.d, z29.s, z28.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer add/subtract wide") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(saddwb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddwb z30.h, z29.h, z28.b");
+  TEST_SINGLE(saddwb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddwb z30.s, z29.s, z28.h");
+  TEST_SINGLE(saddwb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddwb z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(saddwt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddwt z30.h, z29.h, z28.b");
+  TEST_SINGLE(saddwt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddwt z30.s, z29.s, z28.h");
+  TEST_SINGLE(saddwt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "saddwt z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(uaddwb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uaddwb z30.h, z29.h, z28.b");
+  TEST_SINGLE(uaddwb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uaddwb z30.s, z29.s, z28.h");
+  TEST_SINGLE(uaddwb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uaddwb z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(uaddwt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uaddwt z30.h, z29.h, z28.b");
+  TEST_SINGLE(uaddwt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uaddwt z30.s, z29.s, z28.h");
+  TEST_SINGLE(uaddwt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uaddwt z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(ssubwb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubwb z30.h, z29.h, z28.b");
+  TEST_SINGLE(ssubwb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubwb z30.s, z29.s, z28.h");
+  TEST_SINGLE(ssubwb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubwb z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(ssubwt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubwt z30.h, z29.h, z28.b");
+  TEST_SINGLE(ssubwt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubwt z30.s, z29.s, z28.h");
+  TEST_SINGLE(ssubwt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "ssubwt z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(usubwb(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "usubwb z30.h, z29.h, z28.b");
+  TEST_SINGLE(usubwb(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "usubwb z30.s, z29.s, z28.h");
+  TEST_SINGLE(usubwb(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "usubwb z30.d, z29.d, z28.s");
+
+  TEST_SINGLE(usubwt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "usubwt z30.h, z29.h, z28.b");
+  TEST_SINGLE(usubwt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "usubwt z30.s, z29.s, z28.h");
+  TEST_SINGLE(usubwt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "usubwt z30.d, z29.d, z28.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer multiply long") {
   //TEST_SINGLE(sqdmullb(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmullb z30.b, z29.b, z28.b");

@@ -2012,7 +2012,30 @@ public:
   }
 
   // SVE2 integer add/subtract wide
-  // XXX:
+  void saddwb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b000, size, zd, zn, zm);
+  }
+  void saddwt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b001, size, zd, zn, zm);
+  }
+  void uaddwb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b010, size, zd, zn, zm);
+  }
+  void uaddwt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b011, size, zd, zn, zm);
+  }
+  void ssubwb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b100, size, zd, zn, zm);
+  }
+  void ssubwt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b101, size, zd, zn, zm);
+  }
+  void usubwb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b110, size, zd, zn, zm);
+  }
+  void usubwt(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2IntegerAddSubWide(0b111, size, zd, zn, zm);
+  }
 
   // SVE2 integer multiply long
   void sqdmullb(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
@@ -4591,6 +4614,11 @@ private:
   void SVE2IntegerAddSubLong(uint32_t op, uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
     SVE2WideningIntegerArithmetic(op, SUT, size, zd, zn, zm);
+  }
+
+  void SVE2IntegerAddSubWide(uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
+    SVE2WideningIntegerArithmetic(0b10, SUT, size, zd, zn, zm);
   }
 
   void SVE2IntegerMultiplyLong(uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
