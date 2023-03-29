@@ -173,7 +173,6 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, FLAGS_DEBUG ,                                                                  1, nullptr}},
     {0xCF, 1, X86InstInfo{"IRET",   TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                                                    0, nullptr}},
 
-    {0xD6, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
     {0xD7, 1, X86InstInfo{"XLAT",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                                           0, nullptr}},
 
     {0xE0, 1, X86InstInfo{"LOOPNE", TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1, nullptr}},
@@ -255,6 +254,9 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xA3, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8, nullptr}},
     {0xCE, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
     {0xD4, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
+    // `L1OM` Larrabee instructions used this as an escape byte.
+    // FEX will never support this.
+    {0xD6, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0, nullptr}},
     {0xEA, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                                      0, nullptr}},
   };
 
@@ -285,6 +287,7 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0xCE, 1, X86InstInfo{"INTO",   TYPE_INST, FLAGS_NONE,                                                        0, nullptr}},
     {0xD4, 1, X86InstInfo{"AAM",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                    1, nullptr}},
     {0xD5, 1, X86InstInfo{"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                    1, nullptr}},
+    {0xD6, 1, X86InstInfo{"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX, 0, nullptr}},
     {0xEA, 1, X86InstInfo{"JMPF",   TYPE_INST, FLAGS_NONE,                                                        0, nullptr}},
   };
 

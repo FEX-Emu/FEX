@@ -433,7 +433,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   GenerateFlags_ADC(Op, Result, Before, Src, CF);
 }
 
-template<uint32_t SrcIndex>
+template<uint32_t SrcIndex, bool SetFlags>
 void OpDispatchBuilder::SBBOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
@@ -459,10 +459,12 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  if (Size < 4) {
-    Result = _Bfe(Size, Size * 8, 0, Result);
+  if (SetFlags) {
+    if (Size < 4) {
+      Result = _Bfe(Size, Size * 8, 0, Result);
+    }
+    GenerateFlags_SBB(Op, Result, Before, Src, CF);
   }
-  GenerateFlags_SBB(Op, Result, Before, Src, CF);
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
@@ -6051,7 +6053,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x10, 6, &OpDispatchBuilder::ADCOp<0>},
 
-    {0x18, 6, &OpDispatchBuilder::SBBOp<0>},
+    {0x18, 6, &OpDispatchBuilder::SBBOp<0, true>},
 
     {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_AND, FEXCore::IR::IROps::OP_ATOMICFETCHAND, false>},
 
@@ -6133,6 +6135,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xCE, 1, &OpDispatchBuilder::INTOp},
     {0xD4, 1, &OpDispatchBuilder::AAMOp},
     {0xD5, 1, &OpDispatchBuilder::AADOp},
+    {0xD6, 1, &OpDispatchBuilder::SBBOp<0, false>},
   };
 
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable_64[] = {
@@ -6294,7 +6297,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 2), 1, &OpDispatchBuilder::ADCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 3), 1, &OpDispatchBuilder::SBBOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 3), 1, &OpDispatchBuilder::SBBOp<1, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
@@ -6303,7 +6306,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 2), 1, &OpDispatchBuilder::ADCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 3), 1, &OpDispatchBuilder::SBBOp<1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 3), 1, &OpDispatchBuilder::SBBOp<1, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
@@ -6312,7 +6315,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 2), 1, &OpDispatchBuilder::ADCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 3), 1, &OpDispatchBuilder::SBBOp<1>}, // Unit tests find this setting flags incorrectly
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 3), 1, &OpDispatchBuilder::SBBOp<1, true>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
