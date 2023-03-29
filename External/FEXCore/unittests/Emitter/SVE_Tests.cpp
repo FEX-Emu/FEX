@@ -2126,7 +2126,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Integer Multiply-Add - Unp
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer dot product (unpredicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sdot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.s, z29.b, z28.b");
+  TEST_SINGLE(sdot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sdot z30.d, z29.h, z28.h");
+
+  TEST_SINGLE(udot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.s, z29.b, z28.b");
+  TEST_SINGLE(udot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "udot z30.d, z29.h, z28.h");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add interleaved long") {

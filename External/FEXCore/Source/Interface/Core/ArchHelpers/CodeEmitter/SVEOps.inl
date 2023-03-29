@@ -1755,7 +1755,13 @@ public:
   }
 
   // SVE integer dot product (unpredicated)
-  // XXX:
+  void sdot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerDotProduct(0b0000, size, zda, zn, zm, Rotation::ROTATE_0);
+  }
+  void udot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVEIntegerDotProduct(0b0000, size, zda, zn, zm, Rotation::ROTATE_90);
+  }
+
   // SVE2 saturating multiply-add interleaved long
   // XXX:
   // SVE2 complex integer multiply-add
