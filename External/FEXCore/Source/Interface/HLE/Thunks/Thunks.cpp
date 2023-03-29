@@ -269,12 +269,12 @@ namespace FEXCore {
 
             auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
-            auto Name = Args->Name;
+            std::string_view Name = Args->Name;
 
             auto SOName = (CTX->Config.Is64BitMode() ?
                            CTX->Config.ThunkHostLibsPath() :
                            CTX->Config.ThunkHostLibsPath32())
-                          + "/" + (const char*)Name + "-host.so";
+                          + "/" + Name.data() + "-host.so";
 
             LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
 
@@ -283,7 +283,10 @@ namespace FEXCore {
                 ERROR_AND_DIE_FMT("LoadLib: Failed to dlopen thunk library {}: {}", SOName, dlerror());
             }
 
-            const auto InitSym = fextl::string("fexthunks_exports_") + Name;
+            // Library names often include dashes, which may not be used in C++ identifiers.
+            // They are replaced with underscores hence.
+            auto InitSym = "fexthunks_exports_" + fextl::string { Name };
+            std::replace(InitSym.begin(), InitSym.end(), '-', '_');
 
             ExportEntry* (*InitFN)();
             (void*&)InitFN = dlsym(Handle, InitSym.c_str());
@@ -303,7 +306,7 @@ namespace FEXCore {
             {
                 std::lock_guard lk(That->ThunksMutex);
 
-                That->Libs.insert(Name);
+                That->Libs.insert(fextl::string { Name });
 
                 int i;
                 for (i = 0; Exports[i].sha256; i++) {
