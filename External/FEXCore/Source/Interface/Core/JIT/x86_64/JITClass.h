@@ -346,8 +346,9 @@ private:
   DEF_OP(LoadFlag);
   DEF_OP(StoreFlag);
   DEF_OP(LoadMem);
-  DEF_OP(VLoadVectorMasked);
   DEF_OP(StoreMem);
+  DEF_OP(VLoadVectorMasked);
+  DEF_OP(VStoreVectorMasked);
   DEF_OP(MemSet);
   DEF_OP(MemCpy);
   DEF_OP(CacheLineClear);

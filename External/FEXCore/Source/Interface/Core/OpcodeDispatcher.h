@@ -459,7 +459,7 @@ public:
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
 
-  template <size_t ElementSize>
+  template <size_t ElementSize, bool IsStore>
   void VMASKMOVOp(OpcodeArgs);
 
   void VMOVAPS_VMOVAPD_Op(OpcodeArgs);
@@ -909,9 +909,9 @@ private:
                           const X86Tables::DecodedOperand& Src2,
                           const X86Tables::DecodedOperand& Imm);
 
-  OrderedNode* VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize,
-                              const X86Tables::DecodedOperand& MaskOp,
-                              const X86Tables::DecodedOperand& MemoryOp);
+  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, bool IsStore,
+                      const X86Tables::DecodedOperand& MaskOp,
+                      const X86Tables::DecodedOperand& DataOp);
 
   void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
 

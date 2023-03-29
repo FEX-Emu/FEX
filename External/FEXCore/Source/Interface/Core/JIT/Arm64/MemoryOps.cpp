@@ -1183,7 +1183,7 @@ DEF_OP(LoadMemTSO) {
 }
 
 DEF_OP(VLoadVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE, "Need SVE support in order to use LoadVectorMasked");
+  LOGMAN_THROW_A_FMT(HostSupportsSVE, "Need SVE support in order to use VLoadVectorMasked");
 
   const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
   const auto OpSize = IROp->Size;
@@ -1227,7 +1227,57 @@ DEF_OP(VLoadVectorMasked) {
       break;
     }
     default:
-      LOGMAN_MSG_A_FMT("Unhandled LoadVectorMasked size: {}", ElementSize);
+      LOGMAN_MSG_A_FMT("Unhandled VLoadVectorMasked size: {}", ElementSize);
+      break;
+  }
+}
+
+DEF_OP(VStoreVectorMasked) {
+  LOGMAN_THROW_A_FMT(HostSupportsSVE, "Need SVE support in order to use VStoreVectorMasked");
+
+  const auto Op = IROp->C<IR::IROp_VStoreVectorMasked>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto ElementSize = IROp->ElementSize;
+
+  const auto CMPPredicate = ARMEmitter::PReg::p0;
+  const auto GoverningPredicate = Is256Bit ? PRED_TMP_32B : PRED_TMP_16B;
+
+  const auto RegData = GetVReg(Op->Data.ID());
+  const auto MaskReg = GetVReg(Op->Mask.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
+  const auto MemDst = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  // Check if the sign bit is set for the given element size.
+  cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
+
+  switch (ElementSize) {
+    case 1: {
+      st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    case 2: {
+      st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    case 4: {
+      st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    case 8: {
+      st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unhandled VStoreVectorMasked size: {}", ElementSize);
       break;
   }
 }

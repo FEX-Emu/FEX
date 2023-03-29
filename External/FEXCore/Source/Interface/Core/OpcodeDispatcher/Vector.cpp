@@ -2261,26 +2261,42 @@ void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   }
 }
 
-OrderedNode* OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize,
-                                               const X86Tables::DecodedOperand& MaskOp,
-                                               const X86Tables::DecodedOperand& MemoryOp) {
-  const auto DstSize = GetDstSize(Op);
+void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, bool IsStore,
+                                       const X86Tables::DecodedOperand& MaskOp,
+                                       const X86Tables::DecodedOperand& DataOp) {
+
+  const auto MakeAddress = [this, Op](const X86Tables::DecodedOperand& Data) {
+    OrderedNode *BaseAddr = LoadSource_WithOpSize(GPRClass, Op, Data, CTX->GetGPRSize(), Op->Flags, -1, false);
+    return AppendSegmentOffset(BaseAddr, Op->Flags);
+  };
 
   OrderedNode *Mask = LoadSource(FPRClass, Op, MaskOp, Op->Flags, -1);
-  OrderedNode *BaseAddr = LoadSource_WithOpSize(GPRClass, Op, MemoryOp, CTX->GetGPRSize(), Op->Flags, -1, false);
-  OrderedNode *CorrectedAddr = AppendSegmentOffset(BaseAddr, Op->Flags);
-  return _VLoadVectorMasked(DstSize, ElementSize, Mask, CorrectedAddr, Invalid(), MEM_OFFSET_SXTX, 1);
+
+  if (IsStore) {
+    const auto RegSize = GetSrcSize(Op);
+    OrderedNode *Data = LoadSource(FPRClass, Op, DataOp, Op->Flags, -1);
+    OrderedNode *Address = MakeAddress(Op->Dest);
+    _VStoreVectorMasked(RegSize, ElementSize, Mask, Data, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+  } else {
+    const auto RegSize = GetDstSize(Op);
+    OrderedNode *Address = MakeAddress(DataOp);
+    OrderedNode *Result = _VLoadVectorMasked(RegSize, ElementSize, Mask, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    StoreResult(FPRClass, Op, Result, -1);
+  }
 }
 
-template <size_t ElementSize>
+template <size_t ElementSize, bool IsStore>
 void OpDispatchBuilder::VMASKMOVOp(OpcodeArgs) {
-  OrderedNode *Result = VMASKMOVOpImpl(Op, ElementSize, Op->Src[0], Op->Src[1]);
-  StoreResult(FPRClass, Op, Result, -1);
+  VMASKMOVOpImpl(Op, ElementSize, IsStore, Op->Src[0], Op->Src[1]);
 }
 template
-void OpDispatchBuilder::VMASKMOVOp<4>(OpcodeArgs);
+void OpDispatchBuilder::VMASKMOVOp<4, false>(OpcodeArgs);
 template
-void OpDispatchBuilder::VMASKMOVOp<8>(OpcodeArgs);
+void OpDispatchBuilder::VMASKMOVOp<4, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::VMASKMOVOp<8, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::VMASKMOVOp<8, true>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs) {
   if (Op->Dest.IsGPR() &&

@@ -896,6 +896,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
           }
           break;
         REGISTER_OP(VLOADVECTORMASKED,   VLoadVectorMasked);
+        REGISTER_OP(VSTOREVECTORMASKED,  VStoreVectorMasked);
 
         REGISTER_OP(MEMSET,              MemSet);
         REGISTER_OP(MEMCPY,              MemCpy);
