@@ -2144,7 +2144,45 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add i
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 complex integer multiply-add") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cmla(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "cmla z30.b, z29.b, z28.b, #0");
+  TEST_SINGLE(cmla(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "cmla z30.b, z29.b, z28.b, #90");
+  TEST_SINGLE(cmla(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "cmla z30.b, z29.b, z28.b, #180");
+  TEST_SINGLE(cmla(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "cmla z30.b, z29.b, z28.b, #270");
+
+  TEST_SINGLE(cmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "cmla z30.h, z29.h, z28.h, #0");
+  TEST_SINGLE(cmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "cmla z30.h, z29.h, z28.h, #90");
+  TEST_SINGLE(cmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "cmla z30.h, z29.h, z28.h, #180");
+  TEST_SINGLE(cmla(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "cmla z30.h, z29.h, z28.h, #270");
+
+  TEST_SINGLE(cmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "cmla z30.s, z29.s, z28.s, #0");
+  TEST_SINGLE(cmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "cmla z30.s, z29.s, z28.s, #90");
+  TEST_SINGLE(cmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "cmla z30.s, z29.s, z28.s, #180");
+  TEST_SINGLE(cmla(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "cmla z30.s, z29.s, z28.s, #270");
+
+  TEST_SINGLE(cmla(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "cmla z30.d, z29.d, z28.d, #0");
+  TEST_SINGLE(cmla(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "cmla z30.d, z29.d, z28.d, #90");
+  TEST_SINGLE(cmla(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "cmla z30.d, z29.d, z28.d, #180");
+  TEST_SINGLE(cmla(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "cmla z30.d, z29.d, z28.d, #270");
+
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "sqrdcmlah z30.b, z29.b, z28.b, #0");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "sqrdcmlah z30.b, z29.b, z28.b, #90");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "sqrdcmlah z30.b, z29.b, z28.b, #180");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "sqrdcmlah z30.b, z29.b, z28.b, #270");
+
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "sqrdcmlah z30.h, z29.h, z28.h, #0");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "sqrdcmlah z30.h, z29.h, z28.h, #90");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "sqrdcmlah z30.h, z29.h, z28.h, #180");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "sqrdcmlah z30.h, z29.h, z28.h, #270");
+
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "sqrdcmlah z30.s, z29.s, z28.s, #0");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "sqrdcmlah z30.s, z29.s, z28.s, #90");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "sqrdcmlah z30.s, z29.s, z28.s, #180");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "sqrdcmlah z30.s, z29.s, z28.s, #270");
+
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "sqrdcmlah z30.d, z29.d, z28.d, #0");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "sqrdcmlah z30.d, z29.d, z28.d, #90");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "sqrdcmlah z30.d, z29.d, z28.d, #180");
+  TEST_SINGLE(sqrdcmlah(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "sqrdcmlah z30.d, z29.d, z28.d, #270");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 integer multiply-add long") {

@@ -1771,7 +1771,13 @@ public:
   }
 
   // SVE2 complex integer multiply-add
-  // XXX:
+  void cmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVEIntegerComplexMulAdd(0b0010, size, zda, zn, zm, rot);
+  }
+  void sqrdcmlah(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVEIntegerComplexMulAdd(0b0011, size, zda, zn, zm, rot);
+  }
+
   // SVE2 integer multiply-add long
   // XXX:
   // SVE2 saturating multiply-add long
@@ -4557,7 +4563,10 @@ private:
   void SVEIntegerDotProduct(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Dot product must only use 32-bit or 64-bit element sizes");
+    SVEIntegerComplexMulAdd(op, size, zda, zn, zm, rot);
+  }
 
+  void SVEIntegerComplexMulAdd(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
     const auto op0 = op << 2 | FEXCore::ToUnderlying(rot);
     SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
   }
