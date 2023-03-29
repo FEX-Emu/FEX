@@ -1750,7 +1750,10 @@ public:
   }
 
   // SVE Integer Multiply-Add - Unpredicated
-  // XXX: CDOT
+  void cdot(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    SVEIntegerDotProduct(0b0001, size, zda, zn, zm, rot);
+  }
+
   // SVE integer dot product (unpredicated)
   // XXX:
   // SVE2 saturating multiply-add interleaved long
@@ -4525,4 +4528,24 @@ private:
   void SVE2IntegerSaturatingAddSub(uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
     SVE2IntegerPredicated((0b11 << 3) | opc, 0b100, size, zd, pg, zm);
+  }
+
+  void SVEIntegerMultiplyAddUnpredicated(uint32_t op0, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+
+    uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= zm.Idx() << 16;
+    Instr |= op0 << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEIntegerDotProduct(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Dot product must only use 32-bit or 64-bit element sizes");
+
+    const auto op0 = op << 2 | FEXCore::ToUnderlying(rot);
+    SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
   }

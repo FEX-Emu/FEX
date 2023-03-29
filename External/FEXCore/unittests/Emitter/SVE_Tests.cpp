@@ -2114,7 +2114,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE FFR initialise") {
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Integer Multiply-Add - Unpredicated") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cdot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "cdot z30.s, z29.b, z28.b, #0");
+  TEST_SINGLE(cdot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "cdot z30.s, z29.b, z28.b, #90");
+  TEST_SINGLE(cdot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "cdot z30.s, z29.b, z28.b, #180");
+  TEST_SINGLE(cdot(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "cdot z30.s, z29.b, z28.b, #270");
+
+  TEST_SINGLE(cdot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_0),   "cdot z30.d, z29.h, z28.h, #0");
+  TEST_SINGLE(cdot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_90),  "cdot z30.d, z29.h, z28.h, #90");
+  TEST_SINGLE(cdot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_180), "cdot z30.d, z29.h, z28.h, #180");
+  TEST_SINGLE(cdot(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28, Rotation::ROTATE_270), "cdot z30.d, z29.h, z28.h, #270");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer dot product (unpredicated)") {
