@@ -862,6 +862,9 @@ namespace FEXCore::Context {
             }
           }
           else {
+            if (TableInfo) {
+              LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
+            }
             // Invalid instruction
             Thread->OpDispatcher->InvalidOp(DecodedInfo);
             Thread->OpDispatcher->_ExitFunction(Thread->OpDispatcher->_EntrypointOffset(Block.Entry - GuestRIP, GPRSize));
