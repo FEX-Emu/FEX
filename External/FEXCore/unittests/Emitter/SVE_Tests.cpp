@@ -2134,7 +2134,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer dot product (unpre
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 saturating multiply-add interleaved long") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sqdmlalbt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmlalbt z30.h, z29.b, z28.b");
+  TEST_SINGLE(sqdmlalbt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmlalbt z30.s, z29.h, z28.h");
+  TEST_SINGLE(sqdmlalbt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmlalbt z30.d, z29.s, z28.s");
+
+  TEST_SINGLE(sqdmlslbt(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmlslbt z30.h, z29.b, z28.b");
+  TEST_SINGLE(sqdmlslbt(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmlslbt z30.s, z29.h, z28.h");
+  TEST_SINGLE(sqdmlslbt(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28), "sqdmlslbt z30.d, z29.s, z28.s");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 complex integer multiply-add") {

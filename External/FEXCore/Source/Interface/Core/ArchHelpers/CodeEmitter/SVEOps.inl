@@ -1763,7 +1763,13 @@ public:
   }
 
   // SVE2 saturating multiply-add interleaved long
-  // XXX:
+  void sqdmlalbt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingMulAddInterleaved(0b000010, size, zda, zn, zm);
+  }
+  void sqdmlslbt(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    SVE2SaturatingMulAddInterleaved(0b000011, size, zda, zn, zm);
+  }
+
   // SVE2 complex integer multiply-add
   // XXX:
   // SVE2 integer multiply-add long
@@ -4553,5 +4559,11 @@ private:
                        "Dot product must only use 32-bit or 64-bit element sizes");
 
     const auto op0 = op << 2 | FEXCore::ToUnderlying(rot);
+    SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
+  }
+
+  void SVE2SaturatingMulAddInterleaved(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit,
+                       "Element size may only be 16-bit, 32-bit, or 64-bit");
     SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
   }
