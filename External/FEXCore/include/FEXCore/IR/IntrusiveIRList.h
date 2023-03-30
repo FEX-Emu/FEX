@@ -170,6 +170,7 @@ public:
     }
   }
 
+  // Required due to raw new usage.
   void *operator new(size_t size) {
     return FEXCore::Allocator::malloc(size);
   }

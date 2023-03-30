@@ -11,7 +11,6 @@
 #include <unistd.h>
 
 extern "C" {
-#ifdef GLIBC_ALLOCATOR_FAULT
   // The majority of FEX internal code should avoid using the glibc allocator. To ensure glibc allocations don't accidentally slip
   // in, FEX overrides these glibc functions with faulting variants.
   //
@@ -52,7 +51,7 @@ namespace FEXCore::Allocator {
   static bool GlobalEvaluate{};
 
   // Enable or disable allocation faulting per-thread.
-  thread_local uint64_t SkipEvalForThread{};
+  static thread_local uint64_t SkipEvalForThread{};
 
   // Internal memory allocation hooks to allow non-faulting allocations through.
   CALLOC_Hook calloc_ptr = __libc_calloc;
@@ -100,7 +99,7 @@ namespace FEXCore::Allocator {
     }
 
     if (SkipEvalForThread) {
-      // Fault evaluation disabled for this thread.
+      // Fault evaluation currently disabled for this thread.
       return;
     }
 
@@ -155,5 +154,4 @@ extern "C" {
     FEXCore::Allocator::EvaluateReturnAddress(__builtin_extract_return_addr (__builtin_return_address (0)));
     return FEXCore::Allocator::aligned_alloc_ptr(a, s);
   }
-#endif
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/memory_resource.h>
 #include <FEXCore/fextl/string.h>
@@ -27,17 +28,22 @@ namespace FHU::Filesystem {
     return access(Path.c_str(), F_OK) == 0;
   }
 
+  enum class CreateDirectoryResult {
+    CREATED,
+    EXISTS,
+    ERROR,
+  };
   /**
    * @brief Creates a directory at the provided path.
    *
    * @param Path The path to create a directory at.
    *
-   * @return True if the directory was created or already exists.
+   * @return Result enum depending.
    */
-  inline bool CreateDirectory(const fextl::string &Path) {
+  inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
     auto Result = ::mkdir(Path.c_str(), 0777);
     if (Result == 0) {
-      return true;
+      return CreateDirectoryResult::CREATED;
     }
 
     if (Result == -1 && errno == EEXIST) {
@@ -45,12 +51,14 @@ namespace FHU::Filesystem {
       struct stat buf;
       if (stat(Path.c_str(), &buf) == 0) {
         // Check to see if the path is a file or folder. Following symlinks.
-        return S_ISDIR(buf.st_mode);
+        return S_ISDIR(buf.st_mode) ?
+          CreateDirectoryResult::EXISTS :
+          CreateDirectoryResult::ERROR;
       }
     }
 
     // Couldn't create, or the path that existed wasn't a folder.
-    return false;
+    return CreateDirectoryResult::ERROR;
   }
 
   /**
@@ -62,14 +70,14 @@ namespace FHU::Filesystem {
    */
   inline bool CreateDirectories(const fextl::string &Path) {
     // Try to create the directory initially.
-    if (CreateDirectory(Path)) {
+    if (CreateDirectory(Path) != CreateDirectoryResult::ERROR) {
       return true;
     }
 
     // Walk the path in reverse and create paths as we go.
     fextl::string TmpPath {Path.substr(0, Path.rfind('/', Path.size() - 1))};
     if (!TmpPath.empty() && CreateDirectories(TmpPath)) {
-      return CreateDirectory(Path);
+      return CreateDirectory(Path) != CreateDirectoryResult::ERROR;
     }
     return false;
   }
@@ -93,15 +101,37 @@ namespace FHU::Filesystem {
 
   inline fextl::string ParentPath(const fextl::string &Path) {
     auto LastSeparator = Path.rfind('/');
+
     if (LastSeparator == fextl::string::npos) {
       // No separator. Likely relative `.`, `..`, `<Application Name>`, or empty string.
+      if (Path == "." || Path == "..") {
+        // In this edge-case, return nothing to match std::filesystem::path::parent_path behaviour.
+        return {};
+      }
       return Path;
     }
 
-    return Path.substr(0, LastSeparator);
+    if (LastSeparator == 0) {
+      // In the case of root, just return.
+      return "/";
+    }
+
+    auto SubString = Path.substr(0, LastSeparator);
+
+    while (SubString.size() > 1 && SubString.ends_with("/")) {
+      // If the substring still ended with `/` then we need to string that off as well.
+      --LastSeparator;
+      SubString = Path.substr(0, LastSeparator);
+    }
+
+    return SubString;
   }
 
   inline bool IsRelative(const fextl::string &Path) {
+    return !Path.starts_with('/');
+  }
+
+  inline bool IsAbsolute(const fextl::string &Path) {
     return Path.starts_with('/');
   }
 
@@ -111,22 +141,23 @@ namespace FHU::Filesystem {
     OVERWRITE_EXISTING,
   };
 
+  /**
+   * @brief Copy a file from a location to another
+   *
+   * Behaves similarly to std::filesystem::copy_file but with less copy options.
+   *
+   * @param From Source file location.
+   * @param To Destination file location.
+   * @param Options Copy options.
+   *
+   * @return True if the copy succeeded, false otherwise.
+   */
   inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
-    bool DestTested = false;
-    bool DestExists = false;
-    if (Options == CopyOptions::SKIP_EXISTING && Exists(To.c_str())) {
-      DestTested = true;
-      DestExists = Exists(To.c_str());
-      if (DestExists) {
-        // If the destination file exists already and the skip existing flag is set then
-        // return true without error.
-        return true;
-      }
-    }
-
-    if (!DestTested) {
-      DestTested = true;
-      DestExists = Exists(To.c_str());
+    const bool DestExists = Exists(To);
+    if (Options == CopyOptions::SKIP_EXISTING && DestExists) {
+      // If the destination file exists already and the skip existing flag is set then
+      // return true without error.
+      return true;
     }
 
     if (Options == CopyOptions::OVERWRITE_EXISTING && DestExists) {
@@ -177,15 +208,16 @@ namespace FHU::Filesystem {
       return {};
     }
 
+    const auto IsAbsolutePath = IsAbsolute(Path);
+    const auto EndsWithSeparator = Path.ends_with('/');
     // Count the number of separators up front
     const auto SeparatorCount = std::count(Path.begin(), Path.end(), '/');
 
-    // Needs to be a list so iterators aren't invalidated while erasing.
-    // Maximum number of list regions will be the counted separators plus 2.
-    // Multiplied by two since it allocates * 2 the size (32-bytes per element)
-    // Use a small stack allocator to be more optimal.
-    // Needs to be a list so iterators aren't invalidated while erasing.
-    size_t DataSize = sizeof(std::string_view) * (SeparatorCount + 2) * 2;
+    // Use std::list to store path elements to avoid iterator invalidation on insert/erase.
+    // The list is allocated on stack to be more optimal. The size is determined by the
+    // maximum number of list objects (separator count plus 2) multiplied by the list
+    // element size (32-bytes per element: the string_view itself and the prev/next pointers).
+    size_t DataSize = (sizeof(std::string_view) + sizeof(void*) * 2) * (SeparatorCount + 2);
     void *Data = alloca(DataSize);
     fextl::pmr::fixed_size_monotonic_buffer_resource mbr(Data, DataSize);
     std::pmr::polymorphic_allocator pa {&mbr};
@@ -205,9 +237,8 @@ namespace FHU::Filesystem {
       const auto Size = End - Begin;
       ExpectedStringSize += Size;
 
-      // If Size is zero then only insert if Parts is empty.
-      // Ensures that we don't remove an initial `/` by itself
-      if (Parts.empty() || Size != 0) {
+      // Only insert parts that contain data.
+      if (Size != 0) {
         Parts.emplace_back(std::string_view(Begin, End));
       }
 
@@ -221,9 +252,10 @@ namespace FHU::Filesystem {
 
     size_t CurrentIterDistance{};
     for (auto iter = Parts.begin(); iter != Parts.end();) {
-      if (*iter == ".") {
+      auto &Part = *iter;
+      if (Part == ".") {
         // Erase '.' directory parts if not at root.
-        if (CurrentIterDistance > 0) {
+        if (CurrentIterDistance > 0 || IsAbsolutePath) {
           // Erasing this iterator, don't increase iter distances
           iter = Parts.erase(iter);
           --ExpectedStringSize;
@@ -231,9 +263,8 @@ namespace FHU::Filesystem {
         }
       }
 
-      if (*iter == "..") {
-        auto Distance = std::distance(Parts.begin(), iter);
-        if (Distance > 0) {
+      if (Part == "..") {
+        if (CurrentIterDistance > 0) {
           // If not at root then remove both this iterator and the previous one.
           // ONLY if the previous iterator is also not ".."
           //
@@ -257,6 +288,12 @@ namespace FHU::Filesystem {
             continue;
           }
         }
+        else if (IsAbsolutePath) {
+          // `..` at the base. Just remove this
+          ExpectedStringSize -= 2;
+          iter = Parts.erase(iter);
+          continue;
+        }
       }
 
       // Interator distance increased by one.
@@ -264,28 +301,12 @@ namespace FHU::Filesystem {
       ++iter;
     }
 
-    fextl::string OutputPath{};
-    OutputPath.reserve(ExpectedStringSize + Parts.size());
 
-    auto iter = Parts.begin();
-    for (size_t i = 0; i < Parts.size(); ++i, ++iter) {
-      auto &Part = *iter;
-      OutputPath += Part;
-
-      const bool IsFinal = (i + 1) == Parts.size();
-      // If the final element is ellipses then don't apply a separator.
-      // Otherwise if it is anything else, apply a separator.
-      const bool IsEllipses = Part == "." || Part == "..";
-
-      const bool NeedsSeparator =
-        !IsFinal || // Needs a separator if this isn't the final part.
-        (IsFinal && !IsEllipses); // Needs a separator if the final part doesn't end in `.` or `..`
-
-      if (NeedsSeparator) {
-        OutputPath += '/';
-      }
-    }
-
-    return OutputPath;
+    // Add a final separator unless the last element is ellipses.
+    const bool NeedsFinalSeparator = EndsWithSeparator && (!Parts.empty() && Parts.back() != "." && Parts.back() != "..");
+    return fextl::fmt::format("{}{}{}",
+      IsAbsolutePath ? "/" : "",
+      fmt::join(Parts, "/"),
+      NeedsFinalSeparator ? "/" : "");
   }
 }

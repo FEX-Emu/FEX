@@ -64,6 +64,7 @@ namespace FEXCore::Core {
     fextl::vector<DebugDataGuestOpcode> GuestOpcodes;
     fextl::vector<FEXCore::CPU::Relocation> *Relocations;
 
+    // Required due to raw new usage.
     void *operator new(size_t size) {
       return FEXCore::Allocator::malloc(size);
     }
@@ -127,6 +128,7 @@ namespace FEXCore::Core {
     std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 
+    // Required due to raw new usage.
     void *operator new(size_t size) {
       return FEXCore::Allocator::malloc(size);
     }

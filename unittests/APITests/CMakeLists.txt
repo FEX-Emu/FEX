@@ -1,6 +1,6 @@
 set (TESTS
   InterruptableConditionVariable
-  LexicallyNormal
+  Filesystem
   )
 
 list(APPEND LIBS FEXCore)

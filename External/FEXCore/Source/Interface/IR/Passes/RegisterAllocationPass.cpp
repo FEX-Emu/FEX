@@ -99,6 +99,7 @@ namespace {
     fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> BlockPredecessors;
     fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> VisitedNodePredecessors;
 
+    // Required due to raw new usage.
     void *operator new(size_t size) {
       return FEXCore::Allocator::malloc(size);
     }

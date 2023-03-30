@@ -31,14 +31,6 @@ namespace Alloc::OSAllocator {
 
   class OSAllocator_64Bit final : public Alloc::HostAllocator {
     public:
-      void *operator new(size_t size) {
-        return ::malloc(size);
-      }
-
-      void operator delete(void *ptr) {
-        return ::free(ptr);
-      }
-
       OSAllocator_64Bit();
       virtual ~OSAllocator_64Bit();
       void *AllocateSlab(size_t Size) override { return nullptr; }
