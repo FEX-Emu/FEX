@@ -698,6 +698,7 @@ namespace {
 
               }
               ConfigChanged = true;
+              UpdateAdvancedOptionsVector();
             }
 
             ImGui::SameLine();
