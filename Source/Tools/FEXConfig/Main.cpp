@@ -16,6 +16,12 @@
 #include <unistd.h>
 #include <vector>
 
+namespace fextl {
+  // Helper to convert a std::filesystem::path to a fextl::string.
+  inline fextl::string string_from_path(std::filesystem::path const &Path) {
+    return Path.string().c_str();
+  }
+}
 namespace {
   static std::chrono::time_point<std::chrono::high_resolution_clock> GlobalTime{};
 

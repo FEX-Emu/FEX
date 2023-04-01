@@ -9,10 +9,6 @@ namespace fextl {
   using basic_string = std::basic_string<CharT, Traits, Allocator>;
 
   using string = fextl::basic_string<char>;
-  // Helper to be removed.
-  inline fextl::string string_from_path(std::filesystem::path const &Path) {
-    return Path.string().c_str();
-  }
 }
 
 template<>
