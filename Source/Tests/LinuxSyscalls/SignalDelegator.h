@@ -23,16 +23,8 @@ namespace Core {
 }
 
 namespace FEX::HLE {
-  class SignalDelegator final : public FEXCore::SignalDelegator {
+  class SignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
   public:
-    void *operator new(size_t size) {
-      return FEXCore::Allocator::malloc(size);
-    }
-
-    void operator delete(void *ptr) {
-      return FEXCore::Allocator::free(ptr);
-    }
-
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
     SignalDelegator();

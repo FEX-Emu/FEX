@@ -120,7 +120,7 @@ class DualIntrusiveAllocatorThreadPool final : public DualIntrusiveAllocator {
     Utils::FixedSizePooledAllocation<uintptr_t, 5000, 500> PoolObject;
 };
 
-class IRListView final {
+class IRListView final : public FEXCore::Allocator::FEXAllocOperators {
   enum Flags {
     FLAG_IsCopy = 1,
     FLAG_Shared = 2,
@@ -168,15 +168,6 @@ public:
       FEXCore::Allocator::free (IRDataInternal);
       // ListData is just offset from IRData
     }
-  }
-
-  // Required due to raw new usage.
-  void *operator new(size_t size) {
-    return FEXCore::Allocator::malloc(size);
-  }
-
-  void operator delete(void *ptr) {
-    return FEXCore::Allocator::free(ptr);
   }
 
   void Serialize(std::ostream& stream) const {

@@ -90,7 +90,7 @@ namespace {
     IR::OrderedNode *SpilledNode;
   };
 
-  struct RegisterGraph {
+  struct RegisterGraph : public FEXCore::Allocator::FEXAllocOperators {
     IR::RegisterAllocationData::UniquePtr AllocData;
     RegisterSet Set;
     fextl::vector<RegisterNode> Nodes{};
@@ -98,15 +98,6 @@ namespace {
     fextl::vector<SpillStackUnit> SpillStack;
     fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> BlockPredecessors;
     fextl::unordered_map<IR::NodeID, fextl::unordered_set<IR::NodeID>> VisitedNodePredecessors;
-
-    // Required due to raw new usage.
-    void *operator new(size_t size) {
-      return FEXCore::Allocator::malloc(size);
-    }
-
-    void operator delete(void *ptr) {
-      return FEXCore::Allocator::free(ptr);
-    }
   };
 
   void ResetRegisterGraph(RegisterGraph *Graph, uint64_t NodeCount);

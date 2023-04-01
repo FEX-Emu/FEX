@@ -63,19 +63,16 @@ namespace FEXCore::Utils {
 
       using BufferOwnedFlag = std::atomic<ClientFlags>;
 
-      struct MemoryBuffer {
+      struct MemoryBuffer : public FEXCore::Allocator::FEXAllocOperators {
+        MemoryBuffer(void* Ptr, size_t Size, std::chrono::time_point<ClockType> LastUsed)
+          : Ptr {Ptr}
+          , Size {Size}
+          , LastUsed {LastUsed} {}
+
         void* Ptr;
         size_t Size;
         std::atomic<std::chrono::time_point<ClockType>> LastUsed;
         BufferOwnedFlag *CurrentClientOwnedFlag{};
-
-        void *operator new(size_t size) {
-          return FEXCore::Allocator::malloc(size);
-        }
-
-        void operator delete(void *ptr) {
-          return FEXCore::Allocator::free(ptr);
-        }
       };
       // Ensure that the atomic objects of MemoryBuffer are lock free
       static_assert(decltype(MemoryBuffer::LastUsed){}.is_always_lock_free, "Oops, needs to be lock free");

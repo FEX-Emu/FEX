@@ -58,20 +58,11 @@ namespace FEXCore::Core {
    *
    * Needs to remain around for as long as the code could be executed at least
    */
-  struct DebugData {
+  struct DebugData : public FEXCore::Allocator::FEXAllocOperators {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     fextl::vector<DebugDataSubblock> Subblocks;
     fextl::vector<DebugDataGuestOpcode> GuestOpcodes;
     fextl::vector<FEXCore::CPU::Relocation> *Relocations;
-
-    // Required due to raw new usage.
-    void *operator new(size_t size) {
-      return FEXCore::Allocator::malloc(size);
-    }
-
-    void operator delete(void *ptr) {
-      return FEXCore::Allocator::free(ptr);
-    }
   };
 
   enum class SignalEvent {
@@ -90,7 +81,7 @@ namespace FEXCore::Core {
     fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
   };
 
-  struct InternalThreadState {
+  struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
     FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
     struct {
@@ -127,15 +118,6 @@ namespace FEXCore::Core {
 
     std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
-
-    // Required due to raw new usage.
-    void *operator new(size_t size) {
-      return FEXCore::Allocator::malloc(size);
-    }
-
-    void operator delete(void *ptr) {
-      return FEXCore::Allocator::free(ptr);
-    }
 
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
 

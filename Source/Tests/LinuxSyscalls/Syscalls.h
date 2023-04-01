@@ -93,16 +93,8 @@ struct ExecveAtArgs {
 
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
-class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver {
+class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  void *operator new(size_t size) {
-    return FEXCore::Allocator::malloc(size);
-  }
-
-  void operator delete(void *ptr) {
-    return FEXCore::Allocator::free(ptr);
-  }
-
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here

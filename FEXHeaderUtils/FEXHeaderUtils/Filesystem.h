@@ -222,8 +222,6 @@ namespace FHU::Filesystem {
     fextl::pmr::fixed_size_monotonic_buffer_resource mbr(Data, DataSize);
     std::pmr::polymorphic_allocator pa {&mbr};
     std::pmr::list<std::string_view> Parts{pa};
-    // Calculate the expected string size while parsing to reduce allocations.
-    size_t ExpectedStringSize{};
 
     size_t CurrentOffset{};
     do {
@@ -235,7 +233,6 @@ namespace FHU::Filesystem {
       const auto Begin = Path.begin() + CurrentOffset;
       const auto End = Path.begin() + FoundSeperator;
       const auto Size = End - Begin;
-      ExpectedStringSize += Size;
 
       // Only insert parts that contain data.
       if (Size != 0) {
@@ -258,7 +255,6 @@ namespace FHU::Filesystem {
         if (CurrentIterDistance > 0 || IsAbsolutePath) {
           // Erasing this iterator, don't increase iter distances
           iter = Parts.erase(iter);
-          --ExpectedStringSize;
           continue;
         }
       }
@@ -275,14 +271,12 @@ namespace FHU::Filesystem {
           if (*PreviousIter == ".") {
             // Erasing the previous iterator, iterator distance has subtracted by one
             --CurrentIterDistance;
-            ExpectedStringSize -= PreviousIter->size();
             Parts.erase(PreviousIter);
           }
           else if (*PreviousIter != "..") {
             // Erasing the previous iterator, iterator distance has subtracted by one
             // Also erasing current iterator, which means iterator distance also doesn't increase by one.
             --CurrentIterDistance;
-            ExpectedStringSize -= PreviousIter->size() + 2;
             Parts.erase(PreviousIter);
             iter = Parts.erase(iter);
             continue;
@@ -290,7 +284,6 @@ namespace FHU::Filesystem {
         }
         else if (IsAbsolutePath) {
           // `..` at the base. Just remove this
-          ExpectedStringSize -= 2;
           iter = Parts.erase(iter);
           continue;
         }
