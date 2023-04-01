@@ -1,17 +1,21 @@
 #include "Common/Paths.h"
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <pwd.h>
 #include <system_error>
+#include <sys/stat.h>
 #include <unistd.h>
 
 namespace FEXCore::Paths {
-  std::unique_ptr<fextl::string> CachePath;
-  std::unique_ptr<fextl::string> EntryCache;
+  fextl::string CachePath{};
+  fextl::string EntryCache{};
 
   char const* FindUserHomeThroughUID() {
     auto passwd = getpwuid(geteuid());
@@ -43,9 +47,6 @@ namespace FEXCore::Paths {
   }
 
   void InitializePaths() {
-    CachePath = std::make_unique<fextl::string>();
-    EntryCache = std::make_unique<fextl::string>();
-
     char const *HomeDir = getenv("HOME");
 
     if (!HomeDir) {
@@ -58,35 +59,29 @@ namespace FEXCore::Paths {
 
     char *XDGDataDir = getenv("XDG_DATA_DIR");
     if (XDGDataDir) {
-      *CachePath = XDGDataDir;
+      CachePath = XDGDataDir;
     }
     else {
       if (HomeDir) {
-        *CachePath = HomeDir;
+        CachePath = HomeDir;
       }
     }
 
-    *CachePath += "/.fex-emu/";
-    *EntryCache = *CachePath + "/EntryCache/";
+    CachePath += "/.fex-emu/";
+    EntryCache = CachePath + "/EntryCache/";
 
-    std::error_code ec{};
     // Ensure the folder structure is created for our Data
-    if (!std::filesystem::exists(*EntryCache, ec) &&
-        !std::filesystem::create_directories(*EntryCache, ec)) {
-      LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", *EntryCache);
+    if (!FHU::Filesystem::Exists(EntryCache) &&
+        !FHU::Filesystem::CreateDirectories(EntryCache)) {
+      LogMan::Msg::DFmt("Couldn't create EntryCache directory: '{}'", EntryCache);
     }
   }
 
-  void ShutdownPaths() {
-    CachePath.reset();
-    EntryCache.reset();
-  }
-
   fextl::string GetCachePath() {
-    return *CachePath;
+    return CachePath;
   }
 
   fextl::string GetEntryCachePath() {
-    return *EntryCache;
+    return EntryCache;
   }
 }

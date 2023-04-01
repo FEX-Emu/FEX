@@ -199,14 +199,16 @@ void SyscallHandler::TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Fla
       fstat64(fd, &buf);
       MRID mrid {buf.st_dev, buf.st_ino};
 
-      auto filename = FEX::get_fdpath(fd);
+      char Tmp[PATH_MAX];
+      auto PathLength = FEX::get_fdpath(fd, Tmp);
 
-      if (filename.has_value()) {
+      if (PathLength != -1) {
+        Tmp[PathLength] = '\0';
         auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, MappedResource {nullptr, nullptr, 0});
         Resource = &Iter->second;
 
         if (Inserted) {
-          Resource->AOTIRCacheEntry = CTX->LoadAOTIRCacheEntry(filename.value());
+          Resource->AOTIRCacheEntry = CTX->LoadAOTIRCacheEntry(fextl::string(Tmp, PathLength));
           Resource->Iterator = Iter;
         }
       }

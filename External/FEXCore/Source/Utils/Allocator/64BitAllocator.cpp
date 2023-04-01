@@ -8,6 +8,7 @@
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
@@ -142,7 +143,9 @@ namespace Alloc::OSAllocator {
 
         [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
 
-        LOGMAN_THROW_AA_FMT(Res == 0, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
+        if (Res == -1) {
+          LOGMAN_MSG_A_FMT("Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
+        }
 
         LiveVMARegion *LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 
@@ -572,7 +575,7 @@ OSAllocator_64Bit::~OSAllocator_64Bit() {
   }
 }
 
-std::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
-  return std::make_unique<OSAllocator_64Bit>();
+fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
+  return fextl::make_unique<OSAllocator_64Bit>();
 }
 }

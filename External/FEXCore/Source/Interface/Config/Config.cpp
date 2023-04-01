@@ -4,13 +4,16 @@
 #include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
 #include <assert.h>
@@ -18,7 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <memory>
+#include <linux/limits.h>
 #include <optional>
 #include <stddef.h>
 #include <stdint.h>
@@ -45,13 +48,13 @@ namespace DefaultValues {
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
-    std::unique_ptr<fextl::list<json_t>> json_objects;
+    fextl::unique_ptr<fextl::list<json_t>> json_objects;
   };
   static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = std::make_unique<fextl::list<json_t>>();
+    alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
@@ -143,9 +146,8 @@ namespace JSON {
       }
 
       // Ensure the folder structure is created for our configuration
-      std::error_code ec{};
-      if (!std::filesystem::exists(ConfigDir, ec) &&
-          !std::filesystem::create_directories(ConfigDir, ec)) {
+      if (!FHU::Filesystem::Exists(ConfigDir) &&
+          !FHU::Filesystem::CreateDirectories(ConfigDir)) {
         // Let's go local in this case
         return "./";
       }
@@ -175,10 +177,9 @@ namespace JSON {
   fextl::string GetApplicationConfig(const fextl::string &Filename, bool Global) {
     fextl::string ConfigFile = GetConfigDirectory(Global);
 
-    std::error_code ec{};
     if (!Global &&
-        !std::filesystem::exists(ConfigFile, ec) &&
-        !std::filesystem::create_directories(ConfigFile, ec)) {
+        !FHU::Filesystem::Exists(ConfigFile) &&
+        !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       LogMan::Msg::DFmt("Couldn't create config directory: '{}'", ConfigFile);
       // Let's go local in this case
       return "./" + Filename + ".json";
@@ -188,8 +189,8 @@ namespace JSON {
 
     // Attempt to create the local folder if it doesn't exist
     if (!Global &&
-        !std::filesystem::exists(ConfigFile, ec) &&
-        !std::filesystem::create_directories(ConfigFile, ec)) {
+        !FHU::Filesystem::Exists(ConfigFile) &&
+        !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       // Let's go local in this case
       return "./" + Filename + ".json";
     }
@@ -208,7 +209,7 @@ namespace JSON {
     return 0;
   }
 
-  static fextl::map<FEXCore::Config::LayerType, std::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
+  static fextl::map<FEXCore::Config::LayerType, fextl::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
   static FEXCore::Config::Layer *Meta{};
 
   constexpr std::array<FEXCore::Config::LayerType, 9> LoadOrder = {
@@ -311,7 +312,7 @@ namespace JSON {
   }
 
   void Initialize() {
-    AddLayer(std::make_unique<MetaLayer>(FEXCore::Config::LayerType::LAYER_TOP));
+    AddLayer(fextl::make_unique<MetaLayer>(FEXCore::Config::LayerType::LAYER_TOP));
     Meta = ConfigLayers.begin()->second.get();
   }
 
@@ -334,10 +335,9 @@ namespace JSON {
       return {};
     }
 
-    std::filesystem::path Path{PathName};
 
     // Expand home if it exists
-    if (Path.is_relative()) {
+    if (FHU::Filesystem::IsRelative(PathName)) {
       fextl::string Home = getenv("HOME") ?: "";
       // Home expansion only works if it is the first character
       // This matches bash behaviour
@@ -347,12 +347,15 @@ namespace JSON {
       }
 
       // Expand relative path to absolute
-      Path = std::filesystem::absolute(Path);
+      char ExistsTempPath[PATH_MAX];
+      char *RealPath = realpath(PathName.c_str(), ExistsTempPath);
+      if (RealPath) {
+        PathName = RealPath;
+      }
 
       // Only return if it exists
-      std::error_code ec{};
-      if (std::filesystem::exists(Path, ec)) {
-        return fextl::string_from_path(Path);
+      if (FHU::Filesystem::Exists(PathName)) {
+        return PathName;
       }
     }
     else {
@@ -368,9 +371,9 @@ namespace JSON {
       // HostThunks: $CMAKE_INSTALL_PREFIX/lib/fex-emu/HostThunks/
       // GuestThunks: $CMAKE_INSTALL_PREFIX/share/fex-emu/GuestThunks/
       if (!ContainerPrefix.empty() && !PathName.empty()) {
-        if (!std::filesystem::exists(PathName)) {
+        if (!FHU::Filesystem::Exists(PathName)) {
           auto ContainerPath = ContainerPrefix + PathName;
-          if (std::filesystem::exists(ContainerPath)) {
+          if (FHU::Filesystem::Exists(ContainerPath)) {
             return ContainerPath;
           }
         }
@@ -379,11 +382,11 @@ namespace JSON {
     return {};
   }
 
+  constexpr char ContainerManager[] = "/run/host/container-manager";
 
   fextl::string FindContainer() {
     // We only support pressure-vessel at the moment
-    const static fextl::string ContainerManager = "/run/host/container-manager";
-    if (std::filesystem::exists(ContainerManager)) {
+    if (FHU::Filesystem::Exists(ContainerManager)) {
       fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -397,8 +400,7 @@ namespace JSON {
 
   fextl::string FindContainerPrefix() {
     // We only support pressure-vessel at the moment
-    const static fextl::string ContainerManager = "/run/host/container-manager";
-    if (std::filesystem::exists(ContainerManager)) {
+    if (FHU::Filesystem::Exists(ContainerManager)) {
       fextl::vector<char> Manager{};
       if (FEXCore::FileLoading::LoadFile(Manager, ContainerManager)) {
         // Trim the whitespace, may contain a newline
@@ -467,7 +469,7 @@ namespace JSON {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
       FEX_CONFIG_OPT(PathName, ROOTFS);
-      auto ExpandedString = ExpandPath(ContainerPrefix, PathName());
+      auto ExpandedString = ExpandPath(ContainerPrefix,PathName());
       if (!ExpandedString.empty()) {
         // Adjust the path if it ended up being relative
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
@@ -518,7 +520,7 @@ namespace JSON {
     }
   }
 
-  void AddLayer(std::unique_ptr<FEXCore::Config::Layer> _Layer) {
+  void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer) {
     ConfigLayers.emplace(_Layer->GetLayerType(), std::move(_Layer));
   }
 
@@ -705,7 +707,8 @@ namespace JSON {
   }
 
   void EnvLoader::Load() {
-    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
+    using EnvMapType = fextl::unordered_map<std::string_view, std::string_view>;
+    EnvMapType EnvMap;
 
     for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
       std::string_view Var(*pvar);
@@ -719,10 +722,10 @@ namespace JSON {
 #define ENVLOADER
 #include <FEXCore/Config/ConfigOptions.inl>
 
-      EnvMap[Key]=Value;
+      EnvMap[Key] = Value;
     }
 
-    std::function GetVar = [=](const std::string_view id)  -> std::optional<std::string_view> {
+    auto GetVar = [](EnvMapType &EnvMap, const std::string_view id)  -> std::optional<std::string_view> {
       if (EnvMap.find(id) != EnvMap.end())
         return EnvMap.at(id);
 
@@ -739,31 +742,31 @@ namespace JSON {
     std::optional<std::string_view> Value;
 
     for (auto &it : EnvConfigLookup) {
-      if ((Value = GetVar(it.first)).has_value()) {
+      if ((Value = GetVar(EnvMap, it.first)).has_value()) {
         Set(it.second, fextl::string(*Value));
       }
     }
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer() {
-    return std::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer() {
+    return fextl::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN);
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File) {
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File) {
     if (File) {
-      return std::make_unique<FEXCore::Config::MainLoader>(*File);
+      return fextl::make_unique<FEXCore::Config::MainLoader>(*File);
     }
     else {
-      return std::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_MAIN);
+      return fextl::make_unique<FEXCore::Config::MainLoader>(FEXCore::Config::LayerType::LAYER_MAIN);
     }
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
-    return std::make_unique<FEXCore::Config::AppLoader>(Filename, Type);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type) {
+    return fextl::make_unique<FEXCore::Config::AppLoader>(Filename, Type);
   }
 
-  std::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]) {
-    return std::make_unique<FEXCore::Config::EnvLoader>(_envp);
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]) {
+    return fextl::make_unique<FEXCore::Config::EnvLoader>(_envp);
   }
 }
 

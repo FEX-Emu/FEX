@@ -23,7 +23,7 @@ namespace Core {
 }
 
 namespace FEX::HLE {
-  class SignalDelegator final : public FEXCore::SignalDelegator {
+  class SignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
   public:
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler

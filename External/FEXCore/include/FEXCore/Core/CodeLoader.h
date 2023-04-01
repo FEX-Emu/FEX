@@ -17,9 +17,6 @@ class IREmitter;
 */
 class CodeLoader {
 public:
-  using MapperFn = std::function<void *(void *addr, size_t length, int prot, int flags, int fd, off_t offset)>;
-  using UnmapperFn = std::function<int(void *addr, size_t length)>;
-
   virtual ~CodeLoader() = default;
 
   /**
@@ -36,11 +33,6 @@ public:
    * @brief Function to return the guest RIP that the code should start out at
    */
   virtual uint64_t DefaultRIP() const = 0;
-
-  /**
-   * @brief Maps and copies the executable, also sets up stack
-   */
-  virtual bool MapMemory(const MapperFn& Mapper, const UnmapperFn& Unmapper) { return false; }
 
   virtual fextl::vector<fextl::string> const *GetApplicationArguments() { return nullptr; }
   virtual void GetExecveArguments(fextl::vector<char const*> *Args) {}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/fextl/memory.h>
 #include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <cstdint>
@@ -73,8 +74,8 @@ public:
   virtual size_t GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) = 0;
   virtual size_t GenerateInterpreterTrampoline(uint8_t *CodeBuffer) = 0;
 
-  static std::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
-  static std::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
+  static fextl::unique_ptr<Dispatcher> CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
+  static fextl::unique_ptr<Dispatcher> CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config);
 
   virtual void ExecuteDispatch(FEXCore::Core::CpuStateFrame *Frame) {
     DispatchPtr(Frame);

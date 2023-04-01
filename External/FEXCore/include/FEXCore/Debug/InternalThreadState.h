@@ -7,11 +7,12 @@
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <tsl/robin_map.h>
-
 #include <shared_mutex>
+#include <type_traits>
 
 namespace FEXCore {
   class LookupCache;
@@ -57,7 +58,7 @@ namespace FEXCore::Core {
    *
    * Needs to remain around for as long as the code could be executed at least
    */
-  struct DebugData {
+  struct DebugData : public FEXCore::Allocator::FEXAllocOperators {
     uint64_t HostCodeSize; ///< The size of the code generated in the host JIT
     fextl::vector<DebugDataSubblock> Subblocks;
     fextl::vector<DebugDataGuestOpcode> GuestOpcodes;
@@ -75,12 +76,12 @@ namespace FEXCore::Core {
   struct LocalIREntry {
     uint64_t StartAddr;
     uint64_t Length;
-    std::unique_ptr<FEXCore::IR::IRListView, FEXCore::IR::IRListViewDeleter> IR;
+    fextl::unique_ptr<FEXCore::IR::IRListView, FEXCore::IR::IRListViewDeleter> IR;
     FEXCore::IR::RegisterAllocationData::UniquePtr RAData;
-    std::unique_ptr<FEXCore::Core::DebugData> DebugData;
+    fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
   };
 
-  struct InternalThreadState {
+  struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
     FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
     struct {
@@ -93,20 +94,20 @@ namespace FEXCore::Core {
     FEXCore::Context::Context *CTX;
     std::atomic<SignalEvent> SignalReason{SignalEvent::Nothing};
 
-    std::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
+    fextl::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
     bool StartPaused {false};
     InterruptableConditionVariable StartRunning;
     Event ThreadWaiting;
 
-    std::unique_ptr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
+    fextl::unique_ptr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 
-    std::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
-    std::unique_ptr<FEXCore::LookupCache> LookupCache;
+    fextl::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
+    fextl::unique_ptr<FEXCore::LookupCache> LookupCache;
 
-    tsl::robin_map<uint64_t, LocalIREntry> DebugStore;
+    fextl::robin_map<uint64_t, LocalIREntry> DebugStore;
 
-    std::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
-    std::unique_ptr<FEXCore::IR::PassManager> PassManager;
+    fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
+    fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
     FEXCore::HLE::ThreadManagement ThreadManager;
 
     RuntimeStats Stats{};

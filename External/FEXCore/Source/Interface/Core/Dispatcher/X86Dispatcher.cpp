@@ -11,6 +11,7 @@
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -19,7 +20,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/mman.h>
-#include <xbyak/xbyak.h>
 
 #define STATE_PTR(STATE_TYPE, FIELD) \
   [STATE + offsetof(FEXCore::Core::STATE_TYPE, FIELD)]
@@ -417,13 +417,11 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
 }
 
-// Used by GenerateGDBPauseCheck, GenerateInterpreterTrampoline
-static thread_local Xbyak::CodeGenerator emit(1, &emit); // actual emit target set with setNewBuffer
-
 size_t X86Dispatcher::GenerateGDBPauseCheck(uint8_t *CodeBuffer, uint64_t GuestRIP) {
   using namespace Xbyak;
   using namespace Xbyak::util;
 
+  Xbyak::CodeGenerator emit(1, &emit); // actual emit target set with setNewBuffer
   emit.setNewBuffer(CodeBuffer, MaxGDBPauseCheckSize);
 
   Label RunBlock;
@@ -458,6 +456,7 @@ size_t X86Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   using namespace Xbyak;
   using namespace Xbyak::util;
 
+  Xbyak::CodeGenerator emit(1, &emit); // actual emit target set with setNewBuffer
   emit.setNewBuffer(CodeBuffer, MaxInterpreterTrampolineSize);
 
   Label InlineIRData;
@@ -500,8 +499,8 @@ void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Threa
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
-  return std::make_unique<X86Dispatcher>(CTX, Config);
+fextl::unique_ptr<Dispatcher> Dispatcher::CreateX86(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
+  return fextl::make_unique<X86Dispatcher>(CTX, Config);
 }
 
 }

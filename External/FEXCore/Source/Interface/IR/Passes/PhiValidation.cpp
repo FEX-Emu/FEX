@@ -70,8 +70,8 @@ bool PhiValidation::Run(IREmitter *IREmit) {
   return false;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreatePhiValidation() {
-  return std::make_unique<PhiValidation>();
+fextl::unique_ptr<FEXCore::IR::Pass> CreatePhiValidation() {
+  return fextl::make_unique<PhiValidation>();
 }
 
 }

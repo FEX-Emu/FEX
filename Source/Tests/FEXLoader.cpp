@@ -28,6 +28,7 @@ $end_info$
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <atomic>
 #include <cerrno>
@@ -123,27 +124,31 @@ namespace FEXServerLogging {
 }
 
 void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
-  // Open the file pointer to the filename and see if we need to find an interpreter
-  std::fstream File(fextl::string_from_string(*Filename), std::fstream::in | std::fstream::binary);
-
-  if (!File.is_open()) {
+  // Open the Filename to determine if it is a shebang file.
+  int FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
+  if (FD == -1) {
     return;
   }
 
-  File.seekg(0, std::fstream::end);
-  const auto FileSize = File.tellg();
-  File.seekg(0, std::fstream::beg);
+  std::array<char, 257> Header;
+  const auto ChunkSize = 257l;
+  const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
+
+  const auto Data = std::span<char>(Header.data(), ReadSize);
 
   // Is the file large enough for shebang
-  if (FileSize <= 2) {
+  if (ReadSize <= 2) {
+    close(FD);
     return;
   }
 
   // Handle shebang files
-  if (File.get() == '#' &&
-      File.get() == '!') {
-    fextl::string InterpreterLine;
-    std::getline(File, InterpreterLine);
+  if (Data[0] == '#' &&
+      Data[1] == '!') {
+    fextl::string InterpreterLine {
+        Data.begin() + 2, // strip off "#!" prefix
+        std::find(Data.begin(), Data.end(), '\n')
+    };
     fextl::vector<fextl::string> ShebangArguments{};
 
     // Shebang line can have a single argument
@@ -168,17 +173,14 @@ void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fe
 
     // Insert all the arguments at the start
     args->insert(args->begin(), ShebangArguments.begin(), ShebangArguments.end());
-
-    // Done here
-    return;
   }
+  close(FD);
 }
 
 void RootFSRedirect(fextl::string *Filename, fextl::string const &RootFS) {
   auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
 
-  std::error_code ec{};
-  if (std::filesystem::exists(RootFSLink, ec)) {
+  if (FHU::Filesystem::Exists(RootFSLink)) {
     *Filename = RootFSLink;
   }
 }
@@ -197,6 +199,7 @@ bool IsInterpreterInstalled() {
 }
 
 int main(int argc, char **argv, char **const envp) {
+  FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
@@ -292,8 +295,7 @@ int main(int argc, char **argv, char **const envp) {
   RootFSRedirect(&Program.ProgramPath, LDPath());
   InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
 
-  std::error_code ec{};
-  if (!ExecutedWithFD && !FEXFD && !std::filesystem::exists(Program.ProgramPath, ec)) {
+  if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
@@ -342,12 +344,18 @@ int main(int argc, char **argv, char **const envp) {
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
   }
   else {
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, std::filesystem::canonical(Program.ProgramPath).string());
+    {
+      char ExistsTempPath[PATH_MAX];
+      char *RealPath = realpath(Program.ProgramPath.c_str(), ExistsTempPath);
+      if (RealPath) {
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, fextl::string(RealPath));
+      }
+    }
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   }
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
-  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+  fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
   fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
 
   if (Loader.Is64BitMode()) {
@@ -402,18 +410,17 @@ int main(int argc, char **argv, char **const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
-  auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-  auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
+  {
+    // Load VDSO in to memory prior to mapping our ELFs.
+    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
+    Loader.SetVDSOBase(VDSOBase);
+    Loader.CalculateHWCaps(CTX);
 
-  // Load VDSO in to memory prior to mapping our ELFs.
-  void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), Mapper);
-  Loader.SetVDSOBase(VDSOBase);
-  Loader.CalculateHWCaps(CTX);
-
-  if (!Loader.MapMemory(Mapper, Unmapper)) {
-    // failed to map
-    LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
-    return -ENOEXEC;
+    if (!Loader.MapMemory(SyscallHandler.get())) {
+      // failed to map
+      LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
+      return -ENOEXEC;
+    }
   }
 
   SyscallHandler->SetCodeLoader(&Loader);
@@ -484,6 +491,7 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   if (AOTEnabled) {
+    std::error_code ec{};
     std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
     if (!ec) {
       CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
@@ -508,7 +516,6 @@ int main(int argc, char **argv, char **const envp) {
   SignalDelegation.reset();
   FEXCore::Context::Context::DestroyContext(CTX);
 
-  FEXCore::Context::ShutdownStaticTables();
   FEXCore::Threads::Shutdown();
 
   Loader.FreeSections();
@@ -523,6 +530,7 @@ int main(int argc, char **argv, char **const envp) {
   // Allocator is now original system allocator
   FEXCore::Telemetry::Shutdown(Program.ProgramName);
   FEXCore::Profiler::Shutdown();
+
   if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
     return ProgramStatus;
   }

@@ -82,8 +82,8 @@ bool SyscallOptimization::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization() {
-  return std::make_unique<SyscallOptimization>();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization() {
+  return fextl::make_unique<SyscallOptimization>();
 }
 
 }

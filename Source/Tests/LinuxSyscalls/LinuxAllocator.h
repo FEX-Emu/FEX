@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FEXCore/fextl/memory.h>
+
 #include <cstdint>
 #include <memory>
 
@@ -16,6 +18,6 @@ namespace FEX::HLE {
     virtual uint64_t Shmdt(const void* shmaddr) = 0;
   };
 
-  std::unique_ptr<FEX::HLE::MemAllocator> Create32BitAllocator();
-  std::unique_ptr<FEX::HLE::MemAllocator> CreatePassthroughAllocator();
+  fextl::unique_ptr<FEX::HLE::MemAllocator> Create32BitAllocator();
+  fextl::unique_ptr<FEX::HLE::MemAllocator> CreatePassthroughAllocator();
 }

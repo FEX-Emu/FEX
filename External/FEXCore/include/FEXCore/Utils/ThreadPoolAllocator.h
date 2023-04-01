@@ -63,7 +63,12 @@ namespace FEXCore::Utils {
 
       using BufferOwnedFlag = std::atomic<ClientFlags>;
 
-      struct MemoryBuffer {
+      struct MemoryBuffer : public FEXCore::Allocator::FEXAllocOperators {
+        MemoryBuffer(void* Ptr, size_t Size, std::chrono::time_point<ClockType> LastUsed)
+          : Ptr {Ptr}
+          , Size {Size}
+          , LastUsed {LastUsed} {}
+
         void* Ptr;
         size_t Size;
         std::atomic<std::chrono::time_point<ClockType>> LastUsed;

@@ -358,8 +358,8 @@ namespace FEXCore {
         }
     };
 
-    ThunkHandler* ThunkHandler::Create() {
-      return new ThunkHandler_impl();
+    fextl::unique_ptr<ThunkHandler> ThunkHandler::Create() {
+      return fextl::make_unique<ThunkHandler_impl>();
     }
 
     /**

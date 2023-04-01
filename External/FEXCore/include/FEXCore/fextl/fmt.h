@@ -3,6 +3,7 @@
 #include <FEXCore/fextl/string.h>
 
 #include <fmt/format.h>
+#include <unistd.h>
 
 namespace fextl::fmt {
   template <typename T, size_t SIZE = ::fmt::inline_buffer_size,
@@ -35,5 +36,12 @@ namespace fextl::fmt {
   FMT_NODISCARD FMT_INLINE auto format(::fmt::format_string<T...> fmt, T&&... args)
       -> fextl::string {
     return fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+  }
+
+  template <typename... T>
+  FMT_INLINE auto print(::fmt::format_string<T...> fmt, T&&... args)
+      -> void {
+    auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+    write(STDERR_FILENO, String.c_str(), String.size());
   }
 }

@@ -12,6 +12,7 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <array>
@@ -672,8 +673,8 @@ void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thr
   }
 }
 
-std::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
-  return std::make_unique<Arm64Dispatcher>(CTX, Config);
+fextl::unique_ptr<Dispatcher> Dispatcher::CreateArm64(FEXCore::Context::ContextImpl *CTX, const DispatcherConfig &Config) {
+  return fextl::make_unique<Arm64Dispatcher>(CTX, Config);
 }
 
 }

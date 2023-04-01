@@ -1,6 +1,6 @@
 #pragma once
 
-#include <memory>
+#include <FEXCore/fextl/memory.h>
 
 namespace FEXCore::Utils {
 class IntrusivePooledAllocator;
@@ -11,23 +11,23 @@ class Pass;
 class RegisterAllocationPass;
 class RegisterAllocationData;
 
-std::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9);
-std::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX);
-std::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization();
-std::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
-std::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX);
-std::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination();
-std::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
-std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass,
+fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateSyscallOptimization();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::Pass> CreatePassDeadCodeElimination();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateIRCompaction(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
+fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass,
                                                                                   bool OptimizeSRA,
                                                                                   bool SupportsAVX);
-std::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateLongDivideEliminationPass();
 
 namespace Validation {
-std::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();
-std::unique_ptr<FEXCore::IR::Pass> CreateRAValidation();
-std::unique_ptr<FEXCore::IR::Pass> CreatePhiValidation();
-std::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation();
+fextl::unique_ptr<FEXCore::IR::Pass> CreatePhiValidation();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation();
 }
 }
 

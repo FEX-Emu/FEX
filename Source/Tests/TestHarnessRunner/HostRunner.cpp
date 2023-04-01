@@ -6,6 +6,9 @@
 #include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/fextl/list.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/unordered_set.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #ifdef _M_X86_64
@@ -21,6 +24,14 @@
 #include <vector>
 
 #include <signal.h>
+#define XBYAK_CUSTOM_ALLOC
+#define XBYAK_CUSTOM_MALLOC FEXCore::Allocator::malloc
+#define XBYAK_CUSTOM_FREE FEXCore::Allocator::free
+#define XBYAK_CUSTOM_SETS
+#define XBYAK_STD_UNORDERED_SET fextl::unordered_set
+#define XBYAK_STD_UNORDERED_MAP fextl::unordered_map
+#define XBYAK_STD_UNORDERED_MULTIMAP fextl::unordered_multimap
+#define XBYAK_STD_LIST fextl::list
 #include <xbyak/xbyak.h>
 using namespace Xbyak;
 

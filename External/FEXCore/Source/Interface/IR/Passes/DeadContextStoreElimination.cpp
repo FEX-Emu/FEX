@@ -410,7 +410,7 @@ public:
   }
   bool Run(FEXCore::IR::IREmitter *IREmit) override;
 private:
-  std::unique_ptr<FEXCore::IR::Pass> DCE;
+  fextl::unique_ptr<FEXCore::IR::Pass> DCE;
 
   ContextInfo ClassifiedStruct;
   fextl::unordered_map<FEXCore::IR::NodeID, BlockInfo> OffsetToBlockMap;
@@ -784,8 +784,8 @@ bool RCLSE::Run(FEXCore::IR::IREmitter *IREmit) {
 
 namespace FEXCore::IR {
 
-std::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX) {
-  return std::make_unique<RCLSE>(SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateContextLoadStoreElimination(bool SupportsAVX) {
+  return fextl::make_unique<RCLSE>(SupportsAVX);
 }
 
 }

@@ -40,7 +40,6 @@ $end_info$
 #include <tuple>
 #include <unordered_map>
 #include <utility>
-#include <xbyak/xbyak.h>
 
 // #define DEBUG_RA 1
 // #define DEBUG_CYCLES
@@ -788,8 +787,8 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
   return CodeData;
 }
 
-std::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return std::make_unique<X86JITCore>(ctx, Thread);
+fextl::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return fextl::make_unique<X86JITCore>(ctx, Thread);
 }
 
 CPUBackendFeatures GetX86JITBackendFeatures() {

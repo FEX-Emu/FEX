@@ -13,6 +13,52 @@ namespace FEXCore::Allocator {
 
   FEX_DEFAULT_VISIBILITY size_t DetermineVASize();
 
+#ifdef GLIBC_ALLOCATOR_FAULT
+  // Glibc hooks should only fault once we are in main.
+  // Required since glibc allocator hooking will catch things before FEX has control.
+  FEX_DEFAULT_VISIBILITY void SetupFaultEvaluate();
+  // Glibc hook faulting needs to be disabled when leaving main.
+  // Required since glibc does some state teardown after main.
+  FEX_DEFAULT_VISIBILITY void ClearFaultEvaluate();
+
+  class FEX_DEFAULT_VISIBILITY YesIKnowImNotSupposedToUseTheGlibcAllocator final {
+    public:
+      FEX_DEFAULT_VISIBILITY YesIKnowImNotSupposedToUseTheGlibcAllocator();
+      FEX_DEFAULT_VISIBILITY ~YesIKnowImNotSupposedToUseTheGlibcAllocator();
+      FEX_DEFAULT_VISIBILITY static void HardDisable();
+  };
+
+  class FEX_DEFAULT_VISIBILITY GLIBCScopedFault final {
+    public:
+      GLIBCScopedFault() {
+        FEXCore::Allocator::SetupFaultEvaluate();
+      }
+      ~GLIBCScopedFault() {
+        FEXCore::Allocator::ClearFaultEvaluate();
+      }
+  };
+#else
+  FEX_DEFAULT_VISIBILITY inline void SetupFaultEvaluate() {}
+  FEX_DEFAULT_VISIBILITY inline void ClearFaultEvaluate() {}
+
+  class FEX_DEFAULT_VISIBILITY YesIKnowImNotSupposedToUseTheGlibcAllocator final {
+    public:
+    FEX_DEFAULT_VISIBILITY YesIKnowImNotSupposedToUseTheGlibcAllocator() {}
+    FEX_DEFAULT_VISIBILITY ~YesIKnowImNotSupposedToUseTheGlibcAllocator() {}
+    FEX_DEFAULT_VISIBILITY static inline void HardDisable() {}
+  };
+
+  class FEX_DEFAULT_VISIBILITY GLIBCScopedFault final {
+    public:
+      GLIBCScopedFault() {
+        // nop
+      }
+      ~GLIBCScopedFault() {
+        // nop
+      }
+  };
+#endif
+
   struct MemoryRegion {
     void *Ptr;
     size_t Size;

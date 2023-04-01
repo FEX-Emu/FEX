@@ -358,8 +358,8 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX) {
-  return std::make_unique<DeadStoreElimination>(SupportsAVX);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadStoreElimination(bool SupportsAVX) {
+  return fextl::make_unique<DeadStoreElimination>(SupportsAVX);
 }
 
 }

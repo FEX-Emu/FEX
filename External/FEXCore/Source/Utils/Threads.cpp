@@ -1,12 +1,12 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/deque.h>
 
 #include <alloca.h>
 #include <cstring>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <pthread.h>
 #include <stdint.h>
@@ -97,9 +97,14 @@ namespace FEXCore::Threads {
       , UserArg {Arg} {
       pthread_attr_t Attr{};
       Stack = AllocateStackObject(STACK_SIZE);
+      // pthreads allocates its dtv region behind our back and there is nothing we can do about it.
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
       AddStackToLivePool(Stack, STACK_SIZE);
       pthread_attr_init(&Attr);
       pthread_attr_setstack(&Attr, Stack, STACK_SIZE);
+      // TODO: Thread creation should be using this instead.
+      // Causes Steam to crash early though.
+      // pthread_create(&Thread, &Attr, InitializeThread, this);
       pthread_create(&Thread, &Attr, Func, Arg);
 
       pthread_attr_destroy(&Attr);
@@ -155,13 +160,17 @@ namespace FEXCore::Threads {
 
     // Put the stack back in to the stack pool
     Thread->FreeStack();
+
+    // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
+
     return Result;
   }
 
-  std::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(
+  fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(
     ThreadFunc Func,
     void* Arg) {
-    return std::make_unique<PThread>(Func, Arg);
+    return fextl::make_unique<PThread>(Func, Arg);
   }
 
   void CleanupAfterFork_PThread() {
@@ -199,7 +208,7 @@ namespace FEXCore::Threads {
     .CleanupAfterFork = CleanupAfterFork_PThread,
   };
 
-  std::unique_ptr<FEXCore::Threads::Thread> FEXCore::Threads::Thread::Create(
+  fextl::unique_ptr<FEXCore::Threads::Thread> FEXCore::Threads::Thread::Create(
     ThreadFunc Func,
     void* Arg) {
     return Ptrs.CreateThread(Func, Arg);

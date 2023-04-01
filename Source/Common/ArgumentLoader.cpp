@@ -3,7 +3,7 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include "OptionParser.h"
+#include "cpp-optparse/OptionParser.h"
 #include "git_version.h"
 
 #include <stdint.h>
@@ -12,7 +12,7 @@ namespace FEX::ArgLoader {
   fextl::vector<fextl::string> RemainingArgs;
   fextl::vector<fextl::string> ProgramArguments;
 
-  static std::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
+  static fextl::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
   void FEX::ArgLoader::ArgLoader::Load() {
     optparse::OptionParser Parser{};
     Parser.version(Version);
@@ -39,12 +39,8 @@ namespace FEX::ArgLoader {
     using uint32 = uint32_t;
 #define AFTER_PARSE
 #include <FEXCore/Config/ConfigOptions.inl>
-    // TODO: Convert cpp-optparse over to fextl::vector
-    auto ParserArgs = Parser.args();
-    auto ParsedArgs = Parser.parsed_args();
-
-    RemainingArgs.insert(RemainingArgs.begin(), ParserArgs.begin(), ParserArgs.end());
-    ProgramArguments.insert(ProgramArguments.begin(), ParsedArgs.begin(), ParsedArgs.end());
+    RemainingArgs = Parser.args();
+    ProgramArguments = Parser.parsed_args();
   }
 
   void LoadWithoutArguments(int _argc, char **_argv) {

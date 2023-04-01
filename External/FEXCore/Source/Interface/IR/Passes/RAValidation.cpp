@@ -452,7 +452,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
   return false;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateRAValidation() {
-  return std::make_unique<RAValidation>();
+fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation() {
+  return fextl::make_unique<RAValidation>();
 }
 }

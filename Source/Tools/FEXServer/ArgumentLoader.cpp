@@ -1,12 +1,12 @@
 #include "ArgumentLoader.h"
-#include "OptionParser.h"
+#include "Common/cpp-optparse/OptionParser.h"
 
 #include "git_version.h"
 
 #include <fmt/format.h>
 
 namespace FEXServer::Config {
-  static std::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
+  static fextl::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
 
   FEXServerOptions Load(int argc, char **argv) {
     FEXServerOptions FEXOptions{};

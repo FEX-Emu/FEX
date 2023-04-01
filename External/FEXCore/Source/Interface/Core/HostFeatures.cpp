@@ -9,7 +9,7 @@
 #endif
 
 #ifdef _M_X86_64
-#include <xbyak/xbyak_util.h>
+#include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #endif
 
 namespace FEXCore {

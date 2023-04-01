@@ -1,5 +1,7 @@
 set (TESTS
-  InterruptableConditionVariable)
+  InterruptableConditionVariable
+  Filesystem
+  )
 
 list(APPEND LIBS FEXCore)
 

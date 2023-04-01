@@ -2,21 +2,21 @@
 #include "Interface/Context/Context.h"
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory_resource.h>
+#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/fextl/memory_resource.h>
 
 #include <cstdint>
 #include <functional>
-#include <memory_resource>
 #include <stddef.h>
 #include <utility>
 #include <mutex>
-#include <tsl/robin_map.h>
 
 namespace FEXCore {
 
 class LookupCache {
 public:
-
   struct LookupCacheEntry {
     uintptr_t HostCode;
     uintptr_t GuestCode;
@@ -245,10 +245,10 @@ private:
   // This makes `BlockLinks` look like a raw pointer that could memory leak, but since it is backed by the MBR, it won't.
   std::pmr::monotonic_buffer_resource BlockLinks_mbr;
   using BlockLinksMapType = std::pmr::map<BlockLinkTag, std::function<void()>>;
-  std::pmr::polymorphic_allocator<std::byte> BlockLinks_pma {&BlockLinks_mbr};
+  fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
   BlockLinksMapType *BlockLinks;
 
-  tsl::robin_map<uint64_t, uint64_t> BlockList;
+  fextl::robin_map<uint64_t, uint64_t> BlockList;
 
   size_t TotalCacheSize;
 

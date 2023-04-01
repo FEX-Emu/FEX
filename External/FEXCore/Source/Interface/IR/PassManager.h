@@ -8,12 +8,12 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <functional>
-#include <memory>
 #include <utility>
 
 namespace FEXCore::Context {
@@ -48,7 +48,7 @@ class PassManager final {
 public:
   void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
-  Pass* InsertPass(std::unique_ptr<Pass> Pass, fextl::string Name = "") {
+  Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
     Pass->RegisterPassManager(this);
     auto PassPtr = Passes.emplace_back(std::move(Pass)).get();
 
@@ -88,12 +88,12 @@ protected:
   FEXCore::HLE::SyscallHandler *SyscallHandler;
 
 private:
-  fextl::vector<std::unique_ptr<Pass>> Passes;
+  fextl::vector<fextl::unique_ptr<Pass>> Passes;
   fextl::unordered_map<fextl::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  fextl::vector<std::unique_ptr<Pass>> ValidationPasses;
-  void InsertValidationPass(std::unique_ptr<Pass> Pass, fextl::string Name = "") {
+  fextl::vector<fextl::unique_ptr<Pass>> ValidationPasses;
+  void InsertValidationPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
     Pass->RegisterPassManager(this);
     auto PassPtr = ValidationPasses.emplace_back(std::move(Pass)).get();
 

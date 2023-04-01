@@ -6,6 +6,7 @@ desc: Glue logic, brk allocations
 $end_info$
 */
 
+#include "FEXHeaderUtils/Filesystem.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFParser.h"
 
@@ -237,7 +238,6 @@ static bool IsShebangFilename(fextl::string const &Filename) {
 uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
   fextl::string Filename{};
 
-  std::error_code ec;
   fextl::string RootFS = FEX::HLE::_SyscallHandler->RootFSPath();
   ELFLoader::ELFContainer::ELFType Type{};
 
@@ -257,7 +257,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
     // For absolute paths, check the rootfs first (if available)
     if (pathname[0] == '/') {
       auto Path = FEX::HLE::_SyscallHandler->FM.GetEmulatedPath(pathname, true);
-      if (!Path.empty() && std::filesystem::exists(Path, ec)) {
+      if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
         Filename = Path;
       }
       else {
@@ -268,8 +268,8 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
       Filename = pathname;
     }
 
-    bool exists = std::filesystem::exists(Filename, ec);
-    if (ec || !exists) {
+    bool exists = FHU::Filesystem::Exists(Filename);
+    if (!exists) {
       return -ENOENT;
     }
 
@@ -867,7 +867,7 @@ static bool isHEX(char c) {
   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
 }
 
-std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
+fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
 
   ELFParser GuestELF;
 
@@ -929,7 +929,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
       goto DoGenerate;
     }
 
-    auto rv = std::make_unique<FEXCore::HLE::SourcecodeMap>();
+    auto rv = fextl::make_unique<FEXCore::HLE::SourcecodeMap>();
 
     {
       auto len = rv->SourceFile.size();
@@ -1006,7 +1006,7 @@ std::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const s
     uintptr_t CurrentOffset{};
     int LastOffsetLine;
 
-    auto rv = std::make_unique<FEXCore::HLE::SourcecodeMap>();
+    auto rv = fextl::make_unique<FEXCore::HLE::SourcecodeMap>();
 
     rv->SourceFile = GuestSourceFile;
 

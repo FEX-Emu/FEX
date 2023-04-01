@@ -1,3 +1,4 @@
+#include "FEXHeaderUtils/Filesystem.h"
 #include "Interface/Context/Context.h"
 #include "Interface/IR/AOTIR.h"
 
@@ -5,6 +6,7 @@
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
 #include <Interface/Core/LookupCache.h>
@@ -371,19 +373,18 @@ namespace FEXCore::IR {
   }
 
   AOTIRCacheEntry *AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string &filename) {
-    fextl::string base_filename = fextl::string_from_path(std::filesystem::path(filename).filename());
+    fextl::string base_filename = FHU::Filesystem::GetFilename(filename);
 
     if (!base_filename.empty()) {
       auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
 
-      auto fileid = base_filename + "-";
-      fileid += std::to_string(filename_hash) + "-";
-
-      // append optimization flags to the fileid
-      fileid += (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? "S" : "s";
-      fileid += CTX->Config.TSOEnabled ? "T" : "t";
-      fileid += CTX->Config.ABILocalFlags ? "L" : "l";
-      fileid += CTX->Config.ABINoPF ? "p" : "P";
+      auto fileid = fextl::fmt::format("{}-{}-{}{}{}{}",
+        base_filename,
+        filename_hash,
+        (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? 'S' : 's',
+        CTX->Config.TSOEnabled ? 'T' : 't',
+        CTX->Config.ABILocalFlags ? 'L' : 'l',
+        CTX->Config.ABINoPF ? 'p' : 'P');
 
       std::unique_lock lk(AOTIRCacheLock);
 

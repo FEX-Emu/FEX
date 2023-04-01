@@ -57,11 +57,11 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     CharLevel = "???";
     break;
   }
-  fmt::print("[{}] {}\n", CharLevel, Message);
+  fextl::fmt::print("[{}] {}\n", CharLevel, Message);
 }
 
 void AssertHandler(char const *Message) {
-  fmt::print("[ASSERT] {}\n", Message);
+  fextl::fmt::print("[ASSERT] {}\n", Message);
 
   // make sure buffers are flushed
   fflush(nullptr);
@@ -83,7 +83,7 @@ public:
   }
 
   void Load() override {
-    std::unordered_map<std::string_view, std::string_view> EnvMap;
+    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
     for (auto &Option : Env) {
       std::string_view Key = Option.first;
       std::string_view Value = Option.second;
@@ -115,10 +115,11 @@ private:
 }
 
 int main(int argc, char **argv, char **const envp) {
+  FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(std::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
   FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
@@ -132,14 +133,14 @@ int main(int argc, char **argv, char **const envp) {
   FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
 
   // Adds in environment options from the test harness config
-  FEXCore::Config::AddLayer(std::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
+  FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
   FEXCore::Config::ReloadMetaLayer();
 
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   FEX_CONFIG_OPT(Core, CORE);
 
-  std::unique_ptr<FEX::HLE::MemAllocator> Allocator;
+  fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 
   if (!Loader.Is64BitMode()) {
     // Setup our userspace allocator
@@ -202,14 +203,11 @@ int main(int argc, char **argv, char **const envp) {
       return false;
     }, true);
 
-    // Run through FEX
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
                                                : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
 
-    auto Mapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMmap, SyscallHandler.get());
-    auto Unmapper = std::bind_front(&FEX::HLE::SyscallHandler::GuestMunmap, SyscallHandler.get());
-
-    if (!Loader.MapMemory(Mapper, Unmapper)) {
+    // Run through FEX
+    if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       return -ENOEXEC;
@@ -237,7 +235,7 @@ int main(int argc, char **argv, char **const envp) {
     // Run as host
     SupportsAVX = true;
     SignalDelegation->RegisterTLSState((FEXCore::Core::InternalThreadState*)UINTPTR_MAX);
-    if (!Loader.MapMemory(mmap, munmap)) {
+    if (!Loader.MapMemory()) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       return -ENOEXEC;
@@ -247,7 +245,6 @@ int main(int argc, char **argv, char **const envp) {
   }
 
   FEXCore::Context::Context::DestroyContext(CTX);
-  FEXCore::Context::ShutdownStaticTables();
 
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 
@@ -263,7 +260,6 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::UnInstallHandlers();
 
   FEXCore::Allocator::ClearHooks();
-
   return Passed ? 0 : -1;
 }
 

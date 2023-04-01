@@ -1087,8 +1087,8 @@ void Arm64JITCore::ResetStack() {
   }
 }
 
-std::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
-  return std::make_unique<Arm64JITCore>(ctx, Thread);
+fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
+  return fextl::make_unique<Arm64JITCore>(ctx, Thread);
 }
 
 void InitializeArm64JITSignalHandlers(FEXCore::Context::ContextImpl *CTX) {

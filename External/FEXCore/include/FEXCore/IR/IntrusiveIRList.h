@@ -120,7 +120,7 @@ class DualIntrusiveAllocatorThreadPool final : public DualIntrusiveAllocator {
     Utils::FixedSizePooledAllocation<uintptr_t, 5000, 500> PoolObject;
 };
 
-class IRListView final {
+class IRListView final : public FEXCore::Allocator::FEXAllocOperators {
   enum Flags {
     FLAG_IsCopy = 1,
     FLAG_Shared = 2,
@@ -183,7 +183,7 @@ public:
     //uint64_t Flags;
     uint64_t WrittenFlags = FLAG_Shared; //on disk format always has the Shared flag
     stream.write((const char*)&WrittenFlags, sizeof(WrittenFlags));
-    
+
     // inline data
     stream.write((const char*)GetData(), DataSize);
     stream.write((const char*)GetListData(), ListSize);
@@ -202,7 +202,7 @@ public:
     //uint64_t Flags;
     uint64_t WrittenFlags = FLAG_Shared; //on disk format always has the Shared flag
     memcpy(ptr, &WrittenFlags, sizeof(WrittenFlags)); ptr += sizeof(WrittenFlags);
-    
+
     // inline data
     memcpy(ptr, (const void*)GetData(), DataSize); ptr += DataSize;
     memcpy(ptr, (const void*)GetListData(), ListSize); ptr += ListSize;

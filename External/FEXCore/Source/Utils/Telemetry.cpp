@@ -1,7 +1,9 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
 #include <filesystem>
@@ -28,9 +30,8 @@ namespace FEXCore::Telemetry {
     DataDirectory += "Telemetry/";
 
     // Ensure the folder structure is created for our configuration
-    std::error_code ec{};
-    if (!std::filesystem::exists(DataDirectory, ec) &&
-        !std::filesystem::create_directories(DataDirectory, ec)) {
+    if (!FHU::Filesystem::Exists(DataDirectory) &&
+        !FHU::Filesystem::CreateDirectories(DataDirectory)) {
       LogMan::Msg::IFmt("Couldn't create telemetry Folder");
     }
   }
@@ -39,23 +40,24 @@ namespace FEXCore::Telemetry {
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
-    std::error_code ec{};
-    if (std::filesystem::exists(DataDirectory, ec)) {
+    if (FHU::Filesystem::Exists(DataDirectory)) {
       // If the file exists, retain a single backup
       auto Backup = DataDirectory + ".1";
-      std::filesystem::copy_file(DataDirectory, Backup, std::filesystem::copy_options::overwrite_existing, ec);
+      FHU::Filesystem::CopyFile(DataDirectory, Backup, FHU::Filesystem::CopyOptions::OVERWRITE_EXISTING);
     }
 
-    std::fstream fs(fextl::string_from_string(DataDirectory), std::ios_base::out | std::ios_base::trunc);
-    if (fs.is_open()) {
+    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+    int fd = open(DataDirectory.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+
+    if (fd != -1) {
       for (size_t i = 0; i < TelemetryType::TYPE_LAST; ++i) {
         auto &Name = TelemetryNames.at(i);
         auto &Data = TelemetryValues.at(i);
-        fs << Name << ": " << *Data << std::endl;
+        auto Output = fextl::fmt::format("{}: {}\n", Name, *Data);
+        write(fd, Output.c_str(), Output.size());
       }
-
-      fs.flush();
-      fs.close();
+      fsync(fd);
+      close(fd);
     }
   }
 

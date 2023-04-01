@@ -45,6 +45,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/vector.h>
@@ -59,7 +60,6 @@ $end_info$
 #include <filesystem>
 #include <functional>
 #include <fstream>
-#include <memory>
 #include <mutex>
 #include <queue>
 #include <shared_mutex>
@@ -151,7 +151,7 @@ namespace FEXCore::Context {
     BlockData = std::make_unique<FEXCore::BlockSamplingData>();
 #endif
     if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
-      CodeObjectCacheService = std::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
+      CodeObjectCacheService = fextl::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
     }
     if (!Config.EnableAVX) {
       HostFeatures.SupportsAVX = false;
@@ -275,7 +275,7 @@ namespace FEXCore::Context {
       StopGdbServer();
     }
 
-    ThunkHandler.reset(FEXCore::ThunkHandler::Create());
+    ThunkHandler = FEXCore::ThunkHandler::Create();
 
     using namespace FEXCore::Core;
 
@@ -295,7 +295,7 @@ namespace FEXCore::Context {
 
   void ContextImpl::StartGdbServer() {
     if (!DebugServer) {
-      DebugServer = std::make_unique<GdbServer>(this);
+      DebugServer = fextl::make_unique<GdbServer>(this);
       StartPaused = true;
     }
   }
@@ -557,11 +557,11 @@ namespace FEXCore::Context {
   }
 
   void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
-    Thread->OpDispatcher = std::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
+    Thread->OpDispatcher = fextl::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
     Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
-    Thread->LookupCache = std::make_unique<FEXCore::LookupCache>(this);
-    Thread->FrontendDecoder = std::make_unique<FEXCore::Frontend::Decoder>(this);
-    Thread->PassManager = std::make_unique<FEXCore::IR::PassManager>();
+    Thread->LookupCache = fextl::make_unique<FEXCore::LookupCache>(this);
+    Thread->FrontendDecoder = fextl::make_unique<FEXCore::Frontend::Decoder>(this);
+    Thread->PassManager = fextl::make_unique<FEXCore::IR::PassManager>();
     Thread->PassManager->RegisterExitHandler([this]() {
         Stop(false /* Ignore current thread */);
     });

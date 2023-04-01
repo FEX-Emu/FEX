@@ -19,6 +19,7 @@ $end_info$
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -42,13 +43,13 @@ $end_info$
 namespace JSON {
   struct JsonAllocator {
     jsonPool_t PoolObject;
-    std::unique_ptr<fextl::list<json_t>> json_objects;
+    fextl::unique_ptr<fextl::list<json_t>> json_objects;
   };
   static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
   json_t* PoolInit(jsonPool_t* Pool) {
     JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
-    alloc->json_objects = std::make_unique<fextl::list<json_t>>();
+    alloc->json_objects = fextl::make_unique<fextl::list<json_t>>();
     return &*alloc->json_objects->emplace(alloc->json_objects->end());
   }
 
@@ -62,39 +63,31 @@ namespace FEX::HLE {
   struct open_how;
 
 static bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filename) {
-  std::fstream File(fextl::string_from_string(Filename), std::ios::in);
-
-  if (!File.is_open()) {
+  int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
+  if (fd == -1) {
     return false;
   }
 
-  if (!File.seekg(0, std::fstream::end)) {
-    LogMan::Msg::DFmt("Couldn't load configuration file: Seek end");
+  struct stat buf;
+  if (fstat(fd, &buf) != 0) {
+    LogMan::Msg::DFmt("Couldn't load configuration file: fstat");
+    close(fd);
     return false;
   }
 
-  auto FileSize = File.tellg();
-  if (File.fail()) {
-    LogMan::Msg::DFmt("Couldn't load configuration file: tellg");
-    return false;
-  }
-
-  if (!File.seekg(0, std::fstream::beg)) {
-    LogMan::Msg::DFmt("Couldn't load configuration file: Seek beginning");
-    return false;
-  }
+  auto FileSize = buf.st_size;
 
   if (FileSize <= 0) {
     LogMan::Msg::DFmt("FileSize less than or equal to zero specified");
+    close(fd);
     return false;
   }
 
   Data.resize(FileSize);
-  if (!File.read(Data.data(), FileSize)) {
-    // Probably means permissions aren't set. Just early exit
-    return false;
-  }
-  return true;
+  const auto ReadSize = pread(fd, Data.data(), FileSize, 0);
+
+  close(fd);
+  return ReadSize == FileSize;
 }
 
 struct ThunkDBObject {
@@ -216,7 +209,6 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
 
 FileManager::FileManager(FEXCore::Context::Context *ctx)
   : EmuFD {ctx} {
-
   auto ThunkConfigFile = ThunkConfig();
 
   // We try to load ThunksDB from:
@@ -287,7 +279,7 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   }
 
   // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
-  auto ThunkGuestPath = std::filesystem::path { Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() };
+  auto ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32() ;
   for (auto const &DBObject : ThunkDB) {
     if (!DBObject.second.Enabled) {
       continue;
@@ -298,17 +290,17 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     struct {
       decltype(FileManager::ThunkOverlays)& ThunkOverlays;
       decltype(ThunkDB)& ThunkDB;
-      const std::filesystem::path& ThunkGuestPath;
+      const fextl::string& ThunkGuestPath;
       bool Is64BitMode;
 
       void SetupOverlay(const ThunkDBObject& DBDepend) {
-          auto ThunkPath = ThunkGuestPath / DBDepend.LibraryName;
-          if (!std::filesystem::exists(ThunkPath)) {
+          auto ThunkPath = fextl::fmt::format("{}/{}", ThunkGuestPath, DBDepend.LibraryName);
+          if (!FHU::Filesystem::Exists(ThunkPath)) {
             if (!Is64BitMode) {
               // Guest libraries not existing is expected since not all libraries are thunked on 32-bit
               return;
             }
-            ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath.string());
+            ERROR_AND_DIE_FMT("Requested thunking via guest library \"{}\" that does not exist", ThunkPath);
           }
 
           for (const auto& Overlay : DBDepend.Overlays) {
@@ -663,7 +655,11 @@ uint64_t FileManager::Readlinkat(int dirfd, const char *pathname, char *buf, siz
         dirfd != AT_FDCWD) {
     // Passed in a dirfd that isn't magic FDCWD
     // We need to get the path from the fd now
-    Path = FEX::get_fdpath(dirfd).value_or("");
+    char Tmp[PATH_MAX] = "";
+    auto PathLength = FEX::get_fdpath(dirfd, Tmp);
+    if (PathLength != -1) {
+      Path = fextl::string(Tmp, PathLength);
+    }
 
     if (pathname) {
       if (!Path.empty()) {

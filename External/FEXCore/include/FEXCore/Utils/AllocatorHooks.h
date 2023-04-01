@@ -30,4 +30,16 @@ namespace FEXCore::Allocator {
   FEX_DEFAULT_VISIBILITY extern FREE_Hook free;
   FEX_DEFAULT_VISIBILITY extern MALLOC_USABLE_SIZE_Hook malloc_usable_size;
   FEX_DEFAULT_VISIBILITY extern ALIGNED_ALLOC_Hook aligned_alloc;
+
+  struct FEXAllocOperators {
+    FEXAllocOperators() = default;
+
+    void *operator new(size_t size) {
+      return FEXCore::Allocator::malloc(size);
+    }
+
+    void operator delete(void *ptr) {
+      return FEXCore::Allocator::free(ptr);
+    }
+  };
 }

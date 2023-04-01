@@ -90,7 +90,7 @@ namespace {
     IR::OrderedNode *SpilledNode;
   };
 
-  struct RegisterGraph {
+  struct RegisterGraph : public FEXCore::Allocator::FEXAllocOperators {
     IR::RegisterAllocationData::UniquePtr AllocData;
     RegisterSet Set;
     fextl::vector<RegisterNode> Nodes{};
@@ -1559,7 +1559,7 @@ namespace {
     return Changed;
   }
 
-  std::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA, bool SupportsAVX) {
-    return std::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA, SupportsAVX);
+  fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(FEXCore::IR::Pass* CompactionPass, bool OptimizeSRA, bool SupportsAVX) {
+    return fextl::make_unique<ConstrainedRAPass>(CompactionPass, OptimizeSRA, SupportsAVX);
   }
 }

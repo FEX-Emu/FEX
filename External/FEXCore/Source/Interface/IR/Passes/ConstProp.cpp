@@ -22,6 +22,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/unordered_map.h>
 
 #include <bit>
@@ -29,7 +30,6 @@ $end_info$
 #include <memory>
 #include <string.h>
 #include <tuple>
-#include <tsl/robin_map.h>
 #include <utility>
 
 namespace FEXCore::IR {
@@ -201,7 +201,7 @@ private:
   fextl::map<OrderedNode*, uint64_t> AddressgenConsts;
 
   // Pool inline constant generation. These are typically very small and pool efficiently.
-  tsl::robin_map<uint64_t, OrderedNode*> InlineConstantGen;
+  fextl::robin_map<uint64_t, OrderedNode*> InlineConstantGen;
   OrderedNode *CreateInlineConstant(IREmitter *IREmit, uint64_t Constant) {
     const auto it = InlineConstantGen.find(Constant);
     if (it != InlineConstantGen.end()) {
@@ -1073,8 +1073,8 @@ bool ConstProp::Run(IREmitter *IREmit) {
   return Changed;
 }
 
-std::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9) {
-  return std::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool InlineConstants, bool SupportsTSOImm9) {
+  return fextl::make_unique<ConstProp>(InlineConstants, SupportsTSOImm9);
 }
 
 }

@@ -6,6 +6,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
 #include "Tests/LinuxSyscalls/Syscalls.h"
@@ -33,7 +34,7 @@ namespace FEX::HLE::x32 {
 
 class x32SyscallHandler final : public FEX::HLE::SyscallHandler {
 public:
-  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, std::unique_ptr<MemAllocator> Allocator);
+  x32SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation, fextl::unique_ptr<MemAllocator> Allocator);
 
   FEX::HLE::MemAllocator *GetAllocator() { return AllocHandler.get(); }
   void *GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
@@ -69,12 +70,12 @@ public:
 
 private:
   void RegisterSyscallHandlers();
-  std::unique_ptr<MemAllocator> AllocHandler{};
+  fextl::unique_ptr<MemAllocator> AllocHandler{};
 };
 
-std::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx,
+fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context *ctx,
                                                         FEX::HLE::SignalDelegator *_SignalDelegation,
-                                                        std::unique_ptr<MemAllocator> Allocator);
+                                                        fextl::unique_ptr<MemAllocator> Allocator);
 //////
 // REGISTER_SYSCALL_IMPL implementation
 // Given a syscall name + a lambda, and it will generate an strace string, extract number of arguments
