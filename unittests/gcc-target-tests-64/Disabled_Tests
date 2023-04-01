@@ -40,3 +40,6 @@ sse4_1-rint-sfix-vec.c.gcc-target-test-64
 sse4_1-rintf-sfix-vec.c.gcc-target-test-64
 sse4_1-round-sfix-vec.c.gcc-target-test-64
 sse4_1-roundf-sfix-vec.c.gcc-target-test-64
+
+# This has a race with SIGPROF
+mcount_pic.c.gcc-target-test-64
