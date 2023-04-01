@@ -114,11 +114,11 @@ ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &R
     }
     fextl::string RootFSLink = RootFS + RawString;
     char Filename[PATH_MAX];
-    while(FHU::Symlinks::IsSymlink(RootFSLink.c_str())) {
+    while(FHU::Symlinks::IsSymlink(RootFSLink)) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
-      const auto SymlinkTarget = FHU::Symlinks::ResolveSymlink(RootFSLink.c_str(), Filename);
+      const auto SymlinkTarget = FHU::Symlinks::ResolveSymlink(RootFSLink, Filename);
       if (FHU::Filesystem::IsAbsolute(SymlinkTarget)) {
         RootFSLink = RootFS;
         RootFSLink += SymlinkTarget;
