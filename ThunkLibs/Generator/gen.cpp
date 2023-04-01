@@ -483,15 +483,35 @@ void GenerateThunkLibsAction::ParseInterface(clang::ASTContext& context) {
 
 void GenerateThunkLibsAction::EmitOutput() {
     static auto format_decl = [](clang::QualType type, const std::string_view& name) {
-        if (type->isFunctionPointerType()) {
+        clang::QualType innermostPointee = type;
+        while (innermostPointee->isPointerType()) {
+          innermostPointee = innermostPointee->getPointeeType();
+        }
+        if (innermostPointee->isFunctionType()) {
+            // Function pointer declarations (e.g. void (**callback)()) require
+            // the variable name to be prefixed *and* suffixed.
+
             auto signature = type.getAsString();
-            const char needle[] = { '(', '*', ')' };
-            auto it = std::search(signature.begin(), signature.end(), std::begin(needle), std::end(needle));
-            if (it == signature.end()) {
+
+            // Search for strings like (*), (**), or (*****). Insert the
+            // variable name before the closing parenthesis
+            auto needle = signature.begin();
+            for (; needle != signature.end(); ++needle) {
+                if (signature.end() - needle < 3 ||
+                    std::string_view { &*needle, 2 } != "(*") {
+                    continue;
+                }
+                while (*++needle == '*') {
+                }
+                if (*needle == ')') {
+                    break;
+                }
+            }
+            if (needle == signature.end()) {
                 // It's *probably* a typedef, so this should be safe after all
                 return fmt::format("{} {}", signature, name);
             } else {
-                signature.insert(it + 2, name.begin(), name.end());
+                signature.insert(needle, name.begin(), name.end());
                 return signature;
             }
         } else {

@@ -216,6 +216,9 @@ if (BITNESS EQUAL 64)
   generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
   add_guest_lib(xcb "libxcb.so.1")
 
+  generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
+  add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
+
   generate(libxcb-dri2 ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb-dri2/libxcb-dri2_interface.cpp)
   add_guest_lib(xcb-dri2 "libxcb-dri2.so.0")
 
