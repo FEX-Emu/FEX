@@ -127,11 +127,11 @@ namespace FHU::Filesystem {
     return SubString;
   }
 
-  inline bool IsRelative(const fextl::string &Path) {
+  inline bool IsRelative(const std::string_view Path) {
     return !Path.starts_with('/');
   }
 
-  inline bool IsAbsolute(const fextl::string &Path) {
+  inline bool IsAbsolute(const std::string_view Path) {
     return Path.starts_with('/');
   }
 
