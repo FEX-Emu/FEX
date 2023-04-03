@@ -1,8 +1,8 @@
 #pragma once
-#include <string>
+#include <FEXCore/fextl/string.h>
 
 namespace SquashFS {
   bool InitializeSquashFS();
   void UnmountRootFS();
-  std::string GetMountFolder();
+  fextl::string GetMountFolder();
 }

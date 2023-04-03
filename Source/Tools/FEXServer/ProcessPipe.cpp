@@ -357,7 +357,7 @@ namespace ProcessPipe {
           break;
         }
         case FEXServerClient::PacketType::TYPE_GET_ROOTFS_PATH: {
-          std::string MountFolder = SquashFS::GetMountFolder();
+          fextl::string MountFolder = SquashFS::GetMountFolder();
 
           FEXServerClient::FEXServerResultPacket Res {
             .MountPath {
