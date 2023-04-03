@@ -10,7 +10,7 @@
 namespace FEXCore::FileLoading {
 
 template<typename T>
-bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
+static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
   if (FD == -1) {

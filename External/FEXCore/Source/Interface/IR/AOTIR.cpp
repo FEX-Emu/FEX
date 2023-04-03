@@ -199,6 +199,7 @@ namespace FEXCore::IR {
 
     for (;;) {
       // This code is tricky to refactor so it doesn't allocate memory through glibc.
+      // The moved std::function object deallocates memory at the end of scope.
       FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
 
       AOTIRCaptureCacheWriteoutLock.lock();
@@ -329,7 +330,7 @@ namespace FEXCore::IR {
           auto RADataCopyDeleter = RADataCopy.get_deleter();
           auto IRListCopy = IRList->CreateCopy();
 
-          // This code is tricky to refactor so it doesn't allocate memory through glibc.
+          // The lambda is converted to std::function. This is tricky to refactor so it doesn't allocate memory through glibc.
           FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
           AOTIRCaptureCacheWriteoutQueue_Append([this, LocalRIP, LocalStartAddr, Length, hash, IRListCopy, RADataCopy=RADataCopy.release(), RADataCopyDeleter, FileId]() {
 

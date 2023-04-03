@@ -1279,6 +1279,7 @@ void GdbServer::StartThread() {
 }
 
 void GdbServer::OpenListenSocket() {
+  // getaddrinfo allocates memory that can't be removed.
   FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
   struct addrinfo hints, *res;
 

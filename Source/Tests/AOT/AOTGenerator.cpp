@@ -147,6 +147,7 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
       // All entryproints processed, cleanup this thread
       CTX->DestroyThread(Thread);
+      // This thread is now getting abandoned. Disable glibc allocator checking so glibc can safely cleanup its internal allocations.
       FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
     });
 

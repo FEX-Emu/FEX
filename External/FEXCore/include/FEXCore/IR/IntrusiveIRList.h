@@ -171,7 +171,7 @@ public:
     }
   }
 
-  void Serialize(FEXCore::Context::AOTIRWriterFD& stream) const {
+  void Serialize(FEXCore::Context::AOTIRWriter& stream) const {
     void *nul = nullptr;
     //void *IRDataInternal;
     stream.Write((const char*)&nul, sizeof(nul));

@@ -121,6 +121,42 @@ namespace FEXServerLogging {
   }
 }
 
+namespace AOTIR {
+  class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriter {
+    public:
+      AOTIRWriterFD(const fextl::string &Path) {
+        // Create and truncate if exists.
+        constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+        FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+      }
+
+      operator bool() const {
+        return FD != -1;
+      }
+
+      void Write(const void* Data, size_t Size) override {
+        write(FD, Data, Size);
+      }
+
+      size_t Offset() override {
+        return lseek(FD, 0, SEEK_CUR);
+      }
+
+      void Close() override {
+        if (FD != -1) {
+          close(FD);
+          FD = -1;
+        }
+      }
+
+      virtual ~AOTIRWriterFD() {
+        Close();
+      }
+    private:
+      int FD{-1};
+  };
+}
+
 void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
@@ -457,43 +493,9 @@ int main(int argc, char **argv, char **const envp) {
       return open(filepath.c_str(), O_RDONLY);
     });
 
-    class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriterFD {
-      public:
-        AOTIRWriterFD(const fextl::string &Path) {
-          // Create and truncate if exists.
-          constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-          FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
-        }
-
-        operator bool() const {
-          return FD != -1;
-        }
-
-        void Write(const void* Data, size_t Size) override {
-          write(FD, Data, Size);
-        }
-
-        size_t Offset() override {
-          return lseek(FD, 0, SEEK_CUR);
-        }
-
-        void Close() override {
-          if (FD != -1) {
-            close(FD);
-            FD = -1;
-          }
-        }
-
-        virtual ~AOTIRWriterFD() {
-          Close();
-        }
-      private:
-        int FD{-1};
-    };
-
-    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> fextl::unique_ptr<AOTIRWriterFD> {
+    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> fextl::unique_ptr<AOTIR::AOTIRWriterFD> {
       const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
-      auto AOTWrite = fextl::make_unique<AOTIRWriterFD>(filepath);
+      auto AOTWrite = fextl::make_unique<AOTIR::AOTIRWriterFD>(filepath);
       if (*AOTWrite) {
         LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
       } else {
@@ -507,7 +509,9 @@ int main(int argc, char **argv, char **const envp) {
       const auto NewFilepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
 
       // Rename the temporary file to atomically update the file
-      FHU::Filesystem::RenameFile(TmpFilepath, NewFilepath);
+      if (!FHU::Filesystem::RenameFile(TmpFilepath, NewFilepath)) {
+        LogMan::Msg::IFmt("Couldn't rename aotir");
+      }
     });
   }
 

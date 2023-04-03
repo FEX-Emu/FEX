@@ -58,7 +58,7 @@ class FEX_PACKED RegisterAllocationData {
 
     UniquePtr CreateCopy() const;
 
-    void Serialize(FEXCore::Context::AOTIRWriterFD& stream) const {
+    void Serialize(FEXCore::Context::AOTIRWriter& stream) const {
       stream.Write((const char*)&SpillSlotCount, sizeof(SpillSlotCount));
       stream.Write((const char*)&MapCount, sizeof(MapCount));
       // RAData (inline)

@@ -70,14 +70,15 @@ namespace FEXCore::Context {
       std::unique_lock<std::shared_mutex> lock;
   };
 
-  class AOTIRWriterFD {
+  /**
+   * @brief IR Serialization handler class.
+   */
+  class AOTIRWriter {
     public:
-      virtual ~AOTIRWriterFD() {
-      }
+      virtual ~AOTIRWriter() = default;
       virtual void Write(const void* Data, size_t Size) = 0;
       virtual size_t Offset() = 0;
       virtual void Close() = 0;
-    private:
   };
 
   struct VDSOSigReturn {
@@ -265,7 +266,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriterFD>(const fextl::string&)> CacheWriter) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) = 0;
       FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
