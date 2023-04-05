@@ -164,10 +164,10 @@ void Dispatcher::RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context,
     // Extended XMM state
     if (IsAVXEnabled) {
       for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&fpstate->_xmm[i], &Frame->State.xmm.avx.data[i][0], sizeof(__uint128_t));
+        memcpy(&Frame->State.xmm.avx.data[i][0], &fpstate->_xmm[i], sizeof(__uint128_t));
       }
       for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm.avx.data[i][2], sizeof(__uint128_t));
+        memcpy(&Frame->State.xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i], sizeof(__uint128_t));
       }
     } else {
       memcpy(Frame->State.xmm.sse.data, fpstate->_xmm, sizeof(Frame->State.xmm.sse.data));
@@ -247,10 +247,10 @@ void Dispatcher::RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Contex
     // Extended XMM state
     if (IsAVXEnabled) {
       for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&fpstate->_xmm[i], &Frame->State.xmm.avx.data[i][0], sizeof(__uint128_t));
+        memcpy(&Frame->State.xmm.avx.data[i][0], &fpstate->_xmm[i], sizeof(__uint128_t));
       }
       for (size_t i = 0; i < Core::CPUState::NUM_XMMS; i++) {
-        memcpy(&xstate->ymmh.ymmh_space[i], &Frame->State.xmm.avx.data[i][2], sizeof(__uint128_t));
+        memcpy(&Frame->State.xmm.avx.data[i][2], &xstate->ymmh.ymmh_space[i], sizeof(__uint128_t));
       }
     } else {
       memcpy(Frame->State.xmm.sse.data, fpstate->_xmm, sizeof(Frame->State.xmm.sse.data));
