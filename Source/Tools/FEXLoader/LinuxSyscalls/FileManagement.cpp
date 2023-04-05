@@ -420,27 +420,47 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
 
   if (FollowSymlink) {
     // Check if the combination of RootFS FD and subpath with the front '/' stripped off is a symlink.
-    while(FEX::HLE::IsSymlink(RootFSFD, &SubPath[1])) {
-      // Choose the current temporary working path.
-      auto CurrentTmp = TmpPaths[CurrentIndex];
+    bool HadAtLeastOne{};
+    struct stat Buffer{};
+    for(;;) {
+      // We need to check if the filepath exists and is a symlink.
+      // If the initial filepath doesn't exist then early exit.
+      // If it did exist at some state then trace it all all the way to the final link.
+      int Result = fstatat(RootFSFD, &SubPath[1], &Buffer, AT_SYMLINK_NOFOLLOW);
+      if (Result != 0 && errno == ENOENT && !HadAtLeastOne) {
+        // Initial file didn't exist at all
+        return NoEntry;
+      }
 
-      // Get the symlink of RootFS FD + stripped subpath.
-      auto SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
+      const bool IsLink = Result == 0 && S_ISLNK(Buffer.st_mode);
 
-      if (SymlinkSize > 0 && CurrentTmp[0] == '/') {
-        // If the symlink is absolute:
-        // 1) Zero terminate it.
-        // 2) Set the path as our current subpath.
-        // 3) Switch to the next temporary index. (We don't want to overwrite the current one on the next loop iteration).
-        // 4) Run the loop again.
-        CurrentTmp[SymlinkSize] = 0;
-        SubPath = CurrentTmp;
-        CurrentIndex ^= 1;
+      HadAtLeastOne = true;
+
+      if (IsLink) {
+        // Choose the current temporary working path.
+        auto CurrentTmp = TmpPaths[CurrentIndex];
+
+        // Get the symlink of RootFS FD + stripped subpath.
+        auto SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
+
+        if (SymlinkSize > 0 && CurrentTmp[0] == '/') {
+          // If the symlink is absolute:
+          // 1) Zero terminate it.
+          // 2) Set the path as our current subpath.
+          // 3) Switch to the next temporary index. (We don't want to overwrite the current one on the next loop iteration).
+          // 4) Run the loop again.
+          CurrentTmp[SymlinkSize] = 0;
+          SubPath = CurrentTmp;
+          CurrentIndex ^= 1;
+        }
+        else {
+          // If the path wasn't a symlink or wasn't absolute.
+          // 1) Break early, returning the previous found result.
+          // 2) If first iteration then we return `pathname`.
+          break;
+        }
       }
       else {
-        // If the path wasn't a symlink or wasn't absolute.
-        // 1) Break early, returning the previous found result.
-        // 2) If first iteration then we return `pathname`.
         break;
       }
     }
