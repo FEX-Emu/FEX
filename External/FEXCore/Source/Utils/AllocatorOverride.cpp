@@ -53,15 +53,15 @@ namespace FEXCore::Allocator {
   static thread_local uint64_t SkipEvalForThread{};
 
   // Internal memory allocation hooks to allow non-faulting allocations through.
-  CALLOC_Hook calloc_ptr = __libc_calloc;
-  FREE_Hook free_ptr = __libc_free;
-  MALLOC_Hook malloc_ptr = __libc_malloc;
-  MEMALIGN_Hook memalign_ptr = __libc_memalign;
-  REALLOC_Hook realloc_ptr = __libc_realloc;
-  VALLOC_Hook valloc_ptr = __libc_valloc;
-  POSIX_MEMALIGN_Hook posix_memalign_ptr = ::posix_memalign;
-  MALLOC_USABLE_SIZE_Hook malloc_usable_size_ptr  = ::malloc_usable_size;
-  ALIGNED_ALLOC_Hook aligned_alloc_ptr = __libc_memalign;
+  auto calloc_ptr = __libc_calloc;
+  auto free_ptr = __libc_free;
+  auto malloc_ptr = __libc_malloc;
+  auto memalign_ptr = __libc_memalign;
+  auto realloc_ptr = __libc_realloc;
+  auto valloc_ptr = __libc_valloc;
+  auto posix_memalign_ptr = ::posix_memalign;
+  auto malloc_usable_size_ptr  = ::malloc_usable_size;
+  auto aligned_alloc_ptr = __libc_memalign;
 
   // Constructor for per-thread allocation faulting check.
   YesIKnowImNotSupposedToUseTheGlibcAllocator::YesIKnowImNotSupposedToUseTheGlibcAllocator() {
