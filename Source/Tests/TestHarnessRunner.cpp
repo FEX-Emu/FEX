@@ -115,6 +115,7 @@ private:
 }
 
 int main(int argc, char **argv, char **const envp) {
+  auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -260,6 +261,9 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Msg::UnInstallHandlers();
 
   FEXCore::Allocator::ClearHooks();
+
+  FEXCore::Allocator::ReenableSBRKAllocations(SBRKPointer);
+
   return Passed ? 0 : -1;
 }
 
