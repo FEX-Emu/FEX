@@ -158,34 +158,6 @@ extern "C" {
       fprintf(stderr, "libX11: LockMutex\n");
     }
 
-  int XFree(void* ptr) {
-    // This function must be able to handle both guest heap pointers *and* host heap pointers,
-    // so it only forwards to the native host library for the latter.
-    //
-    // This is because Xlibint users allocate memory using internal macros aliasing to libc's
-    // malloc but then they free using the function XFree. For libX11, this is not a problem since
-    // the allocation happens in a thunked API function (and hence on the host heap), but if a
-    // function from an unthunked library accesses Xlibint, it will allocate on the guest heap.
-    //
-    // One notable example where this was encountered is XF86VidModeGetAllModeLines.
-
-    if (!ptr || IsHostHeapAllocation(ptr)) {
-      return fexfn_pack_XFree(ptr);
-    } else {
-      free(ptr);
-      return 1;
-    }
-  }
-
-  void XFreeEventData(Display* display, XGenericEventCookie* cookie) {
-    // Has the same heap-mismatch issue as XFree, so we have to reimplement it manually
-    if (_XIsEventCookie(display, (XEvent*)cookie) && cookie->data) {
-      XFree(cookie->data);
-      cookie->data = nullptr;
-      cookie->cookie = 0;
-    }
-  }
-
   Display* XOpenDisplay(const char* name) {
     auto ret = fexfn_pack_XOpenDisplay(name);
 

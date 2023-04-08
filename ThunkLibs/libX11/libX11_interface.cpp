@@ -455,7 +455,7 @@ template<> struct fex_gen_config<XFillRectangle> {};
 template<> struct fex_gen_config<XFillRectangles> {};
 template<> struct fex_gen_config<XFlush> {};
 template<> struct fex_gen_config<XForceScreenSaver> {};
-template<> struct fex_gen_config<XFree> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<XFree> {};
 template<> struct fex_gen_config<XFreeColormap> {};
 template<> struct fex_gen_config<XFreeColors> {};
 template<> struct fex_gen_config<XFreeCursor> {};
@@ -696,7 +696,7 @@ template<> struct fex_gen_config<XSetAuthorization> {};
 template<> struct fex_gen_config<_Xmbtowc> {};
 template<> struct fex_gen_config<_Xwctomb> {};
 template<> struct fex_gen_config<XGetEventData> {};
-template<> struct fex_gen_config<XFreeEventData> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<XFreeEventData> {};
 
 // Xresource.h
 template<> struct fex_gen_config<Xpermalloc> {};
