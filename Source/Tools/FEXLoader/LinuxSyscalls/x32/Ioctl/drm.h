@@ -7,6 +7,9 @@
 
 #include <cstdint>
 extern "C" {
+// drm headers use a `__user` define that has an address_space attribute. This allows their tooling to see unsafe user-space accesses.
+// Define this to nothing so we don't need to modify those headers.
+#define __user
 #include "fex-drm/drm.h"
 #include "fex-drm/drm_mode.h"
 #include "fex-drm/i915_drm.h"
