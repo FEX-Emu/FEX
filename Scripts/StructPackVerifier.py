@@ -400,7 +400,8 @@ def HandleTypeDefDecl(Arch, Cursor, Name):
             Arch = HandleTypeDefDeclCursor(Arch, Child)
         elif (Child.kind == CursorKind.TYPE_REF or
               Child.kind == CursorKind.NAMESPACE_REF or
-              Child.kind == CursorKind.TEMPLATE_REF):
+              Child.kind == CursorKind.TEMPLATE_REF or
+              Child.kind == CursorKind.ALIGNED_ATTR):
             # Safe to pass on
             pass
         else:
