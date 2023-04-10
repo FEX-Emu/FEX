@@ -1,6 +1,6 @@
 #pragma once
 
-#include <memory>
+#include <FEXCore/fextl/memory.h>
 
 namespace FEXCore::CPU {
   class CPUBackend;
@@ -17,4 +17,4 @@ namespace FEX::HLE {
   class SignalDelegator;
 }
 
-void RunAsHost(std::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer, FEXCore::Core::CPUState *OutputState);
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator> &SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer, FEXCore::Core::CPUState *OutputState);

@@ -8,6 +8,7 @@
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/deque.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/unordered_map.h>
 
@@ -296,28 +297,28 @@ bool RAValidation::Run(IREmitter *IREmit) {
         auto CurrentSSAAtReg = BlockRegState.Get(PhyReg);
         if (CurrentSSAAtReg == RegState::InvalidReg) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: Arg[{}] unknown Reg: {}, class: {}\n", ID, i, PhyReg.Reg, PhyReg.Class);
+          Errors << fextl::fmt::format("%ssa{}: Arg[{}] unknown Reg: {}, class: {}\n", ID, i, PhyReg.Reg, PhyReg.Class);
         } else if (CurrentSSAAtReg == RegState::CorruptedPair) {
           HadError |= true;
 
           auto Lower = BlockRegState.Get(PhysicalRegister(GPRClass, uint8_t(PhyReg.Reg*2) + 1));
           auto Upper = BlockRegState.Get(PhysicalRegister(GPRClass, PhyReg.Reg*2 + 1));
 
-          Errors << fmt::format("%ssa{}: Arg[{}] expects paired reg{} to contain %ssa{}, but it actually contains {{%ssa{}, %ssa{}}}\n",
+          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects paired reg{} to contain %ssa{}, but it actually contains {{%ssa{}, %ssa{}}}\n",
                                 ID, i, PhyReg.Reg, ArgID, Lower, Upper);
         } else if (CurrentSSAAtReg == RegState::UninitializedValue) {
           HadError |= true;
 
-          Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it is uninitialized\n",
+          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it is uninitialized\n",
                                 ID, i, PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg == RegState::ClobberedValue) {
           HadError |= true;
 
-          Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but contents vary depending on control flow\n",
+          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but contents vary depending on control flow\n",
                                 ID, i, PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg != ArgID) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it actually contains %ssa{}\n",
+          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it actually contains %ssa{}\n",
                                 ID, i, PhyReg.Reg, ArgID, CurrentSSAAtReg);
         }
       };
@@ -342,15 +343,15 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
         if (Value == RegState::UninitializedValue) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but was undefined in at least one control flow path\n",
+          Errors << fextl::fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but was undefined in at least one control flow path\n",
                                 ID, ExpectedValue, FillRegister->Slot);
         } else if (Value == RegState::ClobberedValue) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but contents vary depending on control flow\n",
+          Errors << fextl::fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but contents vary depending on control flow\n",
                                 ID, ExpectedValue, FillRegister->Slot);
         } else if (Value != ExpectedValue) {
           HadError |= true;
-          Errors << fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but it actually contains %ssa{}\n",
+          Errors << fextl::fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but it actually contains %ssa{}\n",
                                 ID, ExpectedValue, FillRegister->Slot, Value);
         }
         break;
@@ -407,7 +408,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
         const auto BlockID = CurrentIR.GetID(BlockNode);
         const auto& BlockInfo = OffsetToBlockMap[BlockID];
 
-        Errors << fmt::format("Block {}\n\tPredecessors: ", BlockID);
+        Errors << fextl::fmt::format("Block {}\n\tPredecessors: ", BlockID);
 
         for (auto Predecessor : BlockInfo.Predecessors) {
           const auto PredecessorID = CurrentIR.GetID(Predecessor);
@@ -415,7 +416,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
           if (!FowardsEdge) {
             Errors << "(Backwards): ";
           }
-          Errors << fmt::format("Block {} ", PredecessorID);
+          Errors << fextl::fmt::format("Block {} ", PredecessorID);
         }
 
         Errors << "\n\tSuccessors: ";
@@ -427,7 +428,7 @@ bool RAValidation::Run(IREmitter *IREmit) {
           if (!FowardsEdge) {
             Errors << "(Backwards): ";
           }
-          Errors << fmt::format("Block {} ", SuccessorID);
+          Errors << fextl::fmt::format("Block {} ", SuccessorID);
 
         }
 

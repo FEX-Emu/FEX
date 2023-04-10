@@ -8,12 +8,12 @@ $end_info$
 #include "Common/StringConv.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
-#include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/CPUInfo.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>
 

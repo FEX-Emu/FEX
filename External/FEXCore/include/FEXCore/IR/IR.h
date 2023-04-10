@@ -2,6 +2,7 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXHeaderUtils/EnumOperators.h>
 
@@ -565,7 +566,7 @@ class IRListView;
 class IREmitter;
 
 FEX_DEFAULT_VISIBILITY void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocationData *RAData);
-FEX_DEFAULT_VISIBILITY std::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, std::istream *in);
+FEX_DEFAULT_VISIBILITY fextl::unique_ptr<IREmitter> Parse(FEXCore::Utils::IntrusivePooledAllocator &ThreadAllocator, fextl::stringstream &MapsStream);
 
 template<typename Type>
 inline NodeID NodeWrapperBase<Type>::ID() const {

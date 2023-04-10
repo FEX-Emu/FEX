@@ -45,6 +45,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/sstream.h>
@@ -57,9 +58,8 @@ $end_info$
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <filesystem>
+#include <fcntl.h>
 #include <functional>
-#include <fstream>
 #include <mutex>
 #include <queue>
 #include <shared_mutex>
@@ -171,6 +171,10 @@ namespace FEXCore::Context {
   }
 
   ContextImpl::~ContextImpl() {
+    if (ParentThread) {
+      DestroyThread(ParentThread);
+    }
+
     {
       if (CodeObjectCacheService) {
         CodeObjectCacheService->Shutdown();
@@ -708,31 +712,32 @@ namespace FEXCore::Context {
   }
 
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
-    FILE* f = nullptr;
+    int FD {-1};
     bool CloseAfter = false;
     const auto DumpIRStr = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR();
 
     // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
     if (DumpIRStr =="stderr" || DumpIRStr =="no") {
-      f = stderr;
+      FD = STDERR_FILENO;
     }
     else if (DumpIRStr =="stdout") {
-      f = stdout;
+      FD = STDOUT_FILENO;
     }
     else {
-      const auto fileName = fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
-      f = fopen(fileName.c_str(), "w");
+      const auto fileName = fextl::fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
+      constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+      FD = open(fileName.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS, USER_PERMS);
       CloseAfter = true;
     }
 
-    if (f) {
+    if (FD != -1) {
       fextl::stringstream out;
       auto NewIR = IREmitter->ViewIR();
       FEXCore::IR::Dump(&out, &NewIR, RA);
-      fmt::print(f,"IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
+      fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
 
       if (CloseAfter) {
-        fclose(f);
+        close(FD);
       }
     }
   };
@@ -746,7 +751,7 @@ namespace FEXCore::Context {
     Dump(&out, &NewIR, nullptr);
     out.seekg(0);
     FEXCore::Utils::PooledAllocatorMalloc Allocator;
-    auto reparsed = IR::Parse(Allocator, &out);
+    auto reparsed = IR::Parse(Allocator, out);
     if (reparsed == nullptr) {
       LOGMAN_MSG_A_FMT("Failed to parse IR\n");
     } else {
@@ -1097,7 +1102,7 @@ namespace FEXCore::Context {
     if (CodeObjectCacheService &&
         Config.CacheObjectCodeCompilation == FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE &&
         DebugData) {
-      CodeObjectCacheService->AsyncAddSerializationJob(std::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(
+      CodeObjectCacheService->AsyncAddSerializationJob(fextl::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(
         CodeSerialize::AsyncJobHandler::SerializationJobData {
           .GuestRIP = GuestRIP,
           .GuestCodeLength = Length,

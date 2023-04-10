@@ -9,8 +9,6 @@
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <linux/limits.h>
 #include <list>
 #include <utility>
@@ -37,10 +35,12 @@ namespace FEX::Config {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    std::ofstream Output (fextl::string_from_string(Filename), std::ios::out | std::ios::binary);
-    if (Output.is_open()) {
-      Output.write(Buffer, strlen(Buffer));
-      Output.close();
+    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+    int FD = open(Filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+
+    if (FD != -1) {
+      write(FD, Buffer, strlen(Buffer));
+      close(FD);
     }
   }
 
@@ -188,7 +188,7 @@ namespace FEX::Config {
       if (SteamID) {
         // If a SteamID exists then let's search for Steam application configs as well.
         // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
-        fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, fextl::string_from_path(ProgramName));
+        fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, ProgramName);
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
         FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
       }

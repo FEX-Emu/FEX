@@ -13,8 +13,6 @@
 #include <bitset>
 #include <cassert>
 #include <cstring>
-#include <filesystem>
-#include <fstream>
 #include <random>
 
 #include <FEXCore/Core/CodeLoader.h>

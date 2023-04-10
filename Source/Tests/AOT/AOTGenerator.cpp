@@ -2,6 +2,7 @@
 #include "Linux/Utils/ELFContainer.h"
 
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/set.h>
@@ -96,7 +97,9 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
   std::mutex QueueMutex;
   fextl::vector<std::thread> ThreadPool;
 
-  for (int i = 0; i < get_nprocs_conf(); i++) {
+  // This code is tricky to refactor so it doesn't allocate memory through glibc.
+  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
+  for (int i = 0; i < FEXCore::CPUInfo::CalculateNumberOfCPUs(); i++) {
     std::thread thd([&BranchTargets, CTX, &counter, &Compiled, &Section, &QueueMutex, SectionMaxAddress]() {
       // Set the priority of the thread so it doesn't overwhelm the system when running in the background
       setpriority(PRIO_PROCESS, FHU::Syscalls::gettid(), 19);
@@ -144,6 +147,8 @@ void AOTGenSection(FEXCore::Context::Context *CTX, ELFCodeLoader::LoadedSection 
 
       // All entryproints processed, cleanup this thread
       CTX->DestroyThread(Thread);
+      // This thread is now getting abandoned. Disable glibc allocator checking so glibc can safely cleanup its internal allocations.
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
     });
 
     // Add to the thread pool

@@ -1,12 +1,13 @@
 #include "Common/StringConv.h"
 #include "Common/StringUtils.h"
 #include "Common/Paths.h"
-#include "Utils/FileLoading.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CPUInfo.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
@@ -18,8 +19,6 @@
 #include <array>
 #include <assert.h>
 #include <cstdlib>
-#include <filesystem>
-#include <fstream>
 #include <functional>
 #include <linux/limits.h>
 #include <optional>
@@ -426,7 +425,7 @@ namespace JSON {
       FEX_CONFIG_OPT(Cores, THREADS);
       if (Cores == 0) {
         // When the number of emulated CPU cores is zero then auto detect
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, std::to_string(FEXCore::CPUInfo::CalculateNumberOfCPUs()));
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THREADS, fextl::fmt::format("{}", FEXCore::CPUInfo::CalculateNumberOfCPUs()));
       }
     }
 
@@ -445,7 +444,7 @@ namespace JSON {
 #endif
       if (Core > MaxCoreNumber || Core < MinCoreNumber) {
         // Sanitize the core option by setting the core to the JIT if invalid
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, std::to_string(FEXCore::Config::CONFIG_IRJIT));
+        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint32_t>(FEXCore::Config::CONFIG_IRJIT)));
       }
     }
 
@@ -477,8 +476,7 @@ namespace JSON {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         fextl::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
-        std::error_code ec{};
-        if (std::filesystem::exists(NamedRootFS, ec)) {
+        if (FHU::Filesystem::Exists(NamedRootFS)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
         }
       }
@@ -501,8 +499,7 @@ namespace JSON {
       else if (!PathName().empty()) {
         // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
         fextl::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + PathName();
-        std::error_code ec{};
-        if (std::filesystem::exists(NamedConfig, ec)) {
+        if (FHU::Filesystem::Exists(NamedConfig)) {
           FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
         }
       }
@@ -516,7 +513,7 @@ namespace JSON {
 
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_SINGLESTEP)) {
       // Single stepping also enforces single instruction size blocks
-      Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, std::to_string(1u));
+      Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, "1");
     }
   }
 

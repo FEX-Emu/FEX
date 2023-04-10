@@ -6,17 +6,19 @@ $end_info$
 */
 
 #include "Linux/Utils/ELFContainer.h"
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
+#include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <algorithm>
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
-#include <filesystem>
-#include <fstream>
 #include <memory>
+#include <linux/limits.h>
 #include <system_error>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -111,15 +113,15 @@ ELFContainer::ELFContainer(fextl::string const &Filename, fextl::string const &R
       RawString = &RawFile.at(InterpreterHeader._64->p_offset);
     }
     fextl::string RootFSLink = RootFS + RawString;
-    std::error_code ec{};
-    while (std::filesystem::is_symlink(RootFSLink, ec)) {
+    char Filename[PATH_MAX];
+    while(FHU::Symlinks::IsSymlink(RootFSLink)) {
       // Do some special handling if the RootFS's linker is a symlink
       // Ubuntu's rootFS by default provides an absolute location symlink to the linker
       // Resolve this around back to the rootfs
-      auto SymlinkTarget = std::filesystem::read_symlink(RootFSLink, ec);
-      if (SymlinkTarget.is_absolute()) {
+      const auto SymlinkTarget = FHU::Symlinks::ResolveSymlink(RootFSLink, Filename);
+      if (FHU::Filesystem::IsAbsolute(SymlinkTarget)) {
         RootFSLink = RootFS;
-        RootFSLink += SymlinkTarget.string();
+        RootFSLink += SymlinkTarget;
       }
       else {
         break;
@@ -166,18 +168,9 @@ ELFContainer::~ELFContainer() {
 }
 
 bool ELFContainer::LoadELF(fextl::string const &Filename) {
-  std::fstream ELFFile(fextl::string_from_string(Filename), std::fstream::in | std::fstream::binary);
-
-  if (!ELFFile.is_open())
+  if (!FEXCore::FileLoading::LoadFile(RawFile, Filename)) {
     return false;
-
-  ELFFile.seekg(0, ELFFile.end);
-  size_t FileSize = ELFFile.tellg();
-  ELFFile.seekg(0, ELFFile.beg);
-
-  RawFile.resize(FileSize);
-  ELFFile.read(RawFile.data(), FileSize);
-  ELFFile.close();
+  }
 
   InterpreterHeader._64 = nullptr;
 

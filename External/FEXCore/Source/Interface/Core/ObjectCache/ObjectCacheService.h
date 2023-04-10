@@ -7,12 +7,12 @@
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/queue.h>
 #include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <memory>
 #include <shared_mutex>
 
 namespace FEXCore::CodeSerialize {
@@ -132,7 +132,7 @@ namespace FEXCore::CodeSerialize {
   };
 
   // Map type must use an interator that isn't invalidation on erase/insert
-  using CodeRegionMapType = fextl::map<uint64_t, std::unique_ptr<CodeRegionEntry>>;
+  using CodeRegionMapType = fextl::map<uint64_t, fextl::unique_ptr<CodeRegionEntry>>;
   using CodeRegionPtrMapType = fextl::map<uint64_t, CodeRegionEntry*>;
 
   class NamedRegionObjectHandler;
@@ -189,7 +189,7 @@ namespace FEXCore::CodeSerialize {
        * @{ */
         void AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const fextl::string &filename);
         void AsyncRemoveNamedRegionJob(uintptr_t Base, uintptr_t Size);
-        void AsyncAddSerializationJob(std::unique_ptr<SerializationJobData> Data);
+        void AsyncAddSerializationJob(fextl::unique_ptr<SerializationJobData> Data);
       /**  @} */
 
       /**
@@ -235,7 +235,7 @@ namespace FEXCore::CodeSerialize {
 
         class WorkItemRemoveNamedRegion : public NamedRegionWorkItem {
           public:
-            WorkItemRemoveNamedRegion(uint64_t base, uint64_t size, std::unique_ptr<CodeRegionEntry> entry)
+            WorkItemRemoveNamedRegion(uint64_t base, uint64_t size, fextl::unique_ptr<CodeRegionEntry> entry)
               : NamedRegionWorkItem {NamedRegionJobType::JOB_REMOVE_NAMED_REGION}
               , Base {base}
               , Size {size}
@@ -243,7 +243,7 @@ namespace FEXCore::CodeSerialize {
 
             uint64_t Base;
             uint64_t Size;
-            std::unique_ptr<CodeRegionEntry> Entry;
+            fextl::unique_ptr<CodeRegionEntry> Entry;
         };
       /**  @} */
 
@@ -284,7 +284,7 @@ namespace FEXCore::CodeSerialize {
        */
       void AsyncAddNamedRegionWorkItem(const fextl::string &base, const fextl::string &filename, bool executable, CodeRegionMapType::iterator entry) {
         std::unique_lock lk {NamedWorkQueueMutex};
-        WorkQueue.emplace(std::make_unique<AsyncJobHandler::WorkItemAddNamedRegion> (
+        WorkQueue.emplace(fextl::make_unique<AsyncJobHandler::WorkItemAddNamedRegion> (
           base,
           filename,
           executable,
@@ -293,9 +293,9 @@ namespace FEXCore::CodeSerialize {
         ++NamedWorkQueueJobs;
       }
 
-      void AsyncRemoveNamedRegionWorkItem(uint64_t Base, uint64_t Size, std::unique_ptr<CodeRegionEntry> Entry) {
+      void AsyncRemoveNamedRegionWorkItem(uint64_t Base, uint64_t Size, fextl::unique_ptr<CodeRegionEntry> Entry) {
         std::unique_lock lk {NamedWorkQueueMutex};
-        WorkQueue.emplace(std::make_unique<AsyncJobHandler::WorkItemRemoveNamedRegion> (
+        WorkQueue.emplace(fextl::make_unique<AsyncJobHandler::WorkItemRemoveNamedRegion> (
           Base,
           Size,
           std::move(Entry)
@@ -322,13 +322,13 @@ namespace FEXCore::CodeSerialize {
       // The job queue itself
       // Jobs get consumed as a FIFO
       // Jobs always get appended to the end
-      fextl::queue<std::unique_ptr<AsyncJobHandler::NamedRegionWorkItem>> WorkQueue{};
+      fextl::queue<fextl::unique_ptr<AsyncJobHandler::NamedRegionWorkItem>> WorkQueue{};
 
       /**
        * @name Named Region object handling
        * @{ */
         void AddNamedRegionObject(CodeRegionMapType::iterator Entry, const fextl::string &base_filename, const fextl::string &filename, bool Executable);
-        void RemoveNamedRegionObject(uintptr_t Base, uintptr_t Size, std::unique_ptr<CodeRegionEntry> Entry);
+        void RemoveNamedRegionObject(uintptr_t Base, uintptr_t Size, fextl::unique_ptr<CodeRegionEntry> Entry);
       /**  @} */
   };
 
@@ -386,7 +386,7 @@ namespace FEXCore::CodeSerialize {
          *
          * @param Data - A fully filled out struct containing all the code serialization
          */
-        void AsyncAddSerializationJob(std::unique_ptr<AsyncJobHandler::SerializationJobData> Data) {
+        void AsyncAddSerializationJob(fextl::unique_ptr<AsyncJobHandler::SerializationJobData> Data) {
           AsyncHandler.AsyncAddSerializationJob(std::move(Data));
         }
       /**  @} */
@@ -444,7 +444,7 @@ namespace FEXCore::CodeSerialize {
       FEXCore::Context::ContextImpl *CTX;
 
       Event WorkAvailable{};
-      std::unique_ptr<FEXCore::Threads::Thread> WorkerThread;
+      fextl::unique_ptr<FEXCore::Threads::Thread> WorkerThread;
       std::atomic_bool WorkerThreadShuttingDown {false};
       AsyncJobHandler AsyncHandler;
       NamedRegionObjectHandler NamedRegionHandler;

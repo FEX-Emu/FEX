@@ -70,6 +70,17 @@ namespace FEXCore::Context {
       std::unique_lock<std::shared_mutex> lock;
   };
 
+  /**
+   * @brief IR Serialization handler class.
+   */
+  class AOTIRWriter {
+    public:
+      virtual ~AOTIRWriter() = default;
+      virtual void Write(const void* Data, size_t Size) = 0;
+      virtual size_t Offset() = 0;
+      virtual void Close() = 0;
+  };
+
   struct VDSOSigReturn {
     void *VDSO_kernel_sigreturn;
     void *VDSO_kernel_rt_sigreturn;
@@ -89,7 +100,7 @@ namespace FEXCore::Context {
        *
        * @return a new context object
        */
-      FEX_DEFAULT_VISIBILITY static FEXCore::Context::Context *CreateNewContext();
+      FEX_DEFAULT_VISIBILITY static fextl::unique_ptr<FEXCore::Context::Context> CreateNewContext();
 
       /**
        * @brief Post creation context initialization
@@ -100,14 +111,6 @@ namespace FEXCore::Context {
        * @return true if we managed to initialize correctly
        */
       FEX_DEFAULT_VISIBILITY virtual bool InitializeContext() = 0;
-
-      /**
-       * @brief Destroy the context object
-       *
-       * @param CTX
-       */
-      FEX_DEFAULT_VISIBILITY static void DestroyContext(FEXCore::Context::Context * CTX);
-      FEX_DEFAULT_VISIBILITY virtual void DestroyContext() = 0;
 
       /**
        * @brief Allows setting up in memory code and other things prior to launchign code execution
@@ -263,7 +266,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> CacheWriter) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) = 0;
       FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;

@@ -127,11 +127,11 @@ namespace FHU::Filesystem {
     return SubString;
   }
 
-  inline bool IsRelative(const fextl::string &Path) {
+  inline bool IsRelative(const std::string_view Path) {
     return !Path.starts_with('/');
   }
 
-  inline bool IsAbsolute(const fextl::string &Path) {
+  inline bool IsAbsolute(const std::string_view Path) {
     return Path.starts_with('/');
   }
 
@@ -198,6 +198,15 @@ namespace FHU::Filesystem {
     }
 
     return false;
+  }
+
+  /**
+   * @brief Renames a file and overwrites if it already exists.
+   *
+   * @return No error on rename.
+   */
+  [[nodiscard]] inline std::error_code RenameFile(const fextl::string &From, const fextl::string &To) {
+    return rename(From.c_str(), To.c_str()) == 0 ? std::error_code{} : std::make_error_code(std::errc::io_error);
   }
 
   inline fextl::string LexicallyNormal(const fextl::string &Path) {

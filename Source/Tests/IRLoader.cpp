@@ -15,9 +15,11 @@ $end_info$
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/EnumUtils.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IREmitter.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 
 #include <csetjmp>
@@ -27,9 +29,6 @@ $end_info$
 #include <stdio.h>
 #include <sys/mman.h>
 #include <vector>
-#include <fstream>
-
-#include <fmt/format.h>
 
 #include "HarnessHelpers.h"
 
@@ -69,13 +68,13 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message)
     break;
   }
 
-  fmt::print("[{}] {}\n", CharLevel, Message);
+  fextl::fmt::print("[{}] {}\n", CharLevel, Message);
   fflush(stdout);
 }
 
 void AssertHandler(char const *Message)
 {
-  fmt::print("[ASSERT] {}\n", Message);
+  fextl::fmt::print("[ASSERT] {}\n", Message);
   fflush(stdout);
 }
 
@@ -84,14 +83,14 @@ class IRCodeLoader final {
 public:
   IRCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
     Config.Init(ConfigFilename);
-    std::fstream fp(fextl::string_from_string(Filename), std::fstream::binary | std::fstream::in);
 
-    if (!fp.is_open()) {
+    fextl::string IRFile;
+    if (!FEXCore::FileLoading::LoadFile(IRFile, Filename)) {
       LogMan::Msg::EFmt("Couldn't open IR file '{}'", Filename);
       return;
     }
-
-    ParsedCode = FEXCore::IR::Parse(Allocator, &fp);
+    fextl::stringstream IRStream(IRFile);
+    ParsedCode = FEXCore::IR::Parse(Allocator, IRStream);
 
     if (ParsedCode) {
       EntryRIP = 0x40000;
@@ -99,7 +98,7 @@ public:
       fextl::stringstream out;
       auto IR = ParsedCode->ViewIR();
       FEXCore::IR::Dump(&out, &IR, nullptr);
-      fmt::print("IR:\n{}\n@@@@@\n", out.str());
+      fextl::fmt::print("IR:\n{}\n@@@@@\n", out.str());
 
       for (auto &[region, size] : Config.GetMemoryRegions()) {
         FEXCore::Allocator::mmap(reinterpret_cast<void *>(region), size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -139,16 +138,15 @@ public:
 
 private:
   uint64_t EntryRIP{};
-  std::unique_ptr<IREmitter> ParsedCode;
+  fextl::unique_ptr<IREmitter> ParsedCode;
 
   FEXCore::Utils::PooledAllocatorMalloc Allocator;
   FEX::HarnessHelper::ConfigLoader Config;
   constexpr static uint64_t STACK_SIZE = 8 * 1024 * 1024;
 };
 
-class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
+class DummySyscallHandler: public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
   public:
-
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) override {
     LOGMAN_MSG_A_FMT("Syscalls not implemented");
     return 0;
@@ -168,6 +166,7 @@ class DummySyscallHandler: public FEXCore::HLE::SyscallHandler {
 
 int main(int argc, char **argv, char **const envp)
 {
+  FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
@@ -189,7 +188,7 @@ int main(int argc, char **argv, char **const envp)
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
 
-  std::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  fextl::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
 
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(new DummySyscallHandler());
@@ -199,13 +198,12 @@ int main(int argc, char **argv, char **const envp)
   // Skip tests that require AVX on hosts that don't support it.
   const bool SupportsAVX = CTX->GetHostFeatures().SupportsAVX;
   if (!SupportsAVX && Loader.RequiresAVX()) {
-    FEXCore::Context::Context::DestroyContext(CTX);
     return 0;
   }
 
   int Return{};
 
-  if (Loader.LoadIR(CTX))
+  if (Loader.LoadIR(CTX.get()))
   {
     CTX->InitCore(Loader.DefaultRIP(), Loader.GetStackPointer());
 
@@ -254,6 +252,5 @@ int main(int argc, char **argv, char **const envp)
     Return = -1;
   }
 
-  FEXCore::Context::Context::DestroyContext(CTX);
   return Return;
 }

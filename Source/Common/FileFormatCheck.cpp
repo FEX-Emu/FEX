@@ -1,7 +1,9 @@
 #include <FEXCore/fextl/string.h>
 
-#include <fstream>
+#include <fcntl.h>
 #include <stdint.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace FEX::FormatCheck {
   bool IsSquashFS(fextl::string const &Filename) {
@@ -22,36 +24,17 @@ namespace FEX::FormatCheck {
     };
 
     SquashFSHeader Header{};
-    std::fstream File(fextl::string_from_string(Filename), std::ios::in);
-
-    if (!File.is_open()) {
+    int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd == -1) {
       return false;
     }
 
-    if (!File.seekg(0, std::fstream::end)) {
+    if (pread(fd, reinterpret_cast<char*>(&Header), sizeof(SquashFSHeader), 0) != sizeof(SquashFSHeader)) {
+      close(fd);
       return false;
     }
 
-    auto FileSize = File.tellg();
-    if (File.fail()) {
-      return false;
-    }
-
-    if (FileSize <= 0) {
-      return false;
-    }
-
-    if (!File.seekg(0, std::fstream::beg)) {
-      return false;
-    }
-
-    if (FileSize < sizeof(SquashFSHeader)) {
-      return false;
-    }
-
-    if (!File.read(reinterpret_cast<char*>(&Header), sizeof(SquashFSHeader))) {
-      return false;
-    }
+    close(fd);
 
     // Make sure the cookie matches
     if (Header.magic == 0x73717368) {
@@ -80,17 +63,13 @@ namespace FEX::FormatCheck {
     constexpr uint32_t COOKIE_MAGIC_V1 = 0xE0F5E1E2;
 
     EroFSHeader Header{};
-    std::fstream File(fextl::string_from_string(Filename), std::ios::in);
-
-    if (!File.is_open()) {
+    int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd == -1) {
       return false;
     }
 
-    if (!File.seekg(HEADER_OFFSET, std::fstream::beg)) {
-      return false;
-    }
-
-    if (!File.read(reinterpret_cast<char*>(&Header), sizeof(EroFSHeader))) {
+    if (pread(fd, reinterpret_cast<char*>(&Header), sizeof(EroFSHeader), HEADER_OFFSET) != sizeof(EroFSHeader)) {
+      close(fd);
       return false;
     }
 

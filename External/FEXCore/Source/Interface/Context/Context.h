@@ -75,8 +75,6 @@ namespace FEXCore::Context {
       // Context base class implementation.
       bool InitializeContext() override;
 
-      void DestroyContext() override;
-
       FEXCore::Core::InternalThreadState* InitCore(uint64_t InitialRIP, uint64_t StackPointer) override;
 
       void SetExitHandler(ExitHandler handler) override;
@@ -170,7 +168,7 @@ namespace FEXCore::Context {
       void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) override {
         IRCaptureCache.SetAOTIRLoader(CacheReader);
       }
-      void SetAOTIRWriter(std::function<std::unique_ptr<std::ofstream>(const fextl::string&)> CacheWriter) override {
+      void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) override {
         IRCaptureCache.SetAOTIRWriter(CacheWriter);
       }
       void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) override {

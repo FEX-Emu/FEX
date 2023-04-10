@@ -1,5 +1,6 @@
 #include "Common/ArgumentLoader.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 

@@ -25,6 +25,8 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -38,9 +40,6 @@ $end_info$
 #include <cstring>
 #include <elf.h>
 #include <fcntl.h>
-#include <fstream>
-#include <filesystem>
-#include <memory>
 #include <mutex>
 #include <queue>
 #include <set>
@@ -52,7 +51,6 @@ $end_info$
 #include <unistd.h>
 #include <utility>
 
-#include <fmt/format.h>
 #include <sys/sysinfo.h>
 #include <sys/signal.h>
 
@@ -95,7 +93,7 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     break;
   }
 
-  const auto Output = fmt::format("[{}] {}\n", CharLevel, Message);
+  const auto Output = fextl::fmt::format("[{}] {}\n", CharLevel, Message);
   write(OutputFD, Output.c_str(), Output.size());
   fsync(OutputFD);
 }
@@ -105,7 +103,7 @@ void AssertHandler(char const *Message) {
     return;
   }
 
-  const auto Output = fmt::format("[ASSERT] {}\n", Message);
+  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
   write(OutputFD, Output.c_str(), Output.size());
   fsync(OutputFD);
 }
@@ -121,6 +119,42 @@ namespace FEXServerLogging {
   void AssertHandler(char const *Message) {
     FEXServerClient::AssertHandler(FEXServerFD, Message);
   }
+}
+
+namespace AOTIR {
+  class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriter {
+    public:
+      AOTIRWriterFD(const fextl::string &Path) {
+        // Create and truncate if exists.
+        constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+        FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+      }
+
+      operator bool() const {
+        return FD != -1;
+      }
+
+      void Write(const void* Data, size_t Size) override {
+        write(FD, Data, Size);
+      }
+
+      size_t Offset() override {
+        return lseek(FD, 0, SEEK_CUR);
+      }
+
+      void Close() override {
+        if (FD != -1) {
+          close(FD);
+          FD = -1;
+        }
+      }
+
+      virtual ~AOTIRWriterFD() {
+        Close();
+      }
+    private:
+      int FD{-1};
+  };
 }
 
 void InterpreterHandler(fextl::string *Filename, fextl::string const &RootFS, fextl::vector<fextl::string> *args) {
@@ -299,7 +333,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
+    fextl::fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
     return -ENOEXEC;
   }
 
@@ -320,15 +354,14 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
-    fmt::print(stderr, "Invalid or Unsupported elf file.\n");
+    fextl::fmt::print(stderr, "Invalid or Unsupported elf file.\n");
 #ifdef _M_ARM_64
-    fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
-    fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
-    std::error_code ec;
+    fextl::fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
+    fextl::fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
     if (LDPath().empty() ||
-        std::filesystem::exists(LDPath(), ec) == false) {
-      fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
-      fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
+        FHU::Filesystem::Exists(LDPath()) == false) {
+      fextl::fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
+      fextl::fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
     }
 #endif
     return -ENOEXEC;
@@ -388,7 +421,7 @@ int main(int argc, char **argv, char **const envp) {
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
 
-  auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  auto SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
 
   SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [&SignalDelegation](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     ucontext_t* _context = (ucontext_t*)ucontext;
@@ -408,14 +441,14 @@ int main(int argc, char **argv, char **const envp) {
     return false;
   }, true);
 
-  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
-                                             : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
+                                             : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
   {
     // Load VDSO in to memory prior to mapping our ELFs.
     void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
     Loader.SetVDSOBase(VDSOBase);
-    Loader.CalculateHWCaps(CTX);
+    Loader.CalculateHWCaps(CTX.get());
 
     if (!Loader.MapMemory(SyscallHandler.get())) {
       // failed to map
@@ -456,17 +489,14 @@ int main(int argc, char **argv, char **const envp) {
                       "Capture doesn't work with programs that fork.");
 
     CTX->SetAOTIRLoader([](const fextl::string &fileid) -> int {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
-
+      const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
       return open(filepath.c_str(), O_RDONLY);
     });
 
-    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> std::unique_ptr<std::ofstream> {
-      auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-      auto AOTWrite = std::make_unique<std::ofstream>(filepath, std::ios::out | std::ios::binary);
+    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> fextl::unique_ptr<AOTIR::AOTIRWriterFD> {
+      const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
+      auto AOTWrite = fextl::make_unique<AOTIR::AOTIRWriterFD>(filepath);
       if (*AOTWrite) {
-        std::filesystem::resize_file(filepath, 0);
-        AOTWrite->seekp(0);
         LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
       } else {
         LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
@@ -475,28 +505,28 @@ int main(int argc, char **argv, char **const envp) {
     });
 
     CTX->SetAOTIRRenamer([](const fextl::string& fileid) -> void {
-      auto TmpFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir.tmp");
-      auto NewFilepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".aotir");
+      const auto TmpFilepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
+      const auto NewFilepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
 
       // Rename the temporary file to atomically update the file
-      std::filesystem::rename(TmpFilepath, NewFilepath);
+      if (!FHU::Filesystem::RenameFile(TmpFilepath, NewFilepath)) {
+        LogMan::Msg::IFmt("Couldn't rename aotir");
+      }
     });
   }
 
   if (AOTIRGenerate()) {
     for(auto &Section: Loader.Sections) {
-      FEX::AOT::AOTGenSection(CTX, Section);
+      FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
     CTX->RunUntilExit();
   }
 
   if (AOTEnabled) {
-    std::error_code ec{};
-    std::filesystem::create_directories(std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir", ec);
-    if (!ec) {
+    if (FHU::Filesystem::CreateDirectories(fextl::fmt::format("{}/aotir", FEXCore::Config::GetDataDirectory()))) {
       CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
-        auto filepath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "aotir" / (fileid + ".path");
+        const auto filepath = fextl::fmt::format("{}/aotir/{}.path", FEXCore::Config::GetDataDirectory(), fileid);
         int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
         if (fd != -1) {
           write(fd, filename.c_str(), filename.size());
@@ -515,7 +545,6 @@ int main(int argc, char **argv, char **const envp) {
 
   SyscallHandler.reset();
   SignalDelegation.reset();
-  FEXCore::Context::Context::DestroyContext(CTX);
 
   FEXCore::Threads::Shutdown();
 

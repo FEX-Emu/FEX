@@ -22,13 +22,13 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <csetjmp>
 #include <cstdint>
 #include <errno.h>
-#include <memory>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -131,7 +131,7 @@ int main(int argc, char **argv, char **const envp) {
     return -1;
   }
 
-  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1].c_str()};
+  FEX::HarnessHelper::HarnessCodeLoader Loader{Args[0], Args[1]};
 
   // Adds in environment options from the test harness config
   FEXCore::Config::AddLayer(fextl::make_unique<TestEnvLoader>(Loader.GetEnvironmentOptions()));
@@ -158,7 +158,7 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  auto SignalDelegation = std::make_unique<FEX::HLE::SignalDelegator>();
+  auto SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
   bool DidFault = false;
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
@@ -185,7 +185,6 @@ int main(int argc, char **argv, char **const envp) {
     (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
 
   if (TestUnsupported) {
-    FEXCore::Context::Context::DestroyContext(CTX);
     return 0;
   }
 
@@ -204,8 +203,8 @@ int main(int argc, char **argv, char **const envp) {
       return false;
     }, true);
 
-    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX, SignalDelegation.get())
-                                               : FEX::HLE::x32::CreateHandler(CTX, SignalDelegation.get(), std::move(Allocator));
+    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
+                                               : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
     // Run through FEX
     if (!Loader.MapMemory(SyscallHandler.get())) {
@@ -244,8 +243,6 @@ int main(int argc, char **argv, char **const envp) {
 
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
-
-  FEXCore::Context::Context::DestroyContext(CTX);
 
   bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 

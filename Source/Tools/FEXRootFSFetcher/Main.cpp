@@ -861,7 +861,7 @@ namespace TTY {
     fextl::string Response;
     std::cin >> Response;
 
-    int32_t ResponseInt = std::stoi(fextl::string_from_string(Response));
+    int32_t ResponseInt = std::stol(Response.data(), nullptr, 0);
     if (ResponseInt == 0) {
       return -1;
     }

@@ -16,6 +16,12 @@
 #include <unistd.h>
 #include <vector>
 
+namespace fextl {
+  // Helper to convert a std::filesystem::path to a fextl::string.
+  inline fextl::string string_from_path(std::filesystem::path const &Path) {
+    return Path.string().c_str();
+  }
+}
 namespace {
   static std::chrono::time_point<std::chrono::high_resolution_clock> GlobalTime{};
 
@@ -26,7 +32,7 @@ namespace {
   static int NamedRootFSSelected{-1};
 
   static fextl::string ConfigFilename{};
-  static std::unique_ptr<FEXCore::Config::Layer> LoadedConfig{};
+  static fextl::unique_ptr<FEXCore::Config::Layer> LoadedConfig{};
 
   static const char EnvironmentPopupName[] = "#New Environment Variable";
   static const char HostEnvironmentPopupName[] = "#New Host Environment Variable";
@@ -63,7 +69,7 @@ namespace {
   void LoadDefaultSettings() {
     ConfigOpen = true;
     ConfigFilename = {};
-    LoadedConfig = std::make_unique<FEX::Config::EmptyMapper>();
+    LoadedConfig = fextl::make_unique<FEX::Config::EmptyMapper>();
 #define OPT_BASE(type, group, enum, json, default) \
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default));
 #define OPT_STR(group, enum, json, default) \

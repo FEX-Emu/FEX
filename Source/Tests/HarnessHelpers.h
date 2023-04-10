@@ -10,7 +10,6 @@
 #include <cassert>
 #include <cstring>
 #include <fcntl.h>
-#include <fstream>
 #include <sys/mman.h>
 #include <sys/user.h>
 
@@ -29,8 +28,6 @@
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
-#include <fmt/format.h>
-
 namespace FEX::HarnessHelper {
   inline bool CompareStates(FEXCore::Core::CPUState const& State1,
                             FEXCore::Core::CPUState const& State2,
@@ -47,7 +44,7 @@ namespace FEX::HarnessHelper {
         return;
       }
 
-      fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
+      fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
     };
 
     const auto DumpFLAGs = [OutputGPRs](const fextl::string& Name, uint64_t A, uint64_t B) {
@@ -78,11 +75,11 @@ namespace FEX::HarnessHelper {
         FEXCore::X86State::RFLAG_ID_LOC,
       };
 
-      fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
+      fextl::fmt::print("{}: 0x{:016x} {} 0x{:016x}\n", Name, A, A==B ? "==" : "!=", B);
       for (const auto Flag : Flags) {
         const auto FlagMask = uint64_t{1} << Flag;
         if ((A & FlagMask) != (B & FlagMask)) {
-          fmt::print("\t{}: {} != {}\n", FEXCore::Core::GetFlagName(Flag), (A >> Flag) & 1, (B >> Flag) & 1);
+          fextl::fmt::print("\t{}: {} != {}\n", FEXCore::Core::GetFlagName(Flag), (A >> Flag) & 1, (B >> Flag) & 1);
         }
       }
     };
@@ -108,7 +105,7 @@ namespace FEX::HarnessHelper {
     // GPRS
     for (unsigned i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i, MatchMask >>= 1) {
       if (MatchMask & 1) {
-        CheckGPRs(fextl::fmt::format("GPR{}", std::to_string(i)), State1.gregs[i], State2.gregs[i]);
+        CheckGPRs(fextl::fmt::format("GPR{}", i), State1.gregs[i], State2.gregs[i]);
       }
     }
 
@@ -116,15 +113,15 @@ namespace FEX::HarnessHelper {
     if (SupportsAVX) {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
         if (MatchMask & 1) {
-          CheckGPRs(fextl::fmt::format("XMM0_{}", std::to_string(i)), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
-          CheckGPRs(fextl::fmt::format("XMM1_{}", std::to_string(i)), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
+          CheckGPRs(fextl::fmt::format("XMM0_{}", i), State1.xmm.avx.data[i][0], State2.xmm.avx.data[i][0]);
+          CheckGPRs(fextl::fmt::format("XMM1_{}", i), State1.xmm.avx.data[i][1], State2.xmm.avx.data[i][1]);
         }
       }
     } else {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i, MatchMask >>= 1) {
         if (MatchMask & 1) {
-          CheckGPRs(fextl::fmt::format("XMM0_{}", std::to_string(i)), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
-          CheckGPRs(fextl::fmt::format("XMM1_{}", std::to_string(i)), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
+          CheckGPRs(fextl::fmt::format("XMM0_{}", i), State1.xmm.sse.data[i][0], State2.xmm.sse.data[i][0]);
+          CheckGPRs(fextl::fmt::format("XMM1_{}", i), State1.xmm.sse.data[i][1], State2.xmm.sse.data[i][1]);
         }
       }
     }
@@ -461,14 +458,12 @@ namespace FEX::HarnessHelper {
   class HarnessCodeLoader final : public FEXCore::CodeLoader {
   public:
 
-    HarnessCodeLoader(fextl::string const &Filename, const char *ConfigFilename) {
+    HarnessCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
       TestFD = open(Filename.c_str(), O_CLOEXEC | O_RDONLY);
       TestFileSize = lseek(TestFD, 0, SEEK_END);
       lseek(TestFD, 0, SEEK_SET);
 
-      if (ConfigFilename) {
-        Config.Init(ConfigFilename);
-      }
+      Config.Init(ConfigFilename);
     }
 
     uint64_t StackSize() const override {

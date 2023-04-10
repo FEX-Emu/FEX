@@ -10,7 +10,6 @@
 #include <FEXHeaderUtils/Filesystem.h>
 
 #include <fcntl.h>
-#include <filesystem>
 #include <linux/limits.h>
 #include <unistd.h>
 #include <sys/poll.h>

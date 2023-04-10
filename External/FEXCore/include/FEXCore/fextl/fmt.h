@@ -42,6 +42,20 @@ namespace fextl::fmt {
   FMT_INLINE auto print(::fmt::format_string<T...> fmt, T&&... args)
       -> void {
     auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
-    write(STDERR_FILENO, String.c_str(), String.size());
+    std::fwrite(String.c_str(), sizeof(typename decltype(String)::value_type), String.size(), stdout);
+  }
+
+  template <typename... T>
+  FMT_INLINE auto print(int FD, ::fmt::format_string<T...> fmt, T&&... args)
+      -> void {
+    auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+    write(FD, String.c_str(), String.size());
+  }
+
+  template <typename... T>
+  FMT_INLINE auto print(std::FILE* f, ::fmt::format_string<T...> fmt, T&&... args)
+      -> void {
+    auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+    std::fwrite(String.c_str(), sizeof(typename decltype(String)::value_type), String.size(), f);
   }
 }

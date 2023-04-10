@@ -6,7 +6,6 @@ desc: Glue logic, brk allocations
 $end_info$
 */
 
-#include "FEXHeaderUtils/Filesystem.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFParser.h"
 
@@ -30,9 +29,12 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/FileLoading.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/TypeDefines.h>
@@ -41,8 +43,6 @@ $end_info$
 #include <algorithm>
 #include <alloca.h>
 #include <functional>
-#include <filesystem>
-#include <fstream>
 #include <memory>
 #include <regex>
 #include <sched.h>
@@ -201,9 +201,7 @@ static bool IsShebangFile(std::span<char> Data) {
       ShebangProgram = FEX::HLE::_SyscallHandler->RootFSPath() + ShebangProgram;
     }
 
-    std::error_code ec;
-    bool exists = std::filesystem::exists(ShebangProgram, ec);
-    return !ec && exists;
+    return FHU::Filesystem::Exists(ShebangProgram);
   }
 
   return false;
@@ -384,7 +382,7 @@ uint64_t ExecveHandler(const char *pathname, char* const* argv, char* const* env
 
     // Create the environment variable to pass the FD to our FEX.
     // Needs to stick around until execveat completes.
-    FDExecEnv = "FEX_EXECVEFD=" + std::to_string(Args.dirfd);
+    FDExecEnv = fextl::fmt::format("FEX_EXECVEFD={}", Args.dirfd);
 
     // Insert the FD for FEX to track.
     EnvpArgs.emplace_back(FDExecEnv.data());
@@ -883,49 +881,49 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
     return {};
   }
 
-  std::error_code ec;
-  auto FexSrcPath = std::filesystem::path(FEXCore::Config::GetDataDirectory()) / "fexsrc";
-  std::filesystem::create_directories(FexSrcPath, ec);
+  const auto FexSrcPath = fextl::fmt::format("{}/fexsrc", FEXCore::Config::GetDataDirectory());
 
-  if (ec) {
-    LogMan::Msg::DFmt("GenerateMap: failed to create_directories '{}'", FexSrcPath.string());
+  if (!FHU::Filesystem::CreateDirectories(FexSrcPath)) {
+    LogMan::Msg::DFmt("GenerateMap: failed to create_directories '{}'", FexSrcPath);
     return {};
   }
 
-  auto GuestSourceFile = (FexSrcPath / GuestBinaryFileId).string() + ".src";
+  const auto GuestSourceFile = fextl::fmt::format("{}/{}.src", FexSrcPath, GuestBinaryFileId);
 
   struct stat GuestSourceFileStat;
 
   if (stat(GuestSourceFile.data(), &GuestSourceFileStat) != 0 || GuestBinaryFileStat.st_mtime > GuestSourceFileStat.st_mtime) {
     LogMan::Msg::DFmt("GenerateMap: Generating source for '{}'", GuestBinaryFile);
-    auto command = fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);
+    auto command = fextl::fmt::format("x86_64-linux-gnu-objdump -SC \'{}\' > '{}'", GuestBinaryFile, GuestSourceFile);
     if (system(command.c_str()) != 0) {
       LogMan::Msg::DFmt("GenerateMap: '{}' failed", command);
       return {};
     }
   }
 
-  auto GuestIndexFile = (FexSrcPath / GuestBinaryFileId).string() + ".idx";
+  const auto GuestIndexFile = fextl::fmt::format("{}/{}.idx", FexSrcPath, GuestBinaryFileId);
   struct stat GuestIndexFileStat;
 
   bool GenerateIndex = stat(GuestIndexFile.data(), &GuestIndexFileStat) != 0 || GuestSourceFileStat.st_mtime > GuestIndexFileStat.st_mtime;
 
+  constexpr char SrcHeaderString[] = "fexsrcindex0";
   if (!GenerateIndex) {
     // Index file de-serialization
     LogMan::Msg::DFmt("GenerateMap: Reading index '{}'", GuestIndexFile);
 
-    std::ifstream Stream(GuestIndexFile);
+    int FD = ::open(GuestIndexFile.c_str(), O_RDONLY | O_CLOEXEC);
 
-    if (!Stream) {
+    if (FD == -1) {
       LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestIndexFile);
       goto DoGenerate;
     }
 
     //"fexsrcindex0"
     char filemagic[12];
-    Stream.read(filemagic, sizeof(filemagic));
-    if (memcmp(filemagic, "fexsrcindex0", sizeof(filemagic)) != 0) {
+    ::read(FD, filemagic, sizeof(filemagic));
+    if (memcmp(filemagic, SrcHeaderString, sizeof(filemagic)) != 0) {
       LogMan::Msg::DFmt("GenerateMap: '{}' has invalid magic '{}'", GuestIndexFile, filemagic);
+      close(FD);
       goto DoGenerate;
     }
 
@@ -933,64 +931,74 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
 
     {
       auto len = rv->SourceFile.size();
-      Stream.read((char*)&len, sizeof(len));
+      ::read(FD, (char*)&len, sizeof(len));
       rv->SourceFile.resize(len);
-      Stream.read(rv->SourceFile.data(), len);
+      ::read(FD, rv->SourceFile.data(), len);
     }
 
     {
       auto len = rv->SortedLineMappings.size();
 
-      Stream.read((char*)&len, sizeof(len));
+      ::read(FD, (char*)&len, sizeof(len));
 
       rv->SortedLineMappings.resize(len);
 
       for (auto &Mapping: rv->SortedLineMappings) {
-        Stream.read((char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
-        Stream.read((char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
-        Stream.read((char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
+        ::read(FD, (char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        ::read(FD, (char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+        ::read(FD, (char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
       }
     }
 
     {
       auto len = rv->SortedSymbolMappings.size();
 
-      Stream.read((char*)&len, sizeof(len));
+      ::read(FD, (char*)&len, sizeof(len));
 
       rv->SortedSymbolMappings.resize(len);
 
       for (auto &Mapping: rv->SortedSymbolMappings) {
-        Stream.read((char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
-        Stream.read((char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+        ::read(FD, (char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        ::read(FD, (char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
 
         {
           auto len = Mapping.Name.size();
-          Stream.read((char*)&len, sizeof(len));
+          ::read(FD, (char*)&len, sizeof(len));
           Mapping.Name.resize(len);
-          Stream.read(Mapping.Name.data(), len);
+          ::read(FD, Mapping.Name.data(), len);
         }
       }
     }
 
     LogMan::Msg::DFmt("GenerateMap: Finished reading index");
+    close(FD);
     return rv;
   } else {
     // objdump output parsing,  index generation, index file serialization
     DoGenerate:
     LogMan::Msg::DFmt("GenerateMap: Generating index for '{}'", GuestSourceFile);
-    std::ifstream Stream(GuestSourceFile);
+    int StreamFD = ::open(GuestSourceFile.c_str(), O_RDONLY | O_CLOEXEC);
 
-    if (!Stream) {
+    if (StreamFD == -1) {
       LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestSourceFile);
+      return {};
     }
 
-    std::ofstream IndexStream(GuestIndexFile);
+    fextl::string SourceData;
+    if (!FEXCore::FileLoading::LoadFile(SourceData, GuestSourceFile)) {
+      return {};
+    }
+    fextl::istringstream Stream(SourceData);
 
-    if (!IndexStream) {
+    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+    int IndexStream = ::open(GuestSourceFile.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+
+    if (IndexStream == -1) {
       LogMan::Msg::DFmt("GenerateMap: Failed to open '{}' for writing", GuestIndexFile);
+      return {};
     }
 
-    IndexStream.write("fexsrcindex0", strlen("fexsrcindex0"));
+    ::write(IndexStream, SrcHeaderString, strlen(SrcHeaderString));
 
     // objdump parsing
     fextl::string Line;
@@ -1132,37 +1140,45 @@ fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(const
     // Index serialization
     {
       auto len = rv->SourceFile.size();
-      IndexStream.write((const char*)&len, sizeof(len));
-      IndexStream.write(rv->SourceFile.c_str(), len);
+      ::write(IndexStream, (const char*)&len, sizeof(len));
+      ::write(IndexStream, rv->SourceFile.c_str(), len);
     }
 
     {
       auto len = rv->SortedLineMappings.size();
 
-      IndexStream.write((const char*)&len, sizeof(len));
+      ::write(IndexStream, (const char*)&len, sizeof(len));
 
       for (const auto &Mapping: rv->SortedLineMappings) {
-        IndexStream.write((const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
-        IndexStream.write((const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
-        IndexStream.write((const char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
+        ::write(IndexStream, (const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        ::write(IndexStream, (const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+        ::write(IndexStream, (const char*)&Mapping.LineNumber, sizeof(Mapping.LineNumber));
       }
     }
 
     {
       auto len = rv->SortedSymbolMappings.size();
 
-      IndexStream.write((char*)&len, sizeof(len));
+      ::write(IndexStream, (char*)&len, sizeof(len));
 
       for (const auto &Mapping: rv->SortedSymbolMappings) {
-        IndexStream.write((const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
-        IndexStream.write((const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
+        ::write(IndexStream, (const char*)&Mapping.FileGuestBegin, sizeof(Mapping.FileGuestBegin));
+        ::write(IndexStream, (const char*)&Mapping.FileGuestEnd, sizeof(Mapping.FileGuestEnd));
 
         {
           auto len = Mapping.Name.size();
-          IndexStream.write((const char*)&len, sizeof(len));
-          IndexStream.write(Mapping.Name.c_str(), len);
+          ::write(IndexStream, (const char*)&len, sizeof(len));
+          ::write(IndexStream, Mapping.Name.c_str(), len);
         }
       }
+    }
+
+    if (StreamFD != -1) {
+      close(StreamFD);
+    }
+
+    if (IndexStream != -1) {
+      close(IndexStream);
     }
 
     LogMan::Msg::DFmt("GenerateMap: Finished generating index", GuestIndexFile);
