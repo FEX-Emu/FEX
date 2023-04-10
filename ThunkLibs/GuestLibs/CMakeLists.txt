@@ -8,6 +8,12 @@ if (ENABLE_CLANG_THUNKS)
   add_link_options(${LD_OVERRIDE})
 endif()
 
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  message(STATUS "CCache enabled for guest thunks")
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+endif()
+
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We've been included using ExternalProject_add, so set up the actual thunk libraries to be cross-compiled
   set(CMAKE_CXX_STANDARD 17)
