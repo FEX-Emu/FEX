@@ -333,7 +333,7 @@ int main(int argc, char **argv, char **const envp) {
   if (!ExecutedWithFD && !FEXFD && !FHU::Filesystem::Exists(Program.ProgramPath)) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
-    fextl::fmt::print("{}: command not found\n", Program.ProgramPath);
+    fextl::fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
     return -ENOEXEC;
   }
 
@@ -354,14 +354,14 @@ int main(int argc, char **argv, char **const envp) {
 
   if (!Loader.ELFWasLoaded()) {
     // Loader couldn't load this program for some reason
-    fextl::fmt::print("Invalid or Unsupported elf file.\n");
+    fextl::fmt::print(stderr, "Invalid or Unsupported elf file.\n");
 #ifdef _M_ARM_64
-    fextl::fmt::print("This is likely due to a misconfigured x86-64 RootFS\n");
-    fextl::fmt::print("Current RootFS path set to '{}'\n", LDPath());
+    fextl::fmt::print(stderr, "This is likely due to a misconfigured x86-64 RootFS\n");
+    fextl::fmt::print(stderr, "Current RootFS path set to '{}'\n", LDPath());
     if (LDPath().empty() ||
         FHU::Filesystem::Exists(LDPath()) == false) {
-      fextl::fmt::print("RootFS path doesn't exist. This is required on AArch64 hosts\n");
-      fextl::fmt::print("Use FEXRootFSFetcher to download a RootFS\n");
+      fextl::fmt::print(stderr, "RootFS path doesn't exist. This is required on AArch64 hosts\n");
+      fextl::fmt::print(stderr, "Use FEXRootFSFetcher to download a RootFS\n");
     }
 #endif
     return -ENOEXEC;
