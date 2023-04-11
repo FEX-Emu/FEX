@@ -77,7 +77,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   using FnType = OrderedNode* (*)(OpDispatchBuilder&, OrderedNode*, OrderedNode*, OrderedNode*);
 
   const auto f0 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
-    return Self._Xor(Self._And(B, C), Self._And(Self._Not(B), D));
+    return Self._Xor(Self._And(B, C), Self._Andn(D, B));
   };
   const auto f1 = [](OpDispatchBuilder &Self, OrderedNode *B, OrderedNode *C, OrderedNode *D) -> OrderedNode* {
     return Self._Xor(Self._Xor(B, C), D);
@@ -204,7 +204,7 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   const auto Ch = [this](OrderedNode *E, OrderedNode *F, OrderedNode *G) -> OrderedNode* {
-    return _Xor(_And(E, F), _And(_Not(E), G));
+    return _Xor(_And(E, F), _Andn(G, E));
   };
   const auto Major = [this](OrderedNode *A, OrderedNode *B, OrderedNode *C) -> OrderedNode* {
     return _Xor(_Xor(_And(A, B), _And(A, C)), _And(B, C));
