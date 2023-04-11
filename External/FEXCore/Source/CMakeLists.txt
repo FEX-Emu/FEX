@@ -233,6 +233,10 @@ if (ENABLE_JEMALLOC)
   list (APPEND LIBS FEX_jemalloc)
 endif()
 
+if (ENABLE_JEMALLOC_GLIBC_ALLOC)
+  list (APPEND LIBS FEX_jemalloc_glibc)
+endif()
+
 # Generate config
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in

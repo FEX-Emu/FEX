@@ -53,3 +53,6 @@
 	shallow = true
 	path = External/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "External/jemalloc_glibc"]
+	path = External/jemalloc_glibc
+	url = https://github.com/FEX-Emu/jemalloc.git

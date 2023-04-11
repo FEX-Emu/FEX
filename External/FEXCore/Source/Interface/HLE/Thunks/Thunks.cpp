@@ -29,8 +29,14 @@ $end_info$
 #include <stdint.h>
 #include <utility>
 
-#ifdef ENABLE_JEMALLOC
-#include "jemalloc/jemalloc.h"
+#ifdef ENABLE_JEMALLOC_GLIBC
+extern "C" {
+// jemalloc defines nothrow on its internal C function signatures.
+#define JEMALLOC_NOTHROW __attribute__((nothrow))
+// Forward declare jemalloc functions because we can't include the headers from the glibc jemalloc project.
+// This is because we can't simultaneously set up include paths for both of our internal jemalloc modules.
+FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern int glibc_je_is_known_allocation(void *ptr);
+}
 #endif
 
 struct LoadlibArgs {
@@ -251,13 +257,13 @@ namespace FEXCore {
          * and host heap pointers.
          */
         static void IsHostHeapAllocation(void* ArgsRV) {
-#ifdef ENABLE_JEMALLOC
+#ifdef ENABLE_JEMALLOC_GLIBC
             struct ArgsRV_t {
                 void* ptr;
                 bool rv;
             } *args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-            args->rv = je_is_known_allocation(args->ptr);
+            args->rv = glibc_je_is_known_allocation(args->ptr);
 #else
             // Thunks usage without jemalloc isn't supported
             ERROR_AND_DIE_FMT("Unsupported: Thunks querying for host heap allocation information");
