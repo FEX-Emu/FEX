@@ -53,7 +53,7 @@
       },
       "EnableAVX": {
         "Type": "bool",
-        "Default": "true",
+        "Default": "false",
         "Desc": [
           "Determines whether or not we use the expanded register file for AVX or not"
         ]

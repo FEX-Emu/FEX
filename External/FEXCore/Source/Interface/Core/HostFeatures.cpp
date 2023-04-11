@@ -160,5 +160,11 @@ HostFeatures::HostFeatures() {
     SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
   }
 #endif
+
+  // Disable AVX if the configuration explicitly has disabled it.
+  FEX_CONFIG_OPT(EnableAVX, ENABLEAVX);
+  if (!EnableAVX) {
+    SupportsAVX = false;
+  }
 }
 }

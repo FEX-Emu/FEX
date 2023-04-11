@@ -153,10 +153,6 @@ namespace FEXCore::Context {
     if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
       CodeObjectCacheService = fextl::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
     }
-    if (!Config.EnableAVX) {
-      HostFeatures.SupportsAVX = false;
-    }
-
     if (!Config.Is64BitMode()) {
       // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
       Config.VirtualMemSize = 1ULL << 32;

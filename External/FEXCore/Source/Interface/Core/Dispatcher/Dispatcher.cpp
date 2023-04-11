@@ -104,7 +104,7 @@ ArchHelpers::Context::ContextBackup* Dispatcher::StoreThreadState(FEXCore::Core:
 }
 
 void Dispatcher::RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
 
   SigFrame_i32 *guest_uctx = reinterpret_cast<SigFrame_i32*>(Context->UContextLocation);
   // If the guest modified the RIP then we need to take special precautions here
@@ -187,7 +187,7 @@ void Dispatcher::RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context,
 }
 
 void Dispatcher::RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
 
   RTSigFrame_i32 *guest_uctx = reinterpret_cast<RTSigFrame_i32*>(Context->UContextLocation);
   // If the guest modified the RIP then we need to take special precautions here
@@ -272,7 +272,7 @@ void Dispatcher::RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Contex
 void Dispatcher::RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type) {
   // Pulling from context here
   const bool Is64BitMode = CTX->Config.Is64BitMode;
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
 
   uint64_t OldSP{};
   if (Type == RestoreType::TYPE_PAUSE) [[unlikely]] {
@@ -436,7 +436,7 @@ uint64_t Dispatcher::SetupFrame_ia32(
   GuestSigAction *GuestAction, stack_t *GuestStack,
   uint64_t NewGuestSP, const uint32_t eflags) {
 
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(CTX->VDSOPointers.VDSO_kernel_sigreturn);
 
   NewGuestSP -= sizeof(uint64_t);
@@ -578,7 +578,7 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
   GuestSigAction *GuestAction, stack_t *GuestStack,
   uint64_t NewGuestSP, const uint32_t eflags) {
 
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(CTX->VDSOPointers.VDSO_kernel_rt_sigreturn);
 
   NewGuestSP -= sizeof(uint64_t);
@@ -769,7 +769,7 @@ uint64_t Dispatcher::SetupRTFrame_ia32(
 }
 
 void Dispatcher::RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext) {
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
 
   auto *guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
   [[maybe_unused]] auto *guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
@@ -852,7 +852,7 @@ uint64_t Dispatcher::SetupFrame_x64(
   // 32-bit doesn't have a redzone
   NewGuestSP -= 128;
 
-  const bool IsAVXEnabled = CTX->Config.EnableAVX;
+  const bool IsAVXEnabled = CTX->HostFeatures.SupportsAVX;
 
   // On 64-bit the kernel sets up the siginfo_t and ucontext_t regardless of SA_SIGINFO set.
   // This allows the application to /always/ get the siginfo and ucontext even if it didn't set this flag.
