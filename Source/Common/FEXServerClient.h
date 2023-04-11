@@ -126,6 +126,7 @@ namespace FEXServerClient {
       PacketHeader Header{};
       size_t MessageLength;
       uint32_t Level{};
+      uint32_t Pad{};
     };
 
     static_assert(sizeof(PacketHeader) == 24, "Wrong size");
