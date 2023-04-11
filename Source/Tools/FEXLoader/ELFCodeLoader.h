@@ -4,8 +4,8 @@
 #include "Common/Config.h"
 #include "Common/FDUtils.h"
 #include "FEXCore/Utils/Allocator.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/VDSO_Emulation.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "VDSO_Emulation.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 

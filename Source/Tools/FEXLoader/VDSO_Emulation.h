@@ -2,7 +2,7 @@
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/fextl/vector.h>
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 namespace FEXCore::Context {
 struct VDSOSigReturn;

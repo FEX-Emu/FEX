@@ -1,5 +1,5 @@
-#include "Tests/LinuxSyscalls/x64/Types.h"
-#include "Tests/LinuxSyscalls/x64/Ioctl/HelperDefines.h"
+#include "LinuxSyscalls/x64/Types.h"
+#include "LinuxSyscalls/x64/Ioctl/HelperDefines.h"
 
 #include <cstdint>
 #include <sys/ioctl.h>
@@ -36,7 +36,7 @@ constexpr uint32_t F2FS_IOCTL_MAGIC = 0xf5;
                               _IOR(F2FS_IOCTL_MAGIC, 19, uint64_t)
 //#define F2FS_IOC_SEC_TRIM_FILE            _IOW(F2FS_IOCTL_MAGIC, 20,    \
 //                                          struct f2fs_sectrim_range)
-#include "Tests/LinuxSyscalls/x64/Ioctl/f2fs.inl"
+#include "LinuxSyscalls/x64/Ioctl/f2fs.inl"
 }
 }
 

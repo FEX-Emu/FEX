@@ -4,11 +4,11 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/SignalDelegator.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/UContext.h>

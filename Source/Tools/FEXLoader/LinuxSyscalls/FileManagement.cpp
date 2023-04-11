@@ -8,10 +8,10 @@ $end_info$
 #include "Common/FDUtils.h"
 
 #include "FEXCore/Config/Config.h"
-#include "Tests/LinuxSyscalls/FileManagement.h"
-#include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/FileManagement.h"
+#include "LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>

@@ -4,7 +4,7 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
 #include <FEXCore/Utils/LogManager.h>
 
 #include <errno.h>

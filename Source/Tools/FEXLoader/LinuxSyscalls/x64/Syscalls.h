@@ -6,8 +6,8 @@ $end_info$
 
 #pragma once
 
-#include "Tests/LinuxSyscalls/FileManagement.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/FileManagement.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/IR/IR.h>

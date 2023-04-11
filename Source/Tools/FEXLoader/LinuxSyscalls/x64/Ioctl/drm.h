@@ -2,8 +2,8 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
-#include "Tests/LinuxSyscalls/x64/Types.h"
-#include "Tests/LinuxSyscalls/x64/Ioctl/HelperDefines.h"
+#include "LinuxSyscalls/x64/Types.h"
+#include "LinuxSyscalls/x64/Ioctl/HelperDefines.h"
 
 #include <cstdint>
 extern "C" {
@@ -25,9 +25,9 @@ extern "C" {
 #define CPYF(x) x = val.x
 namespace FEX::HLE::x64 {
 
-#include "Tests/LinuxSyscalls/x64/Ioctl/drm.inl"
-#include "Tests/LinuxSyscalls/x64/Ioctl/amdgpu_drm.inl"
-#include "Tests/LinuxSyscalls/x64/Ioctl/msm_drm.inl"
+#include "LinuxSyscalls/x64/Ioctl/drm.inl"
+#include "LinuxSyscalls/x64/Ioctl/amdgpu_drm.inl"
+#include "LinuxSyscalls/x64/Ioctl/msm_drm.inl"
 
 }
 #undef CPYT

@@ -32,7 +32,7 @@ $end_info$
 #include <type_traits>
 #include <utime.h>
 
-#include "Tests/LinuxSyscalls/Types.h"
+#include "LinuxSyscalls/Types.h"
 
 namespace FEX::HLE::x32 {
 

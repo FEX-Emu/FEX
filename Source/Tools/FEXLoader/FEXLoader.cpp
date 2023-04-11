@@ -10,11 +10,11 @@ $end_info$
 #include "Common/FEXServerClient.h"
 #include "ELFCodeLoader.h"
 #include "VDSO_Emulation.h"
-#include "Tests/LinuxSyscalls/LinuxAllocator.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include "Tests/LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/LinuxAllocator.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 #include "Linux/Utils/ELFContainer.h"
 
 #include <FEXCore/Config/Config.h>

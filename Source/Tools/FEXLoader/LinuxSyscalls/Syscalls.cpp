@@ -9,13 +9,14 @@ $end_info$
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFParser.h"
 
-#include "Tests/LinuxSyscalls/LinuxAllocator.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/Syscalls/Thread.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Types.h"
-#include "Tests/LinuxSyscalls/x64/Types.h"
+#include "LinuxSyscalls/LinuxAllocator.h"
+#include "LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Syscalls/Thread.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/x64/Types.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -38,7 +39,6 @@ $end_info$
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/TypeDefines.h>
-#include <Tests/LinuxSyscalls/SignalDelegator.h>
 
 #include <algorithm>
 #include <alloca.h>

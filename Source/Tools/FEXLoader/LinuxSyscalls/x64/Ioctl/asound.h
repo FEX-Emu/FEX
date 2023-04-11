@@ -1,5 +1,5 @@
-#include "Tests/LinuxSyscalls/x64/Types.h"
-#include "Tests/LinuxSyscalls/x64/Ioctl/HelperDefines.h"
+#include "LinuxSyscalls/x64/Types.h"
+#include "LinuxSyscalls/x64/Ioctl/HelperDefines.h"
 
 #include <cstdint>
 #include <sound/asound.h>
@@ -16,6 +16,6 @@ namespace asound {
 #define SNDRV_TIMER_IOCTL_TREAD64	_IOW('T', 0xa4, int)
 #endif
 
-#include "Tests/LinuxSyscalls/x64/Ioctl/asound.inl"
+#include "LinuxSyscalls/x64/Ioctl/asound.inl"
 }
 }

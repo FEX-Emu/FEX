@@ -12,7 +12,7 @@ $end_info$
 #include <sys/shm.h>
 #include <sys/mman.h>
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXCore/Debug/InternalThreadState.h>

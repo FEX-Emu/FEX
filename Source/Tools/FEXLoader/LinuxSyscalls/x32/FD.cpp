@@ -4,13 +4,13 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/IoctlEmulation.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/SyscallsEnum.h"
-#include "Tests/LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x32/IoctlEmulation.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x32/SyscallsEnum.h"
+#include "LinuxSyscalls/x32/Types.h"
 
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>

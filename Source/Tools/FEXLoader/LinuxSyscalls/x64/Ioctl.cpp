@@ -4,8 +4,8 @@ tags: LinuxSyscalls|syscalls-x86-64
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
 
 #include <stdint.h>
 #include <sys/ioctl.h>

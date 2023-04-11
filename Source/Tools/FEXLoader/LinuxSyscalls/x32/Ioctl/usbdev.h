@@ -1,5 +1,5 @@
-#include "Tests/LinuxSyscalls/x32/Types.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/HelperDefines.h"
+#include "LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/x32/Ioctl/HelperDefines.h"
 
 #include <cstdint>
 #include <linux/usbdevice_fs.h>
@@ -22,7 +22,7 @@ namespace usbdev {
 #ifndef USBDEVFS_WAIT_FOR_RESUME
 #define USBDEVFS_WAIT_FOR_RESUME   _IO('U', 35)
 #endif
-#include "Tests/LinuxSyscalls/x32/Ioctl/usbdev.inl"
+#include "LinuxSyscalls/x32/Ioctl/usbdev.inl"
 }
 }
 

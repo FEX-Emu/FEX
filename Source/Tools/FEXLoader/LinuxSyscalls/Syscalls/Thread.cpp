@@ -5,12 +5,12 @@ $end_info$
 */
 
 #include "FEXCore/IR/IR.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/Syscalls/Thread.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Thread.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Thread.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Syscalls/Thread.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/x64/Thread.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x32/Thread.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>

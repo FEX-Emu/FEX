@@ -77,6 +77,7 @@ PRIVATE
 target_include_directories(LinuxEmulation
 PRIVATE
   ${CMAKE_BINARY_DIR}/generated
+  ${CMAKE_CURRENT_SOURCE_DIR}/../
   ${PROJECT_SOURCE_DIR}/External/drm-headers/include/
 )
 

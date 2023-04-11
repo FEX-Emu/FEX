@@ -9,7 +9,7 @@ $end_info$
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <memory>
 #include <stddef.h>

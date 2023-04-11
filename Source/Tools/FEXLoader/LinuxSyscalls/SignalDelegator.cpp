@@ -7,7 +7,7 @@ $end_info$
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include "Tests/LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>

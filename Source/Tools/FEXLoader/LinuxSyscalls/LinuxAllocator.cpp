@@ -1,5 +1,5 @@
-#include "Tests/LinuxSyscalls/LinuxAllocator.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/LinuxAllocator.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXHeaderUtils/Syscalls.h>

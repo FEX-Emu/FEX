@@ -13,12 +13,12 @@ function(GenerateInterpreter NAME AsInterpreter)
     VDSO_Emulation.cpp
     AOT/AOTGenerator.cpp)
 
-# Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
+  # Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
   set_target_properties(${NAME} PROPERTIES ENABLE_EXPORTS 1)
 
   target_include_directories(${NAME}
     PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/Source/
+      ${CMAKE_CURRENT_SOURCE_DIR}/
       ${CMAKE_BINARY_DIR}/generated
   )
   target_link_libraries(${NAME}

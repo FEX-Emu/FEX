@@ -1,5 +1,5 @@
-#include "Tests/LinuxSyscalls/x32/Types.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/HelperDefines.h"
+#include "LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/x32/Ioctl/HelperDefines.h"
 
 #include <cstdint>
 #include <linux/input.h>
@@ -7,7 +7,7 @@
 
 namespace FEX::HLE::x32 {
 namespace input {
-#include "Tests/LinuxSyscalls/x32/Ioctl/input.inl"
+#include "LinuxSyscalls/x32/Ioctl/input.inl"
 }
 }
 

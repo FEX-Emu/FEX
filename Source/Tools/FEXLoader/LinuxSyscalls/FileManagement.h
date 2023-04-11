@@ -20,7 +20,7 @@ $end_info$
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
+#include "LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
 namespace FEXCore::Context {
 class Context;

@@ -6,7 +6,7 @@ $end_info$
 
 #pragma once
 
-#include "Tests/LinuxSyscalls/Types.h"
+#include "LinuxSyscalls/Types.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <linux/types.h>

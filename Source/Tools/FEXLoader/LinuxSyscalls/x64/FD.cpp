@@ -4,10 +4,10 @@ tags: LinuxSyscalls|syscalls-x86-64
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/FileManagement.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Types.h"
+#include "LinuxSyscalls/FileManagement.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/x64/Types.h"
 
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/MathUtils.h>

@@ -1,14 +1,14 @@
 #include "Ioctl/drm.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/asound.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/drm.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/usbdev.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/streams.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/sockios.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/input.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/joystick.h"
-#include "Tests/LinuxSyscalls/x32/Ioctl/wireless.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x32/Ioctl/asound.h"
+#include "LinuxSyscalls/x32/Ioctl/drm.h"
+#include "LinuxSyscalls/x32/Ioctl/usbdev.h"
+#include "LinuxSyscalls/x32/Ioctl/streams.h"
+#include "LinuxSyscalls/x32/Ioctl/sockios.h"
+#include "LinuxSyscalls/x32/Ioctl/input.h"
+#include "LinuxSyscalls/x32/Ioctl/joystick.h"
+#include "LinuxSyscalls/x32/Ioctl/wireless.h"
 #undef _BASIC_META
 #undef _BASIC_META_VAR
 #undef _CUSTOM_META
@@ -162,7 +162,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -297,7 +297,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -333,7 +333,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/msm_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -358,7 +358,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -401,7 +401,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/i915_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/i915_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -427,7 +427,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -452,7 +452,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/lima_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -488,7 +488,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -524,7 +524,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -549,7 +549,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -673,7 +673,7 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num)
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/drm.inl"
         {
           uint64_t Result = ::ioctl(fd, cmd, args);
           SYSCALL_ERRNO();
@@ -719,19 +719,19 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset) IoctlHandler{_IOC_TYPE(FEX_##name), FEX::HLE::x32::BasicHandler::BasicHandler},
 
       // Asound
-#include "Tests/LinuxSyscalls/x32/Ioctl/asound.inl"
+#include "LinuxSyscalls/x32/Ioctl/asound.inl"
       // Streams
-#include "Tests/LinuxSyscalls/x32/Ioctl/streams.inl"
+#include "LinuxSyscalls/x32/Ioctl/streams.inl"
       // USB Dev
-#include "Tests/LinuxSyscalls/x32/Ioctl/usbdev.inl"
+#include "LinuxSyscalls/x32/Ioctl/usbdev.inl"
       // Input
-#include "Tests/LinuxSyscalls/x32/Ioctl/input.inl"
+#include "LinuxSyscalls/x32/Ioctl/input.inl"
       // SOCKIOS
-#include "Tests/LinuxSyscalls/x32/Ioctl/sockios.inl"
+#include "LinuxSyscalls/x32/Ioctl/sockios.inl"
       // Joystick
-#include "Tests/LinuxSyscalls/x32/Ioctl/joystick.inl"
+#include "LinuxSyscalls/x32/Ioctl/joystick.inl"
       // Wireless
-#include "Tests/LinuxSyscalls/x32/Ioctl/wireless.inl"
+#include "LinuxSyscalls/x32/Ioctl/wireless.inl"
 
 #undef _BASIC_META
 #undef _BASIC_META_VAR
@@ -743,18 +743,18 @@ namespace FEX::HLE::x32 {
 #define _CUSTOM_META(name, ioctl_num) IoctlHandler{_IOC_TYPE(FEX_##name), FEX::HLE::x32::DRM::Handler},
 #define _CUSTOM_META_OFFSET(name, ioctl_num, offset) IoctlHandler{_IOC_TYPE(FEX_##name), FEX::HLE::x32::DRM::Handler},
       // DRM
-#include "Tests/LinuxSyscalls/x32/Ioctl/drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/drm.inl"
 
-#include "Tests/LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/msm_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/i915_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/lima_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
-#include "Tests/LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/amdgpu_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/msm_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/i915_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/lima_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/panfrost_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/nouveau_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
 
 #undef _BASIC_META
 #undef _BASIC_META_VAR

@@ -7,8 +7,8 @@ $end_info$
 
 #pragma once
 
-#include "Tests/LinuxSyscalls/FileManagement.h"
-#include "Tests/LinuxSyscalls/LinuxAllocator.h"
+#include "LinuxSyscalls/FileManagement.h"
+#include "LinuxSyscalls/LinuxAllocator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -32,7 +32,7 @@ $end_info$
 #ifdef _M_X86_64
 #define SYSCALL_ARCH_NAME x64
 #elif _M_ARM_64
-#include "Tests/LinuxSyscalls/Arm64/SyscallsEnum.h"
+#include "LinuxSyscalls/Arm64/SyscallsEnum.h"
 #define SYSCALL_ARCH_NAME Arm64
 #endif
 

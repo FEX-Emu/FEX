@@ -6,8 +6,8 @@ $end_info$
 
 #include <FEXCore/Utils/LogManager.h>
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
 
 #include <errno.h>
 #include <stdint.h>

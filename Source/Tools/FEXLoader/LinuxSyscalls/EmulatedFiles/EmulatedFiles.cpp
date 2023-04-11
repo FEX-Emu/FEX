@@ -6,8 +6,8 @@ $end_info$
 */
 
 #include "Common/FDUtils.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>

@@ -1,6 +1,6 @@
 #include "VDSO_Emulation.h"
 #include "FEXCore/IR/IR.h"
-#include "Tests/LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>

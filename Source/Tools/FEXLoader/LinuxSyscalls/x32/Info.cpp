@@ -4,9 +4,9 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Types.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x32/Types.h"
 
 #include <algorithm>
 #include <asm/posix_types.h>

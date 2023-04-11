@@ -6,7 +6,7 @@ desc: VMA Tracking
 $end_info$
 */
 
-#include "Tests/LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 namespace FEX::HLE {
 /// List Operations ///

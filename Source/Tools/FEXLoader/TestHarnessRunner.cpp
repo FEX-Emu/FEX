@@ -8,11 +8,11 @@ $end_info$
 #include "Common/ArgumentLoader.h"
 #include "TestHarnessRunner/HostRunner.h"
 #include "HarnessHelpers.h"
-#include "Tests/LinuxSyscalls/LinuxAllocator.h"
-#include "Tests/LinuxSyscalls/Syscalls.h"
-#include "Tests/LinuxSyscalls/x32/Syscalls.h"
-#include "Tests/LinuxSyscalls/x64/Syscalls.h"
-#include "Tests/LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/LinuxAllocator.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/x32/Syscalls.h"
+#include "LinuxSyscalls/x64/Syscalls.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>

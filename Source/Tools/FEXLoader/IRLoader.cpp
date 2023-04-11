@@ -6,7 +6,7 @@ $end_info$
 */
 
 #include "Common/ArgumentLoader.h"
-#include "Tests/LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
