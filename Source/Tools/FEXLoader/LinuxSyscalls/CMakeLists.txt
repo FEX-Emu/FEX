@@ -106,7 +106,8 @@ set (ARGS
   "-x" "c++"
   "-std=c++20"
   "-fno-operator-names"
-  "-I${PROJECT_SOURCE_DIR}/External/drm-headers/include/")
+  "-I${PROJECT_SOURCE_DIR}/External/drm-headers/include/"
+  "-I${CMAKE_CURRENT_SOURCE_DIR}/../")
 # Global include directories
 get_directory_property (INC_DIRS INCLUDE_DIRECTORIES)
 list(TRANSFORM INC_DIRS PREPEND "-I")
