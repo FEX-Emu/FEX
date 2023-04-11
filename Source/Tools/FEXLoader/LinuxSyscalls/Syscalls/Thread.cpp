@@ -292,6 +292,11 @@ namespace FEX::HLE {
     REGISTER_SYSCALL_IMPL_FLAGS(exit, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
       [](FEXCore::Core::CpuStateFrame *Frame, int status) -> uint64_t {
       auto Thread = Frame->Thread;
+
+      // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
+      // Since this thread is hard stopping, we can't track the TLS/DTV teardown in FEX's thread handling.
+      FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
+
       if (Thread->ThreadManager.clear_child_tid) {
         std::atomic<uint32_t> *Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
         Addr->store(0);
