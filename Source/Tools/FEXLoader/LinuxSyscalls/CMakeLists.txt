@@ -8,6 +8,7 @@ add_library(LinuxEmulation STATIC
     Syscalls.cpp
     SyscallsSMCTracking.cpp
     SyscallsVMATracking.cpp
+    Utils/Threads.cpp
     x32/Syscalls.cpp
     x32/EPoll.cpp
     x32/FD.cpp
