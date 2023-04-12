@@ -46,6 +46,7 @@ namespace FEXCore::Allocator {
   inline void free(void* ptr) { return ::je_free(ptr); }
   inline size_t malloc_usable_size(void *ptr) { return ::je_malloc_usable_size(ptr); }
   inline void *aligned_alloc(size_t a, size_t s) { return ::je_aligned_alloc(a, s); }
+  inline void aligned_free(void* ptr) { return ::je_free(ptr); }
 #else
   inline void *malloc(size_t size) { return ::malloc(size); }
   inline void *calloc(size_t n, size_t size) { return ::calloc(n, size); }
@@ -56,6 +57,7 @@ namespace FEXCore::Allocator {
   inline void free(void* ptr) { return ::free(ptr); }
   inline size_t malloc_usable_size(void *ptr) { return ::malloc_usable_size(ptr); }
   inline void *aligned_alloc(size_t a, size_t s) { return ::aligned_alloc(a, s); }
+  inline void aligned_free(void* ptr) { return ::free(ptr); }
 #endif
 
   struct FEXAllocOperators {
