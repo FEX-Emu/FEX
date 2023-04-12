@@ -83,6 +83,7 @@ PRIVATE
 
 target_link_libraries(LinuxEmulation
 PRIVATE
+  Common
   FEXCore
   FEX_Utils
 )

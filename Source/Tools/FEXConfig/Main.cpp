@@ -972,6 +972,8 @@ int main(int argc, char **argv) {
 
   GlobalTime = std::chrono::high_resolution_clock::now();
 
+  FEX::Config::InitializeConfigs();
+
   // Attempt to open the config passed in
   if (argc > 1) {
     if (OpenFile(argv[1], true)) {

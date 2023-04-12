@@ -5,6 +5,7 @@ desc: Rootfs overlay logic
 $end_info$
 */
 
+#include "Common/Config.h"
 #include "Common/FDUtils.h"
 
 #include "FEXCore/Config/Config.h"
@@ -13,7 +14,6 @@ $end_info$
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
 
-#include <FEXCore/Common/Paths.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
@@ -116,7 +116,7 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
       return;
     }
 
-    std::string_view HomeDirectory = FEXCore::Paths::GetHomeDirectory();
+    std::string_view HomeDirectory = FEX::Config::GetHomeDirectory();
 
     for( json_t const* Library = json_getChild( DB ); Library != nullptr; Library = json_getSibling( Library )) {
       // Get the user defined name for the library

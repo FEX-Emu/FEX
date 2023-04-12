@@ -102,10 +102,14 @@ namespace Type {
 #undef P
 }
 
-  FEX_DEFAULT_VISIBILITY fextl::string GetDataDirectory();
-  FEX_DEFAULT_VISIBILITY fextl::string GetConfigDirectory(bool Global);
-  FEX_DEFAULT_VISIBILITY fextl::string GetConfigFileLocation(bool Global = false);
-  FEX_DEFAULT_VISIBILITY fextl::string GetApplicationConfig(const fextl::string &Filename, bool Global);
+  FEX_DEFAULT_VISIBILITY void SetDataDirectory(std::string_view Path);
+  FEX_DEFAULT_VISIBILITY void SetConfigDirectory(const std::string_view Path, bool Global);
+  FEX_DEFAULT_VISIBILITY void SetConfigFileLocation(std::string_view Path, bool Global);
+
+  FEX_DEFAULT_VISIBILITY fextl::string const& GetDataDirectory();
+  FEX_DEFAULT_VISIBILITY fextl::string const& GetConfigDirectory(bool Global);
+  FEX_DEFAULT_VISIBILITY fextl::string const& GetConfigFileLocation(bool Global = false);
+  FEX_DEFAULT_VISIBILITY fextl::string GetApplicationConfig(const std::string_view Program, bool Global);
 
   using LayerValue = fextl::list<fextl::string>;
   using LayerOptions = fextl::unordered_map<ConfigOption, LayerValue>;
