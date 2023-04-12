@@ -19,9 +19,8 @@ if (NOT MINGW_BUILD)
   add_subdirectory(FEXGetConfig/)
   add_subdirectory(FEXServer/)
   add_subdirectory(FEXBash/)
+  add_subdirectory(FEXLoader/)
 endif()
-
-add_subdirectory(FEXLoader/)
 
 set(NAME Opt)
 set(SRCS Opt.cpp)
