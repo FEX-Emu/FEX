@@ -14,6 +14,7 @@ env:
   CC: clang
   CXX: clang++
   FEX_FORCE32BITALLOCATOR: 1
+  FEX_ENABLEAVX: 1
 
 jobs:
   build:
