@@ -22,6 +22,7 @@ option(ENABLE_VISUAL_DEBUGGER "Enables the visual debugger for compiling" FALSE)
 option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
 option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
+option(ENABLE_JEMALLOC_GLIBC_ALLOC "Enables jemalloc glibc allocator" TRUE)
 option(ENABLE_OFFLINE_TELEMETRY "Enables FEX offline telemetry" TRUE)
 option(ENABLE_COMPILE_TIME_TRACE "Enables time trace compile option" FALSE)
 option(ENABLE_LIBCXX "Enables LLVM libc++" FALSE)
@@ -55,6 +56,10 @@ if (ENABLE_FEXCORE_PROFILER)
   else()
     message(FATAL_ERROR "Unknown FEXCore profiler backend ${FEXCORE_PROFILER_BACKEND}")
   endif()
+endif()
+
+if (ENABLE_JEMALLOC_GLIBC_ALLOC AND ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
+  message(FATAL_ERROR "Can't have both glibc fault allocator and jemalloc glibc allocator enabled at the same time")
 endif()
 
 if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
@@ -190,7 +195,22 @@ if (ENABLE_TSAN)
   link_libraries(-fno-omit-frame-pointer -fsanitize=thread)
 endif()
 
+if (ENABLE_JEMALLOC_GLIBC_ALLOC)
+  # The glibc jemalloc subproject which hooks the glibc allocator.
+  # Required for thunks to work.
+  # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
+  add_definitions(-DENABLE_JEMALLOC_GLIBC=1)
+  add_subdirectory(External/jemalloc_glibc/)
+else()
+  message (STATUS
+    " jemalloc glibc allocator disabled!\n"
+    " This is not a recommended configuration!\n"
+    " This will very explicitly break thunk execution!\n"
+    " Use at your own risk!")
+endif()
+
 if (ENABLE_JEMALLOC)
+  # The jemalloc subproject that all FEXCore fextl objects allocate through.
   add_definitions(-DENABLE_JEMALLOC=1)
   add_subdirectory(External/jemalloc/)
   include_directories(External/jemalloc/pregen/include/)
