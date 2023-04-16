@@ -52,4 +52,6 @@ namespace FEXCore::Threads {
    * @return The previous signal mask
    */
   uint64_t SetSignalMask(uint64_t Mask);
+
+  void SetThreadName(const char *name);
 }

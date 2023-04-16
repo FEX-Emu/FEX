@@ -4,16 +4,17 @@
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/deque.h>
 
-#include <alloca.h>
 #include <cstring>
 #include <functional>
 #include <mutex>
 #include <pthread.h>
 #include <stdint.h>
+#include <unistd.h>
+#ifndef _WIN32
 #include <sys/mman.h>
 #include <sys/signal.h>
 #include <sys/syscall.h>
-#include <unistd.h>
+#endif
 
 namespace FEXCore::Threads {
   // Stack pool handling
@@ -223,7 +224,17 @@ namespace FEXCore::Threads {
   }
 
   uint64_t SetSignalMask(uint64_t Mask) {
+#ifndef _WIN32
     ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &Mask, 8);
     return Mask;
+#endif
+  }
+
+  void SetThreadName(const char *name) {
+#ifndef _WIN32
+  pthread_setname_np(pthread_self(), name);
+#else
+  // TODO:
+#endif
   }
 }

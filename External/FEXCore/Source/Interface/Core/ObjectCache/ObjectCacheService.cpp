@@ -2,6 +2,7 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/Utils/Threads.h>
 
 namespace {
   static void* ThreadHandler(void *Arg) {
@@ -60,8 +61,7 @@ namespace FEXCore::CodeSerialize {
 
   void CodeObjectSerializeService::ExecutionThread() {
     // Set our thread name so we can see its relation
-    char ThreadName[16] = "ObjectCodeSeri\0";
-    pthread_setname_np(pthread_self(), ThreadName);
+    FEXCore::Threads::SetThreadName("ObjectCodeSeri\0");
     while (WorkerThreadShuttingDown.load() != true) {
       // Wait for work
       WorkAvailable.Wait();
