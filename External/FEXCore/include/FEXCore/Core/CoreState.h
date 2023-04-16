@@ -225,7 +225,7 @@ namespace FEXCore::Core {
       uint8_t TrapNo;
       uint8_t si_code;
       uint16_t err_code;
-      uint32_t _pad : 16;
+      uint16_t _pad : 16;
     } SynchronousFaultData;
 
     InternalThreadState* Thread;
