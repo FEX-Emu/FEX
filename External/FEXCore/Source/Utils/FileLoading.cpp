@@ -3,12 +3,15 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <span>
 #include <unistd.h>
+#ifdef _WIN32
+#include <fstream>
+#endif
 
 namespace FEXCore::FileLoading {
 
+#ifndef _WIN32
 template<typename T>
 static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
   int FD = open(Filepath.c_str(), O_RDONLY);
@@ -40,14 +43,6 @@ static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSiz
   return Read == FileSize;
 }
 
-bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize) {
-  return LoadFileImpl(Data, Filepath, FixedSize);
-}
-
-bool LoadFile(fextl::string &Data, const fextl::string &Filepath, size_t FixedSize) {
-  return LoadFileImpl(Data, Filepath, FixedSize);
-}
-
 ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
   int FD = open(Filepath.c_str(), O_RDONLY);
 
@@ -60,5 +55,31 @@ ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) 
   return Read;
 }
 
+#else
+// TODO: Should be rewritten using WIN32 specific APIs.
+template<typename T>
+static bool LoadFileImpl(T &Data, const fextl::string &Filepath, size_t FixedSize) {
+  std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
+  auto Size = f.tellg();
+  f.seekg(0, std::ios::beg);
+  Data.resize(Size);
+  f.read(Data.data(), Size);
+  return !f.fail();
+}
+
+ssize_t LoadFileToBuffer(const fextl::string &Filepath, std::span<char> Buffer) {
+  std::ifstream f(Filepath, std::ios::binary | std::ios::ate);
+  return f.readsome(Buffer.data(), Buffer.size());
+}
+
+#endif
+
+bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filepath, size_t FixedSize) {
+  return LoadFileImpl(Data, Filepath, FixedSize);
+}
+
+bool LoadFile(fextl::string &Data, const fextl::string &Filepath, size_t FixedSize) {
+  return LoadFileImpl(Data, Filepath, FixedSize);
+}
 
 }
