@@ -8,12 +8,14 @@
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include <array>
-#include <asm-generic/errno-base.h>
 #include <cctype>
 #include <cstdio>
 #include <fcntl.h>
+#ifndef _WIN32
 #include <sys/mman.h>
 #include <sys/user.h>
+#endif
+
 #ifdef ENABLE_JEMALLOC
 #include <jemalloc/jemalloc.h>
 #endif
@@ -41,6 +43,7 @@ namespace fextl::pmr {
   }
 }
 
+#ifndef _WIN32
 namespace FEXCore::Allocator {
   MMAP_Hook mmap {::mmap};
   MUNMAP_Hook munmap {::munmap};
@@ -338,3 +341,4 @@ namespace FEXCore::Allocator {
     }
   }
 }
+#endif

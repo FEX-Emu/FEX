@@ -6,6 +6,12 @@
 #include <malloc.h>
 #endif
 
+#ifdef _WIN32
+#include <memoryapi.h>
+#else
+#include <sys/mman.h>
+#endif
+
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
@@ -29,14 +35,61 @@ extern "C" {
 }
 
 namespace FEXCore::Allocator {
+#ifdef _WIN32
+  inline void *VirtualAlloc(size_t Size, bool Execute = false) {
+    return ::VirtualAlloc(nullptr, Size, 0, PAGE_READWRITE | (Execute ? PAGE_EXECUTE : 0));
+  }
+
+  inline void VirtualFree(void *Ptr, size_t Size) {
+    ::VirtualFree(Ptr, Size, MEM_RELEASE);
+  }
+  inline void VirtualDontNeed(void *Ptr, size_t Size) {
+    // Match madvise behaviour as best as we can here.
+    // Protections are ignored but still required to be valid.
+    ::VirtualAlloc(Ptr, Size, PAGE_NOACCESS, MEM_RESET);
+  }
+
+#else
   using MMAP_Hook = void*(*)(void*, size_t, int, int, int, off_t);
   using MUNMAP_Hook = int(*)(void*, size_t);
 
   FEX_DEFAULT_VISIBILITY extern MMAP_Hook mmap;
   FEX_DEFAULT_VISIBILITY extern MUNMAP_Hook munmap;
 
+  inline void *VirtualAlloc(size_t Size, bool Execute = false) {
+    return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  }
+
+  inline void VirtualFree(void *Ptr, size_t Size) {
+    FEXCore::Allocator::munmap(Ptr, Size);
+  }
+  inline void VirtualDontNeed(void *Ptr, size_t Size) {
+    ::madvise(reinterpret_cast<void*>(Ptr), Size, MADV_DONTNEED);
+  }
+#endif
+
   // Memory allocation routines aliased to jemalloc functions.
-#ifdef ENABLE_JEMALLOC
+#ifdef _WIN32
+  inline void *malloc(size_t size) { return ::malloc(size); }
+  inline void *calloc(size_t n, size_t size) { return ::calloc(n, size); }
+  inline void *memalign(size_t align, size_t s) { return ::_aligned_malloc(align, s); }
+  inline void *valloc(size_t size)
+  {
+    return ::_aligned_malloc(4096, size);
+  }
+  inline int posix_memalign(void** r, size_t a, size_t s) {
+    void* ptr = _aligned_malloc(a, s);
+    if (ptr) {
+      *r = ptr;
+    }
+    return errno;
+  }
+  inline void *realloc(void* ptr, size_t size) { return ::realloc(ptr, size); }
+  inline void free(void* ptr) { return ::free(ptr); }
+  inline size_t malloc_usable_size(void *ptr) { return ::_msize(ptr); }
+  inline void *aligned_alloc(size_t a, size_t s) { return ::_aligned_malloc(a, s); }
+  inline void aligned_free(void* ptr) { return ::_aligned_free(ptr); }
+#elif defined(ENABLE_JEMALLOC)
   inline void *malloc(size_t size) { return ::je_malloc(size); }
   inline void *calloc(size_t n, size_t size) { return ::je_calloc(n, size); }
   inline void *memalign(size_t align, size_t s) { return ::je_memalign(align, s); }
