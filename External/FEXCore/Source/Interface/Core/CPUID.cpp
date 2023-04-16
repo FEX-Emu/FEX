@@ -969,14 +969,14 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0004h(uint32_t Leaf) {
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0002h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
   memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
-  memcpy(&Res, &ProcessorBrand[0], std::min(16L, DESCRIBE_STR_SIZE));
+  memcpy(&Res, &ProcessorBrand[0], std::min(ssize_t{16L}, DESCRIBE_STR_SIZE));
   return Res;
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0003h(uint32_t Leaf, uint32_t CPU) {
   FEXCore::CPUID::FunctionResults Res{};
   memset(&Res, ' ', sizeof(FEXCore::CPUID::FunctionResults));
-  memcpy(&Res, &ProcessorBrand[16], std::max(0L, DESCRIBE_STR_SIZE - 16));
+  memcpy(&Res, &ProcessorBrand[16], std::max(ssize_t{0L}, DESCRIBE_STR_SIZE - 16));
   return Res;
 }
 
