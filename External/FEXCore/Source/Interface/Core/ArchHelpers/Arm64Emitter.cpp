@@ -1,4 +1,5 @@
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
+#include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Context/Context.h"
@@ -22,7 +23,7 @@ namespace FEXCore::CPU {
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
 Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
-  : Emitter(size ? (uint8_t*)FEXCore::Allocator::mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0) : nullptr, size)
+  : Emitter(size ? (uint8_t*)FEXCore::Allocator::VirtualAlloc(size, true) : nullptr, size)
   , EmitterCTX {ctx} {
   CPU.SetUp();
 
@@ -50,7 +51,7 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
 Arm64Emitter::~Arm64Emitter() {
   auto BufferSize = GetBufferSize();
   if (BufferSize) {
-    FEXCore::Allocator::munmap(GetBufferBase(), BufferSize);
+    FEXCore::Allocator::VirtualFree(GetBufferBase(), BufferSize);
   }
 }
 

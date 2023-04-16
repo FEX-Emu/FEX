@@ -8,7 +8,6 @@
 #include <chrono>
 #include <cstddef>
 #include <mutex>
-#include <sys/mman.h>
 
 namespace FEXCore::Utils {
   /**
@@ -353,22 +352,21 @@ namespace FEXCore::Utils {
   /**
    * @brief Thread pool allocator that allocates and frees objects that uses mmap
    */
-  class PooledAllocatorMMap final : public IntrusivePooledAllocator {
+  class PooledAllocatorVirtual final : public IntrusivePooledAllocator {
     public:
-      PooledAllocatorMMap() = default;
+      PooledAllocatorVirtual() = default;
 
-      virtual ~PooledAllocatorMMap() {
+      virtual ~PooledAllocatorVirtual() {
         FreeAllBuffers();
       }
 
     private:
       void *Alloc(size_t Size) override {
-        return FEXCore::Allocator::mmap(0, Size,
-          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        return FEXCore::Allocator::VirtualAlloc(Size);
       }
 
       void Free(void* Ptr, size_t Size) override {
-        FEXCore::Allocator::munmap(Ptr, Size);
+        FEXCore::Allocator::VirtualFree(Ptr, Size);
       }
   };
 

@@ -368,8 +368,8 @@ namespace FEXCore::Context {
       }
     }
 
-    FEXCore::Utils::PooledAllocatorMMap OpDispatcherAllocator;
-    FEXCore::Utils::PooledAllocatorMMap FrontendAllocator;
+    FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;
+    FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator;
 
     bool IsTSOEnabled() { return (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled; }
 
