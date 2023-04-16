@@ -1,10 +1,13 @@
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/NetStream.h>
 
 #include <array>
 #include <cstring>
 #include <iterator>
+#ifndef _WIN32
 #include <sys/socket.h>
+#endif
 #include <unistd.h>
 
 namespace FEXCore::Utils {
@@ -38,6 +41,7 @@ private:
 };
 
 int NetBuf::flushBuffer(const char *buffer, size_t size) {
+#ifndef _WIN32
     size_t total = 0;
 
     // Send data
@@ -51,6 +55,9 @@ int NetBuf::flushBuffer(const char *buffer, size_t size) {
     }
 
     return 0;
+#else
+  ERROR_AND_DIE_FMT("Unsupported");
+#endif
 }
 
 std::streamsize NetBuf::xsputn(const char* buffer, std::streamsize size) {
@@ -94,6 +101,7 @@ int NetBuf::sync() {
 }
 
 std::streambuf::int_type NetBuf::underflow() {
+#ifndef _WIN32
     ssize_t size = recv(socket, (void *)std::begin(input_buffer), sizeof(input_buffer), 0);
 
     if (size <= 0) {
@@ -104,6 +112,9 @@ std::streambuf::int_type NetBuf::underflow() {
     setg(&input_buffer[0], &input_buffer[0], &input_buffer[size]);
 
     return traits_type::to_int_type(*gptr());
+#else
+    ERROR_AND_DIE_FMT("Unsupported");
+#endif
 }
 } // Anonymous namespace
 
