@@ -12,6 +12,7 @@ $end_info$
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/BucketList.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
@@ -30,7 +31,6 @@ $end_info$
 #include <cstring>
 #include <optional>
 #include <strings.h>
-#include <sys/user.h>
 #include <utility>
 
 #define SRA_DEBUG(...) // fextl::fmt::print(__VA_ARGS__)
@@ -1008,7 +1008,7 @@ namespace {
 
           RegisterConflicts = (~RegisterConflicts) & RAClass->CountMask;
 
-          int Reg = ffs(RegisterConflicts);
+          int Reg = FindFirstSetBit(RegisterConflicts);
           if (Reg != 0) {
             RegAndClass = PhysicalRegister({RegClass}, Reg-1);
           }
