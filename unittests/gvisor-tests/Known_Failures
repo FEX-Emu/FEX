@@ -220,3 +220,8 @@ semaphore_test
 # Since we are running these tests on a fully loaded system, we tend to context switch,
 # causing the chance of a hang to occur quite frequently.
 pselect_test
+
+# Somewhere between kernel versions 5.15 and 6.0, timerfd lseek behaviour has changed.
+# On older kernels it would return -ESPIPE, on new kernels it returns 0.
+# This test expects -ESPIPE behaviour.
+timerfd_test
