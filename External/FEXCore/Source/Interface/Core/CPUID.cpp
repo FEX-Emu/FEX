@@ -21,7 +21,7 @@ $end_info$
 
 #include <cstring>
 #ifdef _M_X86_64
-#include <cpuid.h>
+#include "Interface/Core/Dispatcher/X86Dispatcher.h"
 #endif
 
 namespace FEXCore {
@@ -346,25 +346,25 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
 #else
 static uint32_t GetCycleCounterFrequency() {
-  uint32_t eax, ebx, ecx, edx;
-  __cpuid(0, eax, ebx, ecx, edx);
-  if (eax >= 0x15) {
-    __cpuid(0x15, eax, ebx, ecx, edx);
+  uint32_t data[4];
+  Xbyak::util::Cpu::getCpuid(0, data);
+  if (data[0] >= 0x15) {
+    Xbyak::util::Cpu::getCpuid(0x15, data);
 
-    if (eax && ebx && ecx) {
-      return ecx * ebx / eax;
+    if (data[0] && data[1] && data[2]) {
+      return data[2] * data[1] / data[0];
     }
   }
   return 0;
 }
 
 void CPUIDEmu::SetupHostHybridFlag() {
-  uint32_t eax, ebx, ecx, edx;
-  __cpuid(0, eax, ebx, ecx, edx);
-  if (eax >= 0x7) {
-    __cpuid(0x7, eax, ebx, ecx, edx);
+  uint32_t data[4];
+  Xbyak::util::Cpu::getCpuid(0, data);
+  if (data[0] >= 0x7) {
+    Xbyak::util::Cpu::getCpuid(0x7, data);
     // Bit 15 of edx claims hybrid CPU
-    Hybrid = (edx & (1U << 15)) != 0;
+    Hybrid = (data[3] & (1U << 15)) != 0;
   }
 
   size_t CPUs = FEXCore::CPUInfo::CalculateNumberOfCPUs();

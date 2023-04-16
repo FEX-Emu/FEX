@@ -133,13 +133,14 @@ HostFeatures::HostFeatures() {
   SupportsPMULL_128Bit = Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
 
   // xbyak doesn't know how to check for CLZero
-  uint32_t eax, ebx, ecx, edx;
   // First ensure we support a new enough extended CPUID function range
-  __cpuid(0x8000'0000, eax, ebx, ecx, edx);
-  if (eax >= 0x8000'0008U) {
+
+  uint32_t data[4];
+  Xbyak::util::Cpu::getCpuid(0x8000'0000, data);
+  if (data[0] >= 0x8000'0008U) {
     // CLZero defined in 8000_00008_EBX[bit 0]
-    __cpuid(0x8000'0008, eax, ebx, ecx, edx);
-    SupportsCLZERO = ebx & 1;
+    Xbyak::util::Cpu::getCpuid(0x8000'0008, data);
+    SupportsCLZERO = data[1] & 1;
   }
 
   SupportsFlushInputsToZero = true;
