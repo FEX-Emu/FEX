@@ -35,6 +35,7 @@ namespace FEXCore::Telemetry {
   }
 
   void Shutdown(fextl::string const &ApplicationName) {
+#ifndef _WIN32
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
@@ -57,6 +58,7 @@ namespace FEXCore::Telemetry {
       fsync(fd);
       close(fd);
     }
+#endif
   }
 
   Value &GetObject(TelemetryType Type) {
