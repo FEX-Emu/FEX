@@ -22,7 +22,6 @@ $end_info$
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXHeaderUtils/TypeDefines.h>
-#include <sys/mman.h>
 
 namespace FEXCore::Frontend {
 #include "Interface/Core/VSyscall/VSyscall.inc"
