@@ -29,7 +29,6 @@
 #include <code-buffer-vixl.h>
 #include <platform-vixl.h>
 
-#include <sys/syscall.h>
 #include <unistd.h>
 
 namespace FEXCore::CPU {
@@ -201,6 +200,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // When compiling code, mask all signals to reduce the chance of reentrant allocations
       // Args:
@@ -219,6 +219,7 @@ void Arm64Dispatcher::EmitDispatcher() {
       LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
       svc(0);
     }
+#endif
 
     mov(ARMEmitter::XReg::x0, STATE);
     mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
@@ -230,6 +231,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     blr(ARMEmitter::Reg::r2);
 #endif
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location
@@ -246,6 +248,7 @@ void Arm64Dispatcher::EmitDispatcher() {
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
       mov(ARMEmitter::XReg::x0, ARMEmitter::XReg::x4);
     }
+#endif
 
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
@@ -260,6 +263,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     if (config.StaticRegisterAllocation)
       SpillStaticRegs();
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // When compiling code, mask all signals to reduce the chance of reentrant allocations
       // Args:
@@ -281,6 +285,7 @@ void Arm64Dispatcher::EmitDispatcher() {
       // Reload x2 to bring back RIP
       ldr(ARMEmitter::XReg::x2, ARMEmitter::Reg::rsp, 8);
     }
+#endif
 
     ldr(ARMEmitter::XReg::x0, &l_CTX);
     mov(ARMEmitter::XReg::x1, STATE);
@@ -293,6 +298,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     blr(ARMEmitter::Reg::r3); // { CTX, Frame, RIP}
 #endif
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location
@@ -306,6 +312,7 @@ void Arm64Dispatcher::EmitDispatcher() {
       // Bring stack back
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
     }
+#endif
 
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
@@ -628,6 +635,7 @@ size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
 }
 
 void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
+#ifndef _WIN32
   for (size_t i = 0; i < SRA64.size(); i++) {
     if (IgnoreMask & (1U << SRA64[i].Idx())) {
       // Skip this one, it's already spilled
@@ -647,6 +655,7 @@ void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void 
       memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
     }
   }
+#endif
 }
 
 void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {
