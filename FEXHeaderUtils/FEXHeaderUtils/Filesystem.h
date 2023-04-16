@@ -8,7 +8,12 @@
 #include <fcntl.h>
 #include <memory_resource>
 #include <string>
+#ifndef _WIN32
+#include <linux/limits.h>
 #include <sys/sendfile.h>
+#else
+#include <filesystem>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -40,6 +45,7 @@ namespace FHU::Filesystem {
    *
    * @return Result enum depending.
    */
+#ifndef _WIN32
   inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
     auto Result = ::mkdir(Path.c_str(), 0777);
     if (Result == 0) {
@@ -60,6 +66,19 @@ namespace FHU::Filesystem {
     // Couldn't create, or the path that existed wasn't a folder.
     return CreateDirectoryResult::ERROR;
   }
+#else
+  // TODO: Should be rewritten using WIN32 specific APIs.
+  inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
+    std::error_code ec;
+    if (std::filesystem::exists(Path, ec)) {
+      return CreateDirectoryResult::EXISTS;
+    }
+
+    return std::filesystem::create_directory(Path, ec) ?
+      CreateDirectoryResult::CREATED :
+      CreateDirectoryResult::ERROR;
+  }
+#endif
 
   /**
    * @brief Creates a directory tree with the provided path.
@@ -152,6 +171,7 @@ namespace FHU::Filesystem {
    *
    * @return True if the copy succeeded, false otherwise.
    */
+#ifndef _WIN32
   inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
     const bool DestExists = Exists(To);
     if (Options == CopyOptions::SKIP_EXISTING && DestExists) {
@@ -199,6 +219,22 @@ namespace FHU::Filesystem {
 
     return false;
   }
+#else
+  // TODO: Should be rewritten using WIN32 specific APIs.
+  inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
+    std::filesystem::copy_options options{};
+    if (Options == CopyOptions::SKIP_EXISTING) {
+      options = std::filesystem::copy_options::skip_existing;
+    }
+    else if (Options == CopyOptions::OVERWRITE_EXISTING) {
+      options = std::filesystem::copy_options::overwrite_existing;
+    }
+
+    std::error_code ec;
+    return std::filesystem::copy_file(From, To, options, ec);
+  }
+
+#endif
 
   /**
    * @brief Renames a file and overwrites if it already exists.
@@ -311,4 +347,23 @@ namespace FHU::Filesystem {
       fmt::join(Parts, "/"),
       NeedsFinalSeparator ? "/" : "");
   }
+
+#ifndef _WIN32
+  inline char *Absolute(const char *Path, char Fill[PATH_MAX]) {
+    return realpath(Path, Fill);
+  }
+#else
+  // TODO: Should be rewritten using WIN32 specific APIs.
+  inline char *Absolute(const char *Path, char Fill[PATH_MAX]) {
+    std::error_code ec;
+    const auto PathAbsolute = std::filesystem::absolute(Path, ec);
+    if (!ec) {
+      strncpy(Fill, PathAbsolute.string().c_str(), sizeof(*Fill));
+      return Fill;
+    }
+
+    return nullptr;
+  }
+#endif
+
 }
