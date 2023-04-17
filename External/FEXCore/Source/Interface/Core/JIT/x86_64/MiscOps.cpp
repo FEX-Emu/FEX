@@ -43,6 +43,7 @@ DEF_OP(Fence) {
   }
 }
 
+#ifndef _WIN32
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
 
@@ -79,6 +80,11 @@ DEF_OP(Break) {
     break;
   }
 }
+#else
+DEF_OP(Break) {
+  ERROR_AND_DIE_FMT("Unsupported");
+}
+#endif
 
 DEF_OP(GetRoundingMode) {
   auto Dst = GetDst<RA_32>(Node);
