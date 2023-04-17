@@ -5309,6 +5309,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
   ALUOpImpl(Op, ALUIROp, AtomicFetchOp, RequiresMask);
 }
 
+#ifndef _WIN32
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   IR::BreakDefinition Reason;
   bool SetRIPToNext = false;
@@ -5405,6 +5406,11 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     _Break(Reason);
   }
 }
+#else
+void OpDispatchBuilder::INTOp(OpcodeArgs) {
+  ERROR_AND_DIE_FMT("Unknown INTOp instruction?");
+}
+#endif
 
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
