@@ -1,9 +1,16 @@
 #pragma once
+
+#include <FEXCore/Utils/LogManager.h>
+
 #include <cstdint>
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <syscall.h>
+#else
+#include <processthreadsapi.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -43,6 +50,7 @@ namespace FHU::Syscalls {
 #define SYS_pidfd_open 434
 #endif
 
+#ifndef _WIN32
 inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
   // Third argument is unused
 #if defined(HAS_SYSCALL_GETCPU) && HAS_SYSCALL_GETCPU
@@ -87,5 +95,23 @@ inline int32_t renameat2(int olddirfd, const char *oldpath, int newdirfd, const 
 inline int32_t pidfd_open(pid_t pid, unsigned int flags) {
   return ::syscall(SYS_pidfd_open, pid, flags);
 }
+#else
+
+inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
+  *cpu = GetCurrentProcessorNumber();
+  *node = 0;
+  return 0;
+}
+
+inline int32_t tgkill(pid_t tgid, pid_t tid, int sig) {
+  ERROR_AND_DIE_FMT("Unsupported");
+  return 0;
+}
+
+inline int32_t gettid() {
+  return GetCurrentThreadId();
+}
+
+#endif
 
 }
