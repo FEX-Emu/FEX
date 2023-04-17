@@ -15,7 +15,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <mutex>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <xxhash.h>
@@ -84,6 +83,7 @@ namespace FEXCore::IR {
   }
 
   static bool LoadAOTIRCache(AOTIRCacheEntry *Entry, int streamfd) {
+#ifndef _WIN32
     uint64_t tag;
 
     if (!readAll(streamfd, (char*)&tag, sizeof(tag)) || tag != FEXCore::IR::AOTIR_COOKIE)
@@ -137,6 +137,9 @@ namespace FEXCore::IR {
     LogMan::Msg::DFmt("AOTIR: Module {} has {} functions", Module, Array->Count);
 
     return true;
+#else
+    return false;
+#endif
   }
 
   void AOTIRCaptureCache::FinalizeAOTIRCache() {
@@ -412,6 +415,7 @@ namespace FEXCore::IR {
   }
 
   void AOTIRCaptureCache::UnloadAOTIRCacheEntry(AOTIRCacheEntry *Entry) {
+#ifndef _WIN32
     LOGMAN_THROW_AA_FMT(Entry != nullptr, "Removing not existing entry");
 
     if (Entry->Array) {
@@ -420,5 +424,6 @@ namespace FEXCore::IR {
       Entry->FilePtr = nullptr;
       Entry->Size = 0;
     }
+#endif
   }
 }
