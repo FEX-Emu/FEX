@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <cstdlib>
 #include <functional>
-#include <linux/limits.h>
 #include <optional>
 #include <stddef.h>
 #include <stdint.h>
@@ -347,7 +346,7 @@ namespace JSON {
 
       // Expand relative path to absolute
       char ExistsTempPath[PATH_MAX];
-      char *RealPath = realpath(PathName.c_str(), ExistsTempPath);
+      char *RealPath = FHU::Filesystem::Absolute(PathName.c_str(), ExistsTempPath);
       if (RealPath) {
         PathName = RealPath;
       }
