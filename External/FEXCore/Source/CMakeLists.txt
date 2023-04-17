@@ -4,12 +4,16 @@ set (FEXCORE_BASE_SRCS
   Common/Paths.cpp
   Interface/Config/Config.cpp
   Utils/Allocator.cpp
-  Utils/Allocator/64BitAllocator.cpp
   Utils/CPUInfo.cpp
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp
   )
+
+if (NOT MINGW_BUILD)
+  list(APPEND FEXCORE_BASE_SRCS
+    Utils/Allocator/64BitAllocator.cpp)
+endif()
 
 set (SRCS
   Common/JitSymbols.cpp
@@ -228,7 +232,12 @@ if (ENABLE_JIT_ARM64)
     )
 endif()
 
-set (LIBS fmt::fmt vixl dl xxhash tiny-json FEXHeaderUtils)
+set (LIBS fmt::fmt vixl xxhash tiny-json FEXHeaderUtils)
+
+if (NOT MINGW_BUILD)
+  list (APPEND LIBS dl)
+endif()
+
 if (ENABLE_JEMALLOC)
   list (APPEND LIBS FEX_jemalloc)
 endif()
@@ -394,6 +403,10 @@ function(AddLibrary Name Type)
   add_library(${Name} ${Type} $<TARGET_OBJECTS:${PROJECT_NAME}_object>)
   target_link_libraries(${Name} FEXCore_Base)
   set_target_properties(${Name} PROPERTIES OUTPUT_NAME FEXCore)
+  if (MINGW_BUILD)
+    # Mingw build isn't building a linux shared library, so it can't have a SONAME.
+    set_target_properties(${Name} PROPERTIES NO_SONAME ON)
+  endif()
 
   AddDefaultOptionsToTarget(${Name})
 endfunction()
