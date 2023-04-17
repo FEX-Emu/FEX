@@ -18,7 +18,9 @@ $end_info$
 #include "Thunks.h"
 
 #include <cstdint>
+#ifndef _WIN32
 #include <dlfcn.h>
+#endif
 
 #include <Interface/Context/Context.h>
 #include "FEXCore/Core/X86Enums.h"
@@ -39,12 +41,7 @@ FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern int glibc_je_is_known_allocation(
 }
 #endif
 
-struct LoadlibArgs {
-    const char *Name;
-};
-
-static thread_local FEXCore::Core::InternalThreadState *Thread;
-
+#ifndef _WIN32
 static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate"))) void HostToGuestTrampolineTemplate() {
 #if defined(_M_X86_64)
   asm(
@@ -72,8 +69,17 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
 
 extern char __start_HostToGuestTrampolineTemplate[];
 extern char __stop_HostToGuestTrampolineTemplate[];
+#endif
 
 namespace FEXCore {
+#ifndef _WIN32
+  struct LoadlibArgs {
+      const char *Name;
+  };
+
+  static thread_local FEXCore::Core::InternalThreadState *Thread;
+
+
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
     struct TrampolineInstanceInfo {
@@ -353,8 +359,8 @@ namespace FEXCore {
             }
         }
 
-        void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override {
-            ::Thread = Thread;
+        void RegisterTLSState(FEXCore::Core::InternalThreadState *_Thread) override {
+          Thread = _Thread;
         }
 
         void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override {
@@ -464,4 +470,11 @@ namespace FEXCore {
         Trampoline.HostPacker = HostPacker;
       }
     }
+
+#else
+    fextl::unique_ptr<ThunkHandler> ThunkHandler::Create() {
+      ERROR_AND_DIE_FMT("Unsupported");
+    }
+#endif
+
 }
