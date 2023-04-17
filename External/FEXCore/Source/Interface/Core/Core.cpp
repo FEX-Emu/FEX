@@ -294,14 +294,18 @@ namespace FEXCore::Context {
   }
 
   void ContextImpl::StartGdbServer() {
+#ifndef _WIN32
     if (!DebugServer) {
       DebugServer = fextl::make_unique<GdbServer>(this);
       StartPaused = true;
     }
+#endif
   }
 
   void ContextImpl::StopGdbServer() {
+#ifndef _WIN32
     DebugServer.reset();
+#endif
   }
 
   void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
