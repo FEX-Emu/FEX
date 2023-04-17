@@ -40,6 +40,7 @@ void Dispatcher::SleepThread(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::
   ctx->IdleWaitCV.notify_all();
 }
 
+#ifndef _WIN32
 uint64_t Dispatcher::ReconstructRIPFromContext(FEXCore::Core::CpuStateFrame *Frame, void *ucontext) const {
   const uint64_t HostPC = ArchHelpers::Context::GetPc(ucontext);
   const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
@@ -1224,6 +1225,7 @@ bool Dispatcher::HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, i
   }
   return false;
 }
+#endif
 
 uint64_t Dispatcher::GetCompileBlockPtr() {
   using ClassPtrType = void (FEXCore::Context::ContextImpl::*)(FEXCore::Core::CpuStateFrame *, uint64_t);
