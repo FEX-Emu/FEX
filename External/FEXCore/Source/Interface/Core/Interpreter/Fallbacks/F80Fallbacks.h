@@ -4,12 +4,9 @@
 
 #include <FEXCore/IR/IR.h>
 
+#include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
+
 namespace FEXCore::CPU {
-template<IR::IROps Op>
-struct OpHandlers {
-
-};
-
 template<>
 struct OpHandlers<IR::OP_F80CVTTO> {
   static X80SoftFloat handle4(float src) {
