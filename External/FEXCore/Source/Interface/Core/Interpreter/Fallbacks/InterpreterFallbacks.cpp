@@ -2,6 +2,7 @@
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/Fallbacks/F80Fallbacks.h"
+#include "Interface/Core/Interpreter/Fallbacks/VectorFallbacks.h"
 
 #include <cstddef>
 #include <cstdint>
