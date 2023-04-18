@@ -5978,6 +5978,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVXVectorVariableBlend<8>},
     {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVXVectorVariableBlend<1>},
 
+    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
+
     {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::VAESKeyGenAssistOp},
   };
 #undef OPD
@@ -7265,6 +7267,8 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(0, PF_3A_66,   0x40), 1, &OpDispatchBuilder::DPPOp<4>},
     {OPD(0, PF_3A_66,   0x41), 1, &OpDispatchBuilder::DPPOp<8>},
     {OPD(0, PF_3A_66,   0x42), 1, &OpDispatchBuilder::MPSADBWOp},
+
+    {OPD(0, PF_3A_66,   0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
 
     {OPD(0, PF_3A_NONE, 0xCC), 1, &OpDispatchBuilder::SHA1RNDS4Op},
   };

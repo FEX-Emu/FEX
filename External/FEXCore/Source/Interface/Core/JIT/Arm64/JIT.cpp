@@ -449,6 +449,46 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, ARMEmitter::Reg::r1);
       }
       break;
+      case FABI_I32_I64_I64_I128_I128_I16: {
+        SpillStaticRegs();
+        PushDynamicRegsAndLR(TMP1);
+
+        const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
+        const auto Is64Bit = Op->GPRSize == 8;
+
+        const auto Src1 = GetVReg(Op->LHS.ID());
+        const auto Src2 = GetVReg(Op->RHS.ID());
+        const auto SrcRAX = GetReg(Op->RAX.ID());
+        const auto SrcRDX = GetReg(Op->RDX.ID());
+
+        // We can be cheeky and encode the size at bit 8 to save a parameter
+        const auto Control = Op->Control | (uint16_t(Is64Bit) << 8);
+
+        mov(ARMEmitter::XReg::x0, SrcRAX.X());
+        mov(ARMEmitter::XReg::x1, SrcRDX.X());
+
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r2, Src1, 0);
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src1, 1);
+
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r4, Src2, 0);
+        umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r5, Src2, 1);
+
+        movz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r6, Control);
+
+        ldr(ARMEmitter::XReg::x7, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+#ifdef VIXL_SIMULATOR
+        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint16_t>(ARMEmitter::Reg::r7);
+#else
+        blr(ARMEmitter::Reg::r7);
+#endif
+
+        PopDynamicRegsAndLR();
+        FillStaticRegs();
+
+        const auto Dst = GetReg(Node);
+        mov(Dst.W(), ARMEmitter::WReg::w0);
+        break;
+      }
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED

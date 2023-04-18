@@ -87,6 +87,11 @@ FallbackInfo GetFallbackInfo(X80SoftFloat(*fn)(X80SoftFloat, X80SoftFloat), FEXC
   return {FABI_F80_F80_F80, (void*)fn, HandlerIndex};
 }
 
+template<>
+FallbackInfo GetFallbackInfo(uint32_t(*fn)(uint64_t, uint64_t, __uint128_t, __uint128_t, uint16_t), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_I32_I64_I64_I128_I128_I16, (void*)fn, HandlerIndex};
+}
+
 void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
   Info[Core::OPINDEX_F80LOADFCW] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80LOADFCW>::handle, Core::OPINDEX_F80LOADFCW).fn);
   Info[Core::OPINDEX_F80CVTTO_4] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle4, Core::OPINDEX_F80CVTTO_4).fn);
@@ -144,6 +149,8 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t *Info) {
   Info[Core::OPINDEX_F64FPREM1] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64FPREM1>::handle, Core::OPINDEX_F64FPREM1).fn);
   Info[Core::OPINDEX_F64SCALE] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_F64SCALE>::handle, Core::OPINDEX_F64SCALE).fn);
 
+  // SSE4.2 string instructions
+  Info[Core::OPINDEX_VPCMPESTRX] = reinterpret_cast<uint64_t>(GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_VPCMPESTRX>::handle, Core::OPINDEX_VPCMPESTRX).fn);
 }
 
 bool InterpreterOps::GetFallbackHandler(IR::IROp_Header const *IROp, FallbackInfo *Info) {
@@ -301,6 +308,11 @@ bool InterpreterOps::GetFallbackHandler(IR::IROp_Header const *IROp, FallbackInf
     COMMON_F64_OP(FPREM1)
     COMMON_F64_OP(FPREM)
     COMMON_F64_OP(SCALE)
+
+    // SSE4.2 Fallbacks
+    case IR::OP_VPCMPESTRX:
+      *Info = GetFallbackInfo(&FEXCore::CPU::OpHandlers<IR::OP_VPCMPESTRX>::handle, Core::OPINDEX_VPCMPESTRX);
+      return true;
 
     default:
       break;

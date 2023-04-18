@@ -125,6 +125,10 @@ namespace FEXCore::Core {
     OPINDEX_F64FPREM,
     OPINDEX_F64FPREM1,
     OPINDEX_F64SCALE,
+
+    // SSE4.2 string instructions
+    OPINDEX_VPCMPESTRX,
+
     // Maximum
     OPINDEX_MAX,
   };

@@ -4552,4 +4552,77 @@ void OpDispatchBuilder::VPERMILRegOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::PCMPESTRXOpImpl(OpcodeArgs,
+                                                const X86Tables::DecodedOperand& Src1Op,
+                                                const X86Tables::DecodedOperand& Src2Op,
+                                                const X86Tables::DecodedOperand& Imm) {
+  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
+  const auto Control = Imm.Data.Literal.Value;
+
+  // Will be 4 in the absence of a REX.W bit and 8 in the presence of a REX.W bit.
+  const auto SrcSize = GetSrcSize(Op);
+
+  // SSE4.2 string instructions modify flags, so invalidate
+  // any previously deferred flags.
+  InvalidateDeferredFlags();
+
+  // NOTE: Unlike most other SSE/AVX instructions, the SSE4.2 string and text
+  //       instructions do *not* require memory operands to be aligned on a 16 byte
+  //       boundary (see "Other Exceptions" descriptions for the relevant
+  //       instructions in the Intel Software Development Manual).
+  //
+  //       So, we specify Src2 as having an alignment of 1 to indicate this.
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, 16, Op->Flags, 1);
+
+  OrderedNode *SrcRAX = LoadGPRRegister(X86State::REG_RAX);
+  OrderedNode *SrcRDX = LoadGPRRegister(X86State::REG_RDX);
+
+  OrderedNode *IntermediateResult = _VPCMPESTRX(SrcSize, Src1, Src2, SrcRAX, SrcRDX, Control);
+  OrderedNode *ResultNoFlags = _And(IntermediateResult, _Constant(0xFFFF));
+
+  // For the indexed variant of the instructions, if control[6] is set, then we
+  // store the index of the most significant bit into ECX. If it's not set,
+  // then we store the least significant bit.
+  OrderedNode *ZeroConst = _Constant(0);
+
+  const auto ECXResult = [&]() -> OrderedNode* {
+    const auto UseMSBIndex = (Control & 0b0100'0000) != 0;
+
+    OrderedNode *IfZero = _Constant(16 >> (Control & 1));
+    OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(ResultNoFlags)
+                                         : _FindLSB(ResultNoFlags);
+
+    return _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
+                   IfZero, IfNotZero);
+  }();
+
+  // Set all of the necessary flags.
+  // We use the top 16-bits of the result to store the flags
+  // in the form:
+  //
+  // Bit:  19   18   17   16
+  //      [OF | CF | SF | ZF]
+  //
+  const auto GetFlagBit = [this, IntermediateResult](int BitIndex) {
+    return _Bfe(1, BitIndex, IntermediateResult);
+  };
+
+  SetRFLAG<X86State::RFLAG_ZF_LOC>(GetFlagBit(16));
+  SetRFLAG<X86State::RFLAG_SF_LOC>(GetFlagBit(17));
+  SetRFLAG<X86State::RFLAG_CF_LOC>(GetFlagBit(18));
+  SetRFLAG<X86State::RFLAG_OF_LOC>(GetFlagBit(19));
+
+  SetRFLAG<X86State::RFLAG_AF_LOC>(ZeroConst);
+  SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
+
+  // ... and we're done!
+  return ECXResult;
+}
+
+void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
+  OrderedNode *Result = PCMPESTRXOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  StoreGPRRegister(X86State::REG_RCX, Result, 4);
+}
+
 }

@@ -487,6 +487,8 @@ public:
 
   void VPALIGNROp(OpcodeArgs);
 
+  void VPCMPESTRIOp(OpcodeArgs);
+
   void VPERM2Op(OpcodeArgs);
   void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
@@ -852,6 +854,11 @@ private:
   OrderedNode* PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                              const X86Tables::DecodedOperand& Src2,
                              const X86Tables::DecodedOperand& Imm);
+
+  OrderedNode* PCMPESTRXOpImpl(OpcodeArgs,
+                               const X86Tables::DecodedOperand& Src1,
+                               const X86Tables::DecodedOperand& Src2,
+                               const X86Tables::DecodedOperand& Imm);
 
   OrderedNode* PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                             const X86Tables::DecodedOperand& Src2);
