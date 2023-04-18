@@ -1,7 +1,7 @@
 #include <FEXCore/Core/CoreState.h>
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
-#include "Interface/Core/Interpreter/F80Ops.h"
+#include "Interface/Core/Interpreter/Fallbacks/F80Fallbacks.h"
 
 #include <cstddef>
 #include <cstdint>

@@ -8,7 +8,7 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
 
-#include "F80Ops.h"
+#include "Interface/Core/Interpreter/Fallbacks/F80Fallbacks.h"
 
 #include <cstdint>
 
