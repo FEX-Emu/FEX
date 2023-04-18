@@ -2126,17 +2126,20 @@ void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<8, true, true>(OpcodeArgs);
 
+OrderedNode* OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
+                                                              const X86Tables::DecodedOperand& Src1Op,
+                                                              const X86Tables::DecodedOperand& Src2Op) {
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcElementSize, Op->Flags, -1);
+
+  OrderedNode *Converted = _Float_FToF(DstElementSize, SrcElementSize, Src2);
+
+  return _VInsElement(16, DstElementSize, 0, 0, Src1, Converted);
+}
+
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-
-  OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags, -1);
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-
-  Src = _Float_FToF(DstElementSize, SrcElementSize, Src);
-  Src = _VInsElement(16, DstElementSize, 0, 0, Dest, Src);
-
-  auto Result = _VInsElement(DstSize, DstElementSize, 0, 0, Dest, Src);
+  OrderedNode *Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0]);
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -2144,6 +2147,17 @@ template
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+
+template <size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float(OpcodeArgs) {
+  OrderedNode *Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
