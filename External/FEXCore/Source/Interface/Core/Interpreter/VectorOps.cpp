@@ -8,6 +8,8 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 #include "Interface/Core/Interpreter/InterpreterDefines.h"
 
+#include "Interface/Core/Interpreter/Fallbacks/VectorFallbacks.h"
+
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/BitUtils.h>
 
@@ -2274,6 +2276,24 @@ DEF_OP(VRev64) {
       break;
   }
   memcpy(GDP, Tmp, OpSize);
+}
+
+DEF_OP(VPCMPESTRX) {
+  const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
+  const auto Is64Bit = Op->GPRSize == 8;
+
+  const auto RAX = *GetSrc<uint64_t*>(Data->SSAData, Op->RAX);
+  const auto RDX = *GetSrc<uint64_t*>(Data->SSAData, Op->RDX);;
+  const auto LHS = *GetSrc<__uint128_t*>(Data->SSAData, Op->LHS);
+  const auto RHS = *GetSrc<__uint128_t*>(Data->SSAData, Op->RHS);
+
+  // We can be cheeky and encode the size at bit 8 to save a parameter
+  const auto Control = Op->Control | (uint16_t(Is64Bit) << 8);
+
+  const auto Result = OpHandlers<IR::OP_VPCMPESTRX>::handle(RAX, RDX, LHS, RHS, Control);
+
+  memset(GDP, 0, sizeof(uint64_t));
+  memcpy(GDP, &Result, sizeof(Result));
 }
 
 #undef DEF_OP

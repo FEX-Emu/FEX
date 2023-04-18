@@ -2,7 +2,6 @@
 #include "Interface/Core/CPUID.h"
 #include "InterpreterDefines.h"
 #include "InterpreterOps.h"
-#include "F80Ops.h"
 
 #ifdef _M_ARM_64
 #include "Interface/Core/ArchHelpers/Arm64.h"

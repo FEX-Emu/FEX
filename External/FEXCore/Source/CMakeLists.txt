@@ -107,7 +107,7 @@ set (SRCS
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Dispatcher/X86Dispatcher.cpp
   Interface/Core/Dispatcher/Arm64Dispatcher.cpp
-  Interface/Core/Interpreter/InterpreterFallbacks.cpp
+  Interface/Core/Interpreter/Fallbacks/InterpreterFallbacks.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
   Interface/Core/X86Tables/EVEXTables.cpp
