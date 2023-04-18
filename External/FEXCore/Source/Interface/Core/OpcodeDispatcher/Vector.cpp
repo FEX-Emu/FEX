@@ -2148,6 +2148,17 @@ void OpDispatchBuilder::Scalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::Scalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
+template <size_t DstElementSize, size_t SrcElementSize>
+void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float(OpcodeArgs) {
+  OrderedNode *Result = Scalar_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1]);
+  StoreResult(FPRClass, Op, Result, -1);
+}
+
+template
+void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
+template
+void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
