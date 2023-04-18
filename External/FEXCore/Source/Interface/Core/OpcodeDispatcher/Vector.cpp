@@ -2193,6 +2193,10 @@ template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8, false>(OpcodeArgs);
 template
 void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4, false>(OpcodeArgs);
+template
+void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8, true>(OpcodeArgs);
+template
+void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4, true>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
