@@ -2159,8 +2159,7 @@ void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template
 void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
-template<size_t DstElementSize, size_t SrcElementSize>
-void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
+void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX) {
   const auto IsFloatSrc = SrcElementSize == 4;
 
   const auto SrcSize = GetSrcSize(Op);
@@ -2172,19 +2171,28 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
   OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags, -1);
 
   OrderedNode *Result{};
-  if constexpr (DstElementSize > SrcElementSize) {
+  if (DstElementSize > SrcElementSize) {
     Result = _Vector_FToF(SrcSize, SrcElementSize << 1, Src, SrcElementSize);
   } else {
     Result = _Vector_FToF(SrcSize, SrcElementSize >> 1, Src, SrcElementSize);
   }
 
+  if (IsAVX && GetDstSize(Op) == 16) {
+    Result = _VMov(16, Result);
+  }
+
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
 }
 
+template<size_t DstElementSize, size_t SrcElementSize, bool IsAVX>
+void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
+  Vector_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, IsAVX);
+}
+
 template
-void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
+void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8, false>(OpcodeArgs);
 template
-void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
+void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4, false>(OpcodeArgs);
 
 template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {

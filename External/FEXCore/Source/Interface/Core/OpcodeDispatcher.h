@@ -355,7 +355,7 @@ public:
   void Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<size_t DstElementSize, size_t SrcElementSize, bool IsAVX>
   void Vector_CVT_Float_To_Float(OpcodeArgs);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
@@ -942,6 +942,8 @@ private:
   OrderedNode* Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize,
                                              const X86Tables::DecodedOperand& Src1Op,
                                              const X86Tables::DecodedOperand& Src2Op);
+
+  void Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
 
   OrderedNode* Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 
