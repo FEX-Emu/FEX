@@ -2161,18 +2161,24 @@ void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
-  const auto Size = GetDstSize(Op);
+  const auto IsFloatSrc = SrcElementSize == 4;
 
-  OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
+  const auto SrcSize = GetSrcSize(Op);
+  const auto StoreSize = IsFloatSrc ? SrcSize
+                                    : 16;
+  const auto LoadSize = IsFloatSrc ? SrcSize / 2
+                                   : SrcSize;
 
+  OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags, -1);
+
+  OrderedNode *Result{};
   if constexpr (DstElementSize > SrcElementSize) {
-    Src = _Vector_FToF(Size, SrcElementSize << 1, Src, SrcElementSize);
-  }
-  else {
-    Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
+    Result = _Vector_FToF(SrcSize, SrcElementSize << 1, Src, SrcElementSize);
+  } else {
+    Result = _Vector_FToF(SrcSize, SrcElementSize >> 1, Src, SrcElementSize);
   }
 
-  StoreResult(FPRClass, Op, Src, -1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, -1);
 }
 
 template
