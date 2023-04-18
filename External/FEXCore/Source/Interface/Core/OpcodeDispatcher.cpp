@@ -5724,6 +5724,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMUL, 4>},
     {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarALUOp<IR::OP_VFMUL, 8>},
 
+    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4, true>},
+    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8, true>},
     {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>},
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<4, 8>},
 
@@ -6211,7 +6213,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
-    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>},
+    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4, false>},
     {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
@@ -6500,7 +6502,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x57, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VXOR, 16>},
     {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
     {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
-    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
+    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8, false>},
     {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, true>},
     {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>},
     {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>},
