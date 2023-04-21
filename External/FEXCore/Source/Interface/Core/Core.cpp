@@ -212,21 +212,39 @@ namespace FEXCore::Context {
     return NewThreadState;
   }
 
+  uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) {
+    const auto Frame = Thread->CurrentFrame;
+    const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
+    const CPU::CPUBackend::JITCodeHeader *InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader *>(BlockBegin);
+
+    if (InlineHeader) {
+      const CPU::CPUBackend::JITCodeTail *InlineTail = reinterpret_cast<const CPU::CPUBackend::JITCodeTail *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+
+      // Check if the host PC is currently within a code block.
+      // If it is then RIP can be reconstructed from the beginning of the code block.
+      // This is currently as close as FEX can get RIP reconstructions.
+      if (HostPC >= reinterpret_cast<uint64_t>(BlockBegin) &&
+          HostPC < reinterpret_cast<uint64_t>(BlockBegin + InlineTail->Size)) {
+        return InlineTail->RIP;
+      }
+    }
+
+    // Fallback to what is stored in the RIP currently.
+    return Frame->State.rip;
+  }
+
   FEXCore::Core::InternalThreadState* ContextImpl::InitCore(uint64_t InitialRIP, uint64_t StackPointer) {
     // Initialize the CPU core signal handlers & DispatcherConfig
     switch (Config.Core) {
 #ifdef INTERPRETER_ENABLED
     case FEXCore::Config::CONFIG_INTERPRETER:
-      FEXCore::CPU::InitializeInterpreterSignalHandlers(this);
       BackendFeatures = FEXCore::CPU::GetInterpreterBackendFeatures();
       break;
 #endif
     case FEXCore::Config::CONFIG_IRJIT:
 #if (_M_X86_64 && JIT_X86_64)
-      FEXCore::CPU::InitializeX86JITSignalHandlers(this);
       BackendFeatures = FEXCore::CPU::GetX86JITBackendFeatures();
 #elif (_M_ARM_64 && JIT_ARM64) || defined(VIXL_SIMULATOR)
-      FEXCore::CPU::InitializeArm64JITSignalHandlers(this);
       BackendFeatures = FEXCore::CPU::GetArm64JITBackendFeatures();
 #else
       ERROR_AND_DIE_FMT("FEXCore has been compiled without a viable JIT core");
@@ -250,25 +268,37 @@ namespace FEXCore::Context {
     ERROR_AND_DIE_FMT("FEXCore has been compiled with an unknown target");
 #endif
 
-    // Initialize common signal handlers
-#ifndef _WIN32
-    auto PauseHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      return static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
+    // Set up the SignalDelegator config since core is initialized.
+    FEXCore::SignalDelegator::SignalDelegatorConfig SignalConfig {
+      .StaticRegisterAllocation = DispatcherConfig.StaticRegisterAllocation,
+      .SupportsAVX = HostFeatures.SupportsAVX,
+
+      .DispatcherBegin = Dispatcher->Start,
+      .DispatcherEnd = Dispatcher->End,
+
+      .AbsoluteLoopTopAddressFillSRA = Dispatcher->AbsoluteLoopTopAddressFillSRA,
+      .SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress,
+      .SignalHandlerReturnAddressRT = Dispatcher->SignalHandlerReturnAddressRT,
+
+      .PauseReturnInstruction = Dispatcher->PauseReturnInstruction,
+      .ThreadPauseHandlerAddressSpillSRA = Dispatcher->ThreadPauseHandlerAddressSpillSRA,
+      .ThreadPauseHandlerAddress = Dispatcher->ThreadPauseHandlerAddress,
+
+      // Stop handlers.
+      .ThreadStopHandlerAddressSpillSRA = Dispatcher->ThreadStopHandlerAddressSpillSRA,
+      .ThreadStopHandlerAddress = Dispatcher->ThreadStopHandlerAddress,
+
+      // SRA information.
+      .SRAGPRCount = Dispatcher->GetSRAGPRCount(),
+      .SRAFPRCount = Dispatcher->GetSRAFPRCount(),
     };
 
-    SignalDelegation->RegisterHostSignalHandler(SignalDelegator::SIGNAL_FOR_PAUSE, PauseHandler, true);
+    Dispatcher->GetSRAGPRMapping(SignalConfig.SRAGPRMapping);
+    Dispatcher->GetSRAFPRMapping(SignalConfig.SRAFPRMapping);
 
-    auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack) -> bool {
-      return static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->HandleGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
-    };
+    // Give this configuration to the SignalDelegator.
+    SignalDelegation->SetConfig(SignalConfig);
 
-    for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
-      SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
-    }
-#endif
-
-    // Initialize GDBServer after the signal handlers are installed
-    // It may install its own handlers that need to be executed AFTER the CPU cores
     if (Config.GdbServer) {
       StartGdbServer();
     }
@@ -313,29 +343,6 @@ namespace FEXCore::Context {
     static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
   }
 
-  void ContextImpl::HandleSignalHandlerReturn(bool RT) {
-    using SignalHandlerReturnFunc = void(*)();
-
-    SignalHandlerReturnFunc SignalHandlerReturn{};
-    if (RT) {
-      SignalHandlerReturn = reinterpret_cast<SignalHandlerReturnFunc>(Dispatcher->SignalHandlerReturnAddressRT);
-    }
-    else {
-      SignalHandlerReturn = reinterpret_cast<SignalHandlerReturnFunc>(Dispatcher->SignalHandlerReturnAddress);
-    }
-
-    SignalHandlerReturn();
-    FEX_UNREACHABLE;
-  }
-
-  void ContextImpl::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-      SignalDelegation->RegisterHostSignalHandler(Signal, Func, Required);
-  }
-
-  void ContextImpl::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-    SignalDelegation->RegisterFrontendHostSignalHandler(Signal, Func, Required);
-  }
-
   void ContextImpl::WaitForIdle() {
     std::unique_lock<std::mutex> lk(IdleWaitMutex);
     IdleWaitCV.wait(lk, [this] {
@@ -368,11 +375,7 @@ namespace FEXCore::Context {
     // Tell all the threads that they should pause
     std::lock_guard<std::mutex> lk(ThreadCreationMutex);
     for (auto &Thread : Threads) {
-      Thread->SignalReason.store(FEXCore::Core::SignalEvent::Pause);
-      if (Thread->RunningEvents.Running.load()) {
-        // Only attempt to stop this thread if it is running
-        FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
-      }
+      SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Pause);
     }
   }
 
@@ -473,15 +476,13 @@ namespace FEXCore::Context {
 
   void ContextImpl::StopThread(FEXCore::Core::InternalThreadState *Thread) {
     if (Thread->RunningEvents.Running.exchange(false)) {
-      Thread->SignalReason.store(FEXCore::Core::SignalEvent::Stop);
-      FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      SignalDelegation->SignalThread(Thread, FEXCore::Core::SignalEvent::Stop);
     }
   }
 
   void ContextImpl::SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) {
     if (Thread->RunningEvents.Running.load()) {
-      Thread->SignalReason.store(Event);
-      FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+      SignalDelegation->SignalThread(Thread, Event);
     }
   }
 

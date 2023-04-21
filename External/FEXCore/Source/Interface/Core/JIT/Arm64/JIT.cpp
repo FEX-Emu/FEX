@@ -14,8 +14,6 @@ $end_info$
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
-#include "Interface/Core/ArchHelpers/Arm64.h"
-#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "Interface/Core/InternalThreadState.h"
@@ -608,23 +606,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
   ClearCache();
 }
 
-void Arm64JITCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
-  CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return reinterpret_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
-  }, true);
-
-#ifdef _M_ARM_64
-  CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    if (!Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
-      // Wasn't a sigbus in JIT code
-      return false;
-    }
-
-    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(static_cast<Context::ContextImpl*>(Thread->CTX)->Config.ParanoidTSO(), Signal, info, ucontext);
-  }, true);
-#endif
-}
-
 void Arm64JITCore::EmitDetectionString() {
   const char JITString[] = "FEXJIT::Arm64JITCore::";
   EmitString(JITString);
@@ -1129,10 +1110,6 @@ void Arm64JITCore::ResetStack() {
 
 fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return fextl::make_unique<Arm64JITCore>(ctx, Thread);
-}
-
-void InitializeArm64JITSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
-  Arm64JITCore::InitializeSignalHandlers(CTX);
 }
 
 CPUBackendFeatures GetArm64JITBackendFeatures() {

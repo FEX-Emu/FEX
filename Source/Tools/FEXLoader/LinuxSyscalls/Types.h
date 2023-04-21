@@ -2,6 +2,8 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <algorithm>
+#include <signal.h>
 #include <sys/epoll.h>
 #include <type_traits>
 
@@ -85,6 +87,21 @@ struct fex_seminfo {
 	int32_t semusz;
 	int32_t semvmx;
 	int32_t semaem;
+};
+
+struct FEX_PACKED GuestSAMask {
+  uint64_t Val;
+};
+
+struct FEX_PACKED GuestSigAction {
+  union {
+    void (*handler)(int);
+    void (*sigaction)(int, siginfo_t *, void*);
+  } sigaction_handler;
+
+  uint64_t sa_flags;
+  void (*restorer)(void);
+  GuestSAMask sa_mask;
 };
 
 }

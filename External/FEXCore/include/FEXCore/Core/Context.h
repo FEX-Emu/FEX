@@ -246,9 +246,7 @@ namespace FEXCore::Context {
 
       FEX_DEFAULT_VISIBILITY virtual void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) = 0;
-      [[noreturn]] FEX_DEFAULT_VISIBILITY virtual void HandleSignalHandlerReturn(bool RT) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) = 0;
+      FEX_DEFAULT_VISIBILITY virtual uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) = 0;
       FEX_DEFAULT_VISIBILITY virtual void ExecutionThread(FEXCore::Core::InternalThreadState *Thread) = 0;
@@ -259,6 +257,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void CleanupAfterFork(FEXCore::Core::InternalThreadState *Thread) = 0;
       FEX_DEFAULT_VISIBILITY virtual void SetSignalDelegator(FEXCore::SignalDelegator *SignalDelegation) = 0;
       FEX_DEFAULT_VISIBILITY virtual void SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) = 0;
+
       FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) = 0;
       FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) = 0;
 
@@ -286,7 +285,9 @@ namespace FEXCore::Context {
        */
       FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void SetVDSOSigReturn(const VDSOSigReturn &Pointers) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void GetVDSOSigReturn(VDSOSigReturn *VDSOPointers) = 0;
+
+      FEX_DEFAULT_VISIBILITY virtual void IncrementIdleRefCount() = 0;
     private:
   };
 

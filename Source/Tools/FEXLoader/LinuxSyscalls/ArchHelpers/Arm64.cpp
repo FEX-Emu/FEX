@@ -1,6 +1,5 @@
-#include "Interface/Core/ArchHelpers/Arm64.h"
-#include "Interface/Core/ArchHelpers/MContext.h"
-#include "Interface/Core/ArchHelpers/CodeEmitter/Buffer.h"
+#include "LinuxSyscalls/ArchHelpers/Arm64.h"
+#include "LinuxSyscalls/ArchHelpers/MContext.h"
 
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -10,13 +9,17 @@
 #include <csignal>
 #include <cstdint>
 
-namespace FEXCore::ArchHelpers::Arm64 {
+namespace FEX::ArchHelpers::Arm64 {
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock16B, TYPE_16BYTE_SPLIT);
 FEXCORE_TELEMETRY_STATIC_INIT(Cas16Tear,  TYPE_CAS_16BIT_TEAR);
 FEXCORE_TELEMETRY_STATIC_INIT(Cas32Tear,  TYPE_CAS_32BIT_TEAR);
 FEXCORE_TELEMETRY_STATIC_INIT(Cas64Tear,  TYPE_CAS_64BIT_TEAR);
 FEXCORE_TELEMETRY_STATIC_INIT(Cas128Tear, TYPE_CAS_128BIT_TEAR);
+
+static void ClearICache(void* Begin, std::size_t Length) {
+  __builtin___clear_cache(static_cast<char*>(Begin), static_cast<char*>(Begin) + Length);
+}
 
 static __uint128_t LoadAcquire128(uint64_t Addr) {
   __uint128_t Result{};
@@ -491,7 +494,7 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
     }
     else {
       uint32_t NextInstr = PC[1];
-      if ((NextInstr & FEXCore::ArchHelpers::Arm64::CLREX_MASK) == FEXCore::ArchHelpers::Arm64::CLREX_INST) {
+      if ((NextInstr & ArchHelpers::Arm64::CLREX_MASK) == ArchHelpers::Arm64::CLREX_INST) {
         uint64_t Addr = mcontext->regs[AddrReg];
 
         auto Res = DoLoad128(Addr);
@@ -513,12 +516,12 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   //Only 32-bit pairs
   for(int i = 1; i < 10; i++) {
     uint32_t NextInstr = PC[i];
-    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST ||
-        (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_SHIFT_INST) {
+    if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
+        (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
        ExpectedReg1 = GetRmReg(NextInstr);
-    } else if ((NextInstr & FEXCore::ArchHelpers::Arm64::CCMP_MASK) == FEXCore::ArchHelpers::Arm64::CCMP_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::CCMP_MASK) == ArchHelpers::Arm64::CCMP_INST) {
        ExpectedReg2 = GetRmReg(NextInstr);
-    } else if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXP_MASK) == FEXCore::ArchHelpers::Arm64::STLXP_INST) {
+    } else if ((NextInstr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) {
        DesiredReg1 = (NextInstr & 0x1F);
        DesiredReg2 = (NextInstr >> 10) & 0x1F;
     }
@@ -571,7 +574,7 @@ bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr) {
       PC[1] = STP;
       PC[2] = DMB;
       // Back up one instruction and have another go
-      FEXCore::ARMEmitter::Buffer::ClearICache(&PC[0], 16);
+      ClearICache(&PC[0], 16);
       return true;
     }
   }
@@ -1738,7 +1741,7 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
   uint32_t ExpectedReg = 0;
   for (size_t i = 1; i < 6; ++i) {
      uint32_t NextInstr = PC[i];
-     if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
+     if ((NextInstr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) {
        #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
        // Just double check that the memory destination matches
        const uint32_t StoreAddressReg = GetRnReg(NextInstr);
@@ -1746,8 +1749,8 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
        #endif
        DesiredReg = GetRdReg(NextInstr);
      }
-     else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST ||
-              (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_SHIFT_INST) {
+     else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
+              (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
        ExpectedReg = GetRmReg(NextInstr);
      }
   }
@@ -1830,13 +1833,13 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   // Scan forward at most five instructions to find our instructions
   for (size_t i = 1; i < 6; ++i) {
     uint32_t NextInstr = PC[i];
-    if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ADD_INST ||
-        (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ADD_SHIFT_INST) {
+    if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::ADD_INST ||
+        (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::ADD_SHIFT_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_ADD;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::SUB_INST ||
-             (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::SUB_SHIFT_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::SUB_INST ||
+             (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::SUB_SHIFT_INST) {
       uint32_t RnReg = GetRnReg(NextInstr);
       if (RnReg == REGISTER_MASK) {
         // Zero reg means neg
@@ -1847,35 +1850,35 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
       }
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_INST ||
-             (NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::CMP_SHIFT_INST ) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
+             (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST ) {
       return HandleCAS_NoAtomics(_ucontext, _info); //ARMv8.0 CAS
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::AND_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::AND_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_AND;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::BIC_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::BIC_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_BIC;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::OR_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::OR_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_OR;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::ORN_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::ORN_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_ORN;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::EOR_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::EOR_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_EOR;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::ALU_OP_MASK) == FEXCore::ArchHelpers::Arm64::EON_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::EON_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_EON;
       DataSourceReg = GetRmReg(NextInstr);
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::STLXR_MASK) == FEXCore::ArchHelpers::Arm64::STLXR_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       // Just double check that the memory destination matches
       const uint32_t StoreAddressReg = GetRnReg(NextInstr);
@@ -1891,7 +1894,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         DataSourceReg = StoreResultReg;
       }
     }
-    else if ((NextInstr & FEXCore::ArchHelpers::Arm64::CBNZ_MASK) == FEXCore::ArchHelpers::Arm64::CBNZ_INST) {
+    else if ((NextInstr & ArchHelpers::Arm64::CBNZ_MASK) == ArchHelpers::Arm64::CBNZ_INST) {
       // Found the CBNZ, we want to skip to just after this instruction when done
       NumInstructionsToSkip = i + 1;
       // This is the last instruction we care about. Leave now
@@ -1987,7 +1990,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         break;
       default:
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
-                          ToUnderlying(AtomicOp));
+                          FEXCore::ToUnderlying(AtomicOp));
         return false;
     }
 
@@ -2041,7 +2044,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         break;
       default:
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
-                          ToUnderlying(AtomicOp));
+                          FEXCore::ToUnderlying(AtomicOp));
         return false;
     }
 
@@ -2095,7 +2098,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
         break;
       default:
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}",
-                          ToUnderlying(AtomicOp));
+                          FEXCore::ToUnderlying(AtomicOp));
         return false;
     }
 
@@ -2136,7 +2139,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
     if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
         (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
       if (ParanoidTSO) {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, 0)) {
+        if (ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, 0)) {
           // Skip this instruction now
           ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
           return true;
@@ -2160,7 +2163,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
     }
     else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
       if (ParanoidTSO) {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, 0)) {
+        if (ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, 0)) {
           // Skip this instruction now
           ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
           return true;
@@ -2186,7 +2189,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
       if (ParanoidTSO) {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, Offset)) {
+        if (ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, Offset)) {
           // Skip this instruction now
           ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
           return true;
@@ -2213,7 +2216,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
       if (ParanoidTSO) {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, Offset)) {
+        if (ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, Offset)) {
           // Skip this instruction now
           ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
           return true;
@@ -2236,16 +2239,16 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
       }
     }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXP_MASK) == FEXCore::ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
+    else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
       //Should be compare and swap pair only. LDAXP not used elsewhere
-      uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleCASPAL_ARMv8(ucontext, info, Instr);
+      uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(ucontext, info, Instr);
       if (BytesToSkip) {
         // Skip this instruction now
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
         return true;
       }
       else {
-        if (FEXCore::ArchHelpers::Arm64::HandleAtomicVectorStore(ucontext, info, Instr)) {
+        if (ArchHelpers::Arm64::HandleAtomicVectorStore(ucontext, info, Instr)) {
           return true;
         }
         else {
@@ -2254,13 +2257,13 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         }
       }
     }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::STLXP_MASK) == FEXCore::ArchHelpers::Arm64::STLXP_INST) { // STLXP
+    else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
       //Should not trigger - middle of an LDAXP/STAXP pair.
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
       return false;
     }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::CASPAL_MASK) == FEXCore::ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
-      if (FEXCore::ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
+    else if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+      if (ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
         // Skip this instruction now
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
         return true;
@@ -2270,8 +2273,8 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         return false;
       }
     }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::CASAL_MASK) == FEXCore::ArchHelpers::Arm64::CASAL_INST) { // CASAL
-      if (FEXCore::ArchHelpers::Arm64::HandleCASAL(ucontext, info, Instr)) {
+    else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
+      if (ArchHelpers::Arm64::HandleCASAL(ucontext, info, Instr)) {
         // Skip this instruction now
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
         return true;
@@ -2281,8 +2284,8 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         return false;
       }
     }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_MASK) == FEXCore::ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
-      if (FEXCore::ArchHelpers::Arm64::HandleAtomicMemOp(ucontext, info, Instr)) {
+    else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+      if (ArchHelpers::Arm64::HandleAtomicMemOp(ucontext, info, Instr)) {
         // Skip this instruction now
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
         return true;
@@ -2293,8 +2296,8 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         return false;
       }
     }
-    else if ((Instr & FEXCore::ArchHelpers::Arm64::LDAXR_MASK) == FEXCore::ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
-      uint64_t BytesToSkip = FEXCore::ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ucontext, info);
+    else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+      uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ucontext, info);
       if (BytesToSkip) {
         // Skip this instruction now
         ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
@@ -2310,7 +2313,7 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
       return false;
     }
 
-    FEXCore::ARMEmitter::Buffer::ClearICache(&PC[-1], 16);
+    ClearICache(&PC[-1], 16);
     return true;
   }
   return false;

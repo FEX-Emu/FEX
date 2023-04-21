@@ -2,6 +2,7 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
+#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Event.h>
@@ -63,14 +64,6 @@ namespace FEXCore::Core {
     fextl::vector<DebugDataSubblock> Subblocks;
     fextl::vector<DebugDataGuestOpcode> GuestOpcodes;
     fextl::vector<FEXCore::CPU::Relocation> *Relocations;
-  };
-
-  enum class SignalEvent {
-    Nothing, // If the guest uses our signal we need to know it was errant on our end
-    Pause,
-    Stop,
-    Return,
-    ReturnRT,
   };
 
   struct LocalIREntry {

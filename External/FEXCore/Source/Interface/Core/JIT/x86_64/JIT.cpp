@@ -19,7 +19,6 @@ $end_info$
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
@@ -433,14 +432,6 @@ X86JITCore::X86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::Intern
   ClearCache();
 }
 
-void X86JITCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
-#ifndef _WIN32
-  CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return static_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
-  }, true);
-#endif
-}
-
 X86JITCore::~X86JITCore() {
 
 }
@@ -830,10 +821,6 @@ fextl::unique_ptr<CPUBackend> CreateX86JITCore(FEXCore::Context::ContextImpl *ct
 
 CPUBackendFeatures GetX86JITBackendFeatures() {
   return CPUBackendFeatures { };
-}
-
-void InitializeX86JITSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
-  X86JITCore::InitializeSignalHandlers(CTX);
 }
 
 }

@@ -110,23 +110,23 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(signal, [](FEXCore::Core::CpuStateFrame *Frame, int signum, uint32_t handler) -> uint64_t {
-      FEXCore::GuestSigAction newact{};
-      FEXCore::GuestSigAction oldact{};
+      GuestSigAction newact{};
+      GuestSigAction oldact{};
       newact.sigaction_handler.handler = reinterpret_cast<decltype(newact.sigaction_handler.handler)>(handler);
       FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, &newact, &oldact);
       return static_cast<uint32_t>(reinterpret_cast<uint64_t>(oldact.sigaction_handler.handler));
     });
 
     REGISTER_SYSCALL_IMPL_X32(sigaction, [](FEXCore::Core::CpuStateFrame *Frame, int signum, const OldGuestSigAction_32 *act, OldGuestSigAction_32 *oldact) -> uint64_t {
-      FEXCore::GuestSigAction *act64_p{};
-      FEXCore::GuestSigAction *old64_p{};
+      GuestSigAction *act64_p{};
+      GuestSigAction *old64_p{};
 
-      FEXCore::GuestSigAction act64{};
+      GuestSigAction act64{};
       if (act) {
         act64 = *act;
         act64_p = &act64;
       }
-      FEXCore::GuestSigAction old64{};
+      GuestSigAction old64{};
 
       if (oldact) {
         old64_p = &old64;
@@ -145,15 +145,15 @@ namespace FEX::HLE::x32 {
         return -EINVAL;
       }
 
-      FEXCore::GuestSigAction *act64_p{};
-      FEXCore::GuestSigAction *old64_p{};
+      GuestSigAction *act64_p{};
+      GuestSigAction *old64_p{};
 
-      FEXCore::GuestSigAction act64{};
+      GuestSigAction act64{};
       if (act) {
         act64 = *act;
         act64_p = &act64;
       }
-      FEXCore::GuestSigAction old64{};
+      GuestSigAction old64{};
 
       if (oldact) {
         old64_p = &old64;

@@ -31,11 +31,6 @@ namespace FEXCore {
     FrontendRegisterHostSignalHandler(Signal, Func, Required);
   }
 
-  void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-    SetFrontendHostSignalHandler(Signal, Func, Required);
-    FrontendRegisterFrontendHostSignalHandler(Signal, Func, Required);
-  }
-
   void SignalDelegator::HandleSignal(int Signal, void *Info, void *UContext) {
     // Let the host take first stab at handling the signal
     auto Thread = GetTLSThread();

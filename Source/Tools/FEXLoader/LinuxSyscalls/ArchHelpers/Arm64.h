@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace FEXCore::ArchHelpers::Arm64 {
+namespace FEX::ArchHelpers::Arm64 {
   constexpr uint32_t CASPAL_MASK = 0xBF'E0'FC'00;
   constexpr uint32_t CASPAL_INST = 0x08'60'FC'00;
 

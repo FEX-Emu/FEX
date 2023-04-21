@@ -7,7 +7,6 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/IR/IntrusiveIRList.h>

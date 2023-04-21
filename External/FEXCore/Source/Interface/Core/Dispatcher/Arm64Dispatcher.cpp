@@ -1,7 +1,6 @@
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/LookupCache.h"
 
-#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Arm64Dispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 
@@ -632,30 +631,6 @@ size_t Arm64Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
   auto UsedBytes = emit.GetCursorOffset();
   emit.ClearICache(CodeBuffer, UsedBytes);
   return UsedBytes;
-}
-
-void Arm64Dispatcher::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
-#ifndef _WIN32
-  for (size_t i = 0; i < SRA64.size(); i++) {
-    if (IgnoreMask & (1U << SRA64[i].Idx())) {
-      // Skip this one, it's already spilled
-      continue;
-    }
-    Thread->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRA64[i].Idx());
-  }
-
-  if (EmitterCTX->HostFeatures.SupportsAVX) {
-    for (size_t i = 0; i < SRAFPR.size(); i++) {
-      auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].Idx());
-      memcpy(&Thread->CurrentFrame->State.xmm.avx.data[i][0], &FPR, sizeof(__uint128_t));
-    }
-  } else {
-    for (size_t i = 0; i < SRAFPR.size(); i++) {
-      auto FPR = ArchHelpers::Context::GetArmFPR(ucontext, SRAFPR[i].Idx());
-      memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
-    }
-  }
-#endif
 }
 
 void Arm64Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {

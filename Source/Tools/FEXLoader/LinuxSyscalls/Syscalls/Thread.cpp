@@ -5,6 +5,7 @@ $end_info$
 */
 
 #include "FEXCore/IR/IR.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/Syscalls/Thread.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
@@ -264,7 +265,7 @@ namespace FEX::HLE {
     using namespace FEXCore::IR;
 
     REGISTER_SYSCALL_IMPL(rt_sigreturn, [](FEXCore::Core::CpuStateFrame *Frame) -> uint64_t {
-      Frame->Thread->CTX->HandleSignalHandlerReturn(true);
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->HandleSignalHandlerReturn(true);
       FEX_UNREACHABLE;
     });
 

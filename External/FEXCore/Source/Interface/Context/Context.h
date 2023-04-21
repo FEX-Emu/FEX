@@ -106,9 +106,7 @@ namespace FEXCore::Context {
 
       void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) override;
 
-      void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) override;
-      [[noreturn]] void HandleSignalHandlerReturn(bool RT) override ;
-      void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) override;
+      uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) override;
 
       /**
        * @brief Used to create FEX thread objects in preparation for creating a true OS thread. Does set a TID or PID.
@@ -159,6 +157,7 @@ namespace FEXCore::Context {
       void CleanupAfterFork(FEXCore::Core::InternalThreadState *Thread) override;
       void SetSignalDelegator(FEXCore::SignalDelegator *SignalDelegation) override;
       void SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) override;
+
       FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) override;
       FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) override;
 
@@ -271,7 +270,6 @@ namespace FEXCore::Context {
 
     SignalDelegator *SignalDelegation{};
     X86GeneratedCode X86CodeGen;
-    VDSOSigReturn VDSOPointers{};
 
     ContextImpl();
     ~ContextImpl();
@@ -357,15 +355,18 @@ namespace FEXCore::Context {
 
     FEXCore::JITSymbols Symbols;
 
-    void SetVDSOSigReturn(const VDSOSigReturn &Pointers) override {
-      VDSOPointers = Pointers;
-      if (VDSOPointers.VDSO_kernel_sigreturn == nullptr) {
-        VDSOPointers.VDSO_kernel_sigreturn = reinterpret_cast<void*>(X86CodeGen.sigreturn_32);
+    void GetVDSOSigReturn(VDSOSigReturn *VDSOPointers) override {
+      if (VDSOPointers->VDSO_kernel_sigreturn == nullptr) {
+        VDSOPointers->VDSO_kernel_sigreturn = reinterpret_cast<void*>(X86CodeGen.sigreturn_32);
       }
 
-      if (VDSOPointers.VDSO_kernel_rt_sigreturn == nullptr) {
-        VDSOPointers.VDSO_kernel_rt_sigreturn = reinterpret_cast<void*>(X86CodeGen.rt_sigreturn_32);
+      if (VDSOPointers->VDSO_kernel_rt_sigreturn == nullptr) {
+        VDSOPointers->VDSO_kernel_rt_sigreturn = reinterpret_cast<void*>(X86CodeGen.rt_sigreturn_32);
       }
+    }
+
+    void IncrementIdleRefCount() override {
+      ++IdleWaitRefCount;
     }
 
     FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;

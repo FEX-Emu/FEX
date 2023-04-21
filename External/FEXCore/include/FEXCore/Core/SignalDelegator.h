@@ -13,24 +13,16 @@
 namespace FEXCore {
 namespace Core {
   struct InternalThreadState;
+
+  enum class SignalEvent {
+    Nothing, // If the guest uses our signal we need to know it was errant on our end
+    Pause,
+    Stop,
+    Return,
+    ReturnRT,
+  };
 }
-  struct FEX_PACKED GuestSAMask {
-    uint64_t Val;
-  };
-
-  struct FEX_PACKED GuestSigAction {
-    union {
-      void (*handler)(int);
-      void (*sigaction)(int, siginfo_t *, void*);
-    } sigaction_handler;
-
-    uint64_t sa_flags;
-    void (*restorer)(void);
-    GuestSAMask sa_mask;
-  };
-
   using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
-  using HostSignalDelegatorFunctionForGuest = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack)>;
 
   class SignalDelegator {
   public:
@@ -50,14 +42,6 @@ namespace Core {
      * It's a process level signal handler so one must be careful
      */
     void RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
-    void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
-
-    /**
-     * @brief Registers a signal handler for the host to handle a signal specifically for guest handling
-     *
-     * It's a process level signal handler so one must be careful
-     */
-    virtual void RegisterHostSignalHandlerForGuest(int Signal, HostSignalDelegatorFunctionForGuest Func) = 0;
 
     // Called from the thunk handler to handle the signal
     void HandleSignal(int Signal, void *Info, void *UContext);
@@ -76,7 +60,54 @@ namespace Core {
     // 64 is used internally by Valgrind
     constexpr static size_t SIGNAL_FOR_PAUSE {63};
 
+    struct SignalDelegatorConfig {
+      bool StaticRegisterAllocation{};
+      bool SupportsAVX{};
+
+      // Dispatcher information
+      uint64_t DispatcherBegin;
+      uint64_t DispatcherEnd;
+
+      // Dispatcher entrypoint.
+      uint64_t AbsoluteLoopTopAddressFillSRA{};
+
+      // Signal return pointers.
+      uint64_t SignalHandlerReturnAddress{};
+      uint64_t SignalHandlerReturnAddressRT{};
+
+      // Pause handlers.
+      uint64_t PauseReturnInstruction{};
+      uint64_t ThreadPauseHandlerAddressSpillSRA{};
+      uint64_t ThreadPauseHandlerAddress{};
+
+      // Stop handlers.
+      uint64_t ThreadStopHandlerAddressSpillSRA;
+      uint64_t ThreadStopHandlerAddress{};
+
+      // SRA information.
+      uint16_t SRAGPRCount;
+      uint16_t SRAFPRCount;
+
+      // SRA index mapping.
+      uint8_t SRAGPRMapping[16];
+      uint8_t SRAFPRMapping[16];
+    };
+
+    void SetConfig(const SignalDelegatorConfig& _Config) {
+      Config = _Config;
+    }
+
+    /**
+     * @brief Signals a thread with a specific core event.
+     *
+     * @param Thread Which thread to signal.
+     * @param Event Which event to signal the event with.
+     */
+    virtual void SignalThread(FEXCore::Core::InternalThreadState *Thread, Core::SignalEvent Event) = 0;
+
   protected:
+    SignalDelegatorConfig Config;
+
     FEXCore::Core::InternalThreadState *GetTLSThread();
     virtual void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) = 0;
 

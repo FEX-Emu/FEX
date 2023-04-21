@@ -3,10 +3,6 @@
 #include "InterpreterDefines.h"
 #include "InterpreterOps.h"
 
-#ifdef _M_ARM_64
-#include "Interface/Core/ArchHelpers/Arm64.h"
-#endif
-
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>

@@ -158,7 +158,6 @@ int main(int argc, char **argv, char **const envp) {
     }
   }
 
-  auto SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
   bool DidFault = false;
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
@@ -168,6 +167,8 @@ int main(int argc, char **argv, char **const envp) {
   auto CTX = FEXCore::Context::Context::CreateNewContext();
 
   CTX->InitializeContext();
+
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
 
   // Skip any tests that the host doesn't support features for
   auto HostFeatures = CTX->GetHostFeatures();

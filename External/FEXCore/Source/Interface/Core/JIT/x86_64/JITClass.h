@@ -14,6 +14,7 @@ $end_info$
 
 using namespace Xbyak;
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
@@ -68,8 +69,6 @@ public:
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void ClearCache() override;
-
-  static void InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX);
 
   void ClearRelocations() override { Relocations.clear(); }
 

@@ -6,7 +6,6 @@ $end_info$
 
 #pragma once
 
-#include <FEXCore/IR/RegisterAllocationData.h>
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -14,9 +13,11 @@ $end_info$
 #include <aarch64/assembler-aarch64.h>
 #include <aarch64/disasm-aarch64.h>
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
+#include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -48,8 +49,6 @@ public:
   [[nodiscard]] bool NeedsOpDispatch() override { return true; }
 
   void ClearCache() override;
-
-  static void InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX);
 
   void ClearRelocations() override { Relocations.clear(); }
 
