@@ -15,7 +15,7 @@ namespace fextl {
       }
 
       void do_deallocate( void* p, std::size_t bytes, std::size_t alignment ) override {
-        return FEXCore::Allocator::free(p);
+        return FEXCore::Allocator::aligned_free(p);
       }
 
       bool do_is_equal( const std::pmr::memory_resource& other ) const noexcept override {

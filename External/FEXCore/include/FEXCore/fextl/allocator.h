@@ -21,7 +21,7 @@ namespace fextl {
       }
 
       inline void deallocate(value_type* p, size_t) noexcept {
-        ::FEXCore::Allocator::free(p);
+        ::FEXCore::Allocator::aligned_free(p);
       }
 
       inline bool operator==(const FEXAlloc&) const { return true; }
