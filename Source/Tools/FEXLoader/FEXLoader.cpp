@@ -8,6 +8,7 @@ $end_info$
 #include "AOT/AOTGenerator.h"
 #include "Common/ArgumentLoader.h"
 #include "Common/FEXServerClient.h"
+#include "Common/Config.h"
 #include "ELFCodeLoader.h"
 #include "VDSO_Emulation.h"
 #include "LinuxSyscalls/LinuxAllocator.h"

@@ -1,6 +1,5 @@
 #include "Common/StringConv.h"
 #include "Common/StringUtils.h"
-#include "Common/Paths.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
@@ -109,71 +108,41 @@ namespace JSON {
   }
 }
 
-  fextl::string GetDataDirectory() {
-    fextl::string DataDir{};
+  enum Paths {
+    PATH_DATA_DIR = 0,
+    PATH_CONFIG_DIR_LOCAL,
+    PATH_CONFIG_DIR_GLOBAL,
+    PATH_CONFIG_FILE_LOCAL,
+    PATH_CONFIG_FILE_GLOBAL,
+    PATH_LAST,
+  };
+  static std::array<fextl::string, Paths::PATH_LAST> Paths;
 
-    char const *HomeDir = Paths::GetHomeDirectory();
-    char const *DataXDG = getenv("XDG_DATA_HOME");
-    char const *DataOverride = getenv("FEX_APP_DATA_LOCATION");
-    if (DataOverride) {
-      // Data override will override the complete directory
-      DataDir = DataOverride;
-    }
-    else {
-      DataDir = DataXDG ?: HomeDir;
-      DataDir += "/.fex-emu/";
-    }
-    return DataDir;
+  void SetDataDirectory(const std::string_view Path) {
+    Paths[PATH_DATA_DIR] = Path;
   }
 
-  fextl::string GetConfigDirectory(bool Global) {
-    fextl::string ConfigDir;
-    if (Global) {
-      ConfigDir = GLOBAL_DATA_DIRECTORY;
-    }
-    else {
-      char const *HomeDir = Paths::GetHomeDirectory();
-      char const *ConfigXDG = getenv("XDG_CONFIG_HOME");
-      char const *ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
-      if (ConfigOverride) {
-        // Config override completely overrides the config directory
-        ConfigDir = ConfigOverride;
-      }
-      else {
-        ConfigDir = ConfigXDG ? ConfigXDG : HomeDir;
-        ConfigDir += "/.fex-emu/";
-      }
-
-      // Ensure the folder structure is created for our configuration
-      if (!FHU::Filesystem::Exists(ConfigDir) &&
-          !FHU::Filesystem::CreateDirectories(ConfigDir)) {
-        // Let's go local in this case
-        return "./";
-      }
-    }
-
-    return ConfigDir;
+  void SetConfigDirectory(const std::string_view Path, bool Global) {
+    Paths[PATH_CONFIG_DIR_LOCAL + Global] = Path;
   }
 
-  fextl::string GetConfigFileLocation(bool Global) {
-    fextl::string ConfigFile{};
-    if (Global) {
-      ConfigFile = GetConfigDirectory(true) + "Config.json";
-    }
-    else {
-      const char *AppConfig = getenv("FEX_APP_CONFIG");
-      if (AppConfig) {
-        // App config environment variable overwrites only the config file
-        ConfigFile = AppConfig;
-      }
-      else {
-        ConfigFile = GetConfigDirectory(false) + "Config.json";
-      }
-    }
-    return ConfigFile;
+  void SetConfigFileLocation(const std::string_view Path, bool Global) {
+    Paths[PATH_CONFIG_FILE_LOCAL + Global] = Path;
   }
 
-  fextl::string GetApplicationConfig(const fextl::string &Filename, bool Global) {
+  fextl::string const& GetDataDirectory() {
+    return Paths[PATH_DATA_DIR];
+  }
+
+  fextl::string const& GetConfigDirectory(bool Global) {
+    return Paths[PATH_CONFIG_DIR_LOCAL + Global];
+  }
+
+  fextl::string const& GetConfigFileLocation(bool Global) {
+    return Paths[PATH_CONFIG_FILE_LOCAL + Global];
+  }
+
+  fextl::string GetApplicationConfig(const std::string_view Program, bool Global) {
     fextl::string ConfigFile = GetConfigDirectory(Global);
 
     if (!Global &&
@@ -181,7 +150,7 @@ namespace JSON {
         !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       LogMan::Msg::DFmt("Couldn't create config directory: '{}'", ConfigFile);
       // Let's go local in this case
-      return "./" + Filename + ".json";
+      return fextl::fmt::format("./{}.json", Program);
     }
 
     ConfigFile += "AppConfig/";
@@ -191,11 +160,10 @@ namespace JSON {
         !FHU::Filesystem::Exists(ConfigFile) &&
         !FHU::Filesystem::CreateDirectories(ConfigFile)) {
       // Let's go local in this case
-      return "./" + Filename + ".json";
+      return fextl::fmt::format("./{}.json", Program);
     }
 
-    ConfigFile += Filename + ".json";
-    return ConfigFile;
+    return fextl::fmt::format("{}{}.json", ConfigFile, Program);
   }
 
   void SetConfig(FEXCore::Context::Context *CTX, ConfigOption Option, uint64_t Config) {

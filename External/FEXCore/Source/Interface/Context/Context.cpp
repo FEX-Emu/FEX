@@ -1,4 +1,3 @@
-#include "Common/Paths.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Core.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -19,7 +18,6 @@ namespace FEXCore::HLE {
 
 namespace FEXCore::Context {
   void InitializeStaticTables(OperatingMode Mode) {
-    FEXCore::Paths::InitializePaths();
     X86Tables::InitializeInfoTables(Mode);
     IR::InstallOpcodeHandlers(Mode);
   }

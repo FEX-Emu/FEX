@@ -47,4 +47,12 @@ namespace FEX::Config {
     bool ExecFDInterp,
     const std::string_view ProgramFDFromEnv
   );
+
+  const char *GetHomeDirectory();
+
+  fextl::string GetDataDirectory();
+  fextl::string GetConfigDirectory(bool Global);
+  fextl::string GetConfigFileLocation(bool Global);
+
+  void InitializeConfigs();
 }
