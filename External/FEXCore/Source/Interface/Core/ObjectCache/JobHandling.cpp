@@ -7,12 +7,11 @@
 #include <FEXHeaderUtils/Filesystem.h>
 
 #include <fcntl.h>
-#include <sys/uio.h>
-#include <sys/mman.h>
 #include <xxhash.h>
 
 namespace FEXCore::CodeSerialize {
   void AsyncJobHandler::AsyncAddNamedRegionJob(uintptr_t Base, uintptr_t Size, uintptr_t Offset, const fextl::string &filename) {
+#ifndef _WIN32
     // This function adds a named region *JOB* to our named region handler
     // This needs to be as fast as possible to keep out of the way of the JIT
 
@@ -77,9 +76,11 @@ namespace FEXCore::CodeSerialize {
       // Tell the async thread that it has work to do
       CodeObjectCacheService->NotifyWork();
     }
+#endif
   }
 
   void AsyncJobHandler::AsyncRemoveNamedRegionJob(uintptr_t Base, uintptr_t Size) {
+#ifndef _WIN32
     // Removing a named region through the job system
     // We need to find the entry that we are deleting first
     fextl::unique_ptr<CodeRegionEntry> EntryPointer;
@@ -119,6 +120,7 @@ namespace FEXCore::CodeSerialize {
       // Tell the async thread that it has work to do
       CodeObjectCacheService->NotifyWork();
     }
+#endif
   }
 
   void AsyncJobHandler::AsyncAddSerializationJob(fextl::unique_ptr<SerializationJobData> Data) {
