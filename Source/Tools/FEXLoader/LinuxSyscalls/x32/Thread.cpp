@@ -6,6 +6,7 @@ $end_info$
 
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/UContext.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x32/Thread.h"
 #include "LinuxSyscalls/x32/Types.h"
@@ -13,7 +14,6 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/fextl/vector.h>

@@ -23,7 +23,6 @@ $end_info$
 #include "Utils/MemberFunctionToPointer.h"
 
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>

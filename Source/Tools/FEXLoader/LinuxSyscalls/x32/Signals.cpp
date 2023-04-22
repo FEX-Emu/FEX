@@ -6,12 +6,12 @@ $end_info$
 
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/UContext.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Core/SignalDelegator.h>
-#include <FEXCore/Core/UContext.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdint.h>

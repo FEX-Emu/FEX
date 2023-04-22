@@ -1,8 +1,9 @@
 #pragma once
 
+#include "LinuxSyscalls/UContext.h"
+
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Core/X86Enums.h>
 
 #include <signal.h>
