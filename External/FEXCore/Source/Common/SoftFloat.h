@@ -14,7 +14,7 @@ extern "C" {
 #include "SoftFloat-3e/softfloat.h"
 }
 
-struct X80SoftFloat {
+struct FEX_PACKED X80SoftFloat {
 #ifdef _M_X86_64
 // Define this to push some operations to x87
 // Only useful to see if precision loss is killing something
@@ -32,14 +32,20 @@ struct X80SoftFloat {
 #else
 #error No 128bit float for this target!
 #endif
-  struct __attribute__((packed)) {
-    uint64_t Significand : 64;
-    uint16_t Exponent    : 15;
-    unsigned Sign        : 1;
-  };
+
+#ifndef _WIN32
+#define LIBRARY_PRECISION BIGFLOAT
+#else
+// Mingw Win32 libraries don't have `__float128` helpers. Needs to use a lower precision.
+#define LIBRARY_PRECISION double
+#endif
+
+  uint64_t Significand : 64;
+  uint16_t Exponent    : 15;
+  uint16_t Sign        : 1;
 
   X80SoftFloat() { memset(this, 0, sizeof(*this)); }
-  X80SoftFloat(unsigned _Sign, uint16_t _Exponent, uint64_t _Significand)
+  X80SoftFloat(uint16_t _Sign, uint16_t _Exponent, uint64_t _Significand)
     : Significand {_Significand}
     , Exponent {_Exponent}
     , Sign {_Sign}
@@ -262,7 +268,7 @@ struct X80SoftFloat {
     return Result;
 #else
     X80SoftFloat Int = FRNDINT(rhs, softfloat_round_minMag);
-    BIGFLOAT Src2_d = Int;
+    LIBRARY_PRECISION Src2_d = Int;
     Src2_d = exp2l(Src2_d);
     X80SoftFloat Src2_X80 = Src2_d;
     X80SoftFloat Result = extF80_mul(lhs, Src2_X80);
@@ -286,8 +292,8 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    BIGFLOAT Src1_d = lhs;
-    BIGFLOAT Result = exp2l(Src1_d);
+    LIBRARY_PRECISION Src1_d = lhs;
+    LIBRARY_PRECISION Result = exp2l(Src1_d);
     Result -= 1.0;
     return Result;
 #endif
@@ -311,9 +317,9 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    BIGFLOAT Src1_d = lhs;
-    BIGFLOAT Src2_d = rhs;
-    BIGFLOAT Tmp = Src2_d * log2l(Src1_d);
+    LIBRARY_PRECISION Src1_d = lhs;
+    LIBRARY_PRECISION Src2_d = rhs;
+    LIBRARY_PRECISION Tmp = Src2_d * log2l(Src1_d);
     return Tmp;
 #endif
   }
@@ -336,9 +342,9 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    BIGFLOAT Src1_d = lhs;
-    BIGFLOAT Src2_d = rhs;
-    BIGFLOAT Tmp = atan2l(Src1_d, Src2_d);
+    LIBRARY_PRECISION Src1_d = lhs;
+    LIBRARY_PRECISION Src2_d = rhs;
+    LIBRARY_PRECISION Tmp = atan2l(Src1_d, Src2_d);
     return Tmp;
 #endif
   }
@@ -360,7 +366,7 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    BIGFLOAT Src_d = lhs;
+    LIBRARY_PRECISION Src_d = lhs;
     Src_d = tanl(Src_d);
     return Src_d;
 #endif
@@ -382,7 +388,7 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    BIGFLOAT Src_d = lhs;
+    LIBRARY_PRECISION Src_d = lhs;
     Src_d = sinl(Src_d);
     return Src_d;
 #endif
@@ -404,7 +410,7 @@ struct X80SoftFloat {
 
     return Result;
 #else
-    BIGFLOAT Src_d = lhs;
+    LIBRARY_PRECISION Src_d = lhs;
     Src_d = cosl(Src_d);
     return Src_d;
 #endif
@@ -562,4 +568,9 @@ private:
   static constexpr uint32_t ExponentBias = 16383;
 };
 
+#ifndef _WIN32
 static_assert(sizeof(X80SoftFloat) == 10, "tword must be 10bytes in size");
+#else
+// Padding on this extends to 16-bytes rather than 10-bytes on WIN32.
+static_assert(sizeof(X80SoftFloat) == 16, "tword must be 16bytes in size");
+#endif
