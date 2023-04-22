@@ -36,15 +36,17 @@ $end_info$
 
 #include <atomic>
 #include <cstring>
+#ifndef _WIN32
 #include <elf.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <fmt/format.h>
-#include <netdb.h>
 #include <signal.h>
 #include <stddef.h>
 #include <string_view>
-#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <utility>
@@ -53,7 +55,7 @@ $end_info$
 
 namespace FEXCore
 {
-
+#ifndef _WIN32
 void GdbServer::Break(int signal) {
   std::lock_guard lk(sendMutex);
   if (!CommsStream) {
@@ -1324,4 +1326,5 @@ fextl::unique_ptr<std::iostream> GdbServer::OpenSocket() {
   return fextl::make_unique<FEXCore::Utils::NetStream>(new_fd);
 }
 
+#endif
 } // namespace FEXCore
