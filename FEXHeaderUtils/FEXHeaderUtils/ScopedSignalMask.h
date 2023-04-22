@@ -6,8 +6,10 @@
 #include <cstdint>
 #include <mutex>
 #include <shared_mutex>
+#ifndef _WIN32
 #include <signal.h>
 #include <sys/syscall.h>
+#endif
 #include <unistd.h>
 
 namespace FHU {
@@ -30,6 +32,7 @@ namespace FHU {
    * 1) Unlock Mutex
    * 2) Unmask signals
    */
+#ifndef _WIN32
   template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
   class ScopedSignalMaskWithMutexBase final {
     public:
@@ -66,6 +69,39 @@ namespace FHU {
       uint64_t OriginalMask{};
       MutexType *Mutex;
   };
+#else
+  // TODO: Doesn't block signals which may or may not cause issues.
+  template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
+  class ScopedSignalMaskWithMutexBase final {
+    public:
+
+      ScopedSignalMaskWithMutexBase(MutexType &_Mutex, [[maybe_unused]] uint64_t Mask = ~0ULL)
+        : Mutex {&_Mutex} {
+        // Lock the mutex
+        (Mutex->*lock_fn)();
+      }
+
+      // No copy or assignment possible
+      ScopedSignalMaskWithMutexBase(const ScopedSignalMaskWithMutexBase&) = delete;
+      ScopedSignalMaskWithMutexBase& operator=(ScopedSignalMaskWithMutexBase&) = delete;
+
+      // Only move
+      ScopedSignalMaskWithMutexBase(ScopedSignalMaskWithMutexBase &&rhs)
+       : Mutex {rhs.Mutex} {
+        rhs.Mutex = nullptr;
+      }
+
+      ~ScopedSignalMaskWithMutexBase() {
+        if (Mutex != nullptr) {
+          // Unlock the mutex
+          (Mutex->*unlock_fn)();
+        }
+      }
+    private:
+      MutexType *Mutex;
+  };
+
+#endif
 
   using ScopedSignalMaskWithMutex = ScopedSignalMaskWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
   using ScopedSignalMaskWithSharedLock = ScopedSignalMaskWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
