@@ -12,6 +12,7 @@ $end_info$
 #include "VDSO_Emulation.h"
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/Utils/Threads.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/SignalDelegator.h"
@@ -387,6 +388,10 @@ int main(int argc, char **argv, char **const envp) {
     }
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   }
+
+  // Setup Thread handlers, so FEXCore can create threads.
+  FEX::LinuxEmulation::Threads::SetupThreadHandlers();
+
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
@@ -546,7 +551,7 @@ int main(int argc, char **argv, char **const envp) {
   SyscallHandler.reset();
   SignalDelegation.reset();
 
-  FEXCore::Threads::Shutdown();
+  FEX::LinuxEmulation::Threads::Shutdown();
 
   Loader.FreeSections();
 

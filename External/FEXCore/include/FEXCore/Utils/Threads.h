@@ -40,10 +40,6 @@ namespace FEXCore::Threads {
     static void SetInternalPointers(Pointers const &_Ptrs);
   };
 
-  void *AllocateStackObject(size_t Size);
-  void DeallocateStackObject(void *Ptr, size_t Size);
-  void Shutdown();
-
   /**
    * @brief Sets the calling thread's signal mask to the one provided
    *

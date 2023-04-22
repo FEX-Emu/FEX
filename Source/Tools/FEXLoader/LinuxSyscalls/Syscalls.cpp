@@ -13,6 +13,7 @@ $end_info$
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/Syscalls/Thread.h"
+#include "LinuxSyscalls/Utils/Threads.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Types.h"
@@ -29,7 +30,6 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
-#include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
@@ -426,7 +426,7 @@ struct StackFramePlusRet {
 static void Clone3HandlerRet() {
   StackFrameData *Data = (StackFrameData*)alloca(0);
   uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
-  FEXCore::Threads::DeallocateStackObject(Data->NewStack, Data->StackSize);
+  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->NewStack);
   // To behave like a real clone, we now just need to call exit here
   exit(Result);
   FEX_UNREACHABLE;
@@ -435,7 +435,7 @@ static void Clone3HandlerRet() {
 static int Clone2HandlerRet(void *arg) {
   StackFrameData *Data = (StackFrameData*)arg;
   uint64_t Result = FEX::HLE::HandleNewClone(Data->Thread, Data->CTX, &Data->NewFrame, &Data->GuestArgs);
-  FEXCore::Threads::DeallocateStackObject(Data->NewStack, Data->StackSize);
+  FEX::LinuxEmulation::Threads::DeallocateStackObject(Data->NewStack);
   FEXCore::Allocator::free(arg);
   return Result;
 }
@@ -489,8 +489,8 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
   Data->GuestArgs = *args;
 
   // In the case of thread, we need a new stack
-  Data->StackSize = 8 * 1024 * 1024;
-  Data->NewStack = FEXCore::Threads::AllocateStackObject(Data->StackSize);
+  Data->StackSize = FEX::LinuxEmulation::Threads::STACK_SIZE;
+  Data->NewStack = FEX::LinuxEmulation::Threads::AllocateStackObject();
 
   // Create a copy of the parent frame
   memcpy(&Data->NewFrame, Frame, sizeof(FEXCore::Core::CpuStateFrame));
@@ -514,8 +514,8 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clo
 
 static uint64_t Clone3Handler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args *args) {
   // In the case of thread, we need a new stack
-  uint64_t StackSize = 8 * 1024 * 1024;
-  void *NewStack = FEXCore::Threads::AllocateStackObject(StackSize);
+  const uint64_t StackSize = FEX::LinuxEmulation::Threads::STACK_SIZE;
+  void *NewStack = FEX::LinuxEmulation::Threads::AllocateStackObject();
 
   constexpr size_t Offset = sizeof(StackFramePlusRet);
   StackFramePlusRet *Data = (StackFramePlusRet*)(reinterpret_cast<uint64_t>(NewStack) + StackSize - Offset);
