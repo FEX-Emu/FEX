@@ -251,7 +251,7 @@ namespace FEXCore::Context {
 #endif
 
     // Initialize common signal handlers
-
+#ifndef _WIN32
     auto PauseHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
       return static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->HandleSignalPause(Thread, Signal, info, ucontext);
     };
@@ -265,6 +265,7 @@ namespace FEXCore::Context {
     for (uint32_t Signal = 0; Signal <= SignalDelegator::MAX_SIGNALS; ++Signal) {
       SignalDelegation->RegisterHostSignalHandlerForGuest(Signal, GuestSignalHandler);
     }
+#endif
 
     // Initialize GDBServer after the signal handlers are installed
     // It may install its own handlers that need to be executed AFTER the CPU cores

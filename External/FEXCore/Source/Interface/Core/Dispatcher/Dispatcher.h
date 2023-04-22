@@ -57,9 +57,11 @@ public:
   uint64_t Start{};
   uint64_t End{};
 
+#ifndef _WIN32
   bool HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
   bool HandleSIGILL(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
   bool HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
+#endif
 
   bool IsAddressInDispatcher(uint64_t Address) const {
     return Address >= Start && Address < End;
@@ -91,6 +93,7 @@ protected:
     , config {Config}
     {}
 
+#ifndef _WIN32
   uint64_t ReconstructRIPFromContext(FEXCore::Core::CpuStateFrame *Frame, void *ucontext) const;
   void RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
   void RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
@@ -115,12 +118,14 @@ protected:
     uint64_t NewGuestSP, const uint32_t eflags);
 
   ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
+
   enum class RestoreType {
     TYPE_REALTIME, ///< Signal restore type is from a `realtime` signal.
     TYPE_NONREALTIME, ///< Signal restore type is from a `non-realtime` signal.
     TYPE_PAUSE, ///< Signal restore type is from a GDB pause event.
   };
-
+  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
+#endif
   /*
    * Signal frames on 32-bit architecture needs to match exactly how the kernel generates the frame.
    * This is because large parts of the signal frame definition is part of the UAPI.
@@ -153,8 +158,6 @@ protected:
     char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
     ///< FP state now follows after this.
   };
-
-  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
 
   virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
 

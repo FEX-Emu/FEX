@@ -434,9 +434,11 @@ X86JITCore::X86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::Intern
 }
 
 void X86JITCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
+#ifndef _WIN32
   CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
     return static_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
   }, true);
+#endif
 }
 
 X86JITCore::~X86JITCore() {

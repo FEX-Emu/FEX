@@ -7,11 +7,14 @@
 
 #include <signal.h>
 #include <string.h>
+#ifndef _WIN32
 #include <ucontext.h>
+#endif
 #include <stdint.h>
 #include <type_traits>
 
 namespace FEXCore::ArchHelpers::Context {
+#ifndef _WIN32
 
 enum ContextFlags : uint32_t {
   CONTEXT_FLAG_INJIT = (1U << 0),
@@ -353,5 +356,7 @@ static inline void RestoreContext(void* ucontext, T *Backup) {
 }
 
 #endif
+#else
 
+#endif
 } // namespace FEXCore::ArchHelpers::Context
