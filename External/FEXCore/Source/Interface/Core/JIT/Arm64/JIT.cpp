@@ -30,7 +30,6 @@ $end_info$
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
-#include <sys/mman.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>

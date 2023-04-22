@@ -35,7 +35,6 @@ $end_info$
 #include <stddef.h>
 #include <stdint.h>
 #include <signal.h>
-#include <sys/mman.h>
 #include <tuple>
 #include <unordered_map>
 #include <utility>

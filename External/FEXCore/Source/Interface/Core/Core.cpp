@@ -66,9 +66,7 @@ $end_info$
 #include <signal.h>
 #include <stdio.h>
 #include <string_view>
-#include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <type_traits>
 #include <unistd.h>
 #include <unordered_map>
