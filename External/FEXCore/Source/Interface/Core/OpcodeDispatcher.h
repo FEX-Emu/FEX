@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Interface/Core/Frontend.h"
+#include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/Context/Context.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/IR/IntrusiveIRList.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/IR/IREmitter.h>

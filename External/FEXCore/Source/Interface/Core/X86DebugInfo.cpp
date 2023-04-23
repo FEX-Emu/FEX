@@ -1,5 +1,7 @@
 #ifndef NDEBUG
-#include <FEXCore/Debug/X86Tables.h>
+
+#include "Interface/Core/X86Tables/X86Tables.h"
+
 #include <FEXCore/Utils/LogManager.h>
 #include <tuple>
 

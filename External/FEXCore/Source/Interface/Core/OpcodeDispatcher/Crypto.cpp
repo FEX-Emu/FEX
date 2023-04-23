@@ -5,7 +5,8 @@ desc: Handles x86/64 Crypto instructions to IR
 $end_info$
 */
 
-#include <FEXCore/Debug/X86Tables.h>
+#include "Interface/Core/X86Tables/X86Tables.h"
+
 #include <FEXCore/IR/IREmitter.h>
 #include <FEXCore/Utils/LogManager.h>
 #include "Interface/Core/OpcodeDispatcher.h"

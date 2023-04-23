@@ -7,11 +7,11 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
+#include "Interface/Core/X86Tables/X86Tables.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 
