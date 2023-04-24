@@ -516,6 +516,9 @@ public:
   void VPMADDUBSWOp(OpcodeArgs);
   void VPMADDWDOp(OpcodeArgs);
 
+  template <bool IsStore>
+  void VPMASKMOVOp(OpcodeArgs);
+
   void VPMULHRSWOp(OpcodeArgs);
 
   template <bool Signed>
@@ -919,7 +922,7 @@ private:
                           const X86Tables::DecodedOperand& Src2,
                           const X86Tables::DecodedOperand& Imm);
 
-  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, bool IsStore,
+  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore,
                       const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
 
