@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86HelperGen.h"
+#include "FEXCore/Utils/AllocatorHooks.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
@@ -13,12 +14,15 @@ $end_info$
 
 #include <cstdint>
 #include <cstring>
-#include <sys/mman.h>
 
 namespace FEXCore {
 constexpr size_t CODE_SIZE = 0x1000;
 
 X86GeneratedCode::X86GeneratedCode() {
+#ifdef _WIN32
+  // No need to allocate anything in this config.
+#else
+
   // Allocate a page for our emulated guest
   CodePtr = AllocateGuestCodeSpace(CODE_SIZE);
 
@@ -54,18 +58,22 @@ X86GeneratedCode::X86GeneratedCode() {
   memcpy(reinterpret_cast<void*>(rt_sigreturn_32), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
 
   mprotect(CodePtr, CODE_SIZE, PROT_READ);
+#endif
 }
 
 X86GeneratedCode::~X86GeneratedCode() {
-  FEXCore::Allocator::munmap(CodePtr, CODE_SIZE);
+#ifndef _WIN32
+  FEXCore::Allocator::VirtualFree(CodePtr, CODE_SIZE);
+#endif
 }
 
 void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
+#ifndef _WIN32
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
   if (Is64BitMode()) {
     // 64bit mode can have its sigret handler anywhere
-    return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    return FEXCore::Allocator::VirtualAlloc(Size);
   }
 
   // First 64bit page
@@ -94,6 +102,9 @@ void* X86GeneratedCode::AllocateGuestCodeSpace(size_t Size) {
   // Can't do anything about this
   // Here's hoping the application doesn't use signals
   return MAP_FAILED;
+#else
+  return nullptr;
+#endif
 }
 
 }

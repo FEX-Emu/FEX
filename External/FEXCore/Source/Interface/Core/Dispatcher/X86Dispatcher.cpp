@@ -1,3 +1,4 @@
+#include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Core/LookupCache.h"
 
 #include "Interface/Core/Dispatcher/X86Dispatcher.h"
@@ -19,7 +20,6 @@
 #include <memory>
 #include <stddef.h>
 #include <stdint.h>
-#include <sys/mman.h>
 
 #define STATE_PTR(STATE_TYPE, FIELD) \
   [STATE + offsetof(FEXCore::Core::STATE_TYPE, FIELD)]
@@ -31,7 +31,7 @@ static constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
   : Dispatcher(ctx, config)
   , Xbyak::CodeGenerator(MAX_DISPATCHER_CODE_SIZE,
-      FEXCore::Allocator::mmap(nullptr, MAX_DISPATCHER_CODE_SIZE, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0),
+      FEXCore::Allocator::VirtualAlloc(MAX_DISPATCHER_CODE_SIZE, true),
       nullptr) {
 
   LOGMAN_THROW_AA_FMT(!config.StaticRegisterAllocation, "X86 dispatcher does not support SRA");
@@ -175,6 +175,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
   {
     L(NoBlock);
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // When compiling code, mask all signals to reduce the chance of reentrant allocations
       // RDI: SETMASK
@@ -200,6 +201,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
       mov(rdx, r9);
     }
+#endif
 
     // {rdi, rsi, rdx}
     mov(rdi, reinterpret_cast<uint64_t>(CTX));
@@ -208,6 +210,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
     call(rax);
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location
@@ -226,6 +229,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
       mov(rdx, r9);
     }
+#endif
 
     // rdx already contains RIP here
     jmp(LoopTop);
@@ -233,6 +237,8 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
   {
     ExitFunctionLinkerAddress = getCurr<uint64_t>();
+
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // When compiling code, mask all signals to reduce the chance of reentrant allocations
       // RDI: SETMASK
@@ -258,6 +264,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
       mov(rax, r9);
     }
+#endif
 
     // {rdi, rsi}
     mov(rdi, STATE);
@@ -265,6 +272,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
     call(qword STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
 
+#ifndef _WIN32
     if (SignalSafeCompile) {
       // Now restore the signal mask
       // Living in the same location
@@ -283,7 +291,9 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
       jmp(r9);
     }
-    else {
+    else
+#endif
+    {
       jmp(rax);
     }
   }
@@ -475,7 +485,7 @@ size_t X86Dispatcher::GenerateInterpreterTrampoline(uint8_t *CodeBuffer) {
 }
 
 X86Dispatcher::~X86Dispatcher() {
-  FEXCore::Allocator::munmap(top_, MAX_DISPATCHER_CODE_SIZE);
+  FEXCore::Allocator::VirtualFree(top_, MAX_DISPATCHER_CODE_SIZE);
 }
 
 void X86Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) {

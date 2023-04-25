@@ -1,3 +1,4 @@
+#include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include <FEXCore/Core/CPUBackend.h>
@@ -57,7 +58,7 @@ auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> CodeBuffer {
   CodeBuffer Buffer;
   Buffer.Size = Size;
   Buffer.Ptr = static_cast<uint8_t *>(
-      FEXCore::Allocator::mmap(nullptr, Buffer.Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      FEXCore::Allocator::VirtualAlloc(Buffer.Size, true));
   LOGMAN_THROW_AA_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
 
   if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
@@ -67,7 +68,7 @@ auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> CodeBuffer {
 }
 
 void CPUBackend::FreeCodeBuffer(CodeBuffer Buffer) {
-  FEXCore::Allocator::munmap(Buffer.Ptr, Buffer.Size);
+  FEXCore::Allocator::VirtualFree(Buffer.Ptr, Buffer.Size);
 }
 
 bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {

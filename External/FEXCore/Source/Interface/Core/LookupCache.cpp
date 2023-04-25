@@ -11,8 +11,6 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 
-#include <sys/mman.h>
-
 namespace FEXCore {
 LookupCache::LookupCache(FEXCore::Context::ContextImpl *CTX)
   : BlockLinks_mbr { fextl::pmr::get_default_resource() }
@@ -35,7 +33,7 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl *CTX)
   // Allocate a region of memory that we can use to back our block pointers
   // We need one pointer per page of virtual memory
   // At 64GB of virtual memory this will allocate 128MB of virtual memory space
-  PagePointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::mmap(nullptr, TotalCacheSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  PagePointer = reinterpret_cast<uintptr_t>(FEXCore::Allocator::VirtualAlloc(TotalCacheSize));
 
   // Allocate our memory backing our pages
   // We need 32KB per guest page (One pointer per byte)
@@ -54,7 +52,7 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl *CTX)
 
 LookupCache::~LookupCache() {
   const size_t TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
-  FEXCore::Allocator::munmap(reinterpret_cast<void*>(PagePointer), TotalCacheSize);
+  FEXCore::Allocator::VirtualFree(reinterpret_cast<void*>(PagePointer), TotalCacheSize);
 
   // No need to free BlockLinks map.
   // These will get freed when their memory allocators are deallocated.
@@ -64,7 +62,7 @@ void LookupCache::ClearL2Cache() {
   std::lock_guard<std::recursive_mutex> lk(WriteLock);
   // Clear out the page memory
   // PagePointer and PageMemory are sequential with each other. Clear both at once.
-  madvise(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE, MADV_DONTNEED);
+  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE);
   AllocateOffset = 0;
 }
 
@@ -72,7 +70,7 @@ void LookupCache::ClearCache() {
   std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
   // Clear L1 and L2 by clearing the full cache.
-  madvise(reinterpret_cast<void*>(PagePointer), TotalCacheSize, MADV_DONTNEED);
+  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize);
   // Allocate a new pointer from the BlockLinks pma again.
   BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
   // All code is gone, clear the block list
