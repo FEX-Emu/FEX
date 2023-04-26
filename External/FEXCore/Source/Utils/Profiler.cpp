@@ -2,9 +2,11 @@
 #include <cstdint>
 #include <fcntl.h>
 #include <limits.h>
+#ifndef _WIN32
 #include <linux/magic.h>
 #include <sys/stat.h>
 #include <sys/vfs.h>
+#endif
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>

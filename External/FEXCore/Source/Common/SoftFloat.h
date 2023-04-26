@@ -445,6 +445,7 @@ struct FEX_PACKED X80SoftFloat {
     return FEXCore::BitCast<double>(Result);
   }
 
+#ifndef _WIN32
   operator BIGFLOAT() const {
 #if BIGFLOATSIZE == 16
     const float128_t Result = extF80_to_f128(*this);
@@ -455,6 +456,7 @@ struct FEX_PACKED X80SoftFloat {
     return result;
 #endif
   }
+#endif
 
   operator int16_t() const {
     auto rv = extF80_to_i32(*this, softfloat_roundingMode, false);
@@ -523,6 +525,7 @@ struct FEX_PACKED X80SoftFloat {
     *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
   }
 
+#ifndef _WIN32
   X80SoftFloat(BIGFLOAT rhs) {
 #if BIGFLOATSIZE == 16
     *this = f128_to_extF80(FEXCore::BitCast<float128_t>(rhs));
@@ -530,6 +533,7 @@ struct FEX_PACKED X80SoftFloat {
     *this = FEXCore::BitCast<long double>(rhs);
 #endif
   }
+#endif
 
   X80SoftFloat(const int16_t rhs) {
     *this = i32_to_extF80(rhs);

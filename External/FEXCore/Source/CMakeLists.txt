@@ -229,6 +229,8 @@ set (LIBS fmt::fmt vixl xxhash tiny-json FEXHeaderUtils)
 
 if (NOT MINGW_BUILD)
   list (APPEND LIBS dl)
+else()
+  list (APPEND LIBS synchronization)
 endif()
 
 if (ENABLE_JEMALLOC)
@@ -399,6 +401,12 @@ function(AddLibrary Name Type)
   if (MINGW_BUILD)
     # Mingw build isn't building a linux shared library, so it can't have a SONAME.
     set_target_properties(${Name} PROPERTIES NO_SONAME ON)
+    # Change the suffixes otherwise cmake continues using .a and .so
+    if (${Type} STREQUAL SHARED)
+      set_target_properties(${Name} PROPERTIES SUFFIX ".dll")
+    elseif(${Type} STREQUAL STATIC)
+      set_target_properties(${Name} PROPERTIES SUFFIX ".lib")
+    endif()
   endif()
 
   AddDefaultOptionsToTarget(${Name})

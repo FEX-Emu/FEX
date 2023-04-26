@@ -66,9 +66,7 @@ $end_info$
 #include <signal.h>
 #include <stdio.h>
 #include <string_view>
-#include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <type_traits>
 #include <unistd.h>
 #include <unordered_map>
@@ -714,6 +712,7 @@ namespace FEXCore::Context {
   }
 
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
+#ifndef _WIN32
     int FD {-1};
     bool CloseAfter = false;
     const auto DumpIRStr = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR();
@@ -742,6 +741,7 @@ namespace FEXCore::Context {
         close(FD);
       }
     }
+#endif
   };
 
   static void ValidateIR(ContextImpl *ctx, IR::IREmitter *IREmitter) {

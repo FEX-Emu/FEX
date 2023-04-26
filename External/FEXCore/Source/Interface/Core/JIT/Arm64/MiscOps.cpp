@@ -4,7 +4,10 @@ tags: backend|arm64
 $end_info$
 */
 
+#ifndef _WIN32
 #include <syscall.h>
+#endif
+
 #include "Interface/Core/ArchHelpers/CodeEmitter/Emitter.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "FEXCore/Debug/InternalThreadState.h"
@@ -34,6 +37,7 @@ DEF_OP(Fence) {
   }
 }
 
+#ifndef _WIN32
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
 
@@ -73,6 +77,11 @@ DEF_OP(Break) {
     break;
   }
 }
+#else
+DEF_OP(Break) {
+  ERROR_AND_DIE_FMT("Unsupported");
+}
+#endif
 
 DEF_OP(GetRoundingMode) {
   auto Dst = GetReg(Node);
@@ -157,6 +166,7 @@ DEF_OP(Print) {
   PopDynamicRegsAndLR();
 }
 
+#ifndef _WIN32
 DEF_OP(ProcessorID) {
   // We always need to spill x8 since we can't know if it is live at this SSA location
   uint32_t SpillMask = 1U << 8;
@@ -207,6 +217,11 @@ DEF_OP(ProcessorID) {
   // Node is in w1
   orr(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::ShiftType::LSL, 12);
 }
+#else
+DEF_OP(ProcessorID) {
+  ERROR_AND_DIE_FMT("Unsupported");
+}
+#endif
 
 DEF_OP(RDRAND) {
   auto Op = IROp->C<IR::IROp_RDRAND>();

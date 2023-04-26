@@ -9,9 +9,9 @@ $end_info$
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <alloca.h>
 #include <cstdarg>
 #include <cstdio>
+#include <malloc.h>
 
 namespace LogMan {
 

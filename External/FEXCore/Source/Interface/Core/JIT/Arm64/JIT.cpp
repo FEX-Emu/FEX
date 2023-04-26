@@ -23,7 +23,6 @@ $end_info$
 #include "Utils/MemberFunctionToPointer.h"
 
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Core/UContext.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
@@ -31,7 +30,6 @@ $end_info$
 
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
-#include <sys/mman.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
