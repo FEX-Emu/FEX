@@ -221,6 +221,16 @@ namespace FEXCore {
       int si_code;
       union {
         uint32_t pad[29];
+        /* tgkill siginfo_t */
+        struct {
+          int32_t pid;
+          int32_t uid;
+        } _kill;
+        /* SIGPOLL */
+        struct {
+          int32_t band;
+          int32_t fd;
+        } _poll;
         /* SIGILL, SIGFPE, SIGSEGV, SIBUS */
         struct {
           uint32_t addr;
@@ -233,12 +243,27 @@ namespace FEXCore {
           int32_t utime;
           int32_t stime;
         } _sigchld;
+        /* RT signals */
+        struct {
+          int32_t pid;
+          int32_t uid;
+          union {
+            int32_t sival_int;
+            uint32_t sival_ptr; // compat_ptr
+          } sigval;
+        } _rt;
         /* SIGALRM, SIGVTALRM */
         struct {
           int tid;
           int overrun;
           FEXCore::x86::sigval_t sigval;
         } _timer;
+        /* SIGSYS */
+        struct {
+          uint32_t call_addr; // compat_ptr
+          int32_t syscall;
+          uint32_t arch;
+        } _sigsys;
       } _sifields;
 
       union HostSigInfo_t {
