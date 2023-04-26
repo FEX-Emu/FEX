@@ -19,6 +19,7 @@ $end_info$
 #include "Interface/Core/Interpreter/InterpreterCore.h"
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/HLE/Thunks/Thunks.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
@@ -32,7 +33,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/HLE/Linux/ThreadManagement.h>

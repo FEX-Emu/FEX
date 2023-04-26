@@ -7,6 +7,7 @@ $end_info$
 
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
+#include "Interface/Core/X86Tables/X86Tables.h"
 
 #include <array>
 #include <assert.h>
@@ -14,7 +15,6 @@ $end_info$
 #include <cstring>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>

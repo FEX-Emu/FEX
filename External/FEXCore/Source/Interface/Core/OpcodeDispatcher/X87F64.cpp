@@ -6,10 +6,10 @@ $end_info$
 */
 
 #include "Interface/Core/OpcodeDispatcher.h"
+#include "Interface/Core/X86Tables/X86Tables.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Debug/X86Tables.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/IR/IREmitter.h>

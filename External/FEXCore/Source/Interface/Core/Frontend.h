@@ -1,6 +1,7 @@
 #pragma once
 
-#include <FEXCore/Debug/X86Tables.h>
+#include "Interface/Core/X86Tables/X86Tables.h"
+
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/fextl/set.h>
