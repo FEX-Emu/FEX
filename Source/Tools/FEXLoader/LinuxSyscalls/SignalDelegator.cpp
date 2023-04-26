@@ -90,6 +90,62 @@ namespace FEX::HLE {
    * @name Signal frame setup
    * @{ */
 
+  // Total number of layouts that siginfo supports.
+  enum class SigInfoLayout {
+    LAYOUT_KILL,
+    LAYOUT_TIMER,
+    LAYOUT_POLL,
+    LAYOUT_FAULT,
+    LAYOUT_FAULT_RIP,
+    LAYOUT_CHLD,
+    LAYOUT_RT,
+    LAYOUT_SYS,
+  };
+
+  // Calculate the siginfo layout based on Signal and si_code.
+  static SigInfoLayout CalculateSigInfoLayout(int Signal, int si_code) {
+    if (si_code > SI_USER && si_code < SI_KERNEL) {
+      // For signals that are not considered RT.
+      if (Signal == SIGSEGV ||
+          Signal == SIGBUS ||
+          Signal == SIGTRAP) {
+        // Regular FAULT layout.
+        return SigInfoLayout::LAYOUT_FAULT;
+      }
+      else if (Signal == SIGILL ||
+               Signal == SIGFPE) {
+        // Fault layout but addr refers to RIP.
+        return SigInfoLayout::LAYOUT_FAULT_RIP;
+      }
+      else if (Signal == SIGCHLD) {
+        // Child layout
+        return SigInfoLayout::LAYOUT_CHLD;
+      }
+      else if (Signal == SIGPOLL) {
+        // Poll layout
+        return SigInfoLayout::LAYOUT_POLL;
+      }
+      else if (Signal == SIGSYS) {
+        // Sys layout
+        return SigInfoLayout::LAYOUT_SYS;
+      }
+    }
+    else {
+      // Negative si_codes are kernel specific things.
+      if (si_code == SI_TIMER) {
+        return SigInfoLayout::LAYOUT_TIMER;
+      }
+      else if (si_code == SI_SIGIO) {
+        return SigInfoLayout::LAYOUT_POLL;
+      }
+      else if (si_code < 0) {
+        return SigInfoLayout::LAYOUT_RT;
+      }
+    }
+
+    return SigInfoLayout::LAYOUT_KILL;
+  }
+
   void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {
 #ifdef _M_ARM_64
     for (size_t i = 0; i < Config.SRAGPRCount; i++) {
@@ -991,34 +1047,52 @@ namespace FEX::HLE {
     guest_uctx->info.si_signo = HostSigInfo->si_signo;
     guest_uctx->info.si_errno = HostSigInfo->si_errno;
 
-    switch (Signal) {
-      case SIGSEGV:
-      case SIGBUS:
+    const SigInfoLayout Layout = CalculateSigInfoLayout(Signal, guest_uctx->info.si_code);
+
+    switch (Layout) {
+      case SigInfoLayout::LAYOUT_KILL:
+        guest_uctx->info._sifields._kill.pid = HostSigInfo->si_pid;
+        guest_uctx->info._sifields._kill.uid = HostSigInfo->si_uid;
+        break;
+      case SigInfoLayout::LAYOUT_TIMER:
+        guest_uctx->info._sifields._timer.tid = HostSigInfo->si_timerid;
+        guest_uctx->info._sifields._timer.overrun = HostSigInfo->si_overrun;
+        guest_uctx->info._sifields._timer.sigval.sival_int = HostSigInfo->si_int;
+        break;
+      case SigInfoLayout::LAYOUT_POLL:
+        guest_uctx->info._sifields._poll.band= HostSigInfo->si_band;
+        guest_uctx->info._sifields._poll.fd= HostSigInfo->si_fd;
+        break;
+      case SigInfoLayout::LAYOUT_FAULT:
         // Macro expansion to get the si_addr
         // This is the address trying to be accessed, not the RIP
         guest_uctx->info._sifields._sigfault.addr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(HostSigInfo->si_addr));
         break;
-      case SIGFPE:
-      case SIGILL:
+      case SigInfoLayout::LAYOUT_FAULT_RIP:
         // Macro expansion to get the si_addr
         // Can't really give a real result here. Pull from the context for now
         guest_uctx->info._sifields._sigfault.addr = ContextBackup->OriginalRIP;
         break;
-      case SIGCHLD:
+      case SigInfoLayout::LAYOUT_CHLD:
         guest_uctx->info._sifields._sigchld.pid = HostSigInfo->si_pid;
         guest_uctx->info._sifields._sigchld.uid = HostSigInfo->si_uid;
         guest_uctx->info._sifields._sigchld.status = HostSigInfo->si_status;
         guest_uctx->info._sifields._sigchld.utime = HostSigInfo->si_utime;
         guest_uctx->info._sifields._sigchld.stime = HostSigInfo->si_stime;
         break;
-      case SIGALRM:
-      case SIGVTALRM:
-        guest_uctx->info._sifields._timer.tid = HostSigInfo->si_timerid;
-        guest_uctx->info._sifields._timer.overrun = HostSigInfo->si_overrun;
-        guest_uctx->info._sifields._timer.sigval.sival_int = HostSigInfo->si_int;
+      case SigInfoLayout::LAYOUT_RT:
+        guest_uctx->info._sifields._rt.pid = HostSigInfo->si_pid;
+        guest_uctx->info._sifields._rt.uid = HostSigInfo->si_uid;
+        guest_uctx->info._sifields._rt.sigval.sival_int = HostSigInfo->si_int;
         break;
-      default:
-        LogMan::Msg::EFmt("Unhandled siginfo_t for signal: {}\n", Signal);
+      case SigInfoLayout::LAYOUT_SYS:
+        guest_uctx->info._sifields._sigsys.call_addr = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(HostSigInfo->si_call_addr));
+        guest_uctx->info._sifields._sigsys.syscall = HostSigInfo->si_syscall;
+        // We need to lie about the architecture here.
+        // Otherwise we would expose incorrect information to the guest.
+        constexpr uint32_t AUDIT_LE = 0x4000'0000U;
+        constexpr uint32_t MACHINE_I386 = 3; // This matches the ELF definition.
+        guest_uctx->info._sifields._sigsys.arch = AUDIT_LE | MACHINE_I386;
         break;
     }
 
