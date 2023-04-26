@@ -7,6 +7,13 @@ $end_info$
 
 #pragma once
 
+#include "LinuxSyscalls/Types.h"
+#include "LinuxSyscalls/ArchHelpers/MContext.h"
+#include "VDSO_Emulation.h"
+
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/memory.h>
+
 #include <array>
 #include <atomic>
 #include <signal.h>
@@ -17,17 +24,23 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 
 namespace FEXCore {
+namespace Context {
+  class Context;
+}
 namespace Core {
   struct InternalThreadState;
 }
 }
 
 namespace FEX::HLE {
+  using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
+  using HostSignalDelegatorFunctionForGuest = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack)>;
+
   class SignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
   public:
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
-    SignalDelegator();
+    SignalDelegator(FEXCore::Context::Context *_CTX);
     ~SignalDelegator() override;
 
     /**
@@ -35,7 +48,8 @@ namespace FEX::HLE {
      *
      * It's a process level signal handler so one must be careful
      */
-    void RegisterHostSignalHandlerForGuest(int Signal, FEXCore::HostSignalDelegatorFunctionForGuest Func) override;
+    void RegisterHostSignalHandlerForGuest(int Signal, FEX::HLE::HostSignalDelegatorFunctionForGuest Func);
+    void RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
 
     /**
      * @name These functions are all for Linux signal emulation
@@ -43,7 +57,7 @@ namespace FEX::HLE {
       /**
        * @brief Allows the guest to register a signal handler that is run after the host attempts to resolve the handler first
        */
-      uint64_t RegisterGuestSignalHandler(int Signal, const FEXCore::GuestSigAction *Action, struct FEXCore::GuestSigAction *OldAction);
+      uint64_t RegisterGuestSignalHandler(int Signal, const GuestSigAction *Action, struct GuestSigAction *OldAction);
 
       uint64_t RegisterGuestSigAltStack(const stack_t *ss, stack_t *old_ss);
 
@@ -57,6 +71,35 @@ namespace FEX::HLE {
       void CheckXIDHandler() override;
 
       void UninstallHostHandler(int Signal);
+      FEXCore::Context::Context *CTX;
+
+    void SetVDSOSigReturn() {
+      // Get symbols from VDSO.
+      VDSOPointers = FEX::VDSO::GetVDSOSymbols();
+
+      // Update VDSO to generated code.
+      // TODO: Have the frontend generate the x86 sigreturn pointers.
+      CTX->GetVDSOSigReturn(&VDSOPointers);
+    }
+
+    [[noreturn]] void HandleSignalHandlerReturn(bool RT) {
+      using SignalHandlerReturnFunc = void(*)();
+
+      SignalHandlerReturnFunc SignalHandlerReturn{};
+      if (RT) {
+        SignalHandlerReturn = reinterpret_cast<SignalHandlerReturnFunc>(Config.SignalHandlerReturnAddressRT);
+      }
+      else {
+        SignalHandlerReturn = reinterpret_cast<SignalHandlerReturnFunc>(Config.SignalHandlerReturnAddress);
+      }
+
+      SignalHandlerReturn();
+      FEX_UNREACHABLE;
+    }
+
+    void SignalThread(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::SignalEvent Event) override;
+
+    FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
   protected:
     // Called from the thunk handler to handle the signal
     void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) override;
@@ -73,6 +116,9 @@ namespace FEX::HLE {
     void FrontendRegisterFrontendHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) override;
 
   private:
+    FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+    FEX_CONFIG_OPT(Core, CORE);
+
     enum DefaultBehaviour {
       DEFAULT_TERM,
       // Core dump based signals are supposed to have a coredump appear
@@ -98,8 +144,8 @@ namespace FEX::HLE {
       std::atomic<bool> Required{};
       kernel_sigaction HostAction{};
       kernel_sigaction OldAction{};
-      FEXCore::HostSignalDelegatorFunctionForGuest GuestHandler{};
-      FEXCore::GuestSigAction GuestAction{};
+      FEX::HLE::HostSignalDelegatorFunctionForGuest GuestHandler{};
+      GuestSigAction GuestAction{};
       DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
     };
 
@@ -107,7 +153,83 @@ namespace FEX::HLE {
     bool InstallHostThunk(int Signal);
     bool UpdateHostThunk(int Signal);
 
+    FEXCore::Context::VDSOSigReturn VDSOPointers{};
+
+    bool IsAddressInDispatcher(uint64_t Address) const {
+      return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
+    }
+
+    /*
+     * Signal frames on 32-bit architecture needs to match exactly how the kernel generates the frame.
+     * This is because large parts of the signal frame definition is part of the UAPI.
+     * This means that when FEX sets up the signal frame, it needs to match the UAPI stack setup.
+     *
+     * The two signal stack frame types below describe the two different 32-bit frame types.
+     */
+
+    // The 32-bit non-realtime signal frame.
+    // This frame type is used when the guest signal is used without the `SA_SIGINFO` flag.
+    struct SigFrame_i32 {
+      uint32_t pretcode; ///< sigreturn return branch point.
+      int32_t Signal; ///< The signal hit.
+      FEXCore::x86::sigcontext sc; ///< The signal context.
+      FEXCore::x86::_libc_fpstate fpstate_unused; ///< Unused fpstate. Retained for backwards compatibility.
+      uint32_t extramask[1]; ///< Upper 32-bits of the signal mask. Lower 32-bits is in the sigcontext.
+      char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
+      ///< FP state now follows after this.
+    };
+
+    // The 32-bit realtime signal frame.
+    // This frame type is used when the guest signal is used with the `SA_SIGINFO` flag.
+    struct RTSigFrame_i32 {
+      uint32_t pretcode; ///< sigreturn return branch point.
+      int32_t Signal; ///< The signal hit.
+      uint32_t pinfo; ///< Pointer to siginfo_t
+      uint32_t puc; ///< Pointer to ucontext_t
+      FEXCore::x86::siginfo_t info;
+      FEXCore::x86::ucontext_t uc;
+      char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
+      ///< FP state now follows after this.
+    };
+
+    void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask);
+
+    void RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
+    void RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
+    void RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
+
+    ///< Setup the signal frame for x64.
+    uint64_t SetupFrame_x64(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
+      int Signal, siginfo_t *HostSigInfo, void *ucontext,
+      GuestSigAction *GuestAction, stack_t *GuestStack,
+      uint64_t NewGuestSP, const uint32_t eflags);
+
+    ///< Setup the signal frame for a 32-bit signal without SA_SIGINFO.
+    uint64_t SetupFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
+      int Signal, siginfo_t *HostSigInfo, void *ucontext,
+      GuestSigAction *GuestAction, stack_t *GuestStack,
+      uint64_t NewGuestSP, const uint32_t eflags);
+
+    ///< Setup the signal frame for a 32-bit signal with SA_SIGINFO.
+    uint64_t SetupRTFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
+      int Signal, siginfo_t *HostSigInfo, void *ucontext,
+      GuestSigAction *GuestAction, stack_t *GuestStack,
+      uint64_t NewGuestSP, const uint32_t eflags);
+
+    enum class RestoreType {
+      TYPE_REALTIME, ///< Signal restore type is from a `realtime` signal.
+      TYPE_NONREALTIME, ///< Signal restore type is from a `non-realtime` signal.
+      TYPE_PAUSE, ///< Signal restore type is from a GDB pause event.
+    };
+    ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
+    void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
+    bool HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
+    bool HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
+    bool HandleSIGILL(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
+
     std::mutex HostDelegatorMutex;
     std::mutex GuestDelegatorMutex;
   };
+
+  fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context *CTX);
 }

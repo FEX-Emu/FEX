@@ -30,8 +30,25 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
 
   void EmitDispatcher();
 
-  protected:
-    void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) override;
+  uint16_t GetSRAGPRCount() const override {
+    return SRA64.size();
+  }
+
+  uint16_t GetSRAFPRCount() const override {
+    return SRAFPR.size();
+  }
+
+  void GetSRAGPRMapping(uint8_t Mapping[16]) const override {
+    for (size_t i = 0; i < SRA64.size(); ++i) {
+      Mapping[i] = SRA64[i].Idx();
+    }
+  }
+
+  void GetSRAFPRMapping(uint8_t Mapping[16]) const override {
+    for (size_t i = 0; i < SRAFPR.size(); ++i) {
+      Mapping[i] = SRAFPR[i].Idx();
+    }
+  }
 
   private:
     // Long division helpers

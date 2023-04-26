@@ -427,25 +427,7 @@ int main(int argc, char **argv, char **const envp) {
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
 
-  auto SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
-
-  SignalDelegation->RegisterFrontendHostSignalHandler(SIGILL, [&SignalDelegation](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    ucontext_t* _context = (ucontext_t*)ucontext;
-    auto &mcontext = _context->uc_mcontext;
-    uint64_t PC{};
-#ifdef _M_ARM_64
-    PC = mcontext.pc;
-#else
-    PC = mcontext.gregs[REG_RIP];
-#endif
-    if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
-      // This is a host side assert. Don't deliver this to the guest
-      // We want to actually break here
-      SignalDelegation->UninstallHostHandler(Signal);
-      return true;
-    }
-    return false;
-  }, true);
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
 
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
@@ -475,7 +457,7 @@ int main(int argc, char **argv, char **const envp) {
 
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
-  CTX->SetVDSOSigReturn(FEX::VDSO::GetVDSOSymbols());
+  SignalDelegation->SetVDSOSigReturn();
 
   FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 

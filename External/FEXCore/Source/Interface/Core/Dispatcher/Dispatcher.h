@@ -2,7 +2,6 @@
 
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/fextl/memory.h>
-#include "Interface/Core/ArchHelpers/MContext.h"
 
 #include <cstdint>
 #include <signal.h>
@@ -57,16 +56,6 @@ public:
   uint64_t Start{};
   uint64_t End{};
 
-#ifndef _WIN32
-  bool HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext, GuestSigAction *GuestAction, stack_t *GuestStack);
-  bool HandleSIGILL(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
-  bool HandleSignalPause(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
-#endif
-
-  bool IsAddressInDispatcher(uint64_t Address) const {
-    return Address >= Start && Address < End;
-  }
-
   virtual void InitThreadPointers(FEXCore::Core::InternalThreadState *Thread) = 0;
 
   // These are across all arches for now
@@ -87,79 +76,25 @@ public:
     CallbackPtr(Frame, RIP);
   }
 
+  virtual uint16_t GetSRAGPRCount() const {
+    return 0U;
+  }
+
+  virtual uint16_t GetSRAFPRCount() const {
+    return 0U;
+  }
+
+  virtual void GetSRAGPRMapping(uint8_t Mapping[16]) const {
+  }
+
+  virtual void GetSRAFPRMapping(uint8_t Mapping[16]) const {
+  }
+
 protected:
   Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config)
     : CTX {ctx}
     , config {Config}
     {}
-
-#ifndef _WIN32
-  uint64_t ReconstructRIPFromContext(FEXCore::Core::CpuStateFrame *Frame, void *ucontext) const;
-  void RestoreFrame_x64(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
-  void RestoreFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
-  void RestoreRTFrame_ia32(ArchHelpers::Context::ContextBackup* Context, FEXCore::Core::CpuStateFrame *Frame, void *ucontext);
-
-  ///< Setup the signal frame for x64.
-  uint64_t SetupFrame_x64(FEXCore::Core::InternalThreadState *Thread, ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
-    int Signal, siginfo_t *HostSigInfo, void *ucontext,
-    GuestSigAction *GuestAction, stack_t *GuestStack,
-    uint64_t NewGuestSP, const uint32_t eflags);
-
-  ///< Setup the signal frame for a 32-bit signal without SA_SIGINFO.
-  uint64_t SetupFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
-    int Signal, siginfo_t *HostSigInfo, void *ucontext,
-    GuestSigAction *GuestAction, stack_t *GuestStack,
-    uint64_t NewGuestSP, const uint32_t eflags);
-
-  ///< Setup the signal frame for a 32-bit signal with SA_SIGINFO.
-  uint64_t SetupRTFrame_ia32(ArchHelpers::Context::ContextBackup* ContextBackup, FEXCore::Core::CpuStateFrame *Frame,
-    int Signal, siginfo_t *HostSigInfo, void *ucontext,
-    GuestSigAction *GuestAction, stack_t *GuestStack,
-    uint64_t NewGuestSP, const uint32_t eflags);
-
-  ArchHelpers::Context::ContextBackup* StoreThreadState(FEXCore::Core::InternalThreadState *Thread, int Signal, void *ucontext);
-
-  enum class RestoreType {
-    TYPE_REALTIME, ///< Signal restore type is from a `realtime` signal.
-    TYPE_NONREALTIME, ///< Signal restore type is from a `non-realtime` signal.
-    TYPE_PAUSE, ///< Signal restore type is from a GDB pause event.
-  };
-  void RestoreThreadState(FEXCore::Core::InternalThreadState *Thread, void *ucontext, RestoreType Type);
-#endif
-  /*
-   * Signal frames on 32-bit architecture needs to match exactly how the kernel generates the frame.
-   * This is because large parts of the signal frame definition is part of the UAPI.
-   * This means that when FEX sets up the signal frame, it needs to match the UAPI stack setup.
-   *
-   * The two signal stack frame types below describe the two different 32-bit frame types.
-   */
-
-  // The 32-bit non-realtime signal frame.
-  // This frame type is used when the guest signal is used without the `SA_SIGINFO` flag.
-  struct SigFrame_i32 {
-    uint32_t pretcode; ///< sigreturn return branch point.
-    int32_t Signal; ///< The signal hit.
-    FEXCore::x86::sigcontext sc; ///< The signal context.
-    x86::_libc_fpstate fpstate_unused; ///< Unused fpstate. Retained for backwards compatibility.
-    uint32_t extramask[1]; ///< Upper 32-bits of the signal mask. Lower 32-bits is in the sigcontext.
-    char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
-    ///< FP state now follows after this.
-  };
-
-  // The 32-bit realtime signal frame.
-  // This frame type is used when the guest signal is used with the `SA_SIGINFO` flag.
-  struct RTSigFrame_i32 {
-    uint32_t pretcode; ///< sigreturn return branch point.
-    int32_t Signal; ///< The signal hit.
-    uint32_t pinfo; ///< Pointer to siginfo_t
-    uint32_t puc; ///< Pointer to ucontext_t
-    FEXCore::x86::siginfo_t info;
-    FEXCore::x86::ucontext_t uc;
-    char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
-    ///< FP state now follows after this.
-  };
-
-  virtual void SpillSRA(FEXCore::Core::InternalThreadState *Thread, void *ucontext, uint32_t IgnoreMask) {}
 
   FEXCore::Context::ContextImpl *CTX;
   DispatcherConfig config;

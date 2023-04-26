@@ -105,7 +105,6 @@ set (SRCS
   Interface/Core/X86Tables.cpp
   Interface/Core/X86DebugInfo.cpp
   Interface/Core/X86HelperGen.cpp
-  Interface/Core/ArchHelpers/Arm64_stubs.cpp
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Dispatcher/X86Dispatcher.cpp
@@ -169,11 +168,6 @@ if (ENABLE_INTERPRETER)
     Interface/Core/Interpreter/MiscOps.cpp
     Interface/Core/Interpreter/MoveOps.cpp
     Interface/Core/Interpreter/VectorOps.cpp)
-endif()
-
-if(_M_ARM_64)
-  list(APPEND SRCS
-    Interface/Core/ArchHelpers/Arm64.cpp)
 endif()
 
 set(DEFINES -DTHREAD_LOCAL=_Thread_local)

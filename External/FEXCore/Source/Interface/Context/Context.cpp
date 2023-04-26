@@ -90,9 +90,6 @@ namespace FEXCore::Context {
   FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
     return CPUID.RunFunctionName(Function, Leaf, CPU);
   }
-  void SetVDSOSigReturn(FEXCore::Context::Context *CTX, const VDSOSigReturn &Pointers) {
-    CTX->SetVDSOSigReturn(Pointers);
-  }
 
 namespace Debug {
   //void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {

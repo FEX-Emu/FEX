@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <type_traits>
 
-namespace FEXCore::ArchHelpers::Context {
+namespace FEX::ArchHelpers::Context {
 #ifndef _WIN32
 
 enum ContextFlags : uint32_t {
@@ -194,12 +194,12 @@ static inline uint32_t GetProtectFlags(void* ucontext) {
   uint32_t ProtectFlags{};
   if ((ESR & ESR1_DataAbort_Level) == ESR1_DataAbort_Level_EL0) {
     // Always a user error for us.
-    ProtectFlags |= X86State::X86_PF_USER;
+    ProtectFlags |= FEXCore::X86State::X86_PF_USER;
   }
 
   if (ESR & ESR1_WNR) {
     // Fault was due to a write
-    ProtectFlags |= X86State::X86_PF_WRITE;
+    ProtectFlags |= FEXCore::X86State::X86_PF_WRITE;
   }
 
   // PF_PROT is not returned to user on x86, so don't return the difference between permission fault and translation fault.

@@ -6,9 +6,9 @@ $end_info$
 
 #pragma once
 
-#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#include <cstddef>
 #include <linux/types.h>
 #include <asm/ipcbuf.h>
 #include <asm/msgbuf.h>
@@ -879,8 +879,8 @@ OldGuestSigAction_32 {
 
   OldGuestSigAction_32() = delete;
 
-  operator FEXCore::GuestSigAction() const {
-    FEXCore::GuestSigAction action{};
+  operator FEX::HLE::GuestSigAction() const {
+    FEX::HLE::GuestSigAction action{};
 
     action.sigaction_handler.handler = reinterpret_cast<decltype(action.sigaction_handler.handler)>(handler_32.Ptr);
     action.sa_flags = sa_flags;
@@ -889,7 +889,7 @@ OldGuestSigAction_32 {
     return action;
   }
 
-  OldGuestSigAction_32(FEXCore::GuestSigAction action)
+  OldGuestSigAction_32(FEX::HLE::GuestSigAction action)
     : handler_32 {reinterpret_cast<void*>(action.sigaction_handler.handler)}
     , restorer_32 {reinterpret_cast<void*>(action.restorer)} {
     sa_flags = action.sa_flags;
@@ -911,12 +911,12 @@ GuestSigAction_32 {
 
   uint32_t sa_flags;
   FEX::HLE::x32::compat_ptr<void> restorer_32;
-  FEXCore::GuestSAMask sa_mask;
+  FEX::HLE::GuestSAMask sa_mask;
 
   GuestSigAction_32() = delete;
 
-  operator FEXCore::GuestSigAction() const {
-    FEXCore::GuestSigAction action{};
+  operator FEX::HLE::GuestSigAction() const {
+    FEX::HLE::GuestSigAction action{};
 
     action.sigaction_handler.handler = reinterpret_cast<decltype(action.sigaction_handler.handler)>(handler_32.Ptr);
     action.sa_flags = sa_flags;
@@ -925,7 +925,7 @@ GuestSigAction_32 {
     return action;
   }
 
-  GuestSigAction_32(FEXCore::GuestSigAction action)
+  GuestSigAction_32(FEX::HLE::GuestSigAction action)
     : handler_32 {reinterpret_cast<void*>(action.sigaction_handler.handler)}
     , restorer_32 {reinterpret_cast<void*>(action.restorer)} {
     sa_flags = action.sa_flags;

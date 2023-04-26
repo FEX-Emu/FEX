@@ -1,12 +1,9 @@
 #include "Interface/Context/Context.h"
 
-#include "Interface/Core/ArchHelpers/Arm64.h"
-#include "Interface/Core/ArchHelpers/MContext.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/Interpreter/InterpreterClass.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
@@ -47,18 +44,6 @@ InterpreterCore::InterpreterCore(Dispatcher *Dispatcher, FEXCore::Core::Internal
   Interpreter.FragmentExecuter = reinterpret_cast<uint64_t>(&InterpreterOps::InterpretIR);
 
   ClearCache();
-}
-
-void InterpreterCore::InitializeSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
-  CTX->SignalDelegation->RegisterHostSignalHandler(SIGILL, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return reinterpret_cast<Context::ContextImpl*>(Thread->CTX)->Dispatcher->HandleSIGILL(Thread, Signal, info, ucontext);
-  }, true);
-
-#ifdef _M_ARM_64
-  CTX->SignalDelegation->RegisterHostSignalHandler(SIGBUS, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-    return FEXCore::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
-  }, true);
-#endif
 }
 
 CPUBackend::CompiledCode InterpreterCore::CompileCode(uint64_t Entry, [[maybe_unused]] FEXCore::IR::IRListView const *IR, [[maybe_unused]] FEXCore::Core::DebugData *DebugData, FEXCore::IR::RegisterAllocationData *RAData, bool GDBEnabled) {
@@ -105,10 +90,6 @@ void InterpreterCore::ClearCache() {
 
 fextl::unique_ptr<CPUBackend> CreateInterpreterCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread) {
   return fextl::make_unique<InterpreterCore>(ctx->Dispatcher.get(), Thread);
-}
-
-void InitializeInterpreterSignalHandlers(FEXCore::Context::ContextImpl *CTX) {
-  InterpreterCore::InitializeSignalHandlers(CTX);
 }
 
 CPUBackendFeatures GetInterpreterBackendFeatures() {

@@ -188,7 +188,7 @@ int main(int argc, char **argv, char **const envp)
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
 
-  fextl::unique_ptr<FEX::HLE::SignalDelegator> SignalDelegation = fextl::make_unique<FEX::HLE::SignalDelegator>();
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
 
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(new DummySyscallHandler());
