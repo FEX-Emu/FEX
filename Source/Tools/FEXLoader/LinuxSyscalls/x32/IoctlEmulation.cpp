@@ -567,6 +567,12 @@ namespace FEX::HLE::x32 {
       return -EPERM;
     }
 
+    uint32_t Default_Handler(int fd, uint32_t cmd, uint32_t args) {
+      // Default handler assumes everything is correct and doesn't need to do any work.
+      uint64_t Result = ::ioctl(fd, cmd, args);
+      SYSCALL_ERRNO();
+    }
+
     void AssignDeviceTypeToFD(int fd, drm_version const &Version) {
       if (Version.name) {
         if (strncmp(Version.name, "amdgpu", Version.name_len) == 0) {
@@ -600,7 +606,8 @@ namespace FEX::HLE::x32 {
           FDToHandler.SetFDHandler(fd, Virtio_Handler);
         }
         else {
-          LogMan::Msg::EFmt("Unknown DRM device: '{}'", Version.name);
+          LogMan::Msg::IFmt("Unknown DRM device: '{}'. Using default passthrough", Version.name);
+          FDToHandler.SetFDHandler(fd, Default_Handler);
         }
       }
     }
