@@ -2283,7 +2283,7 @@ DEF_OP(VPCMPESTRX) {
   const auto Is64Bit = Op->GPRSize == 8;
 
   const auto RAX = *GetSrc<uint64_t*>(Data->SSAData, Op->RAX);
-  const auto RDX = *GetSrc<uint64_t*>(Data->SSAData, Op->RDX);;
+  const auto RDX = *GetSrc<uint64_t*>(Data->SSAData, Op->RDX);
   const auto LHS = *GetSrc<__uint128_t*>(Data->SSAData, Op->LHS);
   const auto RHS = *GetSrc<__uint128_t*>(Data->SSAData, Op->RHS);
 
@@ -2291,6 +2291,19 @@ DEF_OP(VPCMPESTRX) {
   const auto Control = Op->Control | (uint16_t(Is64Bit) << 8);
 
   const auto Result = OpHandlers<IR::OP_VPCMPESTRX>::handle(RAX, RDX, LHS, RHS, Control);
+
+  memset(GDP, 0, sizeof(uint64_t));
+  memcpy(GDP, &Result, sizeof(Result));
+}
+
+DEF_OP(VPCMPISTRX) {
+  const auto Op = IROp->C<IR::IROp_VPCMPISTRX>();
+
+  const auto LHS = *GetSrc<__uint128_t*>(Data->SSAData, Op->LHS);
+  const auto RHS = *GetSrc<__uint128_t*>(Data->SSAData, Op->RHS);
+  const auto Control = Op->Control;
+
+  const auto Result = OpHandlers<IR::OP_VPCMPISTRX>::handle(LHS, RHS, Control);
 
   memset(GDP, 0, sizeof(uint64_t));
   memcpy(GDP, &Result, sizeof(Result));

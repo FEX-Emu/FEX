@@ -4591,15 +4591,13 @@ void OpDispatchBuilder::VPERMILRegOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PCMPESTRXOpImpl(OpcodeArgs,
+OrderedNode* OpDispatchBuilder::PCMPXSTRIOpImpl(OpcodeArgs,
                                                 const X86Tables::DecodedOperand& Src1Op,
                                                 const X86Tables::DecodedOperand& Src2Op,
-                                                const X86Tables::DecodedOperand& Imm) {
+                                                const X86Tables::DecodedOperand& Imm,
+                                                bool IsExplicit) {
   LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
   const auto Control = Imm.Data.Literal.Value;
-
-  // Will be 4 in the absence of a REX.W bit and 8 in the presence of a REX.W bit.
-  const auto SrcSize = GetSrcSize(Op);
 
   // SSE4.2 string instructions modify flags, so invalidate
   // any previously deferred flags.
@@ -4614,10 +4612,18 @@ OrderedNode* OpDispatchBuilder::PCMPESTRXOpImpl(OpcodeArgs,
   OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, 16, Op->Flags, 1);
 
-  OrderedNode *SrcRAX = LoadGPRRegister(X86State::REG_RAX);
-  OrderedNode *SrcRDX = LoadGPRRegister(X86State::REG_RDX);
+  OrderedNode *IntermediateResult{};
+  if (IsExplicit) {
+    // Will be 4 in the absence of a REX.W bit and 8 in the presence of a REX.W bit.
+    const auto SrcSize = GetSrcSize(Op);
 
-  OrderedNode *IntermediateResult = _VPCMPESTRX(SrcSize, Src1, Src2, SrcRAX, SrcRDX, Control);
+    OrderedNode *SrcRAX = LoadGPRRegister(X86State::REG_RAX);
+    OrderedNode *SrcRDX = LoadGPRRegister(X86State::REG_RDX);
+
+    IntermediateResult = _VPCMPESTRX(SrcSize, Src1, Src2, SrcRAX, SrcRDX, Control);
+  } else {
+    IntermediateResult = _VPCMPISTRX(Src1, Src2, Control);
+  }
   OrderedNode *ResultNoFlags = _And(IntermediateResult, _Constant(0xFFFF));
 
   // For the indexed variant of the instructions, if control[6] is set, then we
@@ -4660,8 +4666,12 @@ OrderedNode* OpDispatchBuilder::PCMPESTRXOpImpl(OpcodeArgs,
 }
 
 void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
-  OrderedNode *Result = PCMPESTRXOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1]);
+  OrderedNode *Result = PCMPXSTRIOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], true);
+  StoreGPRRegister(X86State::REG_RCX, Result, 4);
+}
+void OpDispatchBuilder::VPCMPISTRIOp(OpcodeArgs) {
+  OrderedNode *Result = PCMPXSTRIOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
   StoreGPRRegister(X86State::REG_RCX, Result, 4);
 }
 
-}
+} // namespace FEXCore::IR
