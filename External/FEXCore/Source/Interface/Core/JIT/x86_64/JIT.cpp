@@ -339,6 +339,31 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         break;
       }
 
+      case FABI_I32_I128_I128_I16: {
+        PushRegs();
+
+        const auto Op = IROp->C<IR::IROp_VPCMPISTRX>();
+
+        const auto LHS = GetSrc(Op->LHS.ID());
+        const auto RHS = GetSrc(Op->RHS.ID());
+        const auto Control = Op->Control;
+
+        movq(rdi, LHS);
+        pextrq(rsi, LHS, 1);
+
+        movq(rdx, RHS);
+        pextrq(rcx, RHS, 1);
+
+        mov(r8, Control);
+
+        call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex])]);
+
+        PopRegs();
+
+        mov(GetDst<RA_32>(Node), rax);
+        break;
+      }
+
       case FABI_UNKNOWN:
       default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED

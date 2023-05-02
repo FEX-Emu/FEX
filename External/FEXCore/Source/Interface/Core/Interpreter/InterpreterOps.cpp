@@ -268,6 +268,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VTBL1,                  VTBL1);
   REGISTER_OP(VREV64,                 VRev64);
   REGISTER_OP(VPCMPESTRX,             VPCMPESTRX);
+  REGISTER_OP(VPCMPISTRX,             VPCMPISTRX);
 
   // Encryption ops
   REGISTER_OP(VAESIMC,                AESImc);

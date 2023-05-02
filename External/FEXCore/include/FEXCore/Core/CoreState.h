@@ -128,6 +128,7 @@ namespace FEXCore::Core {
 
     // SSE4.2 string instructions
     OPINDEX_VPCMPESTRX,
+    OPINDEX_VPCMPISTRX,
 
     // Maximum
     OPINDEX_MAX,

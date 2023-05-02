@@ -1408,6 +1408,18 @@
                 ],
         "HasSideEffects": true,
         "DestSize": "4"
+      },
+      "GPR = VPCMPISTRX FPR:$LHS, FPR:$RHS, u8:$Control": {
+        "Desc": ["Performs intermediate behavior analogous to the x86 PCMPISTRI/PCMPISTRM instruction",
+                 "This will return the intermediate result of a PCMPISTR-type operation, but NOT the final",
+                 "result. This must be derived from the intermediate result",
+
+                 "NOTE: On top of returning the intermediate result, the returned value also combines the status",
+                 "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
+                 "course of creating the intermediate result"
+                ],
+        "HasSideEffects": true,
+        "DestSize": "4"
       }
     },
     "Conv": {
