@@ -249,7 +249,7 @@ namespace FEX::HLE {
     // Save guest state
     // We can't guarantee if registers are in context or host GPRs
     // So we need to save everything
-    memcpy(&Context->GuestState, Thread->CurrentFrame, sizeof(FEXCore::Core::CPUState));
+    memcpy(&Context->GuestState, &Thread->CurrentFrame->State, sizeof(FEXCore::Core::CPUState));
 
     // Set the new SP
     ArchHelpers::Context::SetSp(ucontext, NewSP);
@@ -258,6 +258,7 @@ namespace FEX::HLE {
     Context->FPStateLocation = 0;
     Context->UContextLocation = 0;
     Context->SigInfoLocation = 0;
+    Context->InSyscallInfo = 0;
 
     // Store fault to top status and then reset it
     Context->FaultToTopAndGeneratedException = Thread->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException;
@@ -350,7 +351,7 @@ namespace FEX::HLE {
     ArchHelpers::Context::RestoreContext(ucontext, Context);
 
     // Reset the guest state
-    memcpy(Thread->CurrentFrame, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
+    memcpy(&Thread->CurrentFrame->State, &Context->GuestState, sizeof(FEXCore::Core::CPUState));
 
     if (Context->UContextLocation) {
       auto Frame = Thread->CurrentFrame;
@@ -384,6 +385,10 @@ namespace FEX::HLE {
     // If the guest modified the RIP then we need to take special precautions here
     if (Context->OriginalRIP != guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] ||
         Context->FaultToTopAndGeneratedException) {
+
+      // Restore previous `InSyscallInfo` structure.
+      Frame->InSyscallInfo = Context->InSyscallInfo;
+
       // Hack! Go back to the top of the dispatcher top
       // This is only safe inside the JIT rather than anything outside of it
       ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
@@ -456,6 +461,9 @@ namespace FEX::HLE {
     // If the guest modified the RIP then we need to take special precautions here
     if (Context->OriginalRIP != guest_uctx->sc.ip ||
         Context->FaultToTopAndGeneratedException) {
+      // Restore previous `InSyscallInfo` structure.
+      Frame->InSyscallInfo = Context->InSyscallInfo;
+
       // Hack! Go back to the top of the dispatcher top
       // This is only safe inside the JIT rather than anything outside of it
       ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
@@ -539,6 +547,10 @@ namespace FEX::HLE {
     // If the guest modified the RIP then we need to take special precautions here
     if (Context->OriginalRIP != guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] ||
         Context->FaultToTopAndGeneratedException) {
+
+      // Restore previous `InSyscallInfo` structure.
+      Frame->InSyscallInfo = Context->InSyscallInfo;
+
       // Hack! Go back to the top of the dispatcher top
       // This is only safe inside the JIT rather than anything outside of it
       ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
@@ -1166,6 +1178,10 @@ namespace FEX::HLE {
         SpillSRA(Thread, ucontext, IgnoreMask);
 
         ContextBackup->Flags |= ArchHelpers::Context::ContextFlags::CONTEXT_FLAG_INJIT;
+
+        // We are leaving the syscall information behind. Make sure to store the previous state.
+        ContextBackup->InSyscallInfo = Thread->CurrentFrame->InSyscallInfo;
+        Thread->CurrentFrame->InSyscallInfo = 0;
       } else {
         if (!IsAddressInDispatcher(OldPC)) {
           // This is likely to cause issues but in some cases it isn't fatal
