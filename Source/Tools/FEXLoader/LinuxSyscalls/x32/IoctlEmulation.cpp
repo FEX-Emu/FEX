@@ -569,34 +569,34 @@ namespace FEX::HLE::x32 {
 
     void AssignDeviceTypeToFD(int fd, drm_version const &Version) {
       if (Version.name) {
-        if (strcmp(Version.name, "amdgpu") == 0) {
+        if (strncmp(Version.name, "amdgpu", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, AMDGPU_Handler);
         }
-        else if (strcmp(Version.name, "radeon") == 0) {
+        else if (strncmp(Version.name, "radeon", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, RADEON_Handler);
         }
-        else if (strcmp(Version.name, "msm") == 0) {
+        else if (strncmp(Version.name, "msm", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, MSM_Handler);
         }
-        else if (strcmp(Version.name, "nouveau") == 0) {
+        else if (strncmp(Version.name, "nouveau", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, Nouveau_Handler);
         }
-        else if (strcmp(Version.name, "i915") == 0) {
+        else if (strncmp(Version.name, "i915", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, I915_Handler);
         }
-        else if (strcmp(Version.name, "panfrost") == 0) {
+        else if (strncmp(Version.name, "panfrost", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, Panfrost_Handler);
         }
-        else if (strcmp(Version.name, "lima") == 0) {
+        else if (strncmp(Version.name, "lima", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, Lima_Handler);
         }
-        else if (strcmp(Version.name, "vc4") == 0) {
+        else if (strncmp(Version.name, "vc4", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, VC4_Handler);
         }
-        else if (strcmp(Version.name, "v3d") == 0) {
+        else if (strncmp(Version.name, "v3d", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, V3D_Handler);
         }
-        else if (strcmp(Version.name, "virtio_gpu") == 0) {
+        else if (strncmp(Version.name, "virtio_gpu", Version.name_len) == 0) {
           FDToHandler.SetFDHandler(fd, Virtio_Handler);
         }
         else {
