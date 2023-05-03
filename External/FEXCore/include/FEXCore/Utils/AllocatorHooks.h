@@ -72,13 +72,13 @@ namespace FEXCore::Allocator {
 #ifdef _WIN32
   inline void *malloc(size_t size) { return ::malloc(size); }
   inline void *calloc(size_t n, size_t size) { return ::calloc(n, size); }
-  inline void *memalign(size_t align, size_t s) { return ::_aligned_malloc(align, s); }
+  inline void *memalign(size_t align, size_t s) { return ::_aligned_malloc(s, align); }
   inline void *valloc(size_t size)
   {
-    return ::_aligned_malloc(4096, size);
+    return ::_aligned_malloc(size, 4096);
   }
   inline int posix_memalign(void** r, size_t a, size_t s) {
-    void* ptr = _aligned_malloc(a, s);
+    void* ptr = _aligned_malloc(s, a);
     if (ptr) {
       *r = ptr;
     }
@@ -87,7 +87,7 @@ namespace FEXCore::Allocator {
   inline void *realloc(void* ptr, size_t size) { return ::realloc(ptr, size); }
   inline void free(void* ptr) { return ::free(ptr); }
   inline size_t malloc_usable_size(void *ptr) { return ::_msize(ptr); }
-  inline void *aligned_alloc(size_t a, size_t s) { return ::_aligned_malloc(a, s); }
+  inline void *aligned_alloc(size_t a, size_t s) { return ::_aligned_malloc(s, a); }
   inline void aligned_free(void* ptr) { return ::_aligned_free(ptr); }
 #elif defined(ENABLE_JEMALLOC)
   inline void *malloc(size_t size) { return ::je_malloc(size); }
