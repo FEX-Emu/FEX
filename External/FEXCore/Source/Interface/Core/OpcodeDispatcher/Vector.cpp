@@ -4591,13 +4591,9 @@ void OpDispatchBuilder::VPERMILRegOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PCMPXSTRIOpImpl(OpcodeArgs,
-                                                const X86Tables::DecodedOperand& Src1Op,
-                                                const X86Tables::DecodedOperand& Src2Op,
-                                                const X86Tables::DecodedOperand& Imm,
-                                                bool IsExplicit) {
-  LOGMAN_THROW_A_FMT(Imm.IsLiteral(), "Imm needs to be a literal");
-  const auto Control = Imm.Data.Literal.Value;
+void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit) {
+  LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
+  const auto Control = Op->Src[1].Data.Literal.Value;
 
   // SSE4.2 string instructions modify flags, so invalidate
   // any previously deferred flags.
@@ -4609,8 +4605,8 @@ OrderedNode* OpDispatchBuilder::PCMPXSTRIOpImpl(OpcodeArgs,
   //       instructions in the Intel Software Development Manual).
   //
   //       So, we specify Src2 as having an alignment of 1 to indicate this.
-  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, 16, Op->Flags, -1);
-  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, 16, Op->Flags, 1);
+  OrderedNode *Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags, 1);
 
   OrderedNode *IntermediateResult{};
   if (IsExplicit) {
@@ -4662,16 +4658,14 @@ OrderedNode* OpDispatchBuilder::PCMPXSTRIOpImpl(OpcodeArgs,
   SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
 
   // ... and we're done!
-  return ECXResult;
+  StoreGPRRegister(X86State::REG_RCX, ECXResult, 4);
 }
 
 void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
-  OrderedNode *Result = PCMPXSTRIOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], true);
-  StoreGPRRegister(X86State::REG_RCX, Result, 4);
+  PCMPXSTRXOpImpl(Op, true);
 }
 void OpDispatchBuilder::VPCMPISTRIOp(OpcodeArgs) {
-  OrderedNode *Result = PCMPXSTRIOpImpl(Op, Op->Dest, Op->Src[0], Op->Src[1], false);
-  StoreGPRRegister(X86State::REG_RCX, Result, 4);
+  PCMPXSTRXOpImpl(Op, false);
 }
 
 } // namespace FEXCore::IR
