@@ -37,7 +37,7 @@ extern "C" {
 namespace FEXCore::Allocator {
 #ifdef _WIN32
   inline void *VirtualAlloc(size_t Size, bool Execute = false) {
-    return ::VirtualAlloc(nullptr, Size, 0, PAGE_READWRITE | (Execute ? PAGE_EXECUTE : 0));
+    return ::VirtualAlloc(nullptr, Size, MEM_COMMIT, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
   }
 
   inline void VirtualFree(void *Ptr, size_t Size) {
@@ -46,7 +46,7 @@ namespace FEXCore::Allocator {
   inline void VirtualDontNeed(void *Ptr, size_t Size) {
     // Match madvise behaviour as best as we can here.
     // Protections are ignored but still required to be valid.
-    ::VirtualAlloc(Ptr, Size, PAGE_NOACCESS, MEM_RESET);
+    ::VirtualAlloc(Ptr, Size, MEM_RESET, PAGE_NOACCESS);
   }
 
 #else
