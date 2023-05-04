@@ -1,11 +1,11 @@
 
 #pragma once
 
+#include "ArchHelpers/UContext.h"
 #include "Common/Config.h"
 #include "Common/FDUtils.h"
 #include "FEXCore/Utils/Allocator.h"
 #include "LinuxSyscalls/Syscalls.h"
-#include "LinuxSyscalls/UContext.h"
 #include "VDSO_Emulation.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"

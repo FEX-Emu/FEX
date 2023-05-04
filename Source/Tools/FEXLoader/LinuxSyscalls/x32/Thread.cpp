@@ -4,9 +4,9 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
+#include "ArchHelpers/UContext.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
-#include "LinuxSyscalls/UContext.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x32/Thread.h"
 #include "LinuxSyscalls/x32/Types.h"

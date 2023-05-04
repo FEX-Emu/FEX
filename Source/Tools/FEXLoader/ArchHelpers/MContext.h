@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LinuxSyscalls/UContext.h"
+#include "UContext.h"
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Core/CoreState.h>
@@ -140,6 +140,10 @@ static inline void SetState(void* ucontext, uint64_t val) {
 
 static inline uint64_t GetArmReg(void* ucontext, uint32_t id) {
   return GetMContext(ucontext)->regs[id];
+}
+
+static inline uint64_t *GetArmGPRs(void* ucontext) {
+  return reinterpret_cast<uint64_t*>(GetMContext(ucontext)->regs);
 }
 
 static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
@@ -305,6 +309,10 @@ static inline void SetArmReg(void* ucontext, uint32_t id, uint64_t val) {
 }
 
 static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
+  ERROR_AND_DIE_FMT("Not implemented for x86 host");
+}
+
+static inline uint64_t *GetArmGPRs(void* ucontext) {
   ERROR_AND_DIE_FMT("Not implemented for x86 host");
 }
 

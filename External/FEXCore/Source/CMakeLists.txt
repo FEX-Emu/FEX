@@ -148,6 +148,12 @@ set (SRCS
   Utils/Profiler.cpp
   )
 
+if (_M_ARM_64)
+  list(APPEND SRCS Utils/ArchHelpers/Arm64.cpp)
+else()
+  list(APPEND SRCS Utils/ArchHelpers/Arm64_stubs.cpp)
+endif()
+
 if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
   list(APPEND FEXCORE_BASE_SRCS
     Utils/AllocatorOverride.cpp)

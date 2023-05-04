@@ -8,7 +8,7 @@ $end_info$
 #pragma once
 
 #include "LinuxSyscalls/Types.h"
-#include "LinuxSyscalls/ArchHelpers/MContext.h"
+#include "ArchHelpers/MContext.h"
 #include "VDSO_Emulation.h"
 
 #include <FEXCore/Config/Config.h>
