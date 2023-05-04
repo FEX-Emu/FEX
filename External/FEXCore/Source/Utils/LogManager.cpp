@@ -36,38 +36,6 @@ fextl::vector<MsgHandler> Handlers;
 void InstallHandler(MsgHandler Handler) { Handlers.emplace_back(Handler); }
 void UnInstallHandlers() { Handlers.clear(); }
 
-static void M(DebugLevels Level, const char *fmt, va_list args) {
-  size_t MsgSize = 1024;
-  char *Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-  va_list argsCopy;
-  va_copy(argsCopy, args);
-  size_t Return = vsnprintf(Buffer, MsgSize, fmt, argsCopy);
-  va_end(argsCopy);
-  if (Return >= MsgSize) {
-    // Allocate a bigger size on failure
-    MsgSize = Return;
-    Buffer = reinterpret_cast<char*>(alloca(MsgSize));
-    va_end(argsCopy);
-    va_copy(argsCopy, args);
-    vsnprintf(Buffer, MsgSize, fmt, argsCopy);
-    va_end(argsCopy);
-  }
-  for (auto &Handler : Handlers) {
-    Handler(Level, Buffer);
-  }
-}
-
-void D(const char *fmt, ...) {
-  if (MSG_LEVEL < DEBUG) {
-    return;
-  }
-
-  va_list args;
-  va_start(args, fmt);
-  M(DEBUG, fmt, args);
-  va_end(args);
-}
-
 void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {
   const auto msg = fextl::fmt::vformat(fmt, args);
 

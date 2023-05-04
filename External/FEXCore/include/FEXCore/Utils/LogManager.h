@@ -64,8 +64,6 @@ using MsgHandler = void(*)(DebugLevels Level, char const *Message);
 FEX_DEFAULT_VISIBILITY void InstallHandler(MsgHandler Handler);
 FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
 
-FEX_DEFAULT_VISIBILITY void D(const char *fmt, ...);
-
 // Fmt-capable interface.
 
 FEX_DEFAULT_VISIBILITY void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args);
