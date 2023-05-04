@@ -77,6 +77,7 @@ configure_file(
 
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
+add_compile_options(-fno-exceptions)
 add_subdirectory(Source/)
 
 install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
