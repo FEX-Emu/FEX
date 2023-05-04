@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <new>
-#include <fmt/format.h>
 
 namespace fextl {
   template<class T>
@@ -24,6 +23,7 @@ namespace fextl {
   using unique_ptr = std::unique_ptr<T, Deleter>;
 
   template<class T, class... Args>
+  requires (!std::is_array_v<T>)
   fextl::unique_ptr<T> make_unique(Args&&... args) {
     auto ptr = FEXCore::Allocator::aligned_alloc(std::alignment_of_v<T>, sizeof(T));
     auto Result = ::new (ptr) T (std::forward<Args>(args)...);
