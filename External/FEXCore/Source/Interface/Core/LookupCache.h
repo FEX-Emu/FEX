@@ -168,8 +168,6 @@ public:
 
 private:
   void CacheBlockMapping(uint64_t Address, uintptr_t HostCode) {
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
-
     // Do L1
     auto &L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     L1Entry.GuestCode = Address;
