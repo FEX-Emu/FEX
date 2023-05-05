@@ -28,21 +28,37 @@
 #include <utility>
 
 namespace FEXCore::CPU {
-// All but x29 are caller saved
+// Register x18 is unused in the current configuration.
+// This is due to it being a platform register on wine platforms.
+// TODO: Allow x18 register allocation in the future to gain one more register.
+
+// All but x19 and x29 are caller saved
 constexpr std::array<FEXCore::ARMEmitter::Register, 16> SRA64 = {
-  FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5, FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7, FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9, FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
+  FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
+  FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7,
+  FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9,
+  FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
   // Registers that don't exist on 32-bit
-  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13, FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r18, FEXCore::ARMEmitter::Reg::r29
+  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13,
+  FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
+  FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
+  FEXCore::ARMEmitter::Reg::r19, FEXCore::ARMEmitter::Reg::r29
 };
 
-// All are callee saved (except additional registers from 32-bit)
 constexpr std::array<FEXCore::ARMEmitter::Register, 9 + 8> RA64 = {
-  FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21, FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23, FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25, FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
-  FEXCore::ARMEmitter::Reg::r19,
+  // All these callee saved
+  FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21,
+  FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
+  FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25,
+  FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
+  FEXCore::ARMEmitter::Reg::r30,
 
   // Registers only available on 32-bit
-  // All these are caller saved.
-  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13, FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15, FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17, FEXCore::ARMEmitter::Reg::r18, FEXCore::ARMEmitter::Reg::r29
+  // All these are caller saved (except for r19).
+  FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13,
+  FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
+  FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
+  FEXCore::ARMEmitter::Reg::r19, FEXCore::ARMEmitter::Reg::r29
 };
 
 constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 4 + 3> RA64Pair = {{
@@ -59,19 +75,36 @@ constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitte
 
 // All are caller saved
 constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
-  FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17, FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19, FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21, FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+  FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17,
+  FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
+  FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21,
+  FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
 
   // Registers that don't exist on 32-bit
-  FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27, FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
+  FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25,
+  FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
+  FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29,
+  FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
 };
 
 //  v8..v15 = (lower 64bits) Callee saved
 constexpr std::array<FEXCore::ARMEmitter::VRegister, 12 + 8> RAFPR = {
-/*FEXCore::ARMEmitter::VReg::v0,  FEXCore::ARMEmitter::VReg::v1,  FEXCore::ARMEmitter::VReg::v2,  FEXCore::ARMEmitter::VReg::v3,*/FEXCore::ARMEmitter::VReg::v4,  FEXCore::ARMEmitter::VReg::v5,  FEXCore::ARMEmitter::VReg::v6,  FEXCore::ARMEmitter::VReg::v7,  // FEXCore::ARMEmitter::VReg::v0 ~ FEXCore::ARMEmitter::VReg::v3 are used as temps
-  FEXCore::ARMEmitter::VReg::v8,  FEXCore::ARMEmitter::VReg::v9,  FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11, FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13, FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+  // v0 ~ v3 are used as temps.
+  // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
+  // FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
+
+  FEXCore::ARMEmitter::VReg::v4, FEXCore::ARMEmitter::VReg::v5,
+  FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
+  FEXCore::ARMEmitter::VReg::v8, FEXCore::ARMEmitter::VReg::v9,
+  FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11,
+  FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
+  FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
 
   // Registers only available on 32-bit
-  FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25, FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27, FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29, FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
+  FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25,
+  FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
+  FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29,
+  FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
 };
 
 // Contains the address to the currently available CPU state
