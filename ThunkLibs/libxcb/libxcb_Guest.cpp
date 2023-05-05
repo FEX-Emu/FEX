@@ -80,6 +80,7 @@ extern "C" {
 
     // Start a guest side thread that allows us to do callbacks from xcb safely
     if (!CBThread.joinable()) {
+      CBDone = false;
       CBThread = std::thread(CallbackThreadFunc);
     }
   }
@@ -125,6 +126,18 @@ extern "C" {
     args.p = Ptr;
     fexthunks_libxcb_FEX_usable_size(&args);
     return args.rv;
+  }
+
+  xcb_connection_t * xcb_connect_to_fd(int a_0, xcb_auth_info_t * a_1) {
+    auto ret = fexfn_pack_xcb_connect_to_fd(a_0, a_1);
+
+    if (xcb_get_file_descriptor(ret) != -1) {
+      // Only create callback on valid xcb connections.
+      // Checking for FD is the easiest way to do this.
+      CreateCallback();
+    }
+    InitializeExtensions(ret);
+    return ret;
   }
 
   xcb_connection_t * xcb_connect(const char * a_0,int * a_1){

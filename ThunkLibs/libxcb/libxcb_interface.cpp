@@ -42,7 +42,7 @@ template<> struct fex_gen_config<xcb_prefetch_extension_data> {};
 template<> struct fex_gen_config<xcb_get_setup> {};
 template<> struct fex_gen_config<xcb_get_file_descriptor> {};
 template<> struct fex_gen_config<xcb_connection_has_error> {};
-template<> struct fex_gen_config<xcb_connect_to_fd> {};
+template<> struct fex_gen_config<xcb_connect_to_fd> : fexgen::custom_guest_entrypoint {};
 
 template<> struct fex_gen_config<xcb_disconnect> : fexgen::custom_guest_entrypoint {};
 
