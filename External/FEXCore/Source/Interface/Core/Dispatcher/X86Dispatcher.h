@@ -15,6 +15,7 @@
 #define XBYAK_STD_UNORDERED_MAP fextl::unordered_map
 #define XBYAK_STD_UNORDERED_MULTIMAP fextl::unordered_multimap
 #define XBYAK_STD_LIST fextl::list
+#define XBYAK_NO_EXCEPTION
 
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
