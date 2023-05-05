@@ -40,6 +40,10 @@ namespace FEXCore::Allocator {
     return ::VirtualAlloc(nullptr, Size, MEM_COMMIT, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
   }
 
+  inline void *VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
+    return ::VirtualAlloc(Base, Size, MEM_COMMIT | MEM_RESERVE, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  }
+
   inline void VirtualFree(void *Ptr, size_t Size) {
     ::VirtualFree(Ptr, Size, MEM_RELEASE);
   }
@@ -58,6 +62,10 @@ namespace FEXCore::Allocator {
 
   inline void *VirtualAlloc(size_t Size, bool Execute = false) {
     return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  }
+
+  inline void *VirtualAlloc(void *Base, size_t Size, bool Execute = false) {
+    return FEXCore::Allocator::mmap(Base, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   }
 
   inline void VirtualFree(void *Ptr, size_t Size) {
