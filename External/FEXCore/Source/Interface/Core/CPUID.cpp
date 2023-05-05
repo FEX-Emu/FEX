@@ -872,6 +872,13 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) {
 
 // Extended processor and feature bits
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) {
+
+  // RDTSCP is disabled on WIN32/Wine because there is no sane way to query processor ID.
+#ifndef _WIN32
+  constexpr uint32_t SUPPORTS_RDTSCP = 0;
+#else
+  constexpr uint32_t SUPPORTS_RDTSCP = 1;
+#endif
   FEXCore::CPUID::FunctionResults Res{};
 
   Res.eax = FAMILY_IDENTIFIER;
@@ -938,7 +945,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) {
     (1 << 24) | // FXSAVE/FXRSTOR
     (1 << 25) | // FXSAVE/FXRSTOR Optimizations
     (0 << 26) | // 1 gigabit pages
-    (1 << 27) | // RDTSCP
+    (SUPPORTS_RDTSCP << 27) | // RDTSCP
     (0 << 28) | // Reserved
     (1 << 29) | // Long Mode
     (1 << 30) | // 3DNow! Extensions
