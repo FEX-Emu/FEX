@@ -1,8 +1,11 @@
 #pragma once
 
-#include <stdint.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 
-namespace FEX::ArchHelpers::Arm64 {
+#include <stdint.h>
+#include <utility>
+
+namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t CASPAL_MASK = 0xBF'E0'FC'00;
   constexpr uint32_t CASPAL_INST = 0x08'60'FC'00;
 
@@ -96,14 +99,20 @@ namespace FEX::ArchHelpers::Arm64 {
     return (Instr >> RM_OFFSET) & REGISTER_MASK;
   }
 
-  bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset);
-  bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset);
-  bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr);
-  uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info);
-  bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr);
-  uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr);
-  bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr);
-  bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr);
-  bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr);
-  [[nodiscard]] bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext);
+  /**
+   * @brief On ARM64 handles an unaligned memory access that the JIT has done.
+   *
+   * This is an OS agnostic handler where the frontend must provide FEXCore with the information necessary to know if this is safe.
+   * This does not check if the PC is within a JIT code buffer, the frontend must provide that safety with `CPUBackend::IsAddressInCodeBuffer`.
+   *
+   * @param ParanoidTSO If the unaligned fault needs to handled directly or can be backpatched.
+   * @param ProgramCounter The location in memory for the instruction that did the access
+   * @param GPRs The array of GPRs from the signal context. This will be modified and the host context needs to be updated on signal return.
+   *
+   * @return A pair where the first element is if the unaligned access has been handle and the second element is how many bytes to modify the host PC
+   * by. FEXCore will return a positive or negative offset depending on internal handling.
+   */
+  [[nodiscard]]
+  FEX_DEFAULT_VISIBILITY
+  std::pair<bool, int32_t> HandleUnalignedAccess(bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs);
 }

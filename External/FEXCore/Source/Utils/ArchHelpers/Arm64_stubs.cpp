@@ -1,6 +1,6 @@
-#include "LinuxSyscalls/ArchHelpers/Arm64.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <stdint.h>
 
 namespace FEXCore::ArchHelpers::Arm64 {

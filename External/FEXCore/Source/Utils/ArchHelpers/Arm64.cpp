@@ -1,15 +1,13 @@
-#include "LinuxSyscalls/ArchHelpers/Arm64.h"
-#include "LinuxSyscalls/ArchHelpers/MContext.h"
-
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/Utils/ArchHelpers/Arm64.h>
 
 #include <atomic>
 #include <csignal>
 #include <cstdint>
 
-namespace FEX::ArchHelpers::Arm64 {
+namespace FEXCore::ArchHelpers::Arm64 {
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
 FEXCORE_TELEMETRY_STATIC_INIT(SplitLock16B, TYPE_16BYTE_SPLIT);
 FEXCORE_TELEMETRY_STATIC_INIT(Cas16Tear,  TYPE_CAS_16BIT_TEAR);
@@ -241,20 +239,16 @@ std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
   return {ResultLower, ResultUpper};
 }
 
-static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1, uint32_t ExpectedReg2, uint32_t AddressReg) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-
-  //Bus_ADRALN check happens in HandleCASPAL and HandleCASPAL_ARMv8
-
+static bool RunCASPAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1, uint32_t ExpectedReg2, uint32_t AddressReg) {
   if (Size == 0) {
     // 32bit
-    uint64_t Addr = mcontext->regs[AddressReg];
+    uint64_t Addr = GPRs[AddressReg];
 
-    uint32_t DesiredLower = mcontext->regs[DesiredReg1];
-    uint32_t DesiredUpper = mcontext->regs[DesiredReg2];
+    uint32_t DesiredLower = GPRs[DesiredReg1];
+    uint32_t DesiredUpper = GPRs[DesiredReg2];
 
-    uint32_t ExpectedLower = mcontext->regs[ExpectedReg1];
-    uint32_t ExpectedUpper = mcontext->regs[ExpectedReg2];
+    uint32_t ExpectedLower = GPRs[ExpectedReg1];
+    uint32_t ExpectedUpper = GPRs[ExpectedReg2];
 
     // Cross-cacheline CAS doesn't work on ARM
     // It isn't even guaranteed to work on x86
@@ -352,16 +346,16 @@ static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desi
           // If the bits changed that we were wanting to change then we have failed and can return
           // We need to extract the bits and return them in EXPECTED
           uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-          mcontext->regs[ExpectedReg1] = FailedResult & ~0U;
-          mcontext->regs[ExpectedReg2] = FailedResult >> 32;
+          GPRs[ExpectedReg1] = FailedResult & ~0U;
+          GPRs[ExpectedReg2] = FailedResult >> 32;
           return true;
         }
 
         // This happens in the case that between Load and CAS that something has store our desired in to the memory location
         // This means our CAS fails because what we wanted to store was already stored
         uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-        mcontext->regs[ExpectedReg1] = FailedResult & ~0U;
-        mcontext->regs[ExpectedReg2] = FailedResult >> 32;
+        GPRs[ExpectedReg1] = FailedResult & ~0U;
+        GPRs[ExpectedReg2] = FailedResult >> 32;
         return true;
       }
     }
@@ -415,8 +409,8 @@ static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desi
           // This happens in the case that between Load and CAS that something has store our desired in to the memory location
           // This means our CAS fails because what we wanted to store was already stored
           uint64_t FailedResult = FailedResultOurBits >> (Alignment * 8);
-          mcontext->regs[ExpectedReg1] = FailedResult & ~0U;
-          mcontext->regs[ExpectedReg2] = FailedResult >> 32;
+          GPRs[ExpectedReg1] = FailedResult & ~0U;
+          GPRs[ExpectedReg2] = FailedResult >> 32;
           return true;
         }
       }
@@ -425,14 +419,7 @@ static bool RunCASPAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desi
   return false;
 }
 
-bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
-
+bool HandleCASPAL(uint32_t Instr, uint64_t *GPRs) {
   uint32_t Size = (Instr >> 30) & 1;
 
   uint32_t DesiredReg1 = Instr & 0b11111;
@@ -441,18 +428,10 @@ bool HandleCASPAL(void *_ucontext, void *_info, uint32_t Instr) {
   uint32_t ExpectedReg2 = ExpectedReg1 + 1;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  return RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg);
+  return RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg);
 }
 
-uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return 0;
-  }
-
+uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t *GPRs) {
   // caspair
   // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
   // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
@@ -467,7 +446,7 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   // [11] mov(Dst.second.W(), TMP3.W());
   // [12] clrex();
 
-  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+  uint32_t *PC = (uint32_t*)ProgramCounter;
 
   uint32_t Size = (Instr >> 30) & 1;
   uint32_t AddrReg = (Instr >> 5) & 0x1F;
@@ -495,15 +474,15 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
     else {
       uint32_t NextInstr = PC[1];
       if ((NextInstr & ArchHelpers::Arm64::CLREX_MASK) == ArchHelpers::Arm64::CLREX_INST) {
-        uint64_t Addr = mcontext->regs[AddrReg];
+        uint64_t Addr = GPRs[AddrReg];
 
         auto Res = DoLoad128(Addr);
         // We set the result register if it isn't a zero register
         if (DataReg != 31) {
-          mcontext->regs[DataReg] = std::get<0>(Res);
+          GPRs[DataReg] = std::get<0>(Res);
         }
         if (DataReg2 != 31) {
-          mcontext->regs[DataReg2] = std::get<1>(Res);
+          GPRs[DataReg2] = std::get<1>(Res);
         }
 
         // Skip ldaxp and clrex
@@ -528,25 +507,18 @@ uint64_t HandleCASPAL_ARMv8(void *_ucontext, void *_info, uint32_t Instr) {
   }
 
   //mov expected into the temp registers used by JIT
-  mcontext->regs[DataReg] = mcontext->regs[ExpectedReg1];
-  mcontext->regs[DataReg2] = mcontext->regs[ExpectedReg2];
+  GPRs[DataReg] = GPRs[ExpectedReg1];
+  GPRs[DataReg2] = GPRs[ExpectedReg2];
 
-  if(RunCASPAL(_ucontext, _info, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
+  if(RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
     return 9 * sizeof(uint32_t); // skip to mov + clrex
   } else {
     return 0;
   }
 }
 
-bool HandleAtomicVectorStore(void *_ucontext, void *_info, uint32_t Instr) {
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return 0;
-  }
-
-  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
+  uint32_t *PC = (uint32_t*)ProgramCounter;
 
   uint32_t Size = (Instr >> 30) & 1;
   uint32_t AddrReg = (Instr >> 5) & 0x1F;
@@ -1280,10 +1252,8 @@ uint64_t DoCAS64(
   }
 }
 
-static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-
-  uint64_t Addr = mcontext->regs[AddressReg];
+static bool RunCASAL(uint64_t *GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
+  uint64_t Addr = GPRs[AddressReg];
 
   // Cross-cacheline CAS doesn't work on ARM
   // It isn't even guaranteed to work on x86
@@ -1297,8 +1267,8 @@ static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desir
   // Only need to handle 16, 32, 64
   if (Size == 2) {
     auto Res = DoCAS16<false>(
-      mcontext->regs[DesiredReg],
-      mcontext->regs[ExpectedReg],
+      GPRs[DesiredReg],
+      GPRs[ExpectedReg],
       Addr,
       [](uint16_t, uint16_t Expected) -> uint16_t {
         // Expected is just Expected
@@ -1312,14 +1282,14 @@ static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desir
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
     if (ExpectedReg != 31) {
-      mcontext->regs[ExpectedReg] = Res;
+      GPRs[ExpectedReg] = Res;
     }
     return true;
   }
   else if (Size == 4) {
     auto Res = DoCAS32<false>(
-      mcontext->regs[DesiredReg],
-      mcontext->regs[ExpectedReg],
+      GPRs[DesiredReg],
+      GPRs[ExpectedReg],
       Addr,
       [](uint32_t, uint32_t Expected) -> uint32_t {
         // Expected is just Expected
@@ -1333,14 +1303,14 @@ static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desir
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
     if (ExpectedReg != 31) {
-      mcontext->regs[ExpectedReg] = Res;
+      GPRs[ExpectedReg] = Res;
     }
     return true;
   }
   else if (Size == 8) {
     auto Res = DoCAS64<false>(
-      mcontext->regs[DesiredReg],
-      mcontext->regs[ExpectedReg],
+      GPRs[DesiredReg],
+      GPRs[ExpectedReg],
       Addr,
       [](uint64_t, uint64_t Expected) -> uint64_t {
         // Expected is just Expected
@@ -1354,7 +1324,7 @@ static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desir
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
     if (ExpectedReg != 31) {
-      mcontext->regs[ExpectedReg] = Res;
+      GPRs[ExpectedReg] = Res;
     }
     return true;
   }
@@ -1362,37 +1332,22 @@ static bool RunCASAL(void *_ucontext, void *_info, uint32_t Size, uint32_t Desir
   return false;
 }
 
-bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
-
+static bool HandleCASAL(uint64_t *GPRs, uint32_t Instr) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t DesiredReg = Instr & 0b11111;
   uint32_t ExpectedReg = (Instr >> 16) & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
-  return RunCASAL(_ucontext, _info, Size, DesiredReg, ExpectedReg, AddressReg);
+  return RunCASAL(GPRs, Size, DesiredReg, ExpectedReg, AddressReg);
 }
 
-bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
-
+static bool HandleAtomicMemOp(uint32_t Instr, uint64_t *GPRs) {
   uint32_t Size = 1 << (Instr >> 30);
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t SourceReg = (Instr >> 16) & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  uint64_t Addr = mcontext->regs[AddressReg];
+  uint64_t Addr = GPRs[AddressReg];
 
   uint8_t Op = (Instr >> 12) & 0xF;
 
@@ -1445,7 +1400,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     }
 
     auto Res = DoCAS16<true>(
-      mcontext->regs[SourceReg],
+      GPRs[SourceReg],
       0, // Unused
       Addr,
       NOPExpected,
@@ -1453,7 +1408,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
     return true;
   }
@@ -1506,7 +1461,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     }
 
     auto Res = DoCAS32<true>(
-      mcontext->regs[SourceReg],
+      GPRs[SourceReg],
       0, // Unused
       Addr,
       NOPExpected,
@@ -1514,7 +1469,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
     return true;
   }
@@ -1567,7 +1522,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     }
 
     auto Res = DoCAS64<true>(
-      mcontext->regs[SourceReg],
+      GPRs[SourceReg],
       0, // Unused
       Addr,
       NOPExpected,
@@ -1575,7 +1530,7 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
     return true;
   }
@@ -1583,26 +1538,19 @@ bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
   return false;
 }
 
-bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
+static bool HandleAtomicLoad(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  uint64_t Addr = mcontext->regs[AddressReg] + Offset;
+  uint64_t Addr = GPRs[AddressReg] + Offset;
 
   if (Size == 2) {
     auto Res = DoLoad16(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
     return true;
   }
@@ -1610,7 +1558,7 @@ bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offs
     auto Res = DoLoad32(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
     return true;
   }
@@ -1618,7 +1566,7 @@ bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offs
     auto Res = DoLoad64(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
     return true;
   }
@@ -1626,25 +1574,18 @@ bool HandleAtomicLoad(void *_ucontext, void *_info, uint32_t Instr, int64_t Offs
   return false;
 }
 
-bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Offset) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
+static bool HandleAtomicStore(uint32_t Instr, uint64_t *GPRs, int64_t Offset) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t DataReg = Instr & 0x1F;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  uint64_t Addr = mcontext->regs[AddressReg] + Offset;
+  uint64_t Addr = GPRs[AddressReg] + Offset;
 
   constexpr bool DoRetry = false;
   if (Size == 2) {
     DoCAS16<DoRetry>(
-      mcontext->regs[DataReg],
+      GPRs[DataReg],
       0, // Unused
       Addr,
       [](uint16_t SrcVal, uint16_t) -> uint16_t {
@@ -1659,7 +1600,7 @@ bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Off
   }
   else if (Size == 4) {
     DoCAS32<DoRetry>(
-      mcontext->regs[DataReg],
+      GPRs[DataReg],
       0, // Unused
       Addr,
       [](uint32_t SrcVal, uint32_t) -> uint32_t {
@@ -1674,7 +1615,7 @@ bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Off
   }
   else if (Size == 8) {
     DoCAS64<DoRetry>(
-      mcontext->regs[DataReg],
+      GPRs[DataReg],
       0, // Unused
       Addr,
       [](uint64_t SrcVal, uint64_t) -> uint64_t {
@@ -1691,36 +1632,8 @@ bool HandleAtomicStore(void *_ucontext, void *_info, uint32_t Instr, int64_t Off
   return false;
 }
 
-bool HandleAtomicLoad128(void *_ucontext, void *_info, uint32_t Instr) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return false;
-  }
-  uint32_t ResultReg = Instr & 0b11111;
-  uint32_t ResultReg2 = (Instr >> 10) & 0x1F;
-  uint32_t AddressReg = (Instr >> 5) & 0b11111;
-
-  uint64_t Addr = mcontext->regs[AddressReg];
-
-  auto Res = DoLoad128(Addr);
-  // We set the result register if it isn't a zero register
-  if (ResultReg != 31) {
-    mcontext->regs[ResultReg] = std::get<0>(Res);
-  }
-  if (ResultReg2 != 31) {
-    mcontext->regs[ResultReg2] = std::get<1>(Res);
-  }
-
-  return true;
-}
-
-static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
+static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t *GPRs)
 {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-
   // ARMv8.0 CAS
   // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc))
   // [2] cmp (TMP2.W(), Expected.W())
@@ -1732,7 +1645,7 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
   // [8] mov (.., TMP2.W());
   // [9] clrex
 
-  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+  uint32_t *PC = (uint32_t*)ProgramCounter;
   uint32_t Instr = PC[0];
   uint32_t Size = 1 << (Instr >> 30);
   uint32_t AddressReg = GetRnReg(Instr);
@@ -1755,25 +1668,17 @@ static uint64_t HandleCAS_NoAtomics(void *_ucontext, void *_info)
      }
   }
   //set up CASAL by doing mov(TMP2, Expected)
-  mcontext->regs[ResultReg] = mcontext->regs[ExpectedReg];
+  GPRs[ResultReg] = GPRs[ExpectedReg];
 
-  if(RunCASAL(_ucontext, _info, Size, DesiredReg, ResultReg, AddressReg)) {
+  if(RunCASAL(GPRs, Size, DesiredReg, ResultReg, AddressReg)) {
     return 7 * sizeof(uint32_t); //jump to mov to allocated register
   } else {
     return 0;
   }
 }
 
-uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
-  mcontext_t* mcontext = &reinterpret_cast<ucontext_t*>(_ucontext)->uc_mcontext;
-  siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
-
-  if (info->si_code != BUS_ADRALN) {
-    // This only handles alignment problems
-    return 0;
-  }
-
-  uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(_ucontext);
+static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_t *GPRs) {
+  uint32_t *PC = (uint32_t*)ProgramCounter;
   uint32_t Instr = PC[0];
 
   // Atomic Add
@@ -1815,7 +1720,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   //   - The [5]mov instruction source is always the destination register from [1] ldaxr*
   uint32_t ResultReg = GetRdReg(Instr);
   uint32_t AddressReg = GetRnReg(Instr);
-  uint64_t Addr = mcontext->regs[AddressReg];
+  uint64_t Addr = GPRs[AddressReg];
 
   size_t NumInstructionsToSkip = 0;
 
@@ -1852,7 +1757,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     }
     else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
              (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST ) {
-      return HandleCAS_NoAtomics(_ucontext, _info); //ARMv8.0 CAS
+      return HandleCAS_NoAtomics(ProgramCounter, GPRs); //ARMv8.0 CAS
     }
     else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::AND_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_AND;
@@ -1995,7 +1900,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     }
 
     auto Res = DoCAS16<DoRetry>(
-      mcontext->regs[DataSourceReg],
+      GPRs[DataSourceReg],
       0, // Unused
       Addr,
       NOPExpected,
@@ -2004,7 +1909,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
   }
   else if (Size == 4) {
@@ -2049,7 +1954,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     }
 
     auto Res = DoCAS32<DoRetry>(
-      mcontext->regs[DataSourceReg],
+      GPRs[DataSourceReg],
       0, // Unused
       Addr,
       NOPExpected,
@@ -2058,7 +1963,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
   }
   else if (Size == 8) {
@@ -2103,7 +2008,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     }
 
     auto Res = DoCAS64<DoRetry>(
-      mcontext->regs[DataSourceReg],
+      GPRs[DataSourceReg],
       0, // Unused
       Addr,
       NOPExpected,
@@ -2111,7 +2016,7 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
-      mcontext->regs[ResultReg] = Res;
+      GPRs[ResultReg] = Res;
     }
   }
 
@@ -2119,15 +2024,17 @@ uint64_t HandleAtomicLoadstoreExclusive(void *_ucontext, void *_info) {
   return NumInstructionsToSkip * 4;
 }
 
-bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
+[[nodiscard]] std::pair<bool, int32_t> HandleUnalignedAccess(bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
 #else
   constexpr bool is_arm64 = false;
 #endif
 
+  constexpr auto NotHandled = std::make_pair(false, 0);
+
   if constexpr (is_arm64) {
-    uint32_t *PC = (uint32_t*)ArchHelpers::Context::GetPc(ucontext);
+    uint32_t *PC = (uint32_t*)ProgramCounter;
     uint32_t Instr = PC[0];
 
     // 1 = 16bit
@@ -2139,14 +2046,13 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
     if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
         (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
       if (ParanoidTSO) {
-        if (ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, 0)) {
+        if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
           // Skip this instruction now
-          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-          return true;
+          return std::make_pair(true, 4);
         }
         else {
-          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-          return false;
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+          return NotHandled;
         }
       }
       else {
@@ -2157,20 +2063,20 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[-1] = DMB;
         PC[0] = LDR;
         PC[1] = DMB;
+        ClearICache(&PC[-1], 16);
         // Back up one instruction and have another go
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+        return std::make_pair(true, -4);
       }
     }
     else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
       if (ParanoidTSO) {
-        if (ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, 0)) {
+        if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0)) {
           // Skip this instruction now
-          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-          return true;
+          return std::make_pair(true, 4);
         }
         else {
-          LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-          return false;
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+          return NotHandled;
         }
       }
       else {
@@ -2181,22 +2087,22 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[-1] = DMB;
         PC[0] = STR;
         PC[1] = DMB;
+        ClearICache(&PC[-1], 16);
         // Back up one instruction and have another go
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+        return std::make_pair(true, -4);
       }
     }
     else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
       if (ParanoidTSO) {
-        if (ArchHelpers::Arm64::HandleAtomicLoad(ucontext, info, Instr, Offset)) {
+        if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, Offset)) {
           // Skip this instruction now
-          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-          return true;
+          return std::make_pair(true, 4);
         }
         else {
-          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAPUR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-          return false;
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAPUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+          return NotHandled;
         }
       }
       else {
@@ -2208,22 +2114,22 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[-1] = DMB;
         PC[0] = LDUR;
         PC[1] = DMB;
+        ClearICache(&PC[-1], 16);
         // Back up one instruction and have another go
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+        return std::make_pair(true, -4);
       }
     }
     else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
       if (ParanoidTSO) {
-        if (ArchHelpers::Arm64::HandleAtomicStore(ucontext, info, Instr, Offset)) {
+        if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, Offset)) {
           // Skip this instruction now
-          ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-          return true;
+          return std::make_pair(true, 4);
         }
         else {
-          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-          return false;
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+          return NotHandled;
         }
       }
       else {
@@ -2235,88 +2141,82 @@ bool HandleSIGBUS(bool ParanoidTSO, int Signal, void *info, void *ucontext) {
         PC[-1] = DMB;
         PC[0] = STUR;
         PC[1] = DMB;
+        ClearICache(&PC[-1], 16);
         // Back up one instruction and have another go
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) - 4);
+        return std::make_pair(true, -4);
       }
     }
     else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
       //Should be compare and swap pair only. LDAXP not used elsewhere
-      uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(ucontext, info, Instr);
+      uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs);
       if (BytesToSkip) {
         // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
-        return true;
+        return std::make_pair(true, BytesToSkip);
       }
       else {
-        if (ArchHelpers::Arm64::HandleAtomicVectorStore(ucontext, info, Instr)) {
-          return true;
+        if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
+          return std::make_pair(true, 0);
         }
         else {
-          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-          return false;
+          LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+          return NotHandled;
         }
       }
     }
     else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
       //Should not trigger - middle of an LDAXP/STAXP pair.
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-      return false;
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return NotHandled;
     }
     else if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
-      if (ArchHelpers::Arm64::HandleCASPAL(ucontext, info, Instr)) {
+      if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs)) {
         // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-        return true;
+        return std::make_pair(true, 4);
       }
       else {
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-        return false;
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+        return NotHandled;
       }
     }
     else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
-      if (ArchHelpers::Arm64::HandleCASAL(ucontext, info, Instr)) {
+      if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr)) {
         // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-        return true;
+        return std::make_pair(true, 4);
       }
       else {
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-        return false;
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+        return NotHandled;
       }
     }
     else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
-      if (ArchHelpers::Arm64::HandleAtomicMemOp(ucontext, info, Instr)) {
+      if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs)) {
         // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + 4);
-        return true;
+        return std::make_pair(true, 4);
       }
       else {
         uint8_t Op = (PC[0] >> 12) & 0xF;
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: {} Instruction: 0x{:08x}\n", Op, fmt::ptr(PC), PC[0]);
-        return false;
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: 0x{:x} Instruction: 0x{:08x}\n", Op, ProgramCounter, PC[0]);
+        return NotHandled;
       }
     }
     else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
-      uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ucontext, info);
+      uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs);
       if (BytesToSkip) {
         // Skip this instruction now
-        ArchHelpers::Context::SetPc(ucontext, ArchHelpers::Context::GetPc(ucontext) + BytesToSkip);
-        return true;
+        return std::make_pair(true, BytesToSkip);
       }
       else {
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-        return false;
+        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+        return NotHandled;
       }
     }
     else {
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: {} Instruction: 0x{:08x}\n", fmt::ptr(PC), PC[0]);
-      return false;
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return NotHandled;
     }
-
-    ClearICache(&PC[-1], 16);
-    return true;
   }
-  return false;
+  return NotHandled;
 }
+
 
 }

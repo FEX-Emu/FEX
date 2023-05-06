@@ -5,7 +5,6 @@ desc: Handles host -> host and host -> guest signal routing, emulates procmask &
 $end_info$
 */
 
-#include "LinuxSyscalls/ArchHelpers/Arm64.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Core/Context.h>
@@ -17,6 +16,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
@@ -1621,16 +1621,36 @@ namespace FEX::HLE {
 
 #ifdef _M_ARM_64
     // Register SIGBUS signal handler.
-    const auto SigbusHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      if (!Thread->CPUBackend->IsAddressInCodeBuffer(ArchHelpers::Context::GetPc(ucontext))) {
+    const auto SigbusHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *_info, void *ucontext) -> bool {
+      const auto PC = ArchHelpers::Context::GetPc(ucontext);
+      if (!Thread->CPUBackend->IsAddressInCodeBuffer(PC)) {
         // Wasn't a sigbus in JIT code
         return false;
       }
+      siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
 
-      return FEX::ArchHelpers::Arm64::HandleSIGBUS(GlobalDelegator->ParanoidTSO(), Signal, info, ucontext);
+      if (info->si_code != BUS_ADRALN) {
+        // This only handles alignment problems
+        return false;
+      }
+
+      const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(GlobalDelegator->ParanoidTSO(), PC, ArchHelpers::Context::GetArmGPRs(ucontext));
+      ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
+      return Result.first;
     };
-    const auto SigbusHandlerInterpreter = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
-      return FEX::ArchHelpers::Arm64::HandleSIGBUS(true, Signal, info, ucontext);
+
+    const auto SigbusHandlerInterpreter = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *_info, void *ucontext) -> bool {
+      const auto PC = ArchHelpers::Context::GetPc(ucontext);
+      siginfo_t* info = reinterpret_cast<siginfo_t*>(_info);
+
+      if (info->si_code != BUS_ADRALN) {
+        // This only handles alignment problems
+        return false;
+      }
+
+      const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, ArchHelpers::Context::GetArmGPRs(ucontext));
+      ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
+      return Result.first;
     };
 
     if (Core == FEXCore::Config::CONFIG_INTERPRETER) {

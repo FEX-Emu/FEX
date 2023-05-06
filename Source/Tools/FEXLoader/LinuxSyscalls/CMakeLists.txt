@@ -1,7 +1,6 @@
 add_compile_options(-fno-operator-names)
 
 set (SRCS
-  ArchHelpers/Arm64_stubs.cpp
   EmulatedFiles/EmulatedFiles.cpp
   FileManagement.cpp
   LinuxAllocator.cpp
@@ -63,11 +62,6 @@ set (SRCS
   Syscalls/Timer.cpp
   Syscalls/NotImplemented.cpp
   Syscalls/Stubs.cpp)
-
-if (_M_ARM_64)
-  list(APPEND SRCS
-    ArchHelpers/Arm64.cpp)
-endif()
 
 add_library(LinuxEmulation STATIC ${SRCS})
 
