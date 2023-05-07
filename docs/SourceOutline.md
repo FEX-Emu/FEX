@@ -1,4 +1,4 @@
-# FEX-2303
+# FEX-2305
 
 ## External/FEXCore
 See [FEXCore/Readme.md](../External/FEXCore/Readme.md) for more details
@@ -227,6 +227,10 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### fex_malloc_symbols
 - [Host.cpp](../ThunkLibs/libfex_malloc_symbols/Host.cpp): Allows FEX to export allocation symbols
 
+#### wayland-client
+- [Guest.cpp](../ThunkLibs/libwayland-client/Guest.cpp)
+- [Host.cpp](../ThunkLibs/libwayland-client/Host.cpp)
+
 #### xcb
 - [libxcb_Guest.cpp](../ThunkLibs/libxcb/libxcb_Guest.cpp)
 - [libxcb_Host.cpp](../ThunkLibs/libxcb/libxcb_Host.cpp)
@@ -268,113 +272,6 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 - [Host.cpp](../ThunkLibs/libxshmfence/Host.cpp)
 
 ## Source/Tests
-
-### Bin
-
-#### FEXLoader
-- [FEXLoader.cpp](../Source/Tests/FEXLoader.cpp): Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
-
-#### IRLoader
-- [IRLoader.cpp](../Source/Tests/IRLoader.cpp): Used to run IR Tests
-
-#### TestHarnessRunner
-- [TestHarnessRunner.cpp](../Source/Tests/TestHarnessRunner.cpp): Used to run Assembly tests
-
-#### UnitTestGenerator
-- [UnitTestGenerator.cpp](../Source/Tests/UnitTestGenerator.cpp): Brute forces generation of tests for x86/64, incomplete, unused right now
-
-
-
-### LinuxSyscalls
-Linux syscall emulation, marshaling and passthrough
-
-#### android-syscalls-shared
-- [Memory.cpp](../Source/Tests/LinuxSyscalls/AndroidHandlers/Memory.cpp)
-
-#### common
-- [EmulatedFiles.cpp](../Source/Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp): Emulated /proc/cpuinfo, version, osrelease, etc
-- [EmulatedFiles.h](../Source/Tests/LinuxSyscalls/EmulatedFiles/EmulatedFiles.h)
-- [FileManagement.cpp](../Source/Tests/LinuxSyscalls/FileManagement.cpp): Rootfs overlay logic
-- [FileManagement.h](../Source/Tests/LinuxSyscalls/FileManagement.h)
-- [SignalDelegator.cpp](../Source/Tests/LinuxSyscalls/SignalDelegator.cpp): Handles host -> host and host -> guest signal routing, emulates procmask & co
-- [SignalDelegator.h](../Source/Tests/LinuxSyscalls/SignalDelegator.h)
-- [Syscalls.cpp](../Source/Tests/LinuxSyscalls/Syscalls.cpp): Glue logic, brk allocations
-- [Syscalls.h](../Source/Tests/LinuxSyscalls/Syscalls.h): Glue logic, STRACE magic
-- [SyscallsSMCTracking.cpp](../Source/Tests/LinuxSyscalls/SyscallsSMCTracking.cpp): SMC/MMan Tracking
-- [SyscallsVMATracking.cpp](../Source/Tests/LinuxSyscalls/SyscallsVMATracking.cpp): VMA Tracking
-
-#### syscalls-arm64
-- [SyscallsEnum.h](../Source/Tests/LinuxSyscalls/Arm64/SyscallsEnum.h)
-
-#### syscalls-shared
-Syscall implementations shared between x86 and x86-64
-- [EPoll.cpp](../Source/Tests/LinuxSyscalls/Syscalls/EPoll.cpp)
-- [FD.cpp](../Source/Tests/LinuxSyscalls/Syscalls/FD.cpp)
-- [FS.cpp](../Source/Tests/LinuxSyscalls/Syscalls/FS.cpp)
-- [IO.cpp](../Source/Tests/LinuxSyscalls/Syscalls/IO.cpp)
-- [IOUring.cpp](../Source/Tests/LinuxSyscalls/Syscalls/IOUring.cpp)
-- [Info.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Info.cpp)
-- [Key.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Key.cpp)
-- [Memory.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Memory.cpp)
-- [Msg.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Msg.cpp)
-- [Namespace.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Namespace.cpp)
-- [NotImplemented.cpp](../Source/Tests/LinuxSyscalls/Syscalls/NotImplemented.cpp)
-- [SHM.cpp](../Source/Tests/LinuxSyscalls/Syscalls/SHM.cpp)
-- [Sched.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Sched.cpp)
-- [Semaphore.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Semaphore.cpp)
-- [Signals.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Signals.cpp)
-- [Socket.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Socket.cpp)
-- [Stubs.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Stubs.cpp)
-- [Thread.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Thread.cpp)
-- [Thread.h](../Source/Tests/LinuxSyscalls/Syscalls/Thread.h)
-- [Time.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Time.cpp)
-- [Timer.cpp](../Source/Tests/LinuxSyscalls/Syscalls/Timer.cpp)
-
-#### syscalls-x86-32
-x86-32 specific syscall implementations
-- [EPoll.cpp](../Source/Tests/LinuxSyscalls/x32/EPoll.cpp)
-- [FD.cpp](../Source/Tests/LinuxSyscalls/x32/FD.cpp)
-- [FS.cpp](../Source/Tests/LinuxSyscalls/x32/FS.cpp)
-- [IO.cpp](../Source/Tests/LinuxSyscalls/x32/IO.cpp)
-- [Info.cpp](../Source/Tests/LinuxSyscalls/x32/Info.cpp)
-- [Memory.cpp](../Source/Tests/LinuxSyscalls/x32/Memory.cpp)
-- [Msg.cpp](../Source/Tests/LinuxSyscalls/x32/Msg.cpp)
-- [NotImplemented.cpp](../Source/Tests/LinuxSyscalls/x32/NotImplemented.cpp)
-- [Sched.cpp](../Source/Tests/LinuxSyscalls/x32/Sched.cpp)
-- [Semaphore.cpp](../Source/Tests/LinuxSyscalls/x32/Semaphore.cpp)
-- [Signals.cpp](../Source/Tests/LinuxSyscalls/x32/Signals.cpp)
-- [Socket.cpp](../Source/Tests/LinuxSyscalls/x32/Socket.cpp)
-- [Stubs.cpp](../Source/Tests/LinuxSyscalls/x32/Stubs.cpp)
-- [Syscalls.cpp](../Source/Tests/LinuxSyscalls/x32/Syscalls.cpp)
-- [Syscalls.h](../Source/Tests/LinuxSyscalls/x32/Syscalls.h)
-- [SyscallsEnum.h](../Source/Tests/LinuxSyscalls/x32/SyscallsEnum.h)
-- [Thread.cpp](../Source/Tests/LinuxSyscalls/x32/Thread.cpp)
-- [Thread.h](../Source/Tests/LinuxSyscalls/x32/Thread.h)
-- [Time.cpp](../Source/Tests/LinuxSyscalls/x32/Time.cpp)
-- [Timer.cpp](../Source/Tests/LinuxSyscalls/x32/Timer.cpp)
-- [Types.h](../Source/Tests/LinuxSyscalls/x32/Types.h)
-
-#### syscalls-x86-64
-x86-64 specific syscall implementations
-- [EPoll.cpp](../Source/Tests/LinuxSyscalls/x64/EPoll.cpp)
-- [FD.cpp](../Source/Tests/LinuxSyscalls/x64/FD.cpp)
-- [IO.cpp](../Source/Tests/LinuxSyscalls/x64/IO.cpp)
-- [Info.cpp](../Source/Tests/LinuxSyscalls/x64/Info.cpp)
-- [Ioctl.cpp](../Source/Tests/LinuxSyscalls/x64/Ioctl.cpp)
-- [Memory.cpp](../Source/Tests/LinuxSyscalls/x64/Memory.cpp)
-- [Msg.cpp](../Source/Tests/LinuxSyscalls/x64/Msg.cpp)
-- [NotImplemented.cpp](../Source/Tests/LinuxSyscalls/x64/NotImplemented.cpp)
-- [Sched.cpp](../Source/Tests/LinuxSyscalls/x64/Sched.cpp)
-- [Semaphore.cpp](../Source/Tests/LinuxSyscalls/x64/Semaphore.cpp)
-- [Signals.cpp](../Source/Tests/LinuxSyscalls/x64/Signals.cpp)
-- [Socket.cpp](../Source/Tests/LinuxSyscalls/x64/Socket.cpp)
-- [Syscalls.cpp](../Source/Tests/LinuxSyscalls/x64/Syscalls.cpp)
-- [Syscalls.h](../Source/Tests/LinuxSyscalls/x64/Syscalls.h)
-- [SyscallsEnum.h](../Source/Tests/LinuxSyscalls/x64/SyscallsEnum.h)
-- [Thread.cpp](../Source/Tests/LinuxSyscalls/x64/Thread.cpp)
-- [Thread.h](../Source/Tests/LinuxSyscalls/x64/Thread.h)
-- [Time.cpp](../Source/Tests/LinuxSyscalls/x64/Time.cpp)
-- [Types.h](../Source/Tests/LinuxSyscalls/x64/Types.h)
 
 ## unittests
 See [unittests/Readme.md](../unittests/Readme.md) for more details
