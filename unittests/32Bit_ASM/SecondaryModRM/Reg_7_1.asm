@@ -1,6 +1,7 @@
 %ifdef CONFIG
 {
-  "Mode": "32BIT"
+  "Mode": "32BIT",
+  "HostFeatures": ["Linux"]
 }
 %endif
 

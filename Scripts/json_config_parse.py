@@ -73,6 +73,7 @@ class HostFeatures(Flag) :
     FEATURE_BMI1   = (1 << 6)
     FEATURE_BMI2   = (1 << 7)
     FEATURE_CLWB   = (1 << 8)
+    FEATURE_LINUX  = (1 << 9)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -145,6 +146,7 @@ HostFeaturesLookup = {
     "BMI1"   : HostFeatures.FEATURE_BMI1,
     "BMI2"   : HostFeatures.FEATURE_BMI2,
     "CLWB"   : HostFeatures.FEATURE_CLWB,
+    "LINUX"  : HostFeatures.FEATURE_LINUX,
 }
 
 def parse_hexstring(s):
