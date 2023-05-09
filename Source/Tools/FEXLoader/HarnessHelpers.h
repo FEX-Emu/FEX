@@ -19,6 +19,7 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/fmt.h>
@@ -157,36 +158,10 @@ namespace FEX::HarnessHelper {
     return Matches;
   }
 
-  inline void ReadFile(fextl::string const &Filename, fextl::vector<char> *Data) {
-    int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
-    if (fd == -1) {
-      LogMan::Msg::AFmt("Failed to open file");
-    }
-
-    struct stat buf;
-    if (fstat(fd, &buf) != 0) {
-      close(fd);
-      LogMan::Msg::AFmt("Failed to open file");
-    }
-
-    auto FileSize = buf.st_size;
-
-    if (FileSize <= 0) {
-      close(fd);
-      LogMan::Msg::AFmt("Failed to open file");
-    }
-
-    Data->resize(FileSize);
-    const auto ReadSize = pread(fd, Data->data(), FileSize, 0);
-
-    close(fd);
-    LOGMAN_THROW_AA_FMT(ReadSize == FileSize, "Failed to open file");
-  }
-
   class ConfigLoader final {
   public:
     void Init(fextl::string const &ConfigFilename) {
-      ReadFile(ConfigFilename, &RawConfigFile);
+      FEXCore::FileLoading::LoadFile(RawConfigFile, ConfigFilename);
       memcpy(&BaseConfig, RawConfigFile.data(), sizeof(ConfigStructBase));
       GetEnvironmentOptions();
     }
