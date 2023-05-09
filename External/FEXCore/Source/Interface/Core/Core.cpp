@@ -308,7 +308,9 @@ namespace FEXCore::Context {
       StopGdbServer();
     }
 
+#ifndef _WIN32
     ThunkHandler = FEXCore::ThunkHandler::Create();
+#endif
 
     using namespace FEXCore::Core;
 
@@ -556,7 +558,9 @@ namespace FEXCore::Context {
     Thread->ThreadManager.TID = FHU::Syscalls::gettid();
     Thread->ThreadManager.PID = ::getpid();
     SignalDelegation->RegisterTLSState(Thread);
-    ThunkHandler->RegisterTLSState(Thread);
+    if (ThunkHandler) {
+      ThunkHandler->RegisterTLSState(Thread);
+    }
   }
 
   void ContextImpl::RunThread(FEXCore::Core::InternalThreadState *Thread) {
@@ -1361,7 +1365,9 @@ namespace FEXCore::Context {
   }
 
   void ContextImpl::AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) {
-    ThunkHandler->AppendThunkDefinitions(Definitions);
+    if (ThunkHandler) {
+      ThunkHandler->AppendThunkDefinitions(Definitions);
+    }
   }
 
   void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) {
