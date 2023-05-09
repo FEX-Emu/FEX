@@ -1,17 +1,12 @@
 #pragma once
 
 #include "Common/Config.h"
-#include "LinuxSyscalls/Syscalls.h"
-#include "Linux/Utils/ELFContainer.h"
-#include "Linux/Utils/ELFSymbolDatabase.h"
 
 #include <array>
 #include <bitset>
 #include <cassert>
 #include <cstring>
 #include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/user.h>
 
 #include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/CoreState.h>
@@ -434,9 +429,7 @@ namespace FEX::HarnessHelper {
   public:
 
     HarnessCodeLoader(fextl::string const &Filename, fextl::string const &ConfigFilename) {
-      TestFD = open(Filename.c_str(), O_CLOEXEC | O_RDONLY);
-      TestFileSize = lseek(TestFD, 0, SEEK_END);
-      lseek(TestFD, 0, SEEK_SET);
+      FEXCore::FileLoading::LoadFile(RawASMFile, Filename);
 
       Config.Init(ConfigFilename);
     }
@@ -447,10 +440,10 @@ namespace FEX::HarnessHelper {
 
     uint64_t GetStackPointer() override {
       if (Config.Is64BitMode()) {
-        return reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(nullptr, STACK_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) + STACK_SIZE;
+        return reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(STACK_SIZE)) + STACK_SIZE;
       }
       else {
-        uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(STACK_OFFSET), STACK_SIZE));
         LOGMAN_THROW_AA_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
         return Result + STACK_SIZE;
       }
@@ -460,53 +453,56 @@ namespace FEX::HarnessHelper {
       return RIP;
     }
 
-    bool MapMemoryInternal(auto Mapper, auto Munmap) {
+    bool MapMemory() {
       bool LimitedSize = true;
-      auto DoMMap = [](auto This, auto Mapper, uint64_t Address, size_t Size) -> void* {
-        void *Result = (This->*Mapper)(reinterpret_cast<void*>(Address), Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
+        void *Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
         LOGMAN_THROW_AA_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
         return Result;
       };
 
+#ifndef _WIN32
+      const auto AllocPageSize = FHU::FEX_PAGE_SIZE;
+#else
+      const auto AllocPageSize = 64 * 1024;
+#endif
       if (LimitedSize) {
-        DoMMap(this, Mapper, 0xe000'0000, FHU::FEX_PAGE_SIZE * 10);
+        DoMMap(0xe000'0000, AllocPageSize * 10);
 
         // SIB8
         // We test [-128, -126] (Bottom)
         // We test [-8, 8] (Middle)
         // We test [120, 127] (Top)
         // Can fit in two pages
-        DoMMap(this, Mapper, 0xe800'0000 - FHU::FEX_PAGE_SIZE, FHU::FEX_PAGE_SIZE * 2);
+        DoMMap(0xe800'0000 - AllocPageSize, AllocPageSize * 2);
       }
       else {
         // This is scratch memory location and SIB8 location
-        DoMMap(this, Mapper, 0xe000'0000, 0x1000'0000);
+        DoMMap(0xe000'0000, 0x1000'0000);
         // This is for large SIB 32bit displacement testing
-        DoMMap(this, Mapper, 0x2'0000'0000, 0x1'0000'1000);
+        DoMMap(0x2'0000'0000, 0x1'0000'1000);
       }
 
       // Map in the memory region for the test file
-      size_t Length = FEXCore::AlignUp(TestFileSize, FHU::FEX_PAGE_SIZE);
-      (this->*Mapper)(reinterpret_cast<void*>(Code_start_page), Length, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_FIXED | MAP_PRIVATE, TestFD, 0);
+#ifndef _WIN32
+      size_t Length = FEXCore::AlignUp(RawASMFile.size(), FHU::FEX_PAGE_SIZE);
+      auto ASMPtr = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Code_start_page), Length, true);
+#else
+      // Special magic DOS area that starts at 0x1'0000
+      auto ASMPtr = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(1), 0x110000 - 1, true);
+#endif
+      LOGMAN_THROW_A_FMT((uint64_t)ASMPtr == Code_start_page, "Couldn't allocate code at expected page: 0x{:x} != 0x{:x}", (uint64_t)ASMPtr, Code_start_page);
+      memcpy(ASMPtr, RawASMFile.data(), RawASMFile.size());
       RIP = Code_start_page;
 
       // Map the memory regions the test file asks for
       for (auto& [region, size] : Config.GetMemoryRegions()) {
-        DoMMap(this, Mapper, region, size);
+        DoMMap(region, size);
       }
 
       LoadMemory();
 
       return true;
-    }
-
-    bool MapMemory(FEX::HLE::SyscallHandler *const Handler) {
-      SyscallHandler = Handler;
-      return MapMemoryInternal(&FEX::HarnessHelper::HarnessCodeLoader::SyscallMMap, &FEX::HarnessHelper::HarnessCodeLoader::SyscallMunmap);
-    }
-
-    bool MapMemory() {
-      return MapMemoryInternal(&FEX::HarnessHelper::HarnessCodeLoader::MMap, &FEX::HarnessHelper::HarnessCodeLoader::Munmap);
     }
 
     void LoadMemory() {
@@ -534,31 +530,14 @@ namespace FEX::HarnessHelper {
     bool RequiresBMI2()   const { return Config.RequiresBMI2(); }
     bool RequiresCLWB()   const { return Config.RequiresCLWB(); }
 
-  protected:
-    void *SyscallMMap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return SyscallHandler->GuestMmap(addr, length, prot, flags, fd, offset);
-    }
-    int SyscallMunmap(void *addr, size_t length) {
-      return SyscallHandler->GuestMunmap(addr, length);
-    }
-
-    void *MMap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
-      return mmap(addr, length, prot, flags, fd, offset);
-    }
-    int Munmap(void *addr, size_t length) {
-      return munmap(addr, length);
-    }
   private:
-    FEX::HLE::SyscallHandler *SyscallHandler{};
-
     constexpr static uint64_t STACK_SIZE = FHU::FEX_PAGE_SIZE;
     constexpr static uint64_t STACK_OFFSET = 0xc000'0000;
     // Zero is special case to know when we are done
     uint64_t Code_start_page = 0x1'0000;
     uint64_t RIP {};
 
-    int TestFD{};
-    size_t TestFileSize{};
+    fextl::vector<char> RawASMFile;
     ConfigLoader Config;
   };
 
