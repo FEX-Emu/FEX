@@ -1,5 +1,6 @@
 #pragma once
 #ifdef _WIN32
+#include <FEXCore/Utils/LogManager.h>
 #include <winnt.h>
 
 namespace FEX::ArchHelpers::Context {
@@ -56,6 +57,10 @@ static inline uint64_t GetState(PCONTEXT Context) {
 
 static inline void SetState(PCONTEXT Context, uint64_t val) {
   Context->R14 = val;
+}
+
+static inline uint64_t *GetArmGPRs(PCONTEXT Context) {
+  ERROR_AND_DIE_FMT("Not implemented for x86 host");
 }
 
 #endif
