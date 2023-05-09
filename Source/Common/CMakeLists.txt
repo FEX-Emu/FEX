@@ -3,11 +3,15 @@ add_subdirectory(cpp-optparse/)
 set(NAME Common)
 set(SRCS
   ArgumentLoader.cpp
-  Config.cpp
   EnvironmentLoader.cpp
-  FEXServerClient.cpp
-  FileFormatCheck.cpp
   StringUtil.cpp)
+
+if (NOT MINGW_BUILD)
+  list (APPEND SRCS
+    Config.cpp
+    FEXServerClient.cpp
+    FileFormatCheck.cpp)
+endif()
 
 add_library(${NAME} STATIC ${SRCS})
 target_link_libraries(${NAME} FEXCore_Base cpp-optparse json-maker FEXHeaderUtils)
