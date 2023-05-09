@@ -372,10 +372,27 @@ namespace FEXCore::Context {
     FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;
     FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator;
 
-    bool IsTSOEnabled() { return (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled; }
+    // If Atomic-based TSO emulation is enabled or not.
+    bool IsAtomicTSOEnabled() const { return AtomicTSOEmulationEnabled; }
+
+    void SetHardwareTSOSupport(bool HardwareTSOSupported) override {
+      SupportsHardwareTSO = HardwareTSOSupported;
+      UpdateAtomicTSOEmulationConfig();
+    }
 
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
+
+    void UpdateAtomicTSOEmulationConfig() {
+      if (SupportsHardwareTSO) {
+        // If the hardware supports TSO then we don't need to emulate it through atomics.
+        AtomicTSOEmulationEnabled = false;
+      }
+      else {
+        // Atomic TSO emulation only enabled if the config option is enabled.
+        AtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled;
+      }
+    }
 
   private:
     /**
@@ -411,6 +428,8 @@ namespace FEXCore::Context {
 
     bool StartPaused = false;
     bool IsMemoryShared = false;
+    bool SupportsHardwareTSO = false;
+    bool AtomicTSOEmulationEnabled = true;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;

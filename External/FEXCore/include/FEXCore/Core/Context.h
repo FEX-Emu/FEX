@@ -288,6 +288,14 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void GetVDSOSigReturn(VDSOSigReturn *VDSOPointers) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void IncrementIdleRefCount() = 0;
+
+      /**
+       * @brief Informs the context if hardware TSO is supported.
+       * Once hardware TSO is enabled, then TSO emulation through atomics is disabled and relies on the hardware.
+       *
+       * @param HardwareTSOSupported If the hardware supports the TSO memory model or not.
+       */
+      FEX_DEFAULT_VISIBILITY virtual void SetHardwareTSOSupport(bool HardwareTSOSupported) = 0;
     private:
   };
 

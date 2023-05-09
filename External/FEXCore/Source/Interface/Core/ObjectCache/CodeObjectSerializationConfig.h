@@ -22,6 +22,9 @@ namespace FEXCore::CodeSerialize {
     // Multiblock enabled
     unsigned MultiBlock : 1;
 
+    // Hardware TSO enabled
+    unsigned HardwareTSOEnabled : 1;
+
     // TSO enabled
     unsigned TSOEnabled : 1;
 
@@ -48,13 +51,14 @@ namespace FEXCore::CodeSerialize {
 
     // Padding to remove uninitialized data warning from asan
     // Shows remaining amount of bits available for config
-    unsigned _Pad : 18;
+    unsigned _Pad : 17;
 
     bool operator==(CodeObjectSerializationConfig const &other) const {
       return Cookie == other.Cookie &&
         MaxInstPerBlock == other.MaxInstPerBlock &&
         Arch == other.Arch &&
         MultiBlock == other.MultiBlock &&
+        HardwareTSOEnabled == other.HardwareTSOEnabled &&
         TSOEnabled == other.TSOEnabled &&
         ABILocalFlags == other.ABILocalFlags &&
         ABINoPF == other.ABINoPF &&
@@ -71,6 +75,7 @@ namespace FEXCore::CodeSerialize {
       Hash <<= 32; Hash |= other.MaxInstPerBlock;
       Hash <<= 1;  Hash |= other.Arch;
       Hash <<= 1;  Hash |= other.MultiBlock;
+      Hash <<= 1;  Hash |= other.HardwareTSOEnabled;
       Hash <<= 1;  Hash |= other.TSOEnabled;
       Hash <<= 1;  Hash |= other.ABILocalFlags;
       Hash <<= 1;  Hash |= other.ABINoPF;

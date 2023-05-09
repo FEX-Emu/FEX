@@ -3807,7 +3807,7 @@ void OpDispatchBuilder::STOSOp(OpcodeArgs) {
     OrderedNode *Counter = LoadGPRRegister(X86State::REG_RCX);
     auto DF = GetRFLAG(FEXCore::X86State::RFLAG_DF_LOC);
 
-    auto Result = _MemSet(CTX->IsTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, DF);
+    auto Result = _MemSet(CTX->IsAtomicTSOEnabled(), Size, Segment ?: InvalidNode, Dest, Src, Counter, DF);
     StoreGPRRegister(X86State::REG_RCX, _Constant(0));
     StoreGPRRegister(X86State::REG_RDI, Result);
   }
@@ -3834,7 +3834,7 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto DstSegment = GetSegment(0, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX, true);
     auto SrcSegment = GetSegment(Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-    auto Result = _MemCpy(CTX->IsTSOEnabled(), Size,
+    auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size,
         DstSegment ?: InvalidNode,
         SrcSegment ?: InvalidNode,
         DstAddr, SrcAddr, Counter, DF);

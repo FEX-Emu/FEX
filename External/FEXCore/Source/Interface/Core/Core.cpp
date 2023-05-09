@@ -162,6 +162,9 @@ namespace FEXCore::Context {
       // Only initialize symbols file if enabled. Ensures we don't pollute /tmp with empty files.
       Symbols.InitFile();
     }
+
+    // Track atomic TSO emulation configuration.
+    UpdateAtomicTSOEmulationConfig();
   }
 
   ContextImpl::~ContextImpl() {
@@ -1237,6 +1240,7 @@ namespace FEXCore::Context {
   void ContextImpl::MarkMemoryShared() {
     if (!IsMemoryShared) {
       IsMemoryShared = true;
+      UpdateAtomicTSOEmulationConfig();
 
       if (Config.TSOAutoMigration) {
         std::lock_guard<std::mutex> lkThreads(ThreadCreationMutex);
