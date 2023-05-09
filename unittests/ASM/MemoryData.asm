@@ -4,15 +4,15 @@
     "RAX": "0xddccbbaa"
   },
   "MemoryRegions": {
-    "0x100000": "4096"
+    "0x10000000": "4096"
   },
   "MemoryData": {
-    "0x100000": "AA BB CC DD"
+    "0x10000000": "AA BB CC DD"
   }
 }
 %endif
 
 ; Simple test to prove that config loader's MemoryData is working
 
-mov rax, [0x100000]
+mov rax, [0x10000000]
 hlt
