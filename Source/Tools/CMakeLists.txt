@@ -19,13 +19,14 @@ if (NOT MINGW_BUILD)
   add_subdirectory(FEXGetConfig/)
   add_subdirectory(FEXServer/)
   add_subdirectory(FEXBash/)
-  add_subdirectory(FEXLoader/)
+
+  set(NAME Opt)
+  set(SRCS Opt.cpp)
+
+  add_executable(${NAME} ${SRCS})
+  target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
+
+  target_link_libraries(${NAME} FEXCore Common pthread)
 endif()
 
-set(NAME Opt)
-set(SRCS Opt.cpp)
-
-add_executable(${NAME} ${SRCS})
-target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
-
-target_link_libraries(${NAME} FEXCore Common pthread)
+add_subdirectory(FEXLoader/)
