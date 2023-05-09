@@ -369,8 +369,16 @@ void Arm64Dispatcher::EmitDispatcher() {
     // brk = SIGTRAP
     // ??? = SIGSEGV
     // Force a SIGSEGV by loading zero
-    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0);
-    ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r1);
+    if (CTX->ExitOnHLTEnabled()) {
+      ldr(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
+      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::r0, 0);
+      PopCalleeSavedRegisters();
+      ret();
+    }
+    else {
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, 0);
+      ldr(ARMEmitter::XReg::x1, ARMEmitter::Reg::r1);
+    }
   }
 
   {

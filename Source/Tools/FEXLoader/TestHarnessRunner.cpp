@@ -131,7 +131,7 @@ namespace LongJumpHandler {
     Handler->RegisterFrontendHostSignalHandler(SIGSEGV, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
       constexpr uint8_t HLT = 0xF4;
       if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-        DidFault = false;
+        DidFault = true;
         return false;
       }
 
@@ -141,6 +141,10 @@ namespace LongJumpHandler {
   }
 #else
   FEX::WindowsHandlers::DummySignalDelegator *Handler;
+
+  static void LongJumpHandler() {
+    longjmp(LongJump, 1);
+  }
 
   LONG WINAPI
   VectoredExceptionHandler(struct _EXCEPTION_POINTERS *ExceptionInfo) {
@@ -161,6 +165,16 @@ namespace LongJumpHandler {
         return Result.first ?
           EXCEPTION_CONTINUE_EXECUTION :
           EXCEPTION_CONTINUE_SEARCH;
+      }
+      case STATUS_ACCESS_VIOLATION: {
+        constexpr uint8_t HLT = 0xF4;
+        if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+          DidFault = true;
+          return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+        FEX::ArchHelpers::Context::SetPc(Context, reinterpret_cast<uint64_t>(LongJumpHandler));
+        return EXCEPTION_CONTINUE_EXECUTION;
       }
       default: break;
     }
@@ -244,6 +258,10 @@ int main(int argc, char **argv, char **const envp) {
 #ifndef _WIN32
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
 #else
+  // Enable exit on HLT while Wine's longjump is broken.
+  //
+  // Once they fix longjump, we can remove this.
+  CTX->EnableExitOnHLT();
   auto SignalDelegation = FEX::WindowsHandlers::CreateSignalDelegator();
 #endif
 
