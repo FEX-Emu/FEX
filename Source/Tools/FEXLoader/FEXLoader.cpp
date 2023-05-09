@@ -46,6 +46,7 @@ $end_info$
 #include <queue>
 #include <set>
 #include <sys/auxv.h>
+#include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/select.h>
 #include <system_error>
@@ -232,6 +233,47 @@ bool IsInterpreterInstalled() {
   return ExecutedWithFD ||
          (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 &&
           access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
+}
+
+namespace FEX::TSO {
+  void SetupTSOEmulation(FEXCore::Context::Context *CTX) {
+    // We need to check if these are defined or not. This is a very fresh feature.
+#ifndef PR_GET_MEM_MODEL
+#define PR_GET_MEM_MODEL 0x6d4d444c
+#endif
+#ifndef PR_SET_MEM_MODEL
+#define PR_SET_MEM_MODEL 0x4d4d444c
+#endif
+#ifndef PR_SET_MEM_MODEL_DEFAULT
+#define PR_SET_MEM_MODEL_DEFAULT 0
+#endif
+#ifndef PR_SET_MEM_MODEL_TSO
+#define PR_SET_MEM_MODEL_TSO 1
+#endif
+    // Check to see if this is supported.
+    auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
+    if (Result == -1) {
+      // Unsupported, early exit.
+      return;
+    }
+
+    FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
+
+    if (!TSOEnabled()) {
+      // TSO emulation isn't even enabled, early exit.
+      return;
+    }
+
+    if (Result == PR_SET_MEM_MODEL_DEFAULT) {
+      // Try to set the TSO mode if we are currently default.
+      Result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
+      if (Result == 0) {
+        // TSO mode successfully enabled. Tell the context to disable TSO emulation through atomics.
+        // This flag gets inherited on thread creation, so FEX only needs to set it at the start.
+        CTX->SetHardwareTSOSupport(true);
+      }
+    }
+  }
 }
 
 int main(int argc, char **argv, char **const envp) {
@@ -426,6 +468,9 @@ int main(int argc, char **argv, char **const envp) {
 
   auto CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->InitializeContext();
+
+  // Setup TSO hardware emulation immediately after initializing the context.
+  FEX::TSO::SetupTSOEmulation(CTX.get());
 
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
 
