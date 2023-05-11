@@ -129,6 +129,170 @@ DEF_OP(LoadRegister) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
+    [[maybe_unused]] const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
+    const auto regOffs = Op->Offset & 7;
+
+    LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
+
+    switch (OpSize) {
+      case 1:
+        LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
+        ldrb(GetReg(Node), STATE, Op->Offset);
+        break;
+
+      case 2:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        ldrh(GetReg(Node), STATE, Op->Offset);
+        break;
+
+      case 4:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        ldr(GetReg(Node).W(), STATE, Op->Offset);
+        break;
+
+      case 8:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        ldr(GetReg(Node).X(), STATE, Op->Offset);
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled LoadRegister GPR size: {}", OpSize);
+        break;
+    }
+  }
+  else if (Op->Class == IR::FPRClass) {
+    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                         : Core::CPUState::XMM_SSE_REG_SIZE;
+    [[maybe_unused]] const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
+
+    LOGMAN_THROW_A_FMT(HostSupportsSVE, "Unsupported code path!");
+    LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "out of range regId");
+
+    const auto host = GetVReg(Node);
+
+    const auto regOffs = Op->Offset & 15;
+
+    switch (OpSize) {
+      case 1: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        ldrb(host, STATE, Op->Offset);
+        break;
+      }
+      case 2: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        ldrh(host, STATE, Op->Offset);
+        break;
+      }
+      case 4: {
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+        ldr(host.S(), STATE, Op->Offset);
+        break;
+      }
+
+      case 8: {
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+        ldr(host.D(), STATE, Op->Offset);
+        break;
+      }
+
+      case 16: {
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        ldr(host.Q(), STATE, Op->Offset);
+        break;
+      }
+    }
+  } else {
+    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+  }
+}
+
+DEF_OP(StoreRegister) {
+  const auto Op = IROp->C<IR::IROp_StoreRegister>();
+  const auto OpSize = IROp->Size;
+
+  if (Op->Class == IR::GPRClass) {
+    [[maybe_unused]] const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
+    const auto regOffs = Op->Offset & 7;
+
+    LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
+
+    const auto Src = GetReg(Op->Value.ID());
+
+    switch (OpSize) {
+      case 1:
+        LOGMAN_THROW_AA_FMT(regOffs == 0 || regOffs == 1, "unexpected regOffs");
+        strb(Src, STATE, Op->Offset);
+        break;
+
+      case 2:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        strh(Src, STATE, Op->Offset);
+        break;
+
+      case 4:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        str(Src.W(), STATE, Op->Offset);
+        break;
+      case 8:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs");
+        str(Src.X(), STATE, Op->Offset);
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreRegister GPR size: {}", OpSize);
+        break;
+    }
+  } else if (Op->Class == IR::FPRClass) {
+    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
+                                         : Core::CPUState::XMM_SSE_REG_SIZE;
+    [[maybe_unused]] const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
+
+    LOGMAN_THROW_A_FMT(HostSupportsSVE, "Unsupported code path!");
+    LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "regId out of range");
+
+    const auto host = GetVReg(Op->Value.ID());
+
+    const auto regOffs = Op->Offset & 15;
+
+    switch (OpSize) {
+      case 1:
+        strb(host, STATE, Op->Offset);
+        break;
+
+      case 2:
+        LOGMAN_THROW_AA_FMT((regOffs & 1) == 0, "unexpected regOffs: {}", regOffs);
+        strh(host, STATE, Op->Offset);
+        break;
+
+      case 4:
+        LOGMAN_THROW_AA_FMT((regOffs & 3) == 0, "unexpected regOffs: {}", regOffs);
+        str(host.S(), STATE, Op->Offset);
+        break;
+
+      case 8:
+        LOGMAN_THROW_AA_FMT((regOffs & 7) == 0, "unexpected regOffs: {}", regOffs);
+        str(host.D(), STATE, Op->Offset);
+        break;
+
+      case 16:
+        LOGMAN_THROW_AA_FMT(regOffs == 0, "unexpected regOffs: {}", regOffs);
+        str(host.Q(), STATE, Op->Offset);
+        break;
+
+      default:
+        LOGMAN_MSG_A_FMT("Unhandled StoreRegister FPR size: {}", OpSize);
+        break;
+    }
+  } else {
+    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+  }
+}
+
+DEF_OP(LoadRegisterSRA) {
+  const auto Op = IROp->C<IR::IROp_LoadRegister>();
+  const auto OpSize = IROp->Size;
+
+  if (Op->Class == IR::GPRClass) {
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
     const auto regOffs = Op->Offset & 7;
 
@@ -312,7 +476,7 @@ DEF_OP(LoadRegister) {
   }
 }
 
-DEF_OP(StoreRegister) {
+DEF_OP(StoreRegisterSRA) {
   const auto Op = IROp->C<IR::IROp_StoreRegister>();
   const auto OpSize = IROp->Size;
 
@@ -499,7 +663,6 @@ DEF_OP(StoreRegister) {
     LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
   }
 }
-
 
 DEF_OP(LoadContextIndexed) {
   const auto Op = IROp->C<IR::IROp_LoadContextIndexed>();

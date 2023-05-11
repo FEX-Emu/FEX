@@ -634,6 +634,25 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
 
   // Must be done after Dispatcher init
   ClearCache();
+
+  // Setup dynamic dispatch.
+  if (CTX->Dispatcher->GetConfig().StaticRegisterAllocation) {
+    RT_LoadRegister = &Arm64JITCore::Op_LoadRegisterSRA;
+    RT_StoreRegister = &Arm64JITCore::Op_StoreRegisterSRA;
+  }
+  else {
+    RT_LoadRegister = &Arm64JITCore::Op_LoadRegister;
+    RT_StoreRegister = &Arm64JITCore::Op_StoreRegister;
+  }
+
+  if (ParanoidTSO()) {
+    RT_LoadMemTSO = &Arm64JITCore::Op_ParanoidLoadMemTSO;
+    RT_StoreMemTSO = &Arm64JITCore::Op_ParanoidStoreMemTSO;
+  }
+  else {
+    RT_LoadMemTSO = &Arm64JITCore::Op_LoadMemTSO;
+    RT_StoreMemTSO = &Arm64JITCore::Op_StoreMemTSO;
+  }
 }
 
 void Arm64JITCore::EmitDetectionString() {
@@ -814,6 +833,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
       const auto ID = IR->GetID(CodeNode);
       switch (IROp->Op) {
+#define REGISTER_OP_RT(op, x) case FEXCore::IR::IROps::OP_##op: std::invoke(RT_##x, this, IROp, ID); break
 #define REGISTER_OP(op, x) case FEXCore::IR::IROps::OP_##op: Op_##x(IROp, ID); break
         // ALU ops
         REGISTER_OP(TRUNCELEMENTPAIR,  TruncElementPair);
@@ -920,8 +940,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         // Memory ops
         REGISTER_OP(LOADCONTEXT,         LoadContext);
         REGISTER_OP(STORECONTEXT,        StoreContext);
-        REGISTER_OP(LOADREGISTER,        LoadRegister);
-        REGISTER_OP(STOREREGISTER,       StoreRegister);
+        REGISTER_OP_RT(LOADREGISTER,     LoadRegister);
+        REGISTER_OP_RT(STOREREGISTER,    StoreRegister);
         REGISTER_OP(LOADCONTEXTINDEXED,  LoadContextIndexed);
         REGISTER_OP(STORECONTEXTINDEXED, StoreContextIndexed);
         REGISTER_OP(SPILLREGISTER,       SpillRegister);
@@ -930,22 +950,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(STOREFLAG,           StoreFlag);
         REGISTER_OP(LOADMEM,             LoadMem);
         REGISTER_OP(STOREMEM,            StoreMem);
-        case FEXCore::IR::IROps::OP_LOADMEMTSO:
-          if (ParanoidTSO()) {
-            Op_ParanoidLoadMemTSO(IROp, ID);
-          }
-          else {
-            Op_LoadMemTSO(IROp, ID);
-          }
-          break;
-        case FEXCore::IR::IROps::OP_STOREMEMTSO:
-          if (ParanoidTSO()) {
-            Op_ParanoidStoreMemTSO(IROp, ID);
-          }
-          else {
-            Op_StoreMemTSO(IROp, ID);
-          }
-          break;
+        REGISTER_OP_RT(LOADMEMTSO,       LoadMemTSO);
+        REGISTER_OP_RT(STOREMEMTSO,      StoreMemTSO);
         REGISTER_OP(VLOADVECTORMASKED,   VLoadVectorMasked);
         REGISTER_OP(VSTOREVECTORMASKED,  VStoreVectorMasked);
 
