@@ -42,6 +42,7 @@ $end_info$
 #include <FEXCore/IR/RegisterAllocationData.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/Event.h>
+#include <FEXCore/Utils/File.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
@@ -715,36 +716,30 @@ namespace FEXCore::Context {
   }
 
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
-#ifndef _WIN32
-    int FD {-1};
-    bool CloseAfter = false;
+    FEXCore::File::File FD;
     const auto DumpIRStr = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR();
 
     // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
     if (DumpIRStr =="stderr" || DumpIRStr =="no") {
-      FD = STDERR_FILENO;
+      FD = FEXCore::File::File::GetStdERR();
     }
     else if (DumpIRStr =="stdout") {
-      FD = STDOUT_FILENO;
+      FD = FEXCore::File::File::GetStdOUT();
     }
     else {
       const auto fileName = fextl::fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
-      constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-      FD = open(fileName.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS, USER_PERMS);
-      CloseAfter = true;
+      FD = FEXCore::File::File(fileName.c_str(),
+        FEXCore::File::FileModes::WRITE |
+        FEXCore::File::FileModes::CREATE |
+        FEXCore::File::FileModes::TRUNCATE);
     }
 
-    if (FD != -1) {
+    if (FD.IsValid()) {
       fextl::stringstream out;
       auto NewIR = IREmitter->ViewIR();
       FEXCore::IR::Dump(&out, &NewIR, RA);
       fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
-
-      if (CloseAfter) {
-        close(FD);
-      }
     }
-#endif
   };
 
   static void ValidateIR(ContextImpl *ctx, IR::IREmitter *IREmitter) {
