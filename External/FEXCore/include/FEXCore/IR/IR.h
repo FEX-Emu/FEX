@@ -4,7 +4,7 @@
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/sstream.h>
-#include <FEXHeaderUtils/EnumOperators.h>
+#include <FEXCore/Utils/EnumOperators.h>
 
 #include <array>
 #include <cassert>
