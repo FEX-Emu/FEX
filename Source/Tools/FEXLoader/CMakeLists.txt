@@ -40,13 +40,11 @@ if (NOT MINGW_BUILD)
       )
     endif()
 
-    if (NOT MINGW_BUILD)
-      install(TARGETS ${NAME}
-        RUNTIME
-          DESTINATION bin
-          COMPONENT runtime
-      )
-    endif()
+    install(TARGETS ${NAME}
+      RUNTIME
+        DESTINATION bin
+        COMPONENT runtime
+    )
   endfunction()
 
   GenerateInterpreter(FEXLoader 0)

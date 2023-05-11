@@ -278,11 +278,11 @@ int main(int argc, char **argv, char **const envp) {
     (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
     (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) ||
     (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
-    (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB()) ||
+    (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
+
 #ifdef _WIN32
-    (Loader.RequiresLinux()) ||
+    TestUnsupported |= Loader.RequiresLinux();
 #endif
-    false;
 
   if (TestUnsupported) {
     return 0;
