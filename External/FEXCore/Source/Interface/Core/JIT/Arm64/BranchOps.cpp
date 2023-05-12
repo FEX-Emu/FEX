@@ -216,8 +216,11 @@ DEF_OP(Syscall) {
 
     PopDynamicRegsAndLR();
 
-    // Move result to its destination register
-    mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
+    if ((Flags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
+      // Move result to its destination register.
+      // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
+      mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
+    }
   }
 }
 

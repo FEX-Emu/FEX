@@ -361,6 +361,13 @@ constexpr InstFlagType SIZE_128BIT   = 0b101;
 constexpr InstFlagType SIZE_256BIT   = 0b110;
 constexpr InstFlagType SIZE_64BITDEF = 0b111; // Default mode is 64bit instead of typical 32bit
 
+#ifndef _WIN32
+  constexpr uint32_t DEFAULT_SYSCALL_FLAGS = FLAGS_NO_OVERLAY;
+#else
+  // Syscall ends a block on WIN32 because the instruction can update the CPU's RIP.
+  constexpr uint32_t DEFAULT_SYSCALL_FLAGS = FLAGS_NO_OVERLAY | FLAGS_BLOCK_END;
+#endif
+
 constexpr InstFlagType GetSizeDstFlags(InstFlagType Flags) { return (Flags >> FLAGS_SIZE_DST_OFF) & SIZE_MASK; }
 constexpr InstFlagType GetSizeSrcFlags(InstFlagType Flags) { return (Flags >> FLAGS_SIZE_SRC_OFF) & SIZE_MASK; }
 
