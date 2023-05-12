@@ -210,6 +210,16 @@ private:
   /**  @} */
 
   uint32_t SpillSlots{};
+  using OpType = void (Arm64JITCore::*)(IR::IROp_Header const *IROp, IR::NodeID Node);
+
+  // Runtime selection;
+  // Load and store register style.
+  OpType RT_LoadRegister;
+  OpType RT_StoreRegister;
+  // Load and store TSO memory style
+  OpType RT_LoadMemTSO;
+  OpType RT_StoreMemTSO;
+
 #define DEF_OP(x) void Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
   ///< Unhandled handler
@@ -318,6 +328,8 @@ private:
   DEF_OP(StoreContext);
   DEF_OP(LoadRegister);
   DEF_OP(StoreRegister);
+  DEF_OP(LoadRegisterSRA);
+  DEF_OP(StoreRegisterSRA);
   DEF_OP(LoadContextIndexed);
   DEF_OP(StoreContextIndexed);
   DEF_OP(SpillRegister);

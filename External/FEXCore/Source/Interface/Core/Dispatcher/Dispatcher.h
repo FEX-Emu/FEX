@@ -90,6 +90,8 @@ public:
   virtual void GetSRAFPRMapping(uint8_t Mapping[16]) const {
   }
 
+  const DispatcherConfig& GetConfig() const { return config; }
+
 protected:
   Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &Config)
     : CTX {ctx}
