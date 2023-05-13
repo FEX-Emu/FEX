@@ -176,6 +176,12 @@ jobs:
       # ASM tests get quite close to 10MB
       run: truncate --size=<20M ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log || true
 
+    - name: Remove old SHM regions
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config $BUILD_TYPE --target remove_old_shm_regions
+
     - name: Set runner name
       if: ${{ always() }}
       run: echo "runner_name=$(hostname)" >> $GITHUB_ENV
