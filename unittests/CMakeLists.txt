@@ -6,6 +6,7 @@ add_subdirectory(POSIX/)
 add_subdirectory(gvisor-tests/)
 add_subdirectory(gcc-target-tests-32/)
 add_subdirectory(gcc-target-tests-64/)
+add_subdirectory(Utilities/)
 
 if (BUILD_THUNKS)
   add_subdirectory(ThunkLibs)
