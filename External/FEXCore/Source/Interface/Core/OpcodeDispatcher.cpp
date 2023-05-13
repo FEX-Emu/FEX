@@ -5065,8 +5065,8 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
         auto SrcVector = LoadXMMRegister(gprIndex);
 
-        LOGMAN_THROW_AA_FMT(Class != IR::GPRClass, "Partial writes from GPR not allowed. Instruction: {}",
-                            Op->TableInfo->Name);
+        LOGMAN_THROW_A_FMT(Class != IR::GPRClass, "Partial writes from GPR not allowed. Instruction: {}",
+                           Op->TableInfo->Name);
 
         // OpSize of 16 is special in that it is expected to zero the upper bits of the 256-bit operation.
         // TODO: Longer term we should enforce the difference between zero and insert.
