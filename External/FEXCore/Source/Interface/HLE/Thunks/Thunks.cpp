@@ -53,12 +53,9 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
   );
 #elif defined(_M_ARM_64)
   asm(
-    "adr x11, 0f \n"
-    "ldr x16, [x11] \n"
+    "ldr x16, 0f \n"
     "br x16 \n"
-    // Manually align to the next 8-byte boundary
-    // NOTE: GCC over-aligns to a full page when using .align directives on ARM (last tested on GCC 11.2)
-    "nop \n"
+    // 8-byte aligned quad.
     "0: \n"
     ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
   );
