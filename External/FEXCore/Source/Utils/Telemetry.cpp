@@ -1,4 +1,5 @@
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/File.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/fextl/fmt.h>
@@ -35,7 +36,6 @@ namespace FEXCore::Telemetry {
   }
 
   void Shutdown(fextl::string const &ApplicationName) {
-#ifndef _WIN32
     auto DataDirectory = Config::GetDataDirectory();
     DataDirectory += "Telemetry/" + ApplicationName + ".telem";
 
@@ -45,20 +45,19 @@ namespace FEXCore::Telemetry {
       FHU::Filesystem::CopyFile(DataDirectory, Backup, FHU::Filesystem::CopyOptions::OVERWRITE_EXISTING);
     }
 
-    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-    int fd = open(DataDirectory.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+    auto File = FEXCore::File::File(DataDirectory.c_str(),
+         FEXCore::File::FileModes::WRITE |
+         FEXCore::File::FileModes::CREATE |
+         FEXCore::File::FileModes::TRUNCATE);
 
-    if (fd != -1) {
+    if (File.IsValid()) {
       for (size_t i = 0; i < TelemetryType::TYPE_LAST; ++i) {
         auto &Name = TelemetryNames.at(i);
         auto &Data = TelemetryValues.at(i);
-        auto Output = fextl::fmt::format("{}: {}\n", Name, *Data);
-        write(fd, Output.c_str(), Output.size());
+        fextl::fmt::print(File, "{}: {}\n", Name, *Data);
       }
-      fsync(fd);
-      close(fd);
+      File.Flush();
     }
-#endif
   }
 
   Value &GetObject(TelemetryType Type) {

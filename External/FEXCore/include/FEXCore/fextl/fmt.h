@@ -1,6 +1,7 @@
 #pragma once
 #include <FEXCore/fextl/allocator.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/Utils/File.h>
 
 #include <fmt/format.h>
 #include <unistd.h>
@@ -38,6 +39,7 @@ namespace fextl::fmt {
     return fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
   }
 
+#ifndef _WIN32
   template <typename... T>
   FMT_INLINE auto print(::fmt::format_string<T...> fmt, T&&... args)
       -> void {
@@ -50,6 +52,28 @@ namespace fextl::fmt {
       -> void {
     auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
     write(FD, String.c_str(), String.size());
+  }
+#else
+  template <typename... T>
+  FMT_INLINE auto print(::fmt::format_string<T...> fmt, T&&... args)
+      -> void {
+    auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+    auto f = fextl::file::File::GetStdOUT();
+    f.Write(String.c_str(), String.size());
+  }
+
+  template <typename... T>
+  FMT_INLINE auto print(HANDLE File, ::fmt::format_string<T...> fmt, T&&... args)
+      -> void {
+    auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+    WriteFile(File, String.c_str(), String.size(), nullptr, nullptr);
+  }
+#endif
+  template <typename... T>
+  FMT_INLINE auto print(FEXCore::File::File& f, ::fmt::format_string<T...> fmt, T&&... args)
+      -> void {
+    auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
+    f.Write(String.c_str(), String.size());
   }
 
   template <typename... T>
