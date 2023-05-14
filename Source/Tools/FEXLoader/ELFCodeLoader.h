@@ -571,6 +571,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     AuxVariables.emplace_back(auxv_t{26, HWCap2}); // AT_HWCAP2
     AuxVariables.emplace_back(auxv_t{51, CalculateSignalStackSize()}); // AT_MINSIGSTKSZ
     AuxPlatform = &AuxVariables.emplace_back(auxv_t{24, ~0ULL}); // AT_PLATFORM
+    AuxExecFN = &AuxVariables.emplace_back(auxv_t{AT_EXECFN, ~0ULL}); // AT_EXECFN
 
     if (Is64BitMode()) {
       AuxVariables.emplace_back(auxv_t{4, 0x38}); // AT_PHENT
@@ -624,9 +625,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     const fextl::vector<fextl::string> &EnvironmentVariables,
     const fextl::list<auxv_t> &AuxVariables,
     uint64_t *AuxTabBase,
-    uint64_t *AuxTabSize,
-    PointerType RandomNumberOffset,
-    PointerType PlatformNameOffset
+    uint64_t *AuxTabSize
     ) {
     // Pointer list offsets
     PointerType *ArgumentPointers = reinterpret_cast<PointerType*>(StackPointer + PointerSize);
@@ -725,6 +724,9 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t PlatformNameLocation =  TotalArgumentMemSize;
     TotalArgumentMemSize += platform_string_max_size;
 
+    uint64_t ExecFNLocation = TotalArgumentMemSize;
+    TotalArgumentMemSize += Args[0].size() + 1;
+
     // Offset the stack by how much memory we need
     StackPointer -= TotalArgumentMemSize;
 
@@ -758,6 +760,10 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       }
     }
 
+    // Setup ExecFN aux
+    AuxExecFN->val = StackPointer + ExecFNLocation;
+    strncpy(reinterpret_cast<char*>(AuxExecFN->val), Args[0].c_str(), Args[0].size() + 1);
+
     // Stack setup
     // [0, 8):   Argument Count
     // [8, 16):  Argument Pointer 0
@@ -782,9 +788,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
         EnvironmentVariables,
         AuxVariables,
         &AuxTabBase,
-        &AuxTabSize,
-        RandomNumberLocation,
-        PlatformNameLocation
+        &AuxTabSize
         );
     }
     else {
@@ -797,9 +801,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
         EnvironmentVariables,
         AuxVariables,
         &AuxTabBase,
-        &AuxTabSize,
-        RandomNumberLocation,
-        PlatformNameLocation
+        &AuxTabSize
         );
     }
   }
@@ -917,6 +919,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
   auxv_t *AuxRandom{};
   auxv_t *AuxPlatform{};
+  auxv_t *AuxExecFN{};
 
   static constexpr std::string_view platform_name_x86_64 = "x86_64";
   static constexpr std::string_view platform_name_i686 = "i686";
