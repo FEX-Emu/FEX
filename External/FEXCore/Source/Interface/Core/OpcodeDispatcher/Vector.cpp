@@ -4694,5 +4694,8 @@ void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
 void OpDispatchBuilder::VPCMPISTRIOp(OpcodeArgs) {
   PCMPXSTRXOpImpl(Op, false, false);
 }
+void OpDispatchBuilder::VPCMPISTRMOp(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, false, true);
+}
 
 } // namespace FEXCore::IR

@@ -492,6 +492,7 @@ public:
 
   void VPCMPESTRIOp(OpcodeArgs);
   void VPCMPISTRIOp(OpcodeArgs);
+  void VPCMPISTRMOp(OpcodeArgs);
 
   void VPERM2Op(OpcodeArgs);
   void VPERMDOp(OpcodeArgs);
