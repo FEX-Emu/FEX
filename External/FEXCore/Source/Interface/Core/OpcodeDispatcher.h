@@ -862,7 +862,7 @@ private:
                              const X86Tables::DecodedOperand& Src2,
                              const X86Tables::DecodedOperand& Imm);
 
-  void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit);
+  void PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask);
 
   OrderedNode* PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
                             const X86Tables::DecodedOperand& Src2);
