@@ -4591,7 +4591,7 @@ void OpDispatchBuilder::VPERMILRegOp<4>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
 
-void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit) {
+void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
   const auto Control = Op->Src[1].Data.Literal.Value;
 
@@ -4620,23 +4620,53 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit) {
   } else {
     IntermediateResult = _VPCMPISTRX(Src1, Src2, Control);
   }
-  OrderedNode *ResultNoFlags = _And(IntermediateResult, _Constant(0xFFFF));
 
-  // For the indexed variant of the instructions, if control[6] is set, then we
-  // store the index of the most significant bit into ECX. If it's not set,
-  // then we store the least significant bit.
   OrderedNode *ZeroConst = _Constant(0);
 
-  const auto ECXResult = [&]() -> OrderedNode* {
+  if (IsMask) {
+    // For the masked variant of the instructions, if control[6] is set, then we
+    // need to expand the intermediate result into a byte or word mask (depending
+    // on data size specified in control[1]) along the entire length of XMM0,
+    // where set bits in the intermediate result set the corresponding entry
+    // in XMM0 to all 1s and unset bits set the corresponding entry to all 0s.
+    //
+    // If control[6] is not set, then we just store the intermediate result as-is
+    // into the least significant bits of XMM0 and zero extend it.
+    const auto IsExpandedMask = (Control & 0b0100'0000) != 0;
+
+    if (IsExpandedMask) {
+      // We need to iterate over the intermediate result and
+      // expand the mask into XMM0 elements.
+      const auto ElementSize = 1U  << (Control & 1);
+      const auto NumElements = 16U >> (Control & 1);
+
+      OrderedNode *Result = _VectorZero(Core::CPUState::XMM_SSE_REG_SIZE);
+      for (uint32_t i = 0; i < NumElements; i++) {
+        OrderedNode *SignBit = _Sbfe(1, i, IntermediateResult);
+        Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
+      }
+      StoreXMMRegister(0, Result);
+    } else {
+      // We insert the intermediate result as-is.
+      StoreXMMRegister(0, _VCastFromGPR(16, 2, IntermediateResult));
+    }
+  } else {
+    // For the indexed variant of the instructions, if control[6] is set, then we
+    // store the index of the most significant bit into ECX. If it's not set,
+    // then we store the least significant bit.
     const auto UseMSBIndex = (Control & 0b0100'0000) != 0;
+
+    OrderedNode *ResultNoFlags = _Bfe(16, 0, IntermediateResult);
 
     OrderedNode *IfZero = _Constant(16 >> (Control & 1));
     OrderedNode *IfNotZero = UseMSBIndex ? _FindMSB(ResultNoFlags)
                                          : _FindLSB(ResultNoFlags);
 
-    return _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
-                   IfZero, IfNotZero);
-  }();
+    OrderedNode *Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
+                                  IfZero, IfNotZero);
+
+    StoreGPRRegister(X86State::REG_RCX, Result, 4);
+  }
 
   // Set all of the necessary flags.
   // We use the top 16-bits of the result to store the flags
@@ -4656,16 +4686,16 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit) {
 
   SetRFLAG<X86State::RFLAG_AF_LOC>(ZeroConst);
   SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
-
-  // ... and we're done!
-  StoreGPRRegister(X86State::REG_RCX, ECXResult, 4);
 }
 
 void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
-  PCMPXSTRXOpImpl(Op, true);
+  PCMPXSTRXOpImpl(Op, true, false);
 }
 void OpDispatchBuilder::VPCMPISTRIOp(OpcodeArgs) {
-  PCMPXSTRXOpImpl(Op, false);
+  PCMPXSTRXOpImpl(Op, false, false);
+}
+void OpDispatchBuilder::VPCMPISTRMOp(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, false, true);
 }
 
 } // namespace FEXCore::IR
