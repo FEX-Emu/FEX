@@ -491,6 +491,7 @@ public:
   void VPALIGNROp(OpcodeArgs);
 
   void VPCMPESTRIOp(OpcodeArgs);
+  void VPCMPESTRMOp(OpcodeArgs);
   void VPCMPISTRIOp(OpcodeArgs);
   void VPCMPISTRMOp(OpcodeArgs);
 

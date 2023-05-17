@@ -5992,6 +5992,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVXVectorVariableBlend<8>},
     {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVXVectorVariableBlend<1>},
 
+    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
     {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
     {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
     {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
@@ -7284,6 +7285,7 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(0, PF_3A_66,   0x41), 1, &OpDispatchBuilder::DPPOp<8>},
     {OPD(0, PF_3A_66,   0x42), 1, &OpDispatchBuilder::MPSADBWOp},
 
+    {OPD(0, PF_3A_66,   0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
     {OPD(0, PF_3A_66,   0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
     {OPD(0, PF_3A_66,   0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
     {OPD(0, PF_3A_66,   0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},

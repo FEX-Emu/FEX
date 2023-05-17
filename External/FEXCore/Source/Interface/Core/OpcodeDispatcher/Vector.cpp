@@ -4691,6 +4691,9 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 void OpDispatchBuilder::VPCMPESTRIOp(OpcodeArgs) {
   PCMPXSTRXOpImpl(Op, true, false);
 }
+void OpDispatchBuilder::VPCMPESTRMOp(OpcodeArgs) {
+  PCMPXSTRXOpImpl(Op, true, true);
+}
 void OpDispatchBuilder::VPCMPISTRIOp(OpcodeArgs) {
   PCMPXSTRXOpImpl(Op, false, false);
 }
