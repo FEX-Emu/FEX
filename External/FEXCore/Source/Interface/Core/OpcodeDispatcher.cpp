@@ -5340,7 +5340,6 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs) {
   ALUOpImpl(Op, ALUIROp, AtomicFetchOp, RequiresMask);
 }
 
-#ifndef _WIN32
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   IR::BreakDefinition Reason;
   bool SetRIPToNext = false;
@@ -5361,7 +5360,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     }
 
     Reason.ErrorRegister = Literal << 3 | (0b010);
-    Reason.Signal = SIGSEGV;
+    Reason.Signal = Core::FAULT_SIGSEGV;
     // GP is raised when task-gate isn't setup to be valid
     Reason.TrapNumber = X86State::X86_TRAPNO_GP;
     Reason.si_code = 0x80;
@@ -5369,33 +5368,33 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
   case 0xCE: // INTO
     Reason.ErrorRegister = 0;
-    Reason.Signal = SIGSEGV;
+    Reason.Signal = Core::FAULT_SIGSEGV;
     Reason.TrapNumber = X86State::X86_TRAPNO_OF;
     Reason.si_code = 0x80;
    break;
   case 0xF1: // INT1
     Reason.ErrorRegister = 0;
-    Reason.Signal = SIGTRAP;
+    Reason.Signal = Core::FAULT_SIGTRAP;
     Reason.TrapNumber = X86State::X86_TRAPNO_DB;
     Reason.si_code = 1;
     SetRIPToNext = true;
   break;
   case 0xF4: { // HLT
     Reason.ErrorRegister = 0;
-    Reason.Signal = SIGSEGV;
+    Reason.Signal = Core::FAULT_SIGSEGV;
     Reason.TrapNumber = X86State::X86_TRAPNO_GP;
     Reason.si_code = 0x80;
   break;
   }
   case 0x0B: // UD2
     Reason.ErrorRegister = 0;
-    Reason.Signal = SIGILL;
+    Reason.Signal = Core::FAULT_SIGILL;
     Reason.TrapNumber = X86State::X86_TRAPNO_UD;
     Reason.si_code = 2;
   break;
   case 0xCC: // INT3
     Reason.ErrorRegister = 0;
-    Reason.Signal = SIGTRAP;
+    Reason.Signal = Core::FAULT_SIGTRAP;
     Reason.TrapNumber = X86State::X86_TRAPNO_BP;
     Reason.si_code = 0x80;
     SetRIPToNext = true;
@@ -5442,11 +5441,6 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     _Break(Reason);
   }
 }
-#else
-void OpDispatchBuilder::INTOp(OpcodeArgs) {
-  ERROR_AND_DIE_FMT("Unknown INTOp instruction?");
-}
-#endif
 
 void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);

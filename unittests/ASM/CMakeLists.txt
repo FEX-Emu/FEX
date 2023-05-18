@@ -72,6 +72,12 @@ foreach(ASM_SRC ${ASM_SOURCES})
     endif()
   endif()
 
+  if (NOT MINGW_BUILD)
+    set (LAUNCH_PROGRAM "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
+  else()
+    set (LAUNCH_PROGRAM "wine" "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner.exe")
+  endif()
+
   list(LENGTH TEST_ARGS ARG_COUNT)
   math(EXPR ARG_COUNT "${ARG_COUNT}-1")
   foreach(Index RANGE 0 ${ARG_COUNT} 3)
@@ -97,7 +103,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${TEST_TYPE}"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${CPU_CLASS}"
       "Test_${REL_TEST_ASM}"
-      "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner"
+      ${LAUNCH_PROGRAM}
       ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
     # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files
     # Prety crap way to work around the fact that tests can't have a build dependency in a different directory
@@ -105,6 +111,10 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${CMAKE_BINARY_DIR}/Bin/TestHarnessRunner")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_NAME}")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_CONFIG_NAME}")
+    if (MINGW_BUILD)
+      # Ensure the DOS region can be allocated.
+      set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "WINEPRELOADRESERVE=10000-110000")
+    endif()
   endforeach()
 
 endforeach()

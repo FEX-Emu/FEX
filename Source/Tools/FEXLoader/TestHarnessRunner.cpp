@@ -5,23 +5,31 @@ desc: Used to run Assembly tests
 $end_info$
 */
 
-#include "Common/ArgumentLoader.h"
-#include "TestHarnessRunner/HostRunner.h"
-#include "HarnessHelpers.h"
+#ifdef _WIN32
+#include "WindowsDummyHandlers.h"
+#include "ArchHelpers/WinContext.h"
+#else
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/SignalDelegator.h"
+#endif
+
+#include "Common/ArgumentLoader.h"
+#include "TestHarnessRunner/HostRunner.h"
+#include "HarnessHelpers.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/CPUBackend.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -114,8 +122,86 @@ private:
 };
 }
 
+namespace LongJumpHandler {
+  static jmp_buf LongJump{};
+  static bool DidFault{};
+
+#ifndef _WIN32
+  void RegisterLongJumpHandler(FEX::HLE::SignalDelegator *Handler) {
+    Handler->RegisterFrontendHostSignalHandler(SIGSEGV, [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
+      constexpr uint8_t HLT = 0xF4;
+      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+        DidFault = true;
+        return false;
+      }
+
+      longjmp(LongJumpHandler::LongJump, 1);
+      return false;
+    }, true);
+  }
+#else
+  FEX::WindowsHandlers::DummySignalDelegator *Handler;
+
+  static void LongJumpHandler() {
+    longjmp(LongJump, 1);
+  }
+
+  LONG WINAPI
+  VectoredExceptionHandler(struct _EXCEPTION_POINTERS *ExceptionInfo) {
+    auto Thread = Handler->GetBackingTLSThread();
+    PCONTEXT Context;
+    Context = ExceptionInfo->ContextRecord;
+
+    switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
+      case STATUS_DATATYPE_MISALIGNMENT: {
+        const auto PC = FEX::ArchHelpers::Context::GetPc(Context);
+        if (!Thread->CPUBackend->IsAddressInCodeBuffer(PC)) {
+          // Wasn't a sigbus in JIT code
+          return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+        const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, FEX::ArchHelpers::Context::GetArmGPRs(Context));
+        FEX::ArchHelpers::Context::SetPc(Context, PC + Result.second);
+        return Result.first ?
+          EXCEPTION_CONTINUE_EXECUTION :
+          EXCEPTION_CONTINUE_SEARCH;
+      }
+      case STATUS_ACCESS_VIOLATION: {
+        constexpr uint8_t HLT = 0xF4;
+        if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+          DidFault = true;
+          return EXCEPTION_CONTINUE_SEARCH;
+        }
+
+        FEX::ArchHelpers::Context::SetPc(Context, reinterpret_cast<uint64_t>(LongJumpHandler));
+        return EXCEPTION_CONTINUE_EXECUTION;
+      }
+      default: break;
+    }
+
+    printf("!Fault!\n");
+    printf("\tExceptionCode: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionCode);
+    printf("\tExceptionFlags: 0x%lx\n", ExceptionInfo->ExceptionRecord->ExceptionFlags);
+    printf("\tExceptionRecord: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionRecord);
+    printf("\tExceptionAddress: 0x%p\n", ExceptionInfo->ExceptionRecord->ExceptionAddress);
+    printf("\tNumberParameters: 0x%lx\n", ExceptionInfo->ExceptionRecord->NumberParameters);
+
+    return EXCEPTION_CONTINUE_SEARCH;
+  }
+
+  void RegisterLongJumpHandler(FEX::WindowsHandlers::DummySignalDelegator *Handler) {
+    // Install VEH handler.
+    AddVectoredExceptionHandler(0, VectoredExceptionHandler);
+
+    LongJumpHandler::Handler = Handler;
+  }
+#endif
+}
+
 int main(int argc, char **argv, char **const envp) {
+#ifndef _WIN32
   auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
+#endif
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
@@ -141,6 +227,7 @@ int main(int argc, char **argv, char **const envp) {
 
   FEX_CONFIG_OPT(Core, CORE);
 
+#ifndef _WIN32
   fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 
   if (!Loader.Is64BitMode()) {
@@ -157,8 +244,8 @@ int main(int argc, char **argv, char **const envp) {
       Allocator = FEX::HLE::CreatePassthroughAllocator();
     }
   }
+#endif
 
-  bool DidFault = false;
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
 
@@ -168,7 +255,15 @@ int main(int argc, char **argv, char **const envp) {
 
   CTX->InitializeContext();
 
+#ifndef _WIN32
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
+#else
+  // Enable exit on HLT while Wine's longjump is broken.
+  //
+  // Once they fix longjump, we can remove this.
+  CTX->EnableExitOnHLT();
+  auto SignalDelegation = FEX::WindowsHandlers::CreateSignalDelegator();
+#endif
 
   // Skip any tests that the host doesn't support features for
   auto HostFeatures = CTX->GetHostFeatures();
@@ -185,30 +280,27 @@ int main(int argc, char **argv, char **const envp) {
     (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
     (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB());
 
+#ifdef _WIN32
+    TestUnsupported |= Loader.RequiresLinux();
+#endif
+
   if (TestUnsupported) {
     return 0;
   }
 
   if (Core != FEXCore::Config::CONFIG_CUSTOM) {
-    jmp_buf LongJump{};
-    int LongJumpVal{};
-
-    SignalDelegation->RegisterFrontendHostSignalHandler(SIGSEGV, [&DidFault, &LongJump](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) {
-      constexpr uint8_t HLT = 0xF4;
-      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-        DidFault = false;
-        return false;
-      }
-
-      longjmp(LongJump, 1);
-      return false;
-    }, true);
-
+#ifndef _WIN32
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
                                                : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
+#else
+    auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();
+#endif
+
+    LongJumpHandler::RegisterLongJumpHandler(SignalDelegation.get());
+
     // Run through FEX
-    if (!Loader.MapMemory(SyscallHandler.get())) {
+    if (!Loader.MapMemory()) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map %d-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       return -ENOEXEC;
@@ -223,7 +315,7 @@ int main(int argc, char **argv, char **const envp) {
       return 1;
     }
 
-    LongJumpVal = setjmp(LongJump);
+    int LongJumpVal = setjmp(LongJumpHandler::LongJump);
     if (!LongJumpVal) {
       CTX->RunUntilExit();
     }
@@ -232,7 +324,9 @@ int main(int argc, char **argv, char **const envp) {
     CTX->GetCPUState(&State);
 
     SyscallHandler.reset();
-  } else {
+  }
+#ifndef _WIN32
+  else {
     // Run as host
     SupportsAVX = true;
     SignalDelegation->RegisterTLSState((FEXCore::Core::InternalThreadState*)UINTPTR_MAX);
@@ -244,10 +338,11 @@ int main(int argc, char **argv, char **const envp) {
 
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
   }
+#endif
 
-  bool Passed = !DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
+  bool Passed = !LongJumpHandler::DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 
-  LogMan::Msg::IFmt("Faulted? {}", DidFault ? "Yes" : "No");
+  LogMan::Msg::IFmt("Faulted? {}", LongJumpHandler::DidFault ? "Yes" : "No");
   LogMan::Msg::IFmt("Passed? {}", Passed ? "Yes" : "No");
 
 
@@ -258,9 +353,11 @@ int main(int argc, char **argv, char **const envp) {
   LogMan::Throw::UnInstallHandlers();
   LogMan::Msg::UnInstallHandlers();
 
+#ifndef _WIN32
   FEXCore::Allocator::ClearHooks();
 
   FEXCore::Allocator::ReenableSBRKAllocations(SBRKPointer);
+#endif
 
   return Passed ? 0 : -1;
 }

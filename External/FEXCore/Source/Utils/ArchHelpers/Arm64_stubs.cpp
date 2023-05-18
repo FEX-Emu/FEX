@@ -22,6 +22,11 @@ bool HandleCASAL(void *_ucontext, void *_info, uint32_t Instr) {
 bool HandleAtomicMemOp(void *_ucontext, void *_info, uint32_t Instr) {
     ERROR_AND_DIE_FMT("HandleAtomicMemOp Not Implemented");
 }
+
+std::pair<bool, int32_t> HandleUnalignedAccess(bool ParanoidTSO, uintptr_t ProgramCounter, uint64_t *GPRs) {
+  ERROR_AND_DIE_FMT("HandleAtomicMemOp Not Implemented");
+}
+
 #endif
 
 }

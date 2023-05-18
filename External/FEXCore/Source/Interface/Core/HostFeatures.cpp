@@ -54,7 +54,12 @@ HostFeatures::HostFeatures() {
 #ifdef VIXL_SIMULATOR
   auto Features = vixl::CPUFeatures::All();
 #else
+#ifndef _WIN32
   auto Features = vixl::CPUFeatures::InferFromOS();
+#else
+  // Need to use ID registers in WINE.
+  auto Features = vixl::CPUFeatures::InferFromIDRegisters();
+#endif
 #endif
   SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);

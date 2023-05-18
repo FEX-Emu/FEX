@@ -12,6 +12,8 @@ $end_info$
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include "FEXCore/Debug/InternalThreadState.h"
 
+#include <FEXCore/Core/SignalDelegator.h>
+
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 
@@ -37,7 +39,6 @@ DEF_OP(Fence) {
   }
 }
 
-#ifndef _WIN32
 DEF_OP(Break) {
   auto Op = IROp->C<IR::IROp_Break>();
 
@@ -59,15 +60,15 @@ DEF_OP(Break) {
   str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
 
   switch (Op->Reason.Signal) {
-  case SIGILL:
+  case Core::FAULT_SIGILL:
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGILL));
     br(TMP1);
     break;
-  case SIGTRAP:
+  case Core::FAULT_SIGTRAP:
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
     br(TMP1);
     break;
-  case SIGSEGV:
+  case Core::FAULT_SIGSEGV:
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGSEGV));
     br(TMP1);
     break;
@@ -77,11 +78,6 @@ DEF_OP(Break) {
     break;
   }
 }
-#else
-DEF_OP(Break) {
-  ERROR_AND_DIE_FMT("Unsupported");
-}
-#endif
 
 DEF_OP(GetRoundingMode) {
   auto Dst = GetReg(Node);

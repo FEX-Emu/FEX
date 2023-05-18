@@ -21,6 +21,18 @@ namespace Core {
     Return,
     ReturnRT,
   };
+
+  enum SignalNumber {
+#ifndef _WIN32
+    FAULT_SIGSEGV = SIGSEGV,
+    FAULT_SIGTRAP = SIGTRAP,
+    FAULT_SIGILL = SIGILL,
+#else
+    FAULT_SIGSEGV = 11,
+    FAULT_SIGTRAP = 5,
+    FAULT_SIGILL = 4,
+#endif
+  };
 }
   using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext)>;
 

@@ -380,6 +380,10 @@ namespace FEXCore::Context {
       UpdateAtomicTSOEmulationConfig();
     }
 
+    void EnableExitOnHLT() override { ExitOnHLT = true; }
+
+    bool ExitOnHLTEnabled() const { return ExitOnHLT; }
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
 
@@ -430,6 +434,7 @@ namespace FEXCore::Context {
     bool IsMemoryShared = false;
     bool SupportsHardwareTSO = false;
     bool AtomicTSOEmulationEnabled = true;
+    bool ExitOnHLT = false;
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;
