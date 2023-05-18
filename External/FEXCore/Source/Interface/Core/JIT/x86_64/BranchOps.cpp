@@ -146,6 +146,7 @@ DEF_OP(Syscall) {
   auto Op = IROp->C<IR::IROp_Syscall>();
   // XXX: This is very terrible, but I don't care for right now
 
+  FEXCore::IR::SyscallFlags Flags = Op->Flags;
   auto NumPush = RA64.size();
 
   for (auto &Reg : RA64)
@@ -186,7 +187,11 @@ DEF_OP(Syscall) {
   for (uint32_t i = RA64.size(); i > 0; --i)
     pop(RA64[i - 1]);
 
-  mov (GetDst<RA_64>(Node), rax);
+  if ((Flags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
+    // Move result to its destination register.
+    // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
+    mov (GetDst<RA_64>(Node), rax);
+  }
 }
 
 DEF_OP(Thunk) {

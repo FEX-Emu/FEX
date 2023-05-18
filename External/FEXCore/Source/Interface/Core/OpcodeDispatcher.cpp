@@ -35,6 +35,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   constexpr size_t SyscallArgs = 7;
   using SyscallArray = std::array<uint64_t, SyscallArgs>;
 
+  size_t NumArguments{};
   const SyscallArray *GPRIndexes {};
   static constexpr SyscallArray GPRIndexes_64 = {
     FEXCore::X86State::REG_RAX,
@@ -54,13 +55,26 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     FEXCore::X86State::REG_RDI,
     FEXCore::X86State::REG_RBP,
   };
-  static_assert(GPRIndexes_64.size() == GPRIndexes_32.size());
 
-  static std::array<uint64_t, SyscallArgs> GPRIndexes_Hangover = {
+  static constexpr SyscallArray GPRIndexes_Hangover = {
     FEXCore::X86State::REG_RCX,
   };
 
-  size_t NumArguments{};
+  static constexpr SyscallArray GPRIndexes_Win64 = {
+    FEXCore::X86State::REG_RAX,
+    FEXCore::X86State::REG_R10,
+    FEXCore::X86State::REG_RDX,
+    FEXCore::X86State::REG_R8,
+    FEXCore::X86State::REG_R9,
+    FEXCore::X86State::REG_RSP,
+  };
+
+  static constexpr SyscallArray GPRIndexes_Win32 = {
+    FEXCore::X86State::REG_RAX,
+    FEXCore::X86State::REG_RSP,
+  };
+
+  SyscallFlags DefaultSyscallFlags = FEXCore::IR::SyscallFlags::DEFAULT;
 
   const auto OSABI = CTX->SyscallHandler->GetOSABI();
   if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64) {
@@ -68,8 +82,18 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     GPRIndexes = &GPRIndexes_64;
   }
   else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX32) {
-    NumArguments = GPRIndexes_64.size();
+    NumArguments = GPRIndexes_32.size();
     GPRIndexes = &GPRIndexes_32;
+  }
+  else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_WIN64) {
+    NumArguments = 6;
+    GPRIndexes = &GPRIndexes_Win64;
+    DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
+  }
+  else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_WIN32) {
+    NumArguments = 2;
+    GPRIndexes = &GPRIndexes_Win32;
+    DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
   }
   else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
     NumArguments = 1;
@@ -109,12 +133,19 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     Arguments[4],
     Arguments[5],
     Arguments[6],
-    FEXCore::IR::SyscallFlags::DEFAULT);
+    DefaultSyscallFlags);
 
-  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
+  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER &&
+      (DefaultSyscallFlags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
     // Hangover doesn't want us returning a result here
     // syscall is being abused as a thunk for now.
     StoreGPRRegister(X86State::REG_RAX, SyscallOp);
+  }
+
+  if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_BLOCK_END) {
+    // RIP could have been updated after coming back from the Syscall.
+    NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
+    _ExitFunction(NewRIP);
   }
 }
 
@@ -5318,7 +5349,12 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   case 0xCD: { // INT imm8
     uint8_t Literal = Op->Src[0].Data.Literal.Value;
 
-    if (Literal == 0x80) {
+#ifndef _WIN32
+    constexpr uint8_t SYSCALL_LITERAL = 0x80;
+#else
+    constexpr uint8_t SYSCALL_LITERAL = 0x2E;
+#endif
+    if (Literal == SYSCALL_LITERAL) {
       // Syscall on linux
       SyscallOp(Op);
       return;

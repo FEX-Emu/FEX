@@ -22,7 +22,7 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     {0x02, 1, X86InstInfo{"LAR",        TYPE_UNDEC, FLAGS_NO_OVERLAY,                                                                                   0, nullptr}},
     {0x03, 1, X86InstInfo{"LSL",        TYPE_UNDEC, FLAGS_NO_OVERLAY,                                                                                   0, nullptr}},
     {0x04, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
-    {0x05, 1, X86InstInfo{"SYSCALL",    TYPE_INST, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
+    {0x05, 1, X86InstInfo{"SYSCALL",    TYPE_INST, DEFAULT_SYSCALL_FLAGS,                                                                               0, nullptr}},
     {0x06, 1, X86InstInfo{"CLTS",       TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
     {0x07, 1, X86InstInfo{"SYSRET",     TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
     {0x08, 1, X86InstInfo{"INVD",       TYPE_PRIV, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
