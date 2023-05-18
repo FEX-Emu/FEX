@@ -6,7 +6,6 @@
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/Utils/DeferredSignalMutex.h>
-#include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 #include <FEXCore/fextl/memory.h>

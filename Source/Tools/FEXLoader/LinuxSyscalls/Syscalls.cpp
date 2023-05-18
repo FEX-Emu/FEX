@@ -37,7 +37,6 @@ $end_info$
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Filesystem.h>
 #include <FEXHeaderUtils/Syscalls.h>
-#include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/TypeDefines.h>
 
 #include <algorithm>
@@ -671,7 +670,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
 
         uint64_t RemainingSize = DataSpaceMaxSize - NewSizeAligned;
         // We have pages we can unmap
-        auto ok = GuestMunmap(reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
+        auto ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
         LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
 
         DataSpaceMaxSize = NewSizeAligned;
@@ -686,13 +685,13 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
         }
 
         uint64_t NewBRK{};
-        NewBRK = (uint64_t)GuestMmap((void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        NewBRK = (uint64_t)GuestMmap(Frame->Thread, (void*)(DataSpace + DataSpaceMaxSize), AllocateNewSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
 
         if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
           // Couldn't allocate that the region we wanted
           // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
-          int ok = GuestMunmap(reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          int ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(NewBRK), AllocateNewSize);
           LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
           NewBRK = ~0ULL;
         }

@@ -74,8 +74,8 @@ namespace FEXCore::HLE {
 
     SyscallOSABI GetOSABI() const { return OSABI; }
     virtual FEXCore::CodeLoader *GetCodeLoader() const { return nullptr; }
-    virtual void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) { }
-    virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) = 0;
+    virtual void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) { }
+    virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) = 0;
 
     virtual SourcecodeResolver *GetSourcecodeResolver() { return nullptr; }
   protected:

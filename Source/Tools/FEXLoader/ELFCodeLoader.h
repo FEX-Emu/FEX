@@ -77,7 +77,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       return true;
     }
 
-    void *rv = Handler->GuestMmap((void*)addr, size, prot, flags, file.fd, off);
+    void *rv = Handler->GuestMmap(nullptr, (void*)addr, size, prot, flags, file.fd, off);
 
     if (rv == MAP_FAILED) {
       // uhoh, something went wrong
@@ -120,7 +120,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     if (Elf.ehdr.e_type == ET_DYN) {
       // needs base address
       auto TotalSize = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
-      LoadBase = (uintptr_t)Handler->GuestMmap(reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      LoadBase = (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if ((void*)LoadBase == MAP_FAILED) {
         return {};
       }
@@ -154,7 +154,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
         }
 
         if (BSSPageStart != BSSPageEnd) {
-          auto bss = Handler->GuestMmap((void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
+          auto bss = Handler->GuestMmap(nullptr, (void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
           if ((void*)bss == MAP_FAILED) {
             LogMan::Msg::EFmt("Failed to allocate BSS @ {}, {}\n", fmt::ptr(bss), errno);
             return {};
@@ -404,7 +404,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     uint64_t StackHint = Is64BitMode() ? STACK_HINT_64 : STACK_HINT_32;
 
     // Allocate the base of the full 128MB stack range.
-    StackPointerBase = Handler->GuestMmap(reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
+    StackPointerBase = Handler->GuestMmap(nullptr, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 
     if (StackPointerBase == reinterpret_cast<void*>(~0ULL)) {
       LogMan::Msg::EFmt("Allocating stack failed");
@@ -412,7 +412,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
     }
 
     // Allocate with permissions the 8MB of regular stack size.
-    StackPointer = reinterpret_cast<uintptr_t>(Handler->GuestMmap(
+    StackPointer = reinterpret_cast<uintptr_t>(Handler->GuestMmap(nullptr,
       reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
       StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
@@ -539,7 +539,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
     // XXX Randomise brk?
 
-    BrkStart = (uint64_t)Handler->GuestMmap((void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    BrkStart = (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
     if ((void*)BrkStart == MAP_FAILED) {
       LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
@@ -583,7 +583,7 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
       if (!VSyscallEntry) [[unlikely]] {
         // If the VDSO thunk doesn't exist then we might not have a vsyscall entry.
         // Newer glibc requires vsyscall to exist now. So let's allocate a buffer and stick a vsyscall in to it.
-        auto VSyscallPage = Handler->GuestMmap(nullptr, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        auto VSyscallPage = Handler->GuestMmap(nullptr, nullptr, FHU::FEX_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
         constexpr static uint8_t VSyscallCode[] = {
           0xcd, 0x80, // int 0x80
           0xc3,       // ret

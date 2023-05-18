@@ -803,7 +803,7 @@ namespace FEXCore::Context {
 
       Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
-          static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Start, Length);
+          static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
         }
       });
 
@@ -982,7 +982,7 @@ namespace FEXCore::Context {
     }
 
     if (SourcecodeResolver && Config.GDBSymbols()) {
-      auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+      auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
       if (AOTIRCacheEntry.Entry && !AOTIRCacheEntry.Entry->ContainsCode) {
         AOTIRCacheEntry.Entry->SourcecodeMap =
             SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
@@ -991,7 +991,7 @@ namespace FEXCore::Context {
 
     // AOT IR bookkeeping and cache
     {
-      auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(GuestRIP, IRList);
+      auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP, IRList);
       if (_GeneratedIR) {
         // Setup pointers to internal structures
         IRList = IRCopy;
@@ -1084,7 +1084,7 @@ namespace FEXCore::Context {
       auto FragmentBasePtr = reinterpret_cast<uint8_t *>(CodePtr);
 
       if (DebugData) {
-        auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+        auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
 
         if (DebugData->Subblocks.size()) {
           for (auto& Subblock: DebugData->Subblocks) {

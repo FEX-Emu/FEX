@@ -22,7 +22,7 @@ $end_info$
 
 namespace FEX::HLE::x64 {
 
-  void *x64SyscallHandler::GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
+  void *x64SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) {
     uint64_t Result{};
 
     bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
@@ -37,13 +37,13 @@ namespace FEX::HLE::x64 {
     }
 
     if (Result != -1) {
-      FEX::HLE::_SyscallHandler->TrackMmap(nullptr, (uintptr_t)Result, length, prot, flags, fd, offset);
+      FEX::HLE::_SyscallHandler->TrackMmap(Thread, (uintptr_t)Result, length, prot, flags, fd, offset);
     }
 
     return reinterpret_cast<void*>(Result);
   }
 
-  int x64SyscallHandler::GuestMunmap(void *addr, uint64_t length) {
+  int x64SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState *Thread, void *addr, uint64_t length) {
     uint64_t Result{};
     if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
       Result = Get32BitAllocator()->Munmap(addr, length);
@@ -57,7 +57,7 @@ namespace FEX::HLE::x64 {
     }
 
     if (Result != -1) {
-      FEX::HLE::_SyscallHandler->TrackMunmap(nullptr, reinterpret_cast<uintptr_t>(addr), length);
+      FEX::HLE::_SyscallHandler->TrackMunmap(Thread, reinterpret_cast<uintptr_t>(addr), length);
     }
 
     return Result;
@@ -69,7 +69,7 @@ namespace FEX::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64_FLAGS(mmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
         uint64_t Result = (uint64_t) static_cast<FEX::HLE::x64::x64SyscallHandler*>(FEX::HLE::_SyscallHandler)->
-          GuestMmap(addr, length, prot, flags, fd, offset);
+          GuestMmap(Frame->Thread, addr, length, prot, flags, fd, offset);
 
         SYSCALL_ERRNO();
     });
@@ -77,7 +77,7 @@ namespace FEX::HLE::x64 {
     REGISTER_SYSCALL_IMPL_X64_FLAGS(munmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
       [](FEXCore::Core::CpuStateFrame *Frame, void *addr, size_t length) -> uint64_t {
         uint64_t Result = static_cast<FEX::HLE::x64::x64SyscallHandler*>(FEX::HLE::_SyscallHandler)->
-          GuestMunmap(addr, length);
+          GuestMunmap(Frame->Thread, addr, length);
 
       SYSCALL_ERRNO();
     });
