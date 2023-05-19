@@ -61,56 +61,21 @@ namespace FEX::HLE {
 class SignalDelegator;
 SyscallHandler *_SyscallHandler{};
 
-
 template<bool IncrementOffset, typename T>
 uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
-  fextl::vector<uint8_t> TmpVector(count);
-  void *TmpPtr = reinterpret_cast<void*>(&TmpVector.at(0));
-
-  uint64_t Offset = 0;
-  uint64_t TmpOffset = 0;
-  // Copy the incoming structures to our temporary array
-  while (Offset < count) {
-    T *Incoming = (T*)(reinterpret_cast<uint64_t>(dirp) + Offset);
-    FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
-
-    if (!Incoming->d_reclen ||
-        (Offset + Incoming->d_reclen) > count) {
-      break;
-    }
-
-    size_t NewRecLen = FEXCore::AlignUp(Incoming->d_reclen + (sizeof(std::remove_reference<decltype(*Tmp)>::type) - sizeof(*Incoming)),
-                                        alignof(decltype(Tmp->d_ino)));
-    Tmp->d_ino    = Incoming->d_ino;
-    Tmp->d_off    = Incoming->d_off;
-    Tmp->d_reclen = NewRecLen;
-
-    // d_type is hidden at the very end of reclen
-    Tmp->d_type   = Incoming->d_name[Incoming->d_reclen - offsetof(T, d_name) - 1];
-
-    // This actually copies one more byte than the string of d_name
-    // Copies a null byte for the string
-    size_t CopySize = std::clamp<uint32_t>(Incoming->d_reclen - offsetof(T, d_name) - 1, 0U, count - Offset);
-    memcpy(Tmp->d_name, Incoming->d_name, CopySize);
-
-    // We take up 8 more bytes of space
-    TmpOffset += NewRecLen;
-    Offset += Incoming->d_reclen;
-  }
-
   uint64_t Result = syscall(SYSCALL_DEF(getdents64),
     static_cast<uint64_t>(fd),
-    TmpPtr,
+    dirp,
     static_cast<uint64_t>(count));
 
   // Now copy back in to the array we were given
   if (Result != -1) {
     // If the outgoing d_ino is smaller than the incoming d_ino from the kernel
     // Then we need to check for overflow before writing any of the data back
-    if (sizeof(decltype(FEX::HLE::x64::linux_dirent_64::d_ino)) > sizeof(decltype(T::d_ino))) {
+    if constexpr (sizeof(decltype(FEX::HLE::x64::linux_dirent_64::d_ino)) > sizeof(decltype(T::d_ino))) {
       uint64_t TmpOffset = 0;
       while (TmpOffset < Result) {
-        FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
+        FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + TmpOffset);
         decltype(T::d_ino) Result_d_ino = Tmp->d_ino;
 
         if (Result_d_ino != Tmp->d_ino) {
@@ -124,10 +89,13 @@ uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
     uint64_t Offset = 0;
     uint64_t TmpOffset = 0;
     size_t OffsetIndex = 1;
-    // With how the emulation occurs we will always return a smaller buffer than what was given to us
+    // With how the emulation occurs we will always return a smaller buffer than what was given to us.
+    // We need to be careful with the in-place translation that occurs here, the data returning to the guest is guaranteed to be smaller
+    // than the data returned by getdents64.
+    // This means FEX is guaranteed to /never/ fill the full getdents buffer to the guest, but we may temporarily use it all.
     while (TmpOffset < Result) {
       T *Outgoing = (T*)(reinterpret_cast<uint64_t>(dirp) + Offset);
-      FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(TmpPtr) + TmpOffset);
+      FEX::HLE::x64::linux_dirent_64 *Tmp = (FEX::HLE::x64::linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + TmpOffset);
 
       if (!Tmp->d_reclen) {
         break;
@@ -145,7 +113,7 @@ uint64_t GetDentsEmulation(int fd, T *dirp, uint32_t count) {
 
       // Copies null character as well
       size_t NameLength = Tmp->d_reclen - OffsetOfName - 1;
-      memcpy(Outgoing->d_name, Tmp->d_name, NameLength);
+      memmove(Outgoing->d_name, Tmp->d_name, NameLength);
 
       // Copy the hidden d_type flag
       Outgoing->d_name[Outgoing->d_reclen - offsetof(T, d_name) - 1] = Tmp->d_type;
