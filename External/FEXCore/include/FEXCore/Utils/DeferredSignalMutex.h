@@ -103,7 +103,7 @@ namespace FEXCore {
           if (Thread) {
 #ifdef _M_X86_64
           // Needs to be atomic so that operations can't end up getting reordered around this.
-          // Without this, the recount and the signal access could get reordered.
+          // Without this, the refcount and the signal access could get reordered.
           auto Result = Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
 
           // X86-64 must do an additional check around the store.

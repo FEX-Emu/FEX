@@ -213,6 +213,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     subs(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, 1);
     str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
+    // Trigger segfault if any deferred signals are pending
     ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
     str(ARMEmitter::XReg::zr, ARMEmitter::XReg::x1, 0);
 
@@ -248,6 +249,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     subs(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
     str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
+    // Trigger segfault if any deferred signals are pending
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
     str(ARMEmitter::XReg::zr, TMP1, 0);
 

@@ -4,29 +4,26 @@ FEX-Emu has locations in its code which are effectively "uninterruptible". In th
 "uninterruptible" code section, then FEX is likely to hang or crash in spurious and terrible ways.
 
 ## Example
-FEX-Emu is in the middle of emitting code. This is a vulnerable state in which FEX can be in the middle of allocating memory or reading guest state.
-If a signal is received in the middle of this, FEX-Emu might need to compile new code in a re-entrant state. Which could involve allocating memory and
-other vulnerable things. In this case a mutex could very easily be held, interrupted, and then try to get held again while being reentrant.
-
-**This will result in a hang.**
+When FEX is in the process of emitting code, it often needs to acquire mutexes to safeguard operations like memory allocations or reading guest state.
+This puts FEX in a vulnerable state: If a signal is received in the middle of this, FEX may need to initiate compilation of new code. In this case a
+mutex could already be held, so attempting to acquire it again would trigger a deadlock.
 
 ## How do we solve this?
 
 ### Classical signal masking
 One solution to this problem is to mask **all** signals going in to an uninterruptible section and then unmask when leaving. This is the classical
-approach that is viable if performance isn't a significant concern. A major problem with this approach is that we must do two system calls per
-"uninterruptible" code section, which if the section is fairly small then it might cost more to ensure state integrity than doing the work at all.
+approach that is viable if performance isn't a significant concern. A major problem is that it requires two system calls per "uninterruptible" code
+section, which adds overhead that may exceed the runtime of the section itself.
 
 ### Cooperative signal deferring
-A new solution is to defer asynchronous signals if they are caught inside an uninterruptible section. At the basic level, we increment a reference
-counter going in to the "uninterruptible" section, and then decrement the reference counter once we leave. This way when the signal handler receives a
-signal, it can check that thread's reference counter, store the `siginfo_t` to an array/stack object, and return to the same code segment to be handled
-later.
+A new solution is to defer asynchronous signals caught inside an uninterruptible section and handle them at the end of that section.
 
-The trick to how this works is the cost it takes to check if a signal occured, and then handling the signal safely. Ideally no signal has happened in
-the "uninterruptible" code section, so the check needs to be as cheap as possible to ensure no cost in the case that no signal has occured.
+At the basic level, we increment a reference counter going in to the "uninterruptible" section, and then decrement the reference counter once we leave.
+This way when the signal handler receives a signal, it can check that thread's reference counter, store the `siginfo_t` to an array/stack object, and
+return to the same code segment to be handled later.
 
-The trick is that FEX maintains two memory regions for tracking deferred signals **per thread**.
+By making this check as cheap as possible, overhead is minimized for the general case that no signal occurs during "uninterruptible" sections. FEX
+achieves this by maintaining two memory regions for tracking deferred signals **per thread**.
 
 #### 1st memory region
 
@@ -38,41 +35,37 @@ This reference counter is thread local and won't be read by any other threads, s
 Meaning it is usually three instructions (on ARM64) to increment and decrement.
 
 ```cpp
-MoveableNonatomicRefCounter<uint64_t> DeferredReferenceCounter;
-MoveableNonatomicRefCounter<uint64_t> *DeferredSignalHandlerPagePtr;
+NonAtomicRefCounter<uint64_t> DeferredSignalRefCount;
 ```
 
 #### 2nd memory region
 
-This memory region is a single page of memory that is allocated per thread. A pointer to this region exists inside the InternalThreadState object just
-after the reference counter. This allows the JIT code to quickly load the pointer to this region after modifying the reference counter.
+This memory region is a single page of memory that is allocated per thread. Its purpose is to trigger a SIGSEGV when FEX leaves an "uninterruptible"
+section if a signal has been deferred. FEX's signal handler will check if the faulting address is in this special page and subsequently starts the
+deferred signal mechanisms.
 
-This is the tricky memory page where we determine if we have any deferred signals to process. I say it's tricky because after FEX leaves an
-"uninterruptible" code section, it will decrement the reference counter, and then try to store in to the first byte of this page. In the case that no
-signal has been deferred, this memory store will progress without issue, consuming only two instructions in the process.
-
-In the case that a signal **HAS** been deferred, then the permissions on this page will be set to `PROT_NONE` and this memory store will cause a
-SIGSEGV. Then FEX's signal handler will check to see if the access was this special page and start the deferred signal mechanisms. This means that a
-deferred signal check is only five instructions in total.
+```cpp
+NonAtomicRefCounter<uint64_t> *DeferredSignalFaultAddress;
+```
 
 #### Example ARM64 JIT code for uninterruptible region
 ```asm
   ; Increment the reference counter.
-  ldr x0, [x28, #(offsetof(CPUState, DeferredReferenceCounter))]
+  ldr x0, [x28, #(offsetof(CPUState, DeferredSignalRefCount))]
   add x0, x0, #1
-  str x0, [x28, #(offsetof(CPUState, DeferredReferenceCounter))]
+  str x0, [x28, #(offsetof(CPUState, DeferredSignalRefCount))]
 
   ; Do the uninterruptible code section here.
   <...>
 
   ; Now decrement the reference counter.
-  ldr x0, [x28, #(offsetof(CPUState, DeferredReferenceCounter))]
+  ldr x0, [x28, #(offsetof(CPUState, DeferredSignalRefCount))]
   sub x0, x0, #1
-  str x0, [x28, #(offsetof(CPUState, DeferredReferenceCounter))]
+  str x0, [x28, #(offsetof(CPUState, DeferredSignalRefCount))]
 
   ; Now the magic memory access to check for any deferred signals.
   ; Load the page pointer from the CPUState
-  ldr x0, [x28, #(offsetof(CPUState, DeferredSignalHandlerPagePtr))]
+  ldr x0, [x28, #(offsetof(CPUState, DeferredSignalFaultAddress))]
   ; Just store zero. (1 cycle plus no dependencies on a register. Super fast!)
   ; Will store fine with no deferred signal, or SIGSEGV if there was one!
   str xzr, [x0]
@@ -90,48 +83,40 @@ The signal handler now knows that FEX is in an uninterruptible code section. We 
 - If it is an async signal (from tgkill, sigqueue, or something else) then we will start the deferring process.
 
 The deferring process starts with storing the kernel `siginfo_t` to a thread local array so we can restore it later.
-We then modify the permissions on the thread local `DeferredSignalHandlerPagePtr` to be `PROT_NONE`.
+We then modify the permissions on the thread local `DeferredSignalFaultAddress` to be `PROT_NONE`.
 We then immediately return from the signal handler so that FEX can resume its "uninterruptible" code section without breaking anything.
 Once the "uninterruptible" code section finishes, FEX will intentionally trigger a SIGSEGV by storing to the page.
 
-This will trigger a jump to FEX's SIGSEGV handler, where FEX will process the signal as if it was the previously deferred signal.
-the previous signal that was deferred.
-- Replacing the SIGSEGV signal number with the previous captured signal number
-- Replacing the `siginfo_t` with the previous captured `siginfo_t`
-- mprotect the thread local `DeferredSignalHandlerPagePtr` to be RW.
-   - This is so that future signals get deferred, but we don't block forward code progress.
-- TODO: Overwrite mcontext_t things? I don't think this matters but there will be some private state that might leak SIGSEGV information?
-
-Once we are now handling the guest signal, FEX-Emu is in a vulnerable state where any signals received will be deferred /and/ not handled at the end
-of "uninterruptible" code sections. This is because FEX is now currently in a guest signal frame and we need to handle code compiling and other
-potentially awkward interactions without checking for additional signals.
+Once FEX-Emu is in its SIGSEGV handler, it will determine that it is handling a deferred signal. This will pull the previously saved `siginfo_t` and
+start processing the signal.
 
 Once a guest signal handler has finished what it was working on, it will call `rt_sigreturn` or `sigreturn` which triggers FEX's SIGILL signal
 handler.
-   - This SIGILL behaviour is how FEX-Emu emulates sigreturn. In order to safely long-jump on AArch64, it must come from a signal context.
-   - The sigreturn syscall handlers intentionally trigger a SIGILL to do this.
 
 Inside of this SIGILL signal handler FEX will restore the state of FEX /back/ to where the deferred signal handler started (The str xzr, [x0]).
-Inside of this signal handler FEX will check to see if all deferred signals are handled.
-- Checks the reference counter to see if it is zero or not.
+Then, FEX will check if any further deferred signals need to be handled.
+- Checks if the reference counter is zero or not
    - If further asynchronous signals have been triggered that need handling, mprotect the fault page to `PROT_NONE`
       - This trampolining is repeated once per asynchronous signal queued during processing.
-      - This will cause further signal handling immediately once the JIT returns to its original location (Where it'll cause a SIGSEGV again).
+      - This will cause further signal handling immediately once the JIT returns to its original location (where it'll cause a SIGSEGV again).
 
 Once FEX gets back to the page store, it will trampoline back to the SIGSEGV handler if it has more signals to handle.
-   - This is an edge case where we aren't expecting multiple signals in almost all cases
-   - Slightly more expensive is fine in this case.
 
 ## Disadvantages of cooperative signal deferring
-Still thinking about this, come back to me. I'm concerned about signal queueing.
-- How do we handle the guest doing a long-jump out of a signal frame and still receiving signals?
-   - This will block FEX from handling /any/ more deferred signals.
+- How do we handle the guest doing a longjmp out of a signal frame and still receiving signals?
+   - FEX relies on guest signal handlers returning via `sigreturn` to handle stacked deferred signals, so a longjmp would interfere with this
    -  Do we need to store guest stack as well to see if it has reset its own stack frame?
    - moon-buggy does this as an example
    - We currently just leak stack for every guest signal handler that long jumps out of the signal frame.
       - Long term this would exhaust our stack and then crash.
       - Test with a second guest thread where our host will only have an 8MB stack instead of the 128MB primary stack.
       - See issue #2487
+- Deeply recursive signal deferring sections can have excessive SIGSEGV faults.
+   - In the case of ARM64 it will do a SIGSEGV at the end of each deferred signal section if a signal is queued.
+   - This can result in a bunch of trampolining.
+   - Just make sure to not do excessive nesting of deferred signal sections.
+   - Typically not a problem since deferred signals aren't common.
+
 ## Expectations and considerations
 ### What happens with a race condition with the refcounter?
 There are two edges to this problem. The incrementing edge and the decrementing edge that must be considered.
@@ -162,57 +147,52 @@ permissions and continue execution safely.
 ## Execution examples
 ### No signal
 This is a simple example because nothing happens.
-``` diff
-- <Enter Deferred region - 3 instructions>
-! Compiling JIT Code
-+ <Exit deferred region - 5 instructions>
-```
+
+- **Enter Deferred region - 3 instructions**
+- Compiling JIT Code
+- **Exit deferred region - 5 instructions**
 
 ### Signal outside of region
 This is simple because the JIT just handles it.
-``` diff
-! In JIT code
-# Signal received
-# Guest Signal handler called
-# JIT jumps to guest signal handler
-# Hopefully guest calls rt_sigreturn instead of long jumping out.
-```
+
+- In JIT code
+- Signal received
+- Guest Signal handler called
+- JIT jumps to guest signal handler
+- Hopefully guest calls rt_sigreturn instead of long jumping out.
 
 ### Synchronous signal in JIT
 Deferred signals don't affect anything here because only asynchronous signals get affected.
-* State reconstruction problems aren't discussed here.
-``` diff
-! In JIT code
-! JIT code causes a synchronous signal (SIGSEGV or other)
-# Guest Signal Handler called
-# JIT jumps to guest signal handler
-# Hopefully guest calls rt_sigreturn instead of long jumping out.
-```
+
+- In JIT code
+- JIT code causes a synchronous signal (SIGSEGV or other)
+- Guest Signal Handler called
+- JIT jumps to guest signal handler
+- Hopefully guest calls rt_sigreturn instead of long jumping out.
 
 ### Asynchronous signal in code emitter
 This is the first interesting example since deferred signals affects it.
-``` diff
-- <Enter Deferred region - 3 instructions>
-! Compiling JIT Code
-# Asynchronous Signal received
-# - Host signal handler determines the thread is in a deferred signal section.
-# - Signal information is stored in a queue
-# - mprotect signal page to NONE.
-# - Signal handler returns without giving the signal to the guest
-! Compiling JIT Code continues.
-+ #1 - <Exit deferred region - 5 instructions>
-+ Deferred region section causes SIGSEGV
-+ - Host signal handler determines deferred region is done, Still has signal in queue.
-+ - Pull signal information off of queue
-# JIT jumps to guest signal handler
-# Hopefully guest calls rt_sigreturn instead of long jumping out.
-# Host PC is back at deferred signal section.
-+ Deferred region section causes SIGSEGV #2
-+ - Host signal handler determines deferred region is done, No signals in the queue.
-# - mprotect signal page to RW.
-# - Continue execution.
-+ #1 <Exit deferred region continues>
-```
+
+- **Enter Deferred region - 3 instructions**
+- Compiling JIT Code
+- Asynchronous Signal received
+  - Host signal handler determines the thread is in a deferred signal section.
+  - Signal information is stored in a queue
+  - mprotect signal page to NONE.
+  - Signal handler returns without giving the signal to the guest
+- Compiling JIT Code continues.
+- **Exit deferred region - 5 instructions**
+- Deferred region section causes SIGSEGV
+  - Host signal handler determines deferred region is done, Still has signal in queue.
+  - Pull signal information off of queue
+- JIT jumps to guest signal handler
+- Hopefully guest calls rt_sigreturn instead of long jumping out.
+- Host PC is back at deferred signal section.
+- Deferred region section causes SIGSEGV #2
+  - Host signal handler determines deferred region is done, No signals in the queue.
+  - mprotect signal page to RW.
+  - Continue execution.
+- **Exit deferred region continues**
 
 ### Recursive regions with signal in code emitter.
 This one mostly matches the previous example except the behaviour of deferred signal regions leaving.
@@ -226,39 +206,34 @@ In this case, if the thread-local refcount is still >0 on `<Exit deferred region
 This has the expectation that recursive deferred regions both aren't very deep (usually only nested a couple times), and that signals are rare.
 This way there aren't many SIGSEGV checks generated and the signal is finally only handled when reaching the top-most deferred region exit routine.
 
-``` diff
-- #1 <Enter Deferred region - 3 instructions>
-! Compiling JIT Code
--    #2 <Enter Deferred region - 3 instructions>
-!    Memory allocation
-#    <Async signal received logic from above>
-+    #2 <Exit deferred region - 5 instructions>
-+    #2 Exit deferred region causes SIGSEGV
-+    - TLS refcount is still 1 (from #1)
-+    - PC is incremented by one instruction, signal still unhandled.
-+ #1 <Exit deferred region - 5 instructions>
-+ #1 Exit deferred region causes SIGSEGV
-+ <Regular deferred region handling from above called>
-```
+- **Enter Deferred region - 3 instructions**
+- Compiling JIT Code
+     - Enter Deferred region - 3 instructions
+     - Memory allocation
+     - Async signal received logic from above
+     - Exit deferred region - 5 instructions
+     - Exit deferred region causes SIGSEGV
+     - TLS refcount is still 1
+     - PC is incremented by one instruction, signal still unhandled.
+- **Exit deferred region - 5 instructions**
+- Exit deferred region causes SIGSEGV
+- **Regular deferred region handling from above called**
 
-### Multiple signals in deferred region
+### Multiple signals in signal-deferring region
 This is slightly different from the previous iterations since multiple signals in the stack result in odd behaviour.
 
-``` diff
-- #1 <Enter Deferred region - 3 instructions>
-! Compiling JIT Code
-# #1 Asynchronous Signal received
-#   - Signal queued logic
-# #2 Asynchronous Signal received
-#   - Signal queued logic
-+ #1 <Exit deferred region - 5 instructions>
-+ Exit deferred region causes SIGSEGV
-+ <Regular deferred region handling from above called>
-+ Guest calls rt_sigreturn
-+ - rt_sigreturn handler checks for number of queued signals
-# - mprotect signal page to NONE because signals is > 0
-# - JIT is back to #1 <Exit deferred region>
-# - Exit deferred region causes SIGSEGV again.
-# - Regular handler loop occurs
-```
-
+- **Enter Deferred region - 3 instructions**
+- Compiling JIT Code
+- Asynchronous Signal received
+    - Signal queued logic
+- Asynchronous Signal received
+    - Signal queued logic
+- **Exit deferred region - 5 instructions**
+- Exit deferred region causes SIGSEGV
+- **Regular deferred region handling from above called**
+- Guest calls rt_sigreturn
+  - rt_sigreturn handler checks for number of queued signals
+  - mprotect signal page to NONE because signals is > 0
+  - JIT is back to **Exit deferred region**
+  - Exit deferred region causes SIGSEGV again.
+  - Regular handler loop occurs

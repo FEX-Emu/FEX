@@ -29,17 +29,14 @@
 
 namespace Alloc::OSAllocator {
 
-  struct TLSData {
-    FEXCore::Core::InternalThreadState *Thread;
-  };
-  thread_local TLSData TLS{};
+  thread_local FEXCore::Core::InternalThreadState *TLSThread{};
 
   void RegisterTLSData(FEXCore::Core::InternalThreadState *Thread) {
-    TLS.Thread = Thread;
+    TLSThread = Thread;
   }
 
   void UninstallTLSData(FEXCore::Core::InternalThreadState *Thread) {
-    TLS.Thread = nullptr;
+    TLSThread = nullptr;
   }
 
   class OSAllocator_64Bit final : public Alloc::HostAllocator {
@@ -261,7 +258,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   size_t NumberOfPages = length / FHU::FEX_PAGE_SIZE;
 
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLS.Thread);
+  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLSThread);
 
   uint64_t AllocatedOffset{};
   LiveVMARegion *LiveRegion{};
@@ -449,7 +446,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   }
 
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLS.Thread);
+  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLSThread);
 
   length = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE);
 
@@ -574,7 +571,7 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
 
 OSAllocator_64Bit::~OSAllocator_64Bit() {
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLS.Thread);
+  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLSThread);
 
   // Walk the pages and deallocate
   // First walk the live regions

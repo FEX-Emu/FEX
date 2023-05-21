@@ -1383,7 +1383,7 @@ namespace FEX::HLE {
 
   /**  @} */
 
-  static bool IsAsyncSignal(siginfo_t* Info, int Signal) {
+  static bool IsAsyncSignal(const siginfo_t* Info, int Signal) {
     if (Info->si_code <= SI_USER) {
       // If the signal is not from the kernel then it is always async.
       // This is because synchronous signals can be sent through tgkill,sigqueue and other methods.
@@ -1414,44 +1414,42 @@ namespace FEX::HLE {
 
     constexpr bool SupportDeferredSignals = true;
     if (SupportDeferredSignals) {
-      auto RefCount = Thread->CurrentFrame->State.DeferredSignalRefCount.Load();
+      auto MustDeferSignal = (Thread->CurrentFrame->State.DeferredSignalRefCount.Load() != 0);
 
       if (Signal == SIGSEGV &&
           SigInfo.si_code == SEGV_ACCERR &&
           SigInfo.si_addr == reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress)) {
-        if (RefCount == 0) {
-          // We are faulting with an attempt to check deferred signals.
+        if (!MustDeferSignal) {
+          // We just reached the end of the outermost signal-deferring section and faulted to check for pending signals.
           // Pull a signal frame off the stack.
 
           mprotect(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096, PROT_READ | PROT_WRITE);
 
-          if (Thread->DeferredSignalFrames.size() == 0) {
+          if (Thread->DeferredSignalFrames.empty()) {
             // No signals to defer. Just set the fault page back to RW and continue execution.
             // This occurs as a minor race condition between the refcount decrement and the access to the fault page.
             return;
           }
-          else {
-            auto Top = Thread->DeferredSignalFrames.back();
-            Signal = Top.Signal;
-            SigInfo = Top.Info;
-            Thread->DeferredSignalFrames.pop_back();
 
-            // Now that we are handling a deferred signal state. mprotect the fault page with RW permissions.
-            // This puts FEX in a state in-which we are *permanently* deferring signals and /not/ checking them.
-            //
-            // In order to return /back/ to a sane state, we wait for the rt_sigreturn to happen.
-            // rt_sigreturn will check if there are any more deferred signals to handle
-            // - If there are deferred signals
-            //   - mprotect back to PROT_NONE
-            //   - sigreturn will trampoline out to the previous fault address check, SIGSEGV and restart
-            // - If there are *no* deferred signals
-            //  - No need to mprotect, it is already RW
-          }
+          auto Top = Thread->DeferredSignalFrames.back();
+          Signal = Top.Signal;
+          SigInfo = Top.Info;
+          Thread->DeferredSignalFrames.pop_back();
+
+          // Until we re-protect the page to PROT_NONE, FEX will now *permanently* defer signals and /not/ check them.
+          //
+          // In order to return /back/ to a sane state, we wait for the rt_sigreturn to happen.
+          // rt_sigreturn will check if there are any more deferred signals to handle
+          // - If there are deferred signals
+          //   - mprotect back to PROT_NONE
+          //   - sigreturn will trampoline out to the previous fault address check, SIGSEGV and restart
+          // - If there are *no* deferred signals
+          //  - No need to mprotect, it is already RW
         }
         else {
 #ifdef _M_ARM_64
-          // If RefCount != 0 then that means we hit an access with stacked deferred signals.
-          // Increment the PC past the `str zr, [x1]` to continue code execution.
+          // If RefCount != 0 then that means we hit an access with nested signal-deferring sections.
+          // Increment the PC past the `str zr, [x1]` to continue code execution until we reach the outermost section.
           ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetPc(UContext) + 4);
           return;
 #else
@@ -1462,19 +1460,20 @@ namespace FEX::HLE {
         }
       }
       else {
-        if (IsAsyncSignal(&SigInfo, Signal) && RefCount) {
-          // If the signal is asynchronous signal (as determined by si_code) and FEX is in a state of needing
-          // to defer the signal, then make sure to add the signal to the thread's signal queue.
+        if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
+          // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing
+          // to defer the signal, then add the signal to the thread's signal queue.
+          LOGMAN_THROW_A_FMT(Thread->DeferredSignalFrames.size() != Thread->DeferredSignalFrames.capacity(),
+            "Deferred signals vector hit capacity size. This will likely crash! Asserting now!");
           Thread->DeferredSignalFrames.emplace_back(FEXCore::Core::InternalThreadState::DeferredSignalState {
             .Info = SigInfo,
             .Signal = Signal,
           });
 
           // Now update the faulting page permissions so it will fault on write.
-          // Just in case of multiple deferred signals, keep track of protection state.
           mprotect(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096, PROT_NONE);
 
-          // Early exit, we are going to return to this later.
+          // Postpone the remainder of signal handling logic until we process the SIGSEGV triggered by writing to DeferredSignalFaultAddress.
           return;
         }
       }
@@ -1553,7 +1552,6 @@ namespace FEX::HLE {
         // If the signal wasn't sent by the kernel then we need to reraise it.
         // This is necessary since returning from this signal handler now might just continue executing.
         // eg: If sent from tgkill then the signal gets dropped and returns.
-        Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
         FHU::Syscalls::tgkill(::getpid(), FHU::Syscalls::gettid(), Signal);
       }
     }

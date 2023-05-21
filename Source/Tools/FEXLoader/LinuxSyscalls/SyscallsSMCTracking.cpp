@@ -191,7 +191,9 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
   }
 
   {
-    // Frontend calls this with nullptr Thread.
+    // NOTE: Frontend calls this with a nullptr Thread during initialization, but
+    //       providing this code with a valid Thread object earlier would allow
+    //       us to be more optimal by using ScopedDeferredSignalWithUniqueLock instead
     FEXCore::ScopedPotentialDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
 
     static uint64_t AnonSharedId = 1;
@@ -239,7 +241,9 @@ void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uin
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   {
-    // Frontend calls this with nullptr Thread.
+    // Frontend calls this with nullptr Thread during initialization.
+    // This is why `ScopedPotentialDeferredSignalWithUniqueLock` is used here.
+    // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     FEXCore::ScopedPotentialDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
 
     VMATracking.ClearUnsafe(CTX, Base, Size);
