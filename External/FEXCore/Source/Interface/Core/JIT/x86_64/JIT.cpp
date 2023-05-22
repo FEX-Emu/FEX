@@ -444,6 +444,11 @@ X86JITCore::X86JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::Intern
       Common.CPUIDFunction = PMF.GetConvertedPointer();
     }
 
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunXCRFunction);
+      Common.XCRFunction = PMF.GetConvertedPointer();
+    }
+
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
     Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<X86JITCore_ExitFunctionLink>);

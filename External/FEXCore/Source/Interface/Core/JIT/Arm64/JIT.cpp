@@ -615,6 +615,11 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
       Common.CPUIDFunction = PMF.GetConvertedPointer();
     }
 
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunXCRFunction);
+      Common.XCRFunction = PMF.GetConvertedPointer();
+    }
+
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
     Common.SyscallHandlerFunc = reinterpret_cast<uint64_t>(FEXCore::Context::HandleSyscall);
     Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
@@ -911,6 +916,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VALIDATECODE,      ValidateCode);
         REGISTER_OP(THREADREMOVECODEENTRY,   ThreadRemoveCodeEntry);
         REGISTER_OP(CPUID,             CPUID);
+        REGISTER_OP(XGETBV,            XGETBV);
 
         // Conversion ops
         REGISTER_OP(VINSGPR,         VInsGPR);

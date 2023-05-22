@@ -450,6 +450,34 @@ DEF_OP(CPUID) {
   mov(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Reg::r1);
 }
 
+DEF_OP(XGETBV) {
+  auto Op = IROp->C<IR::IROp_XGetBV>();
+
+  PushDynamicRegsAndLR(TMP1);
+  SpillStaticRegs();
+
+  // x0 = CPUID Handler
+  // x1 = XCR Function
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj));
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.XCRFunction));
+  mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
+#ifdef VIXL_SIMULATOR
+  GenerateIndirectRuntimeCall<uint64_t, void*, uint32_t>(ARMEmitter::Reg::r2);
+#else
+  blr(ARMEmitter::Reg::r2);
+#endif
+
+  FillStaticRegs();
+
+  PopDynamicRegsAndLR();
+
+  // Results are in x0
+  // Results want to be in a i32v2 vector
+  auto Dst = GetRegPair(Node);
+  mov(ARMEmitter::Size::i32Bit, Dst.first,  ARMEmitter::Reg::r0);
+  ubfx(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Reg::r0, 32, 32);
+}
+
 #undef DEF_OP
 }
 
