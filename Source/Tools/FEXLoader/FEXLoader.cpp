@@ -472,7 +472,7 @@ int main(int argc, char **argv, char **const envp) {
   // Setup TSO hardware emulation immediately after initializing the context.
   FEX::TSO::SetupTSOEmulation(CTX.get());
 
-  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName);
 
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get())
                                              : FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));

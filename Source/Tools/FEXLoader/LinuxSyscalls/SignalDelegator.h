@@ -22,6 +22,7 @@ $end_info$
 #include <mutex>
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Utils/Telemetry.h>
 
 namespace FEXCore {
 namespace Context {
@@ -40,7 +41,7 @@ namespace FEX::HLE {
   public:
     // Returns true if the host handled the signal
     // Arguments are the same as sigaction handler
-    SignalDelegator(FEXCore::Context::Context *_CTX);
+    SignalDelegator(FEXCore::Context::Context *_CTX, const std::string_view ApplicationName);
     ~SignalDelegator() override;
 
     /**
@@ -118,6 +119,8 @@ namespace FEX::HLE {
   private:
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
     FEX_CONFIG_OPT(Core, CORE);
+    fextl::string const ApplicationName;
+    FEXCORE_TELEMETRY_INIT(CrashMask, TYPE_CRASH_MASK);
 
     enum DefaultBehaviour {
       DEFAULT_TERM,
@@ -231,5 +234,5 @@ namespace FEX::HLE {
     std::mutex GuestDelegatorMutex;
   };
 
-  fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context *CTX);
+  fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context *CTX, const std::string_view ApplicationName);
 }

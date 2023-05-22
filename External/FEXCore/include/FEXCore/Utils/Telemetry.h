@@ -37,6 +37,7 @@ namespace FEXCore::Telemetry {
     TYPE_CAS_32BIT_TEAR,
     TYPE_CAS_64BIT_TEAR,
     TYPE_CAS_128BIT_TEAR,
+    TYPE_CRASH_MASK,
     TYPE_LAST,
   };
 

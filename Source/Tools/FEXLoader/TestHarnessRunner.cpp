@@ -256,7 +256,7 @@ int main(int argc, char **argv, char **const envp) {
   CTX->InitializeContext();
 
 #ifndef _WIN32
-  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get());
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {});
 #else
   // Enable exit on HLT while Wine's longjump is broken.
   //
