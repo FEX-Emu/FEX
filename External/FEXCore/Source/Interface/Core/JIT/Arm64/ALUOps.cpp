@@ -494,7 +494,7 @@ DEF_OP(PDep) {
   // We sadly need to spill regs for this for the time being
   // TODO: Remove when scratch registers can be allocated
   //       explicitly.
-  SpillStaticRegs(false, SpillCode);
+  SpillStaticRegs(TMP1, false, SpillCode);
 
 
   mov(EmitSize, InputReg, Input);
@@ -558,7 +558,7 @@ DEF_OP(PExt) {
   // We sadly need to spill a reg for this for the time being
   // TODO: Remove when scratch registers can be allocated
   //       explicitly.
-  SpillStaticRegs(false, 1U << Mask.Idx());
+  SpillStaticRegs(TMP2, false, 1U << Mask.Idx());
   mov(EmitSize, Mask, ZeroReg);
 
   // Main loop

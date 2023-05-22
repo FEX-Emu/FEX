@@ -144,7 +144,7 @@ DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
   PushDynamicRegsAndLR(TMP1);
-  SpillStaticRegs();
+  SpillStaticRegs(TMP1);
 
   if (IsGPR(Op->Value.ID())) {
     mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->Value.ID()));
@@ -170,7 +170,7 @@ DEF_OP(ProcessorID) {
   // Ordering is incredibly important here
   // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
   // Only spill the registers that intersect with our usage
-  SpillStaticRegs(false, SpillMask);
+  SpillStaticRegs(TMP1, false, SpillMask);
 
   // Now that we are spilled, store in the state that we are in a syscall
   // Still without overwriting registers that matter
