@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set runner label
       run: echo "runner_label=${{ matrix.arch[1] }}" >> $GITHUB_ENV
@@ -188,7 +188,7 @@ jobs:
 
     - name: Upload results
       if: ${{ always() }}
-      uses: 'actions/upload-artifact@v2'
+      uses: 'actions/upload-artifact@v3'
       with:
         name: Results-${{ env.runner_name }}
         path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
