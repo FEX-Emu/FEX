@@ -183,7 +183,7 @@ void Arm64Dispatcher::EmitDispatcher() {
   {
     ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
     ThreadStopHandlerAddress = GetCursorAddress<uint64_t>();
 
@@ -197,7 +197,7 @@ void Arm64Dispatcher::EmitDispatcher() {
   {
     ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
 #ifndef _WIN32
     if (SignalSafeCompile) {
@@ -260,7 +260,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     Bind(&NoBlock);
 
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
 #ifndef _WIN32
     if (SignalSafeCompile) {
@@ -341,7 +341,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     GuestSignal_SIGILL = GetCursorAddress<uint64_t>();
 
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
     hlt(0);
   }
@@ -352,7 +352,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     GuestSignal_SIGTRAP  = GetCursorAddress<uint64_t>();
 
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
     brk(0);
   }
@@ -363,7 +363,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     GuestSignal_SIGSEGV = GetCursorAddress<uint64_t>();
 
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
     // hlt/udf = SIGILL
     // brk = SIGTRAP
@@ -384,7 +384,7 @@ void Arm64Dispatcher::EmitDispatcher() {
   {
     ThreadPauseHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
     if (config.StaticRegisterAllocation)
-      SpillStaticRegs();
+      SpillStaticRegs(TMP1);
 
     ThreadPauseHandlerAddress = GetCursorAddress<uint64_t>();
     // We are pausing, this means the frontend should be waiting for this thread to idle
@@ -461,7 +461,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     LUDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs();
+    SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
 #ifdef VIXL_SIMULATOR
@@ -483,7 +483,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     LDIVHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs();
+    SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
 #ifdef VIXL_SIMULATOR
@@ -505,7 +505,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     LUREMHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs();
+    SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
 #ifdef VIXL_SIMULATOR
@@ -527,7 +527,7 @@ void Arm64Dispatcher::EmitDispatcher() {
     LREMHandlerAddress = GetCursorAddress<uint64_t>();
 
     PushDynamicRegsAndLR(ARMEmitter::Reg::r3);
-    SpillStaticRegs();
+    SpillStaticRegs(ARMEmitter::Reg::r3);
 
     ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
 

@@ -219,7 +219,7 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
   }
 }
 
-void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
+void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
   if (!StaticRegisterAllocation()) {
     return;
   }
@@ -252,8 +252,6 @@ void Arm64Emitter::SpillStaticRegs(bool FPRs, uint32_t GPRSpillMask, uint32_t FP
     } else {
       if (GPRSpillMask && FPRSpillMask == ~0U) {
         // Optimize the common case where we can spill four registers per instruction
-        auto TmpReg = SRA64[FindFirstSetBit(GPRSpillMask)];
-
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
         for (size_t i = 0; i < ConfiguredSRAFPRs; i += 4) {

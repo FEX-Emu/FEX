@@ -144,6 +144,7 @@ namespace FEXCore::Core {
       uint64_t ThreadRemoveCodeEntryFromJIT{};
       uint64_t CPUIDObj{};
       uint64_t CPUIDFunction{};
+      uint64_t XCRFunction{};
       uint64_t SyscallHandlerObj{};
       uint64_t SyscallHandlerFunc{};
       uint64_t ExitFunctionLink{};

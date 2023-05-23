@@ -83,7 +83,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
   } else {
     switch(Info.ABI) {
       case FABI_VOID_U16:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -103,7 +103,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F80_F32:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
         const auto Src1 = GetVReg(IROp->Args[0].ID());
@@ -127,7 +127,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F80_F64:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -153,7 +153,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
 
       case FABI_F80_I16:
       case FABI_F80_I32: {
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -183,7 +183,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F32_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -209,7 +209,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F64_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -235,7 +235,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F64_F64: {
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -259,7 +259,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_F64_F64_F64: {
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -285,7 +285,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       break;
 
       case FABI_I16_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -310,7 +310,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_I32_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -335,7 +335,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_I64_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -360,7 +360,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_I64_F80_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -388,7 +388,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_F80_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -415,7 +415,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_F80_F80_F80:{
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
 
         PushDynamicRegsAndLR(TMP1);
 
@@ -446,7 +446,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
       }
       break;
       case FABI_I32_I64_I64_I128_I128_I16: {
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
         PushDynamicRegsAndLR(TMP1);
 
         const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
@@ -486,7 +486,7 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         break;
       }
       case FABI_I32_I128_I128_I16: {
-        SpillStaticRegs();
+        SpillStaticRegs(TMP1);
         PushDynamicRegsAndLR(TMP1);
 
         const auto Op = IROp->C<IR::IROp_VPCMPISTRX>();
@@ -613,6 +613,11 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
     {
       FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
       Common.CPUIDFunction = PMF.GetConvertedPointer();
+    }
+
+    {
+      FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunXCRFunction);
+      Common.XCRFunction = PMF.GetConvertedPointer();
     }
 
     Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
@@ -911,6 +916,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(VALIDATECODE,      ValidateCode);
         REGISTER_OP(THREADREMOVECODEENTRY,   ThreadRemoveCodeEntry);
         REGISTER_OP(CPUID,             CPUID);
+        REGISTER_OP(XGETBV,            XGETBV);
 
         // Conversion ops
         REGISTER_OP(VINSGPR,         VInsGPR);

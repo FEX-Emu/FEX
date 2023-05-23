@@ -307,6 +307,42 @@ DEF_OP(CPUID) {
   mov(Dst.second, rdx);
 }
 
+DEF_OP(XGETBV) {
+  auto Op = IROp->C<IR::IROp_XGetBV>();
+
+  for (auto &Reg : RA64)
+    push(Reg);
+
+  // CPUID ABI
+  // this: rdi
+  // Function: rsi
+  //
+  // Result: RAX, RDX. 4xi32
+
+  // rsi can be in the source registers, so copy argument to edx first
+  mov (esi, GetSrc<RA_32>(Op->Function.ID()));
+  mov (rdi, qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj)]);
+
+  auto NumPush = RA64.size();
+
+  if (NumPush & 1)
+    sub(rsp, 8); // Align
+
+  // {rdi, rsi, rdx}
+  call(qword [STATE + offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.XCRFunction)]);
+
+  if (NumPush & 1)
+    add(rsp, 8); // Align
+
+  for (uint32_t i = RA64.size(); i > 0; --i)
+    pop(RA64[i - 1]);
+
+  auto Dst = GetSrcPair<RA_64>(Node);
+  mov(Dst.first.cvt32(), eax);
+  mov(Dst.second, rax);
+  shr(Dst.second, 32);
+}
+
 #undef DEF_OP
 void X86JITCore::RegisterBranchHandlers() {
 #define REGISTER_OP(op, x) OpHandlers[FEXCore::IR::IROps::OP_##op] = &X86JITCore::Op_##x
@@ -319,6 +355,7 @@ void X86JITCore::RegisterBranchHandlers() {
   REGISTER_OP(VALIDATECODE,      ValidateCode);
   REGISTER_OP(THREADREMOVECODEENTRY,   ThreadRemoveCodeEntry);
   REGISTER_OP(CPUID,             CPUID);
+  REGISTER_OP(XGETBV,            XGETBV);
 #undef REGISTER_OP
 }
 }

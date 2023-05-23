@@ -219,6 +219,7 @@ public:
   void MOVOffsetOp(OpcodeArgs);
   void CMOVOp(OpcodeArgs);
   void CPUIDOp(OpcodeArgs);
+  void XGetBVOp(OpcodeArgs);
   template<bool SHL1Bit>
   void SHLOp(OpcodeArgs);
   void SHLImmediateOp(OpcodeArgs);

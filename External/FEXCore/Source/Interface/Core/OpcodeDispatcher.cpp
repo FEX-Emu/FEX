@@ -1779,6 +1779,18 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RCX, _Bfe(32, 0,  Result_Upper));
 }
 
+void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
+  OrderedNode *Function = LoadGPRRegister(X86State::REG_RCX);
+
+  auto Res = _XGetBV(Function);
+
+  OrderedNode *Result_Lower = _ExtractElementPair(Res, 0);
+  OrderedNode *Result_Upper = _ExtractElementPair(Res, 1);
+
+  StoreGPRRegister(X86State::REG_RAX, Result_Lower);
+  StoreGPRRegister(X86State::REG_RDX, Result_Upper);
+}
+
 template<bool SHL1Bit>
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   OrderedNode *Src{};
@@ -6736,7 +6748,7 @@ constexpr uint16_t PF_F2 = 3;
 
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOpTable[] = {
     // REG /2
-    {((1 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
+    {((1 << 3) | 0), 1, &OpDispatchBuilder::XGetBVOp},
 
     // REG /7
     {((3 << 3) | 1), 1, &OpDispatchBuilder::RDTSCPOp},

@@ -87,6 +87,10 @@ namespace FEXCore::Context {
     return CPUID.RunFunction(Function, Leaf);
   }
 
+  FEXCore::CPUID::XCRResults FEXCore::Context::ContextImpl::RunXCRFunction(uint32_t Function) {
+    return CPUID.RunXCRFunction(Function);
+  }
+
   FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
     return CPUID.RunFunctionName(Function, Leaf, CPU);
   }

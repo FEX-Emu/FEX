@@ -143,6 +143,15 @@ DEF_OP(CPUID) {
   memcpy(DstPtr, &Results, sizeof(uint32_t) * 4);
 }
 
+DEF_OP(XGETBV) {
+  auto Op = IROp->C<IR::IROp_XGetBV>();
+  uint32_t *DstPtr = GetDest<uint32_t*>(Data->SSAData, Node);
+  const uint32_t Function = *GetSrc<uint32_t*>(Data->SSAData, Op->Function);
+
+  auto Results = Data->State->CTX->RunXCRFunction(Function);
+  memcpy(DstPtr, &Results, sizeof(uint32_t) * 2);
+}
+
 #undef DEF_OP
 
 } // namespace FEXCore::CPU

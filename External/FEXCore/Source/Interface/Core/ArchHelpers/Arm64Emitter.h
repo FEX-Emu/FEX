@@ -183,7 +183,7 @@ protected:
   // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
   //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then
   //       TMP4 is left alone.
-  void SpillStaticRegs(bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
+  void SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U);
 
   // Register 0-18 + 29 + 30 are caller saved

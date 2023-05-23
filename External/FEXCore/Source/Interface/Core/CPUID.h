@@ -63,13 +63,52 @@ public:
       return Function_8000_0004h(Leaf, CPU % PerCPUData.size());
   }
 
+  FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) {
+    if (Function >= 1) {
+      // XCR function 1 is not yet supported.
+      return {};
+    }
+
+    return XCRFunction_0h();
+  }
+
 private:
   FEXCore::Context::ContextImpl *CTX;
   bool Hybrid{};
   FEX_CONFIG_OPT(Cores, THREADS);
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
 
+  // XFEATURE_ENABLED_MASK
+  // Mask that configures what features are enabled on the CPU.
+  // Affects XSAVE and XRSTOR when modified.
+  // Bit layout is as follows.
+  // [0]     - x87 enabled
+  // [1]     - SSE enabled
+  // [2]     - YMM enabled (256-bit SSE)
+  // [8:3]   - Reserved. MBZ.
+  // [9]     - MPK
+  // [10]    - Reserved. MBZ.
+  // [11]    - CET_U
+  // [12]    - CET_S
+  // [61:13] - Reserved. MBZ.
+  // [62]    - LWP (Lightweight profiling)
+  // [63]    - Reserved for XCR bit vector expansion. MBZ.
+  // Always enable x87 and SSE by default.
+  constexpr static uint64_t XCR0_X87 = 1ULL << 0;
+  constexpr static uint64_t XCR0_SSE = 1ULL << 1;
+  constexpr static uint64_t XCR0_AVX = 1ULL << 2;
+
+  uint64_t XCR0 {
+    XCR0_X87 |
+    XCR0_SSE
+  };
+
+  uint32_t SupportsAVX() const {
+    return (XCR0 & XCR0_AVX) ? 1 : 0;
+  }
+
   using FunctionHandler = FEXCore::CPUID::FunctionResults (CPUIDEmu::*)(uint32_t Leaf);
+
   struct CPUData {
     const char *ProductName{};
 #ifdef _M_ARM_64
@@ -108,6 +147,8 @@ private:
   FEXCore::CPUID::FunctionResults Function_8000_0019h(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_8000_001Dh(uint32_t Leaf);
   FEXCore::CPUID::FunctionResults Function_Reserved(uint32_t Leaf);
+
+  FEXCore::CPUID::XCRResults XCRFunction_0h();
 
   void SetupHostHybridFlag();
   static constexpr std::array<FunctionHandler, 27> Primary = {

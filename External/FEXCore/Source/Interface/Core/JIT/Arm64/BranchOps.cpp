@@ -22,7 +22,7 @@ namespace FEXCore::CPU {
 
 DEF_OP(CallbackReturn) {
   // spill back to CTX
-  SpillStaticRegs();
+  SpillStaticRegs(TMP1);
 
   // First we must reset the stack
   ResetStack();
@@ -175,7 +175,7 @@ DEF_OP(Syscall) {
     FPRSpillMask = CALLER_FPR_MASK;
   }
 
-  SpillStaticRegs(true, GPRSpillMask, FPRSpillMask);
+  SpillStaticRegs(TMP1, true, GPRSpillMask, FPRSpillMask);
 
   // Now that we are spilled, store in the state that we are in a syscall
   // Still without overwriting registers that matter
@@ -260,7 +260,7 @@ DEF_OP(InlineSyscall) {
   // Ordering is incredibly important here
   // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
   // Only spill the registers that intersect with our usage
-  SpillStaticRegs(false, SpillMask);
+  SpillStaticRegs(TMP1, false, SpillMask);
 
   // Now that we are spilled, store in the state that we are in a syscall
   // Still without overwriting registers that matter
@@ -328,7 +328,7 @@ DEF_OP(Thunk) {
   // X0: CTX
   // X1: Args (from guest stack)
 
-  SpillStaticRegs(); // spill to ctx before ra64 spill
+  SpillStaticRegs(TMP1); // spill to ctx before ra64 spill
 
   PushDynamicRegsAndLR(TMP1);
 
@@ -403,12 +403,12 @@ DEF_OP(ThreadRemoveCodeEntry) {
   // X1: RIP
 
   PushDynamicRegsAndLR(TMP1);
+  SpillStaticRegs(TMP1);
 
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, STATE.R());
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, Entry);
 
   ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.ThreadRemoveCodeEntryFromJIT));
-  SpillStaticRegs();
 #ifdef VIXL_SIMULATOR
   GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
 #else
@@ -424,7 +424,7 @@ DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
   PushDynamicRegsAndLR(TMP1);
-  SpillStaticRegs();
+  SpillStaticRegs(TMP1);
 
   // x0 = CPUID Handler
   // x1 = CPUID Function
@@ -448,6 +448,34 @@ DEF_OP(CPUID) {
   auto Dst = GetRegPair(Node);
   mov(ARMEmitter::Size::i64Bit, Dst.first,  ARMEmitter::Reg::r0);
   mov(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Reg::r1);
+}
+
+DEF_OP(XGETBV) {
+  auto Op = IROp->C<IR::IROp_XGetBV>();
+
+  PushDynamicRegsAndLR(TMP1);
+  SpillStaticRegs(TMP1);
+
+  // x0 = CPUID Handler
+  // x1 = XCR Function
+  ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.CPUIDObj));
+  ldr(ARMEmitter::XReg::x2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.XCRFunction));
+  mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
+#ifdef VIXL_SIMULATOR
+  GenerateIndirectRuntimeCall<uint64_t, void*, uint32_t>(ARMEmitter::Reg::r2);
+#else
+  blr(ARMEmitter::Reg::r2);
+#endif
+
+  FillStaticRegs();
+
+  PopDynamicRegsAndLR();
+
+  // Results are in x0
+  // Results want to be in a i32v2 vector
+  auto Dst = GetRegPair(Node);
+  mov(ARMEmitter::Size::i32Bit, Dst.first,  ARMEmitter::Reg::r0);
+  lsr(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Reg::r0, 32);
 }
 
 #undef DEF_OP

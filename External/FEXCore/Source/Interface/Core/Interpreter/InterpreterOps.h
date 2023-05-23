@@ -154,6 +154,7 @@ namespace FEXCore::CPU {
   DEF_OP(ValidateCode);
   DEF_OP(ThreadRemoveCodeEntry);
   DEF_OP(CPUID);
+  DEF_OP(XGETBV);
 
   ///< Conversion ops
   DEF_OP(VInsGPR);

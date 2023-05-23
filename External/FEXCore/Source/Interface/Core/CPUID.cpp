@@ -76,10 +76,6 @@ static uint32_t GetCPUID() {
   return CPU;
 }
 
-// TODO: Replace usages with CTX->HostFeatures.EnableAVX
-//       when AVX implementations are further along.
-constexpr uint32_t SUPPORTS_AVX = 0;
-
 #ifdef CPUID_AMD
 constexpr uint32_t FAMILY_IDENTIFIER =
   0 |          // Stepping
@@ -441,7 +437,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (CTX->HostFeatures.SupportsAES << 25) | // AES
     (0 << 26) | // XSAVE
     (0 << 27) | // OSXSAVE
-    (SUPPORTS_AVX << 28) | // AVX
+    (SupportsAVX() << 28) | // AVX
     (0 << 29) | // F16C
     (CTX->HostFeatures.SupportsRAND << 30) | // RDRAND
     (Hypervisor << 31);
@@ -736,13 +732,13 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) {
   // Leaf 0
   FEXCore::CPUID::FunctionResults Res{};
 
-  uint32_t XFeatureSupportedSizeMax = SUPPORTS_AVX ? 0x0000'0340 : 0x0000'0240; // XFeatureEnabledSizeMax: Legacy Header + FPU/SSE + AVX
+  uint32_t XFeatureSupportedSizeMax = SupportsAVX() ? 0x0000'0340 : 0x0000'0240; // XFeatureEnabledSizeMax: Legacy Header + FPU/SSE + AVX
   if (Leaf == 0) {
     // XFeatureSupportedMask[31:0]
     Res.eax =
       (1 << 0) |            // X87 support
       (1 << 1) |            // 128-bit SSE support
-      (SUPPORTS_AVX << 2) | // 256-bit AVX support
+      (SupportsAVX() << 2) | // 256-bit AVX support
       (0b00 << 3) |         // MPX State
       (0b000 << 5) |        // AVX-512 state
       (0 << 8) |            // "Used for IA32_XSS" ... Used for what?
@@ -776,8 +772,8 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) {
     Res.edx = 0;
   }
   else if (Leaf == 2) {
-    Res.eax = SUPPORTS_AVX ? 0x0000'0100 : 0; // YmmSaveStateSize
-    Res.ebx = SUPPORTS_AVX ? 0x0000'0240 : 0; // YmmSaveStateOffset
+    Res.eax = SupportsAVX() ? 0x0000'0100 : 0; // YmmSaveStateSize
+    Res.ebx = SupportsAVX() ? 0x0000'0240 : 0; // YmmSaveStateOffset
 
     // Reserved
     Res.ecx = 0;
@@ -1212,11 +1208,26 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_Reserved(uint32_t Leaf) {
   return Res;
 }
 
+FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() {
+  // This just returns XCR0
+  FEXCore::CPUID::XCRResults Res{
+    .eax = static_cast<uint32_t>(XCR0),
+    .edx = static_cast<uint32_t>(XCR0 >> 32),
+  };
+
+  return Res;
+}
+
 void CPUIDEmu::Init(FEXCore::Context::ContextImpl *ctx) {
   CTX = ctx;
 
   // Setup some state tracking
   SetupHostHybridFlag();
+
+  // TODO: Enable once AVX is supported.
+  if (false && CTX->HostFeatures.SupportsAVX) {
+    XCR0 |= XCR0_AVX;
+  }
 }
 }
 

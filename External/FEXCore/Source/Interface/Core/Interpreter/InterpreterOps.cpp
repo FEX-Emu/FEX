@@ -118,6 +118,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(VALIDATECODE,           ValidateCode);
   REGISTER_OP(THREADREMOVECODEENTRY,        ThreadRemoveCodeEntry);
   REGISTER_OP(CPUID,                  CPUID);
+  REGISTER_OP(XGETBV,                 XGETBV);
 
   // Conversion ops
   REGISTER_OP(VINSGPR,                VInsGPR);

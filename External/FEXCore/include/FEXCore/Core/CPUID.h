@@ -5,5 +5,9 @@ namespace FEXCore::CPUID {
   struct FunctionResults {
     uint32_t eax, ebx, ecx, edx;
   };
+
+  struct XCRResults {
+    uint32_t eax, edx;
+  };
 }
 

@@ -259,6 +259,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) = 0;
+      FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) = 0;
       FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) = 0;

@@ -159,6 +159,7 @@ namespace FEXCore::Context {
       void SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) override;
 
       FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) override;
+      FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) override;
       FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) override;
 
       FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) override;
