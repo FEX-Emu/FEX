@@ -309,12 +309,6 @@ namespace FEXCore::Context {
 
     void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
-    // Debugger interface
-    uint64_t GetThreadCount() const;
-    FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(uint64_t Thread);
-    bool GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data);
-    bool FindHostCodeForRIP(uint64_t RIP, uint8_t **Code);
-
     struct GenerateIRResult {
       FEXCore::IR::IRListView* IRList;
       FEXCore::IR::RegisterAllocationData::UniquePtr RAData;

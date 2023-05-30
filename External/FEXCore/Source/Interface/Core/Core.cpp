@@ -1008,9 +1008,6 @@ namespace FEXCore::Context {
       StartAddr = _StartAddr;
       Length = _Length;
 
-      // Increment stats
-      Thread->Stats.BlocksCompiled.fetch_add(1);
-
       // These blocks aren't already in the cache
       GeneratedIR = true;
     }
@@ -1296,51 +1293,6 @@ namespace FEXCore::Context {
     InvalidateGuestCodeRange(Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
       CustomIRHandlers.erase(Entrypoint);
     });
-  }
-
-  // Debug interface
-  void Context::CompileRIP(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) {
-    uint64_t RIPBackup = Thread->CurrentFrame->State.rip;
-    Thread->CurrentFrame->State.rip = RIP;
-
-    auto CTX = static_cast<ContextImpl*>(Thread->CTX);
-
-    // Erase the RIP from all the storage backings if it exists
-    CTX->ThreadRemoveCodeEntry(Thread, RIP);
-
-    // We don't care if compilation passes or not
-    CTX->CompileBlock(Thread->CurrentFrame, RIP);
-
-    Thread->CurrentFrame->State.rip = RIPBackup;
-  }
-
-  uint64_t ContextImpl::GetThreadCount() const {
-    return Threads.size();
-  }
-
-  FEXCore::Core::RuntimeStats *ContextImpl::GetRuntimeStatsForThread(uint64_t Thread) {
-    return &Threads[Thread]->Stats;
-  }
-
-  bool ContextImpl::GetDebugDataForRIP(uint64_t RIP, FEXCore::Core::DebugData *Data) {
-    std::lock_guard<std::recursive_mutex> lk(ParentThread->LookupCache->WriteLock);
-    auto it = ParentThread->DebugStore.find(RIP);
-    if (it == ParentThread->DebugStore.end()) {
-      return false;
-    }
-
-    memcpy(Data, it->second.DebugData.get(), sizeof(FEXCore::Core::DebugData));
-    return true;
-  }
-
-  bool ContextImpl::FindHostCodeForRIP(uint64_t RIP, uint8_t **Code) {
-    uintptr_t HostCode = ParentThread->LookupCache->FindBlock(RIP);
-    if (!HostCode) {
-      return false;
-    }
-
-    *Code = reinterpret_cast<uint8_t*>(HostCode);
-    return true;
   }
 
   uint64_t HandleSyscall(FEXCore::HLE::SyscallHandler *Handler, FEXCore::Core::CpuStateFrame *Frame, FEXCore::HLE::SyscallArguments *Args) {

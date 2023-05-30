@@ -94,35 +94,4 @@ namespace FEXCore::Context {
   FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
     return CPUID.RunFunctionName(Function, Leaf, CPU);
   }
-
-namespace Debug {
-  //void CompileRIP(FEXCore::Context::Context *CTX, uint64_t RIP) {
-  //  CTX->CompileRIP(CTX->ParentThread, RIP);
-  //}
-  //uint64_t GetThreadCount(FEXCore::Context::Context *CTX) {
-  //  return CTX->GetThreadCount();
-  //}
-
-  //FEXCore::Core::RuntimeStats *GetRuntimeStatsForThread(FEXCore::Context::Context *CTX, uint64_t Thread) {
-  //  return CTX->GetRuntimeStatsForThread(Thread);
-  //}
-
-  //bool GetDebugDataForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::Core::DebugData *Data) {
-  //  return CTX->GetDebugDataForRIP(RIP, Data);
-  //}
-
-  //bool FindHostCodeForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, uint8_t **Code) {
-  //  return CTX->FindHostCodeForRIP(RIP, Code);
-  //}
-
-  // XXX:
-  // bool FindIRForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::IR::IntrusiveIRList **ir) {
-  //   return CTX->FindIRForRIP(RIP, ir);
-  // }
-
-  // void SetIRForRIP(FEXCore::Context::Context *CTX, uint64_t RIP, FEXCore::IR::IntrusiveIRList *const ir) {
-  //   CTX->SetIRForRIP(RIP, ir);
-  // }
-}
-
 }
