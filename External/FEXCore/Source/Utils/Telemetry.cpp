@@ -23,6 +23,7 @@ namespace FEXCore::Telemetry {
     "32bit CAS Tear",
     "64bit CAS Tear",
     "128bit CAS Tear",
+    "Crash mask",
   };
   void Initialize() {
     auto DataDirectory = Config::GetDataDirectory();

@@ -1440,6 +1440,15 @@ namespace FEX::HLE {
     else if (Handler.OldAction.handler == SIG_DFL &&
       (Handler.DefaultBehaviour == DEFAULT_COREDUMP ||
        Handler.DefaultBehaviour == DEFAULT_TERM)) {
+
+      // In the case of signals that cause coredump or terminate, save telemetry early.
+      // FEX is hard crashing at this point and won't hit regular shutdown routines.
+      // Add the signal to the crash mask.
+      CrashMask |= (1ULL << Signal);
+      if (!ApplicationName.empty()) {
+        FEXCore::Telemetry::Shutdown(ApplicationName);
+      }
+
       // Reassign back to DFL and crash
       signal(Signal, SIG_DFL);
       if (SigInfo->si_code != SI_KERNEL) {
@@ -1550,8 +1559,9 @@ namespace FEX::HLE {
     ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.OldAction, nullptr, 8);
   }
 
-  SignalDelegator::SignalDelegator(FEXCore::Context::Context *_CTX)
-    : CTX {_CTX} {
+  SignalDelegator::SignalDelegator(FEXCore::Context::Context *_CTX, const std::string_view ApplicationName)
+    : CTX {_CTX}
+    , ApplicationName {ApplicationName} {
     // Register this delegate
     LOGMAN_THROW_AA_FMT(!GlobalDelegator, "Can't register global delegator multiple times!");
     GlobalDelegator = this;
@@ -2020,7 +2030,7 @@ namespace FEX::HLE {
     return Result == -1 ? -errno : Result;
   }
 
-  fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context *CTX) {
-    return fextl::make_unique<FEX::HLE::SignalDelegator>(CTX);
+  fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context *CTX, const std::string_view ApplicationName) {
+    return fextl::make_unique<FEX::HLE::SignalDelegator>(CTX, ApplicationName);
   }
 }
