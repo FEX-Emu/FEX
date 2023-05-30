@@ -26,6 +26,7 @@ $end_info$
 #include <stdint.h>
 #include <sched.h>
 #include <sys/personality.h>
+#include <sys/poll.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
@@ -187,12 +188,29 @@ namespace FEX::HLE {
   uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, size_t StackSize, pid_t *parent_tid, pid_t *child_tid, void *tls) {
     // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
     FEX::HLE::_SyscallHandler->LockBeforeFork();
-    
+
+    const bool IsVFork = flags & CLONE_VFORK;
     pid_t Result{};
-    if (flags & CLONE_VFORK) {
-      // XXX: We don't currently support a vfork as it causes problems.
-      // Currently behaves like a fork, which isn't correct. Need to find where the problem is
+    int VForkFDs[2];
+    if (IsVFork) {
+      // Use pipes as a mechanism for knowing when the child process is exiting.
+      // FEX can't use `waitpid` for this since the child process may want to use it.
+      // If we use `waitpid` then the kernel won't return the same data if asked again.
+      pipe2(VForkFDs, O_CLOEXEC);
+
+      // XXX: We don't currently support a real `vfork` as it causes problems.
+      // Currently behaves like a fork (with wait after the fact), which isn't correct. Need to find where the problem is
       Result = fork();
+
+      if (Result == 0) {
+        // Close the read end of the pipe.
+        // Keep the write end open so the parent can poll it.
+        close(VForkFDs[0]);
+      }
+      else {
+        // Close the write end of the pipe.
+        close(VForkFDs[1]);
+      }
     }
     else {
       Result = fork();
@@ -256,6 +274,23 @@ namespace FEX::HLE {
           *parent_tid = Result;
         }
       }
+
+      // VFork needs the parent to wait for the child to exit.
+      if (IsVFork) {
+        // Wait for the read end of the pipe to close.
+        pollfd PollFD{};
+        PollFD.fd = VForkFDs[0];
+        PollFD.events = POLLIN | POLLOUT | POLLRDHUP | POLLERR | POLLHUP | POLLNVAL;
+
+        // Mask all signals until the child process returns.
+        sigset_t SignalMask{};
+        sigfillset(&SignalMask);
+        while (ppoll(&PollFD, 1, nullptr, &SignalMask) == -1 && errno == EINTR);
+
+        // Close the read end now.
+        close(VForkFDs[0]);
+      }
+
       // Parent
       SYSCALL_ERRNO();
     }
