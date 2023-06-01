@@ -1,7 +1,3 @@
-if (ENABLE_VISUAL_DEBUGGER)
-  add_subdirectory(Debugger/)
-endif()
-
 if (NOT MINGW_BUILD)
   if (NOT TERMUX_BUILD)
     # Termux builds can't rely on X11 packages
