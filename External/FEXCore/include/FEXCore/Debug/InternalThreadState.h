@@ -38,12 +38,6 @@ namespace FEXCore::IR{
 }
 
 namespace FEXCore::Core {
-
-  struct RuntimeStats {
-    std::atomic_uint64_t InstructionsExecuted;
-    std::atomic_uint64_t BlocksCompiled;
-  };
-
   struct DebugDataSubblock {
     uint32_t HostCodeOffset;
     uint32_t HostCodeSize;
@@ -102,8 +96,6 @@ namespace FEXCore::Core {
     fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
     fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
     FEXCore::HLE::ThreadManagement ThreadManager;
-
-    RuntimeStats Stats{};
 
     int StatusCode{};
     FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
