@@ -314,6 +314,36 @@ namespace {
       FEXCore::IR::InvalidClass,
     });
 
+    // _pad2
+    ContextClassification->emplace_back(ContextMemberInfo {
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, _pad2),
+        sizeof(FEXCore::Core::CPUState::_pad2),
+      },
+      ACCESS_NONE,
+      FEXCore::IR::InvalidClass,
+    });
+
+    // DeferredSignalRefCount
+    ContextClassification->emplace_back(ContextMemberInfo {
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount),
+        sizeof(FEXCore::Core::CPUState::DeferredSignalRefCount),
+      },
+      ACCESS_NONE,
+      FEXCore::IR::InvalidClass,
+    });
+
+    // DeferredSignalFaultAddress
+    ContextClassification->emplace_back(ContextMemberInfo {
+      ContextMemberClassification {
+        offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress),
+        sizeof(FEXCore::Core::CPUState::DeferredSignalFaultAddress),
+      },
+      ACCESS_NONE,
+      FEXCore::IR::InvalidClass,
+    });
+
 
     [[maybe_unused]] size_t ClassifiedStructSize{};
     ContextClassificationInfo->Lookup.reserve(sizeof(FEXCore::Core::CPUState));
@@ -393,6 +423,10 @@ namespace {
 
     SetAccess(Offset++, ACCESS_NONE);
     SetAccess(Offset++, ACCESS_NONE);
+
+    SetAccess(Offset++, ACCESS_INVALID);
+    SetAccess(Offset++, ACCESS_INVALID);
+    SetAccess(Offset++, ACCESS_INVALID);
   }
 
   struct BlockInfo {

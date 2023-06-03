@@ -129,13 +129,6 @@ void Arm64Dispatcher::EmitDispatcher() {
     and_(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, RipReg.R(), ARMEmitter::Reg::r3);
   }
 
-#ifdef VIXL_SIMULATOR
-  // VIXL simulator can't run syscalls.
-  constexpr bool SignalSafeCompile = false;
-#else
-  constexpr bool SignalSafeCompile = true;
-#endif
-
   ARMEmitter::ForwardLabel NoBlock;
 
   {
@@ -199,26 +192,9 @@ void Arm64Dispatcher::EmitDispatcher() {
     if (config.StaticRegisterAllocation)
       SpillStaticRegs(TMP1);
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // Args:
-      // X0: SETMASK
-      // X1: Pointer to mask value (uint64_t)
-      // X2: Pointer to old mask value (uint64_t)
-      // X3: Size of mask, sizeof(uint64_t)
-      // X8: Syscall
-
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ~0ULL);
-      stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, ARMEmitter::Reg::rsp, -16);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
-      svc(0);
-    }
-#endif
+    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
+    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     mov(ARMEmitter::XReg::x0, STATE);
     mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
@@ -230,27 +206,16 @@ void Arm64Dispatcher::EmitDispatcher() {
     blr(ARMEmitter::Reg::r2);
 #endif
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-
-      mov(ARMEmitter::XReg::x4, ARMEmitter::XReg::x0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
-      svc(0);
-
-      // Bring stack back
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
-      mov(ARMEmitter::XReg::x0, ARMEmitter::XReg::x4);
-    }
-#endif
-
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
+
+    ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    subs(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x1, ARMEmitter::XReg::x1, 1);
+    str(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+
+    // Trigger segfault if any deferred signals are pending
+    ldr(ARMEmitter::XReg::x1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
+    str(ARMEmitter::XReg::zr, ARMEmitter::XReg::x1, 0);
 
     br(ARMEmitter::Reg::r0);
   }
@@ -262,29 +227,9 @@ void Arm64Dispatcher::EmitDispatcher() {
     if (config.StaticRegisterAllocation)
       SpillStaticRegs(TMP1);
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // Args:
-      // X0: SETMASK
-      // X1: Pointer to mask value (uint64_t)
-      // X2: Pointer to old mask value (uint64_t)
-      // X3: Size of mask, sizeof(uint64_t)
-      // X8: Syscall
-
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ~0ULL);
-      stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::x0, ARMEmitter::XReg::x2, ARMEmitter::Reg::rsp, -16);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, ARMEmitter::Reg::rsp, 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
-      svc(0);
-
-      // Reload x2 to bring back RIP
-      ldr(ARMEmitter::XReg::x2, ARMEmitter::Reg::rsp, 8);
-    }
-#endif
+    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
+    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     ldr(ARMEmitter::XReg::x0, &l_CTX);
     mov(ARMEmitter::XReg::x1, STATE);
@@ -297,24 +242,16 @@ void Arm64Dispatcher::EmitDispatcher() {
     blr(ARMEmitter::Reg::r3); // { CTX, Frame, RIP}
 #endif
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SIG_SETMASK);
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, ARMEmitter::Reg::rsp, 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, 0);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r3, 8);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, SYS_rt_sigprocmask);
-      svc(0);
-
-      // Bring stack back
-      add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 16);
-    }
-#endif
-
     if (config.StaticRegisterAllocation)
       FillStaticRegs();
+
+    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    subs(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
+    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+
+    // Trigger segfault if any deferred signals are pending
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress));
+    str(ARMEmitter::XReg::zr, TMP1, 0);
 
     b(&LoopTop);
   }

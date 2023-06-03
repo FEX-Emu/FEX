@@ -198,25 +198,25 @@ public:
   FEX::HLE::MemAllocator *Get32BitAllocator() { return Alloc32Handler.get(); }
 
   // does a mmap as if done via a guest syscall
-  virtual void *GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
+  virtual void *GuestMmap(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
 
   // does a guest munmap as if done via a guest syscall
-  virtual int GuestMunmap(void *addr, uint64_t length) = 0;
+  virtual int GuestMunmap(FEXCore::Core::InternalThreadState *Thread, void *addr, uint64_t length) = 0;
 
   ///// Memory Manager tracking /////
-  void TrackMmap(uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
-  void TrackMunmap(uintptr_t Base, uintptr_t Size);
-  void TrackMprotect(uintptr_t Base, uintptr_t Size, int Prot);
-  void TrackMremap(uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
-  void TrackShmat(int shmid, uintptr_t Base, int shmflg);
-  void TrackShmdt(uintptr_t Base);
-  void TrackMadvise(uintptr_t Base, uintptr_t Size, int advice);
+  void TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
+  void TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size);
+  void TrackMprotect(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int Prot);
+  void TrackMremap(FEXCore::Core::InternalThreadState *Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
+  void TrackShmat(FEXCore::Core::InternalThreadState *Thread, int shmid, uintptr_t Base, int shmflg);
+  void TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base);
+  void TrackMadvise(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int advice);
 
   ///// VMA (Virtual Memory Area) tracking /////
   static bool HandleSegfault(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext);
-  void MarkGuestExecutableRange(uint64_t Start, uint64_t Length) override;
+  void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
   // AOTIRCacheEntryLookupResult also includes a shared lock guard, so the pointed AOTIRCacheEntry return can be safely used
-  FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(uint64_t GuestAddr) final override;
+  FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) final override;
 
   ///// FORK tracking /////
   void LockBeforeFork();

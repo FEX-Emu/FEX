@@ -35,8 +35,8 @@ class x64SyscallHandler final : public FEX::HLE::SyscallHandler {
   public:
     x64SyscallHandler(FEXCore::Context::Context *ctx, FEX::HLE::SignalDelegator *_SignalDelegation);
 
-    void *GuestMmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
-    int GuestMunmap(void *addr, uint64_t length) override;
+    void *GuestMmap(FEXCore::Core::InternalThreadState *Thread, void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
+    int GuestMunmap(FEXCore::Core::InternalThreadState *Thread, void *addr, uint64_t length) override;
 
 
   void RegisterSyscall_64(int SyscallNumber,

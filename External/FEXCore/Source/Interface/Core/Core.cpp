@@ -24,6 +24,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
+#include "Utils/Allocator/HostAllocator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CodeLoader.h>
@@ -191,29 +192,6 @@ namespace FEXCore::Context {
     }
   }
 
-  static FEXCore::Core::CPUState CreateDefaultCPUState() {
-    FEXCore::Core::CPUState NewThreadState{};
-
-    // Initialize default CPU state
-    NewThreadState.rip = ~0ULL;
-    for (auto& greg : NewThreadState.gregs) {
-      greg = 0;
-    }
-
-    for (auto& xmm : NewThreadState.xmm.avx.data) {
-      xmm[0] = 0xDEADBEEFULL;
-      xmm[1] = 0xBAD0DAD1ULL;
-      xmm[2] = 0xDEADCAFEULL;
-      xmm[3] = 0xBAD2CAD3ULL;
-    }
-    memset(NewThreadState.flags, 0, Core::CPUState::NUM_EFLAG_BITS);
-    NewThreadState.flags[1] = 1;
-    NewThreadState.flags[9] = 1;
-    NewThreadState.FCW = 0x37F;
-    NewThreadState.FTW = 0xFFFF;
-    return NewThreadState;
-  }
-
   uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) {
     const auto Frame = Thread->CurrentFrame;
     const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
@@ -314,8 +292,7 @@ namespace FEXCore::Context {
 
     using namespace FEXCore::Core;
 
-    FEXCore::Core::CPUState NewThreadState = CreateDefaultCPUState();
-    FEXCore::Core::InternalThreadState *Thread = CreateThread(&NewThreadState, 0);
+    FEXCore::Core::InternalThreadState *Thread = CreateThread(nullptr, 0);
 
     // We are the parent thread
     ParentThread = Thread;
@@ -624,7 +601,9 @@ namespace FEXCore::Context {
     FEXCore::Core::InternalThreadState *Thread = new FEXCore::Core::InternalThreadState{};
 
     // Copy over the new thread state to the new object
-    memcpy(Thread->CurrentFrame, NewThreadState, sizeof(FEXCore::Core::CPUState));
+    if (NewThreadState) {
+      memcpy(Thread->CurrentFrame, NewThreadState, sizeof(FEXCore::Core::CPUState));
+    }
     Thread->CurrentFrame->Thread = Thread;
 
     // Set up the thread manager state
@@ -632,6 +611,9 @@ namespace FEXCore::Context {
 
     InitializeCompiler(Thread);
     InitializeThreadData(Thread);
+
+    Thread->CurrentFrame->State.DeferredSignalRefCount.Store(0);
+    Thread->CurrentFrame->State.DeferredSignalFaultAddress = reinterpret_cast<Core::NonAtomicRefCounter<uint64_t>*>(FEXCore::Allocator::VirtualAlloc(4096));
 
     // Insert after the Thread object has been fully initialized
     {
@@ -658,6 +640,8 @@ namespace FEXCore::Context {
       // To be able to delete a thread from itself, we need to detached the std::thread object
       Thread->ExecutionThread->detach();
     }
+
+    FEXCore::Allocator::VirtualFree(reinterpret_cast<void*>(Thread->CurrentFrame->State.DeferredSignalFaultAddress), 4096);
     delete Thread;
   }
 
@@ -797,7 +781,7 @@ namespace FEXCore::Context {
 
       Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
         if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
-          static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Start, Length);
+          static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
         }
       });
 
@@ -976,7 +960,7 @@ namespace FEXCore::Context {
     }
 
     if (SourcecodeResolver && Config.GDBSymbols()) {
-      auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+      auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
       if (AOTIRCacheEntry.Entry && !AOTIRCacheEntry.Entry->ContainsCode) {
         AOTIRCacheEntry.Entry->SourcecodeMap =
             SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
@@ -985,7 +969,7 @@ namespace FEXCore::Context {
 
     // AOT IR bookkeeping and cache
     {
-      auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(GuestRIP, IRList);
+      auto [IRCopy, RACopy, DebugDataCopy, _StartAddr, _Length, _GeneratedIR] = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP, IRList);
       if (_GeneratedIR) {
         // Setup pointers to internal structures
         IRList = IRCopy;
@@ -1078,7 +1062,7 @@ namespace FEXCore::Context {
       auto FragmentBasePtr = reinterpret_cast<uint8_t *>(CodePtr);
 
       if (DebugData) {
-        auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(GuestRIP);
+        auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
 
         if (DebugData->Subblocks.size()) {
           for (auto& Subblock: DebugData->Subblocks) {
@@ -1146,6 +1130,7 @@ namespace FEXCore::Context {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     InitializeThreadTLSData(Thread);
+    Alloc::OSAllocator::RegisterTLSData(Thread);
 
     ++IdleWaitRefCount;
 
@@ -1190,6 +1175,7 @@ namespace FEXCore::Context {
     --IdleWaitRefCount;
     IdleWaitCV.notify_all();
 
+    Alloc::OSAllocator::UninstallTLSData(Thread);
     SignalDelegation->UninstallTLSState(Thread);
 
     // If the parent thread is waiting to join, then we can't destroy our thread object
@@ -1220,14 +1206,20 @@ namespace FEXCore::Context {
     }
   }
 
-  void ContextImpl::InvalidateGuestCodeRange(uint64_t Start, uint64_t Length) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex);
+  void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) {
+    // Potential deferred since Thread might not be valid.
+    // Thread object isn't valid very early in frontend's initialization.
+    // To be more optimal the frontend should provide this code with a valid Thread object earlier.
+    ScopedPotentialDeferredSignalWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
   }
 
-  void ContextImpl::InvalidateGuestCodeRange(uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
-    FHU::ScopedSignalMaskWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex);
+  void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
+    // Potential deferred since Thread might not be valid.
+    // Thread object isn't valid very early in frontend's initialization.
+    // To be more optimal the frontend should provide this code with a valid Thread object earlier.
+    ScopedPotentialDeferredSignalWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
     CallAfter(Start, Length);
@@ -1290,7 +1282,7 @@ namespace FEXCore::Context {
 
     std::scoped_lock lk(CustomIRMutex);
 
-    InvalidateGuestCodeRange(Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
+    InvalidateGuestCodeRange(nullptr, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) {
       CustomIRHandlers.erase(Entrypoint);
     });
   }

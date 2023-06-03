@@ -170,38 +170,11 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
     ret();
   }
 
-  constexpr bool SignalSafeCompile = true;
   // Block creation
   {
     L(NoBlock);
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // RDI: SETMASK
-      // RSI: Pointer to mask value (uint64_t)
-      // RDX: Pointer to old mask value (uint64_t)
-      // R10: Size of mask, sizeof(uint64_t)
-      // RAX: Syscall
-
-      // Backup rdx
-      mov(r9, rdx);
-
-      mov(rdi, ~0ULL);
-      sub(rsp, 16);
-      mov(qword [rsp], rdi);
-      mov(qword [rsp + 8], rdi);
-
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, rsp);
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
-
-      mov(rdx, r9);
-    }
-#endif
+    inc(qword [STATE + offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount)]);
 
     // {rdi, rsi, rdx}
     mov(rdi, reinterpret_cast<uint64_t>(CTX));
@@ -210,26 +183,15 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
     call(rax);
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-      // Backup rdx
-      mov(r9, rdx);
+    dec(qword [STATE + offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount)]);
 
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, 0); // Don't care about result
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
+    Label AfterStore;
+    // Skip the deferred fault address if the refcount isn't zero
+    jne(AfterStore);
+    mov(rax, qword [STATE + offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress)]);
+    mov(rax, qword [rax]);
 
-      // Bring stack back
-      add(rsp, 16);
-
-      mov(rdx, r9);
-    }
-#endif
+    L(AfterStore);
 
     // rdx already contains RIP here
     jmp(LoopTop);
@@ -237,34 +199,7 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
   {
     ExitFunctionLinkerAddress = getCurr<uint64_t>();
-
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // When compiling code, mask all signals to reduce the chance of reentrant allocations
-      // RDI: SETMASK
-      // RSI: Pointer to mask value (uint64_t)
-      // RDX: Pointer to old mask value (uint64_t)
-      // R10: Size of mask, sizeof(uint64_t)
-      // RAX: Syscall
-
-      // Backup rax
-      mov(r9, rax);
-
-      mov(rdi, ~0ULL);
-      sub(rsp, 16);
-      mov(qword [rsp], rdi);
-      mov(qword [rsp + 8], rdi);
-
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, rsp);
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
-
-      mov(rax, r9);
-    }
-#endif
+    inc(qword [STATE + offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount)]);
 
     // {rdi, rsi}
     mov(rdi, STATE);
@@ -272,30 +207,17 @@ X86Dispatcher::X86Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispatche
 
     call(qword STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
 
-#ifndef _WIN32
-    if (SignalSafeCompile) {
-      // Now restore the signal mask
-      // Living in the same location
-      // Backup rax
-      mov(r9, rax);
+    dec(qword [STATE + offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount)]);
 
-      mov(rdi, SIG_SETMASK);
-      mov(rsi, rsp);
-      mov(rdx, 0); // Don't care about result
-      mov(r10, 8);
-      mov(rax, SYS_rt_sigprocmask);
-      syscall();
+    Label AfterStore;
+    // Skip the deferred fault address if the refcount isn't zero
+    jne(AfterStore);
+    mov(rbx, qword [STATE + offsetof(FEXCore::Core::CPUState, DeferredSignalFaultAddress)]);
+    mov(qword [rbx], rbx);
 
-      // Bring stack back
-      add(rsp, 16);
+    L(AfterStore);
 
-      jmp(r9);
-    }
-    else
-#endif
-    {
-      jmp(rax);
-    }
+    jmp(rax);
   }
 
   {

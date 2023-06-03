@@ -544,7 +544,7 @@ namespace FEX::VDSO {
         VDSOSize = FEXCore::AlignUp(VDSOSize, 4096);
 
         // Map the VDSO file to memory
-        VDSOBase = Handler->GuestMmap(nullptr, VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
+        VDSOBase = Handler->GuestMmap(nullptr, nullptr, VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
 
         // Since we found our VDSO thunk library, find our host VDSO function implementations.
         LoadHostVDSO();

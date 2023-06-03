@@ -105,7 +105,7 @@ namespace FEXCore::IR {
         uint64_t Length {};
         bool GeneratedIR {};
       };
-      [[nodiscard]] PreGenerateIRFetchResult PreGenerateIRFetch(uint64_t GuestRIP, FEXCore::IR::IRListView *IRList);
+      [[nodiscard]] PreGenerateIRFetchResult PreGenerateIRFetch(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestRIP, FEXCore::IR::IRListView *IRList);
 
       bool PostCompileCode(FEXCore::Core::InternalThreadState *Thread,
         void* CodePtr,

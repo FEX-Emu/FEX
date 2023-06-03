@@ -20,7 +20,6 @@ $end_info$
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Filesystem.h>
-#include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>

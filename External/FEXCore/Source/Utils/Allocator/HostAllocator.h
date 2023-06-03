@@ -6,6 +6,10 @@
 #include <cstdint>
 #include <sys/types.h>
 
+namespace FEXCore::Core {
+struct InternalThreadState;
+}
+
 namespace Alloc {
   // HostAllocator is just a page pased slab allocator
   // Similar to mmap and munmap only mapping at the page level
@@ -36,5 +40,7 @@ namespace Alloc {
 }
 
 namespace Alloc::OSAllocator {
+void RegisterTLSData(FEXCore::Core::InternalThreadState *Thread);
+void UninstallTLSData(FEXCore::Core::InternalThreadState *Thread);
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
 }

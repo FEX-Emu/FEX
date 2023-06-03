@@ -8,6 +8,7 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>
 
 #include <stddef.h>
@@ -43,7 +44,7 @@ namespace FEX::HLE {
       uint64_t Result = ::madvise(addr, length, advice);
 
       if (Result != -1) {
-        FEX::HLE::_SyscallHandler->TrackMadvise((uintptr_t)addr, length, advice);
+        FEX::HLE::_SyscallHandler->TrackMadvise(Frame->Thread, (uintptr_t)addr, length, advice);
       }
       SYSCALL_ERRNO();
     });

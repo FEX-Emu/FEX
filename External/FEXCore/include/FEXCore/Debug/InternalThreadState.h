@@ -104,8 +104,19 @@ namespace FEXCore::Core {
     std::shared_mutex ObjectCacheRefCounter{};
     bool DestroyedByParent{false};  // Should the parent destroy this thread, or it destory itself
 
-    alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
+    struct DeferredSignalState {
+#ifndef _WIN32
+      siginfo_t Info;
+#endif
+      int Signal;
+    };
 
+    // Queue of thread local signal frames that have been deferred.
+    // Async signals aren't guaranteed to be delivered in any particular order, but FEX treats them as FILO.
+    fextl::vector<DeferredSignalState> DeferredSignalFrames;
+
+    // BaseFrameState should always be at the end.
+    alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
   };
   // static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
 }
