@@ -366,7 +366,7 @@ namespace {
       ContextClassificationInfo->Lookup.size(), sizeof(FEXCore::Core::CPUState));
   }
 
-  static void ResetClassificationAccesses(ContextInfo *ContextClassificationInfo, bool SupportsAVX) {
+  static void ResetClassificationAccesses(ContextInfo *ContextClassificationInfo, bool SupportsAVX, bool SkipGPRsAndXMM = false) {
     auto ContextClassification = &ContextClassificationInfo->ClassificationInfo;
 
     auto SetAccess = [&](size_t Offset, auto Access) {
@@ -377,8 +377,14 @@ namespace {
     };
     size_t Offset = 0;
     SetAccess(Offset++, ACCESS_NONE);
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+
+    if (SkipGPRsAndXMM) {
+      Offset += FEXCore::Core::CPUState::NUM_GPRS;
+    }
+    else {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; ++i) {
+        SetAccess(Offset++, ACCESS_NONE);
+      }
     }
 
     // Segment indexes
@@ -403,8 +409,13 @@ namespace {
     // Pad2
     SetAccess(Offset++, ACCESS_INVALID);
 
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
-      SetAccess(Offset++, ACCESS_NONE);
+    if (SkipGPRsAndXMM) {
+      Offset += FEXCore::Core::CPUState::NUM_XMMS;
+    }
+    else {
+      for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+        SetAccess(Offset++, ACCESS_NONE);
+      }
     }
 
     if (!SupportsAVX) {
@@ -460,6 +471,8 @@ private:
 
   // Block local Passes
   bool RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit);
+
+  bool ClassifyContextStore(FEXCore::IR::IREmitter *IREmit, ContextInfo *LocalInfo, FEXCore::IR::RegisterClassType Class, uint32_t Offset, uint8_t Size, FEXCore::IR::OrderedNode *Node, FEXCore::IR::OrderedNode *StoreNode);
 };
 
 ContextMemberInfo *RCLSE::FindMemberInfo(ContextInfo *ContextClassificationInfo, uint32_t Offset, uint8_t Size) {
@@ -544,6 +557,41 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
   }
 }
 
+bool RCLSE::ClassifyContextStore(
+  FEXCore::IR::IREmitter *IREmit,
+  ContextInfo *LocalInfo,
+  FEXCore::IR::RegisterClassType Class,
+  uint32_t Offset, uint8_t Size,
+  FEXCore::IR::OrderedNode *CodeNode, FEXCore::IR::OrderedNode *ValueNode) {
+  using namespace FEXCore;
+  using namespace FEXCore::IR;
+
+  auto Info = FindMemberInfo(LocalInfo, Offset, Size);
+  uint8_t LastClass = Info->AccessRegClass;
+  uint32_t LastOffset = Info->AccessOffset;
+  uint8_t LastSize = Info->AccessSize;
+  LastAccessType LastAccess = Info->Accessed;
+  OrderedNode *LastStoreNode = Info->StoreNode;
+  Info = RecordAccess(Info, Class, Offset, Size, ACCESS_WRITE, ValueNode, CodeNode);
+
+  if (IsWriteAccess(LastAccess) &&
+      LastClass == Class &&
+      LastOffset == Offset &&
+      LastSize <= Size) {
+    // Remove the last store because this one overwrites it entirely
+    // Happens when we store in to a location then store again
+    IREmit->Remove(LastStoreNode);
+
+    if (LastSize < Size) {
+      //fmt::print("RCLSE: Eliminated partial write\n");
+    }
+    return true;
+  }
+
+  return false;
+}
+
+
 /**
  * @brief This pass removes redundant pairs of storecontext and loadcontext ops
  *
@@ -597,43 +645,43 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_STORECONTEXT) {
         auto Op = IROp->CW<IR::IROp_StoreContext>();
-        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
-        uint8_t LastClass = Info->AccessRegClass;
-        uint32_t LastOffset = Info->AccessOffset;
-        uint8_t LastSize = Info->AccessSize;
-        LastAccessType LastAccess = Info->Accessed;
-        OrderedNode *LastStoreNode = Info->StoreNode;
-        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_WRITE, CurrentIR.GetNode(Op->Value), CodeNode);
-
-        if (IsWriteAccess(LastAccess) &&
-            LastClass == Op->Class &&
-            LastOffset == Op->Offset &&
-            LastSize <= IROp->Size) {
-          // Remove the last store because this one overwrites it entirely
-          // Happens when we store in to a location then store again
-          IREmit->Remove(LastStoreNode);
-
-          if (LastSize < IROp->Size) {
-            //fmt::print("RCLSE: Eliminated partial write\n");
-          }
-          Changed = true;
-        }
+        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
       }
-      else if (IROp->Op == OP_LOADCONTEXT) {
-        auto Op = IROp->CW<IR::IROp_LoadContext>();
-        auto Info = FindMemberInfo(&LocalInfo, Op->Offset, IROp->Size);
+      else if (IROp->Op == OP_STOREREGISTER) {
+        auto Op = IROp->CW<IR::IROp_StoreRegister>();
+        Changed |= ClassifyContextStore(IREmit, &LocalInfo, Op->Class, Op->Offset, IROp->Size, CodeNode, CurrentIR.GetNode(Op->Value));
+      }
+      else if (IROp->Op == OP_LOADCONTEXT ||
+        IROp->Op == OP_LOADREGISTER) {
+
+        FEXCore::IR::RegisterClassType Class;
+        uint32_t Offset;
+        uint8_t Size = IROp->Size;
+
+        if (IROp->Op == OP_LOADCONTEXT) {
+          auto Op = IROp->CW<IR::IROp_LoadContext>();
+          Class = Op->Class;
+          Offset = Op->Offset;
+        }
+        else {
+          auto Op = IROp->CW<IR::IROp_LoadRegister>();
+          Class = Op->Class;
+          Offset = Op->Offset;
+        }
+
+        auto Info = FindMemberInfo(&LocalInfo, Offset, Size);
         RegisterClassType LastClass = Info->AccessRegClass;
         uint32_t LastOffset = Info->AccessOffset;
         uint8_t LastSize = Info->AccessSize;
         LastAccessType LastAccess = Info->Accessed;
         OrderedNode *LastValueNode = Info->ValueNode;
         OrderedNode *LastStoreNode = Info->StoreNode;
-        RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, CodeNode);
+        Info = RecordAccess(Info, Class, Offset, Size, ACCESS_READ, CodeNode);
 
         if (IsWriteAccess(LastAccess) &&
-            LastClass == Op->Class &&
-            LastOffset == Op->Offset &&
-            IROp->Size <= LastSize) {
+            LastClass == Class &&
+            LastOffset == Offset &&
+            Size <= LastSize) {
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
 
           if (LastClass == GPRClass) {
@@ -646,8 +694,8 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
               TruncateSize = IREmit->GetOpSize(LastStoreNode);
 
             // Or are we doing a partial read
-            if (IROp->Size < TruncateSize)
-              TruncateSize = IROp->Size;
+            if (Size < TruncateSize)
+              TruncateSize = Size;
 
             if (TruncateSize != IREmit->GetOpSize(LastValueNode)) {
               // We need to insert an explict truncation
@@ -655,14 +703,14 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
             }
 
             IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-            RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+            RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
             Changed = true;
           } else if (LastClass == FPRClass) {
-            if (LastSize == IROp->Size && LastSize == IREmit->GetOpSize(LastValueNode)) {
+            if (LastSize == Size && LastSize == IREmit->GetOpSize(LastValueNode)) {
               if (IsFullAccess(Info->Accessed)) {
                 // LoadCtx matches StoreCtx and Node Size
                 IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-                RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+                RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
                 Changed = true;
               }
               else {
@@ -670,48 +718,47 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
                 // the vector element
                 IREmit->SetWriteCursor(CodeNode);
                 // zext to size
-                LastValueNode = IREmit->_VMov(IROp->Size, LastValueNode);
+                LastValueNode = IREmit->_VMov(Size, LastValueNode);
 
                 IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-                RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+                RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
                 Changed = true;
               }
-            } else if (LastSize >= IROp->Size &&
-                       IROp->Size == IREmit->GetOpSize(LastValueNode)) {
+            } else if (LastSize >= Size &&
+                       Size == IREmit->GetOpSize(LastValueNode)) {
               // LoadCtx is <= StoreCtx and Node is LoadCtx
               IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+              RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
               Changed = true;
-            } else if (LastSize >= IROp->Size &&
-                       IROp->Size < IREmit->GetOpSize(LastValueNode)) {
+            } else if (LastSize >= Size &&
+                       Size < IREmit->GetOpSize(LastValueNode)) {
               IREmit->SetWriteCursor(CodeNode);
               // trucate to size
-              LastValueNode = IREmit->_VMov(IROp->Size, LastValueNode);
+              LastValueNode = IREmit->_VMov(Size, LastValueNode);
               IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+              RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
               Changed = true;
-            } else if (LastSize >= IROp->Size &&
-                       IROp->Size > IREmit->GetOpSize(LastValueNode)) {
+            } else if (LastSize >= Size &&
+                       Size > IREmit->GetOpSize(LastValueNode)) {
               IREmit->SetWriteCursor(CodeNode);
               // zext to size
-              LastValueNode = IREmit->_VMov(IROp->Size, LastValueNode);
+              LastValueNode = IREmit->_VMov(Size, LastValueNode);
 
               IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-              RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+              RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
               Changed = true;
             } else {
-              //fmt::print("RCLSE: Not GPR class, missed, {}, lastS: {}, S: {}, Node S: {}\n", LastClass, LastSize, IROp->Size, IREmit->GetOpSize(LastValueNode));
+              //fmt::print("RCLSE: Not GPR class, missed, {}, lastS: {}, S: {}, Node S: {}\n", LastClass, LastSize, Size, IREmit->GetOpSize(LastValueNode));
             }
           }
         }
         else if (IsReadAccess(LastAccess) &&
-                 IsReadAccess(Info->Accessed) &&
-                 LastClass == Op->Class &&
-                 LastOffset == Op->Offset &&
-                 LastSize == IROp->Size) {
+                 LastClass == Class &&
+                 LastOffset == Offset &&
+                 LastSize == Size) {
           // Did we read and then read again?
           IREmit->ReplaceAllUsesWithRange(CodeNode, LastValueNode, IREmit->GetIterator(IREmit->WrapNode(CodeNode)), BlockEnd);
-          RecordAccess(Info, Op->Class, Op->Offset, IROp->Size, ACCESS_READ, LastValueNode);
+          RecordAccess(Info, Class, Offset, Size, ACCESS_READ, LastValueNode);
           Changed = true;
         }
       }
@@ -788,8 +835,12 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         }
       }
       else if (IROp->Op == OP_STORECONTEXTINDEXED ||
-               IROp->Op == OP_LOADCONTEXTINDEXED ||
-               IROp->Op == OP_BREAK) {
+               IROp->Op == OP_LOADCONTEXTINDEXED) {
+        // These are guaranteed to not touch GPRs and XMM/YMM registers.
+        // Reset everything that isn't those.
+        ResetClassificationAccesses(&LocalInfo, SupportsAVX, true);
+      }
+      else if (IROp->Op == OP_BREAK) {
         // We can't track through these
         ResetClassificationAccesses(&LocalInfo, SupportsAVX);
       }
