@@ -52,10 +52,9 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
     InvalidateDeferredFlags();
   }
 
-  auto OneConst = _Constant(1);
   for (size_t i = 0; i < NumFlags; ++i) {
     const auto FlagOffset = FlagOffsets[i];
-    auto Tmp = _And(_Lshr(Src, _Constant(FlagOffset)), OneConst);
+    auto Tmp = _Bfe(4, 1, FlagOffset, Src);
     SetRFLAG(Tmp, FlagOffset);
   }
 }
