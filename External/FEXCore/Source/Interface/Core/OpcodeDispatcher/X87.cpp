@@ -1374,8 +1374,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
   SrcCond = _Sbfe(1, 0, SrcCond);
 
-  OrderedNode *VecCond = _VCastFromGPR(16, 8, SrcCond);
-  VecCond = _VInsGPR(16, 8, 1, VecCond, SrcCond);
+  OrderedNode *VecCond = _VDupFromGPR(16, 8, SrcCond);
 
   auto top = GetX87Top();
   OrderedNode* arg;
