@@ -721,7 +721,8 @@
         "Desc": ["Integer binary not",
                  "op:",
                  "Dest = ~Src"
-                ]
+                ],
+        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
       },
       "GPR = Popcount GPR:$Src": {
         "Desc": ["Population count of source register",

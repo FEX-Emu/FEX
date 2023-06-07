@@ -303,28 +303,11 @@ void OpDispatchBuilder::CalculcateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, O
   // OF
   // Signed
   {
-    auto NegOne = _Constant(~0ULL);
-    auto XorOp1 = _Xor(_Xor(Src1, Src2), NegOne);
+    auto XorOp1 = _Not(_Xor(Src1, Src2));
     auto XorOp2 = _Xor(Res, Src1);
     OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
 
-    switch (Size) {
-    case 8:
-      AndOp1 = _Bfe(1, 7, AndOp1);
-    break;
-    case 16:
-      AndOp1 = _Bfe(1, 15, AndOp1);
-    break;
-    case 32:
-      AndOp1 = _Bfe(1, 31, AndOp1);
-    break;
-    case 64:
-      AndOp1 = _Bfe(1, 63, AndOp1);
-    break;
-    default:
-      LOGMAN_MSG_A_FMT("Unknown BFE size: {}", Size);
-    break;
-    }
+    AndOp1 = _Bfe(1, Size - 1, AndOp1);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }
 }
@@ -375,24 +358,7 @@ void OpDispatchBuilder::CalculcateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, O
     auto XorOp1 = _Xor(Src1, Src2);
     auto XorOp2 = _Xor(Res, Src1);
     OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
-
-    switch (SrcSize) {
-    case 1:
-      AndOp1 = _Bfe(1, 7, AndOp1);
-    break;
-    case 2:
-      AndOp1 = _Bfe(1, 15, AndOp1);
-    break;
-    case 4:
-      AndOp1 = _Bfe(1, 31, AndOp1);
-    break;
-    case 8:
-      AndOp1 = _Bfe(1, 63, AndOp1);
-    break;
-    default:
-      LOGMAN_MSG_A_FMT("Unknown BFE size: {}", SrcSize);
-    break;
-    }
+    AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }
 }
@@ -491,29 +457,12 @@ void OpDispatchBuilder::CalculcateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, O
 
   // OF
   {
-    auto NegOne = _Constant(~0ULL);
-    auto XorOp1 = _Xor(_Xor(Src1, Src2), NegOne);
+    auto XorOp1 = _Not(_Xor(Src1, Src2));
     auto XorOp2 = _Xor(Res, Src1);
 
     OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
 
-    switch (SrcSize) {
-    case 1:
-      AndOp1 = _Bfe(1, 7, AndOp1);
-    break;
-    case 2:
-      AndOp1 = _Bfe(1, 15, AndOp1);
-    break;
-    case 4:
-      AndOp1 = _Bfe(1, 31, AndOp1);
-    break;
-    case 8:
-      AndOp1 = _Bfe(1, 63, AndOp1);
-    break;
-    default:
-      LOGMAN_MSG_A_FMT("Unknown BFE size: {}", SrcSize);
-    break;
-    }
+    AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
   }
 }
