@@ -103,7 +103,7 @@ static void PrintArg(fextl::stringstream *out, IRListView const* IR, OrderedNode
   if (ArgID.IsInvalid()) {
     *out << "%Invalid";
   } else {
-    *out << "%ssa" << ArgID;
+    *out << "%ssa" << std::dec << ArgID;
     if (RAData) {
       auto PhyReg = RAData->GetNodeRegister(ArgID);
 
