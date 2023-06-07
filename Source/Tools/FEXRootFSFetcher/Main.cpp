@@ -306,6 +306,7 @@ namespace DistroQuery {
   struct DistroInfo {
     std::string DistroName;
     std::string DistroVersion;
+    bool RollingRelease;
     bool Unknown;
   };
 
@@ -375,6 +376,9 @@ namespace DistroQuery {
 
     if (FoundCount == 2) {
       Info.Unknown = false;
+      if (Info.DistroName == "arch") {
+        Info.RollingRelease = true;
+      }
       return Info;
     }
     FoundCount = 0;
@@ -397,8 +401,14 @@ namespace DistroQuery {
           ++FoundCount;
         }
         else if (Key == "VERSION_ID") {
+          // Ubuntu provides VERSION_ID
           // Strip the two quotes from the VERSION_ID
           Value = Value.substr(1, Value.size() - 2);
+          Info.DistroVersion = Value;
+          ++FoundCount;
+        }
+        else if (Key == "IMAGE_VERSION") {
+          // Arch provides IMAGE_VERSION
           Info.DistroVersion = Value;
           ++FoundCount;
         }
@@ -407,6 +417,9 @@ namespace DistroQuery {
 
     if (FoundCount == 2) {
       Info.Unknown = false;
+      if (Info.DistroName == "arch") {
+        Info.RollingRelease = true;
+      }
       return Info;
     }
     FoundCount = 0;
@@ -705,7 +718,7 @@ namespace Zenity {
         const auto &Target = Targets[i];
 
         bool ExactMatch = Target.DistroMatch == Info.DistroName &&
-            Target.VersionMatch == Info.DistroVersion;
+            (Info.RollingRelease || Target.VersionMatch == Info.DistroVersion);
         if (ExactMatch) {
           fextl::string Question = fextl::fmt::format("Found exact match for distro '{}'. Do you want to select this image?", Target.DistroName);
           if (ExecWithQuestion(Question)) {
