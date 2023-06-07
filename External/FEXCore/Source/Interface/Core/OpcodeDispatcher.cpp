@@ -1544,7 +1544,7 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
   OrderedNode *Src = LoadGPRRegister(X86State::REG_RAX, 1, 8);
 
   // Clear bits that aren't supposed to be set
-  Src = _And(Src, _Constant(~0b101000));
+  Src = _Andn(Src, _Constant(0b101000));
 
   // Set the bit that is always set here
   Src = _Or(Src, _Constant(0b10));
