@@ -237,7 +237,6 @@ namespace {
 
   void FillCPUConfig() {
     char BlockSize[32]{};
-    char EmulatedCPUCores[32]{};
 
     if (ImGui::BeginTabItem("CPU")) {
       std::optional<fextl::string*> Value{};
@@ -269,15 +268,6 @@ namespace {
       bool Multiblock = Value.has_value() && **Value == "1";
       if (ImGui::Checkbox("Multiblock", &Multiblock)) {
         LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_MULTIBLOCK, Multiblock ? "1" : "0");
-        ConfigChanged = true;
-      }
-
-      Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_THREADS);
-      if (Value.has_value() && !(*Value)->empty()) {
-        strncpy(EmulatedCPUCores, &(*Value)->at(0), 32);
-      }
-      if (ImGui::InputText("Emulated CPU cores:", EmulatedCPUCores, 32, ImGuiInputTextFlags_EnterReturnsTrue)) {
-        LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_THREADS, EmulatedCPUCores);
         ConfigChanged = true;
       }
 
