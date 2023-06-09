@@ -27,6 +27,9 @@ namespace FEXCore::ArchHelpers::Arm64 {
 
   constexpr uint32_t LDAXR_MASK = 0x3F'FF'FC'00;
   constexpr uint32_t LDAXR_INST = 0x08'5F'FC'00;
+  constexpr uint32_t LDAR_INST  = 0x08'DF'FC'00;
+  constexpr uint32_t LDAPR_INST = 0x38'BF'C0'00;
+  constexpr uint32_t STLR_INST  = 0x08'9F'FC'00;
 
   constexpr uint32_t STLXR_MASK = 0x3F'E0'FC'00;
   constexpr uint32_t STLXR_INST = 0x08'00'FC'00;

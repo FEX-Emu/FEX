@@ -2043,8 +2043,8 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
     uint32_t Size = (Instr & 0xC000'0000) >> 30;
     uint32_t AddrReg = (Instr >> 5) & 0x1F;
     uint32_t DataReg = Instr & 0x1F;
-    if ((Instr & 0x3F'FF'FC'00) == 0x08'DF'FC'00 || // LDAR*
-        (Instr & 0x3F'FF'FC'00) == 0x38'BF'C0'00) { // LDAPR*
+    if ((Instr & LDAXR_MASK) == LDAR_INST || // LDAR*
+        (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       if (ParanoidTSO) {
         if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
           // Skip this instruction now
@@ -2068,7 +2068,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         return std::make_pair(true, -4);
       }
     }
-    else if ( (Instr & 0x3F'FF'FC'00) == 0x08'9F'FC'00) { // STLR*
+    else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
       if (ParanoidTSO) {
         if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0)) {
           // Skip this instruction now
