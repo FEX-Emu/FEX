@@ -171,7 +171,7 @@ int main(int argc, char **argv, char **const envp)
 
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
+  FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
   // Ensure the IRLoader runs in 64-bit mode.
   // This is to ensure that static register allocation in the JIT

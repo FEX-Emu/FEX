@@ -99,7 +99,7 @@ namespace {
     }
     ConfigOpen = true;
     ConfigFilename = Filename;
-    LoadedConfig = FEXCore::Config::CreateMainLayer(&Filename);
+    LoadedConfig = FEX::Config::CreateMainLayer(&Filename);
     LoadedConfig->Load();
 
     // Load default options and only overwrite only if the option didn't exist

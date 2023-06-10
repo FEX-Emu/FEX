@@ -7,6 +7,7 @@ $end_info$
 
 #include "ConfigDefines.h"
 #include "Common/ArgumentLoader.h"
+#include "Common/Config.h"
 #include "Common/FEXServerClient.h"
 
 #include <FEXCore/Config/Config.h>
@@ -23,10 +24,10 @@ $end_info$
 
 int main(int argc, char **argv, char **const envp) {
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateGlobalMainLayer());
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
+  FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
+  FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   FEX::ArgLoader::LoadWithoutArguments(argc, argv);
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
+  FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
   // Reload the meta layer

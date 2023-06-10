@@ -55,4 +55,40 @@ namespace FEX::Config {
   fextl::string GetConfigFileLocation(bool Global);
 
   void InitializeConfigs();
+
+  /**
+   * @brief Loads the global FEX config
+   *
+   * @return unique_ptr for that layer
+   */
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer();
+
+  /**
+   * @brief Loads the main application config
+   *
+   * @param File Optional override to load a specific config file in to the main layer
+   * Shouldn't be commonly used
+   *
+   * @return unique_ptr for that layer
+   */
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(fextl::string const *File = nullptr);
+
+  /**
+   * @brief Create an application configuration loader
+   *
+   * @param Filename Application filename component
+   * @param Global Load the global configuration or user accessible file
+   *
+   * @return unique_ptr for that layer
+   */
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateAppLayer(const fextl::string& Filename, FEXCore::Config::LayerType Type);
+
+  /**
+   * @brief iCreate an environment configuration loader
+   *
+   * @param _envp[] The environment array from main
+   *
+   * @return unique_ptr for that layer
+   */
+  fextl::unique_ptr<FEXCore::Config::Layer> CreateEnvironmentLayer(char *const _envp[]);
 }
