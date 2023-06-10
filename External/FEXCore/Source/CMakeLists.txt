@@ -231,7 +231,7 @@ if (ENABLE_JIT_ARM64)
     )
 endif()
 
-set (LIBS fmt::fmt vixl xxhash tiny-json FEXHeaderUtils)
+set (LIBS fmt::fmt vixl xxhash FEXHeaderUtils)
 
 if (NOT MINGW_BUILD)
   list (APPEND LIBS dl)

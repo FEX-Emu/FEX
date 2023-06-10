@@ -1076,7 +1076,7 @@ namespace {
 namespace ConfigSetter {
   void SetRootFSAsDefault(const fextl::string &RootFS) {
     fextl::string Filename = FEXCore::Config::GetConfigFileLocation();
-    auto LoadedConfig = FEXCore::Config::CreateMainLayer(&Filename);
+    auto LoadedConfig = FEX::Config::CreateMainLayer(&Filename);
     LoadedConfig->Load();
     LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_ROOTFS, RootFS);
     FEX::Config::SaveLayerToJSON(Filename, LoadedConfig.get());

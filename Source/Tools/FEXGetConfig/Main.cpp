@@ -1,5 +1,6 @@
 #include "ConfigDefines.h"
 #include "Common/cpp-optparse/OptionParser.h"
+#include "Common/Config.h"
 #include "Common/FEXServerClient.h"
 #include "FEXHeaderUtils/Filesystem.h"
 #include "git_version.h"
@@ -13,10 +14,10 @@
 
 int main(int argc, char **argv, char **envp) {
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateGlobalMainLayer());
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateMainLayer());
+  FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
+  FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   // No FEX arguments passed through command line
-  FEXCore::Config::AddLayer(FEXCore::Config::CreateEnvironmentLayer(envp));
+  FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
   // Load the arguments
@@ -43,16 +44,16 @@ int main(int argc, char **argv, char **envp) {
   if (Options.is_set_by_user("app")) {
     // Load the application config if one was provided
     const auto ProgramName = FHU::Filesystem::GetFilename(Options["app"]);
-    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
-    FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
+    FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+    FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
     auto SteamID = getenv("SteamAppId");
     if (SteamID) {
       // If a SteamID exists then let's search for Steam application configs as well.
       // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
       const auto SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, ProgramName);
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
-      FEXCore::Config::AddLayer(FEXCore::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
+      FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
+      FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
     }
   }
 
