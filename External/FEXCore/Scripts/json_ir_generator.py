@@ -282,6 +282,7 @@ def print_ir_structs(defines):
     output_file.write("\tIROps Op;\n\n")
     output_file.write("\tuint8_t Size;\n")
     output_file.write("\tuint8_t ElementSize;\n")
+    output_file.write("\tuint8_t _pad;\n")
 
     output_file.write("\ttemplate<typename T>\n")
     output_file.write("\tT const* C() const { return reinterpret_cast<T const*>(Data); }\n")
@@ -291,6 +292,7 @@ def print_ir_structs(defines):
     output_file.write("\tOrderedNodeWrapper Args[0];\n")
 
     output_file.write("};\n\n");
+    output_file.write("static_assert(sizeof(IROp_Header) == sizeof(uint32_t), \"IROp_Header should be 32-bits in size\");\n\n");
 
     # Now the user defined types
     output_file.write("// User defined IR Op structs\n")
