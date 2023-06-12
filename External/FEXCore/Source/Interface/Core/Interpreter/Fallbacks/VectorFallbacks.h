@@ -46,7 +46,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
   // Main PCMPXSTRX algorithm body. Allows for reuse with both implicit and explicit length variants.
   static uint32_t MainBody(const __uint128_t& lhs, int valid_lhs, const __uint128_t& rhs, int valid_rhs, uint16_t control) {
     const uint32_t aggregation = PerformAggregation(lhs, valid_lhs, rhs, valid_rhs, control);
-    const uint32_t upper_limit = (16U >> (control & 1)) - 1;
+    const int32_t upper_limit = (16 >> (control & 1)) - 1;
 
     // Bits are arranged as:
     // Bit #:   3    2    1    0

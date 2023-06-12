@@ -1,10 +1,10 @@
 %ifdef CONFIG
 {
   "RegData": {
-      "XMM0": ["0x00060F000F000D01", "0x0000000000070007"],
-      "XMM1": ["0x3111313131311111", "0x0000000000313131"],
+      "XMM0": ["0x00060F000F000D01", "0x0000001010070007"],
+      "XMM1": ["0x3111313131311111", "0x0000001818313131"],
       "XMM2": ["0x005A0041007A0061", "0x55AACCBBFF220000"],
-      "XMM3": ["0x006500200027003F", "0x00210065004F0065"]
+      "XMM3": ["0x0065002000270000", "0x00210065004F0065"]
   }
 }
 %endif
@@ -104,6 +104,16 @@ CompareAndStore 9, 0b00110101
 ; Range unsigned word check (msb, negative masked)
 CompareAndStore 10, 0b01110101
 
+; --- Edge case test (string begins with null character) ---
+movaps xmm2, [rel .data_null]
+movaps xmm3, [rel .data_null + 32]
+
+; Range signed byte check (msb)
+CompareAndStore 11, 0b01000110
+
+; Range signed byte check (lsb)
+CompareAndStore 12, 0b01000110
+
 ; Load all our stored indices and flags for result comparing
 movaps xmm0, [rel .indices]
 movaps xmm1, [rel .flags]
@@ -129,6 +139,17 @@ dq 0xAAAAAAAAAAAAAAAA
 dq 0xBBBBBBBBBBBBBBBB
 
 dq 0x006500200027003F ; "?' e"
+dq 0x00210065004F0065 ; "eOen!"
+dq 0x8888888888888888
+dq 0x9999999999999999
+
+.data_null:
+dq 0x005A0041007A0061 ; "azAZ"
+dq 0x55AACCBBFF220000
+dq 0xAAAAAAAAAAAAAAAA
+dq 0xBBBBBBBBBBBBBBBB
+
+dq 0x0065002000270000 ; "\0' e"
 dq 0x00210065004F0065 ; "eOen!"
 dq 0x8888888888888888
 dq 0x9999999999999999
