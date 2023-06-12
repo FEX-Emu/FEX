@@ -167,6 +167,11 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::CpuStateFrame *Frame, struct robust_list_head *head, size_t len) -> uint64_t {
+      if (len != 12) {
+        // Return invalid if the passed in length doesn't match what's expected.
+        return -EINVAL;
+      }
+
       auto Thread = Frame->Thread;
       // Retain the robust list head but don't give it to the kernel
       // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
@@ -178,7 +183,7 @@ namespace FEX::HLE::x32 {
       auto Thread = Frame->Thread;
       // Give the robust list back to the application
       // Steam specifically checks to make sure the robust list is set
-      *(uint32_t**)head = (uint32_t*)Thread->ThreadManager.robust_list_head;
+      *(uint32_t*)head = (uint32_t)Thread->ThreadManager.robust_list_head;
       *len_ptr = 12;
       return 0;
     });
