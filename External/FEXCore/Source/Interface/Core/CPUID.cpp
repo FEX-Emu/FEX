@@ -395,8 +395,6 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) {
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
   FEXCore::CPUID::FunctionResults Res{};
   uint32_t CoreCount = Cores();
-  // XXX: Enable once the rest of the SSE4.2 instructions are emulated
-  uint32_t SupportsSSE42 = CTX->HostFeatures.SupportsCRC && false ? 1 : 0;
 
   // Hypervisor bit is normally set but some applications have issues with it.
   uint32_t Hypervisor = HideHypervisorBit() ? 0 : 1;
@@ -429,7 +427,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_01h(uint32_t Leaf) {
     (0 << 17) | // Process-context identifiers
     (0 << 18) | // Prefetching from memory mapped device
     (1 << 19) | // SSE4.1
-    (SupportsSSE42 << 20) | // SSE4.2
+    (CTX->HostFeatures.SupportsCRC << 20) | // SSE4.2
     (0 << 21) | // X2APIC
     (1 << 22) | // MOVBE
     (1 << 23) | // POPCNT
