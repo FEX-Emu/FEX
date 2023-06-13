@@ -750,11 +750,9 @@ public:
   void PHADDS(OpcodeArgs);
   void PHSUBS(OpcodeArgs);
 
-  template<uint8_t FenceType>
-  void FenceOp(OpcodeArgs);
-
   void CLWB(OpcodeArgs);
   void CLFLUSHOPT(OpcodeArgs);
+  void LoadFenceOrXRSTOR(OpcodeArgs);
   void MemFenceOrXSAVEOPT(OpcodeArgs);
   void StoreFenceOrCLFlush(OpcodeArgs);
   void CLZeroOp(OpcodeArgs);
@@ -960,6 +958,15 @@ private:
   void SaveSSEState(OrderedNode *MemBase);
   void SaveMXCSRState(OrderedNode *MemBase);
   void SaveAVXState(OrderedNode *MemBase);
+
+  void XRstorOpImpl(OpcodeArgs);
+  void RestoreX87State(OrderedNode *MemBase);
+  void RestoreSSEState(OrderedNode *MemBase);
+  void RestoreMXCSRState(OrderedNode *MXCSR);
+  void RestoreAVXState(OrderedNode *MemBase);
+  void DefaultX87State(OpcodeArgs);
+  void DefaultSSEState();
+  void DefaultAVXState();
 
   OrderedNode *GetMXCSR();
 

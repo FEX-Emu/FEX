@@ -2665,12 +2665,87 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1, false);
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
-  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
+  RestoreX87State(Mem);
+  RestoreSSEState(Mem);
+}
+
+void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
+  const auto XSaveBase = [this, Op] {
+    OrderedNode *Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
+    return AppendSegmentOffset(Mem, Op->Flags);
+  };
+
+  // Set up base address for the XSAVE region to restore from, and also read the
+  // XSTATE_BV bit flags out of the XSTATE header.
+  OrderedNode *Base = XSaveBase();
+  OrderedNode *Mask = _LoadMem(GPRClass, 8, _Add(Base, _Constant(512)), 8);
+
+  // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
+  // otherwise, if not set, then we need to set the relevant data the bit corresponds to
+  // to it's defined initial configuration.
+  const auto RestoreIfFlagSetOrDefault = [&](uint32_t BitIndex, auto restore_fn, auto default_fn, uint32_t FieldSize = 1){
+    OrderedNode *BitFlag = _Bfe(FieldSize, BitIndex, Mask);
+    auto CondJump = _CondJump(BitFlag, {COND_NEQ});
+
+    auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
+    SetTrueJumpTarget(CondJump, RestoreBlock);
+    SetCurrentCodeBlock(RestoreBlock);
+    {
+      restore_fn();
+    }
+    auto RestoreExitJump = _Jump();
+    auto DefaultBlock = CreateNewCodeBlockAfter(RestoreBlock);
+    auto ExitBlock = CreateNewCodeBlockAfter(DefaultBlock);
+    SetJumpTarget(RestoreExitJump, ExitBlock);
+    SetFalseJumpTarget(CondJump, DefaultBlock);
+    SetCurrentCodeBlock(DefaultBlock);
+    {
+      default_fn();
+    }
+    auto DefaultExitJump = _Jump();
+    SetJumpTarget(DefaultExitJump, ExitBlock);
+    SetCurrentCodeBlock(ExitBlock);
+  };
+
+  // x87
+  {
+    RestoreIfFlagSetOrDefault(0,
+                              [this, Base] { RestoreX87State(Base); },
+                              [this, Op] { DefaultX87State(Op); });
+  }
+  // SSE
+  {
+    RestoreIfFlagSetOrDefault(1,
+                              [this, Base] { RestoreSSEState(Base); },
+                              [this] { DefaultSSEState(); });
+  }
+  // AVX
+  if (CTX->HostFeatures.SupportsAVX)
+  {
+    RestoreIfFlagSetOrDefault(2,
+                              [this, Base] { RestoreAVXState(Base); },
+                              [this] { DefaultAVXState(); });
+  }
+
+  {
+    // We need to restore the MXCSR if either SSE or AVX are requested to be saved
+    RestoreIfFlagSetOrDefault(1,
+                              [this, Base] {
+                                OrderedNode *MXCSRLocation = _Add(Base, _Constant(24));
+                                OrderedNode *MXCSR = _LoadMem(GPRClass, 4, MXCSRLocation, 4);
+                                RestoreMXCSRState(MXCSR);
+                              },
+                              [] { /* Intentionally do nothing*/ }, 2);
+  }
+}
+
+void OpDispatchBuilder::RestoreX87State(OrderedNode *MemBase) {
+  auto NewFCW = _LoadMem(GPRClass, 2, MemBase, 2);
   _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   {
-    OrderedNode *MemLocation = _Add(Mem, _Constant(2));
+    OrderedNode *MemLocation = _Add(MemBase, _Constant(2));
     auto NewFSW = _LoadMem(GPRClass, 2, MemLocation, 2);
 
     // Strip out the FSW information
@@ -2690,24 +2765,76 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 
   {
     // FTW
-    OrderedNode *MemLocation = _Add(Mem, _Constant(4));
+    OrderedNode *MemLocation = _Add(MemBase, _Constant(4));
     auto NewFTW = _LoadMem(GPRClass, 2, MemLocation, 2);
     _StoreContext(2, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, FTW));
   }
 
-  for (unsigned i = 0; i < 8; ++i) {
-    OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 32));
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
+    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 32));
     auto MMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     _StoreContext(16, FPRClass, MMReg, offsetof(FEXCore::Core::CPUState, mm[i]));
   }
+}
 
+void OpDispatchBuilder::RestoreSSEState(OrderedNode *MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (unsigned i = 0; i < NumRegs; ++i) {
-    OrderedNode *MemLocation = _Add(Mem, _Constant(i * 16 + 160));
-    auto XMMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
+  for (uint32_t i = 0; i < NumRegs; ++i) {
+    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 160));
+    OrderedNode *XMMReg = _LoadMem(FPRClass, 16, MemLocation, 16);
     StoreXMMRegister(i, XMMReg);
   }
+}
+
+void OpDispatchBuilder::RestoreMXCSRState(OrderedNode *MXCSR) {
+  // We only support the rounding mode and FTZ bit being set
+  OrderedNode *RoundingMode = _Bfe(4, 3, 13, MXCSR);
+  _SetRoundingMode(RoundingMode);
+}
+
+void OpDispatchBuilder::RestoreAVXState(OrderedNode *MemBase) {
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  for (uint32_t i = 0; i < NumRegs; ++i) {
+    OrderedNode *XMMReg = LoadXMMRegister(i);
+    OrderedNode *MemLocation = _Add(MemBase, _Constant(i * 16 + 576));
+    OrderedNode *YMMHReg = _LoadMem(FPRClass, 16, MemLocation, 16);
+    OrderedNode *YMM = _VInsElement(32, 16, 1, 0, XMMReg, YMMHReg);
+    StoreXMMRegister(i, YMM);
+  }
+}
+
+void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
+  // We can piggy-back on FNINIT's implementation, since
+  // it performs the same behavior as required by XRSTOR for resetting flags
+  FNINIT(Op);
+
+  // On top of resetting the flags to a default state, we also need to clear
+  // all of the ST0-7/MM0-7 registers to zero.
+  OrderedNode *ZeroVector = _VectorZero(Core::CPUState::MM_REG_SIZE);
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
+    _StoreContext(16, FPRClass, ZeroVector, offsetof(FEXCore::Core::CPUState, mm[i]));
+  }
+}
+
+void OpDispatchBuilder::DefaultSSEState() {
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  OrderedNode *ZeroVector = _VectorZero(Core::CPUState::XMM_SSE_REG_SIZE);
+  for (uint32_t i = 0; i < NumRegs; ++i) {
+    StoreXMMRegister(i, ZeroVector);
+  }
+}
+
+void OpDispatchBuilder::DefaultAVXState() {
+  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+
+  for (uint32_t i = 0; i < NumRegs; i++) {
+      OrderedNode* Reg = LoadXMMRegister(i);
+      OrderedNode* Dst = _VMov(16, Reg);
+      StoreXMMRegister(i, Dst);
+    }
 }
 
 OrderedNode* OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
@@ -2775,9 +2902,7 @@ void OpDispatchBuilder::UCOMISxOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
-  // We only support the rounding mode and FTZ bit being set
-  OrderedNode *RoundingMode = _Bfe(4, 3, 13, Dest);
-  _SetRoundingMode(RoundingMode);
+  RestoreMXCSRState(Dest);
 }
 
 void OpDispatchBuilder::STMXCSR(OpcodeArgs) {

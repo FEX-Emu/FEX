@@ -5477,11 +5477,6 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, 1);
 }
 
-template<uint8_t FenceType>
-void OpDispatchBuilder::FenceOp(OpcodeArgs) {
-  _Fence({FenceType});
-}
-
 void OpDispatchBuilder::CLWB(OpcodeArgs) {
   OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
   DestMem = AppendSegmentOffset(DestMem, Op->Flags);
@@ -5492,6 +5487,15 @@ void OpDispatchBuilder::CLFLUSHOPT(OpcodeArgs) {
   OrderedNode *DestMem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1, false);
   DestMem = AppendSegmentOffset(DestMem, Op->Flags);
   _CacheLineClear(DestMem, false);
+}
+
+void OpDispatchBuilder::LoadFenceOrXRSTOR(OpcodeArgs) {
+  // 0xE8 signifies LFENCE
+  if (Op->ModRM == 0xE8) {
+    _Fence(IR::Fence_Load);
+  } else {
+    XRstorOpImpl(Op);
+  }
 }
 
 void OpDispatchBuilder::MemFenceOrXSAVEOPT(OpcodeArgs) {
@@ -6714,9 +6718,9 @@ constexpr uint16_t PF_F2 = 3;
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 2), 1, &OpDispatchBuilder::LDMXCSR},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 3), 1, &OpDispatchBuilder::STMXCSR},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 4), 1, &OpDispatchBuilder::XSaveOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::FenceOp<FEXCore::IR::Fence_Load.Val>},      //LFENCE
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::MemFenceOrXSAVEOPT}, //MFENCE
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush},     //SFENCE
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::LoadFenceOrXRSTOR},   // LFENCE (or XRSTOR)
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::MemFenceOrXSAVEOPT},  // MFENCE (or XSAVEOPT)
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush}, // SFENCE (or CLFLUSH)
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
