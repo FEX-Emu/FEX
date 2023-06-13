@@ -73,6 +73,24 @@ constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitte
   {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17}
 }};
 
+/**
+ * @brief These are the intersection indexes for RA64Pair to RA64.
+ *
+ * Since RA64 sticks a register right in the middle of the allocation, this intersection offsets by one half way through.
+ * Keep these intersection indexes nearby the definitions so they can follow the previous definitions.
+ */
+constexpr std::array<std::pair<uint8_t, uint8_t>, RA64Pair.size()> RA64Pair_Intersections = {{
+  {0, 1},
+  {2, 3},
+  {4, 5},
+  {6, 7},
+
+  // Registers only available on 32-bit
+  {9, 10},
+  {11, 12},
+  {13, 14}
+}};
+
 // All are caller saved
 constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
   FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17,
