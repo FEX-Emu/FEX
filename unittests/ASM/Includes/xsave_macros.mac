@@ -1,0 +1,215 @@
+;
+; Various macros used to set up data for the XSAVE tests
+;
+; Define IS_AVX before including this file to enable the
+; use of AVX instructions to handle the upper lanes.
+;
+
+%ifndef XSAVE_MACROS_INC
+%define XSAVE_MACROS_INC
+
+; Initializes the MMX registers to various values using a label to a memory region
+%macro set_up_mmx_state 1
+  movq mm0, [rel %1 + 32 * 0]
+  movq mm1, [rel %1 + 32 * 1]
+  movq mm2, [rel %1 + 32 * 2]
+  movq mm3, [rel %1 + 32 * 3]
+  movq mm4, [rel %1 + 32 * 4]
+  movq mm5, [rel %1 + 32 * 5]
+  movq mm6, [rel %1 + 32 * 6]
+  movq mm7, [rel %1 + 32 * 7]
+%endmacro
+
+; Sets up the XMM registers using a given label to a memory region.
+%macro set_up_xmm_state 1
+  %macro move_to_xmm 2
+    %ifdef IS_AVX
+      vmovaps ymm%1, [rel %2 + 32 * %1]
+    %else
+      movaps xmm%1,  [rel %2 + 32 * %1]
+    %endif
+  %endmacro
+
+  move_to_xmm 0,  %1
+  move_to_xmm 1,  %1
+  move_to_xmm 2,  %1
+  move_to_xmm 3,  %1
+  move_to_xmm 4,  %1
+  move_to_xmm 5,  %1
+  move_to_xmm 6,  %1
+  move_to_xmm 7,  %1
+  move_to_xmm 8,  %1
+  move_to_xmm 9,  %1
+  move_to_xmm 10, %1
+  move_to_xmm 11, %1
+  move_to_xmm 12, %1
+  move_to_xmm 13, %1
+  move_to_xmm 14, %1
+  move_to_xmm 15, %1
+
+  %undef move_to_xmm
+%endmacro
+
+; Overwrites the available slots within the legacy FXSAVE region
+;
+; overwrite_xsave_area .xsave_area
+;
+; Clobbers RAX
+;
+%macro overwrite_fxsave_slots 0
+  ; Overwrite the three 16byte "available" slots
+  mov rax, 0x1111111111111111
+  mov qword [rsp + 464 + 8 * 0], rax
+  mov rax, 0x2222222222222222
+  mov qword [rsp + 464 + 8 * 1], rax
+  mov rax, 0x3333333333333333
+  mov qword [rsp + 464 + 8 * 2], rax
+  mov rax, 0x4444444444444444
+  mov qword [rsp + 464 + 8 * 3], rax
+  mov rax, 0x5555555555555555
+  mov qword [rsp + 464 + 8 * 4], rax
+  mov rax, 0x6666666666666666
+  mov qword [rsp + 464 + 8 * 5], rax
+%endmacro
+
+; Overwrites all MM and XMM registers with -1
+;
+; Typically used right before an XRSTOR to verify
+; data is restored properly
+;
+; Clobbers RAX
+;
+%macro corrupt_mmx_and_xmm_registers 0
+  ; Corrupt MMX And XMM state
+  mov rax, -1
+  movq mm0, rax
+  movq mm1, rax
+  movq mm2, rax
+  movq mm3, rax
+  movq mm4, rax
+  movq mm5, rax
+  movq mm6, rax
+  movq mm7, rax
+
+  ; Setup XMM state
+  movq xmm0, rax
+  movq xmm1, rax
+  movq xmm2, rax
+  movq xmm3, rax
+  movq xmm4, rax
+  movq xmm5, rax
+  movq xmm6, rax
+  movq xmm7, rax
+  movq xmm8, rax
+  movq xmm9, rax
+  movq xmm10, rax
+  movq xmm11, rax
+  movq xmm12, rax
+  movq xmm13, rax
+  movq xmm14, rax
+  movq xmm15, rax
+%endmacro
+
+; At the end of the legacy FXSAVE area, there's three 16-byte regions
+; available for general purpose use. We re-load these to ensure values
+; that we put in here via overwrite_xsave_area aren't clobbered.
+;
+; Clobbers: RAX, RBX, RCX, RDX, RSI, RDI
+;
+%macro load_fxsave_slots 0
+  ; Load the three 16 bytes of "available" slots to make sure it wasn't overwritten
+  ; Reserved can be overwritten regardless
+  mov rax, qword [rsp + 464 + 8 * 0]
+  mov rbx, qword [rsp + 464 + 8 * 1]
+  mov rcx, qword [rsp + 464 + 8 * 2]
+  mov rdx, qword [rsp + 464 + 8 * 3]
+  mov rsi, qword [rsp + 464 + 8 * 4]
+  mov rdi, qword [rsp + 464 + 8 * 5]
+%endmacro
+
+; Defines a region of test data to use
+%macro define_xmm_data_section 0
+align 32
+.xmm_data:
+  dq 0x1112131415161718
+  dq 0xABFDEC3402932039
+  dq 0xA1A2A3A4A5A6A7AA
+  dq 0xABFD392482039840
+
+  dq 0x2122232425262728
+  dq 0xDEFCA93847392992
+  dq 0x4142434445464748
+  dq 0x3987432929293847
+
+  dq 0x3132333435363738
+  dq 0xEADC3284ADCE9339
+  dq 0x6162636465666768
+  dq 0xACDEFACDEFACDEFA
+
+  dq 0x4142434445464748
+  dq 0x3987432929293847
+  dq 0x3132333435363738
+  dq 0xEADC3284ADCE9339
+
+  dq 0x5152535455565758
+  dq 0x3764583402983799
+  dq 0x7172737475767778
+  dq 0x3459238471238023
+
+  dq 0x6162636465666768
+  dq 0xACDEFACDEFACDEFA
+  dq 0xA1AAA3A4A5A6A7A8
+  dq 0x3784769228479192
+
+  dq 0x7172737475767778
+  dq 0x3459238471238023
+  dq 0x6162636465666768
+  dq 0xACDEFACDEFACDEFA
+
+  dq 0x8182838485868788
+  dq 0x9347239480289299
+  dq 0x6162636465666768
+  dq 0xACDEFACDEFACDEFA
+
+  dq 0xCCC2C3C4C5C6C7C8
+  dq 0x3949232903428479
+  dq 0xD1D2D3D4DDD6D7D8
+  dq 0x3674823989ADEF73
+
+  dq 0xA1AAA3A4A5A6A7A8
+  dq 0x3784769228479192
+  dq 0xB1B2B3B4B5B6BBB8
+  dq 0xADEADE3894353499
+
+  dq 0xF1F2FFF4F5F6F7F8
+  dq 0x758734629799389A
+  dq 0xD1D2D3D4DDD6D7D8
+  dq 0x3674823989ADEF73
+
+  dq 0xE1E2E3EEE5E6E7E8
+  dq 0x3756438328472389
+  dq 0xB1B2B3B4B5B6BBB8
+  dq 0xADEADE3894353499
+
+  dq 0xD1D2D3D4DDD6D7D8
+  dq 0x3674823989ADEF73
+  dq 0xA1AAA3A4A5A6A7A8
+  dq 0x3784769228479192
+
+  dq 0xC1C2C3C4C5CCC7C8
+  dq 0xABCDEF3894335820
+  dq 0x6162636465666768
+  dq 0xACDEFACDEFACDEFA
+
+  dq 0xB1B2B3B4B5B6BBB8
+  dq 0xADEADE3894353499
+  dq 0xE1E2E3EEE5E6E7E8
+  dq 0x3756438328472389
+
+  dq 0xA1A2A3A4A5A6A7AA
+  dq 0xABFD392482039840
+  dq 0xB1B2B3B4B5B6BBB8
+  dq 0xADEADE3894353499
+%endmacro
+
+%endif

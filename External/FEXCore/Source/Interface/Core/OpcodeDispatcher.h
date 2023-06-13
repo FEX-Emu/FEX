@@ -699,6 +699,8 @@ public:
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
 
+  void XSaveOp(OpcodeArgs);
+
   void PAlignrOp(OpcodeArgs);
   template<size_t ElementSize>
   void UCOMISxOp(OpcodeArgs);
@@ -748,11 +750,9 @@ public:
   void PHADDS(OpcodeArgs);
   void PHSUBS(OpcodeArgs);
 
-  template<uint8_t FenceType>
-  void FenceOp(OpcodeArgs);
-
   void CLWB(OpcodeArgs);
   void CLFLUSHOPT(OpcodeArgs);
+  void LoadFenceOrXRSTOR(OpcodeArgs);
   void MemFenceOrXSAVEOPT(OpcodeArgs);
   void StoreFenceOrCLFlush(OpcodeArgs);
   void CLZeroOp(OpcodeArgs);
@@ -952,6 +952,23 @@ private:
   OrderedNode* Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 
   OrderedNode* Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen);
+
+  void XSaveOpImpl(OpcodeArgs);
+  void SaveX87State(OpcodeArgs, OrderedNode *MemBase);
+  void SaveSSEState(OrderedNode *MemBase);
+  void SaveMXCSRState(OrderedNode *MemBase);
+  void SaveAVXState(OrderedNode *MemBase);
+
+  void XRstorOpImpl(OpcodeArgs);
+  void RestoreX87State(OrderedNode *MemBase);
+  void RestoreSSEState(OrderedNode *MemBase);
+  void RestoreMXCSRState(OrderedNode *MXCSR);
+  void RestoreAVXState(OrderedNode *MemBase);
+  void DefaultX87State(OpcodeArgs);
+  void DefaultSSEState();
+  void DefaultAVXState();
+
+  OrderedNode *GetMXCSR();
 
   #undef OpcodeArgs
 
