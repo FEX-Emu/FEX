@@ -132,7 +132,7 @@ DEF_OP(LoadRegister) {
     [[maybe_unused]] const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
     switch (OpSize) {
       case 1:
@@ -166,7 +166,7 @@ DEF_OP(LoadRegister) {
     [[maybe_unused]] const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(HostSupportsSVE, "Unsupported code path!");
-    LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
     const auto host = GetVReg(Node);
 
@@ -214,7 +214,7 @@ DEF_OP(StoreRegister) {
     [[maybe_unused]] const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
     const auto Src = GetReg(Op->Value.ID());
 
@@ -248,7 +248,7 @@ DEF_OP(StoreRegister) {
     [[maybe_unused]] const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(HostSupportsSVE, "Unsupported code path!");
-    LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "regId out of range");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
 
     const auto host = GetVReg(Op->Value.ID());
 
@@ -296,9 +296,9 @@ DEF_OP(LoadRegisterSRA) {
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.gregs[0])) / Core::CPUState::GPR_REG_SIZE;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
-    const auto reg = SRA64[regId];
+    const auto reg = StaticRegisters[regId];
 
     switch (OpSize) {
       case 1:
@@ -334,9 +334,9 @@ DEF_OP(LoadRegisterSRA) {
                                          : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
-    LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
-    const auto guest = SRAFPR[regId];
+    const auto guest = StaticFPRegisters[regId];
     const auto host = GetVReg(Node);
 
     if (HostSupportsSVE) {
@@ -484,9 +484,9 @@ DEF_OP(StoreRegisterSRA) {
     const auto regId = (Op->Offset / Core::CPUState::GPR_REG_SIZE) - 1;
     const auto regOffs = Op->Offset & 7;
 
-    LOGMAN_THROW_A_FMT(regId < SRA64.size(), "out of range regId");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
-    const auto reg = SRA64[regId];
+    const auto reg = StaticRegisters[regId];
     const auto Src = GetReg(Op->Value.ID());
 
     switch (OpSize) {
@@ -520,9 +520,9 @@ DEF_OP(StoreRegisterSRA) {
                                          : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
-    LOGMAN_THROW_A_FMT(regId < SRAFPR.size(), "regId out of range");
+    LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
 
-    const auto guest = SRAFPR[regId];
+    const auto guest = StaticFPRegisters[regId];
     const auto host = GetVReg(Op->Value.ID());
 
     if (HostSupportsSVE) {

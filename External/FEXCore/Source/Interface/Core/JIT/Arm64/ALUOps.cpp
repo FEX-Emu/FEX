@@ -477,9 +477,9 @@ DEF_OP(PDep) {
   const auto IndexReg      = TMP4.R();
   const auto ZeroReg       = ARMEmitter::Reg::zr;
 
-  const auto InputReg = SRA64[0];
-  const auto MaskReg  = SRA64[1];
-  const auto DestReg  = SRA64[2];
+  const auto InputReg = StaticRegisters[0];
+  const auto MaskReg  = StaticRegisters[1];
+  const auto DestReg  = StaticRegisters[2];
 
   const auto SpillCode = 1U << InputReg.Idx() |
                          1U << MaskReg.Idx() |
