@@ -587,17 +587,16 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::In
 
   RAPass->AllocateRegisterSet(RegisterClasses);
 
-  RAPass->AddRegisters(FEXCore::IR::GPRClass, ConfiguredGPRs);
-  RAPass->AddRegisters(FEXCore::IR::GPRFixedClass, ConfiguredSRAGPRs);
-  RAPass->AddRegisters(FEXCore::IR::FPRClass, ConfiguredFPRs);
-  RAPass->AddRegisters(FEXCore::IR::FPRFixedClass, ConfiguredSRAFPRs);
-  RAPass->AddRegisters(FEXCore::IR::GPRPairClass, ConfiguredGPRPairs);
+  RAPass->AddRegisters(FEXCore::IR::GPRClass, GeneralRegisters.size());
+  RAPass->AddRegisters(FEXCore::IR::GPRFixedClass, StaticRegisters.size());
+  RAPass->AddRegisters(FEXCore::IR::FPRClass, GeneralFPRegisters.size());
+  RAPass->AddRegisters(FEXCore::IR::FPRFixedClass, StaticFPRegisters.size());
+  RAPass->AddRegisters(FEXCore::IR::GPRPairClass, GeneralPairRegisters.size());
   RAPass->AddRegisters(FEXCore::IR::ComplexClass, 1);
 
-  for (uint32_t i = 0; i < ConfiguredGPRPairs; ++i) {
-    const auto Intersect = RA64Pair_Intersections[i];
-    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, Intersect.first,  FEXCore::IR::GPRPairClass, i);
-    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, Intersect.second, FEXCore::IR::GPRPairClass, i);
+  for (uint32_t i = 0; i < GeneralPairRegisters.size(); ++i) {
+    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2,     FEXCore::IR::GPRPairClass, i);
+    RAPass->AddRegisterConflict(FEXCore::IR::GPRClass, i * 2 + 1, FEXCore::IR::GPRPairClass, i);
   }
 
   {

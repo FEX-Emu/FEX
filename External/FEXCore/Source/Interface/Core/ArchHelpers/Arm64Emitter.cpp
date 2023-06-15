@@ -20,6 +20,131 @@
 #include <utility>
 
 namespace FEXCore::CPU {
+// Register x18 is unused in the current configuration.
+// This is due to it being a platform register on wine platforms.
+// TODO: Allow x18 register allocation in the future to gain one more register.
+
+namespace x64 {
+  // All but x19 and x29 are caller saved
+  constexpr std::array<FEXCore::ARMEmitter::Register, 16> SRA = {
+    FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
+    FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7,
+    FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9,
+    FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
+    FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13,
+    FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
+    FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
+    FEXCore::ARMEmitter::Reg::r19, FEXCore::ARMEmitter::Reg::r29
+  };
+
+  constexpr std::array<FEXCore::ARMEmitter::Register, 9> RA = {
+    // All these callee saved
+    FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21,
+    FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
+    FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25,
+    FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
+    FEXCore::ARMEmitter::Reg::r30,
+  };
+
+  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 4> RAPair = {{
+    {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
+    {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
+    {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
+    {FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27},
+  }};
+
+  // All are caller saved
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 16> SRAFPR = {
+    FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17,
+    FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
+    FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21,
+    FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+    FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25,
+    FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
+    FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29,
+    FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
+  };
+
+  //  v8..v15 = (lower 64bits) Callee saved
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 12> RAFPR = {
+    // v0 ~ v3 are used as temps.
+    // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
+    // FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
+
+    FEXCore::ARMEmitter::VReg::v4, FEXCore::ARMEmitter::VReg::v5,
+    FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
+    FEXCore::ARMEmitter::VReg::v8, FEXCore::ARMEmitter::VReg::v9,
+    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11,
+    FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
+    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+  };
+}
+
+namespace x32 {
+  // All but x19 and x29 are caller saved
+  constexpr std::array<FEXCore::ARMEmitter::Register, 8> SRA = {
+    FEXCore::ARMEmitter::Reg::r4, FEXCore::ARMEmitter::Reg::r5,
+    FEXCore::ARMEmitter::Reg::r6, FEXCore::ARMEmitter::Reg::r7,
+    FEXCore::ARMEmitter::Reg::r8, FEXCore::ARMEmitter::Reg::r9,
+    FEXCore::ARMEmitter::Reg::r10, FEXCore::ARMEmitter::Reg::r11,
+  };
+
+  constexpr std::array<FEXCore::ARMEmitter::Register, 17> RA = {
+    // All these callee saved
+    FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21,
+    FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23,
+    FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25,
+    FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27,
+
+    // Registers only available on 32-bit
+    // All these are caller saved (except for r19).
+    FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13,
+    FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15,
+    FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17,
+    FEXCore::ARMEmitter::Reg::r29, FEXCore::ARMEmitter::Reg::r30,
+
+    FEXCore::ARMEmitter::Reg::r19,
+  };
+
+  constexpr std::array<std::pair<FEXCore::ARMEmitter::Register, FEXCore::ARMEmitter::Register>, 8> RAPair = {{
+    {FEXCore::ARMEmitter::Reg::r20, FEXCore::ARMEmitter::Reg::r21},
+    {FEXCore::ARMEmitter::Reg::r22, FEXCore::ARMEmitter::Reg::r23},
+    {FEXCore::ARMEmitter::Reg::r24, FEXCore::ARMEmitter::Reg::r25},
+    {FEXCore::ARMEmitter::Reg::r26, FEXCore::ARMEmitter::Reg::r27},
+
+    {FEXCore::ARMEmitter::Reg::r12, FEXCore::ARMEmitter::Reg::r13},
+    {FEXCore::ARMEmitter::Reg::r14, FEXCore::ARMEmitter::Reg::r15},
+    {FEXCore::ARMEmitter::Reg::r16, FEXCore::ARMEmitter::Reg::r17},
+    {FEXCore::ARMEmitter::Reg::r29, FEXCore::ARMEmitter::Reg::r30},
+  }};
+
+  // All are caller saved
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 8> SRAFPR = {
+    FEXCore::ARMEmitter::VReg::v16, FEXCore::ARMEmitter::VReg::v17,
+    FEXCore::ARMEmitter::VReg::v18, FEXCore::ARMEmitter::VReg::v19,
+    FEXCore::ARMEmitter::VReg::v20, FEXCore::ARMEmitter::VReg::v21,
+    FEXCore::ARMEmitter::VReg::v22, FEXCore::ARMEmitter::VReg::v23,
+  };
+
+  //  v8..v15 = (lower 64bits) Callee saved
+  constexpr std::array<FEXCore::ARMEmitter::VRegister, 20> RAFPR = {
+    // v0 ~ v3 are used as temps.
+    // FEXCore::ARMEmitter::VReg::v0, FEXCore::ARMEmitter::VReg::v1,
+    // FEXCore::ARMEmitter::VReg::v2, FEXCore::ARMEmitter::VReg::v3,
+
+    FEXCore::ARMEmitter::VReg::v4, FEXCore::ARMEmitter::VReg::v5,
+    FEXCore::ARMEmitter::VReg::v6, FEXCore::ARMEmitter::VReg::v7,
+    FEXCore::ARMEmitter::VReg::v8, FEXCore::ARMEmitter::VReg::v9,
+    FEXCore::ARMEmitter::VReg::v10, FEXCore::ARMEmitter::VReg::v11,
+    FEXCore::ARMEmitter::VReg::v12, FEXCore::ARMEmitter::VReg::v13,
+    FEXCore::ARMEmitter::VReg::v14, FEXCore::ARMEmitter::VReg::v15,
+
+    FEXCore::ARMEmitter::VReg::v24, FEXCore::ARMEmitter::VReg::v25,
+    FEXCore::ARMEmitter::VReg::v26, FEXCore::ARMEmitter::VReg::v27,
+    FEXCore::ARMEmitter::VReg::v28, FEXCore::ARMEmitter::VReg::v29,
+    FEXCore::ARMEmitter::VReg::v30, FEXCore::ARMEmitter::VReg::v31
+  };
+}
 
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
 Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
@@ -29,22 +154,21 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
 
   // Number of register available is dependent on what operating mode the proccess is in.
   if (EmitterCTX->Config.Is64BitMode()) {
-    ConfiguredGPRs = NumGPRs64;
-    ConfiguredSRAGPRs = NumSRAGPRs64;
-    ConfiguredGPRPairs = NumGPRPairs64;
-    ConfiguredFPRs = NumFPRs64;
-    ConfiguredSRAFPRs = NumSRAFPRs64;
-    ConfiguredDynamicGPRs = NumGPRs64 - NumGPRs64; // Will be zero, just to be consistent with 32-bit side
-    ConfiguredDynamicRegisterBase = nullptr;
+    StaticRegisters = x64::SRA;
+    GeneralRegisters = x64::RA;
+    GeneralPairRegisters = x64::RAPair;
+    StaticFPRegisters = x64::SRAFPR;
+    GeneralFPRegisters = x64::RAFPR;
   }
   else {
-    ConfiguredGPRs = NumGPRs32;
-    ConfiguredSRAGPRs = NumSRAGPRs32;
-    ConfiguredGPRPairs = NumGPRPairs32;
-    ConfiguredFPRs = NumFPRs32;
-    ConfiguredSRAFPRs = NumSRAFPRs32;
-    ConfiguredDynamicGPRs = NumGPRs32 - NumGPRs64; // Will be 8
-    ConfiguredDynamicRegisterBase = &RA64[9];
+    ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 8, 8);
+
+    StaticRegisters = x32::SRA;
+    GeneralRegisters = x32::RA;
+    GeneralPairRegisters = x32::RAPair;
+
+    StaticFPRegisters = x32::SRAFPR;
+    GeneralFPRegisters = x32::RAFPR;
   }
 }
 
@@ -224,9 +348,9 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
     return;
   }
 
-  for (size_t i = 0; i < ConfiguredSRAGPRs; i+=2) {
-    auto Reg1 = SRA64[i];
-    auto Reg2 = SRA64[i+1];
+  for (size_t i = 0; i < StaticRegisters.size(); i+=2) {
+    auto Reg1 = StaticRegisters[i];
+    auto Reg2 = StaticRegisters[i+1];
     if (((1U << Reg1.Idx()) & GPRSpillMask) &&
         ((1U << Reg2.Idx()) & GPRSpillMask)) {
       stp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
@@ -241,8 +365,8 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
 
   if (FPRs) {
     if (EmitterCTX->HostFeatures.SupportsAVX) {
-      for (size_t i = 0; i < ConfiguredSRAFPRs; i++) {
-        const auto Reg = SRAFPR[i];
+      for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
+        const auto Reg = StaticFPRegisters[i];
 
         if (((1U << Reg.Idx()) & FPRSpillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
@@ -254,18 +378,18 @@ void Arm64Emitter::SpillStaticRegs(FEXCore::ARMEmitter::Register TmpReg, bool FP
         // Optimize the common case where we can spill four registers per instruction
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
-        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 4) {
-          const auto Reg1 = SRAFPR[i];
-          const auto Reg2 = SRAFPR[i + 1];
-          const auto Reg3 = SRAFPR[i + 2];
-          const auto Reg4 = SRAFPR[i + 3];
+        for (size_t i = 0; i < StaticFPRegisters.size(); i += 4) {
+          const auto Reg1 = StaticFPRegisters[i];
+          const auto Reg2 = StaticFPRegisters[i + 1];
+          const auto Reg3 = StaticFPRegisters[i + 2];
+          const auto Reg4 = StaticFPRegisters[i + 3];
           st1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
         }
       }
       else {
-        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 2) {
-          const auto Reg1 = SRAFPR[i];
-          const auto Reg2 = SRAFPR[i + 1];
+        for (size_t i = 0; i < StaticFPRegisters.size(); i += 2) {
+          const auto Reg1 = StaticFPRegisters[i];
+          const auto Reg2 = StaticFPRegisters[i + 1];
 
           if (((1U << Reg1.Idx()) & FPRSpillMask) &&
               ((1U << Reg2.Idx()) & FPRSpillMask)) {
@@ -297,8 +421,8 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
       ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
       ptrue<ARMEmitter::SubRegSize::i8Bit>(PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
 
-      for (size_t i = 0; i < ConfiguredSRAFPRs; i++) {
-        const auto Reg = SRAFPR[i];
+      for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
+        const auto Reg = StaticFPRegisters[i];
         if (((1U << Reg.Idx()) & FPRFillMask) != 0) {
           mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
           ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B.Zeroing(), STATE.R(), TMP4.R());
@@ -308,22 +432,22 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
       if (GPRFillMask && FPRFillMask == ~0U) {
         // Optimize the common case where we can fill four registers per instruction.
         // Use one of the filling static registers before we fill it.
-        auto TmpReg = SRA64[FindFirstSetBit(GPRFillMask)];
+        auto TmpReg = StaticRegisters[FindFirstSetBit(GPRFillMask)];
 
         // Load the sse offset in to the temporary register
         add(ARMEmitter::Size::i64Bit, TmpReg, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.xmm.sse.data[0][0]));
-        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 4) {
-          const auto Reg1 = SRAFPR[i];
-          const auto Reg2 = SRAFPR[i + 1];
-          const auto Reg3 = SRAFPR[i + 2];
-          const auto Reg4 = SRAFPR[i + 3];
+        for (size_t i = 0; i < StaticFPRegisters.size(); i += 4) {
+          const auto Reg1 = StaticFPRegisters[i];
+          const auto Reg2 = StaticFPRegisters[i + 1];
+          const auto Reg3 = StaticFPRegisters[i + 2];
+          const auto Reg4 = StaticFPRegisters[i + 3];
           ld1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
         }
       }
       else {
-        for (size_t i = 0; i < ConfiguredSRAFPRs; i += 2) {
-          const auto Reg1 = SRAFPR[i];
-          const auto Reg2 = SRAFPR[i + 1];
+        for (size_t i = 0; i < StaticFPRegisters.size(); i += 2) {
+          const auto Reg1 = StaticFPRegisters[i];
+          const auto Reg2 = StaticFPRegisters[i + 1];
 
           if (((1U << Reg1.Idx()) & FPRFillMask) &&
               ((1U << Reg2.Idx()) & FPRFillMask)) {
@@ -340,9 +464,9 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     }
   }
 
-  for (size_t i = 0; i < ConfiguredSRAGPRs; i+=2) {
-    auto Reg1 = SRA64[i];
-    auto Reg2 = SRA64[i+1];
+  for (size_t i = 0; i < StaticRegisters.size(); i+=2) {
+    auto Reg1 = StaticRegisters[i];
+    auto Reg2 = StaticRegisters[i+1];
     if (((1U << Reg1.Idx()) & GPRFillMask) &&
         ((1U << Reg2.Idx()) & GPRFillMask)) {
       ldp<ARMEmitter::IndexType::OFFSET>(Reg1.X(), Reg2.X(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.gregs[i]));
@@ -358,10 +482,10 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
 void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
-  const auto GPRSize = (ConfiguredDynamicGPRs + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto GPRSize = (ConfiguredDynamicRegisterBase.size() + 1) * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE ? Core::CPUState::XMM_AVX_REG_SIZE
                                     : Core::CPUState::XMM_SSE_REG_SIZE;
-  const auto FPRSize = ConfiguredFPRs * FPRRegSize;
+  const auto FPRSize = GeneralFPRegisters.size() * FPRRegSize;
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
 
   sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
@@ -370,31 +494,29 @@ void Arm64Emitter::PushDynamicRegsAndLR(FEXCore::ARMEmitter::Register TmpReg) {
   add(ARMEmitter::Size::i64Bit, TmpReg, ARMEmitter::Reg::rsp, 0);
 
   if (CanUseSVE) {
-    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
-      const auto Reg1 = RAFPR[i];
-      const auto Reg2 = RAFPR[i + 1];
-      const auto Reg3 = RAFPR[i + 2];
-      const auto Reg4 = RAFPR[i + 3];
+    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      const auto Reg3 = GeneralFPRegisters[i + 2];
+      const auto Reg4 = GeneralFPRegisters[i + 3];
       st4b(Reg1.Z(), Reg2.Z(), Reg3.Z(), Reg4.Z(), PRED_TMP_32B, TmpReg, 0);
       add(ARMEmitter::Size::i64Bit, TmpReg, TmpReg, 32 * 4);
     }
   } else {
-    LOGMAN_THROW_AA_FMT(ConfiguredFPRs % 4 == 0, "Needs to have multiple of 4 FPRs for RA");
-    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
-      const auto Reg1 = RAFPR[i];
-      const auto Reg2 = RAFPR[i + 1];
-      const auto Reg3 = RAFPR[i + 2];
-      const auto Reg4 = RAFPR[i + 3];
+    LOGMAN_THROW_A_FMT(GeneralFPRegisters.size() % 4 == 0, "Needs to have multiple of 4 FPRs for RA");
+    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      const auto Reg3 = GeneralFPRegisters[i + 2];
+      const auto Reg4 = GeneralFPRegisters[i + 3];
       st1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), TmpReg, 64);
     }
   }
 
-  if (ConfiguredDynamicRegisterBase) {
-    for (size_t i = 0; i < ConfiguredDynamicGPRs; i += 2) {
-      const auto Reg1 = ConfiguredDynamicRegisterBase[i];
-      const auto Reg2 = ConfiguredDynamicRegisterBase[i + 1];
-      stp<ARMEmitter::IndexType::POST>(Reg1.X(), Reg2.X(), TmpReg, 16);
-    }
+  for (size_t i = 0; i < ConfiguredDynamicRegisterBase.size(); i += 2) {
+    const auto Reg1 = ConfiguredDynamicRegisterBase[i];
+    const auto Reg2 = ConfiguredDynamicRegisterBase[i + 1];
+    stp<ARMEmitter::IndexType::POST>(Reg1.X(), Reg2.X(), TmpReg, 16);
   }
 
   str(ARMEmitter::XReg::lr, TmpReg, 0);
@@ -404,30 +526,28 @@ void Arm64Emitter::PopDynamicRegsAndLR() {
   const auto CanUseSVE = EmitterCTX->HostFeatures.SupportsAVX;
 
   if (CanUseSVE) {
-    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
-      const auto Reg1 = RAFPR[i];
-      const auto Reg2 = RAFPR[i + 1];
-      const auto Reg3 = RAFPR[i + 2];
-      const auto Reg4 = RAFPR[i + 3];
+    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      const auto Reg3 = GeneralFPRegisters[i + 2];
+      const auto Reg4 = GeneralFPRegisters[i + 3];
       ld4b(Reg1.Z(), Reg2.Z(), Reg3.Z(), Reg4.Z(), PRED_TMP_32B.Zeroing(), ARMEmitter::Reg::rsp);
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, 32 * 4);
     }
   } else {
-    for (size_t i = 0; i < ConfiguredFPRs; i += 4) {
-      const auto Reg1 = RAFPR[i];
-      const auto Reg2 = RAFPR[i + 1];
-      const auto Reg3 = RAFPR[i + 2];
-      const auto Reg4 = RAFPR[i + 3];
+    for (size_t i = 0; i < GeneralFPRegisters.size(); i += 4) {
+      const auto Reg1 = GeneralFPRegisters[i];
+      const auto Reg2 = GeneralFPRegisters[i + 1];
+      const auto Reg3 = GeneralFPRegisters[i + 2];
+      const auto Reg4 = GeneralFPRegisters[i + 3];
       ld1<ARMEmitter::SubRegSize::i64Bit>(Reg1.Q(), Reg2.Q(), Reg3.Q(), Reg4.Q(), ARMEmitter::Reg::rsp, 64);
     }
   }
 
-  if (ConfiguredDynamicRegisterBase) {
-    for (size_t i = 0; i < ConfiguredDynamicGPRs; i += 2) {
-      const auto Reg1 = ConfiguredDynamicRegisterBase[i];
-      const auto Reg2 = ConfiguredDynamicRegisterBase[i + 1];
-      ldp<ARMEmitter::IndexType::POST>(Reg1.X(), Reg2.X(), ARMEmitter::Reg::rsp, 16);
-    }
+  for (size_t i = 0; i < ConfiguredDynamicRegisterBase.size(); i += 2) {
+    const auto Reg1 = ConfiguredDynamicRegisterBase[i];
+    const auto Reg2 = ConfiguredDynamicRegisterBase[i + 1];
+    ldp<ARMEmitter::IndexType::POST>(Reg1.X(), Reg2.X(), ARMEmitter::Reg::rsp, 16);
   }
 
   ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);

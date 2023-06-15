@@ -70,9 +70,9 @@ private:
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
 
     if (Reg.Class == IR::GPRFixedClass.Val) {
-      return SRA64[Reg.Reg];
+      return StaticRegisters[Reg.Reg];
     } else if (Reg.Class == IR::GPRClass.Val) {
-      return RA64[Reg.Reg];
+      return GeneralRegisters[Reg.Reg];
     }
 
     FEX_UNREACHABLE;
@@ -84,9 +84,9 @@ private:
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
 
     if (Reg.Class == IR::FPRFixedClass.Val) {
-      return SRAFPR[Reg.Reg];
+      return StaticFPRegisters[Reg.Reg];
     } else if (Reg.Class == IR::FPRClass.Val) {
-      return RAFPR[Reg.Reg];
+      return GeneralFPRegisters[Reg.Reg];
     }
 
     FEX_UNREACHABLE;
@@ -97,7 +97,7 @@ private:
 
     LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRPairClass.Val, "Unexpected Class: {}", Reg.Class);
 
-    return RA64Pair[Reg.Reg];
+    return GeneralPairRegisters[Reg.Reg];
   }
 
   [[nodiscard]] FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;

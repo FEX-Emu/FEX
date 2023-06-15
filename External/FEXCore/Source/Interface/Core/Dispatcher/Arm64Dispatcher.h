@@ -31,22 +31,22 @@ class Arm64Dispatcher final : public Dispatcher, public Arm64Emitter {
   void EmitDispatcher();
 
   uint16_t GetSRAGPRCount() const override {
-    return SRA64.size();
+    return StaticRegisters.size();
   }
 
   uint16_t GetSRAFPRCount() const override {
-    return SRAFPR.size();
+    return StaticFPRegisters.size();
   }
 
   void GetSRAGPRMapping(uint8_t Mapping[16]) const override {
-    for (size_t i = 0; i < SRA64.size(); ++i) {
-      Mapping[i] = SRA64[i].Idx();
+    for (size_t i = 0; i < StaticRegisters.size(); ++i) {
+      Mapping[i] = StaticRegisters[i].Idx();
     }
   }
 
   void GetSRAFPRMapping(uint8_t Mapping[16]) const override {
-    for (size_t i = 0; i < SRAFPR.size(); ++i) {
-      Mapping[i] = SRAFPR[i].Idx();
+    for (size_t i = 0; i < StaticFPRegisters.size(); ++i) {
+      Mapping[i] = StaticFPRegisters[i].Idx();
     }
   }
 
