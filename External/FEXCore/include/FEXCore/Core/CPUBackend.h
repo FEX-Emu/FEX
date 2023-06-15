@@ -89,6 +89,28 @@ namespace CPU {
       size_t Size;
       // RIP that the block's entry comes from.
       uint64_t RIP;
+
+      // Number of RIP entries for this JIT Code section.
+      uint32_t NumberOfRIPEntries;
+
+      // Offset after this block to the start of the RIP entries.
+      uint32_t OffsetToRIPEntries;
+    };
+
+    // Entries that live after the JITCodeTail.
+    // These entries correlate JIT code regions with guest RIP regions.
+    // Using these entries FEX is able to reconstruct the guest RIP accurately when an instruction cause a signal fault.
+    // Packed using 16-bit entries to ensure the size isn't too large.
+    // These smaller sizes means that each entry is relative to each other instead of absolute offset from the start of the JIT block.
+    // When reconstructing the RIP, each entry must be walked linearly and accumulated with the previous entries.
+    // This is a trade-off between compression inside the JIT code space and execution time when reconstruction the RIP.
+    // RIP reconstruction when faulting is less likely so we are requiring the accumulation.
+    struct JITRIPReconstructEntries {
+      // The Host PC offset from the previous entry.
+      uint16_t HostPCOffset;
+
+      // How much to offset the RIP from the previous entry.
+      uint16_t GuestRIPOffset;
     };
 
     /**

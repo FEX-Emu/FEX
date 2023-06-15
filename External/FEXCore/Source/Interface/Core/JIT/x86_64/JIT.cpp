@@ -820,11 +820,32 @@ CPUBackend::CompiledCode X86JITCore::CompileCode(uint64_t Entry, [[maybe_unused]
   auto JITBlockTail = getCurr<JITCodeTail*>();
   setSize(getSize() + sizeof(JITCodeTail));
 
+  auto JITRIPEntriesLocation = getCurr<uint8_t *>();
+  auto JITRIPEntries = getCurr<JITRIPReconstructEntries*>();
+
+  setSize(getSize() + sizeof(JITRIPReconstructEntries) * DebugData->GuestOpcodes.size());
+
   // Put the block's RIP entry in the tail.
   // This will be used for RIP reconstruction in the future.
   // TODO: This needs to be a data RIP relocation once code caching works.
   //   Current relocation code doesn't support this feature yet.
   JITBlockTail->RIP = Entry;
+
+  {
+    // Store the RIP entries.
+    JITBlockTail->NumberOfRIPEntries = DebugData->GuestOpcodes.size();
+    JITBlockTail->OffsetToRIPEntries = JITRIPEntriesLocation - JITBlockTailLocation;
+    uintptr_t CurrentRIPOffset = 0;
+    uint64_t CurrentPCOffset = 0;
+    for (size_t i = 0; i < DebugData->GuestOpcodes.size(); i++) {
+      const auto &GuestOpcode = DebugData->GuestOpcodes[i];
+      auto &RIPEntry = JITRIPEntries[i];
+      RIPEntry.HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
+      RIPEntry.GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
+      CurrentPCOffset = GuestOpcode.HostEntryOffset;
+      CurrentRIPOffset = GuestOpcode.GuestEntryOffset;
+    }
+  }
 
   CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 

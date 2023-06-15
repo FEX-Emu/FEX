@@ -149,6 +149,31 @@ public:
     return false;
   }
 
+  static bool CanHaveSideEffects(FEXCore::X86Tables::X86InstInfo const* TableInfo, FEXCore::X86Tables::DecodedOp Op) {
+    if (TableInfo && TableInfo->Flags & X86Tables::InstFlags::FLAGS_DEBUG_MEM_ACCESS) {
+      // If it is marked as having memory access then always say it has a side-effect.
+      // Not always true but better to be safe.
+      return true;
+    }
+
+    auto CanHaveSideEffects = false;
+
+    auto HasPotentialMemoryAccess = [](X86Tables::DecodedOperand const &Operand) -> bool {
+      if (Operand.IsNone()) {
+        return false;
+      }
+
+      // This isn't guaranteed that all of these types will access memory, but be safe.
+      return Operand.IsGPRDirect() || Operand.IsGPRIndirect() || Operand.IsRIPRelative() || Operand.IsSIB();
+    };
+
+    CanHaveSideEffects |= HasPotentialMemoryAccess(Op->Dest);
+    CanHaveSideEffects |= HasPotentialMemoryAccess(Op->Src[0]);
+    CanHaveSideEffects |= HasPotentialMemoryAccess(Op->Src[1]);
+    CanHaveSideEffects |= HasPotentialMemoryAccess(Op->Src[2]);
+    return CanHaveSideEffects;
+  }
+
   OpDispatchBuilder(FEXCore::Context::ContextImpl *ctx);
   OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator &Allocator);
 
