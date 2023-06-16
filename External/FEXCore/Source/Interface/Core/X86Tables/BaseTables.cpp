@@ -146,10 +146,10 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
     {0x9E, 1, X86InstInfo{"SAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
     {0x9F, 1, X86InstInfo{"LAHF",   TYPE_INST, FLAGS_NONE,                              0, nullptr}},
 
-    {0xA4, 1, X86InstInfo{"MOVSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SUPPORTS_REP,                                            0, nullptr}},
-    {0xA5, 1, X86InstInfo{"MOVS",   TYPE_INST, FLAGS_SUPPORTS_REP,                                                            0, nullptr}},
-    {0xA6, 1, X86InstInfo{"CMPSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SUPPORTS_REP,                                            0, nullptr}},
-    {0xA7, 1, X86InstInfo{"CMPS",   TYPE_INST, FLAGS_SUPPORTS_REP,                                                            0, nullptr}},
+    {0xA4, 1, X86InstInfo{"MOVSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS  | FLAGS_SUPPORTS_REP,                                            0, nullptr}},
+    {0xA5, 1, X86InstInfo{"MOVS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP,                                                            0, nullptr}},
+    {0xA6, 1, X86InstInfo{"CMPSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS  | FLAGS_SUPPORTS_REP,                                            0, nullptr}},
+    {0xA7, 1, X86InstInfo{"CMPS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS | FLAGS_SUPPORTS_REP,                                                            0, nullptr}},
 
     {0xA8, 1, X86InstInfo{"TEST",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX ,                                             1, nullptr}},
     {0xA9, 1, X86InstInfo{"TEST",   TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,                4, nullptr}},

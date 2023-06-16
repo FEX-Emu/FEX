@@ -195,17 +195,35 @@ namespace FEXCore::Context {
   uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState *Thread, uint64_t HostPC) {
     const auto Frame = Thread->CurrentFrame;
     const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
-    const CPU::CPUBackend::JITCodeHeader *InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader *>(BlockBegin);
+    auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader *>(BlockBegin);
 
     if (InlineHeader) {
-      const CPU::CPUBackend::JITCodeTail *InlineTail = reinterpret_cast<const CPU::CPUBackend::JITCodeTail *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+      auto InlineTail = reinterpret_cast<const CPU::CPUBackend::JITCodeTail *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+      auto RIPEntries = reinterpret_cast<const CPU::CPUBackend::JITRIPReconstructEntries *>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail + InlineTail->OffsetToRIPEntries);
 
       // Check if the host PC is currently within a code block.
       // If it is then RIP can be reconstructed from the beginning of the code block.
       // This is currently as close as FEX can get RIP reconstructions.
       if (HostPC >= reinterpret_cast<uint64_t>(BlockBegin) &&
           HostPC < reinterpret_cast<uint64_t>(BlockBegin + InlineTail->Size)) {
-        return InlineTail->RIP;
+
+        // Reconstruct RIP from JIT entries for this block.
+        uint64_t StartingHostPC = BlockBegin;
+        uint64_t StartingGuestRIP = InlineTail->RIP;
+
+        for (uint32_t i = 0; i < InlineTail->NumberOfRIPEntries; ++i) {
+          const auto &RIPEntry = RIPEntries[i];
+          if (HostPC >= (StartingHostPC + RIPEntry.HostPCOffset)) {
+            // We are beyond this entry, keep going forward.
+            StartingHostPC += RIPEntry.HostPCOffset;
+            StartingGuestRIP += RIPEntry.GuestRIPOffset;
+          }
+          else {
+            // Passed where the Host PC is at. Break now.
+            break;
+          }
+        }
+        return StartingGuestRIP;
       }
     }
 
@@ -811,7 +829,7 @@ namespace FEXCore::Context {
           DecodedInfo = &Block.DecodedInstructions[i];
           bool IsLocked = DecodedInfo->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
-          if (ExtendedDebugInfo) {
+          if (ExtendedDebugInfo || Thread->OpDispatcher->CanHaveSideEffects(TableInfo, DecodedInfo)) {
             Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
           }
 
