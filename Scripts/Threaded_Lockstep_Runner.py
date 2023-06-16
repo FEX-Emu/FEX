@@ -9,6 +9,7 @@ from threading import Thread
 import subprocess
 import time
 import multiprocessing
+from shutil import which
 
 if sys.version_info[0] < 3:
         raise Exception("Python 3 or a more recent version is required.")
@@ -40,6 +41,10 @@ def Threaded_Runner(Args, ID, Client):
 def Threaded_Manager(Runner, ID, File):
     ServerArgs = ["catchsegv", Runner, "-c", "vm", "-n", "1", "-I", "R" + str(ID), File]
     ClientArgs = ["catchsegv", Runner, "-c", "vm", "-n", "1", "-I", "R" + str(ID), "-C"]
+
+    if which("catchsegv") is None:
+        ServerArgs.pop(0)
+        ClientArgs.pop(0)
 
     ServerThread = Thread(target = Threaded_Runner, args = (ServerArgs, ID, 0))
     ClientThread = Thread(target = Threaded_Runner, args = (ClientArgs, ID, 1))
