@@ -1260,7 +1260,6 @@ DEF_OP(LoadMemTSO) {
     }
   }
   else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
-
     const auto Dst = GetReg(Node);
     if (OpSize == 1) {
       // 8bit load is always aligned to natural alignment
@@ -2023,32 +2022,78 @@ DEF_OP(MemCpy) {
   // Destination already set to the final pointer.
 }
 
-
-
 DEF_OP(ParanoidLoadMemTSO) {
   const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
   const auto OpSize = IROp->Size;
 
-  const auto Addr = GetReg(Op->Addr.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
 
-  if (!Op->Offset.IsInvalid()) {
-    LOGMAN_MSG_A_FMT("ParanoidLoadMemTSO: No offset allowed");
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+    const auto Dst = GetReg(Node);
+    uint64_t Offset = 0;
+    if (!Op->Offset.IsInvalid()) {
+      (void)IsInlineConstant(Op->Offset, &Offset);
+    }
+
+    if (OpSize == 1) {
+      // 8bit load is always aligned to natural alignment
+      const auto Dst = GetReg(Node);
+      ldapurb(Dst, MemReg, Offset);
+    }
+    else {
+      switch (OpSize) {
+        case 2:
+          ldapurh(Dst, MemReg, Offset);
+          break;
+        case 4:
+          ldapur(Dst.W(), MemReg, Offset);
+          break;
+        case 8:
+          ldapur(Dst.X(), MemReg, Offset);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+          break;
+      }
+    }
   }
-
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+    const auto Dst = GetReg(Node);
+    if (OpSize == 1) {
+      // 8bit load is always aligned to natural alignment
+      ldaprb(Dst.W(), MemReg);
+    }
+    else {
+      switch (OpSize) {
+        case 2:
+          ldaprh(Dst.W(), MemReg);
+          break;
+        case 4:
+          ldapr(Dst.W(), MemReg);
+          break;
+        case 8:
+          ldapr(Dst.X(), MemReg);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
+          break;
+      }
+    }
+  }
+  else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
       case 1:
-        ldarb(Dst, Addr);
+        ldarb(Dst, MemReg);
         break;
       case 2:
-        ldarh(Dst, Addr);
+        ldarh(Dst, MemReg);
         break;
       case 4:
-        ldar(Dst.W(), Addr);
+        ldar(Dst.W(), MemReg);
         break;
       case 8:
-        ldar(Dst.X(), Addr);
+        ldar(Dst.X(), MemReg);
         break;
       default:
         LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize);
@@ -2059,31 +2104,30 @@ DEF_OP(ParanoidLoadMemTSO) {
     const auto Dst = GetVReg(Node);
     switch (OpSize) {
       case 1:
-        ldarb(TMP1, Addr);
-        ins(ARMEmitter::SubRegSize::i8Bit, Dst, 0, TMP1);
+        ldarb(TMP1, MemReg);
+        fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
         break;
       case 2:
-        ldarh(TMP1, Addr);
-        ins(ARMEmitter::SubRegSize::i16Bit, Dst, 0, TMP1);
+        ldarh(TMP1, MemReg);
+        fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
         break;
       case 4:
-        ldar(TMP1.W(), Addr);
-        ins(ARMEmitter::SubRegSize::i32Bit, Dst, 0, TMP1);
+        ldar(TMP1.W(), MemReg);
+        fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
         break;
       case 8:
-        ldar(TMP1, Addr);
-        ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
+        ldar(TMP1, MemReg);
+        fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP1);
         break;
       case 16:
-        nop();
-        ldaxp(ARMEmitter::Size::i64Bit, TMP1, TMP2, Addr);
+        ldaxp(ARMEmitter::Size::i64Bit, TMP1, TMP2, MemReg);
         clrex();
         ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
         ins(ARMEmitter::SubRegSize::i64Bit, Dst, 1, TMP2);
         break;
       case 32:
         dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), Addr);
+        ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemReg);
         dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
         break;
       default:
@@ -2097,26 +2141,50 @@ DEF_OP(ParanoidStoreMemTSO) {
   const auto Op = IROp->C<IR::IROp_StoreMemTSO>();
   const auto OpSize = IROp->Size;
 
-  const auto Addr = GetReg(Op->Addr.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
 
-  if (!Op->Offset.IsInvalid()) {
-    LOGMAN_MSG_A_FMT("ParanoidStoreMemTSO: No offset allowed");
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+    const auto Src = GetReg(Op->Value.ID());
+    uint64_t Offset = 0;
+    if (!Op->Offset.IsInvalid()) {
+      (void)IsInlineConstant(Op->Offset, &Offset);
+    }
+
+    if (OpSize == 1) {
+      // 8bit load is always aligned to natural alignment
+      stlurb(Src, MemReg, Offset);
+    }
+    else {
+      switch (OpSize) {
+        case 2:
+          stlurh(Src, MemReg, Offset);
+          break;
+        case 4:
+          stlur(Src.W(), MemReg, Offset);
+          break;
+        case 8:
+          stlur(Src.X(), MemReg, Offset);
+          break;
+        default:
+          LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize);
+          break;
+      }
+    }
   }
-
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
       case 1:
-        stlrb(Src, Addr);
+        stlrb(Src, MemReg);
         break;
       case 2:
-        stlrh(Src, Addr);
+        stlrh(Src, MemReg);
         break;
       case 4:
-        stlr(Src.W(), Addr);
+        stlr(Src.W(), MemReg);
         break;
       case 8:
-        stlr(Src.X(), Addr);
+        stlr(Src.X(), MemReg);
         break;
       default:
         LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize);
@@ -2129,19 +2197,19 @@ DEF_OP(ParanoidStoreMemTSO) {
     switch (OpSize) {
       case 1:
         umov<ARMEmitter::SubRegSize::i8Bit>(TMP1, Src, 0);
-        stlrb(TMP1, Addr);
+        stlrb(TMP1, MemReg);
         break;
       case 2:
         umov<ARMEmitter::SubRegSize::i16Bit>(TMP1, Src, 0);
-        stlrh(TMP1, Addr);
+        stlrh(TMP1, MemReg);
         break;
       case 4:
         umov<ARMEmitter::SubRegSize::i32Bit>(TMP1, Src, 0);
-        stlr(TMP1.W(), Addr);
+        stlr(TMP1.W(), MemReg);
         break;
       case 8:
         umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
-        stlr(TMP1, Addr);
+        stlr(TMP1, MemReg);
         break;
       case 16: {
         // Move vector to GPRs
@@ -2151,14 +2219,14 @@ DEF_OP(ParanoidStoreMemTSO) {
         Bind(&B);
 
         // ldaxp must not have both the destination registers be the same
-        ldaxp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::zr, TMP3, Addr); // <- Can hit SIGBUS. Overwritten with DMB
-        stlxp(ARMEmitter::Size::i64Bit, TMP3, TMP1, TMP2, Addr); // <- Can also hit SIGBUS
+        ldaxp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::zr, TMP3, MemReg); // <- Can hit SIGBUS. Overwritten with DMB
+        stlxp(ARMEmitter::Size::i64Bit, TMP3, TMP1, TMP2, MemReg); // <- Can also hit SIGBUS
         cbnz(ARMEmitter::Size::i64Bit, TMP3, &B); // < Overwritten with DMB
         break;
       }
       case 32: {
         dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
-        st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, Addr, 0);
+        st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemReg, 0);
         dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
         break;
       }
