@@ -2457,6 +2457,7 @@ void OpDispatchBuilder::FXSaveOp(OpcodeArgs) {
 
   SaveX87State(Op, Mem);
   SaveSSEState(Mem);
+  SaveMXCSRState(Mem);
 }
 
 void OpDispatchBuilder::XSaveOp(OpcodeArgs) {
@@ -2667,6 +2668,10 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 
   RestoreX87State(Mem);
   RestoreSSEState(Mem);
+
+  OrderedNode *MXCSRLocation = _Add(Mem, _Constant(24));
+  OrderedNode *MXCSR = _LoadMem(GPRClass, 4, MXCSRLocation, 4);
+  RestoreMXCSRState(MXCSR);
 }
 
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
