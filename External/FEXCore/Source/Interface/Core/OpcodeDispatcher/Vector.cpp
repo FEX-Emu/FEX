@@ -4812,7 +4812,7 @@ void OpDispatchBuilder::VPERMILRegOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src[1] needs to be a literal");
-  const auto Control = Op->Src[1].Data.Literal.Value;
+  const uint16_t Control = Op->Src[1].Data.Literal.Value;
 
   // SSE4.2 string instructions modify flags, so invalidate
   // any previously deferred flags.
@@ -4830,12 +4830,18 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   OrderedNode *IntermediateResult{};
   if (IsExplicit) {
     // Will be 4 in the absence of a REX.W bit and 8 in the presence of a REX.W bit.
+    //
+    // While the control bit immediate for the instruction itself is only ever 8 bits
+    // in size, we use it as a 16-bit value so that we can use the 8th bit to signify
+    // whether or not RAX and RDX should be interpreted as a 64-bit value.
     const auto SrcSize = GetSrcSize(Op);
+    const auto Is64Bit = SrcSize == 8;
+    const auto NewControl = uint16_t(Control | (uint16_t(Is64Bit) << 8));
 
     OrderedNode *SrcRAX = LoadGPRRegister(X86State::REG_RAX);
     OrderedNode *SrcRDX = LoadGPRRegister(X86State::REG_RDX);
 
-    IntermediateResult = _VPCMPESTRX(SrcSize, Src1, Src2, SrcRAX, SrcRDX, Control);
+    IntermediateResult = _VPCMPESTRX(Src1, Src2, SrcRAX, SrcRDX, NewControl);
   } else {
     IntermediateResult = _VPCMPISTRX(Src1, Src2, Control);
   }

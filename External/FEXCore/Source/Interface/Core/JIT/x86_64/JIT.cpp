@@ -308,15 +308,12 @@ void X86JITCore::Op_Unhandled(IR::IROp_Header *IROp, IR::NodeID Node) {
         PushRegs();
 
         const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
-        const auto Is64Bit = Op->GPRSize == 8;
+        const auto Control = Op->Control;
 
         const auto LHS = GetSrc(Op->LHS.ID());
         const auto RHS = GetSrc(Op->RHS.ID());
         const auto SrcRAX = GetSrc<RA_64>(Op->RAX.ID());
         const auto SrcRDX = GetSrc<RA_64>(Op->RDX.ID());
-
-        // Encode the size check into the 8th bit to save a parameter
-        const auto Control = Op->Control | (uint16_t(Is64Bit) << 8);
 
         mov(rdi, SrcRAX);
         mov(rsi, SrcRDX);
