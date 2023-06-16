@@ -1414,7 +1414,6 @@
                  "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
                  "course of creating the intermediate result"
                 ],
-        "HasSideEffects": true,
         "DestSize": "4"
       },
       "GPR = VPCMPISTRX FPR:$LHS, FPR:$RHS, u8:$Control": {
@@ -1426,7 +1425,6 @@
                  "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
                  "course of creating the intermediate result"
                 ],
-        "HasSideEffects": true,
         "DestSize": "4"
       }
     },
