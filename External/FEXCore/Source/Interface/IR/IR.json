@@ -1405,7 +1405,7 @@
         "DestSize": "RegisterSize"
       },
 
-      "GPR = VPCMPESTRX u8:$GPRSize, FPR:$LHS, FPR:$RHS, GPR:$RAX, GPR:$RDX, u8:$Control": {
+      "GPR = VPCMPESTRX FPR:$LHS, FPR:$RHS, GPR:$RAX, GPR:$RDX, u16:$Control": {
         "Desc": ["Performs intermediate behavior analogous to the x86 PCMPESTRI/PCMPESTRM instruction",
                  "This will return the intermediate result of a PCMPESTR-type operation, but NOT the final",
                  "result. This must be derived from the intermediate result",
@@ -1414,7 +1414,6 @@
                  "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
                  "course of creating the intermediate result"
                 ],
-        "HasSideEffects": true,
         "DestSize": "4"
       },
       "GPR = VPCMPISTRX FPR:$LHS, FPR:$RHS, u8:$Control": {
@@ -1426,7 +1425,6 @@
                  "flags into the upper 16-bits of the 32-bit result, as these can also be derived over the",
                  "course of creating the intermediate result"
                 ],
-        "HasSideEffects": true,
         "DestSize": "4"
       }
     },

@@ -450,15 +450,12 @@ void Arm64JITCore::Op_Unhandled(IR::IROp_Header const *IROp, IR::NodeID Node) {
         PushDynamicRegsAndLR(TMP1);
 
         const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
-        const auto Is64Bit = Op->GPRSize == 8;
+        const auto Control = Op->Control;
 
         const auto Src1 = GetVReg(Op->LHS.ID());
         const auto Src2 = GetVReg(Op->RHS.ID());
         const auto SrcRAX = GetReg(Op->RAX.ID());
         const auto SrcRDX = GetReg(Op->RDX.ID());
-
-        // We can be cheeky and encode the size at bit 8 to save a parameter
-        const auto Control = Op->Control | (uint16_t(Is64Bit) << 8);
 
         mov(ARMEmitter::XReg::x0, SrcRAX.X());
         mov(ARMEmitter::XReg::x1, SrcRDX.X());
