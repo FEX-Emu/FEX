@@ -332,8 +332,10 @@ static_assert(offsetof(OrderedNode, Header) == 0);
 static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
 
 struct RegisterClassType final {
-  uint32_t Val;
-  [[nodiscard]] constexpr operator uint32_t() const {
+  using value_type = uint32_t;
+
+  value_type Val;
+  [[nodiscard]] constexpr operator value_type() const {
     return Val;
   }
   [[nodiscard]] friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
@@ -388,8 +390,10 @@ struct TypeDefinition final {
 static_assert(std::is_trivial_v<TypeDefinition>);
 
 struct FenceType final {
-  uint8_t Val;
-  [[nodiscard]] constexpr operator uint8_t() const {
+  using value_type = uint8_t;
+
+  value_type Val;
+  [[nodiscard]] constexpr operator value_type() const {
     return Val;
   }
   [[nodiscard]] friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
@@ -602,7 +606,27 @@ struct fmt::formatter<FEXCore::IR::NodeID> : fmt::formatter<FEXCore::IR::NodeID:
   // Pass-through the underlying value, so IDs can
   // be formatted like any integral value.
   template <typename FormatContext>
-  auto format(const FEXCore::IR::NodeID& ID, FormatContext& ctx) {
+  auto format(const FEXCore::IR::NodeID& ID, FormatContext& ctx) const {
     return Base::format(ID.Value, ctx);
+  }
+};
+
+template <>
+struct fmt::formatter<FEXCore::IR::RegisterClassType> : fmt::formatter<FEXCore::IR::RegisterClassType::value_type> {
+  using Base = fmt::formatter<FEXCore::IR::RegisterClassType::value_type>;
+
+  template <typename FormatContext>
+  auto format(const FEXCore::IR::RegisterClassType& Class, FormatContext& ctx) const {
+    return Base::format(Class.Val, ctx);
+  }
+};
+
+template <>
+struct fmt::formatter<FEXCore::IR::FenceType> : fmt::formatter<FEXCore::IR::FenceType::value_type> {
+  using Base = fmt::formatter<FEXCore::IR::FenceType::value_type>;
+
+  template <typename FormatContext>
+  auto format(const FEXCore::IR::FenceType& Fence, FormatContext& ctx) const {
+    return Base::format(Fence.Val, ctx);
   }
 };
