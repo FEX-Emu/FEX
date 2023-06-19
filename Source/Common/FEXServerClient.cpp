@@ -27,6 +27,53 @@
 #include <thread>
 
 namespace FEXServerClient {
+  ssize_t SendPacket(int Socket, void *Msg, size_t Size) {
+    return send(Socket, Msg, Size, 0);
+  }
+
+  bool ReceivePacket(int ServerSocket, void *Msg, size_t Size) {
+    ssize_t Read = recv(ServerSocket, Msg, Size, 0);
+    return Read == Size;
+  }
+
+  ssize_t SendFDPacket(int ServerSocket, void *Msg, size_t Size, int FD) {
+    struct iovec iov {
+      .iov_base = Msg,
+      .iov_len = Size,
+    };
+
+    struct msghdr msg {
+      .msg_name = nullptr,
+      .msg_namelen = 0,
+      .msg_iov = &iov,
+      .msg_iovlen = 1,
+    };
+
+    // Setup the ancillary buffer. This is where we will be getting pipe FDs
+    // We only need 4 bytes for the FD
+    constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
+    union AncillaryBuffer {
+      struct cmsghdr Header;
+      uint8_t Buffer[CMSG_SIZE];
+    };
+    AncillaryBuffer AncBuf{};
+
+    // Now link to our ancilllary buffer
+    msg.msg_control = AncBuf.Buffer;
+    msg.msg_controllen = CMSG_SIZE;
+
+    // Now we need to setup the ancillary buffer data. We are only sending an FD
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+
+    // We are giving the daemon the write side of the pipe
+    memcpy(CMSG_DATA(cmsg), &FD, sizeof(int));
+
+    return sendmsg(ServerSocket, &msg, 0);
+  }
+
   union AncillaryBuffer {
     constexpr static size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
     struct cmsghdr Header;
@@ -332,6 +379,15 @@ namespace FEXServerClient {
     return RequestPIDFDPacket(ServerSocket, &Msg, sizeof(Msg.BasicRequest));
   }
 
+  void SendEmptyErrorPacket(int ServerSocket) {
+    FEXServerClient::FEXServerResultPacket Res {
+      .Header {
+        .Type = FEXServerClient::PacketType::TYPE_ERROR,
+      },
+    };
+    SendPacket(ServerSocket, &Res, sizeof(Res));
+  }
+
   fextl::string RequestRootFSPath(int ServerSocket) {
     FEXServerRequestPacket Req {
       .Header {
@@ -404,58 +460,9 @@ namespace FEXServerClient {
    * @name FEX core dump through FEXServer
    * @{ */
   namespace CoreDump {
-    template<typename T>
-    ssize_t SendPacket(int Socket, T &Msg) {
-      return send(Socket, &Msg, sizeof(T), 0);
-    }
-
-    template<typename T>
-    bool ReceivePacket(int ServerSocket, T &Msg, size_t Size) {
-      ssize_t Read = recv(ServerSocket, &Msg, Size, 0);
-      return Read == Size;
-    }
-
     bool WaitForAck(int Socket) {
       CoreDump::PacketHeader Msg;
-      return ReceivePacket(Socket, Msg, sizeof(Msg)) && Msg.PacketType == CoreDump::PacketTypes::ACK;
-    }
-
-    ssize_t SendFDPacket(int Socket, CoreDump::PacketHeader &Msg, int FD) {
-      struct iovec iov {
-        .iov_base = &Msg,
-        .iov_len = sizeof(Msg),
-      };
-
-      struct msghdr msg {
-        .msg_name = nullptr,
-        .msg_namelen = 0,
-        .msg_iov = &iov,
-        .msg_iovlen = 1,
-      };
-
-      // Setup the ancillary buffer. This is where we will be getting pipe FDs
-      // We only need 4 bytes for the FD
-      constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-      union AncillaryBuffer {
-        struct cmsghdr Header;
-        uint8_t Buffer[CMSG_SIZE];
-      };
-      AncillaryBuffer AncBuf{};
-
-      // Now link to our ancilllary buffer
-      msg.msg_control = AncBuf.Buffer;
-      msg.msg_controllen = CMSG_SIZE;
-
-      // Now we need to setup the ancillary buffer data. We are only sending an FD
-      struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-      cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-      cmsg->cmsg_level = SOL_SOCKET;
-      cmsg->cmsg_type = SCM_RIGHTS;
-
-      // We are giving the daemon the write side of the pipe
-      memcpy(CMSG_DATA(cmsg), &FD, sizeof(int));
-
-      return sendmsg(Socket, &msg, 0);
+      return ReceivePacket(Socket, &Msg, sizeof(Msg)) && Msg.PacketType == CoreDump::PacketTypes::ACK;
     }
 
     ssize_t SendPacketWithData(int Socket, void *Msg, size_t size, std::span<const char> Data) {
@@ -483,10 +490,10 @@ namespace FEXServerClient {
     bool SendFD(int CoreDumpSocket, CoreDump::PacketTypes Type, int FD) {
       CoreDump::PacketHeader Msg;
       Msg = CoreDump::FillHeader(Type);
-      if (SendPacket(CoreDumpSocket, Msg) != -1) {
+      if (SendPacket(CoreDumpSocket, &Msg, sizeof(Msg)) != -1) {
         if (WaitForAck(CoreDumpSocket)) {
           Msg = CoreDump::FillHeader(CoreDump::PacketTypes::SUCCESS);
-          return SendFDPacket(CoreDumpSocket, Msg, FD) != -1;
+          return SendFDPacket(CoreDumpSocket, &Msg, sizeof(Msg), FD) != -1;
         }
       }
       return false;
@@ -494,14 +501,14 @@ namespace FEXServerClient {
 
     void SendAckPacket(int CoreDumpSocket) {
       FEXServerClient::CoreDump::PacketHeader Msg = FEXServerClient::CoreDump::FillHeader(FEXServerClient::CoreDump::PacketTypes::ACK);
-      SendPacket(CoreDumpSocket, Msg);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
     ///< Client side handling.
     void SendDescPacket(int CoreDumpSocket, uint32_t Signal, uint8_t GuestArch) {
       CoreDump::PacketDescription Msg;
       Msg = CoreDump::PacketDescription::Fill(Signal, GuestArch);
-      SendPacket(CoreDumpSocket, Msg);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
     void SendCommandLineFD(int CoreDumpSocket) {
@@ -525,17 +532,17 @@ namespace FEXServerClient {
 
     void SendHostContext(int CoreDumpSocket, siginfo_t const *siginfo, mcontext_t const *context) {
       CoreDump::PacketHostContext Msg = CoreDump::PacketHostContext::Fill(siginfo, context);
-      SendPacket(CoreDumpSocket, Msg);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
     void SendGuestContext(int CoreDumpSocket, siginfo_t const *siginfo, void const *context, size_t ContextSize, uint8_t GuestArch) {
       CoreDump::PacketGuestContext Msg = CoreDump::PacketGuestContext::Fill(siginfo, context, ContextSize, GuestArch);
-      SendPacket(CoreDumpSocket, Msg);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
     void SendContextUnwind(int CoreDumpSocket) {
       CoreDump::PacketHeader Msg = CoreDump::FillHeader(CoreDump::PacketTypes::CONTEXT_UNWIND);
-      SendPacket(CoreDumpSocket, Msg);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
     void SendJITRegions(int CoreDumpSocket, FEXCore::Context::Context::JITRegionPairs const *Dispatcher, fextl::vector<FEXCore::Context::Context::JITRegionPairs> const *RegionPairs) {
@@ -563,7 +570,7 @@ namespace FEXServerClient {
           }
 
           FEXServerClient::CoreDump::PacketPeekMemResponse Msg = FEXServerClient::CoreDump::PacketPeekMemResponse::Fill(Data);
-          SendPacket(CoreDumpSocket, Msg);
+          SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
           CurrentOffset += sizeof(*Req);
           break;
         }
@@ -572,7 +579,7 @@ namespace FEXServerClient {
           FEXServerClient::CoreDump::PacketGetFDFromFilename *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGetFDFromFilename *>(&Data[CurrentOffset]);
           int FD = open(Req->Filepath, O_RDONLY);
           auto Msg = CoreDump::FillHeader(CoreDump::PacketTypes::SUCCESS);
-          SendFDPacket(CoreDumpSocket, Msg, FD);
+          SendFDPacket(CoreDumpSocket, &Msg, sizeof(Msg), FD);
           close(FD);
           CurrentOffset += sizeof(*Req) + Req->FilenameLength + 1;
           break;
@@ -631,14 +638,14 @@ namespace FEXServerClient {
 
     void SendShutdownPacket(int CoreDumpSocket) {
       FEXServerClient::CoreDump::PacketHeader Msg = FEXServerClient::CoreDump::FillHeader(FEXServerClient::CoreDump::PacketTypes::CLIENT_SHUTDOWN);
-      SendPacket(CoreDumpSocket, Msg);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
     std::optional<uint64_t> PeekMemory(int ServerSocket, uint64_t Addr, uint32_t Size) {
       FEXServerClient::CoreDump::PacketPeekMem Msg = FEXServerClient::CoreDump::PacketPeekMem::Fill(Addr, Size);
-      SendPacket(ServerSocket, Msg);
+      SendPacket(ServerSocket, &Msg, sizeof(Msg));
       FEXServerClient::CoreDump::PacketPeekMemResponse MsgResponse;
-      if (ReceivePacket(ServerSocket, MsgResponse, sizeof(MsgResponse))) {
+      if (ReceivePacket(ServerSocket, &MsgResponse, sizeof(MsgResponse))) {
         return MsgResponse.Data;
       }
       return std::nullopt;

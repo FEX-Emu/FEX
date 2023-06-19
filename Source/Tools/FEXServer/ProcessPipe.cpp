@@ -218,70 +218,13 @@ namespace ProcessPipe {
     return true;
   }
 
-  void SendEmptyErrorPacket(int Socket) {
-    FEXServerClient::FEXServerResultPacket Res {
-      .Header {
-        .Type = FEXServerClient::PacketType::TYPE_ERROR,
-      },
-    };
-
-    struct iovec iov {
-      .iov_base = &Res,
-      .iov_len = sizeof(Res),
-    };
-
-    struct msghdr msg {
-      .msg_name = nullptr,
-      .msg_namelen = 0,
-      .msg_iov = &iov,
-      .msg_iovlen = 1,
-    };
-
-    sendmsg(Socket, &msg, 0);
-  }
-
   void SendFDSuccessPacket(int Socket, int FD) {
     FEXServerClient::FEXServerResultPacket Res {
       .Header {
         .Type = FEXServerClient::PacketType::TYPE_SUCCESS,
       },
     };
-
-    struct iovec iov {
-      .iov_base = &Res,
-      .iov_len = sizeof(Res),
-    };
-
-    struct msghdr msg {
-      .msg_name = nullptr,
-      .msg_namelen = 0,
-      .msg_iov = &iov,
-      .msg_iovlen = 1,
-    };
-
-    // Setup the ancillary buffer. This is where we will be getting pipe FDs
-    // We only need 4 bytes for the FD
-    constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-    union AncillaryBuffer {
-      struct cmsghdr Header;
-      uint8_t Buffer[CMSG_SIZE];
-    };
-    AncillaryBuffer AncBuf{};
-
-    // Now link to our ancilllary buffer
-    msg.msg_control = AncBuf.Buffer;
-    msg.msg_controllen = CMSG_SIZE;
-
-    // Now we need to setup the ancillary buffer data. We are only sending an FD
-    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level = SOL_SOCKET;
-    cmsg->cmsg_type = SCM_RIGHTS;
-
-    // We are giving the daemon the write side of the pipe
-    memcpy(CMSG_DATA(cmsg), &FD, sizeof(int));
-
-    sendmsg(Socket, &msg, 0);
+    FEXServerClient::SendFDPacket(Socket, &Res, sizeof(Res), FD);
   }
 
   void HandleSocketData(int Socket) {
@@ -319,7 +262,7 @@ namespace ProcessPipe {
           }
           else {
             // Log thread isn't running. Let FEXInterpreter know it can't have one.
-            SendEmptyErrorPacket(Socket);
+            FEXServerClient::SendEmptyErrorPacket(Socket);
           }
 
           CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
@@ -412,7 +355,7 @@ namespace ProcessPipe {
           }
           else {
             // Log thread isn't running. Let FEXInterpreter know it can't have one.
-            SendEmptyErrorPacket(Socket);
+            FEXServerClient::SendEmptyErrorPacket(Socket);
           }
 
           CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);

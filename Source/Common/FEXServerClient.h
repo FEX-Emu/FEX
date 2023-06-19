@@ -120,6 +120,24 @@ namespace FEXServerClient {
    */
   int RequestCoredumpFD(int ServerSocket);
 
+  /**
+   * @brief Sends an error packet through the socket.
+   *
+   * @param ServerSocket - Socket to the server.
+   */
+  void SendEmptyErrorPacket(int ServerSocket);
+
+  /**
+   * @brief Sends an FD through the socket.
+   *
+   * @param ServerSocket - Socket to the server.
+   * @param Msg - The packet data to send.
+   * @param Size - The size of the packet data.
+   * @param FD - The FD to send with the packet.
+   *
+   * @return Number of bytes sent or -1 on error.
+   */
+  ssize_t SendFDPacket(int ServerSocket, void *Msg, size_t Size, int FD);
   /**  @} */
 
   namespace Socket {
