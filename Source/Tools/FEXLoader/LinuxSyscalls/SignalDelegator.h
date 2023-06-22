@@ -8,7 +8,8 @@ $end_info$
 #pragma once
 
 #include "LinuxSyscalls/Types.h"
-#include "ArchHelpers/MContext.h"
+#include "Linux/Utils/ArchHelpers/UContext.h"
+#include "Linux/Utils/ArchHelpers/MContext.h"
 #include "VDSO_Emulation.h"
 
 #include <FEXCore/Config/Config.h>
@@ -182,8 +183,8 @@ namespace FEX::HLE {
     struct SigFrame_i32 {
       uint32_t pretcode; ///< sigreturn return branch point.
       int32_t Signal; ///< The signal hit.
-      FEXCore::x86::sigcontext sc; ///< The signal context.
-      FEXCore::x86::_libc_fpstate fpstate_unused; ///< Unused fpstate. Retained for backwards compatibility.
+      FEX::x86::sigcontext sc; ///< The signal context.
+      FEX::x86::_libc_fpstate fpstate_unused; ///< Unused fpstate. Retained for backwards compatibility.
       uint32_t extramask[1]; ///< Upper 32-bits of the signal mask. Lower 32-bits is in the sigcontext.
       char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
       ///< FP state now follows after this.
@@ -196,8 +197,8 @@ namespace FEX::HLE {
       int32_t Signal; ///< The signal hit.
       uint32_t pinfo; ///< Pointer to siginfo_t
       uint32_t puc; ///< Pointer to ucontext_t
-      FEXCore::x86::siginfo_t info;
-      FEXCore::x86::ucontext_t uc;
+      FEX::x86::siginfo_t info;
+      FEX::x86::ucontext_t uc;
       char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
       ///< FP state now follows after this.
     };
@@ -206,11 +207,11 @@ namespace FEX::HLE {
     // This frame type is always used on 64-bit, regardless of `SA_SIGINFO` flag.
     struct SigFrame_x64 {
       uint64_t sigreturn; ///< sigreturn return branch point.
-      FEXCore::x86_64::ucontext_t GuestContext;
+      FEX::x86_64::ucontext_t GuestContext;
       siginfo_t GuestInfo;
       union {
-        FEXCore::x86_64::xstate AVXState;
-        FEXCore::x86_64::_libc_fpstate FPState;
+        FEX::x86_64::xstate AVXState;
+        FEX::x86_64::_libc_fpstate FPState;
       } FPState;
       ///< Redzone padding will actually be intermixed with FPState depending on if AVX is supported or not.
       uint8_t RedZonePad[128];

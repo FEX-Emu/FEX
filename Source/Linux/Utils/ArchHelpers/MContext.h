@@ -36,7 +36,7 @@ struct X86ContextBackup {
 #endif
   // RIP and RSP is stored in GPRs here
   uint64_t GPRs[23];
-  FEXCore::x86_64::_libc_fpstate FPRState;
+  FEX::x86_64::_libc_fpstate FPRState;
   uint64_t sa_mask;
   uint16_t InSyscallInfo;
   bool FaultToTopAndGeneratedException;

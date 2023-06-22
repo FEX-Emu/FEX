@@ -4,7 +4,6 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "ArchHelpers/UContext.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/x64/Syscalls.h"
@@ -24,10 +23,10 @@ namespace FEXCore::Core {
   struct CpuStateFrame;
 }
 
-ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEXCore::x86::siginfo_t>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::x86::siginfo_t>, "%lx")
 
 namespace FEX::HLE::x32 {
-  void CopySigInfo(FEXCore::x86::siginfo_t *Info, siginfo_t const &Host) {
+  void CopySigInfo(FEX::x86::siginfo_t *Info, siginfo_t const &Host) {
     // Copy the basic things first
     Info->si_signo = Host.si_signo;
     Info->si_errno = Host.si_errno;
@@ -167,7 +166,7 @@ namespace FEX::HLE::x32 {
       return Result;
     });
 
-    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, compat_ptr<FEXCore::x86::siginfo_t> info, const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, compat_ptr<FEX::x86::siginfo_t> info, const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
       struct timespec* timeout_ptr{};
       struct timespec tp64{};
       if (timeout) {
@@ -185,7 +184,7 @@ namespace FEX::HLE::x32 {
     });
 
 
-    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait_time64, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, compat_ptr<FEXCore::x86::siginfo_t> info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait_time64, [](FEXCore::Core::CpuStateFrame *Frame, uint64_t *set, compat_ptr<FEX::x86::siginfo_t> info, const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
       siginfo_t HostInfo{};
       uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout, sigsetsize);
       if (Result != -1) {
@@ -196,7 +195,7 @@ namespace FEX::HLE::x32 {
     });
 
     if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
-      REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, compat_ptr<FEXCore::x86::siginfo_t> info, unsigned int flags) -> uint64_t {
+      REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, [](FEXCore::Core::CpuStateFrame *Frame, int pidfd, int sig, compat_ptr<FEX::x86::siginfo_t> info, unsigned int flags) -> uint64_t {
         siginfo_t *InfoHost_ptr{};
         siginfo_t InfoHost{};
         if (info) {
@@ -212,7 +211,7 @@ namespace FEX::HLE::x32 {
       REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, UnimplementedSyscallSafe);
     }
 
-    REGISTER_SYSCALL_IMPL_X32_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS(rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t pid, int sig, compat_ptr<FEX::x86::siginfo_t> info) -> uint64_t {
       siginfo_t info64{};
       siginfo_t *info64_p{};
 
@@ -224,7 +223,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32_PASS(rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame *Frame, pid_t tgid, pid_t tid, int sig, compat_ptr<FEX::x86::siginfo_t> info) -> uint64_t {
       siginfo_t info64{};
       siginfo_t *info64_p{};
 

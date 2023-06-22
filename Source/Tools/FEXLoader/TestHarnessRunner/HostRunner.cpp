@@ -1,4 +1,3 @@
-#include "ArchHelpers/UContext.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUBackend.h>
@@ -163,7 +162,7 @@ public:
     for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
       memcpy(&OutState->xmm.avx.data[i], &_mcontext->fpregs->_xmm[i], sizeof(_mcontext->fpregs->_xmm[0]));
     }
-    const auto* xstate = reinterpret_cast<FEXCore::x86_64::xstate*>(_mcontext->fpregs);
+    const auto* xstate = reinterpret_cast<FEX::x86_64::xstate*>(_mcontext->fpregs);
     const auto* reserved = &xstate->fpstate.sw_reserved;
     if (reserved->HasExtendedContext() && reserved->HasYMMH()) {
       for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {

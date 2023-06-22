@@ -1,12 +1,12 @@
 
 #pragma once
 
-#include "ArchHelpers/UContext.h"
 #include "Common/Config.h"
 #include "Common/FDUtils.h"
 #include "FEXCore/Utils/Allocator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "VDSO_Emulation.h"
+#include "Linux/Utils/ArchHelpers/UContext.h"
 #include "Linux/Utils/ELFParser.h"
 #include "Linux/Utils/ELFSymbolDatabase.h"
 
@@ -864,34 +864,34 @@ class ELFCodeLoader final : public FEXCore::CodeLoader {
 
     uint64_t Result{};
     if (Is64BitMode()) {
-      Result += sizeof(FEXCore::x86_64::ucontext_t);
-      Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::ucontext_t));
+      Result += sizeof(FEX::x86_64::ucontext_t);
+      Result = FEXCore::AlignUp(Result, alignof(FEX::x86_64::ucontext_t));
       if (SupportsAVX) {
-        Result += sizeof(FEXCore::x86_64::xstate);
-        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::xstate));
+        Result += sizeof(FEX::x86_64::xstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEX::x86_64::xstate));
       }
       else {
-        Result += sizeof(FEXCore::x86_64::_libc_fpstate);
-        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86_64::_libc_fpstate));
+        Result += sizeof(FEX::x86_64::_libc_fpstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEX::x86_64::_libc_fpstate));
       }
 
       Result += sizeof(siginfo_t);
       Result = FEXCore::AlignUp(Result, alignof(siginfo_t));
     }
     else {
-      Result += sizeof(FEXCore::x86::ucontext_t);
-      Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::ucontext_t));
+      Result += sizeof(FEX::x86::ucontext_t);
+      Result = FEXCore::AlignUp(Result, alignof(FEX::x86::ucontext_t));
       if (SupportsAVX) {
-        Result += sizeof(FEXCore::x86::xstate);
-        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::xstate));
+        Result += sizeof(FEX::x86::xstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEX::x86::xstate));
       }
       else {
-        Result += sizeof(FEXCore::x86::_libc_fpstate);
-        Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::_libc_fpstate));
+        Result += sizeof(FEX::x86::_libc_fpstate);
+        Result = FEXCore::AlignUp(Result, alignof(FEX::x86::_libc_fpstate));
       }
 
-      Result += sizeof(FEXCore::x86::siginfo_t);
-      Result = FEXCore::AlignUp(Result, alignof(FEXCore::x86::siginfo_t));
+      Result += sizeof(FEX::x86::siginfo_t);
+      Result = FEXCore::AlignUp(Result, alignof(FEX::x86::siginfo_t));
     }
 
     return Result;

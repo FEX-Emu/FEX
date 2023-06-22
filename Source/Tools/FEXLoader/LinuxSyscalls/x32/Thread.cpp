@@ -4,7 +4,6 @@ tags: LinuxSyscalls|syscalls-x86-32
 $end_info$
 */
 
-#include "ArchHelpers/UContext.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
@@ -31,7 +30,7 @@ $end_info$
 #include <unistd.h>
 
 ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::stack_t32>, "%x")
-ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEXCore::x86::siginfo_t>, "%x")
+ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::x86::siginfo_t>, "%x")
 
 namespace FEX::HLE::x32 {
   // The kernel only gives 32-bit userspace 3 TLS segments
@@ -390,7 +389,7 @@ namespace FEX::HLE::x32 {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_X32(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, compat_ptr<FEXCore::x86::siginfo_t> info, int options, struct rusage_32 *rusage) -> uint64_t {
+    REGISTER_SYSCALL_IMPL_X32(waitid, [](FEXCore::Core::CpuStateFrame *Frame, int which, pid_t upid, compat_ptr<FEX::x86::siginfo_t> info, int options, struct rusage_32 *rusage) -> uint64_t {
       struct rusage usage64{};
       struct rusage *usage64_p{};
 
