@@ -30,9 +30,8 @@ namespace FEXServerClient {
     return send(Socket, Msg, Size, 0);
   }
 
-  bool ReceivePacket(int ServerSocket, void *Msg, size_t Size) {
-    ssize_t Read = recv(ServerSocket, Msg, Size, 0);
-    return Read == Size;
+  ssize_t ReceivePacket(int ServerSocket, void *Msg, size_t Size) {
+    return recv(ServerSocket, Msg, Size, 0);
   }
 
   ssize_t SendFDPacket(int ServerSocket, void *Msg, size_t Size, int FD) {
@@ -461,7 +460,7 @@ namespace FEXServerClient {
   namespace CoreDump {
     bool WaitForAck(int Socket) {
       CoreDump::PacketHeader Msg;
-      return ReceivePacket(Socket, &Msg, sizeof(Msg)) && Msg.PacketType == CoreDump::PacketTypes::ACK;
+      return ReceivePacket(Socket, &Msg, sizeof(Msg)) == sizeof(Msg) && Msg.PacketType == CoreDump::PacketTypes::ACK;
     }
 
     ssize_t SendPacketWithData(int Socket, void *Msg, size_t size, std::span<const char> Data) {
@@ -484,6 +483,28 @@ namespace FEXServerClient {
       };
 
       return sendmsg(Socket, &msg, 0);
+    }
+
+    ssize_t ReceivePacketWithData(int Socket, void *Msg, size_t size, std::span<char> Data) {
+      struct iovec iov[2] = {
+        {
+          .iov_base = Msg,
+          .iov_len = size,
+        },
+        {
+          .iov_base = const_cast<char*>(Data.data()),
+          .iov_len = Data.size(),
+        }
+      };
+
+      struct msghdr msg {
+        .msg_name = nullptr,
+        .msg_namelen = 0,
+        .msg_iov = iov,
+        .msg_iovlen = 2,
+      };
+
+      return recvmsg(Socket, &msg, 0);
     }
 
     bool SendFD(int CoreDumpSocket, CoreDump::PacketTypes Type, int FD) {
@@ -510,6 +531,11 @@ namespace FEXServerClient {
       SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
     }
 
+    void SendApplicationName(int CoreDumpSocket, std::string_view ApplicationName) {
+      auto Msg = CoreDump::PacketApplicationName::Fill(ApplicationName);
+      SendPacketWithData(CoreDumpSocket, &Msg, sizeof(Msg), ApplicationName);
+    }
+
     void SendCommandLineFD(int CoreDumpSocket) {
       int FD = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
       SendFD(CoreDumpSocket, CoreDump::PacketTypes::FD_COMMANDLINE, FD);
@@ -520,6 +546,12 @@ namespace FEXServerClient {
       int FD = open("/proc/self/maps", O_RDONLY | O_CLOEXEC);
 
       SendFD(CoreDumpSocket, CoreDump::PacketTypes::FD_MAPS, FD);
+      close(FD);
+    }
+
+    void SendCoreDumpFilter(int CoreDumpSocket) {
+      int FD = open("/proc/self/coredump_filter", O_RDONLY | O_CLOEXEC);
+      SendFD(CoreDumpSocket, CoreDump::PacketTypes::FD_COREDUMP_FILTER, FD);
       close(FD);
     }
 
@@ -537,6 +569,16 @@ namespace FEXServerClient {
     void SendGuestContext(int CoreDumpSocket, siginfo_t const *siginfo, void const *context, size_t ContextSize, uint8_t GuestArch) {
       CoreDump::PacketGuestContext Msg = CoreDump::PacketGuestContext::Fill(siginfo, context, ContextSize, GuestArch);
       SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
+    }
+
+    void SendGuestXState(int CoreDumpSocket, bool AVX, void const *xstate, size_t XStateSize) {
+      auto Msg = CoreDump::PacketGuestXState::Fill(AVX, xstate, XStateSize);
+      SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
+    }
+
+    void SendGuestAuxv(int CoreDumpSocket, const void *auxv, uint64_t AuxvSize) {
+      auto Msg = FEXServerClient::CoreDump::PacketGuestAuxv::Fill(AuxvSize);
+      SendPacketWithData(CoreDumpSocket, &Msg, sizeof(Msg), std::span(reinterpret_cast<const char*>(auxv), AuxvSize));
     }
 
     void SendContextUnwind(int CoreDumpSocket) {
@@ -574,6 +616,18 @@ namespace FEXServerClient {
           break;
         }
 
+        case FEXServerClient::CoreDump::PacketTypes::READ_MEMORY: {
+          auto Req = reinterpret_cast<FEXServerClient::CoreDump::PacketReadMem *>(&Data[CurrentOffset]);
+          auto Msg = FEXServerClient::CoreDump::PacketReadMemResponse::Fill(false);
+
+          auto SentResult = SendPacketWithData(CoreDumpSocket, &Msg, sizeof(Msg), std::span(reinterpret_cast<const char*>(Req->Addr), Req->Size));
+          if (SentResult == -1) {
+            Msg = FEXServerClient::CoreDump::PacketReadMemResponse::Fill(true);
+            SendPacket(CoreDumpSocket, &Msg, sizeof(Msg));
+          }
+          CurrentOffset += sizeof(*Req);
+          break;
+        }
         case FEXServerClient::CoreDump::PacketTypes::GET_FD_FROM_CLIENT: {
           FEXServerClient::CoreDump::PacketGetFDFromFilename *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGetFDFromFilename *>(&Data[CurrentOffset]);
           int FD = open(Req->Filepath, O_RDONLY);
@@ -629,9 +683,9 @@ namespace FEXServerClient {
     }
 
     ///< Server side handling
-    int GetFDFromClient(int ServerSocket, fextl::string const *Filename) {
+    int GetFDFromClient(int ServerSocket, std::string_view const Filename) {
       FEXServerClient::CoreDump::PacketGetFDFromFilename Msg = FEXServerClient::CoreDump::PacketGetFDFromFilename::Fill(Filename);
-      FEXServerClient::CoreDump::SendPacketWithData(ServerSocket, &Msg, sizeof(Msg), std::span(Filename->data(), Filename->size()));
+      FEXServerClient::CoreDump::SendPacketWithData(ServerSocket, &Msg, sizeof(Msg), std::span(Filename.data(), Filename.size()));
       return FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
     }
 
@@ -644,10 +698,41 @@ namespace FEXServerClient {
       FEXServerClient::CoreDump::PacketPeekMem Msg = FEXServerClient::CoreDump::PacketPeekMem::Fill(Addr, Size);
       SendPacket(ServerSocket, &Msg, sizeof(Msg));
       FEXServerClient::CoreDump::PacketPeekMemResponse MsgResponse;
-      if (ReceivePacket(ServerSocket, &MsgResponse, sizeof(MsgResponse))) {
+      if (ReceivePacket(ServerSocket, &MsgResponse, sizeof(MsgResponse)) == sizeof(MsgResponse)) {
         return MsgResponse.Data;
       }
       return std::nullopt;
+    }
+
+    bool ReadMemory(int ServerSocket, void *ResultMemory, uint64_t Addr, uint32_t Size) {
+      FEXServerClient::CoreDump::PacketReadMem Msg = FEXServerClient::CoreDump::PacketReadMem::Fill(Addr, Size);
+      SendPacket(ServerSocket, &Msg, sizeof(Msg));
+
+      FEXServerClient::CoreDump::PacketReadMemResponse MsgResponse;
+
+      auto TotalSize = sizeof(MsgResponse) + Size;
+      auto Read = ReceivePacketWithData(ServerSocket, &MsgResponse, sizeof(MsgResponse), std::span(reinterpret_cast<char*>(ResultMemory), Size));
+
+      if (Read == TotalSize && MsgResponse.HadError == false) {
+        return true;
+      }
+
+      if (MsgResponse.HadError) {
+        return false;
+      }
+
+      char *CurrentResultOffset = reinterpret_cast<char*>(ResultMemory) + (Read - sizeof(MsgResponse));
+      uint32_t RemainingSize = TotalSize - Read;
+      do {
+        auto ReadBytes = ReceivePacket(ServerSocket, CurrentResultOffset, RemainingSize);
+        if (ReadBytes == -1) {
+          return false;
+        }
+        RemainingSize -= ReadBytes;
+        CurrentResultOffset += ReadBytes;
+      } while (RemainingSize > 0);
+
+      return true;
     }
 
     int HandleFDPacket(int CoreDumpSocket) {

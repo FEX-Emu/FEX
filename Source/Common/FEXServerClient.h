@@ -9,6 +9,8 @@
 
 #include <optional>
 #include <span>
+#include <sys/resource.h>
+#include <unistd.h>
 
 namespace FEXServerClient {
   enum class PacketType {
@@ -26,28 +28,28 @@ namespace FEXServerClient {
 
   union FEXServerRequestPacket {
     struct Header {
-      PacketType Type;
+      PacketType Type{};
     } Header;
 
     struct {
-      struct Header Header;
+      struct Header Header{};
     } BasicRequest;
   };
 
   union FEXServerResultPacket {
     struct Header {
-      PacketType Type;
+      PacketType Type{};
     } Header;
 
     struct {
-      struct Header Header;
-      int32_t PID;
+      struct Header Header{};
+      int32_t PID{};
     } PID;
 
     struct {
-      struct Header Header;
-      size_t Length;
-      char Mount[0];
+      struct Header Header{};
+      size_t Length{};
+      char Mount[];
     } MountPath;
   };
 
@@ -196,15 +198,21 @@ namespace FEXServerClient {
   namespace CoreDump {
     enum class PacketTypes : uint32_t {
       DESC,
+      APPLICATIONNAME,
       FD_COMMANDLINE,
       FD_MAPS,
       FD_MAP_FILES,
+      FD_COREDUMP_FILTER,
       CLIENT_SHUTDOWN,
       HOST_CONTEXT,
       GUEST_CONTEXT,
+      GUEST_XSTATE,
+      GUEST_AUXV,
       CONTEXT_UNWIND,
       PEEK_MEMORY,
       PEEK_MEMORY_RESPONSE,
+      READ_MEMORY,
+      READ_MEMORY_RESPONSE,
       GET_FD_FROM_CLIENT,
       GET_JIT_REGIONS,
 
@@ -230,8 +238,8 @@ namespace FEXServerClient {
       uint32_t gid{};
       uint32_t Signal;
       uint64_t Timestamp{};
-      uint8_t HostArch;
-      uint8_t GuestArch;
+      uint8_t HostArch{};
+      uint8_t GuestArch{};
 
       static PacketDescription Fill(uint32_t Signal, uint8_t GuestArch) {
         uint64_t Timestamp{};
@@ -258,10 +266,22 @@ namespace FEXServerClient {
       }
     };
 
+    struct PacketApplicationName {
+      PacketHeader Header{};
+      size_t FilenameLength{};
+      char Filepath[];
+      static PacketApplicationName Fill(std::string_view const Filename) {
+        return PacketApplicationName {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::APPLICATIONNAME),
+          .FilenameLength = Filename.size(),
+        };
+      }
+    };
+
     struct PacketHostContext {
       PacketHeader Header{};
-      siginfo_t siginfo;
-      mcontext_t context;
+      siginfo_t siginfo{};
+      mcontext_t context{};
 
       static PacketHostContext Fill(siginfo_t const *siginfo, mcontext_t const *context) {
         return PacketHostContext {
@@ -274,9 +294,19 @@ namespace FEXServerClient {
 
     struct PacketGuestContext {
       PacketHeader Header{};
-      siginfo_t siginfo;
-      uint8_t OpaqueContext[256];
-      uint8_t GuestArch;
+      uint64_t pr_sigpend{};
+      uint64_t pr_sighold{};
+      uint32_t pr_ppid{};
+      uint32_t pr_pgrp{};
+      uint32_t pr_sid{};
+      struct timeval pr_utime{};
+      struct timeval pr_stime{};
+      struct timeval pr_cutime{};
+      struct timeval pr_cstime{};
+
+      siginfo_t siginfo{};
+      uint8_t OpaqueContext[256]{};
+      uint8_t GuestArch{};
 
       static PacketGuestContext Fill(siginfo_t const *siginfo, void const *context, size_t ContextSize, uint8_t GuestArch) {
         LOGMAN_THROW_A_FMT(sizeof(OpaqueContext) >= ContextSize, "Context size grew too large");
@@ -285,16 +315,72 @@ namespace FEXServerClient {
           .siginfo = *siginfo,
           .GuestArch = GuestArch,
         };
+        auto SetMask = [](sigset_t &Set) -> uint64_t {
+          uint64_t Mask{};
+          for (size_t i = 0; i < 64; ++i) {
+            if (sigismember(&Set, i)) {
+              Mask |= (1ULL << i);
+            }
+          }
+          return Mask;
+        };
+
+        sigset_t SigSet{};
+        sigpending(&SigSet);
+        Msg.pr_sigpend = SetMask(SigSet);
+        sigprocmask(SIG_SETMASK, nullptr, &SigSet);
+        Msg.pr_sighold = SetMask(SigSet);
+        Msg.pr_ppid = ::getppid();
+        Msg.pr_pgrp = ::getpgrp();
+        Msg.pr_sid = ::getsid(0);
+
+        struct rusage usage{};
+        getrusage(RUSAGE_THREAD, &usage);
+        Msg.pr_utime = usage.ru_utime;
+        Msg.pr_stime = usage.ru_stime;
+        getrusage(RUSAGE_CHILDREN, &usage);
+        Msg.pr_cutime = usage.ru_utime;
+        Msg.pr_cstime = usage.ru_stime;
+
         memcpy(&Msg.OpaqueContext, context, ContextSize);
 
         return Msg;
       }
     };
 
+    struct PacketGuestXState {
+      PacketHeader Header{};
+      uint8_t AVX{};
+      uint8_t OpaqueState[944]{};
+
+      static PacketGuestXState Fill(bool AVX, void const *xstate, size_t XStateSize) {
+        LOGMAN_THROW_A_FMT(sizeof(OpaqueState) >= XStateSize, "XState size grew too large");
+        PacketGuestXState Msg {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GUEST_XSTATE),
+          .AVX = AVX,
+        };
+        memcpy(&Msg.OpaqueState, xstate, XStateSize);
+
+        return Msg;
+      }
+    };
+
+    struct PacketGuestAuxv {
+      PacketHeader Header{};
+      uint64_t AuxvSize{};
+      uint8_t Auxv[];
+      static PacketGuestAuxv Fill(uint64_t AuxvSize) {
+        return PacketGuestAuxv {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GUEST_AUXV),
+          .AuxvSize = AuxvSize,
+        };
+      }
+    };
+
     struct PacketPeekMem {
       PacketHeader Header{};
-      uint64_t Addr;
-      uint32_t Size;
+      uint64_t Addr{};
+      uint32_t Size{};
       static PacketPeekMem Fill(uint64_t Addr, uint32_t Size) {
         return PacketPeekMem {
           .Header = CoreDump::FillHeader(CoreDump::PacketTypes::PEEK_MEMORY),
@@ -306,7 +392,7 @@ namespace FEXServerClient {
 
     struct PacketPeekMemResponse {
       PacketHeader Header{};
-      uint64_t Data;
+      uint64_t Data{};
       static PacketPeekMemResponse Fill(uint64_t Data) {
         return PacketPeekMemResponse {
           .Header = CoreDump::FillHeader(CoreDump::PacketTypes::PEEK_MEMORY_RESPONSE),
@@ -315,14 +401,38 @@ namespace FEXServerClient {
       }
     };
 
+    struct PacketReadMem {
+      PacketHeader Header{};
+      uint64_t Addr{};
+      uint32_t Size{};
+      static PacketReadMem Fill(uint64_t Addr, uint32_t Size) {
+        return PacketReadMem {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::READ_MEMORY),
+          .Addr = Addr,
+          .Size = Size,
+        };
+      }
+    };
+
+    struct PacketReadMemResponse {
+      PacketHeader Header{};
+      bool HadError{};
+      static PacketReadMemResponse Fill(bool HadError) {
+        return PacketReadMemResponse {
+          .Header = CoreDump::FillHeader(CoreDump::PacketTypes::READ_MEMORY_RESPONSE),
+          .HadError = HadError,
+        };
+      }
+    };
+
     struct PacketGetFDFromFilename {
       PacketHeader Header{};
-      size_t FilenameLength;
+      size_t FilenameLength{};
       char Filepath[];
-      static PacketGetFDFromFilename Fill(fextl::string const *Filename) {
+      static PacketGetFDFromFilename Fill(std::string_view const Filename) {
         return PacketGetFDFromFilename {
           .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GET_FD_FROM_CLIENT),
-          .FilenameLength = Filename->size(),
+          .FilenameLength = Filename.size(),
         };
       }
     };
@@ -347,20 +457,25 @@ namespace FEXServerClient {
 
     ///< Client side handling.
     void SendDescPacket(int CoreDumpSocket, uint32_t Signal, uint8_t GuestArch);
+    void SendApplicationName(int CoreDumpSocket, std::string_view ApplicationName);
     void SendCommandLineFD(int CoreDumpSocket);
     void SendMapsFD(int CoreDumpSocket);
+    void SendCoreDumpFilter(int CoreDumpSocket);
     void SendMapFilesFD(int CoreDumpSocket);
     void SendHostContext(int CoreDumpSocket, siginfo_t const *siginfo, mcontext_t const *context);
     void SendGuestContext(int CoreDumpSocket, siginfo_t const *siginfo, void const *context, size_t ContextSize, uint8_t GuestArch);
+    void SendGuestXState(int CoreDumpSocket, bool AVX, void const *xstate, size_t XStateSize);
+    void SendGuestAuxv(int CoreDumpSocket, const void *auxv, uint64_t AuxvSize);
     void SendContextUnwind(int CoreDumpSocket);
     void SendJITRegions(int CoreDumpSocket, FEXCore::Context::Context::JITRegionPairs const *Dispatcher, fextl::vector<FEXCore::Context::Context::JITRegionPairs> const *RegionPairs);
 
     void WaitForRequests(int CoreDumpSocket);
 
     ///< Server side handling.
-    int GetFDFromClient(int ServerSocket, fextl::string const *Filename);
+    int GetFDFromClient(int ServerSocket, std::string_view const Filename);
     void SendShutdownPacket(int CoreDumpSocket);
     std::optional<uint64_t> PeekMemory(int ServerSocket, uint64_t Addr, uint32_t Size);
+    bool ReadMemory(int ServerSocket, void *ResultMemory, uint64_t Addr, uint32_t Size);
     int HandleFDPacket(int CoreDumpSocket);
   }
   /**  @} */
