@@ -10,6 +10,7 @@ $end_info$
 
 #include "LinuxSyscalls/SignalDelegator.h"
 
+#include <FEXCore/Core/CodeLoader.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
@@ -1635,11 +1636,19 @@ namespace FEX::HLE {
       SigFrame_x64 GuestFrameData{};
       auto GuestFrame = FetchThreadSignalData(Thread, Signal, Info, UContext, &GuestFrameData);
       FEXServerClient::CoreDump::SendGuestContext(CoredumpFD, &GuestFrame->GuestInfo, &GuestFrame->GuestContext.uc_mcontext, sizeof(GuestFrame->GuestContext.uc_mcontext), Is64BitMode());
+      FEXServerClient::CoreDump::SendGuestXState(CoredumpFD, Config.SupportsAVX, &GuestFrame->FPState, sizeof(GuestFrame->FPState));
 
+      uint64_t auxvBase=0, auxvSize=0;
+      FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
+      FEXServerClient::CoreDump::SendGuestAuxv(CoredumpFD, reinterpret_cast<const void*>(auxvBase), auxvSize);
+
+      // Send coredump filter.
+      FEXServerClient::CoreDump::SendCoreDumpFilter(CoredumpFD);
       // Send the command line arguments.
       FEXServerClient::CoreDump::SendCommandLineFD(CoredumpFD);
       // Send the program description information.
       FEXServerClient::CoreDump::SendDescPacket(CoredumpFD, Signal, Is64BitMode());
+      FEXServerClient::CoreDump::SendApplicationName(CoredumpFD, ApplicationName);
       // Send FD for mapped files.
       FEXServerClient::CoreDump::SendMapFilesFD(CoredumpFD);
       // Send FD for memory maps.

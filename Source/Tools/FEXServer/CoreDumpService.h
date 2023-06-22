@@ -1,5 +1,6 @@
 #pragma once
 #include "Common/FEXServerClient.h"
+#include "CoreFileWriter/CoreFileWriter.h"
 #include "Unwind/FileMapping.h"
 
 #include <FEXCore/fextl/map.h>
@@ -149,9 +150,7 @@ namespace CoreDumpService {
             }
             Offset += Arg.size() + 1;
           }
-
         }
-        close(FD);
       }
 
       void SetDesc(uint32_t pid, uint32_t tid, uint32_t uid, uint32_t gid, uint32_t Signal, uint64_t Timestamp, uint8_t HostArch, uint8_t GuestArch) {
@@ -187,6 +186,7 @@ namespace CoreDumpService {
 
       FEXServerClient::CoreDump::PacketGuestContext GuestContextData;
       FEXServerClient::CoreDump::PacketHostContext HostContextData;
+      fextl::unique_ptr<CoreFileWriter::CoreFileWriter> CoreWriter;
       void HandleSocketData();
 
       fextl::list<FileMapping::FileMapping> FileMappings;

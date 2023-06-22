@@ -2,6 +2,7 @@ set(NAME FEXServer)
 set(SRCS Main.cpp
   ArgumentLoader.cpp
   CoreDumpService.cpp
+  CoreFileWriter/CoreFileWriter.cpp
   Logger.cpp
   PipeScanner.cpp
   ProcessPipe.cpp

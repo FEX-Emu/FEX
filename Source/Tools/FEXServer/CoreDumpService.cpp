@@ -1,6 +1,7 @@
 #include "CoreDumpService.h"
 #include "ProcessPipe.h"
 #include "Common/FEXServerClient.h"
+#include "CoreFileWriter/CoreFileWriter.h"
 
 #include "Common/SocketUtil.h"
 
@@ -19,6 +20,8 @@
 #include <fmt/chrono.h>
 
 namespace CoreDumpService {
+  std::mutex FileDeletionMutex{};
+
   void CoreDumpClass::ConsumeFileMapsFD(int FD) {
     lseek(FD, 0, SEEK_SET);
     DIR *dir = fdopendir(dup(FD));
@@ -161,6 +164,7 @@ namespace CoreDumpService {
           int FD = FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
 
           ParseCommandLineFromFD(FD);
+          close(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -170,6 +174,8 @@ namespace CoreDumpService {
           int FD = FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
 
           ConsumeMapsFD(FD);
+          CoreWriter->ConsumeMapsFD(FD);
+          close(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -179,6 +185,7 @@ namespace CoreDumpService {
           int FD = FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
 
           ConsumeFileMapsFD(FD);
+          close(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -193,7 +200,33 @@ namespace CoreDumpService {
             Req->HostArch,
             Req->GuestArch);
 
+          if (CoreWriter) {
+            CoreWriter->SetPID(Req->pid);
+            CoreWriter->SetUID(Req->uid);
+            CoreWriter->SetTimestamp(Req->Timestamp);
+          }
+
           CurrentOffset += sizeof(*Req);
+          break;
+        }
+
+        case FEXServerClient::CoreDump::PacketTypes::APPLICATIONNAME: {
+          auto Req = reinterpret_cast<FEXServerClient::CoreDump::PacketApplicationName*>(&Data[CurrentOffset]);
+          if (CoreWriter) {
+            CoreWriter->SetApplicationName(std::string_view(Req->Filepath, Req->FilenameLength));
+          }
+          CurrentOffset += sizeof(*Req) + Req->FilenameLength;
+          break;
+        }
+        case FEXServerClient::CoreDump::PacketTypes::FD_COREDUMP_FILTER: {
+          // Client is waiting for acknowledgement.
+          FEXServerClient::CoreDump::SendAckPacket(ServerSocket);
+          int FD = FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
+
+          CoreWriter->ConsumeCoreDumpFilter(FD);
+          close(FD);
+
+          CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
         case FEXServerClient::CoreDump::PacketTypes::HOST_CONTEXT: {
@@ -206,16 +239,64 @@ namespace CoreDumpService {
         case FEXServerClient::CoreDump::PacketTypes::GUEST_CONTEXT: {
           FEXServerClient::CoreDump::PacketGuestContext *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGuestContext *>(&Data[CurrentOffset]);
           Desc.GuestArch = Req->GuestArch;
+          if (Desc.GuestArch == 1) {
+            CoreWriter = CoreFileWriter::CreateWriter64();
+          }
+          else {
+            CoreWriter = CoreFileWriter::CreateWriter32();
+          }
+
+          CoreWriter->ConsumeGuestContext(Req);
+
           // TODO: Create guest context unwinder.
           CurrentOffset += sizeof(*Req);
+          break;
+        }
+        case FEXServerClient::CoreDump::PacketTypes::GUEST_XSTATE: {
+          FEXServerClient::CoreDump::PacketGuestXState *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGuestXState *>(&Data[CurrentOffset]);
+          CoreWriter->ConsumeGuestXState(Req);
+          CurrentOffset += sizeof(*Req);
+          break;
+        }
+        case FEXServerClient::CoreDump::PacketTypes::GUEST_AUXV: {
+          auto Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGuestAuxv*>(&Data[CurrentOffset]);
+          CoreWriter->ConsumeGuestAuxv(Req->Auxv, Req->AuxvSize);
+          CurrentOffset += sizeof(*Req) + Req->AuxvSize;
           break;
         }
         case FEXServerClient::CoreDump::PacketTypes::CONTEXT_UNWIND: {
           // Print the header to the backtrace.
           BacktraceHeader();
+
+          if (CoreWriter) {
+            auto Fetcher = [this](std::string_view const Filename) -> int {
+              ProcessPipe::CheckRaiseFDLimit();
+              return FEXServerClient::CoreDump::GetFDFromClient(ServerSocket, Filename);
+            };
+
+            CoreWriter->GetMappedFDs(Fetcher);
+
+            auto MemoryFetcher = [this](void *ResultMemory, uint64_t MemoryBase, size_t MemorySize) -> bool {
+              return FEXServerClient::CoreDump::ReadMemory(ServerSocket, ResultMemory, MemoryBase, MemorySize);
+            };
+            CoreWriter->SetMemoryFetcher(MemoryFetcher);
+            CoreWriter->Write();
+          }
+
           // TODO: Unwind the host and guest contexts that were received.
           // Shutdown the client once FEXServer has unwound.
           FEXServerClient::CoreDump::SendShutdownPacket(ServerSocket);
+
+          // Wait a moment for the client to sanely clean-up.
+          // Then just leave if it hung regardless.
+          std::this_thread::sleep_for(std::chrono::seconds(1));
+
+          // After the client has closed and before this thread shuts down, do a check to see if old coredumps should be removed.
+          // Only allow one thread to try doing this at a time.
+          if (CoreWriter && FileDeletionMutex.try_lock()) {
+            CoreWriter->CleanupOldCoredumps();
+            FileDeletionMutex.unlock();
+          }
 
           ShouldShutdown = true;
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
@@ -280,6 +361,7 @@ namespace CoreDumpService {
     shutdown(ServerSocket, SHUT_RDWR);
     close(ServerSocket);
 
+    CoreWriter.reset();
     Running = false;
   }
 
