@@ -7,4 +7,6 @@ namespace ProcessPipe {
   void WaitForRequests();
   void SetConfiguration(bool Foreground, uint32_t PersistentTimeout);
   void Shutdown();
+
+  void CheckRaiseFDLimit();
 }
