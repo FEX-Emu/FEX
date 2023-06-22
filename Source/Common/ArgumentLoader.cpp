@@ -39,6 +39,7 @@ namespace FEX::ArgLoader {
 
     using int32 = int32_t;
     using uint32 = uint32_t;
+    using uint64 = uint64_t;
 #define AFTER_PARSE
 #include <FEXCore/Config/ConfigOptions.inl>
     RemainingArgs = Parser.args();

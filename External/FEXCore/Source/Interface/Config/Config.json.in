@@ -407,6 +407,40 @@
           "Giving backtraces on unhandled signals that will coredump",
           "FEXServer will only give a backtrace socket when in foreground mode"
         ]
+      },
+      "Coredump_Compress_ZSTD": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Enables ZSTD coredump compression.",
+          "After the coredump is generated it will use zstd to compress the file.",
+          "If the zstd application isn't installed then this is skipped."
+        ]
+      },
+      "Coredump_Folder": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Folder override for FEXServer to save its coredump files in to.",
+          "If not set then FEXServer will use its default path:",
+          "\teg: $HOME/.fex-emu/coredump/"
+        ]
+      },
+      "Coredump_Maximum_Threshold": {
+        "Type": "uint64",
+        "Default": "512 * 1024 * 1024",
+        "Desc": [
+          "The maximum amount of data to be stored in the coredump folder before FEXServer starts deleting files.",
+          "Once the capacity has been reached, FEXServer will erase files from oldest to newest until below this threshold."
+        ]
+      },
+      "Coredump_Maximum_Age": {
+        "Type": "uint64",
+        "Default": "24 * 60 * 60",
+        "Desc": [
+          "FEXServer deletes coredump files older than this age in seconds.",
+          "Coredump files older than this age will get erased regardless of size threshold"
+        ]
       }
     }
   },
