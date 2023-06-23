@@ -9,6 +9,7 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <cstring>
+#include <linux/limits.h>
 #include <poll.h>
 #include <sys/socket.h>
 #include <thread>
@@ -32,18 +33,20 @@ namespace CoreDumpService {
       };
 
 
-      int Init() {
+      // Initializes this CoreDumpClass's execution thread and associated sockets.
+      // Returns one socket of the socketpair for the paired connection.
+      int InitExecutionThread() {
         int SVs[2];
         int Result = socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, SVs);
         if (Result == -1) {
           return -1;
         }
 
-        PollFDs.emplace_back(pollfd {
+        PollFD = {
           .fd = SVs[0],
           .events = POLLIN | POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP,
           .revents = 0,
-        });
+        };
 
         ExecutionThread = std::thread(&CoreDumpClass::ExecutionFunc, this);
 
@@ -118,18 +121,19 @@ namespace CoreDumpService {
       }
 
     private:
-      void ParseCommandLineFD(int FD) {
-        char Tmp[512];
-        ssize_t Size = pread(FD, Tmp, 512, 0);
+      // Parses the command line in `/proc/cmdline` format.
+      // Arguments separated by '\0', wrapping each argument with spaces in double-quotes for improved readability.
+      void ParseCommandLineFromFD(int FD) {
+        char Tmp[PATH_MAX];
+        ssize_t Size = pread(FD, Tmp, PATH_MAX, 0);
         if (Size != -1) {
           size_t Offset = 0;
           while (Offset < Size) {
-            char *Arg = &Tmp[Offset];
-            size_t Len = strlen(Arg);
-            if (Len == 0) {
+            std::string_view Arg = &Tmp[Offset];
+            if (Arg.empty()) {
               break;
             }
-            bool HasSpaces = strchr(Arg, ' ') != nullptr;
+            bool HasSpaces = strchr(Arg.data(), ' ') != nullptr;
 
             if (HasSpaces) {
               CommandLineString += "\"";
@@ -143,7 +147,7 @@ namespace CoreDumpService {
             else {
               CommandLineString += " ";
             }
-            Offset += Len + 1;
+            Offset += Arg.size() + 1;
           }
 
         }
@@ -170,7 +174,7 @@ namespace CoreDumpService {
 
       int ServerSocket;
       std::thread ExecutionThread;
-      std::vector<struct pollfd> PollFDs{};
+      pollfd PollFD;
       time_t RequestTimeout {10};
       std::atomic<bool> ShouldShutdown {false};
       std::atomic<bool> Running {true};
