@@ -28,7 +28,7 @@ namespace CoreDumpService {
     while ((entry = readdir(dir)) != nullptr) {
       struct stat buf{};
       if (fstatat(FD, entry->d_name, &buf, 0)) {
-        int LinkSize = readlinkat(FD, entry->d_name, Tmp, 512);
+        int LinkSize = readlinkat(FD, entry->d_name, Tmp, sizeof(Tmp));
         if (LinkSize > 0) {
           auto ReadlinkView = std::string_view(Tmp, LinkSize);
           uint64_t Begin, End;
@@ -160,7 +160,7 @@ namespace CoreDumpService {
           FEXServerClient::CoreDump::SendAckPacket(ServerSocket);
           int FD = FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
 
-          ParseCommandLineFD(FD);
+          ParseCommandLineFromFD(FD);
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
         }
@@ -217,9 +217,6 @@ namespace CoreDumpService {
           // Shutdown the client once FEXServer has unwound.
           FEXServerClient::CoreDump::SendShutdownPacket(ServerSocket);
 
-          // Wait a moment for the client to sanely clean-up.
-          // Then just leave if it hung regardless.
-          std::this_thread::sleep_for(std::chrono::seconds(1000));
           ShouldShutdown = true;
           CurrentOffset += sizeof(FEXServerClient::CoreDump::PacketHeader);
           break;
@@ -249,57 +246,32 @@ namespace CoreDumpService {
       struct timespec ts{};
       ts.tv_sec = RequestTimeout;
 
-      if (PollFDs.empty()) {
-        ShouldShutdown = true;
-      }
-      else {
-        int Result = ppoll(&PollFDs.at(0), PollFDs.size(), &ts, nullptr);
-        if (Result > 0) {
-          // Walk the FDs and see if we got any results
-          for (auto it = PollFDs.begin(); it != PollFDs.end(); ) {
-            auto &Event = *it;
-            bool Erase{};
-
-            if (Event.revents != 0) {
-              if (Event.fd == ServerSocket) {
-                //LogMan::Msg::DFmt("Event: 0x{:x}", Event.revents);
-                if (Event.revents & POLLIN) {
-                  HandleSocketData();
-                }
-
-                // Handle POLLIN and other events at the same time.
-                if (Event.revents & (POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP)) {
-                  // Listen socket error or shutting down
-                  Erase = true;
-                }
-              }
-
-              Event.revents = 0;
-              --Result;
-            }
-
-            if (Erase) {
-              it = PollFDs.erase(it);
-            }
-            else {
-              ++it;
-            }
-
-            if (Result == 0) {
-              // Early break if we've consumed all the results
-              break;
-            }
+      int Result = ppoll(&PollFD, 1, &ts, nullptr);
+      if (Result > 0) {
+        // Walk the FDs and see if we got any results
+        if (PollFD.revents != 0) {
+          //LogMan::Msg::DFmt("Event: 0x{:x}", Event.revents);
+          if (PollFD.revents & POLLIN) {
+            HandleSocketData();
           }
-        }
-        else {
-          auto Now = std::chrono::system_clock::now();
-          auto Diff = Now - LastDataTime;
-          if (Diff >= std::chrono::seconds(RequestTimeout) &&
-              PollFDs.size() < 1) {
-            // If we have no connections after a timeout
-            // Then we can just go ahead and leave
+
+          // Handle POLLIN and other events at the same time.
+          if (PollFD.revents & (POLLHUP | POLLERR | POLLNVAL | POLLREMOVE | POLLRDHUP)) {
+            // Listen socket error or shutting down
             ShouldShutdown = true;
           }
+
+          // Reset the revents for the next query.
+          PollFD.revents = 0;
+        }
+      }
+      else {
+        auto Now = std::chrono::system_clock::now();
+        auto Diff = Now - LastDataTime;
+        if (Diff >= std::chrono::seconds(RequestTimeout)) {
+          // If we have no data after a timeout
+          // Then we can just go ahead and leave
+          ShouldShutdown = true;
         }
       }
     }
@@ -355,7 +327,7 @@ namespace CoreDumpService {
       auto it = &CoreDumpObjects.emplace_back(fextl::make_unique<CoreDumpClass>());
       CoreDump = it->get();
     }
-    return CoreDump->Init();
+    return CoreDump->InitExecutionThread();
   }
 
   void ShutdownFD(int FD) {
