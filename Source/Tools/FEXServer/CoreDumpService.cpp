@@ -270,8 +270,11 @@ namespace CoreDumpService {
 
           if (CoreWriter) {
             auto Fetcher = [this](std::string_view const Filename) -> int {
-              ProcessPipe::CheckRaiseFDLimit();
-              return FEXServerClient::CoreDump::GetFDFromClient(ServerSocket, Filename);
+              auto Result = FEXServerClient::CoreDump::GetFDFromClient(ServerSocket, Filename);
+              if (Result != -1) {
+                ProcessPipe::CheckRaiseFDLimit(1);
+              }
+              return Result;
             };
 
             CoreWriter->GetMappedFDs(Fetcher);
@@ -293,9 +296,14 @@ namespace CoreDumpService {
 
           // After the client has closed and before this thread shuts down, do a check to see if old coredumps should be removed.
           // Only allow one thread to try doing this at a time.
-          if (CoreWriter && FileDeletionMutex.try_lock()) {
-            CoreWriter->CleanupOldCoredumps();
-            FileDeletionMutex.unlock();
+          if (CoreWriter) {
+            // Ensure we have closed all open FDs before continuing.
+            CoreWriter->CleanupFDs();
+
+            if (FileDeletionMutex.try_lock()) {
+              CoreWriter->CleanupOldCoredumps();
+              FileDeletionMutex.unlock();
+            }
           }
 
           ShouldShutdown = true;

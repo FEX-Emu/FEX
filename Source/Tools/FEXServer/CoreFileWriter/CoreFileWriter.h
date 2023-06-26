@@ -67,6 +67,7 @@ namespace CoreFileWriter {
         // Bit 10: DAX Shared
       };
 
+      virtual void CleanupFDs() = 0;
       void CleanupOldCoredumps();
     protected:
       // Get the current offset of the FD.

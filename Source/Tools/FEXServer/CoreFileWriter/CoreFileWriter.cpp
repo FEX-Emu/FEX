@@ -1,3 +1,4 @@
+#include "ProcessPipe.h"
 #include "CoreFileWriter/CoreFileWriter.h"
 #include "Linux/Utils/ArchHelpers/UContext.h"
 
@@ -454,6 +455,9 @@ namespace CoreFileWriter {
           return;
         }
 
+        // Double check FD limits.
+        ProcessPipe::CheckRaiseFDLimit(1);
+
         int fd = FDPair.second;
         Header.e_phnum = ProgramHeaders.size();
 
@@ -600,12 +604,21 @@ namespace CoreFileWriter {
       }
 
       ~CoreFileWriterBase() override {
+        CleanupFDs();
+      }
+
+      void CleanupFDs() override {
+        ssize_t NumberOfFDS{};
         for (auto &Node : LoadSections) {
           if (Node.FD != -1) {
             close(Node.FD);
+            --NumberOfFDS;
             Node.FD = -1;
           }
         }
+
+        ProcessPipe::CheckRaiseFDLimit(NumberOfFDS);
+        LoadSections.clear();
       }
 
     protected:
@@ -784,6 +797,9 @@ namespace CoreFileWriter {
   }
 
   void CoreFileWriter::CleanupOldCoredumps() {
+    // Double check FD limits.
+    ProcessPipe::CheckRaiseFDLimit(1);
+
     const auto DeletionAge = std::chrono::seconds(CoreDumpMaximumAge());
 
     auto CurrentTime = std::chrono::system_clock::now();
@@ -850,6 +866,7 @@ namespace CoreFileWriter {
     }
 
     close(FD);
+    ProcessPipe::CheckRaiseFDLimit(-1);
   }
 
   using CoreFileWriter64 = CoreFileWriterBase<CoreFileWriter64Types>;

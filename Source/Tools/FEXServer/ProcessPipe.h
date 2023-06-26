@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <sys/types.h>
 
 namespace ProcessPipe {
   bool InitializeServerPipe();
@@ -8,5 +9,5 @@ namespace ProcessPipe {
   void SetConfiguration(bool Foreground, uint32_t PersistentTimeout);
   void Shutdown();
 
-  void CheckRaiseFDLimit();
+  void CheckRaiseFDLimit(ssize_t IncrementAmount);
 }

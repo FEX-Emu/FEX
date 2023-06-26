@@ -47,7 +47,9 @@ namespace ProcessPipe {
     NumFilesOpened = GetNumFilesOpen();
   }
 
-  void CheckRaiseFDLimit() {
+  void CheckRaiseFDLimit(ssize_t IncrementAmount) {
+    NumFilesOpened += IncrementAmount;
+
     if (NumFilesOpened < (MaxFDs.rlim_cur - MAX_FD_DISTANCE)) {
       // No need to raise the limit.
       return;
@@ -256,8 +258,7 @@ namespace ProcessPipe {
             close(fds[1]);
 
             // Check if we need to increase the FD limit.
-            ++NumFilesOpened;
-            CheckRaiseFDLimit();
+            CheckRaiseFDLimit(1);
           }
           else {
             // Log thread isn't running. Let FEXInterpreter know it can't have one.
@@ -323,8 +324,7 @@ namespace ProcessPipe {
             close(fds[0]);
 
             // Check if we need to increase the FD limit.
-            ++NumFilesOpened;
-            CheckRaiseFDLimit();
+            CheckRaiseFDLimit(1);
 
             // Write side will naturally close on process exit, letting the other process know we have exited.
           }
@@ -349,8 +349,7 @@ namespace ProcessPipe {
             CoreDumpService::ShutdownFD(Result);
 
             // Check if we need to increase the FD limit.
-            ++NumFilesOpened;
-            CheckRaiseFDLimit();
+            CheckRaiseFDLimit(1);
           }
           else {
             // Log thread isn't running. Let FEXInterpreter know it can't have one.
@@ -405,12 +404,20 @@ namespace ProcessPipe {
                 socklen_t AddrSize{};
                 int NewFD = accept(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
 
-                // Add the new client to the temporary array
-                NewPollFDs.emplace_back(pollfd {
-                  .fd = NewFD,
-                  .events = POLLIN | POLLPRI | POLLRDHUP,
-                  .revents = 0,
-                });
+                // Check if we need to increase the FD limit.
+                CheckRaiseFDLimit(1);
+
+                if (NewFD == -1) {
+                  LogMan::Msg::DFmt("Failure to accept new connection: {} {}", errno, strerror(errno));
+                }
+                else {
+                  // Add the new client to the temporary array
+                  NewPollFDs.emplace_back(pollfd {
+                    .fd = NewFD,
+                    .events = POLLIN | POLLPRI | POLLRDHUP,
+                    .revents = 0,
+                  });
+                }
               }
               else if (Event.revents & (POLLHUP | POLLERR | POLLNVAL)) {
                 // Listen socket error or shutting down
@@ -427,6 +434,7 @@ namespace ProcessPipe {
                 // Error or hangup, close the socket and erase it from our list
                 Erase = true;
                 close(Event.fd);
+                CheckRaiseFDLimit(-1);
               }
             }
 
