@@ -432,7 +432,7 @@ namespace FEXServerClient {
       static PacketGetFDFromFilename Fill(std::string_view const Filename) {
         return PacketGetFDFromFilename {
           .Header = CoreDump::FillHeader(CoreDump::PacketTypes::GET_FD_FROM_CLIENT),
-          .FilenameLength = Filename.size(),
+          .FilenameLength = Filename.size() + 1,
         };
       }
     };

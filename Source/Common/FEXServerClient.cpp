@@ -100,7 +100,7 @@ namespace FEXServerClient {
   }
 
   template<typename T>
-  int ReceiveFDWithAncillary(int ServerSocket) {
+  int ReceiveFDWithAncillary(int ServerSocket, std::function<bool(T &Result)> CheckPacketResult) {
     T Res{};
     struct iovec iov {
       .iov_base = &Res,
@@ -129,7 +129,7 @@ namespace FEXServerClient {
 
     // Wait for success response with SCM_RIGHTS
     ssize_t DataResult = recvmsg(ServerSocket, &msg, 0);
-    if (DataResult > 0) {
+    if (DataResult > 0 && CheckPacketResult(Res)) {
       return ParseFDFromAuxBuffer(&msg);
     }
 
@@ -139,7 +139,9 @@ namespace FEXServerClient {
   int RequestPIDFDPacket(int ServerSocket, void *Msg, size_t size) {
     int Result = write(ServerSocket, Msg, size);
     if (Result != -1) {
-      return ReceiveFDWithAncillary<FEXServerResultPacket>(ServerSocket);
+      return ReceiveFDWithAncillary<FEXServerResultPacket>(ServerSocket, [](auto &Result) -> bool {
+        return Result.Header.Type == PacketType::TYPE_SUCCESS;
+      });
     }
 
     return -1;
@@ -631,10 +633,15 @@ namespace FEXServerClient {
         case FEXServerClient::CoreDump::PacketTypes::GET_FD_FROM_CLIENT: {
           FEXServerClient::CoreDump::PacketGetFDFromFilename *Req = reinterpret_cast<FEXServerClient::CoreDump::PacketGetFDFromFilename *>(&Data[CurrentOffset]);
           int FD = open(Req->Filepath, O_RDONLY);
-          auto Msg = CoreDump::FillHeader(CoreDump::PacketTypes::SUCCESS);
-          SendFDPacket(CoreDumpSocket, &Msg, sizeof(Msg), FD);
-          close(FD);
-          CurrentOffset += sizeof(*Req) + Req->FilenameLength + 1;
+          if (FD != -1) {
+            auto Msg = CoreDump::FillHeader(CoreDump::PacketTypes::SUCCESS);
+            SendFDPacket(CoreDumpSocket, &Msg, sizeof(Msg), FD);
+            close(FD);
+          }
+          else {
+            SendEmptyErrorPacket(CoreDumpSocket);
+          }
+          CurrentOffset += sizeof(*Req) + Req->FilenameLength;
           break;
         }
         case FEXServerClient::CoreDump::PacketTypes::CLIENT_SHUTDOWN: {
@@ -685,7 +692,7 @@ namespace FEXServerClient {
     ///< Server side handling
     int GetFDFromClient(int ServerSocket, std::string_view const Filename) {
       FEXServerClient::CoreDump::PacketGetFDFromFilename Msg = FEXServerClient::CoreDump::PacketGetFDFromFilename::Fill(Filename);
-      FEXServerClient::CoreDump::SendPacketWithData(ServerSocket, &Msg, sizeof(Msg), std::span(Filename.data(), Filename.size()));
+      FEXServerClient::CoreDump::SendPacketWithData(ServerSocket, &Msg, sizeof(Msg), std::span(Filename.data(), Msg.FilenameLength));
       return FEXServerClient::CoreDump::HandleFDPacket(ServerSocket);
     }
 
@@ -736,7 +743,9 @@ namespace FEXServerClient {
     }
 
     int HandleFDPacket(int CoreDumpSocket) {
-      return ReceiveFDWithAncillary<FEXServerClient::CoreDump::PacketHeader>(CoreDumpSocket);
+      return ReceiveFDWithAncillary<FEXServerClient::CoreDump::PacketHeader>(CoreDumpSocket, [](auto &Result) -> bool {
+        return Result.PacketType == CoreDump::PacketTypes::SUCCESS;
+      });
     }
   }
 }
