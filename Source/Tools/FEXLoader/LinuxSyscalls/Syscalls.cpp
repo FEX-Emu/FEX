@@ -41,6 +41,7 @@ $end_info$
 
 #include <algorithm>
 #include <alloca.h>
+#include <charconv>
 #include <functional>
 #include <memory>
 #include <regex>
@@ -741,16 +742,16 @@ uint32_t SyscallHandler::CalculateHostKernelVersion() {
     return 0;
   }
 
-  int32_t Major{};
-  int32_t Minor{};
-  int32_t Patch{};
-  char Tmp{};
-  fextl::istringstream ss{buf.release};
-  ss >> Major;
-  ss.read(&Tmp, 1);
-  ss >> Minor;
-  ss.read(&Tmp, 1);
-  ss >> Patch;
+  uint32_t Major{};
+  uint32_t Minor{};
+  uint32_t Patch{};
+
+  // Parse kernel version in the form of `<Major>.<Minor>.<Patch>[Optional Data]`
+  const auto End = buf.release + sizeof(buf.release);
+  auto Results = std::from_chars(buf.release, End, Major, 10);
+  Results = std::from_chars(Results.ptr + 1, End, Minor, 10);
+  Results = std::from_chars(Results.ptr + 1, End, Patch, 10);
+
   return (Major << 24) | (Minor << 16) | Patch;
 }
 
