@@ -31,16 +31,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System Instruction") {
   TEST_SINGLE(dc(DataCacheOperation::CIGSW, Reg::r30), "sys #0, C7, C14, #4, x30");
   TEST_SINGLE(dc(DataCacheOperation::CIGDSW, Reg::r30), "sys #0, C7, C14, #6, x30");
 
-  TEST_SINGLE(dc(DataCacheOperation::GVA, Reg::r30), "sys #3, C7, C4, #3, x30");
-  TEST_SINGLE(dc(DataCacheOperation::GZVA, Reg::r30), "sys #3, C7, C4, #4, x30");
-  TEST_SINGLE(dc(DataCacheOperation::CGVAC, Reg::r30), "sys #3, C7, C10, #3, x30");
-  TEST_SINGLE(dc(DataCacheOperation::CGDVAC, Reg::r30), "sys #3, C7, C10, #5, x30");
-  TEST_SINGLE(dc(DataCacheOperation::CGVAP, Reg::r30), "sys #3, C7, C12, #3, x30");
-  TEST_SINGLE(dc(DataCacheOperation::CGDVAP, Reg::r30), "sys #3, C7, C12, #5, x30");
+  TEST_SINGLE(dc(DataCacheOperation::GVA, Reg::r30), "dc gva, x30");
+  TEST_SINGLE(dc(DataCacheOperation::GZVA, Reg::r30), "dc gzva, x30");
+  TEST_SINGLE(dc(DataCacheOperation::CGVAC, Reg::r30), "dc cgvac, x30");
+  TEST_SINGLE(dc(DataCacheOperation::CGDVAC, Reg::r30), "dc cgdvac, x30");
+  TEST_SINGLE(dc(DataCacheOperation::CGVAP, Reg::r30), "dc cgvap, x30");
+  TEST_SINGLE(dc(DataCacheOperation::CGDVAP, Reg::r30), "dc cgdvap, x30");
   TEST_SINGLE(dc(DataCacheOperation::CGVADP, Reg::r30), "sys #3, C7, C13, #3, x30");
   TEST_SINGLE(dc(DataCacheOperation::CGDVADP, Reg::r30), "sys #3, C7, C13, #5, x30");
-  TEST_SINGLE(dc(DataCacheOperation::CIGVAC, Reg::r30), "sys #3, C7, C14, #3, x30");
-  TEST_SINGLE(dc(DataCacheOperation::CIGDVAC, Reg::r30), "sys #3, C7, C14, #5, x30");
+  TEST_SINGLE(dc(DataCacheOperation::CIGVAC, Reg::r30), "dc cigvac, x30");
+  TEST_SINGLE(dc(DataCacheOperation::CIGDVAC, Reg::r30), "dc cigdvac, x30");
 
   TEST_SINGLE(dc(DataCacheOperation::CVAP, Reg::r30), "dc cvap, x30");
 

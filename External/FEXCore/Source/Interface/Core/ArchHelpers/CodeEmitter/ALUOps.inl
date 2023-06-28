@@ -899,6 +899,9 @@ private:
   // AddSub - shifted register
   void DataProcessing_Shifted_Reg(uint32_t Op, FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift, uint32_t amt) {
     LOGMAN_THROW_AA_FMT((amt & ~0b11'1111U) == 0, "Shift amount too large");
+    if (s == FEXCore::ARMEmitter::Size::i32Bit) {
+      LOGMAN_THROW_AA_FMT(amt < 32, "Shift amount for 32-bit must be below 32");
+    }
 
     const uint32_t SF = s == FEXCore::ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 

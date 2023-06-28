@@ -2110,7 +2110,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE FFR write from predicate")
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE FFR initialise") {
-  TEST_SINGLE(setffr(), "setffr  ");
+  TEST_SINGLE(setffr(), "setffr");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Integer Multiply-Add - Unpredicated") {

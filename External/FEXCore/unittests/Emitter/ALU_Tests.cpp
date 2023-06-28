@@ -782,23 +782,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(add(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 63), "add x30, x29, x28, lsl #63");
     TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 31), "add w30, w29, w28, lsl #31");
 
-    TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(add(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "add x30, x29, x28, lsr #1");
     TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "add w30, w29, w28, lsr #1");
     TEST_SINGLE(add(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 63), "add x30, x29, x28, lsr #63");
     TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 31), "add w30, w29, w28, lsr #31");
 
-    TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(add(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "add x30, x29, x28, asr #1");
     TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "add w30, w29, w28, asr #1");
     TEST_SINGLE(add(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 63), "add x30, x29, x28, asr #63");
     TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 31), "add w30, w29, w28, asr #31");
-
-    TEST_SINGLE(add(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
@@ -814,23 +808,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(adds(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 63), "adds x30, x29, x28, lsl #63");
     TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 31), "adds w30, w29, w28, lsl #31");
 
-    TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(adds(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "adds x30, x29, x28, lsr #1");
     TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "adds w30, w29, w28, lsr #1");
     TEST_SINGLE(adds(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 63), "adds x30, x29, x28, lsr #63");
     TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 31), "adds w30, w29, w28, lsr #31");
 
-    TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(adds(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "adds x30, x29, x28, asr #1");
     TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "adds w30, w29, w28, asr #1");
     TEST_SINGLE(adds(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 63), "adds x30, x29, x28, asr #63");
     TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 31), "adds w30, w29, w28, asr #31");
-
-    TEST_SINGLE(adds(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
@@ -849,23 +837,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(sub(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 63), "sub x30, x29, x28, lsl #63");
     TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 31), "sub w30, w29, w28, lsl #31");
 
-    TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(sub(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "sub x30, x29, x28, lsr #1");
     TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "sub w30, w29, w28, lsr #1");
     TEST_SINGLE(sub(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 63), "sub x30, x29, x28, lsr #63");
     TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 31), "sub w30, w29, w28, lsr #31");
 
-    TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(sub(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "sub x30, x29, x28, asr #1");
     TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "sub w30, w29, w28, asr #1");
     TEST_SINGLE(sub(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 63), "sub x30, x29, x28, asr #63");
     TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 31), "sub w30, w29, w28, asr #31");
-
-    TEST_SINGLE(sub(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
@@ -881,23 +863,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(subs(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 63), "subs x30, x29, x28, lsl #63");
     TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 31), "subs w30, w29, w28, lsl #31");
 
-    TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(subs(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "subs x30, x29, x28, lsr #1");
     TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 1), "subs w30, w29, w28, lsr #1");
     TEST_SINGLE(subs(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 63), "subs x30, x29, x28, lsr #63");
     TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 31), "subs w30, w29, w28, lsr #31");
 
-    TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(subs(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "subs x30, x29, x28, asr #1");
     TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 1), "subs w30, w29, w28, asr #1");
     TEST_SINGLE(subs(Size::i64Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 63), "subs x30, x29, x28, asr #63");
     TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 31), "subs w30, w29, w28, asr #31");
-
-    TEST_SINGLE(subs(Size::i32Bit, Reg::r30, Reg::r29, Reg::r28, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
@@ -913,23 +889,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(neg(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSL, 63), "neg x30, x29, lsl #63");
     TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSL, 31), "neg w30, w29, lsl #31");
 
-    TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(neg(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSR, 1), "neg x30, x29, lsr #1");
     TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 1), "neg w30, w29, lsr #1");
     TEST_SINGLE(neg(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSR, 63), "neg x30, x29, lsr #63");
     TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 31), "neg w30, w29, lsr #31");
 
-    TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(neg(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::ASR, 1), "neg x30, x29, asr #1");
     TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 1), "neg w30, w29, asr #1");
     TEST_SINGLE(neg(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::ASR, 63), "neg x30, x29, asr #63");
     TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 31), "neg w30, w29, asr #31");
-
-    TEST_SINGLE(neg(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
@@ -945,23 +915,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(cmp(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSL, 63), "cmp x30, x29, lsl #63");
     TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSL, 31), "cmp w30, w29, lsl #31");
 
-    TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(cmp(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSR, 1), "cmp x30, x29, lsr #1");
     TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 1), "cmp w30, w29, lsr #1");
     TEST_SINGLE(cmp(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSR, 63), "cmp x30, x29, lsr #63");
     TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 31), "cmp w30, w29, lsr #31");
 
-    TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(cmp(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::ASR, 1), "cmp x30, x29, asr #1");
     TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 1), "cmp w30, w29, asr #1");
     TEST_SINGLE(cmp(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::ASR, 63), "cmp x30, x29, asr #63");
     TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 31), "cmp w30, w29, asr #31");
-
-    TEST_SINGLE(cmp(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
@@ -977,23 +941,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     TEST_SINGLE(negs(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSL, 63), "negs x30, x29, lsl #63");
     TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSL, 31), "negs w30, w29, lsl #31");
 
-    TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSL, 32), "unallocated (Unallocated)");
-
     // LSR
     TEST_SINGLE(negs(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSR, 1), "negs x30, x29, lsr #1");
     TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 1), "negs w30, w29, lsr #1");
     TEST_SINGLE(negs(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::LSR, 63), "negs x30, x29, lsr #63");
     TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 31), "negs w30, w29, lsr #31");
 
-    TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::LSR, 32), "unallocated (Unallocated)");
-
     // ASR
     TEST_SINGLE(negs(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::ASR, 1), "negs x30, x29, asr #1");
     TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 1), "negs w30, w29, asr #1");
     TEST_SINGLE(negs(Size::i64Bit, Reg::r30, Reg::r29, ShiftType::ASR, 63), "negs x30, x29, asr #63");
     TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 31), "negs w30, w29, asr #31");
-
-    TEST_SINGLE(negs(Size::i32Bit, Reg::r30, Reg::r29, ShiftType::ASR, 32), "unallocated (Unallocated)");
 
     // ROR
     // Unsupported
