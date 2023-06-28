@@ -153,7 +153,7 @@ namespace FEXServerClient {
     auto ServerSocketName = GetServerSocketName();
 
     // Create the initial unix socket
-    int SocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
+    int SocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if (SocketFD == -1) {
       LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {} {}", errno, strerror(errno));
       return -1;
