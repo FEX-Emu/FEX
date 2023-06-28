@@ -145,6 +145,27 @@ public:
     DataProcessing_AddSub_Imm(Op, s, rd, rn, Imm, LSL12);
   }
 
+  // Min/max immediate
+  void smax(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, int64_t Imm) {
+    LOGMAN_THROW_A_FMT(Imm >= -128 && Imm <= 127, "{} Immediate too large", __func__);
+    MinMaxImmediate(0b0000, s, rd, rn, Imm);
+  }
+
+  void umax(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
+    LOGMAN_THROW_A_FMT(Imm <= 255, "{} Immediate too large", __func__);
+    MinMaxImmediate(0b0001, s, rd, rn, Imm);
+  }
+
+  void smin(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, int64_t Imm) {
+    LOGMAN_THROW_A_FMT(Imm >= -128 && Imm <= 127, "{} Immediate too large", __func__);
+    MinMaxImmediate(0b0010, s, rd, rn, Imm);
+  }
+
+  void umin(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
+    LOGMAN_THROW_A_FMT(Imm <= 255, "{} Immediate too large", __func__);
+    MinMaxImmediate(0b0011, s, rd, rn, Imm);
+  }
+
   // Logical immediate
   void and_(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
@@ -381,6 +402,26 @@ public:
                         (0b0101'10U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
+  void smax(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+    constexpr uint32_t Op = (0b001'1010'110U << 21) |
+                        (0b0110'00U << 10);
+    DataProcessing_2Source(Op, s, rd, rn, rm);
+  }
+  void umax(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+    constexpr uint32_t Op = (0b001'1010'110U << 21) |
+                        (0b0110'01U << 10);
+    DataProcessing_2Source(Op, s, rd, rn, rm);
+  }
+  void smin(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+    constexpr uint32_t Op = (0b001'1010'110U << 21) |
+                        (0b0110'10U << 10);
+    DataProcessing_2Source(Op, s, rd, rn, rm);
+  }
+  void umin(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
+    constexpr uint32_t Op = (0b001'1010'110U << 21) |
+                        (0b0110'11U << 10);
+    DataProcessing_2Source(Op, s, rd, rn, rm);
+  }
   void subp(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::XRegister rn, FEXCore::ARMEmitter::XRegister rm) {
     constexpr uint32_t Op = (0b001'1010'110U << 21) |
                         (0b0000'00U << 10);
@@ -467,7 +508,24 @@ public:
                         (s == ARMEmitter::Size::i64Bit ? (1U << 10) : 0);
     DataProcessing_1Source(Op, s, rd, rn);
   }
-
+  void ctz(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn) {
+    constexpr uint32_t Op = (0b101'1010'110U << 21) |
+                        (0b0'0000U << 16) |
+                        (0b0001'10U << 10);
+    DataProcessing_1Source(Op, s, rd, rn);
+  }
+  void cnt(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn) {
+    constexpr uint32_t Op = (0b101'1010'110U << 21) |
+                        (0b0'0000U << 16) |
+                        (0b0001'11U << 10);
+    DataProcessing_1Source(Op, s, rd, rn);
+  }
+  void abs(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn) {
+    constexpr uint32_t Op = (0b101'1010'110U << 21) |
+                        (0b0'0000U << 16) |
+                        (0b0010'00U << 10);
+    DataProcessing_1Source(Op, s, rd, rn);
+  }
 
   // TODO: PAUTH
 
@@ -813,6 +871,21 @@ private:
     Instr |= SF;
     Instr |= LSL12 << 22;
     Instr |= Imm << 10;
+    Instr |= Encode_rn(rn);
+    Instr |= Encode_rd(rd);
+
+    dc32(Instr);
+  }
+
+  // Min/max immediate
+  void MinMaxImmediate(uint32_t opc, FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint64_t Imm) {
+    const uint32_t SF = s == FEXCore::ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
+
+    uint32_t Instr = 0b1'0001'11U << 22;
+
+    Instr |= SF;
+    Instr |= opc << 18;
+    Instr |= (Imm & 0xFF) << 10;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
 
