@@ -122,6 +122,8 @@ namespace FEX::HLE {
   private:
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
     FEX_CONFIG_OPT(Core, CORE);
+    FEX_CONFIG_OPT(CooperativeCoreDump, COOPERATIVECOREDUMP);
+
     fextl::string const ApplicationName;
     FEXCORE_TELEMETRY_INIT(CrashMask, TYPE_CRASH_MASK);
 

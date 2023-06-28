@@ -1617,8 +1617,6 @@ namespace FEX::HLE {
   }
 
   void SignalDelegator::CoreDumpService(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) {
-    FEX_CONFIG_OPT(CooperativeCoreDump, COOPERATIVECOREDUMP);
-
     if (!CooperativeCoreDump) {
       return;
     }
@@ -1764,6 +1762,7 @@ namespace FEX::HLE {
     SignalHandler &SignalHandler = HostHandlers[Signal];
 
     ::syscall(SYS_rt_sigaction, Signal, &SignalHandler.OldAction, nullptr, 8);
+    SignalHandler.Installed = false;
   }
 
   SignalDelegator::SignalDelegator(FEXCore::Context::Context *_CTX, const std::string_view ApplicationName)
@@ -1800,6 +1799,18 @@ namespace FEX::HLE {
 
     for (const auto &[Signal, Behaviour] : SignalDefaultBehaviours) {
       HostHandlers[Signal].DefaultBehaviour = Behaviour;
+
+      if (CooperativeCoreDump) {
+        // If the cooperative coredump service is enabled then install signal handlers for all COREDUMP signals.
+        // In the case of the coredump service, the handler just needs to be installed, don't actually handle anything.
+        if (Behaviour == DEFAULT_COREDUMP) {
+          const auto NopHandler = [](FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) -> bool {
+            return false;
+          };
+
+          RegisterFrontendHostSignalHandler(Signal, NopHandler, true);
+        }
+      }
     }
 
     // Register frontend SIGILL handler for forced assertion.
