@@ -3,6 +3,7 @@ import sys
 import subprocess
 import os.path
 from os import path
+from shutil import which
 
 # Args: <Known Failures file> <Known Failures Type File> <DisabledTestsFile> <DisabledTestsTypeFile> <DisabledTestsRunnerFile> <TestName> <Test Harness Executable> <Args>...
 
@@ -46,6 +47,9 @@ if path.exists(disabled_tests_runner_file):
             disabled_tests[line.strip()] = 1
 
 RunnerArgs = ["catchsegv", runner]
+
+if which("catchsegv") is None:
+    RunnerArgs.pop(0)
 # Add the rest of the arguments
 for i in range(len(sys.argv) - args_start_index):
     RunnerArgs.append(sys.argv[args_start_index + i])
