@@ -100,8 +100,6 @@ namespace FEXCore::Context {
 
       void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
-      bool AddVirtualMemoryMapping(uint64_t VirtualAddress, uint64_t PhysicalAddress, uint64_t Size) override;
-
       HostFeatures GetHostFeatures() const override;
 
       void HandleCallback(FEXCore::Core::InternalThreadState *Thread, uint64_t RIP) override;

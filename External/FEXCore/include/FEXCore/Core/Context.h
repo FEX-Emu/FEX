@@ -226,17 +226,6 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) = 0;
 
       /**
-       * @brief Sets up memory regions on the guest for mirroring within the guest's VM space
-       *
-       * @param VirtualAddress The address we want to set to mirror a physical memory region
-       * @param PhysicalAddress The physical memory region we are mapping
-       * @param Size Size of the region to mirror
-       *
-       * @return true when successfully mapped. false if there was an error adding
-       */
-      FEX_DEFAULT_VISIBILITY virtual bool AddVirtualMemoryMapping(uint64_t VirtualAddress, uint64_t PhysicalAddress, uint64_t Size) = 0;
-
-      /**
        * @brief Retrieves a feature struct indicating certain supported aspects from
        *        the hose.
        *

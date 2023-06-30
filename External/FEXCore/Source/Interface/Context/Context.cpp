@@ -66,10 +66,6 @@ namespace FEXCore::Context {
     CustomCPUFactory = std::move(Factory);
   }
 
-  bool FEXCore::Context::ContextImpl::AddVirtualMemoryMapping([[maybe_unused]] uint64_t VirtualAddress, [[maybe_unused]] uint64_t PhysicalAddress, [[maybe_unused]] uint64_t Size) {
-    return false;
-  }
-
   HostFeatures FEXCore::Context::ContextImpl::GetHostFeatures() const {
     return HostFeatures;
   }
