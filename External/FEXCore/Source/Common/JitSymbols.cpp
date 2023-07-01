@@ -17,8 +17,12 @@ namespace FEXCore {
 
   void JITSymbols::InitFile() {
     // We can't use FILE here since we must be robust against forking processes closing our FD from under us.
+#ifdef __ANDROID__
+    // Android simpleperf looks in /data/local/tmp instead of /tmp
+    const auto PerfMap = fextl::fmt::format("/data/local/tmp/perf-{}.map", getpid());
+#else
     const auto PerfMap = fextl::fmt::format("/tmp/perf-{}.map", getpid());
-
+#endif
     fd = open(PerfMap.c_str(), O_CREAT | O_TRUNC | O_WRONLY | O_APPEND, 0644);
   }
 
