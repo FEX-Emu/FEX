@@ -112,7 +112,14 @@ namespace FEXCore::Allocator {
   inline void *malloc(size_t size) { return ::malloc(size); }
   inline void *calloc(size_t n, size_t size) { return ::calloc(n, size); }
   inline void *memalign(size_t align, size_t s) { return ::memalign(align, s); }
-  inline void *valloc(size_t size) { return ::valloc(size); }
+  inline void *valloc(size_t size)
+  {
+#ifdef __ANDROID__
+    return ::aligned_alloc(4096, size);
+#else
+    return ::valloc(size);
+#endif
+  }
   inline int posix_memalign(void** r, size_t a, size_t s) { return ::posix_memalign(r, a, s); }
   inline void *realloc(void* ptr, size_t size) { return ::realloc(ptr, size); }
   inline void free(void* ptr) { return ::free(ptr); }
