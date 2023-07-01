@@ -7,6 +7,7 @@ CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
+option(BUILD_FEXCONFIG "Build FEXConfig, requires SDL2 and X11" TRUE)
 option(ENABLE_CLANG_THUNKS "Build thunks with clang" FALSE)
 option(ENABLE_CLANG_FORMAT "Run clang format over the source" FALSE)
 option(ENABLE_IWYU "Enables include what you use program" FALSE)
@@ -179,8 +180,13 @@ endif()
 if(DEFINED ENV{TERMUX_VERSION} OR ENABLE_TERMUX_BUILD)
   add_definitions(-DTERMUX_BUILD=1)
   set(TERMUX_BUILD 1)
+
   # Termux doesn't support Jemalloc due to bad interactions between emutls, jemalloc, and scudo
   set(ENABLE_JEMALLOC FALSE)
+
+  # Termux builds can't rely on X11 packages
+  # SDL2 isn't even compiled with GL support so our GUIs wouldn't even work
+  set(BUILD_FEXCONFIG FALSE)
 endif()
 
 if (ENABLE_ASAN)
