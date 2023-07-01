@@ -66,7 +66,14 @@ public:
   uint64_t Mknod(const char *pathname, mode_t mode, dev_t dev);
   uint64_t NewFSStatAt(int dirfd, const char *pathname, struct stat *buf, int flag);
   uint64_t NewFSStatAt64(int dirfd, const char *pathname, struct stat64 *buf, int flag);
-
+  uint64_t Setxattr(const char *path, const char *name, const void *value, size_t size, int flags);
+  uint64_t LSetxattr(const char *path, const char *name, const void *value, size_t size, int flags);
+  uint64_t Getxattr(const char *path, const char *name, void *value, size_t size);
+  uint64_t LGetxattr(const char *path, const char *name, void *value, size_t size);
+  uint64_t Listxattr(const char *path, char *list, size_t size);
+  uint64_t LListxattr(const char *path, char *list, size_t size);
+  uint64_t Removexattr(const char *path, const char *name);
+  uint64_t LRemovexattr(const char *path, const char *name);
   // vfs
   uint64_t Statfs(const char *path, void *buf);
 
