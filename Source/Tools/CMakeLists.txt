@@ -1,9 +1,9 @@
 if (NOT MINGW_BUILD)
-  if (NOT TERMUX_BUILD)
-    # Termux builds can't rely on X11 packages
-    # SDL2 isn't even compiled with GL support so our GUIs wouldn't even work
+  if (BUILD_FEXCONFIG)
     add_subdirectory(FEXConfig/)
+  endif()
 
+  if (NOT TERMUX_BUILD)
     # Disable FEXRootFSFetcher on Termux, it doesn't even work there
     add_subdirectory(FEXRootFSFetcher/)
   endif()
