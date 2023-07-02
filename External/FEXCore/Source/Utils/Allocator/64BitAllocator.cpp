@@ -49,6 +49,19 @@ namespace Alloc::OSAllocator {
       void *Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) override;
       int Munmap(void *addr, size_t length) override;
 
+      void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) override {
+        AllocationMutex.lock();
+      }
+
+      void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child) override {
+        if (Child) {
+          AllocationMutex.StealAndDropActiveLocks();
+        }
+        else {
+          AllocationMutex.unlock();
+        }
+      }
+
     private:
       // Upper bound is the maximum virtual address space of the host processor
       uintptr_t UPPER_BOUND = (1ULL << 57);
@@ -139,7 +152,7 @@ namespace Alloc::OSAllocator {
       LiveRegionListType *LiveRegions{};
 
       Alloc::ForwardOnlyIntrusiveArenaAllocator *ObjectAlloc{};
-      std::mutex AllocationMutex{};
+      FEXCore::ForkableUniqueMutex AllocationMutex;
       void DetermineVASize();
 
       LiveVMARegion *MakeRegionActive(ReservedRegionListType::iterator ReservedIterator, uint64_t UsedSize) {
@@ -258,7 +271,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   size_t NumberOfPages = length / FHU::FEX_PAGE_SIZE;
 
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLSThread);
+  FEXCore::ScopedPotentialDeferredSignalWithForkableMutex lk(AllocationMutex, TLSThread);
 
   uint64_t AllocatedOffset{};
   LiveVMARegion *LiveRegion{};
@@ -446,7 +459,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   }
 
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLSThread);
+  FEXCore::ScopedPotentialDeferredSignalWithForkableMutex lk(AllocationMutex, TLSThread);
 
   length = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE);
 
@@ -571,7 +584,7 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
 
 OSAllocator_64Bit::~OSAllocator_64Bit() {
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithMutex lk(AllocationMutex, TLSThread);
+  FEXCore::ScopedPotentialDeferredSignalWithForkableMutex lk(AllocationMutex, TLSThread);
 
   // Walk the pages and deallocate
   // First walk the live regions

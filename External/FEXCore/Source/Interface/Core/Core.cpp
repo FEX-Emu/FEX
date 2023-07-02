@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include <cstdint>
+#include "FEXCore/Utils/DeferredSignalMutex.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Core.h"
@@ -24,6 +25,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 #include "Interface/IR/Passes.h"
 #include "Interface/IR/PassManager.h"
+#include "Utils/Allocator.h"
 #include "Utils/Allocator/HostAllocator.h"
 
 #include <FEXCore/Config/Config.h>
@@ -663,7 +665,17 @@ namespace FEXCore::Context {
     delete Thread;
   }
 
-  void ContextImpl::CleanupAfterFork(FEXCore::Core::InternalThreadState *LiveThread) {
+  void ContextImpl::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child) {
+    Allocator::UnlockAfterFork(LiveThread, Child);
+
+    if (Child) {
+      CodeInvalidationMutex.StealAndDropActiveLocks();
+    }
+    else {
+      CodeInvalidationMutex.unlock();
+      return;
+    }
+
     // This function is called after fork
     // We need to cleanup some of the thread data that is dead
     for (auto &DeadThread : Threads) {
@@ -700,6 +712,11 @@ namespace FEXCore::Context {
 
     // Clean up dead stacks
     FEXCore::Threads::Thread::CleanupAfterFork();
+  }
+
+  void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {
+    CodeInvalidationMutex.lock();
+    Allocator::LockBeforeFork(Thread);
   }
 
   void ContextImpl::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
@@ -1048,7 +1065,7 @@ namespace FEXCore::Context {
     auto Thread = Frame->Thread;
 
     // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
-    std::shared_lock lk(CodeInvalidationMutex);
+    ScopedDeferredSignalWithForkableSharedLock lk(CodeInvalidationMutex, Thread);
 
     // Is the code in the cache?
     // The backends only check L1 and L2, not L3
@@ -1228,7 +1245,7 @@ namespace FEXCore::Context {
     // Potential deferred since Thread might not be valid.
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    ScopedPotentialDeferredSignalWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex, Thread);
+    ScopedPotentialDeferredSignalWithForkableUniqueLock lk(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
   }
@@ -1237,7 +1254,7 @@ namespace FEXCore::Context {
     // Potential deferred since Thread might not be valid.
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    ScopedPotentialDeferredSignalWithUniqueLock CodeInvalidationLock(CodeInvalidationMutex, Thread);
+    ScopedPotentialDeferredSignalWithForkableUniqueLock lk(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
     CallAfter(Start, Length);
@@ -1265,7 +1282,7 @@ namespace FEXCore::Context {
   }
 
   void ContextImpl::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
-    std::shared_lock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex);
+    ScopedDeferredSignalWithForkableSharedLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
     Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
   }

@@ -140,7 +140,13 @@ namespace FEX::HLE {
       // If we don't have CLONE_THREAD then we are effectively a fork
       // Clear all the other threads that are being tracked
       // Frame->Thread is /ONLY/ safe to access when CLONE_THREAD flag is not set
-      CTX->CleanupAfterFork(Frame->Thread);
+      // Unlock the mutexes on both sides of the fork
+      FEX::HLE::_SyscallHandler->UnlockAfterFork(true);
+
+      // Clear all the other threads that are being tracked
+      Thread->CTX->UnlockAfterFork(Frame->Thread, true);
+
+      ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &CloneArgs->SignalMask, nullptr, sizeof(CloneArgs->SignalMask));
 
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
       Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RBX] = 0;
@@ -187,6 +193,11 @@ namespace FEX::HLE {
 
   uint64_t ForkGuest(FEXCore::Core::InternalThreadState *Thread, FEXCore::Core::CpuStateFrame *Frame, uint32_t flags, void *stack, size_t StackSize, pid_t *parent_tid, pid_t *child_tid, void *tls) {
     // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
+
+    uint64_t Mask{~0ULL};
+    ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &Mask, sizeof(Mask));
+    Thread->CTX->LockBeforeFork(Frame->Thread);
+
     FEX::HLE::_SyscallHandler->LockBeforeFork();
 
     const bool IsVFork = flags & CLONE_VFORK;
@@ -215,20 +226,23 @@ namespace FEX::HLE {
     else {
       Result = fork();
     }
+    const bool IsChild = Result == 0;
 
-    // Unlock the mutexes on both sides of the fork
-    FEX::HLE::_SyscallHandler->UnlockAfterFork();
+    if (IsChild) {
+      // Unlock the mutexes on both sides of the fork
+      FEX::HLE::_SyscallHandler->UnlockAfterFork(IsChild);
 
-    if (Result == 0) {
+      // Clear all the other threads that are being tracked
+      Thread->CTX->UnlockAfterFork(Frame->Thread, IsChild);
+
+      ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, nullptr, sizeof(Mask));
+
       // Child
       // update the internal TID
       Thread->ThreadManager.TID = FHU::Syscalls::gettid();
       Thread->ThreadManager.PID = ::getpid();
       FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
       Thread->ThreadManager.clear_child_tid = nullptr;
-
-      // Clear all the other threads that are being tracked
-      Thread->CTX->CleanupAfterFork(Frame->Thread);
 
       // only a  single thread running so no need to remove anything from the thread array
 
@@ -274,6 +288,14 @@ namespace FEX::HLE {
           *parent_tid = Result;
         }
       }
+
+      // Unlock the mutexes on both sides of the fork
+      FEX::HLE::_SyscallHandler->UnlockAfterFork(IsChild);
+
+      // Clear all the other threads that are being tracked
+      Thread->CTX->UnlockAfterFork(Frame->Thread, IsChild);
+
+      ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, nullptr, sizeof(Mask));
 
       // VFork needs the parent to wait for the child to exit.
       if (IsVFork) {
