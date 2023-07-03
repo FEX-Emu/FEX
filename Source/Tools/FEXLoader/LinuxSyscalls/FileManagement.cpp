@@ -592,7 +592,7 @@ uint64_t FileManager::FAccessat(int dirfd, const char *pathname, int mode) {
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, true, TmpFilename);
   if (Path.first != -1) {
-    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), Path.first, Path.second, mode, 0);
+    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat), Path.first, Path.second, mode);
     if (Result != -1)
       return Result;
   }
