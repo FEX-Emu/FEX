@@ -340,5 +340,17 @@ namespace FEXCore::Allocator {
       ::munmap(Region.Ptr, Region.Size);
     }
   }
+
+  void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {
+    if (Alloc64) {
+      Alloc64->LockBeforeFork(Thread);
+    }
+  }
+
+  void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child) {
+    if (Alloc64) {
+      Alloc64->UnlockAfterFork(Thread, Child);
+    }
+  }
 }
 #endif

@@ -54,7 +54,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
 
   {
     // Can't use the deferred signal lock in the SIGSEGV handler.
-    FHU::ScopedSignalMaskWithSharedLock lk(_SyscallHandler->VMATracking.Mutex);
+    FHU::ScopedSignalMaskWithForkableSharedLock lk(_SyscallHandler->VMATracking.Mutex);
 
     auto VMATracking = &_SyscallHandler->VMATracking;
 
@@ -111,7 +111,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
       return;
     }
 
-    FEXCore::ScopedDeferredSignalWithSharedLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedDeferredSignalWithForkableSharedLock lk(VMATracking.Mutex, Thread);
 
     // Find the first mapping at or after the range ends, or ::end().
     // Top points to the address after the end of the range
@@ -166,7 +166,7 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
 
 // Used for AOT
 FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) {
-  FEXCore::ScopedDeferredSignalWithSharedLock lk(VMATracking.Mutex, Thread);
+  FEXCore::ScopedDeferredSignalWithForkableSharedLock lk(VMATracking.Mutex, Thread);
 
   // Get the first mapping after GuestAddr, or end
   // GuestAddr is inclusive
@@ -194,7 +194,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
     // NOTE: Frontend calls this with a nullptr Thread during initialization, but
     //       providing this code with a valid Thread object earlier would allow
     //       us to be more optimal by using ScopedDeferredSignalWithUniqueLock instead
-    FEXCore::ScopedPotentialDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedPotentialDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
 
     static uint64_t AnonSharedId = 1;
 
@@ -233,6 +233,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState *Thread, uintp
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
+    // VMATracking.Mutex can't be held while executing this, otherwise it hangs if the JIT is in the process of looking up code in the AOT JIT.
     CTX->InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
   }
 }
@@ -244,7 +245,7 @@ void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState *Thread, uin
     // Frontend calls this with nullptr Thread during initialization.
     // This is why `ScopedPotentialDeferredSignalWithUniqueLock` is used here.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    FEXCore::ScopedPotentialDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedPotentialDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
 
     VMATracking.ClearUnsafe(CTX, Base, Size);
   }
@@ -258,7 +259,7 @@ void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState *Thread, u
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
 
   {
-    FEXCore::ScopedDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
 
     VMATracking.ChangeUnsafe(Base, Size, VMAProt::fromProt(Prot));
   }
@@ -273,7 +274,7 @@ void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState *Thread, uin
   NewSize = FEXCore::AlignUp(NewSize, FHU::FEX_PAGE_SIZE);
 
   {
-    FEXCore::ScopedDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
 
     const auto OldVMA = VMATracking.LookupVMAUnsafe(OldAddress);
 
@@ -331,7 +332,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int 
   uint64_t Length = stat.shm_segsz;
 
   {
-    FEXCore::ScopedDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
 
     // TODO
     MRID mrid{SpecialDev::SHM, static_cast<uint64_t>(shmid)};
@@ -353,7 +354,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState *Thread, int 
 void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base) {
   uintptr_t Length = 0;
   {
-    FEXCore::ScopedDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
+    FEXCore::ScopedDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
 
     Length = VMATracking.ClearShmUnsafe(CTX, Base);
   }
@@ -367,8 +368,7 @@ void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState *Thread, uint
 void SyscallHandler::TrackMadvise(FEXCore::Core::InternalThreadState *Thread, uintptr_t Base, uintptr_t Size, int advice) {
   Size = FEXCore::AlignUp(Size, FHU::FEX_PAGE_SIZE);
   {
-    FEXCore::ScopedDeferredSignalWithUniqueLock lk(VMATracking.Mutex, Thread);
-
+    FEXCore::ScopedDeferredSignalWithForkableUniqueLock lk(VMATracking.Mutex, Thread);
     // TODO
   }
 }

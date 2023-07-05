@@ -580,12 +580,33 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
     if (!AnyFlagsSet(flags, CLONE_THREAD)) {
       // Has an unsupported flag
       // Fall to a handler that can handle this case
+      auto Thread = Frame->Thread;
+
+      args->SignalMask = ~0ULL;
+      ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &args->SignalMask, &args->SignalMask, sizeof(args->SignalMask));
+      Thread->CTX->LockBeforeFork(Frame->Thread);
+
+      FEX::HLE::_SyscallHandler->LockBeforeFork();
+
+      uint64_t Result{};
       if (args->Type == TYPE_CLONE2) {
-        return Clone2Handler(Frame, args);
+        Result = Clone2Handler(Frame, args);
       }
       else {
-        return Clone3Handler(Frame, args);
+        Result = Clone3Handler(Frame, args);
       }
+
+      if (Result != 0) {
+        // Parent
+        // Unlock the mutexes on both sides of the fork
+        FEX::HLE::_SyscallHandler->UnlockAfterFork(false);
+
+        // Clear all the other threads that are being tracked
+        Thread->CTX->UnlockAfterFork(Frame->Thread, false);
+
+        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &args->SignalMask, nullptr, sizeof(args->SignalMask));
+      }
+      return Result;
     }
     else {
       LogMan::Msg::IFmt("Unsupported flag with CLONE_THREAD. This breaks TLS, falling down classic thread path");
@@ -634,6 +655,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame *Frame, FEX::HLE::clone3_args
       // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
       Thread->CTX->DestroyThread(NewThread);
     }
+
     SYSCALL_ERRNO();
   }
 };
@@ -808,17 +830,16 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame *Frame, uint64_t 
 }
 
 void SyscallHandler::LockBeforeFork() {
-  // XXX shared_mutex has issues with locking and forks
-  // VMATracking.Mutex.lock();
-
-  // Add other mutexes here
+  VMATracking.Mutex.lock();
 }
 
-void SyscallHandler::UnlockAfterFork() {
-  // Add other mutexes here
-
-  // XXX shared_mutex has issues with locking and forks
-  // VMATracking.Mutex.unlock();
+void SyscallHandler::UnlockAfterFork(bool Child) {
+  if (Child) {
+    VMATracking.Mutex.StealAndDropActiveLocks();
+  }
+  else {
+    VMATracking.Mutex.unlock();
+  }
 }
 
 static bool isHEX(char c) {

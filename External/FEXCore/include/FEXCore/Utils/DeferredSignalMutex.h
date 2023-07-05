@@ -11,6 +11,91 @@
 #include <unistd.h>
 
 namespace FEXCore {
+#ifndef _WIN32
+  // Replacement for std::mutexes to deal with unlocking issues in the face of Linux fork() semantics.
+  //
+  // A fork() only clones the parent's calling thread. Other threads are silently dropped, which permanently leaves any mutexes owned by them locked.
+  // To address this issue, ForkableUniqueMutex and ForkableSharedMutex provide a way to forcefully remove any dangling locks and reset the mutexes to their default state.
+  class ForkableUniqueMutex final {
+    public:
+      ForkableUniqueMutex()
+        : Mutex (PTHREAD_MUTEX_INITIALIZER) {
+      }
+
+      // Move-only type
+      ForkableUniqueMutex(const ForkableUniqueMutex&) = delete;
+      ForkableUniqueMutex& operator=(const ForkableUniqueMutex&) = delete;
+      ForkableUniqueMutex(ForkableUniqueMutex &&rhs) = default;
+      ForkableUniqueMutex& operator=(ForkableUniqueMutex &&) = default;
+
+      void lock() {
+        [[maybe_unused]] const auto Result = pthread_mutex_lock(&Mutex);
+        LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
+      }
+      void unlock() {
+        [[maybe_unused]] const auto Result = pthread_mutex_unlock(&Mutex);
+        LOGMAN_THROW_A_FMT(Result == 0, "{} failed to unlock with {}", __func__, Result);
+      }
+      // Initialize the internal pthread object to its default initializer state.
+      // Should only ever be used in the child process when a Linux fork() has occured.
+      void StealAndDropActiveLocks() {
+        Mutex = PTHREAD_MUTEX_INITIALIZER;
+      }
+    private:
+      pthread_mutex_t Mutex;
+  };
+
+  class ForkableSharedMutex final {
+    public:
+      ForkableSharedMutex()
+        : Mutex (PTHREAD_RWLOCK_INITIALIZER) {
+      }
+
+      // Move-only type
+      ForkableSharedMutex(const ForkableSharedMutex&) = delete;
+      ForkableSharedMutex& operator=(const ForkableSharedMutex&) = delete;
+      ForkableSharedMutex(ForkableSharedMutex &&rhs) = default;
+      ForkableSharedMutex& operator=(ForkableSharedMutex &&) = default;
+
+      void lock() {
+        [[maybe_unused]] const auto Result = pthread_rwlock_wrlock(&Mutex);
+        LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
+      }
+      void unlock() {
+        [[maybe_unused]] const auto Result = pthread_rwlock_unlock(&Mutex);
+        LOGMAN_THROW_A_FMT(Result == 0, "{} failed to unlock with {}", __func__, Result);
+      }
+      void lock_shared() {
+        [[maybe_unused]] const auto Result = pthread_rwlock_rdlock(&Mutex);
+        LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
+      }
+
+      void unlock_shared() {
+        unlock();
+      }
+
+      bool try_lock() {
+        const auto Result = pthread_rwlock_trywrlock(&Mutex);
+        return Result == 0;
+      }
+
+      bool try_lock_shared() {
+        const auto Result = pthread_rwlock_tryrdlock(&Mutex);
+        return Result == 0;
+      }
+      // Initialize the internal pthread object to its default initializer state.
+      // Should only ever be used in the child process when a Linux fork() has occured.
+      void StealAndDropActiveLocks() {
+        Mutex = PTHREAD_RWLOCK_INITIALIZER;
+      }
+    private:
+      pthread_rwlock_t Mutex;
+  };
+#else
+  // Windows doesn't support forking, so these can be standard mutexes.
+  using ForkableUniqueMutex = std::mutex;
+  using ForkableSharedMutex = std::shared_mutex;
+#endif
 
   template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
   class ScopedDeferredSignalWithMutexBase final {
@@ -65,6 +150,20 @@ namespace FEXCore {
   using ScopedDeferredSignalWithMutex      = ScopedDeferredSignalWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
   using ScopedDeferredSignalWithSharedLock = ScopedDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
   using ScopedDeferredSignalWithUniqueLock = ScopedDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock, &std::shared_mutex::unlock>;
+
+  // Forkable variant
+  using ScopedDeferredSignalWithForkableMutex      = ScopedDeferredSignalWithMutexBase<
+    FEXCore::ForkableUniqueMutex,
+    &FEXCore::ForkableUniqueMutex::lock,
+    &FEXCore::ForkableUniqueMutex::unlock>;
+  using ScopedDeferredSignalWithForkableSharedLock = ScopedDeferredSignalWithMutexBase<
+    FEXCore::ForkableSharedMutex,
+    &FEXCore::ForkableSharedMutex::lock_shared,
+    &FEXCore::ForkableSharedMutex::unlock_shared>;
+  using ScopedDeferredSignalWithForkableUniqueLock = ScopedDeferredSignalWithMutexBase<
+    FEXCore::ForkableSharedMutex,
+    &FEXCore::ForkableSharedMutex::lock,
+    &FEXCore::ForkableSharedMutex::unlock>;
 
   template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
   class ScopedPotentialDeferredSignalWithMutexBase final {
@@ -131,4 +230,18 @@ namespace FEXCore {
   using ScopedPotentialDeferredSignalWithMutex      = ScopedPotentialDeferredSignalWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
   using ScopedPotentialDeferredSignalWithSharedLock = ScopedPotentialDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
   using ScopedPotentialDeferredSignalWithUniqueLock = ScopedPotentialDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock, &std::shared_mutex::unlock>;
+
+  // Forkable variant
+  using ScopedPotentialDeferredSignalWithForkableMutex      = ScopedPotentialDeferredSignalWithMutexBase<
+    FEXCore::ForkableUniqueMutex,
+    &FEXCore::ForkableUniqueMutex::lock,
+    &FEXCore::ForkableUniqueMutex::unlock>;
+  using ScopedPotentialDeferredSignalWithForkableSharedLock = ScopedPotentialDeferredSignalWithMutexBase<
+    FEXCore::ForkableSharedMutex,
+    &FEXCore::ForkableSharedMutex::lock_shared,
+    &FEXCore::ForkableSharedMutex::unlock_shared>;
+  using ScopedPotentialDeferredSignalWithForkableUniqueLock = ScopedPotentialDeferredSignalWithMutexBase<
+    FEXCore::ForkableSharedMutex,
+    &FEXCore::ForkableSharedMutex::lock,
+    &FEXCore::ForkableSharedMutex::unlock>;
 }

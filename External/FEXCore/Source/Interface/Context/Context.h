@@ -152,7 +152,9 @@ namespace FEXCore::Context {
        * @param Thread The internal FEX thread state object
        */
       void DestroyThread(FEXCore::Core::InternalThreadState *Thread) override;
-      void CleanupAfterFork(FEXCore::Core::InternalThreadState *Thread) override;
+
+      void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) override;
+      void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child) override;
       void SetSignalDelegator(FEXCore::SignalDelegator *SignalDelegation) override;
       void SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) override;
 
@@ -252,7 +254,7 @@ namespace FEXCore::Context {
     Event PauseWait;
     bool Running{};
 
-    std::shared_mutex CodeInvalidationMutex;
+    FEXCore::ForkableSharedMutex CodeInvalidationMutex;
 
     FEXCore::CPUIDEmu CPUID;
     FEXCore::HLE::SyscallHandler *SyscallHandler{};
@@ -289,7 +291,7 @@ namespace FEXCore::Context {
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
       auto Thread = Frame->Thread;
-      ScopedDeferredSignalWithSharedLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+      ScopedDeferredSignalWithForkableSharedLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       return Fn(Frame, record);
     }
@@ -300,8 +302,7 @@ namespace FEXCore::Context {
       auto Thread = Frame->Thread;
 
       LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == FHU::Syscalls::gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), FHU::Syscalls::gettid());
-
-      ScopedDeferredSignalWithUniqueLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+      ScopedDeferredSignalWithForkableUniqueLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       ThreadRemoveCodeEntry(Thread, GuestRIP);
     }

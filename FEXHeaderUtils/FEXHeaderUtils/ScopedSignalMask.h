@@ -1,6 +1,6 @@
 #pragma once
 
-#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/DeferredSignalMutex.h>
 
 #include <atomic>
 #include <cstdint>
@@ -106,4 +106,17 @@ namespace FHU {
   using ScopedSignalMaskWithMutex = ScopedSignalMaskWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
   using ScopedSignalMaskWithSharedLock = ScopedSignalMaskWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
   using ScopedSignalMaskWithUniqueLock = ScopedSignalMaskWithMutexBase<std::shared_mutex, &std::shared_mutex::lock, &std::shared_mutex::unlock>;
+
+  using ScopedSignalMaskWithForkableMutex = ScopedSignalMaskWithMutexBase<
+    FEXCore::ForkableUniqueMutex,
+    &FEXCore::ForkableUniqueMutex::lock,
+    &FEXCore::ForkableUniqueMutex::unlock>;
+  using ScopedSignalMaskWithForkableSharedLock = ScopedSignalMaskWithMutexBase<
+    FEXCore::ForkableSharedMutex,
+    &FEXCore::ForkableSharedMutex::lock_shared,
+    &FEXCore::ForkableSharedMutex::unlock_shared>;
+  using ScopedSignalMaskWithForkableUniqueLock = ScopedSignalMaskWithMutexBase<
+    FEXCore::ForkableSharedMutex,
+    &FEXCore::ForkableSharedMutex::lock,
+    &FEXCore::ForkableSharedMutex::unlock>;
 }

@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/DeferredSignalMutex.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
@@ -220,7 +221,7 @@ public:
 
   ///// FORK tracking /////
   void LockBeforeFork();
-  void UnlockAfterFork();
+  void UnlockAfterFork(bool Child);
 
   SourcecodeResolver *GetSourcecodeResolver() override { return this; }
 
@@ -327,7 +328,7 @@ private:
   struct VMATracking {
     using VMAEntry = SyscallHandler::VMAEntry;
     // Held while reading/writing this struct
-    std::shared_mutex Mutex;
+    FEXCore::ForkableSharedMutex Mutex;
 
     // Memory ranges indexed by page aligned starting address
     fextl::map<uint64_t, VMAEntry> VMAs;
@@ -430,6 +431,7 @@ enum TypeOfClone {
 
 struct clone3_args {
   TypeOfClone Type;
+  uint64_t SignalMask;
   kernel_clone3_args args;
 };
 

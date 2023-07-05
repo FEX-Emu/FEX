@@ -22,6 +22,9 @@ namespace Alloc {
 
       virtual void *Mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset) { return nullptr; }
       virtual int Munmap(void *addr, size_t length) { return -1; }
+
+      virtual void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) {}
+      virtual void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child) {}
   };
 
   class GlobalAllocator {
