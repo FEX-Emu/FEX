@@ -265,7 +265,7 @@ namespace FHU::Filesystem {
     size_t DataSize = (sizeof(std::string_view) + sizeof(void*) * 2) * (SeparatorCount + 2);
     void *Data = alloca(DataSize);
     fextl::pmr::fixed_size_monotonic_buffer_resource mbr(Data, DataSize);
-    std::pmr::polymorphic_allocator pa {&mbr};
+    std::pmr::polymorphic_allocator<std::byte>  pa {&mbr};
     std::pmr::list<std::string_view> Parts{pa};
 
     size_t CurrentOffset{};
