@@ -181,15 +181,15 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(setxattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(setxattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      uint64_t Result = ::setxattr(path, name, value, size, flags);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Setxattr(path, name, value, size, flags);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(lsetxattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(lsetxattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, const void *value, size_t size, int flags) -> uint64_t {
-      uint64_t Result = ::lsetxattr(path, name, value, size, flags);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.LSetxattr(path, name, value, size, flags);
       SYSCALL_ERRNO();
     });
 
@@ -199,15 +199,15 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(getxattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(getxattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, void *value, size_t size) -> uint64_t {
-      uint64_t Result = ::getxattr(path, name, value, size);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Getxattr(path, name, value, size);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(lgetxattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(lgetxattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name, void *value, size_t size) -> uint64_t {
-      uint64_t Result = ::lgetxattr(path, name, value, size);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.LGetxattr(path, name, value, size);
       SYSCALL_ERRNO();
     });
 
@@ -217,15 +217,15 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(listxattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(listxattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, char *list, size_t size) -> uint64_t {
-      uint64_t Result = ::listxattr(path, list, size);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Listxattr(path, list, size);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(llistxattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(llistxattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, char *list, size_t size) -> uint64_t {
-      uint64_t Result = ::llistxattr(path, list, size);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.LListxattr(path, list, size);
       SYSCALL_ERRNO();
     });
 
@@ -235,15 +235,15 @@ namespace FEX::HLE {
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(removexattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(removexattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name) -> uint64_t {
-      uint64_t Result = ::removexattr(path, name);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.Removexattr(path, name);
       SYSCALL_ERRNO();
     });
 
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(lremovexattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+    REGISTER_SYSCALL_IMPL(lremovexattr,
       [](FEXCore::Core::CpuStateFrame *Frame, const char *path, const char *name) -> uint64_t {
-      uint64_t Result = ::lremovexattr(path, name);
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.LRemovexattr(path, name);
       SYSCALL_ERRNO();
     });
 

@@ -31,6 +31,7 @@ $end_info$
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+#include <sys/xattr.h>
 #include <syscall.h>
 #include <system_error>
 #include <unistd.h>
@@ -840,6 +841,126 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char *pathname, struct stat
     }
   }
   return ::fstatat64(dirfd, SelfPath, buf, flag);
+}
+
+uint64_t FileManager::Setxattr(const char *path, const char *name, const void *value, size_t size, int flags) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, true);
+  if (!Path.empty()) {
+    uint64_t Result = ::setxattr(Path.c_str(), name, value, size, flags);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::setxattr(SelfPath, name, value, size, flags);
+}
+
+uint64_t FileManager::LSetxattr(const char *path, const char *name, const void *value, size_t size, int flags) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, false);
+  if (!Path.empty()) {
+    uint64_t Result = ::lsetxattr(Path.c_str(), name, value, size, flags);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::lsetxattr(SelfPath, name, value, size, flags);
+}
+
+uint64_t FileManager::Getxattr(const char *path, const char *name, void *value, size_t size) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, true);
+  if (!Path.empty()) {
+    uint64_t Result = ::getxattr(Path.c_str(), name, value, size);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::getxattr(SelfPath, name, value, size);
+}
+
+uint64_t FileManager::LGetxattr(const char *path, const char *name, void *value, size_t size) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, false);
+  if (!Path.empty()) {
+    uint64_t Result = ::lgetxattr(Path.c_str(), name, value, size);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::lgetxattr(SelfPath, name, value, size);
+}
+
+uint64_t FileManager::Listxattr(const char *path, char *list, size_t size) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, true);
+  if (!Path.empty()) {
+    uint64_t Result = ::listxattr(Path.c_str(), list, size);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::listxattr(SelfPath, list, size);
+}
+
+uint64_t FileManager::LListxattr(const char *path, char *list, size_t size) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, false);
+  if (!Path.empty()) {
+    uint64_t Result = ::llistxattr(Path.c_str(), list, size);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::llistxattr(SelfPath, list, size);
+}
+
+uint64_t FileManager::Removexattr(const char *path, const char *name) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, true);
+  if (!Path.empty()) {
+    uint64_t Result = ::removexattr(Path.c_str(), name);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::removexattr(SelfPath, name);
+}
+
+uint64_t FileManager::LRemovexattr(const char *path, const char *name) {
+  auto NewPath = GetSelf(path);
+  const char *SelfPath = NewPath ? NewPath->c_str() : nullptr;
+
+  auto Path = GetEmulatedPath(SelfPath, false);
+  if (!Path.empty()) {
+    uint64_t Result = ::lremovexattr(Path.c_str(), name);
+    if (Result != -1 || errno != ENOENT) {
+      return Result;
+    }
+  }
+
+  return ::lremovexattr(SelfPath, name);
 }
 
 }
