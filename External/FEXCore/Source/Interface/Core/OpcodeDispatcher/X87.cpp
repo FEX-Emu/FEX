@@ -1356,7 +1356,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
   auto MaskConst = _Constant(FLAGMask);
 
-  auto RFLAG = GetPackedRFLAG(false);
+  auto RFLAG = GetPackedRFLAG(FLAGMask);
 
   auto AndOp = _And(RFLAG, MaskConst);
   switch (Type) {

@@ -827,7 +827,7 @@ public:
   void InvalidOp(OpcodeArgs);
 
   void SetPackedRFLAG(bool Lower8, OrderedNode *Src);
-  OrderedNode *GetPackedRFLAG(bool Lower8);
+  OrderedNode *GetPackedRFLAG(uint32_t FlagsMask = ~0U);
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 

@@ -1554,7 +1554,7 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
 }
 void OpDispatchBuilder::LAHFOp(OpcodeArgs) {
   // Load the lower 8 bits of the Rflags register
-  auto RFLAG = GetPackedRFLAG(true);
+  auto RFLAG = GetPackedRFLAG(0xFF);
 
   // Store the lower 8 bits of the rflags register in to AH
   StoreGPRRegister(X86State::REG_RAX, RFLAG, 1, 8);
@@ -4269,7 +4269,7 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
-  OrderedNode *Src = GetPackedRFLAG(false);
+  OrderedNode *Src = GetPackedRFLAG();
   if (Size != 8) {
     Src = _Bfe(Size * 8, 0, Src);
   }

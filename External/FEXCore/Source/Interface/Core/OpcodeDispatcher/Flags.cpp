@@ -59,22 +59,19 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, OrderedNode *Src) {
   }
 }
 
-OrderedNode *OpDispatchBuilder::GetPackedRFLAG(bool Lower8) {
+OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
   OrderedNode *Original = _Constant(2);
-  size_t NumFlags = FlagOffsets.size();
-  if (Lower8) {
-    NumFlags = 5;
-  }
-
-  for (size_t i = 0; i < NumFlags; ++i) {
+  for (size_t i = 0; i < FlagOffsets.size(); ++i) {
     const auto FlagOffset = FlagOffsets[i];
+    if (!((1U << FlagOffset) & FlagsMask)) {
+      continue;
+    }
+
     OrderedNode *Flag = _LoadFlag(FlagOffset);
-    Flag = _Bfe(4, 32, 0, Flag);
-    Flag = _Lshl(Flag, _Constant(FlagOffset));
-    Original = _Or(Original, Flag);
+    Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
   return Original;
 }
