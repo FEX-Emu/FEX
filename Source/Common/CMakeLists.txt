@@ -2,13 +2,13 @@ add_subdirectory(cpp-optparse/)
 
 set(NAME Common)
 set(SRCS
+  Config.cpp
   ArgumentLoader.cpp
   EnvironmentLoader.cpp
   StringUtil.cpp)
 
 if (NOT MINGW_BUILD)
   list (APPEND SRCS
-    Config.cpp
     FEXServerClient.cpp
     FileFormatCheck.cpp)
 endif()

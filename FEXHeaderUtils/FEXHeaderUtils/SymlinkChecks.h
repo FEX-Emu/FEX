@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 namespace FHU::Symlinks {
+#ifndef _WIN32
 // Checks to see if a filepath is a symlink.
 inline bool IsSymlink(const fextl::string &Filename) {
   struct stat Buffer{};
@@ -26,4 +27,5 @@ inline std::string_view ResolveSymlink(const fextl::string &Filename, std::span<
 
   return std::string_view(ResultBuffer.data(), Result);
 }
+#endif
 }
