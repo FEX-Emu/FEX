@@ -11,7 +11,6 @@ $end_info$
 #include "FEXCore/Utils/DeferredSignalMutex.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
-#include "Interface/Core/Core.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/GdbServer.h"
@@ -76,15 +75,6 @@ $end_info$
 #include <unordered_map>
 #include <utility>
 #include <xxhash.h>
-
-
-namespace FEXCore::CPU {
-  bool CreateCPUCore(Context::ContextImpl *CTX) {
-    // This should be used for generating things that are shared between threads
-    CTX->CPUID.Init(CTX);
-    return true;
-  }
-}
 
 namespace FEXCore::Core {
 struct ThreadLocalData {
