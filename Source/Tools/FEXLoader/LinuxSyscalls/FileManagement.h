@@ -86,6 +86,15 @@ public:
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char *pathname, bool FollowSymlink, FDPathTmpData &TmpFilename);
 
 private:
+  bool RootFSPathExists(const char* Filepath);
+
+  struct ThunkDBObject {
+    fextl::string LibraryName;
+    fextl::unordered_set<fextl::string> Depends;
+    fextl::vector<fextl::string> Overlays;
+    bool Enabled{};
+  };
+  void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>& ThunkDB, bool Global);
   FEX::EmulatedFile::EmulatedFDManager EmuFD;
 
   fextl::map<fextl::string, fextl::string, std::less<>> ThunkOverlays;
