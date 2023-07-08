@@ -787,20 +787,29 @@
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
       },
-      "GPR = Lshl GPR:$Src1, GPR:$Src2": {
+      "GPR = Lshl u8:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift left"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
+        "EmitValidation": [
+          "Size >= 4"
+        ],
+        "DestSize": "Size"
       },
-      "GPR = Lshr GPR:$Src1, GPR:$Src2": {
+      "GPR = Lshr u8:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift right"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
+        "EmitValidation": [
+          "Size >= 4"
+        ],
+        "DestSize": "Size"
       },
-      "GPR = Ashr GPR:$Src1, GPR:$Src2": {
+      "GPR = Ashr u8:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer arithmetic shift right"
                 ],
-        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
+        "EmitValidation": [
+          "Size >= 4"
+        ],
+        "DestSize": "Size"
       },
       "GPR = Ror GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer rotate right"

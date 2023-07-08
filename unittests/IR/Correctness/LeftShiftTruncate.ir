@@ -22,14 +22,14 @@
     %AddrA i64 = Constant #0x1000000
     %MemValueA i32 = LoadMem GPR, #4, %AddrA i64, %Invalid, #4, SXTX, #1
     %Shift i64 = Constant #0x1
-    %ResultA i32 = Lshl %MemValueA, %Shift
-    %ResultB i64 = Lshl %MemValueA, %Shift
+    %ResultA i32 = Lshl #4, %MemValueA, %Shift
+    %ResultB i64 = Lshl #8, %MemValueA, %Shift
     (%Store i64) StoreRegister %ResultA i64, #0, #0x8, GPR, GPRFixed, #8
     (%Store i64) StoreRegister %ResultB i64, #0, #0x20, GPR, GPRFixed, #8
 ;  Constant optimisable version
     %ValueB i64 = Constant #0x87654321
-    %ResultC i32 = Lshl %ValueB, %Shift
-    %ResultD i64 = Lshl %ValueB, %Shift
+    %ResultC i32 = Lshl #4, %ValueB, %Shift
+    %ResultD i64 = Lshl #8, %ValueB, %Shift
     (%Store i64) StoreRegister %ResultC i64, #0, #0x10, GPR, GPRFixed, #8
     (%Store i64) StoreRegister %ResultD i64, #0, #0x18, GPR, GPRFixed, #8
     (%ssa7 i0) Break {0.11.0.128}

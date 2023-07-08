@@ -93,6 +93,15 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_StoreMemTSO> _StoreMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, OrderedNode *Addr, OrderedNode *Value, uint8_t Align = 1) {
     return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
+  IRPair<IROp_Lshl> _Lshl(OrderedNode *Src1, OrderedNode *Src2) {
+    return _Lshl(std::max<uint8_t>(4, GetOpSize(Src1)), Src1, Src2);
+  }
+  IRPair<IROp_Lshr> _Lshr(OrderedNode *Src1, OrderedNode *Src2) {
+    return _Lshr(std::max<uint8_t>(4, GetOpSize(Src1)), Src1, Src2);
+  }
+  IRPair<IROp_Ashr> _Ashr(OrderedNode *Src1, OrderedNode *Src2) {
+    return _Ashr(std::max<uint8_t>(4, GetOpSize(Src1)), Src1, Src2);
+  }
   OrderedNode *Invalid() {
     return InvalidNode;
   }
