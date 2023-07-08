@@ -1020,14 +1020,22 @@ DEF_OP(Bfi) {
   const auto SrcDst = GetReg(Op->Dest.ID());
   const auto Src = GetReg(Op->Src.ID());
 
-  mov(EmitSize, TMP1, SrcDst);
-  bfi(EmitSize, TMP1, Src, Op->lsb, Op->Width);
-
-  if (OpSize == 8) {
-    mov(EmitSize, Dst, TMP1.R());
+  if (Dst == SrcDst) {
+    // If Dst and SrcDst match then this turns in to a simple BFI instruction.
+    bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
   }
   else {
-    ubfx(EmitSize, Dst, TMP1, 0, OpSize * 8);
+    // Destination didn't match the dst source register.
+    // TODO: Inefficient until FEX can have RA constraints here.
+    mov(EmitSize, TMP1, SrcDst);
+    bfi(EmitSize, TMP1, Src, Op->lsb, Op->Width);
+
+    if (OpSize == 8) {
+      mov(EmitSize, Dst, TMP1.R());
+    }
+    else {
+      ubfx(EmitSize, Dst, TMP1, 0, OpSize * 8);
+    }
   }
 }
 
