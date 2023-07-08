@@ -2257,40 +2257,26 @@ template
 void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true>(OpcodeArgs);
 
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
-  // Until we get correct PHI nodes this is required to be a loop unroll
-  const auto Size = uint32_t{GetSrcSize(Op)} * 8;
+  const auto Size = GetSrcSize(Op);
 
-  OrderedNode *Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+  OrderedNode *MaskSrc = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  // Mask only cares about the top bit of each byte
+  MaskSrc = _VCMPLTZ(Size, 1, MaskSrc);
 
+  // Vector that will overwrite byte elements.
+  OrderedNode *VectorSrc = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
+
+  // RDI source
   auto MemDest = LoadGPRRegister(X86State::REG_RDI);
 
-  const size_t NumElements = Size / 64;
-  for (size_t Element = 0; Element < NumElements; ++Element) {
-    // Extract the current element
-    auto SrcElement = _VExtractToGPR(GetSrcSize(Op), 8, Src, Element);
-    auto DestElement = _VExtractToGPR(GetSrcSize(Op), 8, Dest, Element);
+  // DS prefix by default.
+  MemDest = AppendSegmentOffset(MemDest, Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-    constexpr size_t NumSelectBits = 64 / 8;
-    for (size_t Select = 0; Select < NumSelectBits; ++Select) {
-      auto SelectMask = _Bfe(1, 8 * Select + 7, SrcElement);
-      auto CondJump = _CondJump(SelectMask, {COND_EQ});
-      auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
-      SetFalseJumpTarget(CondJump, StoreBlock);
-      SetCurrentCodeBlock(StoreBlock);
-      {
-        auto DestByte = _Bfe(8, 8 * Select, DestElement);
-        auto MemLocation = _Add(MemDest, _Constant(Element * 8 + Select));
-        // MASKMOVDQU/MASKMOVQ is explicitly weakly-ordered on its store
-        _StoreMem(GPRClass, 1, MemLocation, DestByte, 1);
-      }
-      auto Jump = _Jump();
-      auto NextJumpTarget = CreateNewCodeBlockAfter(StoreBlock);
-      SetJumpTarget(Jump, NextJumpTarget);
-      SetTrueJumpTarget(CondJump, NextJumpTarget);
-      SetCurrentCodeBlock(NextJumpTarget);
-    }
-  }
+  OrderedNode *XMMReg = _LoadMem(FPRClass, Size, MemDest, 1);
+
+  // If the Mask element high bit is set then overwrite the element with the source, else keep the memory variant
+  XMMReg = _VBSL(Size, MaskSrc, VectorSrc, XMMReg);
+  _StoreMem(FPRClass, Size, MemDest, XMMReg, 1);
 }
 
 void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore,
