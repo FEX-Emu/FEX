@@ -1,5 +1,4 @@
 #include "Interface/Context/Context.h"
-#include "Interface/Core/Core.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 
@@ -27,7 +26,9 @@ namespace FEXCore::Context {
   }
 
   bool FEXCore::Context::ContextImpl::InitializeContext() {
-    return FEXCore::CPU::CreateCPUCore(this);
+    // This should be used for generating things that are shared between threads
+    CPUID.Init(this);
+    return true;
   }
 
   void FEXCore::Context::ContextImpl::SetExitHandler(ExitHandler handler) {
