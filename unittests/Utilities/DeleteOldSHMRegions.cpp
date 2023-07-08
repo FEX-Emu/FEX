@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <fstream>
 #include <stdio.h>
 #include <sys/shm.h>
