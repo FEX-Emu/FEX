@@ -4881,7 +4881,12 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
     OrderedNode *Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst,
                                   IfZero, IfNotZero);
 
-    StoreGPRRegister(X86State::REG_RCX, Result, 4);
+    const uint8_t GPRSize = CTX->GetGPRSize();
+    if (GPRSize == 8) {
+      // If being stored to an 8-byte register, zero extend the 4-byte result.
+      Result = _Bfe(8, 32, 0, Result);
+    }
+    StoreGPRRegister(X86State::REG_RCX, Result);
   }
 
   // Set all of the necessary flags.
