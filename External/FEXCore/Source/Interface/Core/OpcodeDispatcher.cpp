@@ -1804,15 +1804,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   }
   const auto Size = GetSrcBitSize(Op);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(Src, _Constant(0x3F));
-  }
-  else {
-    Src = _And(Src, _Constant(0x1F));
-  }
-
-  OrderedNode *Result = _Lshl(Dest, Src);
+  OrderedNode *Result = _Lshl(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   if (Size < 32) {
@@ -1866,17 +1858,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
-  const auto Size = GetSrcBitSize(Op);
-
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(Src, _Constant(0x3F));
-  }
-  else {
-    Src = _And(Src, _Constant(0x1F));
-  }
-
-  auto ALUOp = _Lshr(Dest, Src);
+  auto ALUOp = _Lshr(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
   StoreResult(GPRClass, Op, ALUOp, -1);
 
   if constexpr (SHR1Bit) {
@@ -2117,18 +2099,11 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
   }
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(Src, _Constant(Size, 0x3F));
-  } else {
-    Src = _And(Src, _Constant(Size, 0x1F));
-  }
-
   if (Size < 32) {
     Dest = _Sbfe(Size, 0, Dest);
   }
 
-  OrderedNode *Result = _Ashr(Dest, Src);
+  OrderedNode *Result = _Ashr(std::max<uint8_t>(4, GetSrcSize(Op)), Dest, Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   if constexpr (SHR1Bit) {
@@ -2412,29 +2387,20 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
   auto* Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, -1);
-  const auto OperandSize = GetSrcBitSize(Op);
-
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  auto SanitizedShift = [&] {
-    if (OperandSize == 64) {
-      return _And(Shift, _Constant(0x3F));
-    } else {
-      return _And(Shift, _Constant(0x1F));
-    }
-  }();
+  const auto Size = GetSrcSize(Op);
 
   auto* Result = [&]() -> OrderedNode* {
     // SARX
     if (Op->OP == 0x6F7) {
-      return _Ashr(Src, SanitizedShift);
+      return _Ashr(Size, Src, Shift);
     }
     // SHLX
     if (Op->OP == 0x5F7) {
-      return _Lshl(Src, SanitizedShift);
+      return _Lshl(Size, Src, Shift);
     }
 
     // SHRX
-    return _Lshr(Src, SanitizedShift);
+    return _Lshr(Size, Src, Shift);
   }();
 
   StoreResult(GPRClass, Op, Result, -1);
@@ -2631,19 +2597,12 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(Src, _Constant(Size, 0x3F));
-  } else {
-    Src = _And(Src, _Constant(Size, 0x1F));
-  }
-
   // Res = Src >> Shift
   OrderedNode *Res = _Lshr(Dest, Src);
 
   // Res |= (Src << (Size - Shift + 1));
   OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
-  auto TmpHigher = _Lshl(Dest, SrcShl);
+  auto TmpHigher = _Lshl(GetSrcSize(Op), Dest, SrcShl);
 
   auto One = _Constant(Size, 1);
   auto Zero = _Constant(Size, 0);
@@ -2780,15 +2739,8 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   OrderedNode *Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
 
-  // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  if (Size == 64) {
-    Src = _And(Src, _Constant(Size, 0x3F));
-  } else {
-    Src = _And(Src, _Constant(Size, 0x1F));
-  }
-
   // Res = Src << Shift
-  OrderedNode *Res = _Lshl(Dest, Src);
+  OrderedNode *Res = _Lshl(GetSrcSize(Op), Dest, Src);
 
   // Res |= (Src << (Size - Shift + 1));
   OrderedNode *SrcShl = _Sub(_Constant(Size, Size + 1), Src);
