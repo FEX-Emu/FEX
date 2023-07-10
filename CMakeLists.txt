@@ -267,6 +267,8 @@ if (BUILD_TESTS)
   include(Catch)
 endif()
 
+# Disable fmt install
+set(FMT_INSTALL OFF)
 add_subdirectory(External/fmt/)
 
 add_subdirectory(External/imgui/)
