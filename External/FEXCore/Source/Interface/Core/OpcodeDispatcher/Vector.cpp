@@ -217,7 +217,7 @@ void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
   }
   else {
     // MOVSS mem32, xmm1
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, 4, -1);
   }
 }
