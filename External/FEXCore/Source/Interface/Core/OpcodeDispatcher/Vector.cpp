@@ -204,8 +204,8 @@ void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
 void OpDispatchBuilder::MOVSSOp(OpcodeArgs) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR()) {
     // MOVSS xmm1, xmm2
-    OrderedNode *Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags, -1);
-    OrderedNode *Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 4, Op->Flags, -1);
+    OrderedNode *Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags, -1);
+    OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
     auto Result = _VInsElement(16, 4, 0, 0, Dest, Src);
     StoreResult(FPRClass, Op, Result, -1);
   }
