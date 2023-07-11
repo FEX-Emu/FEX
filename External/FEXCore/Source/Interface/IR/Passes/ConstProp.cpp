@@ -561,6 +561,44 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
     }
 */
 
+    case OP_LOADMEMTSO: {
+      auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
+
+      if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
+        // TODO: LRCPC3 supports a vector unscaled offset like LRCPC2.
+        // Support once hardware is available to use this.
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+
+        Changed = true;
+      }
+      break;
+    }
+
+    case OP_STOREMEMTSO: {
+      auto Op = IROp->CW<IR::IROp_StoreMemTSO>();
+      auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
+
+      if (Op->Class == FEXCore::IR::FPRClass && AddressHeader->Op == OP_ADD && AddressHeader->Size == 8) {
+        // TODO: LRCPC3 supports a vector unscaled offset like LRCPC2.
+        // Support once hardware is available to use this.
+        auto [OffsetType, OffsetScale, Arg0, Arg1] = MemExtendedAddressing(IREmit, IROp->Size, AddressHeader);
+
+        Op->OffsetType = OffsetType;
+        Op->OffsetScale = OffsetScale;
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Addr_Index, Arg0); // Addr
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Offset_Index, Arg1); // Offset
+
+        Changed = true;
+      }
+      break;
+    }
+
     case OP_LOADMEM: {
       auto Op = IROp->CW<IR::IROp_LoadMem>();
       auto AddressHeader = IREmit->GetOpHeader(Op->Addr);
