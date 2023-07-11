@@ -2628,7 +2628,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
   // CF only changes if we actually shifted
   // Our new CF will be bit (Shift - 1) of the source
-  auto NewCF = _Lshr(Dest, _Sub(Src, One));
+  auto NewCF = _Bfe(1, 0, _Lshr(Dest, _Sub(Src, One)));
   CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
     NewCF, CF);
@@ -2682,7 +2682,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   // CF only changes if we actually shifted
   // Our new CF will be bit (Shift - 1) of the source
   auto One = _Constant(Size, 1);
-  auto NewCF = _Lshr(Tmp, _Sub(Src, One));
+  auto NewCF = _Bfe(1, 0, _Lshr(Tmp, _Sub(Src, One)));
   auto CompareResult = _Select(FEXCore::IR::COND_UGE,
     Src, One,
     NewCF, CF);
@@ -2771,7 +2771,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   {
     // CF only changes if we actually shifted
     // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Lshr(Dest, _Sub(_Constant(Size, Size), Src));
+    auto NewCF = _Bfe(1, 0, _Lshr(Dest, _Sub(_Constant(Size, Size), Src)));
     CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, One,
       NewCF, CF);
@@ -2830,7 +2830,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Ror(Tmp, _Sub(_Constant(63), Src));
+    auto NewCF = _Bfe(1, 0, _Ror(Tmp, _Sub(_Constant(63), Src)));
     auto CompareResult = _Select(FEXCore::IR::COND_UGE,
       Src, _Constant(1),
       NewCF, CF);
@@ -2907,7 +2907,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs) {
     // Now shift in to the correct bit location
     Result = _Lshr(Result, BitSelect);
   }
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, 0, Result));
 }
 
 template<uint32_t SrcIndex>
@@ -2985,7 +2985,7 @@ void OpDispatchBuilder::BTROp(OpcodeArgs) {
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, 0, Result));
 }
 
 template<uint32_t SrcIndex>
@@ -3059,7 +3059,7 @@ void OpDispatchBuilder::BTSOp(OpcodeArgs) {
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, 0, Result));
 }
 
 template<uint32_t SrcIndex>
@@ -3133,7 +3133,7 @@ void OpDispatchBuilder::BTCOp(OpcodeArgs) {
       _StoreMemAutoTSO(GPRClass, 1, MemoryLocation, Value, 1);
     }
   }
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Result);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, 0, Result));
 }
 
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
@@ -3377,6 +3377,10 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     CalculateDeferredFlags();
     auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    // XXX: I don't think this is correct. Needs Investigation.
+    // The `CF` variable is the original CF from the start of the operation
+    // The `NewCF` will be _Constant(0) stored aboved.
+    // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
     _Jump(EndBlock);
@@ -3439,6 +3443,10 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     CalculateDeferredFlags();
     auto NewCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+    // XXX: I don't think this is correct. Needs Investigation.
+    // The `CF` variable is the original CF from the start of the operation
+    // The `NewCF` will be _Constant(0) stored aboved.
+    // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
     _Jump(EndBlock);
@@ -3475,6 +3483,8 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
+  InvalidateDeferredFlags();
+
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
@@ -3506,6 +3516,8 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
+  InvalidateDeferredFlags();
+
   auto AF = GetRFLAG(FEXCore::X86State::RFLAG_AF_LOC);
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AX = LoadGPRRegister(X86State::REG_RAX, 2);
@@ -3538,6 +3550,8 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
+  InvalidateDeferredFlags();
+
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto UDivOp = _UDiv(AL, Imm8);
@@ -3557,6 +3571,8 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
+  InvalidateDeferredFlags();
+
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
   auto AH = _Lshr(LoadGPRRegister(X86State::REG_RAX, 2), _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);

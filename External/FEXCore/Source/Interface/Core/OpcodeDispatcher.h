@@ -1041,12 +1041,12 @@ private:
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
     flagsOp = SelectionFlag::Nothing;
-    _StoreFlag(_Bfe(1, 0, Value), BitOffset);
+    _StoreFlag(Value, BitOffset);
   }
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
     flagsOp = SelectionFlag::Nothing;
-    _StoreFlag(_Bfe(1, 0, Value), BitOffset);
+    _StoreFlag(Value, BitOffset);
   }
 
   OrderedNode *GetRFLAG(unsigned BitOffset) {

@@ -50,12 +50,12 @@ void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Init FSW to 0
-  SetX87Top(_Constant(0));
+  SetX87Top(Zero);
 
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
 
   // Tags all get set to 0b11
   _StoreContext(2, GPRClass, _Constant(0xFFFF), offsetof(FEXCore::Core::CPUState, FTW));
@@ -1119,7 +1119,7 @@ void OpDispatchBuilder::X87FXAMF64(OpcodeArgs) {
   OrderedNode *Result = _VExtractToGPR(8, 8, a, 0);
 
   // Extract the sign bit
-  Result = _Lshr(Result, _Constant(63));
+  Result = _Bfe(1, 63, Result);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Result);
 
   // Claim this is a normal number
