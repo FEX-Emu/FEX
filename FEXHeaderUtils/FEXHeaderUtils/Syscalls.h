@@ -98,8 +98,12 @@ inline int32_t pidfd_open(pid_t pid, unsigned int flags) {
 #else
 
 inline int32_t getcpu(uint32_t *cpu, uint32_t *node) {
-  *cpu = GetCurrentProcessorNumber();
-  *node = 0;
+  if (cpu) {
+    *cpu = GetCurrentProcessorNumber();
+  }
+  if (node) {
+    *node = 0;
+  }
   return 0;
 }
 
