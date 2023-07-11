@@ -621,18 +621,19 @@ void OpDispatchBuilder::FXTRACT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
+  auto Zero = _Constant(0);
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
   _F80LoadFCW(NewFCW);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Init FSW to 0
-  SetX87Top(_Constant(0));
+  SetX87Top(Zero);
 
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
 
   // Tags all get set to 0b11
   _StoreContext(2, GPRClass, _Constant(0xFFFF), offsetof(FEXCore::Core::CPUState, FTW));
@@ -1278,7 +1279,7 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   OrderedNode *Result = _VExtractToGPR(16, 8, a, 1);
 
   // Extract the sign bit
-  Result = _Lshr(Result, _Constant(15));
+  Result = _Bfe(1, 15, Result);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Result);
 
   // Claim this is a normal number
