@@ -1155,34 +1155,35 @@ private:
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
-  void CalculcateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
-  void CalculcateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
-  void CalculcateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  void CalculcateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
-  void CalculcateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High);
-  void CalculcateFlags_UMUL(OrderedNode *High);
-  void CalculcateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculcateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculcateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculcateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculcateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
-  void CalculcateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
-  void CalculcateFlags_BEXTR(OrderedNode *Src);
-  void CalculcateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
-  void CalculcateFlags_BLSMSK(OrderedNode *Src);
-  void CalculcateFlags_BLSR(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
-  void CalculcateFlags_POPCOUNT(OrderedNode *Src);
-  void CalculcateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
-  void CalculcateFlags_TZCNT(OrderedNode *Src);
-  void CalculcateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
-  void CalculcateFlags_BITSELECT(OrderedNode *Src);
-  void CalculcateFlags_RDRAND(OrderedNode *Src);
+  void CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
+  void CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF);
+  void CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
+  void CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF = true);
+  void CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High);
+  void CalculateFlags_UMUL(OrderedNode *High);
+  void CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_FCMP(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
+  void CalculateFlags_BEXTR(OrderedNode *Src);
+  void CalculateFlags_BLSI(uint8_t SrcSize, OrderedNode *Src);
+  void CalculateFlags_BLSMSK(OrderedNode *Src);
+  void CalculateFlags_BLSR(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src);
+  void CalculateFlags_POPCOUNT(OrderedNode *Src);
+  void CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src);
+  void CalculateFlags_TZCNT(OrderedNode *Src);
+  void CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src);
+  void CalculateFlags_BITSELECT(OrderedNode *Src);
+  void CalculateFlags_RDRAND(OrderedNode *Src);
   /**  @} */
 
   /**
