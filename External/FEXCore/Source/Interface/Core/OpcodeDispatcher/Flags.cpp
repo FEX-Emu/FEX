@@ -86,6 +86,23 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }
 
+void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res) {
+  auto One = _Constant(1);
+  auto EightBitMask = _Constant(0xFF);
+
+  auto PopCountOp = _Popcount(_And(Res, EightBitMask));
+  auto XorOp = _Xor(PopCountOp, One);
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+}
+
+void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
+  if (!CTX->Config.ABINoPF) {
+    CalculatePFUncheckedABI(Res);
+  } else {
+    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
+  }
+}
+
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
@@ -282,15 +299,7 @@ void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
-
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // ZF
   {
@@ -329,15 +338,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto PopCountOp = _Popcount(_And(Res, _Constant(0xFF)));
-
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // ZF
   {
@@ -383,15 +384,7 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // ZF
   {
@@ -436,15 +429,7 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // ZF
   {
@@ -530,15 +515,7 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // ZF
   {
@@ -572,15 +549,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    COND_FLAG_SET(Src2, RFLAG_PF_LOC, XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // AF
   {
@@ -623,15 +592,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    COND_FLAG_SET(Src2, RFLAG_PF_LOC, XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // AF
   {
@@ -674,15 +635,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNo
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    COND_FLAG_SET(Src2, RFLAG_PF_LOC, XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // AF
   {
@@ -727,15 +680,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, OpSize - Shift, Src1));
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // AF
   {
@@ -778,15 +723,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, Shift-1, Src1));
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // AF
   {
@@ -830,15 +767,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Orde
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, Shift-1, Src1));
   }
 
-  // PF
-  if (!CTX->Config.ABINoPF) {
-    auto EightBitMask = _Constant(0xFF);
-    auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-    auto XorOp = _Xor(PopCountOp, One);
-    SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
-  } else {
-    _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
-  }
+  CalculatePF(Res);
 
   // AF
   {

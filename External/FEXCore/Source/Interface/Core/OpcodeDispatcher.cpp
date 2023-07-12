@@ -3414,10 +3414,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
 
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  auto EightBitMask = _Constant(0xFF);
-  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
-  auto XorOp = _Xor(PopCountOp, _Constant(1));
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  CalculatePFUncheckedABI(AL);
 }
 
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
@@ -3478,10 +3475,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  auto EightBitMask = _Constant(0xFF);
-  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
-  auto XorOp = _Xor(PopCountOp, _Constant(1));
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  CalculatePFUncheckedABI(AL);
 }
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
@@ -3566,10 +3560,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  auto EightBitMask = _Constant(0xFF);
-  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
-  auto XorOp = _Xor(PopCountOp, _Constant(1));
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  CalculatePFUncheckedABI(AL);
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
@@ -3586,10 +3577,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   AL = LoadGPRRegister(X86State::REG_RAX, 1);
   SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(_Select(FEXCore::IR::COND_UGE, _And(AL, _Constant(0x80)), _Constant(0), _Constant(1), _Constant(0)));
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Select(FEXCore::IR::COND_EQ, _And(AL, _Constant(0xFF)), _Constant(0), _Constant(1), _Constant(0)));
-  auto EightBitMask = _Constant(0xFF);
-  auto PopCountOp = _Popcount(_And(AL, EightBitMask));
-  auto XorOp = _Xor(PopCountOp, _Constant(1));
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  CalculatePFUncheckedABI(AL);
 }
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
