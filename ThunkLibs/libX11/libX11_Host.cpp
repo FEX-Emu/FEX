@@ -5,7 +5,9 @@ desc: Handles callbacks and varargs
 $end_info$
 */
 
+#include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cstdlib>
 #include <stdio.h>
 
@@ -31,6 +33,7 @@ extern "C" {
 #include <utility>
 
 #include "thunkgen_host_libX11.inl"
+#include "X11Common.h"
 
 #ifdef _M_ARM_64
 // This Variadic asm only works for one signature
@@ -46,15 +49,15 @@ extern "C" {
 //
 // Incoming:
 // x0 = XIM
-// x1 = count
-// x2 = array of 64-bit values
+// x1 = count (excluding final nullptr)
+// x2 = array of 64-bit values (excluding final nullptr)
 // x3 = Function to call
 //
 // Outgoing:
 // x0: Ptr
 
 __attribute__((naked))
-void *libX11_Variadic_u64(uint64_t a_0, size_t count, unsigned long *list, void *Func) {
+void *libX11_Variadic_u64(uint64_t a_0, size_t count, void **list, void *Func) {
   asm volatile(R"(
     # Move our function to x8, which will be unused
     mov x8, x3
@@ -122,10 +125,11 @@ void *libX11_Variadic_u64(uint64_t a_0, size_t count, unsigned long *list, void 
       # x1 = <count>
       # x9 = <list ptr>
 
-      # Stack objects
-      # Count >= 7
+      # The number of arguments on the stack will always be (Count - 7) + 1
+
       # Subtract 6 count objects
-      # Leaves us at least 1 (nullptr)
+      # Gives us the total number of objects that need to be stored on to the stack.
+      # If exactly 7 objects then only nullptr ends up on the stack.
       sub x1, x1, 6
 
       # Round up to the nearest pair
@@ -141,29 +145,33 @@ void *libX11_Variadic_u64(uint64_t a_0, size_t count, unsigned long *list, void 
       # Store how much data we added to the stack in our callee saved register we stole
       mov x28, x10
 
-      # Subtract one member due to nullptr ender
-      sub x10, x1, 1
-
-      # x11 - stack offset
+      # x11 - stack offset - for stack Arguments
       mov x11, sp
 
-      # x12 - load offset
+      # x12 - load offset into input array (skipping the first 7 arguments)
       add x12, x9, (7 * 8)
 
-      cmp x10, 1
+      # Compute the number of elements excluding the terminating nullptr
+      subs x10, x1, 1
+
       b.eq .single%=
       b.lt .no_single%=
 
       .load_pair%=:
+      # Copy data from x12 to x11
       ldp x1, x2, [x12], 16
       stp x1, x2, [x11], 16
-      sub x10, x10, 8
+
+      # Stored two so subtract from the count.
+      sub x10, x10, 2
       cmp x10, 1
       b.gt .load_pair%=
       b.lt .no_single%=
 
-      # One variable at most
       .single%=:
+      # One variable at most
+      # Load the argument from the source.
+      # Then store that and the terminating nullptr.
       ldr x1, [x12]
       stp x1, xzr, [x11]
       b .top_reg_args%=
@@ -201,7 +209,32 @@ void *libX11_Variadic_u64(uint64_t a_0, size_t count, unsigned long *list, void 
 
 #endif
 
-_XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long *list) {
+// Walks the array of key:value pairs provided from the guest code side.
+// Finalizing any callback functions that the guest side prepared for us.
+template<typename CallbackType>
+void FinalizeIncomingCallbacks(size_t Count, void **list) {
+  assert(Count % 2 == 0 && "Incoming arguments needs to be in pairs");
+  for (size_t i = 0; i < (Count / 2); ++i) {
+    const char *Key = static_cast<const char*>(list[i * 2]);
+    void** Data = &list[i * 2 + 1];
+    if (!*Data) {
+      continue;
+    }
+
+    // Check if the key is a callback and needs to be modified.
+    auto KeyIt = std::find(X11::CallbackKeys.begin(), X11::CallbackKeys.end(), Key);
+    if (KeyIt == X11::CallbackKeys.end()) {
+      continue;
+    }
+
+    CallbackType *IncomingCallback = reinterpret_cast<CallbackType*>(*Data);
+    FinalizeHostTrampolineForGuestFunction(IncomingCallback->callback);
+  }
+}
+
+_XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XICCallback>(count, list);
+
   switch(count) {
     case 0: return fexldr_ptr_libX11_XCreateIC(a_0, nullptr); break;
     case 1: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], nullptr); break;
@@ -222,7 +255,7 @@ _XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long 
   }
 }
 
-char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
+char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, void **list) {
   switch(count) {
     case 0: return fexldr_ptr_libX11_XGetICValues(a_0, nullptr); break;
     case 1: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], nullptr); break;
@@ -243,7 +276,9 @@ char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned lo
   }
 }
 
-char* fexfn_impl_libX11_XSetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
+char* fexfn_impl_libX11_XSetICValues_internal(XIC a_0, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XICCallback>(count, list);
+
   switch(count) {
     case 0: return fexldr_ptr_libX11_XSetICValues(a_0, nullptr); break;
     case 1: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], nullptr); break;
@@ -277,7 +312,7 @@ char* fexfn_impl_libX11_XGetIMValues_internal(XIM a_0, size_t count, void **list
     case 8: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
     default:
 #ifdef _M_ARM_64
-      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, reinterpret_cast<unsigned long *>(list), reinterpret_cast<void*>(fexldr_ptr_libX11_XGetIMValues)));
+      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, list, reinterpret_cast<void*>(fexldr_ptr_libX11_XGetIMValues)));
 #else
       fprintf(stderr, "XGetIMValues_internal FAILURE\n");
       abort();
@@ -286,6 +321,8 @@ char* fexfn_impl_libX11_XGetIMValues_internal(XIM a_0, size_t count, void **list
 }
 
 char* fexfn_impl_libX11_XSetIMValues_internal(XIM a_0, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XIMCallback>(count, list);
+
   switch(count) {
     case 0: return fexldr_ptr_libX11_XSetIMValues(a_0, nullptr); break;
     case 1: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], nullptr); break;
@@ -298,7 +335,7 @@ char* fexfn_impl_libX11_XSetIMValues_internal(XIM a_0, size_t count, void **list
     case 8: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
     default:
 #ifdef _M_ARM_64
-      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, reinterpret_cast<unsigned long *>(list), reinterpret_cast<void*>(fexldr_ptr_libX11_XSetIMValues)));
+      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, list, reinterpret_cast<void*>(fexldr_ptr_libX11_XSetIMValues)));
 #else
       fprintf(stderr, "XSetIMValues_internal FAILURE\n");
       abort();
@@ -306,7 +343,9 @@ char* fexfn_impl_libX11_XSetIMValues_internal(XIM a_0, size_t count, void **list
   }
 }
 
-XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, size_t count, void** list) {
+XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XIMCallback>(count, list);
+
   switch(count) {
     case 0: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, nullptr); break;
     case 1: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], nullptr); break;
@@ -319,7 +358,7 @@ XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, siz
     case 8: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
     default:
 #ifdef _M_ARM_64
-      return reinterpret_cast<XVaNestedList>(libX11_Variadic_u64(unused_arg, count, reinterpret_cast<unsigned long *>(list), reinterpret_cast<void*>(fexldr_ptr_libX11_XVaCreateNestedList)));
+      return reinterpret_cast<XVaNestedList>(libX11_Variadic_u64(unused_arg, count, list, reinterpret_cast<void*>(fexldr_ptr_libX11_XVaCreateNestedList)));
 #else
       fprintf(stderr, "XVaCreateNestedList_internal FAILURE\n");
       abort();
