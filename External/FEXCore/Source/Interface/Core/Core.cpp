@@ -81,8 +81,6 @@ struct ThreadLocalData {
   FEXCore::Core::InternalThreadState* Thread;
 };
 
-thread_local ThreadLocalData ThreadData{};
-
 constexpr std::array<std::string_view const, 22> FlagNames = {
   "CF",
   "",
@@ -1153,7 +1151,6 @@ namespace FEXCore::Context {
   }
 
   void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState *Thread) {
-    Core::ThreadData.Thread = Thread;
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     InitializeThreadTLSData(Thread);
