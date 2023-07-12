@@ -57,8 +57,8 @@ namespace XXFileHash {
       }
       auto Cur = std::chrono::high_resolution_clock::now();
       auto Dur = Cur - Now;
-      if (Dur >= std::chrono::seconds(5)) {
-        fmt::print("{}% hashed\n", (double)CurrentOffset / SizeD);
+      if (Dur >= std::chrono::seconds(1)) {
+        fmt::print("{:.2}% hashed\n", (double)CurrentOffset / SizeD * 100.0);
         Now = Cur;
       }
       CurrentOffset += Result;
