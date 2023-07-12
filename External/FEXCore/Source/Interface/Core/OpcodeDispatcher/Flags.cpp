@@ -87,12 +87,20 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
 }
 
 void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res) {
-  auto One = _Constant(1);
-  auto EightBitMask = _Constant(0xFF);
+  // We will use the bottom bit of the popcount, set if an odd number of bits are set.
+  // But the x86 parity flag is supposed to be set for an even number of bits.
+  // Simply invert any bit of the input GPR and that will invert the bottom bit of the
+  // output FPR.
+  auto Flipped = _Xor(Res, _Constant(1));
 
-  auto PopCountOp = _Popcount(_And(Res, EightBitMask));
-  auto XorOp = _Xor(PopCountOp, One);
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(XorOp);
+  // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
+  // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
+  auto InputFPR = _VCastFromGPR(4, 4, Flipped);
+
+  // Store the popcount. When reading, only the bottom bit will be used.
+  auto Count = _VPopcount(1, 1, InputFPR);
+  auto Parity = _VExtractToGPR(8, 1, Count, 0);
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Parity);
 }
 
 void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
