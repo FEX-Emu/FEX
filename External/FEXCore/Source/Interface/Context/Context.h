@@ -153,8 +153,10 @@ namespace FEXCore::Context {
        */
       void DestroyThread(FEXCore::Core::InternalThreadState *Thread) override;
 
+#ifndef _WIN32
       void LockBeforeFork(FEXCore::Core::InternalThreadState *Thread) override;
       void UnlockAfterFork(FEXCore::Core::InternalThreadState *Thread, bool Child) override;
+#endif
       void SetSignalDelegator(FEXCore::SignalDelegator *SignalDelegation) override;
       void SetSyscallHandler(FEXCore::HLE::SyscallHandler *Handler) override;
 

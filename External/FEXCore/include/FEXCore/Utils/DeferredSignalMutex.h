@@ -7,7 +7,9 @@
 #include <mutex>
 #include <shared_mutex>
 #include <signal.h>
+#ifndef _WIN32
 #include <sys/syscall.h>
+#endif
 #include <unistd.h>
 
 namespace FEXCore {
@@ -93,8 +95,70 @@ namespace FEXCore {
   };
 #else
   // Windows doesn't support forking, so these can be standard mutexes.
-  using ForkableUniqueMutex = std::mutex;
-  using ForkableSharedMutex = std::shared_mutex;
+  class ForkableUniqueMutex final {
+    public:
+      ForkableUniqueMutex() = default;
+
+      // Non-moveable
+      ForkableUniqueMutex(const ForkableUniqueMutex&) = delete;
+      ForkableUniqueMutex& operator=(const ForkableUniqueMutex&) = delete;
+      ForkableUniqueMutex(ForkableUniqueMutex &&rhs) = delete;
+      ForkableUniqueMutex& operator=(ForkableUniqueMutex &&) = delete;
+
+      void lock() {
+        Mutex.lock();
+      }
+      void unlock() {
+        Mutex.unlock();
+      }
+      // Initialize the internal pthread object to its default initializer state.
+      // Should only ever be used in the child process when a Linux fork() has occured.
+      void StealAndDropActiveLocks() {
+        LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
+      }
+    private:
+      std::mutex Mutex;
+  };
+
+  class ForkableSharedMutex final {
+    public:
+      ForkableSharedMutex() = default;
+
+      // Non-moveable
+      ForkableSharedMutex(const ForkableSharedMutex&) = delete;
+      ForkableSharedMutex& operator=(const ForkableSharedMutex&) = delete;
+      ForkableSharedMutex(ForkableSharedMutex &&rhs) = delete;
+      ForkableSharedMutex& operator=(ForkableSharedMutex &&) = delete;
+
+      void lock() {
+        Mutex.lock();
+      }
+      void unlock() {
+        Mutex.unlock();
+      }
+      void lock_shared() {
+        Mutex.lock_shared();
+      }
+
+      void unlock_shared() {
+        Mutex.unlock_shared();
+      }
+
+      bool try_lock() {
+        return Mutex.try_lock();
+      }
+
+      bool try_lock_shared() {
+        return Mutex.try_lock_shared();
+      }
+      // Initialize the internal pthread object to its default initializer state.
+      // Should only ever be used in the child process when a Linux fork() has occured.
+      void StealAndDropActiveLocks() {
+        LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
+      }
+    private:
+      std::shared_mutex Mutex;
+  };
 #endif
 
   template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
@@ -165,10 +229,37 @@ namespace FEXCore {
     &FEXCore::ForkableSharedMutex::lock,
     &FEXCore::ForkableSharedMutex::unlock>;
 
+  class ScopedSignalMasker final {
+    public:
+      ScopedSignalMasker() = default;
+
+      void Mask(uint64_t Mask) {
+#ifndef _WIN32
+        // Mask all signals, storing the original incoming mask
+        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &OriginalMask, sizeof(OriginalMask));
+#endif
+      }
+
+      // Move-only type
+      ScopedSignalMasker(const ScopedSignalMasker&) = delete;
+      ScopedSignalMasker& operator=(ScopedSignalMasker&) = delete;
+      ScopedSignalMasker(ScopedSignalMasker &&rhs) = default;
+      ScopedSignalMasker& operator=(ScopedSignalMasker &&) = default;
+
+      void Unmask() {
+#ifndef _WIN32
+        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &OriginalMask, nullptr, sizeof(OriginalMask));
+#endif
+      }
+    private:
+#ifndef _WIN32
+      uint64_t OriginalMask{};
+#endif
+  };
+
   template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
   class ScopedPotentialDeferredSignalWithMutexBase final {
     public:
-
       ScopedPotentialDeferredSignalWithMutexBase(MutexType &_Mutex, FEXCore::Core::InternalThreadState *Thread, uint64_t Mask = ~0ULL)
         : Mutex {&_Mutex}
         , Thread {Thread} {
@@ -176,8 +267,7 @@ namespace FEXCore {
           Thread->CurrentFrame->State.DeferredSignalRefCount.Increment(1);
         }
         else {
-          // Mask all signals, storing the original incoming mask
-          ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &OriginalMask, sizeof(OriginalMask));
+          Masker.Mask(Mask);
         }
         // Lock the mutex
         (Mutex->*lock_fn)();
@@ -201,29 +291,29 @@ namespace FEXCore {
 
           if (Thread) {
 #ifdef _M_X86_64
-          // Needs to be atomic so that operations can't end up getting reordered around this.
-          // Without this, the refcount and the signal access could get reordered.
-          auto Result = Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
+            // Needs to be atomic so that operations can't end up getting reordered around this.
+            // Without this, the refcount and the signal access could get reordered.
+            auto Result = Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
 
-          // X86-64 must do an additional check around the store.
-          if ((Result - 1) == 0) {
-            // Must happen after the refcount store
-            Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
-          }
+            // X86-64 must do an additional check around the store.
+            if ((Result - 1) == 0) {
+              // Must happen after the refcount store
+              Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
+            }
 #else
-          Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
-          Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
+            Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
+            Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
 #endif
           }
           else {
             // Unmask back to the original signal mask
-            ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &OriginalMask, nullptr, sizeof(OriginalMask));
+            Masker.Unmask();
           }
         }
       }
     private:
       MutexType *Mutex;
-      uint64_t OriginalMask{};
+      ScopedSignalMasker Masker;
       FEXCore::Core::InternalThreadState *Thread;
   };
 

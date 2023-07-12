@@ -41,7 +41,7 @@ namespace FEXCore::Telemetry {
     TYPE_LAST,
   };
 
-  Value &GetObject(TelemetryType Type);
+  FEX_DEFAULT_VISIBILITY Value &GetTelemetryValue(TelemetryType Type);
 
   FEX_DEFAULT_VISIBILITY void Initialize();
   FEX_DEFAULT_VISIBILITY void Shutdown(fextl::string const &ApplicationName);
@@ -50,8 +50,8 @@ namespace FEXCore::Telemetry {
 // This returns the internal structure to the telemetry data structures
 // One must be careful with placing these in the hot path of code execution
 // It can be fairly costly, especially in the static version where it puts barriers in the code
-#define FEXCORE_TELEMETRY_STATIC_INIT(Name, Type) static FEXCore::Telemetry::Value &Name = FEXCore::Telemetry::GetObject(FEXCore::Telemetry::Type)
-#define FEXCORE_TELEMETRY_INIT(Name, Type) FEXCore::Telemetry::Value &Name = FEXCore::Telemetry::GetObject(FEXCore::Telemetry::Type)
+#define FEXCORE_TELEMETRY_STATIC_INIT(Name, Type) static FEXCore::Telemetry::Value &Name = FEXCore::Telemetry::GetTelemetryValue(FEXCore::Telemetry::Type)
+#define FEXCORE_TELEMETRY_INIT(Name, Type) FEXCore::Telemetry::Value &Name = FEXCore::Telemetry::GetTelemetryValue(FEXCore::Telemetry::Type)
 // Telemetry ALU operations
 // These are typically 3-4 instructions depending on what you're doing
 #define FEXCORE_TELEMETRY_SET(Name, Value) Name = Value

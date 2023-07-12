@@ -61,7 +61,7 @@ namespace FEXCore::Telemetry {
     }
   }
 
-  Value &GetObject(TelemetryType Type) {
+  Value &GetTelemetryValue(TelemetryType Type) {
     return TelemetryValues.at(Type);
   }
 #endif

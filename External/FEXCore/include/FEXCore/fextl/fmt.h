@@ -58,7 +58,7 @@ namespace fextl::fmt {
   FMT_INLINE auto print(::fmt::format_string<T...> fmt, T&&... args)
       -> void {
     auto String = fextl::fmt::vformat(fmt, ::fmt::make_format_args(args...));
-    auto f = fextl::file::File::GetStdOUT();
+    auto f = FEXCore::File::File::GetStdOUT();
     f.Write(String.c_str(), String.size());
   }
 

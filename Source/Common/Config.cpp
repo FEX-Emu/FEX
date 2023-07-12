@@ -10,9 +10,11 @@
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
+#ifndef _WIN32
 #include <linux/limits.h>
-#include <list>
 #include <pwd.h>
+#endif
+#include <list>
 #include <utility>
 #include <json-maker.h>
 #include <tiny-json.h>
@@ -103,12 +105,13 @@ namespace JSON {
     Dest = json_objClose(Dest);
     json_end(Dest);
 
-    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-    int FD = open(Filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
+    auto File = FEXCore::File::File(Filename.c_str(),
+      FEXCore::File::FileModes::WRITE |
+      FEXCore::File::FileModes::CREATE |
+      FEXCore::File::FileModes::TRUNCATE);
 
-    if (FD != -1) {
-      write(FD, Buffer, strlen(Buffer));
-      close(FD);
+    if (File.IsValid()) {
+      File.Write(Buffer, strlen(Buffer));
     }
   }
 
@@ -286,7 +289,7 @@ namespace JSON {
     // This is because we rewrite `/proc/self/exe` to the absolute program path calculated in here.
     if (!Program.starts_with('/')) {
       char ExistsTempPath[PATH_MAX];
-      char *RealPath = realpath(Program.c_str(), ExistsTempPath);
+      char *RealPath = FHU::Filesystem::Absolute(Program.c_str(), ExistsTempPath);
       if (RealPath) {
         Program = RealPath;
       }
@@ -315,6 +318,7 @@ namespace JSON {
     //    execveat binfmt_misc args layout: `FEXInterpreter <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
     //  - Regular execveat with FD. FD points to file on disk that has been deleted.
     //    execveat binfmt_misc args layout: `FEXInterpreter /dev/fd/<FD> <user provided argv[0]> <user provided argv[n]>...`
+#ifndef _WIN32
     if (ExecFDInterp || !ProgramFDFromEnv.empty()) {
       // Only in the case that FEX is executing an FD will the program argument potentially be a symlink.
       // This symlink will be in the style of `/dev/fd/<FD>`.
@@ -331,6 +335,7 @@ namespace JSON {
         }
       }
     }
+#endif
 
     return Program;
   }
@@ -425,6 +430,7 @@ namespace JSON {
     return {};
   }
 
+#ifndef _WIN32
   char const* FindUserHomeThroughUID() {
     auto passwd = getpwuid(geteuid());
     if (passwd) {
@@ -525,4 +531,10 @@ namespace JSON {
     FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(false), false);
     FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(true), true);
   }
+#else
+  void InitializeConfigs() {
+    // TODO: Find out how to set this up on WIN32.
+    LogMan::Msg::EFmt("{} Unsupported on WIN32!", __func__);
+  }
+#endif
 }

@@ -655,6 +655,7 @@ namespace FEXCore::Context {
     delete Thread;
   }
 
+#ifndef _WIN32
   void ContextImpl::UnlockAfterFork(FEXCore::Core::InternalThreadState *LiveThread, bool Child) {
     Allocator::UnlockAfterFork(LiveThread, Child);
 
@@ -708,6 +709,7 @@ namespace FEXCore::Context {
     CodeInvalidationMutex.lock();
     Allocator::LockBeforeFork(Thread);
   }
+#endif
 
   void ContextImpl::AddBlockMapping(FEXCore::Core::InternalThreadState *Thread, uint64_t Address, void *Ptr) {
     Thread->LookupCache->AddBlockMapping(Address, Ptr);
@@ -1155,7 +1157,9 @@ namespace FEXCore::Context {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
     InitializeThreadTLSData(Thread);
+#ifndef _WIN32
     Alloc::OSAllocator::RegisterTLSData(Thread);
+#endif
 
     ++IdleWaitRefCount;
 
@@ -1200,7 +1204,9 @@ namespace FEXCore::Context {
     --IdleWaitRefCount;
     IdleWaitCV.notify_all();
 
+#ifndef _WIN32
     Alloc::OSAllocator::UninstallTLSData(Thread);
+#endif
     SignalDelegation->UninstallTLSState(Thread);
 
     // If the parent thread is waiting to join, then we can't destroy our thread object
