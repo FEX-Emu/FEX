@@ -76,6 +76,14 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   return Original;
 }
 
+void OpDispatchBuilder::CalculateOF_Add(OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
+  auto XorOp1 = _Not(_Xor(Src1, Src2));
+  auto XorOp2 = _Xor(Res, Src1);
+  OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
+  AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
+}
+
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
@@ -299,16 +307,8 @@ void OpDispatchBuilder::CalculcateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, O
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
   }
 
-  // OF
   // Signed
-  {
-    auto XorOp1 = _Not(_Xor(Src1, Src2));
-    auto XorOp2 = _Xor(Res, Src1);
-    OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
-
-    AndOp1 = _Bfe(1, Size - 1, AndOp1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
-  }
+  CalculateOF_Add(Res, Src1, Src2);
 }
 
 void OpDispatchBuilder::CalculcateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
@@ -459,15 +459,7 @@ void OpDispatchBuilder::CalculcateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, O
   }
 
   // OF
-  {
-    auto XorOp1 = _Not(_Xor(Src1, Src2));
-    auto XorOp2 = _Xor(Res, Src1);
-
-    OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
-
-    AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
-  }
+  OpDispatchBuilder::CalculateOF_Add(Res, Src1, Src2);
 }
 
 void OpDispatchBuilder::CalculcateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
