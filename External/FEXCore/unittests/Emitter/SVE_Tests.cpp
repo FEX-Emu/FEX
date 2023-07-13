@@ -3253,6 +3253,172 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d]");
 
+  TEST_SINGLE(ldff1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         "ldff1b {z30.s}, p6/z, [x30, z31.s, uxtw]");
+  TEST_SINGLE(ldff1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         "ldff1b {z30.s}, p6/z, [x30, z31.s, sxtw]");
+  TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         "ldff1b {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         "ldff1b {z30.d}, p6/z, [x30, z31.d, sxtw]");
+  TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                         "ldff1b {z30.d}, p6/z, [x30, z31.d]");
+
+  TEST_SINGLE(ldff1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          "ldff1sb {z30.s}, p6/z, [x30, z31.s, uxtw]");
+  TEST_SINGLE(ldff1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          "ldff1sb {z30.s}, p6/z, [x30, z31.s, sxtw]");
+  TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          "ldff1sb {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          "ldff1sb {z30.d}, p6/z, [x30, z31.d, sxtw]");
+  TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                          "ldff1sb {z30.d}, p6/z, [x30, z31.d]");
+
+  TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                     "ldff1d {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                     "ldff1d {z30.d}, p6/z, [x30, z31.d, sxtw]");
+  TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 3)),
+                     "ldff1d {z30.d}, p6/z, [x30, z31.d, uxtw #3]");
+  TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 3)),
+                     "ldff1d {z30.d}, p6/z, [x30, z31.d, sxtw #3]");
+  TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 3)),
+                     "ldff1d {z30.d}, p6/z, [x30, z31.d, lsl #3]");
+  TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                     "ldff1d {z30.d}, p6/z, [x30, z31.d]");
+
+  TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                         "ldff1h {z30.s}, p6/z, [x30, z31.s, uxtw #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                         "ldff1h {z30.s}, p6/z, [x30, z31.s, sxtw #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                         "ldff1h {z30.d}, p6/z, [x30, z31.d, uxtw #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                         "ldff1h {z30.d}, p6/z, [x30, z31.d, sxtw #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                         "ldff1h {z30.d}, p6/z, [x30, z31.d, lsl #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                         "ldff1h {z30.d}, p6/z, [x30, z31.d]");
+
+  TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         "ldff1h {z30.s}, p6/z, [x30, z31.s, uxtw]");
+  TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         "ldff1h {z30.s}, p6/z, [x30, z31.s, sxtw]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         "ldff1h {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         "ldff1h {z30.d}, p6/z, [x30, z31.d, sxtw]");
+
+  TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                          "ldff1sh {z30.s}, p6/z, [x30, z31.s, uxtw #1]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                          "ldff1sh {z30.s}, p6/z, [x30, z31.s, sxtw #1]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                          "ldff1sh {z30.d}, p6/z, [x30, z31.d, uxtw #1]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                          "ldff1sh {z30.d}, p6/z, [x30, z31.d, sxtw #1]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                          "ldff1sh {z30.d}, p6/z, [x30, z31.d, lsl #1]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                          "ldff1sh {z30.d}, p6/z, [x30, z31.d]");
+
+  TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          "ldff1sh {z30.s}, p6/z, [x30, z31.s, uxtw]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          "ldff1sh {z30.s}, p6/z, [x30, z31.s, sxtw]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          "ldff1sh {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          "ldff1sh {z30.d}, p6/z, [x30, z31.d, sxtw]");
+
+  TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                         "ldff1w {z30.s}, p6/z, [x30, z31.s, uxtw #2]");
+  TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                         "ldff1w {z30.s}, p6/z, [x30, z31.s, sxtw #2]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                         "ldff1w {z30.d}, p6/z, [x30, z31.d, uxtw #2]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                         "ldff1w {z30.d}, p6/z, [x30, z31.d, sxtw #2]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                                         "ldff1w {z30.d}, p6/z, [x30, z31.d, lsl #2]");
+
+  TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         "ldff1w {z30.s}, p6/z, [x30, z31.s, uxtw]");
+  TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         "ldff1w {z30.s}, p6/z, [x30, z31.s, sxtw]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         "ldff1w {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         "ldff1w {z30.d}, p6/z, [x30, z31.d, sxtw]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                         "ldff1w {z30.d}, p6/z, [x30, z31.d]");
+
+  TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                      "ldff1sw {z30.d}, p6/z, [x30, z31.d, uxtw]");
+  TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                      "ldff1sw {z30.d}, p6/z, [x30, z31.d, sxtw]");
+  TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                      "ldff1sw {z30.d}, p6/z, [x30, z31.d, uxtw #2]");
+  TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                      "ldff1sw {z30.d}, p6/z, [x30, z31.d, sxtw #2]");
+  TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                      "ldff1sw {z30.d}, p6/z, [x30, z31.d, lsl #2]");
+  TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                      "ldff1sw {z30.d}, p6/z, [x30, z31.d]");
+
   TEST_SINGLE(ldr(PReg::p6, XReg::x29, 0), "ldr p6, [x29]");
   TEST_SINGLE(ldr(PReg::p6, XReg::x29, -256), "ldr p6, [x29, #-256, mul vl]");
   TEST_SINGLE(ldr(PReg::p6, XReg::x29, 255), "ldr p6, [x29, #255, mul vl]");
