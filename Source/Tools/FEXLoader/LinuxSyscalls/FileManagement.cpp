@@ -15,6 +15,7 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
@@ -59,48 +60,61 @@ namespace JSON {
 }
 
 namespace FEX::HLE {
-  struct open_how;
-
-static bool LoadFile(fextl::vector<char> &Data, const fextl::string &Filename) {
-  int fd = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
-  if (fd == -1) {
-    return false;
-  }
-
-  struct stat buf;
-  if (fstat(fd, &buf) != 0) {
-    LogMan::Msg::DFmt("Couldn't load configuration file: fstat");
-    close(fd);
-    return false;
-  }
-
-  auto FileSize = buf.st_size;
-
-  if (FileSize <= 0) {
-    LogMan::Msg::DFmt("FileSize less than or equal to zero specified");
-    close(fd);
-    return false;
-  }
-
-  Data.resize(FileSize);
-  const auto ReadSize = pread(fd, Data.data(), FileSize, 0);
-
-  close(fd);
-  return ReadSize == FileSize;
+bool FileManager::RootFSPathExists(const char* Filepath) {
+  LOGMAN_THROW_A_FMT(Filepath && Filepath[0] == '/', "Filepath needs to be absolute");
+  return FHU::Filesystem::ExistsAt(RootFSFD, Filepath + 1);
 }
 
-struct ThunkDBObject {
-  fextl::string LibraryName;
-  fextl::unordered_set<fextl::string> Depends;
-  fextl::vector<fextl::string> Overlays;
-  bool Enabled{};
-};
-
-static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>& ThunkDB, bool Is64BitMode, bool Global) {
+void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>& ThunkDB, bool Global) {
   auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
   fextl::vector<char> FileData;
-  if (LoadFile(FileData, ThunkDBPath)) {
+  if (FEXCore::FileLoading::LoadFile(FileData, ThunkDBPath)) {
     FileData.push_back(0);
+
+    // If the thunksDB file exists then we need to check if the rootfs supports multi-arch or not.
+    const bool RootFSIsMultiarch = RootFSPathExists("/usr/lib/x86_64-linux-gnu/") ||
+      RootFSPathExists("/usr/lib/i386-linux-gnu/");
+
+    fextl::vector<fextl::string> PathPrefixes{};
+    if (RootFSIsMultiarch) {
+      // Multi-arch debian distros have a fairly complex arrangement of filepaths.
+      // These fractal out to the combination of library prefixes with arch suffixes.
+      constexpr static std::array<std::string_view, 4> LibPrefixes = {
+        "/usr/lib",
+        "/usr/local/lib",
+        "/lib",
+        "/usr/lib/pressure-vessel/overrides/lib",
+      };
+
+      // We only need to generate 32-bit or 64-bit depending on the operating mode.
+      const auto ArchPrefix = Is64BitMode() ?
+        "x86_64-linux-gnu" :
+        "i386-linux-gnu";
+
+      for (auto Prefix : LibPrefixes) {
+        PathPrefixes.emplace_back(fextl::fmt::format("{}/{}", Prefix, ArchPrefix));
+      }
+    }
+    else {
+      // Non multi-arch supporting distros like Fedora and Debian have a much more simple layout.
+      // lib/ folders refer to 32-bit library folders.
+      // li64/ folders refer to 64-bit library folders.
+      constexpr static std::array<std::string_view, 4> LibPrefixes = {
+        "/usr",
+        "/usr/local",
+        "", // root, the '/' will be appended in the next step.
+        "/usr/lib/pressure-vessel/overrides",
+      };
+
+      // We only need to generate 32-bit or 64-bit depending on the operating mode.
+      const auto ArchPrefix = Is64BitMode() ?
+        "lib64" :
+        "lib";
+
+      for (auto Prefix : LibPrefixes) {
+        PathPrefixes.emplace_back(fextl::fmt::format("{}/{}", Prefix, ArchPrefix));
+      }
+    }
 
     JSON::JsonAllocator Pool {
       .PoolObject = {
@@ -143,39 +157,24 @@ static void LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBObject>
           }
         }
         else if (ItemName == "Overlay") {
-          auto AddWithReplacement = [Is64BitMode, HomeDirectory](ThunkDBObject& DBObject, fextl::string LibraryItem) {
-            constexpr static std::array<std::string_view, 4> LibPrefixes = {
-              "/usr/lib",
-              "/usr/local/lib",
-              "/lib",
-              "/usr/lib/pressure-vessel/overrides/lib",
-            };
-
-            constexpr static std::array<std::string_view, 2> ArchPrefixes = {
-              "i386",
-              "x86_64",
-            };
-
+          auto AddWithReplacement = [HomeDirectory, &PathPrefixes](ThunkDBObject& DBObject, fextl::string LibraryItem) {
             // Walk through template string and fill in prefixes from right to left
 
             using namespace std::string_view_literals;
-            const std::pair PrefixArch { "@PREFIX_ARCH@"sv, LibraryItem.find("@PREFIX_ARCH@") };
             const std::pair PrefixHome { "@HOME@"sv, LibraryItem.find("@HOME@") };
             const std::pair PrefixLib { "@PREFIX_LIB@"sv, LibraryItem.find("@PREFIX_LIB@") };
 
             fextl::string::size_type PrefixPositions[] = {
-              PrefixArch.second, PrefixHome.second, PrefixLib.second,
+              PrefixHome.second, PrefixLib.second,
             };
             // Sort offsets in descending order to enable safe in-place replacement
             std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<>{});
 
-            for (auto& LibPrefix : LibPrefixes) {
+            for (auto& LibPrefix : PathPrefixes) {
               fextl::string Replacement = LibraryItem;
               for (auto PrefixPos : PrefixPositions) {
                 if (PrefixPos == fextl::string::npos) {
                   continue;
-                } else if (PrefixPos == PrefixArch.second) {
-                  Replacement.replace(PrefixPos, PrefixArch.first.size(), ArchPrefixes[Is64BitMode]);
                 } else if (PrefixPos == PrefixHome.second) {
                   Replacement.replace(PrefixPos, PrefixHome.first.size(), HomeDirectory);
                 } else if (PrefixPos == PrefixLib.second) {
@@ -244,13 +243,20 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
     ConfigPaths.emplace_back(FEXCore::Config::GetApplicationConfig(AppName, false));
   }
 
+  if (!LDPath().empty()) {
+    RootFSFD = open(LDPath().c_str(), O_DIRECTORY | O_PATH | O_CLOEXEC);
+    if (RootFSFD == -1) {
+      RootFSFD = AT_FDCWD;
+    }
+  }
+
   fextl::unordered_map<fextl::string, ThunkDBObject> ThunkDB;
-  LoadThunkDatabase(ThunkDB, Is64BitMode(), true);
-  LoadThunkDatabase(ThunkDB, Is64BitMode(), false);
+  LoadThunkDatabase(ThunkDB, true);
+  LoadThunkDatabase(ThunkDB, false);
 
   for (const auto &Path : ConfigPaths) {
     fextl::vector<char> FileData;
-    if (LoadFile(FileData, Path)) {
+    if (FEXCore::FileLoading::LoadFile(FileData, Path)) {
       JSON::JsonAllocator Pool {
         .PoolObject = {
           .init = JSON::PoolInit,
@@ -339,13 +345,6 @@ FileManager::FileManager(FEXCore::Context::Context *ctx)
   }
 
   UpdatePID(::getpid());
-
-  if (!LDPath().empty()) {
-    RootFSFD = open(LDPath().c_str(), O_DIRECTORY | O_PATH | O_CLOEXEC);
-    if (RootFSFD == -1) {
-      RootFSFD = AT_FDCWD;
-    }
-  }
 }
 
 FileManager::~FileManager() {
