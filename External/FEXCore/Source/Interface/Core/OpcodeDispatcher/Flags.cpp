@@ -70,6 +70,8 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
       continue;
     }
 
+    // Note that the Bfi only considers the bottom bit of the flag, the rest of
+    // the byte is allowed to be garbage. PF relies on this.
     OrderedNode *Flag = _LoadFlag(FlagOffset);
     Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
