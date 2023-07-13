@@ -297,28 +297,28 @@ bool RAValidation::Run(IREmitter *IREmit) {
         auto CurrentSSAAtReg = BlockRegState.Get(PhyReg);
         if (CurrentSSAAtReg == RegState::InvalidReg) {
           HadError |= true;
-          Errors << fextl::fmt::format("%ssa{}: Arg[{}] unknown Reg: {}, class: {}\n", ID, i, PhyReg.Reg, PhyReg.Class);
+          Errors << fextl::fmt::format("%{}: Arg[{}] unknown Reg: {}, class: {}\n", ID, i, PhyReg.Reg, PhyReg.Class);
         } else if (CurrentSSAAtReg == RegState::CorruptedPair) {
           HadError |= true;
 
           auto Lower = BlockRegState.Get(PhysicalRegister(GPRClass, uint8_t(PhyReg.Reg*2) + 1));
           auto Upper = BlockRegState.Get(PhysicalRegister(GPRClass, PhyReg.Reg*2 + 1));
 
-          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects paired reg{} to contain %ssa{}, but it actually contains {{%ssa{}, %ssa{}}}\n",
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects paired reg{} to contain %{}, but it actually contains {{%{}, %{}}}\n",
                                 ID, i, PhyReg.Reg, ArgID, Lower, Upper);
         } else if (CurrentSSAAtReg == RegState::UninitializedValue) {
           HadError |= true;
 
-          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it is uninitialized\n",
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it is uninitialized\n",
                                 ID, i, PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg == RegState::ClobberedValue) {
           HadError |= true;
 
-          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but contents vary depending on control flow\n",
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but contents vary depending on control flow\n",
                                 ID, i, PhyReg.Reg, ArgID);
         } else if (CurrentSSAAtReg != ArgID) {
           HadError |= true;
-          Errors << fextl::fmt::format("%ssa{}: Arg[{}] expects reg{} to contain %ssa{}, but it actually contains %ssa{}\n",
+          Errors << fextl::fmt::format("%{}: Arg[{}] expects reg{} to contain %{}, but it actually contains %{}\n",
                                 ID, i, PhyReg.Reg, ArgID, CurrentSSAAtReg);
         }
       };
@@ -343,15 +343,15 @@ bool RAValidation::Run(IREmitter *IREmit) {
 
         if (Value == RegState::UninitializedValue) {
           HadError |= true;
-          Errors << fextl::fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but was undefined in at least one control flow path\n",
+          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but was undefined in at least one control flow path\n",
                                 ID, ExpectedValue, FillRegister->Slot);
         } else if (Value == RegState::ClobberedValue) {
           HadError |= true;
-          Errors << fextl::fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but contents vary depending on control flow\n",
+          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but contents vary depending on control flow\n",
                                 ID, ExpectedValue, FillRegister->Slot);
         } else if (Value != ExpectedValue) {
           HadError |= true;
-          Errors << fextl::fmt::format("%ssa{}: FillRegister expected %ssa{} in Slot {}, but it actually contains %ssa{}\n",
+          Errors << fextl::fmt::format("%{}: FillRegister expected %{} in Slot {}, but it actually contains %{}\n",
                                 ID, ExpectedValue, FillRegister->Slot, Value);
         }
         break;

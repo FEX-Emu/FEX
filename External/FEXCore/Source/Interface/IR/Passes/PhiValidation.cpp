@@ -47,7 +47,7 @@ bool PhiValidation::Run(IREmitter *IREmit) {
             // If we have found a non-phi IR op and then had a Phi or PhiValue value then this is a programming mistake
             // PHI values MUST be defined at the top of the block only
             HadError |= true;
-            Errors << "Phi %ssa" << CurrentIR.GetID(CodeNode) << ": Was defined after non-phi operations. Which is invalid!" << std::endl;
+            Errors << "Phi %" << CurrentIR.GetID(CodeNode) << ": Was defined after non-phi operations. Which is invalid!" << std::endl;
           }
 
           // Check all the phi values to ensure they have the same type

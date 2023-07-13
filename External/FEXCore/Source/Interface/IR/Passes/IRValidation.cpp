@@ -82,13 +82,13 @@ bool IRValidation::Run(IREmitter *IREmit) {
         HadError |= OpSize == 0;
         // Does the op have a destination of size 0?
         if (OpSize == 0) {
-          Errors << "%ssa" << ID << ": Had destination but with no size" << std::endl;
+          Errors << "%" << ID << ": Had destination but with no size" << std::endl;
         }
 
         // Does the node have zero uses? Should have been DCE'd
         if (CodeNode->GetUses() == 0) {
           HadWarning |= true;
-          Warnings << "%ssa" << ID << ": Destination created but had no uses" << std::endl;
+          Warnings << "%" << ID << ": Destination created but had no uses" << std::endl;
         }
 
         if (RAData) {
@@ -101,20 +101,20 @@ bool IRValidation::Run(IREmitter *IREmit) {
           // If no register class was assigned
           if (AssignedClass == IR::InvalidClass) {
             HadError |= true;
-            Errors << "%ssa" << ID << ": Had destination but with no register class assigned" << std::endl;
+            Errors << "%" << ID << ": Had destination but with no register class assigned" << std::endl;
           }
 
           // If no physical register was assigned
           if (PhyReg.Reg == IR::InvalidReg) {
             HadError |= true;
-            Errors << "%ssa" << ID << ": Had destination but with no register assigned" << std::endl;
+            Errors << "%" << ID << ": Had destination but with no register assigned" << std::endl;
           }
 
           // Assigned class wasn't the expected class and it is a non-complex op
           if (AssignedClass != ExpectedClass &&
               ExpectedClass != IR::ComplexClass) {
             HadWarning |= true;
-            Warnings << "%ssa" << ID << ": Destination had register class " << AssignedClass.Val << " When register class " << ExpectedClass.Val << " Was expected" << std::endl;
+            Warnings << "%" << ID << ": Destination had register class " << AssignedClass.Val << " When register class " << ExpectedClass.Val << " Was expected" << std::endl;
           }
         }
       }
@@ -128,12 +128,12 @@ bool IRValidation::Run(IREmitter *IREmit) {
         // Was an argument defined after this node?
         if (ArgID >= ID) {
           HadError |= true;
-          Errors << "%ssa" << ID << ": Arg[" << i << "] has definition after use at %ssa" << ArgID << std::endl;
+          Errors << "%" << ID << ": Arg[" << i << "] has definition after use at %" << ArgID << std::endl;
         }
 
         if (ArgID.IsValid() && !NodeIsLive.Get(ArgID.Value)) {
           HadError |= true;
-          Errors << "%ssa" << ID << ": Arg[" << i << "] references dead %ssa" << ArgID << std::endl;
+          Errors << "%" << ID << ": Arg[" << i << "] references dead %" << ArgID << std::endl;
         }
 
         if (ArgID.IsValid()) {
@@ -162,7 +162,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
           if (TrueTargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
-            Errors << "CondJump %ssa" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
+            Errors << "CondJump %" << ID << ": True Target Jumps to Op that isn't the begining of a block" << std::endl;
           }
           else {
             auto Block = OffsetToBlockMap.try_emplace(Op->TrueBlock.ID()).first;
@@ -171,7 +171,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
 
           if (FalseTargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
-            Errors << "CondJump %ssa" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
+            Errors << "CondJump %" << ID << ": False Target Jumps to Op that isn't the begining of a block" << std::endl;
           }
           else {
             auto Block = OffsetToBlockMap.try_emplace(Op->FalseBlock.ID()).first;
@@ -188,7 +188,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
           FEXCore::IR::IROp_Header const *TargetOp = CurrentIR.GetOp<IROp_Header>(TargetNode);
           if (TargetOp->Op != OP_CODEBLOCK) {
             HadError |= true;
-            Errors << "Jump %ssa" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
+            Errors << "Jump %" << ID << ": Jump to Op that isn't the begining of a block" << std::endl;
           }
           else {
             auto Block = OffsetToBlockMap.try_emplace(Op->Header.Args[0].ID()).first;
@@ -206,7 +206,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
     size_t NumSuccessors = CurrentBlock->Successors.size();
     if (NumSuccessors > 2) {
       HadError |= true;
-      Errors << "%ssa" << BlockID << " Has " << NumSuccessors << " successors which is too many" << std::endl;
+      Errors << "%" << BlockID << " Has " << NumSuccessors << " successors which is too many" << std::endl;
     }
 
     {
@@ -222,7 +222,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
         auto Op = GetOp(CodeCurrent);
         if (Op != IR::OP_ENDBLOCK) {
           HadError |= true;
-          Errors << "%ssa" << BlockID << " Failed to end block with EndBlock" << std::endl;
+          Errors << "%" << BlockID << " Failed to end block with EndBlock" << std::endl;
         }
       }
 
@@ -233,7 +233,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
         auto Op = GetOp(CodeCurrent);
         if (!IsBlockExit(Op)) {
           HadError |= true;
-          Errors << "%ssa" << BlockID << " Didn't have a block exit IR op as its last instruction" << std::endl;
+          Errors << "%" << BlockID << " Didn't have a block exit IR op as its last instruction" << std::endl;
         }
       }
     }
@@ -243,7 +243,7 @@ bool IRValidation::Run(IREmitter *IREmit) {
     auto [Node, IROp] = CurrentIR.at(IR::NodeID{i})();
     if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
       HadError |= true;
-      Errors << "%ssa" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
+      Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
     }
   }
 

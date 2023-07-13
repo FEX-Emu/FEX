@@ -103,7 +103,7 @@ static void PrintArg(fextl::stringstream *out, IRListView const* IR, OrderedNode
   if (ArgID.IsInvalid()) {
     *out << "%Invalid";
   } else {
-    *out << "%ssa" << std::dec << ArgID;
+    *out << "%" << std::dec << ArgID;
     if (RAData) {
       auto PhyReg = RAData->GetNodeRegister(ArgID);
 
@@ -202,8 +202,8 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
 
   ++CurrentIndent;
   AddIndent();
-  *out << "(%ssa0) " << "IRHeader ";
-  *out << "%ssa" << HeaderOp->Blocks.ID() << ", ";
+  *out << "(%0) " << "IRHeader ";
+  *out << "%" << HeaderOp->Blocks.ID() << ", ";
   *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
@@ -211,10 +211,10 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
       auto BlockIROp = BlockHeader->C<FEXCore::IR::IROp_CodeBlock>();
 
       AddIndent();
-      *out << "(%ssa" << IR->GetID(BlockNode) << ") " << "CodeBlock ";
+      *out << "(%" << IR->GetID(BlockNode) << ") " << "CodeBlock ";
 
-      *out << "%ssa" << BlockIROp->Begin.ID() << ", ";
-      *out << "%ssa" << BlockIROp->Last.ID() << std::endl;
+      *out << "%" << BlockIROp->Begin.ID() << ", ";
+      *out << "%" << BlockIROp->Last.ID() << std::endl;
     }
 
     ++CurrentIndent;
@@ -244,7 +244,7 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
             NumElements /= ElementSize;
           }
 
-          *out << "%ssa" << std::dec << ID;
+          *out << "%" << std::dec << ID;
 
           if (RAData) {
             auto PhyReg = RAData->GetNodeRegister(ID);
@@ -284,7 +284,7 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
             NumElements = IROp->Size / ElementSize;
           }
 
-          *out << "(%ssa" << std::dec << ID << ' ';
+          *out << "(%" << std::dec << ID << ' ';
           *out << 'i' << std::dec << (ElementSize * 8);
           if (NumElements > 1) {
             *out << 'v' << std::dec << NumElements;

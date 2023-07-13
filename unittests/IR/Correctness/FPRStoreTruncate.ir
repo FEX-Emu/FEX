@@ -19,9 +19,9 @@
 
 
 
-(%ssa1) IRHeader %ssa2, #0
-  (%ssa2) CodeBlock %ssa6, %end, %begin
-    (%begin i0) BeginBlock %ssa2
+(%1) IRHeader %2, #0
+  (%2) CodeBlock %6, %end, %begin
+    (%begin i0) BeginBlock %2
 ; Clear registers
     %AddrB i64 = Constant #0x1000010
 
@@ -61,5 +61,5 @@
     (%Store8 i128) StoreRegister %Truncated8 i128, #0, #0x1a0, FPR, FPRFixed, #0x10
     (%Store9 i128) StoreRegister %MemValueA i128, #0, #0x1c0, FPR, FPRFixed, #0x10
 
-    (%ssa7 i0) Break {0.11.0.128}
-    (%end i0) EndBlock %ssa2
+    (%7 i0) Break {0.11.0.128}
+    (%end i0) EndBlock %2

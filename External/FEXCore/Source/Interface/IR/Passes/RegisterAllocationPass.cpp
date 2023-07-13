@@ -494,7 +494,7 @@ namespace {
           const auto ArgNode = Arg.ID();
           auto& ArgNodeLiveRange = LiveRanges[ArgNode.Value];
           LOGMAN_THROW_AA_FMT(ArgNodeLiveRange.Begin.Value != UINT32_MAX,
-                             "%ssa{} used by %ssa{} before defined?", ArgNode, Node);
+                             "%{} used by %{} before defined?", ArgNode, Node);
 
           const auto ArgNodeBlockID = Graph->Nodes[ArgNode.Value].Head.BlockID;
           if (ArgNodeBlockID == BlockNodeID) {
@@ -1311,7 +1311,7 @@ namespace {
 
         if (!CurrentNodes.contains(InterferenceNode)) {
           InterferenceIdToSpill = InterferenceNode;
-          LogMan::Msg::DFmt("Panic spilling %ssa{}, Live Range[{}, {})", InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+          LogMan::Msg::DFmt("Panic spilling %{}, Live Range[{}, {})", InterferenceIdToSpill, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
           return true;
         }
         return false;
@@ -1320,14 +1320,14 @@ namespace {
 
     if (InterferenceIdToSpill.IsInvalid()) {
       int j = 0;
-      LogMan::Msg::DFmt("node %ssa{}, was dumped in to virtual reg {}. Live Range[{}, {})",
+      LogMan::Msg::DFmt("node %{}, was dumped in to virtual reg {}. Live Range[{}, {})",
                         CurrentLocation, -1,
                         OpLiveRange->Begin, OpLiveRange->End);
 
       RegisterNode->Interferences.Iterate([&](IR::NodeID InterferenceNode) {
         auto *InterferenceLiveRange = &LiveRanges[InterferenceNode.Value];
 
-        LogMan::Msg::DFmt("\tInt{}: %ssa{} Remat: {} [{}, {})", j++, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
+        LogMan::Msg::DFmt("\tInt{}: %{} Remat: {} [{}, {})", j++, InterferenceNode, InterferenceLiveRange->RematCost, InterferenceLiveRange->Begin, InterferenceLiveRange->End);
       });
     }
     LOGMAN_THROW_A_FMT(InterferenceIdToSpill.IsValid(), "Couldn't find Node to spill");
@@ -1395,7 +1395,7 @@ namespace {
         auto FirstUseLocation = FindFirstUse(IREmit, ConstantNode, NextIter, NodeIterator::Invalid());
 
         LOGMAN_THROW_A_FMT(FirstUseLocation != IR::NodeIterator::Invalid(),
-                           "At %ssa{} Spilling Op %ssa{} but Failure to find op use",
+                           "At %{} Spilling Op %{} but Failure to find op use",
                            Node, *InterferenceNode);
 
         if (FirstUseLocation != IR::NodeIterator::Invalid()) {
@@ -1454,7 +1454,7 @@ namespace {
             auto FirstUseLocation = FindFirstUse(IREmit, InterferenceOrderedNode, FirstIter, NodeIterator::Invalid());
 
             LOGMAN_THROW_A_FMT(FirstUseLocation != NodeIterator::Invalid(),
-                               "At %ssa{} Spilling Op %ssa{} but Failure to find op use",
+                               "At %{} Spilling Op %{} but Failure to find op use",
                                Node, *InterferenceNode);
 
             if (FirstUseLocation != IR::NodeIterator::Invalid()) {

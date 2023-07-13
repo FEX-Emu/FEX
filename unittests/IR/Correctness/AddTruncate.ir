@@ -16,9 +16,9 @@
 ;}
 ;%endif
 
-(%ssa1) IRHeader %ssa2, #0
-  (%ssa2) CodeBlock %ssa6, %ssa12, %ssa1
-    (%ssa6 i0) BeginBlock %ssa2
+(%1) IRHeader %2, #0
+  (%2) CodeBlock %6, %12, %1
+    (%6 i0) BeginBlock %2
     %AddrA i64 = Constant #0x1000000
     %MemValueA i64 = LoadMem GPR, #8, %AddrA i64, %Invalid, #8, SXTX, #1
     %AddrB i64 = Constant #0x1000010
@@ -35,5 +35,5 @@
     %ResultD i64 = Add %ValueC, %ValueD
     (%Store i64) StoreRegister %ResultC i64, #0, #0x10, GPR, GPRFixed, #8
     (%Store i64) StoreRegister %ResultD i64, #0, #0x18, GPR, GPRFixed, #8
-    (%ssa7 i0) Break {0.11.0.128}
-    (%ssa12 i0) EndBlock %ssa2
+    (%7 i0) Break {0.11.0.128}
+    (%12 i0) EndBlock %2
