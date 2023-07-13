@@ -2647,30 +2647,22 @@ public:
   // SVE Memory - 32-bit Gather and Unsized Contiguous
   void ldr(PRegister pt, XRegister rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
-    SVEGatherAndUnsizedContiguous(0b11, 0b000, Imm & 0b1'1111'1111, pt, rn);
+    SVEUnsizedContiguous(0b11, 0b000, Imm & 0b1'1111'1111, pt, rn);
   }
   void ldr(ZRegister zt, XRegister rn, int32_t Imm = 0) {
     LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
-    SVEGatherAndUnsizedContiguous(0b11, 0b010, Imm & 0b1'1111'1111, PRegister{zt.Idx()}, rn);
+    SVEUnsizedContiguous(0b11, 0b010, Imm & 0b1'1111'1111, PRegister{zt.Idx()}, rn);
   }
 
   // SVE 32-bit gather prefetch (scalar plus 32-bit scaled offsets)
   // XXX:
-  // SVE 32-bit gather load halfwords (scalar plus 32-bit scaled offsets)
-  // XXX:
-  // SVE 32-bit gather load words (scalar plus 32-bit scaled offsets)
-  // XXX:
   // SVE contiguous prefetch (scalar plus immediate)
-  // XXX:
-  // SVE 32-bit gather load (scalar plus 32-bit unscaled offsets)
   // XXX:
   // SVE2 32-bit gather non-temporal load (vector plus scalar)
   // XXX:
   // SVE contiguous prefetch (scalar plus scalar)
   // XXX:
   // SVE 32-bit gather prefetch (vector plus immediate)
-  // XXX:
-  // SVE 32-bit gather load (vector plus immediate)
   // XXX:
   // SVE load and broadcast element
   // XXX:
@@ -2754,18 +2746,18 @@ public:
   }
 
   // SVE helper implementations
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ld1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2773,17 +2765,36 @@ public:
     }
   }
 
-  void ld1sw(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ldff1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1b scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1b doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1b vector plus immediate not yet implemented");
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  void ld1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1sw(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1sw(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, false);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2791,18 +2802,18 @@ public:
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ld1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2810,18 +2821,18 @@ public:
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sh(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ld1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, false);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2829,18 +2840,56 @@ public:
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ldff1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1h scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1h doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1h vector plus immediate not yet implemented");
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  template<SubRegSize size>
+  void ldff1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sh scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sh doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sh vector plus immediate not yet implemented");
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  template<SubRegSize size>
+  void ld1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2848,18 +2897,55 @@ public:
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sb(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ldff1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1w scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1w doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1w vector plus immediate not yet implemented");
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  void ldff1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sw scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sw doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sw vector plus immediate not yet implemented");
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  template<SubRegSize size>
+  void ld1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, false);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2867,18 +2953,55 @@ public:
     }
   }
 
-  void ld1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+  template<SubRegSize size>
+  void ldff1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sb scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sb doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1sb vector plus immediate not yet implemented");
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  void ld1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
       ld1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
       ld1d(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, false);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+    else {
+      FEX_UNREACHABLE;
+    }
+  }
+
+  void ldff1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
+    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+      LOGMAN_THROW_A_FMT(false, "ldff1d scalar plus scalar not yet implemented");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1d doesn't have a scalar plus immediate variant");
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+      SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, true);
+    }
+    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+      LOGMAN_THROW_A_FMT(false, "ldff1d vector plus immediate not yet implemented");
     }
     else {
       FEX_UNREACHABLE;
@@ -3101,19 +3224,11 @@ public:
   // XXX:
   // SVE 64-bit gather prefetch (scalar plus unpacked 32-bit scaled offsets)
   // XXX:
-  // SVE 64-bit gather load (scalar plus 64-bit scaled offsets)
-  // XXX:
-  // SVE 64-bit gather load (scalar plus 32-bit unpacked scaled offsets)
-  // XXX:
   // SVE 64-bit gather prefetch (vector plus immediate)
   // XXX:
   // SVE2 64-bit gather non-temporal load (vector plus scalar)
   // XXX:
   // SVE 64-bit gather load (vector plus immediate)
-  // XXX:
-  // SVE 64-bit gather load (scalar plus 64-bit unscaled offsets)
-  // XXX:
-  // SVE 64-bit gather load (scalar plus unpacked 32-bit unscaled offsets)
   // XXX:
 
   // SVE Memory - Contiguous Store and Unsized Contiguous
@@ -3957,7 +4072,64 @@ private:
   }
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
-  void SVEGatherAndUnsizedContiguous(uint32_t op0, uint32_t op2, uint32_t imm9, PRegister pt, Register rn) {
+  // Note: This also handles 64-bit variants to keep overall handling code
+  //       compact and in the same place.
+  void SVEGatherLoadScalarPlusVector(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
+                                     bool is_unsigned, bool is_fault_first) {
+    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
+                       "Gather load element size must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    const auto& op_data = mem_op.MetaType.ScalarVectorType;
+    const bool is_scaled = op_data.scale != 0;
+    const auto msize_value = FEXCore::ToUnderlying(msize);
+
+    LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value,
+                       "scale may only be 0 or {}", msize_value);
+
+    uint32_t mod_value = FEXCore::ToUnderlying(op_data.mod);
+    uint32_t Instr = 0b1000'0100'0000'0000'0000'0000'0000'0000;
+
+    if (esize == SubRegSize::i64Bit) {
+      Instr |= 1U << 30;
+
+      const auto mod = op_data.mod;
+      const bool is_lsl = mod == SVEMemOperand::ModType::MOD_LSL;
+      const bool is_none = mod == SVEMemOperand::ModType::MOD_NONE;
+
+      // LSL and no modifier encodings should be setting bit 22 to 1.
+      if (is_lsl || is_none) {
+        if (is_lsl) {
+          LOGMAN_THROW_A_FMT(op_data.scale == msize_value,
+                             "mod type of LSL must have a scale of {}", msize_value);
+        } else {
+          LOGMAN_THROW_A_FMT(op_data.scale == 0,
+                             "mod type of none must have a scale of 0");
+        }
+        
+        Instr |= 1U << 15;
+        mod_value = 1;
+      }
+    } else {
+      LOGMAN_THROW_A_FMT(op_data.mod == SVEMemOperand::ModType::MOD_UXTW ||
+                         op_data.mod == SVEMemOperand::ModType::MOD_SXTW,
+                         "mod type for 32-bit lane size may only be UXTW or SXTW");
+    }
+
+    Instr |= FEXCore::ToUnderlying(msize) << 23;
+    Instr |= static_cast<uint32_t>(mod_value) << 22;
+    Instr |= static_cast<uint32_t>(is_scaled) << 21;
+    Instr |= op_data.zm.Idx() << 16;
+    Instr |= static_cast<uint32_t>(is_unsigned) << 14;
+    Instr |= static_cast<uint32_t>(is_fault_first) << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= mem_op.rn.Idx() << 5;
+    Instr |= zt.Idx();
+
+    dc32(Instr);
+  }
+
+  void SVEUnsizedContiguous(uint32_t op0, uint32_t op2, uint32_t imm9, PRegister pt, Register rn) {
     uint32_t Instr = 0b1000'0100'0000'0000'0000'0000'0000'0000;
 
     Instr |= op0 << 23;

@@ -207,6 +207,15 @@ namespace FEXCore::ARMEmitter {
    */
   class SVEMemOperand final {
     public:
+      // Used for scalar + vector variants to determine
+      // extension behavior on the index values.
+      enum class ModType : uint8_t {
+        MOD_UXTW,
+        MOD_SXTW,
+        MOD_LSL,
+        MOD_NONE,
+      };
+
       SVEMemOperand(XRegister rn, XRegister rm = XReg::zr)
         : rn {rn}
         , MetaType {
@@ -221,6 +230,16 @@ namespace FEXCore::ARMEmitter {
           .ScalarImmType {
             .Header = { .MemType = TYPE_SCALAR_IMM },
             .Imm = imm,
+          }
+        } {}
+      SVEMemOperand(XRegister rn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
+        : rn{rn}
+        , MetaType {
+          .ScalarVectorType {
+            .Header = { .MemType = TYPE_SCALAR_VECTOR },
+            .zm = zm,
+            .mod = mod,
+            .scale = scale,
           }
         } {}
 
@@ -250,7 +269,8 @@ namespace FEXCore::ARMEmitter {
         struct {
           HeaderStruct Header;
           ZRegister zm;
-          // TODO: Implement support for modifier
+          ModType mod;
+          uint8_t scale;
         } ScalarVectorType;
 
         struct {
