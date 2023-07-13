@@ -107,18 +107,18 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
           // then it must only be declared prior to this instruction
           // Eg: Valid
           // CodeBlock_1:
-          // %ssa_1 = Load
-          // %ssa_2 = Load
-          // %ssa_3 = <Op> %ssa_1, %ssa_2
+          // %_1 = Load
+          // %_2 = Load
+          // %_3 = <Op> %_1, %_2
           //
           // Eg: Invalid
           // CodeBlock_1:
-          // %ssa_1 = Load
-          // %ssa_2 = <Op> %ssa_1, %ssa_3
-          // %ssa_3 = Load
+          // %_1 = Load
+          // %_2 = <Op> %_1, %_3
+          // %_3 = Load
           if (Arg.ID() > CodeID) {
             HadError |= true;
-            Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
+            Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition does not dominate this use!" << std::endl;
           }
         }
         else if (Arg.ID() < BlockIROp->Begin.ID()) {
@@ -127,21 +127,21 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
 
           // Eg: Valid
           // CodeBlock_1:
-          // %ssa_1 = Load
-          // %ssa_2 = Load
+          // %_1 = Load
+          // %_2 = Load
           // Jump %CodeBlock_2
           //
           // CodeBlock_2:
-          // %ssa_3 = <Op> %ssa_1, %ssa_2
+          // %_3 = <Op> %_1, %_2
           //
           // Eg: Invalid
           // CodeBlock_1:
-          // %ssa_1 = Load
-          // %ssa_2 = Load
+          // %_1 = Load
+          // %_2 = Load
           // Jump %CodeBlock_3
           //
           // CodeBlock_2:
-          // %ssa_3 = <Op> %ssa_1, %ssa_2
+          // %_3 = <Op> %_1, %_2
           //
           // CodeBlock_3:
           // ...
@@ -171,26 +171,26 @@ bool ValueDominanceValidation::Run(IREmitter *IREmit) {
               FoundPredDefine = true;
               break;
             }
-            Errors << "\tChecking Pred %ssa" << CurrentIR.GetID(Pred) << std::endl;
+            Errors << "\tChecking Pred %" << CurrentIR.GetID(Pred) << std::endl;
           }
 
           if (!FoundPredDefine) {
             HadError |= true;
-            Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
+            Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition does not dominate this use! But was defined before this block!" << std::endl;
           }
         }
         else if (Arg.ID() > BlockIROp->Last.ID()) {
           // If this SSA argument is defined AFTER this block then it is just completely broken
           // Eg: Invalid
           // CodeBlock_1:
-          // %ssa_1 = Load
-          // %ssa_2 = <Op> %ssa_1, %ssa_3
+          // %_1 = Load
+          // %_2 = <Op> %_1, %_3
           // Jump %CodeBlock_2
           //
           // CodeBlock_2:
-          // %ssa_3 = Load
+          // %_3 = Load
           HadError |= true;
-          Errors << "Inst %ssa" << CodeID << ": Arg[" << i << "] %ssa" << Arg.ID() << " definition does not dominate this use!" << std::endl;
+          Errors << "Inst %" << CodeID << ": Arg[" << i << "] %" << Arg.ID() << " definition does not dominate this use!" << std::endl;
         }
       }
     }

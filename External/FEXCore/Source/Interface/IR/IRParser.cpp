@@ -413,7 +413,7 @@ class IRParser: public FEXCore::IR::IREmitter {
       }
 
       // Check if we are pulling in some IR from the IR Printer
-      // Prints (%ssa%d) at the start of lines without a definition
+      // Prints (%%d) at the start of lines without a definition
       if (Line[0] == '(') {
         size_t DefinitionEnd = fextl::string::npos;
         if ((DefinitionEnd = Line.find_first_of(')', CurrentPos)) != fextl::string::npos) {

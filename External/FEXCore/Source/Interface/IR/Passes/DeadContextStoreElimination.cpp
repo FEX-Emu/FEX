@@ -546,32 +546,32 @@ void RCLSE::CalculateControlFlowInfo(FEXCore::IR::IREmitter *IREmit) {
  * @brief This pass removes redundant pairs of storecontext and loadcontext ops
  *
  * eg.
- *   %ssa26 i128 = LoadMem %ssa25 i64, 0x10
- *   (%%ssa27) StoreContext %ssa26 i128, 0x10, 0xb0
- *   %ssa28 i128 = LoadContext 0x10, 0x90
- *   %ssa29 i128 = LoadContext 0x10, 0xb0
+ *   %26 i128 = LoadMem %25 i64, 0x10
+ *   (%%27) StoreContext %26 i128, 0x10, 0xb0
+ *   %28 i128 = LoadContext 0x10, 0x90
+ *   %29 i128 = LoadContext 0x10, 0xb0
  * Converts to
- *   %ssa26 i128 = LoadMem %ssa25 i64, 0x10
- *   (%%ssa27) StoreContext %ssa26 i128, 0x10, 0xb0
- *   %ssa28 i128 = LoadContext 0x10, 0x90
+ *   %26 i128 = LoadMem %25 i64, 0x10
+ *   (%%27) StoreContext %26 i128, 0x10, 0xb0
+ *   %28 i128 = LoadContext 0x10, 0x90
  *
  * eg.
- * 		%ssa6 i128 = LoadContext 0x10, 0x90
- *		%ssa7 i128 = LoadContext 0x10, 0x90
- *		%ssa8 i128 = VXor %ssa7 i128, %ssa6 i128
+ * 		%6 i128 = LoadContext 0x10, 0x90
+ *		%7 i128 = LoadContext 0x10, 0x90
+ *		%8 i128 = VXor %7 i128, %6 i128
  * Converts to
- *    %ssa6 i128 = LoadContext 0x10, 0x90
- *    %ssa7 i128 = VXor %ssa6 i128, %ssa6 i128
+ *    %6 i128 = LoadContext 0x10, 0x90
+ *    %7 i128 = VXor %6 i128, %6 i128
  *
  * eg.
- *   (%%ssa189) StoreContext %ssa188 i128, 0x10, 0xa0
- *   %ssa190 i128 = LoadContext 0x10, 0x90
- *   %ssa192 i128 = VAdd %ssa188 i128, %ssa190 i128, 0x10, 0x4
- *   (%%ssa193) StoreContext %ssa192 i128, 0x10, 0xa0
+ *   (%%189) StoreContext %188 i128, 0x10, 0xa0
+ *   %190 i128 = LoadContext 0x10, 0x90
+ *   %192 i128 = VAdd %188 i128, %190 i128, 0x10, 0x4
+ *   (%%193) StoreContext %192 i128, 0x10, 0xa0
  * Converts to
- *   %ssa173 i128 = LoadContext 0x10, 0x90
- *   %ssa175 i128 = VAdd %ssa172 i128, %ssa173 i128, 0x10, 0x4
- *   (%%ssa176) StoreContext %ssa175 i128, 0x10, 0xa0
+ *   %173 i128 = LoadContext 0x10, 0x90
+ *   %175 i128 = VAdd %172 i128, %173 i128, 0x10, 0x4
+ *   (%%176) StoreContext %175 i128, 0x10, 0xa0
 
  */
 bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {

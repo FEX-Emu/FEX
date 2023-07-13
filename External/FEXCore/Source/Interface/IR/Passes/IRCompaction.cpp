@@ -183,7 +183,7 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
           #ifndef NDEBUG
             LOGMAN_THROW_A_FMT(NewArg.Value != UINT32_MAX,
-                               "Tried remapping unfound node %ssa{}", OldArg);
+                               "Tried remapping unfound node %{}", OldArg);
           #endif
 
           LocalIROp->Args[i].NodeOffset = NewArg.Value * sizeof(OrderedNode);

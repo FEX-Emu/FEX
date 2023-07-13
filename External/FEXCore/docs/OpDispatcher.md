@@ -17,23 +17,23 @@ Ex:
  Translates to the IR of:
  ```
 BeginBlock
-        %ssa8 i32 = Constant 0x1
-        StoreContext 0x8, 0x8, %ssa8
-        %ssa64 i32 = Constant 0x1
-        StoreContext 0x8, 0x30, %ssa64
-        %ssa120 i32 = Constant 0x1f
-        StoreContext 0x8, 0x28, %ssa120
-        %ssa176 i32 = Constant 0x1
-        StoreContext 0x8, 0x20, %ssa176
-        %ssa232 i64 = LoadContext 0x8, 0x8
-        %ssa264 i64 = LoadContext 0x8, 0x30
-        %ssa296 i64 = LoadContext 0x8, 0x28
-        %ssa328 i64 = LoadContext 0x8, 0x20
-        %ssa360 i64 = LoadContext 0x8, 0x58
-        %ssa392 i64 = LoadContext 0x8, 0x48
-        %ssa424 i64 = LoadContext 0x8, 0x50
-        %ssa456 i64 = Syscall%ssa232, %ssa264, %ssa296, %ssa328, %ssa360, %ssa392, %ssa424
-        StoreContext 0x8, 0x8, %ssa456
+        %8 i32 = Constant 0x1
+        StoreContext 0x8, 0x8, %8
+        %64 i32 = Constant 0x1
+        StoreContext 0x8, 0x30, %64
+        %120 i32 = Constant 0x1f
+        StoreContext 0x8, 0x28, %120
+        %176 i32 = Constant 0x1
+        StoreContext 0x8, 0x20, %176
+        %232 i64 = LoadContext 0x8, 0x8
+        %264 i64 = LoadContext 0x8, 0x30
+        %296 i64 = LoadContext 0x8, 0x28
+        %328 i64 = LoadContext 0x8, 0x20
+        %360 i64 = LoadContext 0x8, 0x58
+        %392 i64 = LoadContext 0x8, 0x48
+        %424 i64 = LoadContext 0x8, 0x50
+        %456 i64 = Syscall%232, %264, %296, %328, %360, %392, %424
+        StoreContext 0x8, 0x8, %456
         BeginBlock
         EndBlock 0x1e
         ExitFunction

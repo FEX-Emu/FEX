@@ -124,7 +124,7 @@ friend class FEXCore::IR::PassManager;
 
   void SetJumpTarget(IR::IROp_Jump *Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting Jump target to %ssa{} {}",
+        "Tried setting Jump target to %{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
         IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
@@ -132,7 +132,7 @@ friend class FEXCore::IR::PassManager;
   }
   void SetTrueJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %ssa{} {}",
+        "Tried setting CondJump target to %{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
         IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
@@ -140,7 +140,7 @@ friend class FEXCore::IR::PassManager;
   }
   void SetFalseJumpTarget(IR::IROp_CondJump *Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %ssa{} {}",
+        "Tried setting CondJump target to %{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
         IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
@@ -149,7 +149,7 @@ friend class FEXCore::IR::PassManager;
 
   void SetJumpTarget(IRPair<IROp_Jump> Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting Jump target to %ssa{} {}",
+        "Tried setting Jump target to %{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
         IR::GetName(Target->Op(DualListData.DataBegin())->Op));
 
@@ -157,14 +157,14 @@ friend class FEXCore::IR::PassManager;
   }
   void SetTrueJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %ssa{} {}",
+        "Tried setting CondJump target to %{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
         IR::GetName(Target->Op(DualListData.DataBegin())->Op));
     Op.first->TrueBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;
   }
   void SetFalseJumpTarget(IRPair<IROp_CondJump> Op, OrderedNode *Target) {
     LOGMAN_THROW_A_FMT(Target->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK,
-        "Tried setting CondJump target to %ssa{} {}",
+        "Tried setting CondJump target to %{} {}",
         Target->Wrapped(DualListData.ListBegin()).ID(),
         IR::GetName(Target->Op(DualListData.DataBegin())->Op));
     Op.first->FalseBlock.NodeOffset = Target->Wrapped(DualListData.ListBegin()).NodeOffset;

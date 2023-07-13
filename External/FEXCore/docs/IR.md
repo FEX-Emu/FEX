@@ -32,17 +32,17 @@ SSA is quite nice to work with when translating the x86-64 code to the IR, when 
   * Read the python generation file to determine the extent of what it can do
 
 ## IR function considerations
-The first SSA node is a special case node that is considered invalid. This means %ssa0 will always be invalid for "null" node checks
-The first real SSA node also has to be a IRHeader node. This means it is safe to assume that %ssa1 will always be an IRHeader.
+The first SSA node is a special case node that is considered invalid. This means %0 will always be invalid for "null" node checks
+The first real SSA node also has to be a IRHeader node. This means it is safe to assume that %1 will always be an IRHeader.
 
 
-```(%%ssa1) IRHeader 0x41a9a0, %%ssa2, 5```
+```(%%1) IRHeader 0x41a9a0, %%2, 5```
 
 The header provides information about that function like the entry point address.
 Additionally it also points to the first `CodeBlock` IROp
 
 
-```(%%ssa2) CodeBlock %%ssa7, %%ssa168, %%ssa3```
+```(%%2) CodeBlock %%7, %%168, %%3```
 
 
 * The `CodeBlock` Op is a jump target and must be treated as if it'll be jumped to from other blocks
@@ -54,12 +54,12 @@ Additionally it also points to the first `CodeBlock` IROp
 ### Example code block
 
 ```
-(%%ssa3) CodeBlock %%ssa169, %%ssa173, %%ssa4
-	(%%ssa169) BeginBlock %ssa3
-	%ssa170 i64 = Constant 0x41a9e1
-	(%%ssa171) StoreContext %ssa170 i64, 0x8, 0x0
-	(%%ssa172) ExitFunction
-	(%%ssa173) EndBlock %ssa3
+(%%3) CodeBlock %%169, %%173, %%4
+	(%%169) BeginBlock %3
+	%170 i64 = Constant 0x41a9e1
+	(%%171) StoreContext %170 i64, 0x8, 0x0
+	(%%172) ExitFunction
+	(%%173) EndBlock %3
 ```
 
 * BeginBlock points back to the CodeBlock SSA which helps with iterating across multiple blocks

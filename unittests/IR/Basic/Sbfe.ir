@@ -17,9 +17,9 @@
 ;}
 ;%endif
 
-(%ssa1) IRHeader %ssa2, #0
-  (%ssa2) CodeBlock %start, %end, %ssa1
-    (%start i0) BeginBlock %ssa2
+(%1) IRHeader %2, #0
+  (%2) CodeBlock %start, %end, %1
+    (%start i0) BeginBlock %2
     %Addr1 i64 = Constant #0x1000000
     %Val i64 = LoadMem GPR, #8, %Addr1 i64, %Invalid, #8, SXTX, #1
 ; Test aligned special cases
@@ -39,4 +39,4 @@
     %Res5 i64 = Sbfe #0x4, #0x2, %Val2
     (%Store5 i64) StoreRegister %Res5 i64, #0, #0x38, GPR, GPRFixed, #8
     (%brk i0) Break {0.11.0.128}
-    (%end i0) EndBlock %ssa2
+    (%end i0) EndBlock %2
