@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
+include(${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/version_to_variables.cmake)
 
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
@@ -189,11 +190,7 @@ if (BITNESS EQUAL 64)
 
   find_package(PkgConfig)
   pkg_search_module(X11 REQUIRED x11)
-
-  string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
-  set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
-  set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
-  set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
+  version_to_variables(${X11_VERSION} X11)
 
   generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp)
   add_guest_lib(X11 "libX11.so.6")
@@ -219,8 +216,16 @@ if (BITNESS EQUAL 64)
   target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
   add_guest_lib(vulkan "libvulkan.so.1")
 
+  find_package(PkgConfig)
+  pkg_search_module(XCB REQUIRED xcb)
+  version_to_variables(${XCB_VERSION} XCB)
+
   generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp)
   add_guest_lib(xcb "libxcb.so.1")
+
+  target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MAJOR=${XCB_VERSION_MAJOR})
+  target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
+  target_compile_definitions(libxcb-guest-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
 
   generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
   add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
