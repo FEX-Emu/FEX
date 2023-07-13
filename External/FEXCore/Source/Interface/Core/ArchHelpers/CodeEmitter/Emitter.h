@@ -216,16 +216,16 @@ namespace FEXCore::ARMEmitter {
         MOD_NONE,
       };
 
-      enum Type {
-        TYPE_SCALAR_SCALAR,
-        TYPE_SCALAR_IMM,
-        TYPE_SCALAR_VECTOR,
-        TYPE_VECTOR_IMM,
+      enum class Type {
+        ScalarPlusScalar,
+        ScalarPlusImm,
+        ScalarPlusVector,
+        VectorPlusImm,
       };
 
       SVEMemOperand(XRegister rn, XRegister rm = XReg::zr)
         : rn {rn}
-        , MemType{TYPE_SCALAR_SCALAR}
+        , MemType{Type::ScalarPlusScalar}
         , MetaType {
           .ScalarScalarType {
             .rm = rm,
@@ -233,7 +233,7 @@ namespace FEXCore::ARMEmitter {
         } {}
       SVEMemOperand(XRegister rn, int32_t imm = 0)
         : rn {rn}
-        , MemType{TYPE_SCALAR_IMM}
+        , MemType{Type::ScalarPlusImm}
         , MetaType {
           .ScalarImmType {
             .Imm = imm,
@@ -241,7 +241,7 @@ namespace FEXCore::ARMEmitter {
         } {}
       SVEMemOperand(XRegister rn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
         : rn{rn}
-        , MemType{TYPE_SCALAR_VECTOR}
+        , MemType{Type::ScalarPlusVector}
         , MetaType {
           .ScalarVectorType {
             .zm = zm,
@@ -251,16 +251,16 @@ namespace FEXCore::ARMEmitter {
         } {}
 
       [[nodiscard]] bool IsScalarPlusScalar() const {
-        return MemType == TYPE_SCALAR_SCALAR;
+        return MemType == Type::ScalarPlusScalar;
       }
       [[nodiscard]] bool IsScalarPlusImm() const {
-        return MemType == TYPE_SCALAR_IMM;
+        return MemType == Type::ScalarPlusImm;
       }
       [[nodiscard]] bool IsScalarPlusVector() const {
-        return MemType == TYPE_SCALAR_VECTOR;
+        return MemType == Type::ScalarPlusVector;
       }
       [[nodiscard]] bool IsVectorPlusImm() const {
-        return MemType == TYPE_VECTOR_IMM;
+        return MemType == Type::VectorPlusImm;
       }
 
       union Data {
