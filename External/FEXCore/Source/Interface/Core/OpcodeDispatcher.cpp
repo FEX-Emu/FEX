@@ -5064,7 +5064,6 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       if (OpSize != VectorSize) {
         // Partial writes can come from FPRs.
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
-        auto SrcVector = LoadXMMRegister(gprIndex);
 
         LOGMAN_THROW_A_FMT(Class != IR::GPRClass, "Partial writes from GPR not allowed. Instruction: {}",
                            Op->TableInfo->Name);
@@ -5074,6 +5073,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         if (VectorSize == Core::CPUState::XMM_AVX_REG_SIZE && OpSize == Core::CPUState::XMM_SSE_REG_SIZE) {
           Result = _VMov(OpSize, Src);
         } else {
+          auto SrcVector = LoadXMMRegister(gprIndex);
           Result = _VInsElement(VectorSize, OpSize, 0, 0, SrcVector, Src);
         }
       }
