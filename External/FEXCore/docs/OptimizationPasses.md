@@ -30,7 +30,7 @@ Large amount of x86-64 instructions load or store registers in order from the co
 We can merge these in to loadstore pair ops to improve perf
 ### Function level heuristic pass
 Once we know that a function is a true full recompile we can do some additional optimizations.
-Remove any final flag stores. We know that a compiler won't pass flags past a function call boundry(It doesn't exist in the ABI)
+Remove any final flag stores. We know that a compiler won't pass flags past a function call boundary(It doesn't exist in the ABI)
 Remove any loadstores to the context mid function, only do a final store at the end of the function and do loads at the start. Which means ops just map registers directly throughout the entire function.
 ### SIMD coalescing pass?
 When operating on older MMX ops(64bit SIMD) and they may end up up generating some independent ops that can be coalesced in to a 128bit op

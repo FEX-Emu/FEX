@@ -133,7 +133,7 @@ refcounter will be the original value loaded. So even though it is a tear, it's 
 This edge is far less problematic to understand compared to the incrementing edge. Signals will get deferred entirely until the store instruction (If
 storing zero), so FEX will always return to the code region and finish the decrement.
 
-If FEX receives a signal after the decrement store has completed but /before/ the page faulting store has occured, then FEX will start processing the
+If FEX receives a signal after the decrement store has completed but /before/ the page faulting store has occurred, then FEX will start processing the
 signal immediately. At which point the fault page will have either RW or NONE permission. FEX will then likely hit another "uninterruptible" code
 section which will complete the store to the fault page.
  - RW permission if it hadn't received another signal in the uninterruptible section

@@ -92,7 +92,7 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README.md
 * Use FEXRootFSFetcher <image.sqsh> to generate the xxhash for the image
 * Update `https://rootfs.fex-emu.com/file/fex-rootfs/RootFS_links.json` with the new rootfs image and hash
   * This currently lives in a private FEX-Emu backblaze bucket with cloudflare servicing it.
-  * Never publically give the direct backblaze link to the file. Will cause BW costs to skyrocket
+  * Never publicly give the direct backblaze link to the file. Will cause BW costs to skyrocket
   * Always pass through cloudflare
 
 * Upload new image to Backblaze using the b2 upload tool
