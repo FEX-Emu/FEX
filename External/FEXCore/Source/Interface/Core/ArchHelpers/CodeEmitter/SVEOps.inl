@@ -2748,16 +2748,16 @@ public:
   // SVE helper implementations
   template<SubRegSize size>
   void ld1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2767,16 +2767,16 @@ public:
 
   template<SubRegSize size>
   void ldff1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1b scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1b doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1b vector plus immediate not yet implemented");
     }
     else {
@@ -2785,16 +2785,16 @@ public:
   }
 
   void ld1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1sw(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1sw(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2804,16 +2804,16 @@ public:
 
   template<SubRegSize size>
   void ld1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2823,16 +2823,16 @@ public:
 
   template<SubRegSize size>
   void ld1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2842,16 +2842,16 @@ public:
 
   template<SubRegSize size>
   void ldff1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1h scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1h doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1h vector plus immediate not yet implemented");
     }
     else {
@@ -2861,16 +2861,16 @@ public:
 
   template<SubRegSize size>
   void ldff1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sh scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sh doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sh vector plus immediate not yet implemented");
     }
     else {
@@ -2880,16 +2880,16 @@ public:
 
   template<SubRegSize size>
   void ld1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2899,16 +2899,16 @@ public:
 
   template<SubRegSize size>
   void ldff1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1w scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1w doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1w vector plus immediate not yet implemented");
     }
     else {
@@ -2917,16 +2917,16 @@ public:
   }
 
   void ldff1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sw scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sw doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sw vector plus immediate not yet implemented");
     }
     else {
@@ -2936,16 +2936,16 @@ public:
 
   template<SubRegSize size>
   void ld1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2955,16 +2955,16 @@ public:
 
   template<SubRegSize size>
   void ldff1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sb scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sb doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sb vector plus immediate not yet implemented");
     }
     else {
@@ -2973,16 +2973,16 @@ public:
   }
 
   void ld1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       ld1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       ld1d(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, false);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -2991,16 +2991,16 @@ public:
   }
 
   void ldff1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       LOGMAN_THROW_A_FMT(false, "ldff1d scalar plus scalar not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1d doesn't have a scalar plus immediate variant");
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, true);
     }
-    else if (Src.MetaType.Header.MemType == SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1d vector plus immediate not yet implemented");
     }
     else {
@@ -3010,16 +3010,16 @@ public:
 
   template<FEXCore::ARMEmitter::SubRegSize size>
   void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -3029,16 +3029,16 @@ public:
 
   template<FEXCore::ARMEmitter::SubRegSize size>
   void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -3048,16 +3048,16 @@ public:
 
   template<FEXCore::ARMEmitter::SubRegSize size>
   void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {
@@ -3066,16 +3066,16 @@ public:
   }
 
   void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
-    if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_SCALAR) {
+    if (Src.IsScalarPlusScalar()) {
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_IMM) {
+    else if (Src.IsScalarPlusImm()) {
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_SCALAR_VECTOR) {
+    else if (Src.IsScalarPlusVector()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
-    else if (Src.MetaType.Header.MemType == FEXCore::ARMEmitter::SVEMemOperand::Type::TYPE_VECTOR_IMM) {
+    else if (Src.IsVectorPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "Not yet implemented");
     }
     else {

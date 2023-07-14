@@ -216,69 +216,77 @@ namespace FEXCore::ARMEmitter {
         MOD_NONE,
       };
 
+      enum class Type {
+        ScalarPlusScalar,
+        ScalarPlusImm,
+        ScalarPlusVector,
+        VectorPlusImm,
+      };
+
       SVEMemOperand(XRegister rn, XRegister rm = XReg::zr)
         : rn {rn}
+        , MemType{Type::ScalarPlusScalar}
         , MetaType {
           .ScalarScalarType {
-            .Header = { .MemType = TYPE_SCALAR_SCALAR },
             .rm = rm,
           }
         } {}
       SVEMemOperand(XRegister rn, int32_t imm = 0)
         : rn {rn}
+        , MemType{Type::ScalarPlusImm}
         , MetaType {
           .ScalarImmType {
-            .Header = { .MemType = TYPE_SCALAR_IMM },
             .Imm = imm,
           }
         } {}
       SVEMemOperand(XRegister rn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
         : rn{rn}
+        , MemType{Type::ScalarPlusVector}
         , MetaType {
           .ScalarVectorType {
-            .Header = { .MemType = TYPE_SCALAR_VECTOR },
             .zm = zm,
             .mod = mod,
             .scale = scale,
           }
         } {}
 
-      Register rn;
-      enum Type {
-        TYPE_SCALAR_SCALAR,
-        TYPE_SCALAR_IMM,
-        TYPE_SCALAR_VECTOR,
-        TYPE_VECTOR_IMM,
-      };
-      struct HeaderStruct {
-        Type MemType;
-      };
+      [[nodiscard]] bool IsScalarPlusScalar() const {
+        return MemType == Type::ScalarPlusScalar;
+      }
+      [[nodiscard]] bool IsScalarPlusImm() const {
+        return MemType == Type::ScalarPlusImm;
+      }
+      [[nodiscard]] bool IsScalarPlusVector() const {
+        return MemType == Type::ScalarPlusVector;
+      }
+      [[nodiscard]] bool IsVectorPlusImm() const {
+        return MemType == Type::VectorPlusImm;
+      }
 
-      union {
-        HeaderStruct Header;
+      union Data {
         struct {
-          HeaderStruct Header;
           Register rm;
         } ScalarScalarType;
 
         struct {
-          HeaderStruct Header;
           int32_t Imm;
         } ScalarImmType;
 
         struct {
-          HeaderStruct Header;
           ZRegister zm;
           ModType mod;
           uint8_t scale;
         } ScalarVectorType;
 
         struct {
-          HeaderStruct Header;
           // rn will be a ZRegister
           int32_t Imm;
         } VectorImmType;
-      } MetaType;
+      };
+
+      Register rn;
+      Type MemType;
+      Data MetaType;
   };
 
   /* This `ExtendedMemOperand` class is used for the helper load-store instructions.
