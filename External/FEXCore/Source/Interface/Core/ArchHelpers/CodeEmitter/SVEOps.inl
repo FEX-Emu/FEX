@@ -2758,7 +2758,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, true, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -2777,7 +2777,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1b vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, true, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -2795,7 +2795,7 @@ public:
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -2814,7 +2814,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, true, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -2833,7 +2833,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, false, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -2852,7 +2852,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1h vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, true, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -2871,7 +2871,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1sh vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, false, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -2890,7 +2890,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src, true, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -2909,7 +2909,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1w vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src, true, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -2927,7 +2927,7 @@ public:
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1sw vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -2946,7 +2946,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, false, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -2965,7 +2965,7 @@ public:
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1sb vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, false, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -2983,7 +2983,7 @@ public:
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, false);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, false);
     }
     else {
       FEX_UNREACHABLE;
@@ -3001,7 +3001,7 @@ public:
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, true);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1d vector plus immediate not yet implemented");
+      SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, true);
     }
     else {
       FEX_UNREACHABLE;
@@ -4120,6 +4120,40 @@ private:
     Instr |= static_cast<uint32_t>(mod_value) << 22;
     Instr |= static_cast<uint32_t>(is_scaled) << 21;
     Instr |= op_data.zm.Idx() << 16;
+    Instr |= static_cast<uint32_t>(is_unsigned) << 14;
+    Instr |= static_cast<uint32_t>(is_fault_first) << 13;
+    Instr |= pg.Idx() << 10;
+    Instr |= mem_op.rn.Idx() << 5;
+    Instr |= zt.Idx();
+
+    dc32(Instr);
+  }
+
+  void SVEGatherLoadVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
+                                  bool is_unsigned, bool is_fault_first) {
+    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
+                       "Gather load element size must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    const auto msize_value = FEXCore::ToUnderlying(msize);
+    const auto msize_bytes = 1U << msize_value;
+
+    const auto imm_limit = (32U << msize_value) - msize_bytes;
+    const auto imm = mem_op.MetaType.VectorImmType.Imm;
+    const auto imm_to_encode = imm >> msize_value;
+
+    LOGMAN_THROW_A_FMT(imm <= imm_limit, "immediate must be within [0, {}]", imm_limit);
+    LOGMAN_THROW_A_FMT(imm == 0 || (imm % msize_bytes) == 0,
+                       "Immediate must be cleanly divisible by {}", msize_bytes);
+
+    uint32_t Instr = 0b1000'0100'0010'0000'1000'0000'0000'0000;
+
+    if (esize == SubRegSize::i64Bit) {
+      Instr |= 1U << 30;
+    }
+
+    Instr |= FEXCore::ToUnderlying(msize) << 23;
+    Instr |= imm_to_encode << 16;
     Instr |= static_cast<uint32_t>(is_unsigned) << 14;
     Instr |= static_cast<uint32_t>(is_fault_first) << 13;
     Instr |= pg.Idx() << 10;

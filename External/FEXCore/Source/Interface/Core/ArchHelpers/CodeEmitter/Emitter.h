@@ -249,6 +249,14 @@ namespace FEXCore::ARMEmitter {
             .scale = scale,
           }
         } {}
+      SVEMemOperand(ZRegister zn, uint32_t imm)
+        : rn{Register{zn.Idx()}}
+        , MemType{Type::VectorPlusImm}
+        , MetaType {
+          .VectorImmType{
+            .Imm = imm,
+          }
+        } {}
 
       [[nodiscard]] bool IsScalarPlusScalar() const {
         return MemType == Type::ScalarPlusScalar;
@@ -280,7 +288,7 @@ namespace FEXCore::ARMEmitter {
 
         struct {
           // rn will be a ZRegister
-          int32_t Imm;
+          uint32_t Imm;
         } VectorImmType;
       };
 
