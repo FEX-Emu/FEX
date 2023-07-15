@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
+include(${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/version_to_variables.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 set (HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
@@ -114,11 +115,7 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
 
   find_package(PkgConfig)
   pkg_search_module(X11 REQUIRED x11)
-
-  string(REGEX MATCH "([0-9]*)\.([0-9]*)\.([0-9]*)" _ "${X11_VERSION}")
-  set(X11_VERSION_MAJOR ${CMAKE_MATCH_1})
-  set(X11_VERSION_MINOR ${CMAKE_MATCH_2})
-  set(X11_VERSION_PATCH ${CMAKE_MATCH_3})
+  version_to_variables(${X11_VERSION} X11)
 
   generate(libX11 ${CMAKE_CURRENT_SOURCE_DIR}/../libX11/libX11_interface.cpp ${GUEST_BITNESS})
   add_host_lib(X11 ${GUEST_BITNESS})
@@ -144,8 +141,16 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
   add_host_lib(vulkan ${GUEST_BITNESS})
 
+  find_package(PkgConfig)
+  pkg_search_module(XCB REQUIRED xcb)
+  version_to_variables(${XCB_VERSION} XCB)
+
   generate(libxcb ${CMAKE_CURRENT_SOURCE_DIR}/../libxcb/libxcb_interface.cpp ${GUEST_BITNESS})
   add_host_lib(xcb ${GUEST_BITNESS})
+
+  target_compile_definitions(libxcb-${GUEST_BITNESS}-deps INTERFACE -DXCB_VERSION_MAJOR=${XCB_VERSION_MAJOR})
+  target_compile_definitions(libxcb-${GUEST_BITNESS}-deps INTERFACE -DXCB_VERSION_MINOR=${XCB_VERSION_MINOR})
+  target_compile_definitions(libxcb-${GUEST_BITNESS}-deps INTERFACE -DXCB_VERSION_PATCH=${XCB_VERSION_PATCH})
 
   generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
   add_host_lib(wayland-client ${GUEST_BITNESS})
