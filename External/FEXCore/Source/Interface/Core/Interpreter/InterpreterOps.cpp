@@ -52,6 +52,7 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(ADD,                    Add);
   REGISTER_OP(SUB,                    Sub);
   REGISTER_OP(NEG,                    Neg);
+  REGISTER_OP(ABS,                    Abs);
   REGISTER_OP(MUL,                    Mul);
   REGISTER_OP(UMUL,                   UMul);
   REGISTER_OP(DIV,                    Div);

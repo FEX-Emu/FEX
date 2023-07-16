@@ -245,6 +245,7 @@ private:
   DEF_OP(Add);
   DEF_OP(Sub);
   DEF_OP(Neg);
+  DEF_OP(Abs);
   DEF_OP(Mul);
   DEF_OP(UMul);
   DEF_OP(Div);
