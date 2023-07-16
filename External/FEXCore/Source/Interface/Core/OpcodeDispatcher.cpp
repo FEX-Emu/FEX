@@ -2669,17 +2669,62 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   Src = _And(Src, _Constant(Size, 0x1F));
 
-  OrderedNode *Tmp = _Constant(64, 0);
+  OrderedNode *Tmp{};
 
   // Insert the incoming value across the temporary 64bit source
   // Make sure to insert at <BitSize> + 1 offsets
   // We need to cover 32bits plus the amount that could rotate in
-  for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
-    // Insert incoming value
-    Tmp = _Bfi(8, Size, i, Tmp, Dest);
 
-    // Insert CF
-    Tmp = _Bfi(8, 1, i + Size, Tmp, CF);
+  if (Size == 8) {
+    // 8-bit optimal cascade
+    // Cascade: 0
+    //   Data: -> [7:0]
+    //   CF:   -> [8:8]
+    // Cascade: 1
+    //   Data: -> [16:9]
+    //   CF:   -> [17:17]
+    // Cascade: 2
+    //   Data: -> [25:18]
+    //   CF:   -> [26:26]
+    // Cascade: 3
+    //   Data: -> [34:27]
+    //   CF:   -> [35:35]
+    // Cascade: 4
+    //   Data: -> [43:36]
+    //   CF:   -> [44:44]
+
+    // Insert CF, Destination already at [7:0]
+    Tmp = _Bfi(8, 1, 8, Dest, CF);
+
+    // First Cascade, copies 9 bits from itself.
+    Tmp = _Bfi(8, 9, 9, Tmp, Tmp);
+
+    // Second cascade, copies 18 bits from itself.
+    Tmp = _Bfi(8, 18, 18, Tmp, Tmp);
+
+    // Final cascade, copies 9 bits again from itself.
+    Tmp = _Bfi(8, 9, 36, Tmp, Tmp);
+  }
+  else {
+    // 16-bit optimal cascade
+    // Cascade: 0
+    //   Data: -> [15:0]
+    //   CF:   -> [16:16]
+    // Cascade: 1
+    //   Data: -> [32:17]
+    //   CF:   -> [33:33]
+    // Cascade: 2
+    //   Data: -> [49:34]
+    //   CF:   -> [50:50]
+
+    // Insert CF, Destination already at [15:0]
+    Tmp = _Bfi(8, 1, 16, Dest, CF);
+
+    // First Cascade, copies 17 bits from itself.
+    Tmp = _Bfi(8, 17, 17, Tmp, Tmp);
+
+    // Final Cascade, copies 17 bits from itself again.
+    Tmp = _Bfi(8, 17, 34, Tmp, Tmp);
   }
 
   // Entire bitfield has been setup
