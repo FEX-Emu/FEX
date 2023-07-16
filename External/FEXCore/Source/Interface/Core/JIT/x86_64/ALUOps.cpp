@@ -161,6 +161,30 @@ DEF_OP(Neg) {
   neg(Dst);
 }
 
+DEF_OP(Abs) {
+  auto Op = IROp->C<IR::IROp_Abs>();
+  const uint8_t OpSize = IROp->Size;
+
+  Xbyak::Reg Src;
+  Xbyak::Reg Dst;
+  switch (OpSize) {
+  case 4:
+    Src = GetSrc<RA_32>(Op->Src.ID());
+    Dst = GetDst<RA_32>(Node);
+    break;
+  case 8:
+    Src = GetSrc<RA_64>(Op->Src.ID());
+    Dst = GetDst<RA_64>(Node);
+    break;
+  default:  LOGMAN_MSG_A_FMT("Unhandled Abs size: {}", OpSize);
+    break;
+  }
+  mov(Dst, Src);
+  mov(TMP1, Src);
+  neg(Dst);
+  cmovs(Dst, TMP1);
+}
+
 DEF_OP(Mul) {
   auto Op = IROp->C<IR::IROp_Mul>();
   const uint8_t OpSize = IROp->Size;
@@ -1298,6 +1322,7 @@ void X86JITCore::RegisterALUHandlers() {
   REGISTER_OP(ADD,               Add);
   REGISTER_OP(SUB,               Sub);
   REGISTER_OP(NEG,               Neg);
+  REGISTER_OP(ABS,               Abs);
   REGISTER_OP(MUL,               Mul);
   REGISTER_OP(UMUL,              UMul);
   REGISTER_OP(DIV,               Div);

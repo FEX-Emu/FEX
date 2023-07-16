@@ -171,12 +171,14 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto zero = _Constant(0);
 
   // Sign extend to 64bits
-  if (read_width != 8)
+  if (read_width != 8) {
     data = _Sext(read_width * 8, data);
+  }
 
   // Extract sign and make interger absolute
   auto sign = _Select(COND_SLT, data, zero, _Constant(0x8000), zero);
-  auto absolute =  _Select(COND_SLT, data, zero, _Sub(zero, data), data);
+
+  auto absolute = _Abs(data);
 
   // left justify the absolute interger
   auto shift = _Sub(_Constant(63), _FindMSB(absolute));

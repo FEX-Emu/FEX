@@ -113,6 +113,22 @@ DEF_OP(Neg) {
   }
 }
 
+DEF_OP(Abs) {
+  auto Op = IROp->C<IR::IROp_Abs>();
+  const uint8_t OpSize = IROp->Size;
+
+  const int64_t Src = *GetSrc<int64_t*>(Data->SSAData, Op->Src);
+  switch (OpSize) {
+    case 4:
+      GD = std::abs(static_cast<int32_t>(Src));
+      break;
+    case 8:
+      GD = std::abs(static_cast<int64_t>(Src));
+      break;
+    default: LOGMAN_MSG_A_FMT("Unknown Abs Size: {}\n", OpSize); break;
+  }
+}
+
 DEF_OP(Mul) {
   auto Op = IROp->C<IR::IROp_Mul>();
   const uint8_t OpSize = IROp->Size;

@@ -29,6 +29,7 @@ class HostFeatures final {
     bool SupportsBMI2{};
     bool SupportsCLWB{};
     bool SupportsPMULL_128Bit{};
+    bool SupportsCSSC{};
 
     // Float exception behaviour
     bool SupportsFlushInputsToZero{};

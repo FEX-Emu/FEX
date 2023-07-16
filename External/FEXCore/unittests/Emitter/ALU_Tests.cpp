@@ -1690,6 +1690,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Conditional select") {
   TEST_SINGLE(csinv(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_EQ), "csinv x29, x28, x27, eq");
   TEST_SINGLE(csneg(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_EQ), "csneg w29, w28, w27, eq");
   TEST_SINGLE(csneg(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_EQ), "csneg x29, x28, x27, eq");
+  TEST_SINGLE(cneg(Size::i32Bit, Reg::r29, Reg::r28, Condition::CC_EQ), "cneg w29, w28, eq");
+  TEST_SINGLE(cneg(Size::i64Bit, Reg::r29, Reg::r28, Condition::CC_EQ), "cneg x29, x28, eq");
 
   TEST_SINGLE(csel(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_AL), "csel w29, w28, w27, al");
   TEST_SINGLE(csel(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_AL), "csel x29, x28, x27, al");
@@ -1701,6 +1703,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Conditional select") {
   TEST_SINGLE(csinv(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_AL), "csinv x29, x28, x27, al");
   TEST_SINGLE(csneg(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_AL), "csneg w29, w28, w27, al");
   TEST_SINGLE(csneg(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, Condition::CC_AL), "csneg x29, x28, x27, al");
+  TEST_SINGLE(cneg(Size::i32Bit, Reg::r29, Reg::r28, Condition::CC_AL), "csneg w29, w28, w28, nv");
+  TEST_SINGLE(cneg(Size::i64Bit, Reg::r29, Reg::r28, Condition::CC_AL), "csneg x29, x28, x28, nv");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Data processing - 3 source") {
   TEST_SINGLE(madd(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, Reg::r26), "madd w29, w28, w27, w26");

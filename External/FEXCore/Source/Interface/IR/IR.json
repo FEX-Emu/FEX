@@ -717,6 +717,13 @@
                 ],
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
       },
+      "GPR = Abs GPR:$Src": {
+        "Desc": ["Integer 2's complement absolute value",
+                 "Dest = std::abs(Src)",
+                 "Will truncate to 64 or 32bits"
+                ],
+        "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
+      },
       "GPR = Not GPR:$Src": {
         "Desc": ["Integer binary not",
                  "op:",

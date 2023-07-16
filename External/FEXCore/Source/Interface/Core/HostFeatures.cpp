@@ -71,6 +71,7 @@ HostFeatures::HostFeatures() {
   SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
   SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
   SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
+  SupportsCSSC = Features.Has(vixl::CPUFeatures::Feature::kCSSC);
 
   Supports3DNow = true;
   SupportsSSE4A = true;
