@@ -44,6 +44,9 @@ namespace FEX::HLE {
     SignalDelegator(FEXCore::Context::Context *_CTX, const std::string_view ApplicationName);
     ~SignalDelegator() override;
 
+    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) override;
+    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) override;
+
     /**
      * @brief Registers a signal handler for the host to handle a signal specifically for guest handling
      *
@@ -105,8 +108,7 @@ namespace FEX::HLE {
     // Called from the thunk handler to handle the signal
     void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *Info, void *UContext) override;
 
-    void RegisterFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) override;
-    void UninstallFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) override;
+    FEXCore::Core::InternalThreadState *GetTLSThread() override;
 
     /**
      * @brief Registers a signal handler for the host to handle a signal

@@ -45,8 +45,8 @@ namespace Core {
      *
      * Required to know which thread has received the signal when it occurs
      */
-    void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread);
-    void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread);
+    virtual void RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
+    virtual void UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
 
     /**
      * @brief Registers a signal handler for the host to handle a signal
@@ -120,16 +120,8 @@ namespace Core {
   protected:
     SignalDelegatorConfig Config;
 
-    FEXCore::Core::InternalThreadState *GetTLSThread();
+    virtual FEXCore::Core::InternalThreadState *GetTLSThread() = 0;
     virtual void HandleGuestSignal(FEXCore::Core::InternalThreadState *Thread, int Signal, void *info, void *ucontext) = 0;
-
-    /**
-     * @brief Registers an emulated thread's object to a TLS object
-     *
-     * Required to know which thread has received the signal when it occurs
-     */
-    virtual void RegisterFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
-    virtual void UninstallFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) = 0;
 
     /**
      * @brief Registers a signal handler for the host to handle a signal

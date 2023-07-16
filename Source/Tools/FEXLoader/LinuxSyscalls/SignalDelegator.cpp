@@ -54,6 +54,8 @@ namespace FEX::HLE {
   static SignalDelegator *GlobalDelegator{};
 
   struct ThreadState {
+    FEXCore::Core::InternalThreadState *Thread{};
+
     void *AltStackPtr{};
     stack_t GuestAltStack {
       .ss_sp = nullptr,
@@ -1791,7 +1793,13 @@ namespace FEX::HLE {
     GlobalDelegator = nullptr;
   }
 
-  void SignalDelegator::RegisterFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) {
+  FEXCore::Core::InternalThreadState *SignalDelegator::GetTLSThread() {
+    return ThreadData.Thread;
+  }
+
+  void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
+    ThreadData.Thread = Thread;
+
     // Set up our signal alternative stack
     // This is per thread rather than per signal
     ThreadData.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ * 16, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -1817,7 +1825,7 @@ namespace FEX::HLE {
     }
   }
 
-  void SignalDelegator::UninstallFrontendTLSState(FEXCore::Core::InternalThreadState *Thread) {
+  void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
     FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ * 16);
 
     ThreadData.AltStackPtr = nullptr;
@@ -1830,6 +1838,8 @@ namespace FEX::HLE {
     if (Result == -1) {
       LogMan::Msg::EFmt("Failed to uninstall alternative signal stack {}", strerror(errno));
     }
+
+    ThreadData.Thread = nullptr;
   }
 
   void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, FEXCore::HostSignalDelegatorFunction Func, bool Required) {
