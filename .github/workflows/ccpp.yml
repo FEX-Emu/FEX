@@ -172,6 +172,17 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_APITests.log || true
 
+    - name: FEXCore APITest tests
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target fexcore_apitests
+
+    - name: FEXCore APITest Test Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
+
     - name: ARMEmitter tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
