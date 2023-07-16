@@ -1969,20 +1969,23 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
   }
 
   if (Shift != 0) {
-    OrderedNode *ShiftLeft = _Constant(Shift);
-    auto ShiftRight = _Constant(Size - Shift);
+    OrderedNode *Res{};
+    if (Size < 32) {
+      OrderedNode *ShiftLeft = _Constant(Shift);
+      auto ShiftRight = _Constant(Size - Shift);
 
-    auto Tmp1 = _Lshl(Dest, ShiftLeft);
-    Tmp1.first->Header.Size = 8;
-    auto Tmp2 = _Lshr(Src, ShiftRight);
+      auto Tmp1 = _Lshl(Dest, ShiftLeft);
+      Tmp1.first->Header.Size = 8;
+      auto Tmp2 = _Lshr(Src, ShiftRight);
 
-    OrderedNode *Res = _Or(Tmp1, Tmp2);
+      Res = _Or(Tmp1, Tmp2);
+    }
+    else {
+      // 32-bit and 64-bit SHLD behaves like an EXTR where the lower bits are filled from the source.
+      Res = _Extr(Dest, Src, Size - Shift);
+    }
 
     StoreResult(GPRClass, Op, Res, -1);
-
-    if (Size != 64) {
-      Res = _Bfe(Size, 0, Res);
-    }
     GenerateFlags_ShiftLeftImmediate(Op, Res, Dest, Shift);
   }
   else if (Shift == 0 && Size == 32) {
@@ -2066,20 +2069,24 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   }
 
   if (Shift != 0) {
-    OrderedNode *ShiftRight = _Constant(Shift);
-    auto ShiftLeft = _Constant(Size - Shift);
 
-    auto Tmp1 = _Lshr(Dest, ShiftRight);
-    auto Tmp2 = _Lshl(Src, ShiftLeft);
-    Tmp2.first->Header.Size = 8;
+    OrderedNode *Res{};
+    if (Size < 32) {
+      OrderedNode *ShiftRight = _Constant(Shift);
+      auto ShiftLeft = _Constant(Size - Shift);
 
-    OrderedNode *Res = _Or(Tmp1, Tmp2);
+      auto Tmp1 = _Lshr(Dest, ShiftRight);
+      auto Tmp2 = _Lshl(Src, ShiftLeft);
+      Tmp2.first->Header.Size = 8;
+
+      Res = _Or(Tmp1, Tmp2);
+    }
+    else {
+      // 32-bit and 64-bit SHRD behaves like an EXTR where the upper bits are filled from the source.
+      Res = _Extr(Src, Dest, Shift);
+    }
 
     StoreResult(GPRClass, Op, Res, -1);
-
-    if (Size != 64) {
-      Res = _Bfe(Size, 0, Res);
-    }
     GenerateFlags_ShiftRightImmediate(Op, Res, Dest, Shift);
   }
   else if (Shift == 0 && Size == 32) {
