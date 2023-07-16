@@ -761,6 +761,9 @@ public:
     constexpr uint32_t Op = 0b0001'1010'100 << 21;
     ConditionalCompare(Op, 1, 0b01, s, rd, rn, rm, Cond);
   }
+  void cneg(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Condition Cond) {
+    csneg(s, rd, rn, rn, static_cast<FEXCore::ARMEmitter::Condition>(FEXCore::ToUnderlying(Cond) ^ FEXCore::ToUnderlying(FEXCore::ARMEmitter::Condition::CC_NE)));
+  }
 
   // Data processing - 3 source
   void madd(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::Register ra) {
