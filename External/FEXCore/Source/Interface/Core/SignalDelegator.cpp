@@ -6,26 +6,6 @@
 #include <signal.h>
 
 namespace FEXCore {
-  struct ThreadState {
-    FEXCore::Core::InternalThreadState *Thread{};
-  };
-
-  thread_local ThreadState ThreadData{};
-
-  FEXCore::Core::InternalThreadState *SignalDelegator::GetTLSThread() {
-    return ThreadData.Thread;
-  }
-
-  void SignalDelegator::RegisterTLSState(FEXCore::Core::InternalThreadState *Thread) {
-    ThreadData.Thread = Thread;
-    RegisterFrontendTLSState(Thread);
-  }
-
-  void SignalDelegator::UninstallTLSState(FEXCore::Core::InternalThreadState *Thread) {
-    UninstallFrontendTLSState(Thread);
-    ThreadData.Thread = nullptr;
-  }
-
   void SignalDelegator::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
     SetHostSignalHandler(Signal, Func, Required);
     FrontendRegisterHostSignalHandler(Signal, Func, Required);
