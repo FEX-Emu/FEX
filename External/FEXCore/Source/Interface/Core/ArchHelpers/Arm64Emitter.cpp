@@ -192,6 +192,23 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
     return;
   }
 
+  if ((Constant >> 32) == 0) {
+    // If the upper 32-bits is all zero, we can now switch to a 32-bit move.
+    s = ARMEmitter::Size::i32Bit;
+    Is64Bit = false;
+    Segments = 2;
+  }
+
+  // If this can be loaded with a mov bitmask.
+  const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Constant, RegSizeInBits(s));
+  if (IsImm) {
+    orr(s, Reg, ARMEmitter::Reg::zr, Constant);
+    if (NOPPad) {
+      nop(); nop(); nop();
+    }
+    return;
+  }
+
   int NumMoves = 1;
   int RequiredMoveSegments{};
 
