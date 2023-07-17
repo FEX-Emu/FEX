@@ -3020,7 +3020,7 @@ public:
       SVEScatterStoreScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
@@ -3039,7 +3039,7 @@ public:
       SVEScatterStoreScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
@@ -3058,7 +3058,7 @@ public:
       SVEScatterStoreScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
@@ -3076,7 +3076,7 @@ public:
       SVEScatterStoreScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
@@ -3274,12 +3274,6 @@ public:
   // SVE2 32-bit scatter non-temporal store (vector plus scalar)
   // XXX:
   // SVE store multiple structures (scalar plus scalar)
-  // XXX:
-
-  // SVE Memory - Scatter
-  // SVE 64-bit scatter store (vector plus immediate)
-  // XXX:
-  // SVE 32-bit scatter store (vector plus immediate)
   // XXX:
 
   // SVE Memory - Contiguous Store with Immediate Offset
@@ -4184,10 +4178,10 @@ private:
     dc32(Instr);
   }
 
-  void SVEGatherLoadVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
-                                  bool is_unsigned, bool is_fault_first) {
+  void SVEGatherScatterVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op,
+                                     bool is_store, bool is_unsigned, bool is_fault_first) {
     LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
-                       "Gather load element size must be 32-bit or 64-bit");
+                       "Gather load/store element size must be 32-bit or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto msize_value = FEXCore::ToUnderlying(msize);
@@ -4197,17 +4191,25 @@ private:
     const auto imm = mem_op.MetaType.VectorImmType.Imm;
     const auto imm_to_encode = imm >> msize_value;
 
-    LOGMAN_THROW_A_FMT(imm <= imm_limit, "immediate must be within [0, {}]", imm_limit);
+    LOGMAN_THROW_A_FMT(imm <= imm_limit, "Immediate must be within [0, {}]", imm_limit);
     LOGMAN_THROW_A_FMT(imm == 0 || (imm % msize_bytes) == 0,
                        "Immediate must be cleanly divisible by {}", msize_bytes);
 
-    uint32_t Instr = 0b1000'0100'0010'0000'1000'0000'0000'0000;
+    uint32_t Instr = 0b1000'0100'0000'0000'1000'0000'0000'0000;
 
-    if (esize == SubRegSize::i64Bit) {
-      Instr |= 1U << 30;
+    if (is_store) {
+      Instr |= 0x60402000U;
+      if (esize == SubRegSize::i32Bit) {
+        Instr |= 1U << 21;
+      }
+    } else {
+      Instr |= 0x00200000U;
+      if (esize == SubRegSize::i64Bit) {
+        Instr |= 1U << 30;
+      }
     }
 
-    Instr |= FEXCore::ToUnderlying(msize) << 23;
+    Instr |= msize_value << 23;
     Instr |= imm_to_encode << 16;
     Instr |= static_cast<uint32_t>(is_unsigned) << 14;
     Instr |= static_cast<uint32_t>(is_fault_first) << 13;
@@ -4216,6 +4218,15 @@ private:
     Instr |= zt.Idx();
 
     dc32(Instr);
+  }
+
+  void SVEGatherLoadVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
+                                  bool is_unsigned, bool is_fault_first) {
+    SVEGatherScatterVectorPlusImm(esize, msize, zt, pg, mem_op, false, is_unsigned, is_fault_first);
+  }
+
+  void SVEScatterStoreVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op) {
+    SVEGatherScatterVectorPlusImm(esize, msize, zt, pg, mem_op, true, false, true);
   }
 
   void SVEUnsizedContiguous(uint32_t op0, uint32_t op2, uint32_t imm9, PRegister pt, Register rn) {

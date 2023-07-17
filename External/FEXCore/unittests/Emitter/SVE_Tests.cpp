@@ -4024,6 +4024,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
                                        "st1b {z30.d}, p6, [x30, z31.d]");
 
+  TEST_SINGLE(st1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                                       "st1b {z30.s}, p6, [z31.s]");
+  TEST_SINGLE(st1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 31)),
+                                       "st1b {z30.s}, p6, [z31.s, #31]");
+  TEST_SINGLE(st1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                                       "st1b {z30.d}, p6, [z31.d]");
+  TEST_SINGLE(st1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 31)),
+                                       "st1b {z30.d}, p6, [z31.d, #31]");
+
   TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
                                        "st1h {z30.s}, p6, [x30, z31.s, uxtw #1]");
@@ -4055,6 +4064,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
                                        "st1h {z30.d}, p6, [x30, z31.d]");
+
+  TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                                       "st1h {z30.s}, p6, [z31.s]");
+  TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 62)),
+                                       "st1h {z30.s}, p6, [z31.s, #62]");
+  TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                                       "st1h {z30.d}, p6, [z31.d]");
+  TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 62)),
+                                       "st1h {z30.d}, p6, [z31.d, #62]");
 
   TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
@@ -4088,6 +4106,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
                                        "st1w {z30.d}, p6, [x30, z31.d]");
 
+  TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                                       "st1w {z30.s}, p6, [z31.s]");
+  TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 124)),
+                                       "st1w {z30.s}, p6, [z31.s, #124]");
+  TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                                       "st1w {z30.d}, p6, [z31.d]");
+  TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 124)),
+                                       "st1w {z30.d}, p6, [z31.d, #124]");
+
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 3)),
                    "st1d {z30.d}, p6, [x30, z31.d, uxtw #3]");
@@ -4107,4 +4134,9 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
                    "st1d {z30.d}, p6, [x30, z31.d]");
+
+  TEST_SINGLE(st1d(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
+                   "st1d {z30.d}, p6, [z31.d]");
+  TEST_SINGLE(st1d(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 248)),
+                   "st1d {z30.d}, p6, [z31.d, #248]");
 }
