@@ -1357,20 +1357,17 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   break;
   }
 
-  auto MaskConst = _Constant(FLAGMask);
-
   auto RFLAG = GetPackedRFLAG(FLAGMask);
 
-  auto AndOp = _And(RFLAG, MaskConst);
   switch (Type) {
     case COMPARE_ZERO: {
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-      AndOp, ZeroConst, OneConst, ZeroConst);
+      RFLAG, ZeroConst, OneConst, ZeroConst);
       break;
     }
     case COMPARE_NOTZERO: {
       SrcCond = _Select(FEXCore::IR::COND_EQ,
-      AndOp, ZeroConst, ZeroConst, OneConst);
+      RFLAG, ZeroConst, ZeroConst, OneConst);
       break;
     }
   }
