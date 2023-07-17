@@ -4221,11 +4221,8 @@ OrderedNode* OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
                   Element, MinGPR, Indexes[i - 1], Pos);
   }
 
-  // Insert the minimum in to bits [15:0]
-  OrderedNode *Result = _VMov(2, Min);
-
   // Insert position in to bits [18:16]
-  return _VInsGPR(16, 2, 1, Result, Pos);
+  return _VInsGPR(16, 2, 1, Min, Pos);
 }
 
 void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
