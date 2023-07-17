@@ -169,6 +169,28 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
+        auto ClassifyRegisterStore = [this](Info &BlockInfo, uint32_t Offset, uint8_t Size) {
+          //// GPR ////
+          if (IsFullGPR(Offset, Size))
+            BlockInfo.gpr.writes |= GPRBit(Offset);
+          else
+            BlockInfo.gpr.reads |= GPRBit(Offset);
+
+          //// FPR ////
+          if (IsTrackedWriteFPR(Offset, Size))
+            BlockInfo.fpr.writes |= FPRBit(Offset, Size);
+          else
+            BlockInfo.fpr.reads |= FPRBit(Offset, Size);
+        };
+
+        auto ClassifyRegisterLoad = [this](Info &BlockInfo, uint32_t Offset, uint8_t Size) {
+          //// GPR ////
+          BlockInfo.gpr.reads |= GPRBit(Offset);
+
+          //// FPR ////
+          BlockInfo.fpr.reads |= FPRBit(Offset, Size);
+        };
+
         //// Flags ////
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->C<IR::IROp_StoreFlag>();
@@ -188,43 +210,16 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
           auto& BlockInfo = InfoMap[BlockNode];
 
           BlockInfo.flag.reads |= 1UL << Op->Flag;
-        } else if (IROp->Op == OP_STORECONTEXT) {
-          auto Op = IROp->C<IR::IROp_StoreContext>();
+        } else if (IROp->Op == OP_STOREREGISTER) {
+          auto Op = IROp->C<IR::IROp_StoreRegister>();
 
           auto& BlockInfo = InfoMap[BlockNode];
-
-          //// GPR ////
-          if (IsFullGPR(Op->Offset, IROp->Size))
-            BlockInfo.gpr.writes |= GPRBit(Op->Offset);
-          else
-            BlockInfo.gpr.reads |= GPRBit(Op->Offset);
-
-          //// FPR ////
-          if (IsTrackedWriteFPR(Op->Offset, IROp->Size))
-            BlockInfo.fpr.writes |= FPRBit(Op->Offset, IROp->Size);
-          else
-            BlockInfo.fpr.reads |= FPRBit(Op->Offset, IROp->Size);
-        } else if (IROp->Op == OP_STORECONTEXTINDEXED ||
-               IROp->Op == OP_LOADCONTEXTINDEXED) {
-          auto& BlockInfo = InfoMap[BlockNode];
-
-          //// GPR ////
-          // We can't track through these
-          BlockInfo.gpr.reads = -1;
-
-          //// FPR ////
-          // We can't track through these
-          BlockInfo.fpr.reads = -1;
-        } else if (IROp->Op == OP_LOADCONTEXT) {
-          auto Op = IROp->C<IR::IROp_LoadContext>();
+          ClassifyRegisterStore(BlockInfo, Op->Offset, IROp->Size);
+        } else if (IROp->Op == OP_LOADREGISTER) {
+          auto Op = IROp->C<IR::IROp_LoadRegister>();
 
           auto& BlockInfo = InfoMap[BlockNode];
-
-          //// GPR ////
-          BlockInfo.gpr.reads |= GPRBit(Op->Offset);
-
-          //// FPR ////
-          BlockInfo.fpr.reads |= FPRBit(Op->Offset, IROp->Size);
+          ClassifyRegisterLoad(BlockInfo, Op->Offset, IROp->Size);
         }
       }
     }
@@ -321,6 +316,25 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
 
+        auto RemoveDeadRegisterStore = [this](FEXCore::IR::IREmitter *IREmit, FEXCore::IR::OrderedNode *CodeNode, Info &BlockInfo, uint32_t Offset, uint8_t Size) -> bool {
+          bool Changed{};
+          //// GPRs ////
+          // If this OP_STOREREGISTER is never read, remove it
+          if (BlockInfo.gpr.kill & GPRBit(Offset)) {
+            IREmit->Remove(CodeNode);
+            Changed = true;
+          }
+
+          //// FPRs ////
+          // If this OP_STOREREGISTER is never read, remove it
+          if ((BlockInfo.fpr.kill & FPRBit(Offset, Size)) == FPRBit(Offset, Size) && (FPRBit(Offset, Size) != 0)) {
+            IREmit->Remove(CodeNode);
+            Changed = true;
+          }
+
+          return Changed;
+        };
+
         //// Flags ////
         if (IROp->Op == OP_STOREFLAG) {
           auto Op = IROp->C<IR::IROp_StoreFlag>();
@@ -332,24 +346,12 @@ bool DeadStoreElimination::Run(IREmitter *IREmit) {
             IREmit->Remove(CodeNode);
             Changed = true;
           }
-        } else if (IROp->Op == OP_STORECONTEXT) {
-          auto Op = IROp->C<IR::IROp_StoreContext>();
+        } else if (IROp->Op == OP_STOREREGISTER) {
+          auto Op = IROp->C<IR::IROp_StoreRegister>();
 
           auto& BlockInfo = InfoMap[BlockNode];
 
-          //// GPRs ////
-          // If this OP_STORECONTEXT is never read, remove it
-          if (BlockInfo.gpr.kill & GPRBit(Op->Offset)) {
-            IREmit->Remove(CodeNode);
-            Changed = true;
-          }
-
-          //// FPRs ////
-          // If this OP_STORECONTEXT is never read, remove it
-          if ((BlockInfo.fpr.kill & FPRBit(Op->Offset, IROp->Size)) == FPRBit(Op->Offset, IROp->Size) && (FPRBit(Op->Offset, IROp->Size) != 0)) {
-            IREmit->Remove(CodeNode);
-            Changed = true;
-          }
+          Changed |= RemoveDeadRegisterStore(IREmit, CodeNode, BlockInfo, Op->Offset, IROp->Size);
         }
       }
     }
