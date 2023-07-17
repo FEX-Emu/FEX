@@ -239,8 +239,16 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     Operand->Data.SIB.Scale = 1 << SIB.scale;
 
     // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
-    Operand->Data.SIB.Index = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X ? 1 : 0, SIB.index, false, false, false, false, 0b100);
-    Operand->Data.SIB.Base  = MapModRMToReg(DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B ? 1 : 0, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
+    {
+      // If we have a VSIB byte (as opposed to SIB), then the index register is a vector.
+      const bool IsIndexVector = (DecodeInst->TableInfo->Flags & InstFlags::FLAGS_VEX_VSIB) != 0;
+
+      const uint8_t IndexREX = (DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X) != 0 ? 1 : 0;
+      const uint8_t BaseREX = (DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B) != 0 ? 1 : 0;
+
+      Operand->Data.SIB.Index = MapModRMToReg(IndexREX, SIB.index, false, false, IsIndexVector, false, 0b100);
+      Operand->Data.SIB.Base  = MapModRMToReg(BaseREX, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
+    }
 
     LOGMAN_THROW_AA_FMT(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
 
