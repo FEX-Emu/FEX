@@ -732,7 +732,9 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-        uint64_t NewConstant = (Constant1 << Constant2) & getMask(Op);
+        // Shifts mask the shift amount by 63 or 31 depending on operating size;
+        uint64_t ShiftMask = IROp->Size == 8 ? 63 : 31;
+        uint64_t NewConstant = (Constant1 << (Constant2 & ShiftMask)) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
@@ -758,7 +760,9 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
 
       if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
           IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
-        uint64_t NewConstant = (Constant1 >> Constant2) & getMask(Op);
+        // Shifts mask the shift amount by 63 or 31 depending on operating size;
+        uint64_t ShiftMask = IROp->Size == 8 ? 63 : 31;
+        uint64_t NewConstant = (Constant1 >> (Constant2 & ShiftMask)) & getMask(Op);
         IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
