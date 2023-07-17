@@ -3008,8 +3008,8 @@ public:
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  template<SubRegSize size>
+  void st1b(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -3017,18 +3017,18 @@ public:
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
     else if (Src.IsScalarPlusVector()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  template<SubRegSize size>
+  void st1h(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -3036,18 +3036,18 @@ public:
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
     else if (Src.IsScalarPlusVector()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
     }
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  template<SubRegSize size>
+  void st1w(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -3055,17 +3055,17 @@ public:
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
     else if (Src.IsScalarPlusVector()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
     }
   }
 
-  void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::SVEMemOperand Src) {
+  void st1d(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
@@ -3073,10 +3073,10 @@ public:
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
     }
     else if (Src.IsScalarPlusVector()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src);
     }
     else if (Src.IsVectorPlusImm()) {
-      LOGMAN_THROW_A_FMT(false, "Not yet implemented");
+      SVEScatterStoreVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src);
     }
     else {
       FEX_UNREACHABLE;
@@ -3274,26 +3274,6 @@ public:
   // SVE2 32-bit scatter non-temporal store (vector plus scalar)
   // XXX:
   // SVE store multiple structures (scalar plus scalar)
-  // XXX:
-
-  // SVE Memory - Scatter with Optional Sign Extend
-  // SVE 64-bit scatter store (scalar plus unpacked 32-bit unscaled offsets)
-  // XXX:
-  // SVE 64-bit scatter store (scalar plus unpacked 32-bit scaled offsets)
-  // XXX:
-  // SVE 32-bit scatter store (scalar plus 32-bit unscaled offsets)
-  // XXX:
-  // SVE 32-bit scatter store (scalar plus 32-bit scaled offsets)
-  // XXX:
-
-  // SVE Memory - Scatter
-  // SVE 64-bit scatter store (scalar plus 64-bit unscaled offsets)
-  // XXX:
-  // SVE 64-bit scatter store (scalar plus 64-bit scaled offsets)
-  // XXX:
-  // SVE 64-bit scatter store (vector plus immediate)
-  // XXX:
-  // SVE 32-bit scatter store (vector plus immediate)
   // XXX:
 
   // SVE Memory - Contiguous Store with Immediate Offset
@@ -4129,10 +4109,79 @@ private:
     dc32(Instr);
   }
 
-  void SVEGatherLoadVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
-                                  bool is_unsigned, bool is_fault_first) {
+  void SVEScatterStoreScalarPlusVector(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op) {
     LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
                        "Gather load element size must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    const auto& op_data = mem_op.MetaType.ScalarVectorType;
+    const bool is_scaled = op_data.scale != 0;
+
+    const auto msize_value = FEXCore::ToUnderlying(msize);
+    uint32_t mod_value = FEXCore::ToUnderlying(op_data.mod);
+
+    LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value,
+                       "scale may only be 0 or {}", msize_value);
+
+    uint32_t Instr = 0b1110'0100'0000'0000'1000'0000'0000'0000;
+
+    if (esize == SubRegSize::i64Bit) {
+      const auto mod = op_data.mod;
+      const bool is_lsl = mod == SVEMemOperand::ModType::MOD_LSL;
+      const bool is_none = mod == SVEMemOperand::ModType::MOD_NONE;
+
+      if (is_lsl || is_none) {
+        if (is_lsl) {
+          LOGMAN_THROW_A_FMT(op_data.scale == msize_value,
+                             "mod type of LSL must have a scale of {}", msize_value);
+        } else {
+          LOGMAN_THROW_A_FMT(op_data.scale == 0,
+                             "mod type of none must have a scale of 0");
+        }
+        if (is_lsl || is_scaled) {
+          LOGMAN_THROW_A_FMT(msize != SubRegSize::i8Bit,
+                           "Cannot use 8-bit store elements with unpacked 32-bit scaled offset and "
+                           "64-bit scaled offset variants. Instructions not allocated.");
+        }
+
+        // 64-bit scaled/unscaled scatters need to set bit 13
+        Instr |= 1U << 13;
+        mod_value = 0;
+      }
+    } else {
+      if (is_scaled) {
+        LOGMAN_THROW_A_FMT(msize != SubRegSize::i8Bit && msize != SubRegSize::i64Bit,
+                           "Cannot use 8-bit or 64-bit store elements with 32-bit scaled offset variant. "
+                           "Instructions not allocated");
+      } else {
+        LOGMAN_THROW_A_FMT(msize != SubRegSize::i64Bit,
+                           "Cannot use 64-bit store elements with 32-bit unscaled offset variant. "
+                           "Instruction not allocated.");
+      }
+
+      LOGMAN_THROW_A_FMT(op_data.mod == SVEMemOperand::ModType::MOD_UXTW ||
+                         op_data.mod == SVEMemOperand::ModType::MOD_SXTW,
+                         "mod type for 32-bit lane size may only be UXTW or SXTW");
+
+      // 32-bit scatters need to set bit 22.
+      Instr |= 1U << 22;
+    }
+
+    Instr |= msize_value << 23;
+    Instr |= static_cast<uint32_t>(is_scaled) << 21;
+    Instr |= op_data.zm.Idx() << 16;
+    Instr |= static_cast<uint32_t>(mod_value) << 14;
+    Instr |= pg.Idx() << 10;
+    Instr |= mem_op.rn.Idx() << 5;
+    Instr |= zt.Idx();
+
+    dc32(Instr);
+  }
+
+  void SVEGatherScatterVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op,
+                                     bool is_store, bool is_unsigned, bool is_fault_first) {
+    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
+                       "Gather load/store element size must be 32-bit or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto msize_value = FEXCore::ToUnderlying(msize);
@@ -4142,17 +4191,25 @@ private:
     const auto imm = mem_op.MetaType.VectorImmType.Imm;
     const auto imm_to_encode = imm >> msize_value;
 
-    LOGMAN_THROW_A_FMT(imm <= imm_limit, "immediate must be within [0, {}]", imm_limit);
+    LOGMAN_THROW_A_FMT(imm <= imm_limit, "Immediate must be within [0, {}]", imm_limit);
     LOGMAN_THROW_A_FMT(imm == 0 || (imm % msize_bytes) == 0,
                        "Immediate must be cleanly divisible by {}", msize_bytes);
 
-    uint32_t Instr = 0b1000'0100'0010'0000'1000'0000'0000'0000;
+    uint32_t Instr = 0b1000'0100'0000'0000'1000'0000'0000'0000;
 
-    if (esize == SubRegSize::i64Bit) {
-      Instr |= 1U << 30;
+    if (is_store) {
+      Instr |= 0x60402000U;
+      if (esize == SubRegSize::i32Bit) {
+        Instr |= 1U << 21;
+      }
+    } else {
+      Instr |= 0x00200000U;
+      if (esize == SubRegSize::i64Bit) {
+        Instr |= 1U << 30;
+      }
     }
 
-    Instr |= FEXCore::ToUnderlying(msize) << 23;
+    Instr |= msize_value << 23;
     Instr |= imm_to_encode << 16;
     Instr |= static_cast<uint32_t>(is_unsigned) << 14;
     Instr |= static_cast<uint32_t>(is_fault_first) << 13;
@@ -4161,6 +4218,15 @@ private:
     Instr |= zt.Idx();
 
     dc32(Instr);
+  }
+
+  void SVEGatherLoadVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
+                                  bool is_unsigned, bool is_fault_first) {
+    SVEGatherScatterVectorPlusImm(esize, msize, zt, pg, mem_op, false, is_unsigned, is_fault_first);
+  }
+
+  void SVEScatterStoreVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op) {
+    SVEGatherScatterVectorPlusImm(esize, msize, zt, pg, mem_op, true, false, true);
   }
 
   void SVEUnsizedContiguous(uint32_t op0, uint32_t op2, uint32_t imm9, PRegister pt, Register rn) {
