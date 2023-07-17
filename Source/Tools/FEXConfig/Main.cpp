@@ -1,6 +1,7 @@
 #include "Common/Config.h"
 #include "Common/FileFormatCheck.h"
 #include "FEXCore/Config/Config.h"
+#include "FEXCore/Utils/EnumUtils.h"
 #include "Tools/CommonGUI/IMGui.h"
 
 #include <FEXCore/Utils/Event.h>
@@ -75,6 +76,8 @@ namespace {
 #define OPT_STR(group, enum, json, default) \
     LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);
 #define OPT_STRARRAY(group, enum, json, default)  // Do nothing
+#define OPT_STRENUM(group, enum, json, default) \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(FEXCore::ToUnderlying(default)));
 #include <FEXCore/Config/ConfigValues.inl>
 
     // Erase unnamed options which shouldn't be set
@@ -108,6 +111,8 @@ namespace {
 #define OPT_STR(group, enum, json, default) \
     if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, default); }
 #define OPT_STRARRAY(group, enum, json, default)  // Do nothing
+#define OPT_STRENUM(group, enum, json, default) \
+    if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(FEXCore::ToUnderlying(default))); }
 #include <FEXCore/Config/ConfigValues.inl>
 
     // Erase unnamed options which shouldn't be set
