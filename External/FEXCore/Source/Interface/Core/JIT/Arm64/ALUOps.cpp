@@ -898,34 +898,55 @@ DEF_OP(Popcount) {
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  switch (OpSize) {
-    case 0x1:
-      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-      // only use lowest byte
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      break;
-    case 0x2:
-      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      // only count two lowest bytes
-      addp(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
-      break;
-    case 0x4:
-      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      // fmov has zero extended, unused bytes are zero
-      addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      break;
-    case 0x8:
-      fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Src);
-      cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      // fmov has zero extended, unused bytes are zero
-      addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
-      break;
-    default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
+  if (CTX->HostFeatures.SupportsCSSC) {
+    switch (OpSize) {
+      case 0x1:
+        uxtb(ARMEmitter::Size::i32Bit, Dst, Src);
+        cnt(ARMEmitter::Size::i32Bit, Dst, Dst);
+        break;
+      case 0x2:
+        uxtw(ARMEmitter::Size::i32Bit, Dst, Src);
+        cnt(ARMEmitter::Size::i32Bit, Dst, Dst);
+        break;
+      case 0x4:
+        cnt(ARMEmitter::Size::i32Bit, Dst, Src);
+        break;
+      case 0x8:
+        cnt(ARMEmitter::Size::i64Bit, Dst, Src);
+        break;
+      default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
+    }
   }
+  else {
+    switch (OpSize) {
+      case 0x1:
+        fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
+        // only use lowest byte
+        cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+        break;
+      case 0x2:
+        fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
+        cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+        // only count two lowest bytes
+        addp(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
+        break;
+      case 0x4:
+        fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
+        cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+        // fmov has zero extended, unused bytes are zero
+        addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+        break;
+      case 0x8:
+        fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Src);
+        cnt(FEXCore::ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+        // fmov has zero extended, unused bytes are zero
+        addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
+        break;
+      default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
+    }
 
-  umov<ARMEmitter::SubRegSize::i8Bit>(Dst, VTMP1, 0);
+    umov<ARMEmitter::SubRegSize::i8Bit>(Dst, VTMP1, 0);
+  }
 }
 
 DEF_OP(FindLSB) {

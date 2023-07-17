@@ -731,10 +731,11 @@
                 ],
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src))"
       },
-      "GPR = Popcount GPR:$Src": {
+      "GPR = Popcount u8:#Size, GPR:$Src": {
         "Desc": ["Population count of source register",
                  "Returns the number of bits set"
-                ]
+                ],
+        "DestSize": "Size"
       },
       "GPR = FindLSB GPR:$Src": {
         "Desc": ["Find least-significant-bit set",

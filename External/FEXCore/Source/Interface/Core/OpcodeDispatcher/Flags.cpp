@@ -93,13 +93,10 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
   auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
 
-  // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
-  // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
-  auto InputFPR = _VCastFromGPR(4, 4, PFByte);
-
   // Calculate the popcount.
-  auto Count = _VPopcount(1, 1, InputFPR);
-  auto Parity = _VExtractToGPR(8, 1, Count, 0);
+  // Logically we only need 8-bit, but that would generate an unwanted ubfx instruction.
+  // The LoadFlag operation will zero extend the upper bits anyway.
+  auto Parity = _Popcount(4, PFByte);
 
   // Mask off the bottom bit only.
   return _And(_Constant(1), Parity);

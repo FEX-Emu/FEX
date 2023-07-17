@@ -102,6 +102,10 @@ friend class FEXCore::IR::PassManager;
   IRPair<IROp_Ashr> _Ashr(OrderedNode *Src1, OrderedNode *Src2) {
     return _Ashr(std::max<uint8_t>(4, GetOpSize(Src1)), Src1, Src2);
   }
+  IRPair<IROp_Popcount> _Popcount(OrderedNode *Src) {
+    return _Popcount(GetOpSize(Src), Src);
+  }
+
   OrderedNode *Invalid() {
     return InvalidNode;
   }
