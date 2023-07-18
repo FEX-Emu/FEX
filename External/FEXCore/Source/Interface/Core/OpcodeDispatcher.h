@@ -182,6 +182,9 @@ public:
   bool HadDecodeFailure() const { return DecodeFailure; }
   bool NeedsBlockEnder() const { return NeedsBlockEnd; }
 
+  void ResetHandledLock() { HandledLock = false; }
+  bool HasHandledLock() const { return HandledLock; }
+
   void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   void Finalize();
 
@@ -831,8 +834,8 @@ public:
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 
-  bool HandledLock = false;
 private:
+  bool HandledLock{false};
   bool DecodeFailure{false};
   bool NeedsBlockEnd{false};
 

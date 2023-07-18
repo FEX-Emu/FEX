@@ -863,14 +863,14 @@ namespace FEXCore::Context {
 
           if (TableInfo && TableInfo->OpcodeDispatcher) {
             auto Fn = TableInfo->OpcodeDispatcher;
-            Thread->OpDispatcher->HandledLock = false;
+            Thread->OpDispatcher->ResetHandledLock();
             Thread->OpDispatcher->ResetDecodeFailure();
             std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
             if (Thread->OpDispatcher->HadDecodeFailure()) {
               HadDispatchError = true;
             }
             else {
-              if (Thread->OpDispatcher->HandledLock != IsLocked) {
+              if (Thread->OpDispatcher->HasHandledLock() != IsLocked) {
                 HadDispatchError = true;
                 LogMan::Msg::EFmt("Missing LOCK HANDLER at 0x{:x}{{'{}'}}", Block.Entry + BlockInstructionsLength, TableInfo->Name ?: "UND");
               }
