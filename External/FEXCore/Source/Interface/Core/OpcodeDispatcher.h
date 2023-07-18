@@ -28,13 +28,6 @@ class OpDispatchBuilder final : public IREmitter {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 
-enum class SelectionFlag {
-  Nothing,  // must rely on x86 flags
-  CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
-  AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
-  FCMP,     // flags were set by a ucomis* / comis*
-};
-
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
@@ -67,13 +60,6 @@ public:
     TYPE_BITSELECT,
     TYPE_RDRAND,
   };
-
-  SelectionFlag flagsOp{};
-  uint8_t flagsOpSize{};
-  OrderedNode* flagsOpDest{};
-  OrderedNode* flagsOpSrc{};
-  OrderedNode* flagsOpDestSigned{};
-  OrderedNode* flagsOpSrcSigned{};
 
   FEXCore::Context::ContextImpl *CTX{};
 
@@ -828,10 +814,24 @@ public:
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 
 private:
+  enum class SelectionFlag {
+    Nothing,  // must rely on x86 flags
+    CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
+    AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
+    FCMP,     // flags were set by a ucomis* / comis*
+  };
+
   struct JumpTargetInfo {
     OrderedNode* BlockEntry;
     bool HaveEmitted;
   };
+
+  SelectionFlag flagsOp{};
+  uint8_t flagsOpSize{};
+  OrderedNode* flagsOpDest{};
+  OrderedNode* flagsOpSrc{};
+  OrderedNode* flagsOpDestSigned{};
+  OrderedNode* flagsOpSrcSigned{};
 
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock{false};
