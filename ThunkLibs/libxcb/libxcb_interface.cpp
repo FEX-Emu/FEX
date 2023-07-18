@@ -52,7 +52,7 @@ template<> struct fex_gen_config<xcb_connect> : fexgen::custom_guest_entrypoint 
 template<> struct fex_gen_config<xcb_connect_to_display_with_auth_info> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<xcb_generate_id> {};
 
-#if XCB_VERSION_MAJOR >= 1 && XCB_VERSION_MINOR >= 4 && XCB_VERSION_PATCH >= 0
+#if XCB_VERSION_MAJOR >= 1 && XCB_VERSION_MINOR >= 14 && XCB_VERSION_PATCH >= 0
 template<> struct fex_gen_config<xcb_total_read> {};
 template<> struct fex_gen_config<xcb_total_written> {};
 #endif
