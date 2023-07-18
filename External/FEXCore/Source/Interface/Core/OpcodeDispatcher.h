@@ -835,8 +835,6 @@ public:
 private:
   bool DecodeFailure{false};
   bool NeedsBlockEnd{false};
-  FEXCore::IR::IROp_IRHeader *Current_Header{};
-  OrderedNode *Current_HeaderNode{};
 
   void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask);
 
