@@ -80,13 +80,6 @@ public:
   // Used during new op bringup
   bool ShouldDump {false};
 
-  struct JumpTargetInfo {
-    OrderedNode* BlockEntry;
-    bool HaveEmitted;
-  };
-
-  fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
-
   OrderedNode* GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
     LOGMAN_THROW_A_FMT(it != JumpTargets.end(), "Couldn't find block generated for 0x{:x}", RIP);
@@ -835,6 +828,12 @@ public:
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 
 private:
+  struct JumpTargetInfo {
+    OrderedNode* BlockEntry;
+    bool HaveEmitted;
+  };
+
+  fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock{false};
   bool DecodeFailure{false};
   bool NeedsBlockEnd{false};
