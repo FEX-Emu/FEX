@@ -61,8 +61,6 @@ public:
     TYPE_RDRAND,
   };
 
-  FEXCore::Context::ContextImpl *CTX{};
-
   // Used during new op bringup
   bool ShouldDump {false};
 
@@ -825,6 +823,8 @@ private:
     OrderedNode* BlockEntry;
     bool HaveEmitted;
   };
+
+  FEXCore::Context::ContextImpl *CTX{};
 
   SelectionFlag flagsOp{};
   uint8_t flagsOpSize{};
