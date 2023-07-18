@@ -4140,3 +4140,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 248)),
                    "st1d {z30.d}, p6, [z31.d, #248]");
 }
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Unsized Stores") {
+  TEST_SINGLE(str(PReg::p6, XReg::x29, 0), "str p6, [x29]");
+  TEST_SINGLE(str(PReg::p6, XReg::x29, -256), "str p6, [x29, #-256, mul vl]");
+  TEST_SINGLE(str(PReg::p6, XReg::x29, 255), "str p6, [x29, #255, mul vl]");
+
+  TEST_SINGLE(str(ZReg::z30, XReg::x29, 0), "str z30, [x29]");
+  TEST_SINGLE(str(ZReg::z30, XReg::x29, -256), "str z30, [x29, #-256, mul vl]");
+  TEST_SINGLE(str(ZReg::z30, XReg::x29, 255), "str z30, [x29, #255, mul vl]");
+}
