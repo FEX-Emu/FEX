@@ -2645,13 +2645,11 @@ public:
   }
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
-  void ldr(PRegister pt, XRegister rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
-    SVEUnsizedContiguous(0b11, 0b000, Imm & 0b1'1111'1111, pt, rn);
+  void ldr(PRegister pt, XRegister rn, int32_t imm = 0) {
+    SVEUnsizedLoadStoreContiguous(0b0, imm, ZRegister{pt.Idx()}, rn, false);
   }
-  void ldr(ZRegister zt, XRegister rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -256 && Imm <= 255, "Immediate offset too large");
-    SVEUnsizedContiguous(0b11, 0b010, Imm & 0b1'1111'1111, PRegister{zt.Idx()}, rn);
+  void ldr(ZRegister zt, XRegister rn, int32_t imm = 0) {
+    SVEUnsizedLoadStoreContiguous(0b1, imm, zt, rn, false);
   }
 
   // SVE 32-bit gather prefetch (scalar plus 32-bit scaled offsets)
@@ -3232,9 +3230,13 @@ public:
   // XXX:
 
   // SVE Memory - Contiguous Store and Unsized Contiguous
-  // XXX: STR (predicate)
-  // XXX: STR (vector)
-  //
+  void str(PRegister pt, XRegister rn, int32_t imm = 0) {
+    SVEUnsizedLoadStoreContiguous(0b0, imm, ZRegister{pt.Idx()}, rn, true);
+  }
+  void str(ZRegister zt, XRegister rn, int32_t imm = 0) {
+    SVEUnsizedLoadStoreContiguous(0b1, imm, zt, rn, true);
+  }
+
   // SVE contiguous store (scalar plus scalar)
   template<FEXCore::ARMEmitter::SubRegSize size>
   void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
@@ -4229,15 +4231,23 @@ private:
     SVEGatherScatterVectorPlusImm(esize, msize, zt, pg, mem_op, true, false, true);
   }
 
-  void SVEUnsizedContiguous(uint32_t op0, uint32_t op2, uint32_t imm9, PRegister pt, Register rn) {
-    uint32_t Instr = 0b1000'0100'0000'0000'0000'0000'0000'0000;
+  void SVEUnsizedLoadStoreContiguous(uint32_t op2, int32_t imm, ZRegister zt, Register rn, bool is_store) {
+    LOGMAN_THROW_AA_FMT(imm >= -256 && imm <= 255,
+                        "Immediate offset ({}) too large. Must be within [-256, 255].", imm);
 
-    Instr |= op0 << 23;
+    const auto imm9 = static_cast<uint32_t>(imm) & 0b1'1111'1111;
+
+    uint32_t Instr = 0b1000'0101'1000'0000'0000'0000'0000'0000;
+
+    if (is_store) {
+      Instr |= 0x60000000U;
+    }
+
     Instr |= (imm9 >> 3) << 16;
-    Instr |= op2 << 13;
+    Instr |= op2 << 14;
     Instr |= (imm9 & 0b111) << 10;
     Instr |= rn.Idx() << 5;
-    Instr |= pt.Idx();
+    Instr |= zt.Idx();
 
     dc32(Instr);
   }
