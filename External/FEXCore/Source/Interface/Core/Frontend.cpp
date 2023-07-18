@@ -242,6 +242,9 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand *Operand, X86Tables::ModR
     {
       // If we have a VSIB byte (as opposed to SIB), then the index register is a vector.
       const bool IsIndexVector = (DecodeInst->TableInfo->Flags & InstFlags::FLAGS_VEX_VSIB) != 0;
+      if (IsIndexVector) {
+        DecodeInst->Flags |= X86Tables::DecodeFlags::FLAG_VSIB_BYTE;
+      }
 
       const uint8_t IndexREX = (DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_X) != 0 ? 1 : 0;
       const uint8_t BaseREX = (DecodeInst->Flags & DecodeFlags::FLAG_REX_XGPR_B) != 0 ? 1 : 0;
