@@ -28,13 +28,6 @@ class OpDispatchBuilder final : public IREmitter {
 friend class FEXCore::IR::Pass;
 friend class FEXCore::IR::PassManager;
 
-enum class SelectionFlag {
-  Nothing,  // must rely on x86 flags
-  CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
-  AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
-  FCMP,     // flags were set by a ucomis* / comis*
-};
-
 public:
   enum class FlagsGenerationType : uint8_t {
     TYPE_NONE,
@@ -67,25 +60,6 @@ public:
     TYPE_BITSELECT,
     TYPE_RDRAND,
   };
-
-  SelectionFlag flagsOp{};
-  uint8_t flagsOpSize{};
-  OrderedNode* flagsOpDest{};
-  OrderedNode* flagsOpSrc{};
-  OrderedNode* flagsOpDestSigned{};
-  OrderedNode* flagsOpSrcSigned{};
-
-  FEXCore::Context::ContextImpl *CTX{};
-
-  // Used during new op bringup
-  bool ShouldDump {false};
-
-  struct JumpTargetInfo {
-    OrderedNode* BlockEntry;
-    bool HaveEmitted;
-  };
-
-  fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
 
   OrderedNode* GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
@@ -181,6 +155,12 @@ public:
   void ResetDecodeFailure() { NeedsBlockEnd = DecodeFailure = false; }
   bool HadDecodeFailure() const { return DecodeFailure; }
   bool NeedsBlockEnder() const { return NeedsBlockEnd; }
+
+  void ResetHandledLock() { HandledLock = false; }
+  bool HasHandledLock() const { return HandledLock; }
+
+  void SetDumpIR(bool DumpIR) { ShouldDump = DumpIR; }
+  bool ShouldDumpIR() const { return ShouldDump; }
 
   void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   void Finalize();
@@ -831,12 +811,34 @@ public:
 
   void SetMultiblock(bool _Multiblock) { Multiblock = _Multiblock; }
 
-  bool HandledLock = false;
 private:
+  enum class SelectionFlag {
+    Nothing,  // must rely on x86 flags
+    CMP,      // flags were set by a CMP between flagsOpDest/flagsOpDestSigned and flagsOpSrc/flagsOpSrcSigned with flagsOpSize size
+    AND,      // flags were set by an AND/TEST, flagsOpDest contains the resulting value of flagsOpSize size
+    FCMP,     // flags were set by a ucomis* / comis*
+  };
+
+  struct JumpTargetInfo {
+    OrderedNode* BlockEntry;
+    bool HaveEmitted;
+  };
+
+  FEXCore::Context::ContextImpl *CTX{};
+
+  SelectionFlag flagsOp{};
+  uint8_t flagsOpSize{};
+  OrderedNode* flagsOpDest{};
+  OrderedNode* flagsOpSrc{};
+  OrderedNode* flagsOpDestSigned{};
+  OrderedNode* flagsOpSrcSigned{};
+
+  fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
+  bool HandledLock{false};
   bool DecodeFailure{false};
   bool NeedsBlockEnd{false};
-  FEXCore::IR::IROp_IRHeader *Current_Header{};
-  OrderedNode *Current_HeaderNode{};
+  // Used during new op bringup
+  bool ShouldDump{false};
 
   void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask);
 
