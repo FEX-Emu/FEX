@@ -61,9 +61,6 @@ public:
     TYPE_RDRAND,
   };
 
-  // Used during new op bringup
-  bool ShouldDump {false};
-
   OrderedNode* GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
     LOGMAN_THROW_A_FMT(it != JumpTargets.end(), "Couldn't find block generated for 0x{:x}", RIP);
@@ -161,6 +158,9 @@ public:
 
   void ResetHandledLock() { HandledLock = false; }
   bool HasHandledLock() const { return HandledLock; }
+
+  void SetDumpIR(bool DumpIR) { ShouldDump = DumpIR; }
+  bool ShouldDumpIR() const { return ShouldDump; }
 
   void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
   void Finalize();
@@ -837,6 +837,8 @@ private:
   bool HandledLock{false};
   bool DecodeFailure{false};
   bool NeedsBlockEnd{false};
+  // Used during new op bringup
+  bool ShouldDump{false};
 
   void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, bool RequiresMask);
 

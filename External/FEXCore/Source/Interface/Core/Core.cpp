@@ -920,7 +920,7 @@ namespace FEXCore::Context {
 
     IR::IREmitter *IREmitter = Thread->OpDispatcher.get();
 
-    auto ShouldDump = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDump;
+    auto ShouldDump = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDumpIR();
     // Debug
     {
       if (ShouldDump) {
