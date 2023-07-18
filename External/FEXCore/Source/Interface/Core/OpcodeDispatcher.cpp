@@ -4905,8 +4905,19 @@ OrderedNode *OpDispatchBuilder::LoadSource_WithOpSize(FEXCore::IR::RegisterClass
     LoadableType = true;
   }
   else if (Operand.IsSIB()) {
-    OrderedNode *Tmp {};
-    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID) {
+    const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+    OrderedNode *Tmp{};
+
+    // NOTE: VSIB cannot have the index * scale portion calculated ahead of time,
+    //       since the index in this case is a vector. So, we can't just apply the scale
+    //       to it, since this needs to be applied to each element in the index register
+    //       after said element has been sign extended. So, we pass this through for the
+    //       instruction implementation to handle.
+    //
+    //       What we do handle though, is the applying the displacement value to
+    //       the base register (if a base register is provided), since this is a
+    //       part of the address calculation that can be done ahead of time.
+    if (Operand.Data.SIB.Index != FEXCore::X86State::REG_INVALID && !IsVSIB) {
       Tmp = LoadGPRRegister(Operand.Data.SIB.Index, GPRSize);
 
       if (Operand.Data.SIB.Scale != 1) {
