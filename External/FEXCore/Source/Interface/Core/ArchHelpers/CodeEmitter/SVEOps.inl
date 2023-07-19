@@ -841,25 +841,20 @@ public:
 
   // SVE Bitwise Logical - Unpredicated
   // SVE bitwise logical operations (unpredicated)
-  void and_(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b00, zm, zn, zd);
+  void and_(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b00, zm, zn, zd);
   }
-  void orr(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b01, zm, zn, zd);
+  void orr(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b01, zm, zn, zd);
   }
-  void mov(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b01, zn, zn, zd);
+  void mov(ZRegister zd, ZRegister zn) {
+    SVEBitwiseLogicalUnpredicated(0b01, zn, zn, zd);
   }
-  void eor(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b10, zm, zn, zd);
+  void eor(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b10, zm, zn, zd);
   }
-  void bic(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b11, zm, zn, zd);
+  void bic(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b11, zm, zn, zd);
   }
 
   // SVE2 bitwise ternary operations
@@ -3564,8 +3559,8 @@ private:
   }
 
   // SVE bitwise logical operations (unpredicated)
-  void SVEBitwiseLogicalUnpredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEBitwiseLogicalUnpredicated(uint32_t opc, ZRegister zm, ZRegister zn, ZRegister zd) {
+    uint32_t Instr = 0b0000'0100'0010'0000'0011'0000'0000'0000;
 
     Instr |= opc << 22;
     Instr |= zm.Idx() << 16;
