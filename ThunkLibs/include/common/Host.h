@@ -16,23 +16,17 @@ $end_info$
 //
 // Note these are statically linked into the FEX executable. The linker hence
 // doesn't know about them when linking thunk libraries. This issue is avoided
-// by declaring the functions as weak symbols. Their implementation in this
-// file serves as a panicking fallback if matching symbols are not found.
+// by declaring the functions as weak symbols.
 namespace FEXCore {
   struct HostToGuestTrampolinePtr;
 
   __attribute__((weak))
   HostToGuestTrampolinePtr*
-  MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
-    fprintf(stderr, "Failed to load %s from FEX executable\n", __FUNCTION__);
-    std::abort();
-  }
+  MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker);
+
   __attribute__((weak))
   HostToGuestTrampolinePtr*
-  FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr*, void* HostPacker) {
-    fprintf(stderr, "Failed to load %s from FEX executable\n", __FUNCTION__);
-    std::abort();
-  }
+  FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr*, void* HostPacker);
 }
 
 template<typename Fn>
