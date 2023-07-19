@@ -46,6 +46,9 @@
       ]
     },
     "xcb": {
+      "Depends": [
+        "X11"
+      ],
       "Library": "libxcb-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/libxcb.so",
