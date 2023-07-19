@@ -783,59 +783,59 @@ public:
 
   // SVE Integer Unary Arithmetic - Predicated
   // SVE integer unary operations (predicated)
-  void sxtb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
+  void sxtb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
     SVEIntegerUnaryPredicated(0b10, 0b000, size, pg, zn, zd);
   }
-  void uxtb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
+  void uxtb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
     SVEIntegerUnaryPredicated(0b10, 0b001, size, pg, zn, zd);
   }
-  void sxth(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
+  void sxth(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
     SVEIntegerUnaryPredicated(0b10, 0b010, size, pg, zn, zd);
   }
-  void uxth(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
+  void uxth(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
     SVEIntegerUnaryPredicated(0b10, 0b011, size, pg, zn, zd);
   }
-  void sxtw(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
+  void sxtw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit, "Invalid subregsize size");
     SVEIntegerUnaryPredicated(0b10, 0b100, size, pg, zn, zd);
   }
-  void uxtw(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
+  void uxtw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit, "Invalid subregsize size");
     SVEIntegerUnaryPredicated(0b10, 0b101, size, pg, zn, zd);
   }
-  void abs(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void abs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b10, 0b110, size, pg, zn, zd);
   }
-  void neg(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void neg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b10, 0b111, size, pg, zn, zd);
   }
 
   // SVE bitwise unary operations (predicated)
-  void cls(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void cls(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b11, 0b000, size, pg, zn, zd);
   }
-  void clz(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void clz(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b11, 0b001, size, pg, zn, zd);
   }
-  void cnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void cnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b11, 0b010, size, pg, zn, zd);
   }
-  void cnot(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void cnot(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b11, 0b011, size, pg, zn, zd);
   }
-  void fabs(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+  void fabs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Invalid size");
     SVEIntegerUnaryPredicated(0b11, 0b100, size, pg, zn, zd);
   }
-  void fneg(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
+  void fneg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Invalid size");
     SVEIntegerUnaryPredicated(0b11, 0b101, size, pg, zn, zd);
   }
-  void not_(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void not_(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEIntegerUnaryPredicated(0b11, 0b110, size, pg, zn, zd);
   }
 
