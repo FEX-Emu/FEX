@@ -56,6 +56,7 @@ enum X86Reg : uint32_t {
  * @{ */
 enum X86RegLocation : uint32_t {
   RFLAG_CF_LOC    = 0,
+  RFLAG_RESERVED_LOC = 1, // Reserved Bit, Read-as-1
   RFLAG_PF_LOC    = 2,
   RFLAG_AF_LOC    = 4,
   RFLAG_ZF_LOC    = 6,

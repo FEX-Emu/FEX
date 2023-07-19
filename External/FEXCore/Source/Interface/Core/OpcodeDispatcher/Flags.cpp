@@ -63,7 +63,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Original = _Constant(2);
+  OrderedNode *Original = _Constant((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask ? 2 : 0);
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
     const auto FlagOffset = FlagOffsets[i];
     if (!((1U << FlagOffset) & FlagsMask)) {
