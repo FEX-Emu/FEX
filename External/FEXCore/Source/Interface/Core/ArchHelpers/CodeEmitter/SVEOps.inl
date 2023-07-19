@@ -2386,7 +2386,18 @@ public:
   }
 
   // SVE floating-point convert precision
-  // XXX:
+  void fcvt(SubRegSize to, SubRegSize from, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFPConvertPrecision(to, from, zd, pg, zn);
+  }
+  void fcvtx(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    uint32_t Instr = 0b0110'0101'0000'1010'1010'0000'0000'0000;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
   // SVE floating-point unary operations
   void frecpx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
@@ -3790,6 +3801,64 @@ private:
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
     Instr |= i1 << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPConvertPrecision(SubRegSize to, SubRegSize from, ZRegister zd, PRegister pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(to != from, "to and from sizes cannot be the same.");
+    LOGMAN_THROW_A_FMT(to != SubRegSize::i8Bit && to != SubRegSize::i128Bit &&
+                       from != SubRegSize::i8Bit && from != SubRegSize::i128Bit,
+                       "Can't use 8-bit or 128-bit element size");
+
+    // Encodings for the to and from sizes can get a little funky
+    // depending on what is being converted to/from.
+    const uint32_t op = [&] {
+      switch (from) {
+      case SubRegSize::i16Bit: {
+        switch (to) {
+        case SubRegSize::i32Bit:
+          return 0x00810000U;
+        case SubRegSize::i64Bit:
+          return 0x00C10000U;
+        default:
+          return UINT32_MAX;
+        }
+        }
+
+      case SubRegSize::i32Bit: {
+        switch (to) {
+        case SubRegSize::i16Bit:
+          return 0x00800000U;
+        case SubRegSize::i64Bit:
+          return 0x00C30000U;
+        default:
+          return UINT32_MAX;
+        }
+      }
+
+      case SubRegSize::i64Bit: {
+        switch (to) {
+        case SubRegSize::i16Bit:
+          return 0x00C00000U;
+        case SubRegSize::i32Bit:
+          return 0x00C20000U;
+        default:
+          return UINT32_MAX;
+        }
+      }
+
+      default:
+        return UINT32_MAX;
+      }
+    }();
+    LOGMAN_THROW_A_FMT(op != UINT32_MAX, "Invalid conversion op value: {}", op);
+
+    uint32_t Instr = 0b0110'0101'0000'1000'1010'0000'0000'0000;
+    Instr |= op;
+    Instr |= pg.Idx() << 10;
+    Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }

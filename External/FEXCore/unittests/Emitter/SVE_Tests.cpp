@@ -3809,7 +3809,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point round to in
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert precision") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fcvt(SubRegSize::i16Bit, SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.h, p6/m, z29.s");
+  TEST_SINGLE(fcvt(SubRegSize::i16Bit, SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.h, p6/m, z29.d");
+
+  TEST_SINGLE(fcvt(SubRegSize::i32Bit, SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.s, p6/m, z29.h");
+  TEST_SINGLE(fcvt(SubRegSize::i32Bit, SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.s, p6/m, z29.d");
+
+  TEST_SINGLE(fcvt(SubRegSize::i64Bit, SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.d, p6/m, z29.h");
+  TEST_SINGLE(fcvt(SubRegSize::i64Bit, SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvt z30.d, p6/m, z29.s");
+
+  TEST_SINGLE(fcvtx(ZReg::z30, PReg::p6.Merging(), ZReg::z29), "fcvtx z30.s, p6/m, z29.d");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point unary operations") {
