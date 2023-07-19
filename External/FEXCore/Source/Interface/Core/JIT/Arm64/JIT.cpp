@@ -1098,6 +1098,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   }
   PendingTargetLabel = nullptr;
 
+  // CodeSize not including the tail data.
+  const uint64_t CodeOnlySize = GetCursorAddress<uint8_t *>() - CodeData.BlockBegin;
+
   // Add the JitCodeTail
   auto JITBlockTailLocation = GetCursorAddress<uint8_t *>();
   auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
@@ -1136,10 +1139,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
 
   JITBlockTail->Size = CodeData.Size;
 
-  ClearICache(CodeData.BlockBegin, CodeData.Size);
+  ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
 #ifdef VIXL_DISASSEMBLER
-  const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
+  const auto DisasmEnd = reinterpret_cast<const vixl::aarch64::Instruction*>(JITBlockTailLocation);
   Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
 #endif
 
