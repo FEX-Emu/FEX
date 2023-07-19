@@ -911,6 +911,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE bitwise logical operations
   TEST_SINGLE(mov(ZReg::z30, ZReg::z29), "mov z30.d, z29.d");
   TEST_SINGLE(eor(ZReg::z30, ZReg::z29, ZReg::z28), "eor z30.d, z29.d, z28.d");
   TEST_SINGLE(bic(ZReg::z30, ZReg::z29, ZReg::z28), "bic z30.d, z29.d, z28.d");
+
+  TEST_SINGLE(xar(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 1),  "xar z30.b, z30.b, z29.b, #1");
+  TEST_SINGLE(xar(SubRegSize::i8Bit,  ZReg::z30, ZReg::z29, 8),  "xar z30.b, z30.b, z29.b, #8");
+  TEST_SINGLE(xar(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 1),  "xar z30.h, z30.h, z29.h, #1");
+  TEST_SINGLE(xar(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, 16), "xar z30.h, z30.h, z29.h, #16");
+  TEST_SINGLE(xar(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 1),  "xar z30.s, z30.s, z29.s, #1");
+  TEST_SINGLE(xar(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, 32), "xar z30.s, z30.s, z29.s, #32");
+  TEST_SINGLE(xar(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 1),  "xar z30.d, z30.d, z29.d, #1");
+  TEST_SINGLE(xar(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, 64), "xar z30.d, z30.d, z29.d, #64");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 bitwise ternary operations") {
   TEST_SINGLE(eor3(ZReg::z30, ZReg::z30, ZReg::z28, ZReg::z29), "eor3 z30.d, z30.d, z28.d, z29.d");
