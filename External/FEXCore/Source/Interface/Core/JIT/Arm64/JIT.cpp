@@ -549,7 +549,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     FEXCore::ARMEmitter::Emitter::ClearICache((void*)branch, 24);
 
     // Add de-linking handler
-    Context::ContextImpl::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [branch, LinkerAddress]{
       FEXCore::ARMEmitter::Emitter emit((uint8_t*)(branch), 24);
       FEXCore::ARMEmitter::ForwardLabel l_BranchHost;
       emit.ldr(FEXCore::ARMEmitter::XReg::x0, &l_BranchHost);
@@ -563,7 +563,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Fram
     record[0] = HostCode;
 
     // Add de-linking handler
-    Context::ContextImpl::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+    Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
       record[0] = LinkerAddress;
     });
   }
