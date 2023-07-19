@@ -251,6 +251,20 @@
           "Set this in an application configuration for injecting in to only specific applications.",
           "\tNote: If x86/x86_64 libSegFault.so isn't installed then this option won't work."
         ]
+      },
+      "Disassemble": {
+        "Type": "strenum",
+        "Default": "FEXCore::Config::Disassemble::OFF",
+        "Enums": {
+          "DISPATCHER": "dispatcher",
+          "BLOCKS": "blocks"
+        },
+        "Desc": [
+          "Allows controlling of the vixl disassembler.",
+          "\toff: No disassembly will be output",
+          "\tdispatcher: Will enable disassembly of the JIT dispatcher loop",
+          "\tblocks: Will enable disassembly of the translated instruction code blocks"
+        ]
       }
     },
     "Logging": {

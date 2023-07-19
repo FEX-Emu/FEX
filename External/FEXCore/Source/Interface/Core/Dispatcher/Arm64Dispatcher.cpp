@@ -503,8 +503,10 @@ void Arm64Dispatcher::EmitDispatcher() {
   }
 
 #ifdef VIXL_DISASSEMBLER
-  const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
-  Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
+  if (Disassemble() & FEXCore::Config::Disassemble::DISPATCHER) {
+    const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
+    Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
+  }
 #endif
 }
 

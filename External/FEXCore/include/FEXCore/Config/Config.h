@@ -2,12 +2,16 @@
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/EnumOperators.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/list.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 
+#include <charconv>
 #include <optional>
 #include <stdint.h>
 
@@ -52,6 +56,9 @@ namespace Handler {
 #include <FEXCore/Config/ConfigValues.inl>
   };
 
+#define ENUMDEFINES
+#include <FEXCore/Config/ConfigOptions.inl>
+
   enum ConfigCore {
     CONFIG_INTERPRETER,
     CONFIG_IRJIT,
@@ -82,6 +89,42 @@ namespace Handler {
     LAYER_ENVIRONMENT,
     LAYER_TOP,
   };
+
+  template<typename PairTypes>
+  static inline fextl::string EnumParser(PairTypes const &EnumPairs, std::string_view const View) {
+    uint64_t EnumMask{};
+    auto Results = std::from_chars(View.data(), View.data() + View.size(), EnumMask);
+    if (Results.ec == std::errc()) {
+      // If the data is a valid number, just pass it through.
+      return View.data();
+    }
+
+    auto Begin = 0;
+    auto End = View.find_first_of(',');
+    std::string_view Option = View.substr(Begin, End);
+    while (Option.size() != 0) {
+      auto EnumValue = std::find_if(EnumPairs.begin(), EnumPairs.end(),
+        [Option](const DisassembleConfigPair &Value) -> bool {
+          return Value.first == Option;
+        });
+
+      if (EnumValue == EnumPairs.end()) {
+        LogMan::Msg::IFmt("Skipping Unknown option: {}", Option);
+      }
+      else {
+        EnumMask |= FEXCore::ToUnderlying(EnumValue->second);
+      }
+
+      if (End == std::string::npos) {
+        break;
+      }
+      Begin = End + 1;
+      End = View.find_first_of(',', Begin);
+      Option = View.substr(Begin, End);
+    }
+
+    return fextl::fmt::format("{}", EnumMask);
+  }
 
 namespace DefaultValues {
 #define P(x) x

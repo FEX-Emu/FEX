@@ -27,7 +27,9 @@ def print_header():
 #ifndef OPT_STRARRAY
 #define OPT_STRARRAY(group, enum, json, default) OPT_BASE(fextl::string, group, enum, json, default)
 #endif
-
+#ifndef OPT_STRENUM
+#define OPT_STRENUM(group, enum, json, default) OPT_BASE(uint64_t, group, enum, json, default)
+#endif
 '''
     output_file.write(header)
 
@@ -40,6 +42,7 @@ def print_tail():
 #undef OPT_UINT64
 #undef OPT_STR
 #undef OPT_STRARRAY
+#undef OPT_STRENUM
 '''
     output_file.write(tail)
 
@@ -127,12 +130,13 @@ def print_man_options(options):
                 short = op_vals["ShortArg"]
 
             default = op_vals["Default"]
+            value_type = op_vals["Type"]
 
             # Textual default rather than enum based
             if ("TextDefault" in op_vals):
                 default = op_vals["TextDefault"]
 
-            if (op_vals["Type"] == "str" or op_vals["Type"] == "strarray"):
+            if (value_type == "str" or value_type == "strarray" or value_type == "strenum"):
                 # Wrap the string argument in quotes
                 default = "'" + default + "'"
             print_man_option(
@@ -141,6 +145,12 @@ def print_man_options(options):
                 op_vals["Desc"],
                 default
             )
+            if (value_type == "strenum"):
+                Enums = op_vals["Enums"]
+                output_man.write("\\fBAvailable Options:\\fR\n")
+                for enum_op_key, enum_op_vals in Enums.items():
+                    output_man.write("{}, ".format(enum_op_vals))
+                output_man.write("\n")
 
     output_man.write(".El\n")
 
@@ -150,12 +160,13 @@ def print_man_environment(options):
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():
             default = op_vals["Default"]
+            value_type = op_vals["Type"]
 
             # Textual default rather than enum based
             if ("TextDefault" in op_vals):
                 default = op_vals["TextDefault"]
 
-            if (op_vals["Type"] == "str" or op_vals["Type"] == "strarray"):
+            if (value_type == "str" or value_type == "strarray" or value_type == "strenum"):
                 # Wrap the string argument in quotes
                 default = "'" + default + "'"
             print_man_env_option(
@@ -164,6 +175,13 @@ def print_man_environment(options):
                 default,
                 False
             )
+
+            if (value_type == "strenum"):
+                Enums = op_vals["Enums"]
+                output_man.write("\\fBAvailable Options:\\fR\n")
+                for enum_op_key, enum_op_vals in Enums.items():
+                    output_man.write("{}, ".format(enum_op_vals))
+                output_man.write("\n")
 
     print_man_environment_tail()
     output_man.write(".El\n")
@@ -334,7 +352,7 @@ def print_argloader_options(options):
         for op_key, op_vals in group_vals.items():
             default = op_vals["Default"]
 
-            if (op_vals["Type"] == "str" or op_vals["Type"] == "strarray"):
+            if (op_vals["Type"] == "str" or op_vals["Type"] == "strarray" or op_vals["Type"] == "strenum"):
                 # Wrap the string argument in quotes
                 default = "\"" + default + "\""
 
@@ -382,7 +400,10 @@ def print_parse_argloader_options(options):
                 # boolean values need a decimal specifier. Otherwise fmt prints strings.
                 conversion_func = "fextl::fmt::format(\"{:d}\", "
 
-            if (value_type == "strarray"):
+            if (value_type == "strenum"):
+                output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
+                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key))
+            elif (value_type == "strarray"):
                 # these need a bit more help
                 output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
                 output_argloader.write("\tfor (auto iter = Array.begin(); iter != Array.end(); ++iter) {\n")
@@ -407,11 +428,52 @@ def print_parse_envloader_options(options):
 
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():
+            value_type = op_vals["Type"]
+            if (value_type == "strenum"):
+                output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
+                output_argloader.write("Value = FEXCore::Config::EnumParser(FEXCore::Config::{}_EnumPairs, Value);\n".format(op_key, op_key))
+                output_argloader.write("}\n")
+
             if ("ArgumentHandler" in op_vals):
                 conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
                 output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
                 output_argloader.write("Value = {0}(Value);\n".format(conversion_func))
                 output_argloader.write("}\n")
+    output_argloader.write("#endif\n")
+
+def print_parse_enum_options(options):
+    output_argloader.write("#ifdef ENUMDEFINES\n")
+    output_argloader.write("#undef ENUMDEFINES\n")
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            if (op_vals["Type"] == "strenum"):
+                output_argloader.write("enum {} : uint64_t {{\n".format(op_key))
+                Enums = op_vals["Enums"]
+                i = 0
+                # Always have an OFF.
+                output_argloader.write("\tOFF = 0,\n")
+                for enum_op_key, enum_op_vals in Enums.items():
+                    output_argloader.write("\t{} = 1ULL << {},\n".format(enum_op_key.upper(), i))
+                    i += 1
+
+                output_argloader.write("};\n")
+
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            if (op_vals["Type"] == "strenum"):
+                Enums = op_vals["Enums"]
+
+                output_argloader.write("using {}ConfigPair = std::pair<std::string_view, FEXCore::Config::{}>;\n".format(op_key, op_key))
+                output_argloader.write("constexpr static std::array<{}ConfigPair, {}> {}_EnumPairs = {{{{\n".format(op_key, len(Enums) + 1, op_key))
+                i = 0
+                # Always have an OFF.
+                output_argloader.write("\t{{ \"off\", FEXCore::Config::{}::OFF }},\n".format(op_key))
+                for enum_op_key, enum_op_vals in Enums.items():
+                    output_argloader.write("\t{{ \"{}\", FEXCore::Config::{}::{} }},\n".format(enum_op_vals, op_key, enum_op_key.upper()))
+                    i += 1
+
+                output_argloader.write("}};\n")
+
     output_argloader.write("#endif\n")
 
 def check_for_duplicate_options(options):
@@ -491,5 +553,8 @@ print_parse_argloader_options(options);
 
 # Generate environment loader code
 print_parse_envloader_options(options);
+
+# Generate enum variable options
+print_parse_enum_options(options);
 
 output_argloader.close()

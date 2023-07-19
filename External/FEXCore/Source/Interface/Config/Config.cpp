@@ -1,5 +1,6 @@
 #include "Common/StringConv.h"
 #include "Common/StringUtils.h"
+#include "FEXCore/Utils/EnumUtils.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
@@ -37,6 +38,7 @@ namespace DefaultValues {
 #define OPT_BASE(type, group, enum, json, default) const P(type) P(enum) = P(default);
 #define OPT_STR(group, enum, json, default) const std::string_view P(enum) = P(default);
 #define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
+#define OPT_STRENUM(group, enum, json, default) const uint64_t P(enum) = FEXCore::ToUnderlying(P(default));
 #include <FEXCore/Config/ConfigValues.inl>
 }
 
