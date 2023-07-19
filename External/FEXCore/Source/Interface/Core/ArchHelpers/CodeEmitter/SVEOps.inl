@@ -857,6 +857,20 @@ public:
     SVEBitwiseLogicalUnpredicated(0b11, zm, zn, zd);
   }
 
+  void xar(SubRegSize size, ZRegister zd, ZRegister zm, uint32_t rotate) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Element size cannot be 128-bit.");
+
+    const auto [tszh, tszl, imm3] = EncodeSVEShiftImmediate(size, rotate);
+
+    uint32_t Inst = 0b0000'0100'0010'0000'0011'0100'0000'0000;
+    Inst |= tszh << 22;
+    Inst |= tszl << 19;
+    Inst |= imm3 << 16;
+    Inst |= zm.Idx() << 5;
+    Inst |= zd.Idx();
+    dc32(Inst);
+  }
+
   // SVE2 bitwise ternary operations
   void eor3(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
     LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
