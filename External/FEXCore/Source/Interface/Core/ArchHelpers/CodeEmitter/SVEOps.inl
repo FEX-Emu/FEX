@@ -2150,7 +2150,6 @@ public:
     SVE2BitwiseShiftAndInsert(size, 0b1, zda, zn, shift);
   }
 
-
   // SVE2 integer absolute difference and accumulate
   void saba(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
     SVE2IntegerAbsDiffAndAccumulate(size, 0b0, zda, zn, zm);
@@ -3834,34 +3833,7 @@ private:
   void SVE2BitwiseShiftRightAndAccumulate(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, uint32_t shift) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Element size cannot be 128-bit");
 
-    const auto ElementSize = SubRegSizeInBits(size);
-
-    LOGMAN_THROW_A_FMT(shift > 0 && shift <= ElementSize, "Incorrect right shift: {}", shift);
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = (2 * ElementSize) - shift;
-
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i64Bit) {
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
+    const auto [tszh, tszl, imm3] = EncodeSVEShiftImmediate(size, shift);
 
     uint32_t Instr = 0b0100'0101'0000'0000'1110'0000'0000'0000;
     Instr |= tszh << 22;
@@ -3876,39 +3848,8 @@ private:
   void SVE2BitwiseShiftAndInsert(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t shift) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Element size cannot be 128-bit");
 
-    const auto ElementSize = SubRegSizeInBits(size);
     const bool IsLeftShift = opc != 0;
-    if (IsLeftShift) {
-      LOGMAN_THROW_A_FMT(shift >= 0 && shift < ElementSize, "Incorrect left shift: {}", shift);
-    } else {
-      LOGMAN_THROW_A_FMT(shift > 0 && shift <= ElementSize, "Incorrect right shift: {}", shift);
-    }
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = IsLeftShift ? shift
-                                              :(2 * ElementSize) - shift;
-
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i64Bit) {
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
+    const auto [tszh, tszl, imm3] = EncodeSVEShiftImmediate(size, shift, IsLeftShift);
 
     uint32_t Instr = 0b0100'0101'0000'0000'1111'0000'0000'0000;
     Instr |= tszh << 22;
@@ -3924,23 +3865,19 @@ private:
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
                        "Can't use 8-bit or 128-bit element size");
 
-    const auto Underlying = FEXCore::ToUnderlying(size);
-    const auto ElementSize = SubRegSizeInBits(static_cast<SubRegSize>(Underlying - 1));
-
-    LOGMAN_THROW_A_FMT(shift >= 0 && shift < ElementSize,
-                       "Shift must be within 0-{}", ElementSize - 1);
+    // The size provided in is the size to expand to (e.g. 16-bit means a long shift
+    // expanding from 8-bit) so we just need to subtract the size by 1 so that our
+    // encoding helper will perform the proper encoding.
+    const auto size_minus_1 = SubRegSize{FEXCore::ToUnderlying(size) - 1};
+    const auto encoded = EncodeSVEShiftImmediate(size_minus_1, shift, true);
 
     uint32_t Instr = 0b0100'0101'0000'0000'1010'0000'0000'0000;
+    Instr |= encoded.tszh << 22;
+    Instr |= encoded.tszl << 19;
     Instr |= shift << 16;
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
-    if (size == SubRegSize::i64Bit) {
-      Instr |= 1U << 22;
-    } else {
-      Instr |= (1U << 19) << (Underlying - 1);
-    }
-
     dc32(Instr);
   }
 
@@ -4334,48 +4271,15 @@ private:
     dc32(Instr);
   }
 
-    void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
+  void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
-    const auto ElementSize = SubRegSizeInBits(size);
     const bool IsLeftShift = L != 0;
-    if (IsLeftShift) {
-      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
-    } else {
-      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
-    }
+    const auto [tszh, tszl, imm3] = EncodeSVEShiftImmediate(size, Shift, IsLeftShift);
 
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = IsLeftShift ? Shift
-                                              : (2 * ElementSize) - Shift;
-
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i64Bit) {
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
-    
-    constexpr uint32_t Op = 0b0000'0100'0000'0000'100 << 13;
-    uint32_t Instr = Op;
-
+    uint32_t Instr = 0b0000'0100'0000'0000'1000'0000'0000'0000;
     Instr |= tszh << 22;
     Instr |= opc << 18;
     Instr |= L << 17;
@@ -4390,39 +4294,8 @@ private:
   void SVEBitWiseShiftImmediateUnpred(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t Shift) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
-    const auto ElementSize = SubRegSizeInBits(size);
     const bool IsLeftShift = opc == 0b11;
-    if (IsLeftShift) {
-      LOGMAN_THROW_A_FMT(Shift >= 0 && Shift < ElementSize, "Incorrect left shift: {}", Shift);
-    } else {
-      LOGMAN_THROW_A_FMT(Shift > 0 && Shift <= ElementSize, "Incorrect right shift: {}", Shift);
-    }
-
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = IsLeftShift ? Shift
-                                              : (2 * ElementSize) - Shift;
-
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0b00;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0b00;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 0b01;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i64Bit) {
-      tszh = 0b10 | ((InverseShift >> 5) & 1);
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
+    const auto [tszh, tszl, imm3] = EncodeSVEShiftImmediate(size, Shift, IsLeftShift);
 
     uint32_t Instr = 0b0000'0100'0010'0000'1001'0000'0000'0000;
     Instr |= tszh << 22;
@@ -4484,26 +4357,13 @@ private:
   void SVE2SaturatingExtractNarrow(SubRegSize size, uint32_t opc, uint32_t T, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
 
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    if (size == SubRegSize::i8Bit) {
-      tszh = 0;
-      tszl = 0b01;
-    } else if (size == SubRegSize::i16Bit) {
-      tszh = 0;
-      tszl = 0b10;
-    } else if (size == SubRegSize::i32Bit) {
-      tszh = 1;
-      tszl = 0b00;
-    } else {
-      FEX_UNREACHABLE;
-    }
+    // While not necessarily a left shift, we can piggyback off its
+    // encoding behavior to encode the tszh and tszl bits.
+    const auto encoded = EncodeSVEShiftImmediate(size, 0, true);
 
-    constexpr uint32_t Op = 0b0100'0101'0010'0000'010 << 13;
-
-    uint32_t Instr = Op;
-    Instr |= tszh << 22;
-    Instr |= tszl << 19;
+    uint32_t Instr = 0b0100'0101'0010'0000'0100'0000'0000'0000;
+    Instr |= encoded.tszh << 22;
+    Instr |= encoded.tszl << 19;
     Instr |= opc << 11;
     Instr |= T << 10;
     Instr |= zn.Idx() << 5;
@@ -4514,32 +4374,9 @@ private:
   void SVE2BitwiseShiftRightNarrow(SubRegSize size, uint32_t shift, uint32_t opc, uint32_t U, uint32_t R, uint32_t T, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit element size");
 
-    uint32_t tszh = 0;
-    uint32_t tszl = 0;
-    uint32_t imm3 = 0;
-    const uint32_t InverseShift = (2 * SubRegSizeInBits(size)) - shift;
-    if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 8, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b01;
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 16, "Incorrect shift");
-      tszh = 0;
-      tszl = 0b10 | ((InverseShift >> 3) & 0b1);
-      imm3 = InverseShift & 0b111;
-    } else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(shift > 0 && shift <= 32, "Incorrect shift");
-      tszh = 1;
-      tszl = (InverseShift >> 3) & 0b11;
-      imm3 = InverseShift & 0b111;
-    } else {
-      FEX_UNREACHABLE;
-    }
+    const auto [tszh, tszl, imm3] = EncodeSVEShiftImmediate(size, shift);
 
-    constexpr uint32_t Op = 0b0100'0101'0010'0000'00 << 14;
-
-    uint32_t Instr = Op;
+    uint32_t Instr = 0b0100'0101'0010'0000'0000'0000'0000'0000;
     Instr |= tszh << 22;
     Instr |= tszl << 19;
     Instr |= imm3 << 16;
@@ -4892,4 +4729,53 @@ private:
     }
 
     SVE2WideningIntegerArithmetic(0b11, SUT, size, zd, zn, zm);
+  }
+
+  struct SVEEncodedImmShift {
+    uint32_t tszh;
+    uint32_t tszl;
+    uint32_t imm3;
+  };
+  // Helper for encoding shift immediates that make use of the tszh:tszl and imm3 field.
+  static constexpr SVEEncodedImmShift EncodeSVEShiftImmediate(SubRegSize size, uint32_t shift, bool is_left_shift = false) {
+    const uint32_t element_size = SubRegSizeInBits(size);
+
+    if (is_left_shift) {
+      LOGMAN_THROW_A_FMT(shift >= 0 && shift < element_size,
+                         "Invalid left shift value ({}). Must be within [0, {}]", shift, element_size - 1);
+    } else {
+      LOGMAN_THROW_A_FMT(shift > 0 && shift <= element_size,
+                         "Invalid right shift value ({}). Must be within [1, {}]", shift, element_size);
+    }
+
+    const uint32_t inverted_shift = is_left_shift ? shift
+                                                  : (2 * element_size) - shift;
+    if (size == SubRegSize::i8Bit) {
+      return {
+        .tszh = 0b00,
+        .tszl = 0b01,
+        .imm3 = inverted_shift & 0b111,
+      };
+    } else if (size == SubRegSize::i16Bit) {
+      return {
+        .tszh = 0b00,
+        .tszl = 0b10 | ((inverted_shift >> 3) & 0b1),
+        .imm3 = inverted_shift & 0b111,
+      };
+    } else if (size == SubRegSize::i32Bit) {
+      return {
+        .tszh = 0b01,
+        .tszl = (inverted_shift >> 3) & 0b11,
+        .imm3 = inverted_shift & 0b111,
+      };
+    } else if (size == SubRegSize::i64Bit) {
+      return {
+        .tszh = 0b10 | ((inverted_shift >> 5) & 1),
+        .tszl = (inverted_shift >> 3) & 0b11,
+        .imm3 = inverted_shift & 0b111,
+      };
+    } else {
+      FEX_UNREACHABLE;
+      return {};
+    }
   }
