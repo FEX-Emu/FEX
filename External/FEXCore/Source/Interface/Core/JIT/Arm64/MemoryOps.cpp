@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/MathUtils.h>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
@@ -676,10 +677,7 @@ DEF_OP(LoadContextIndexed) {
     case 2:
     case 4:
     case 8: {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Stride);
-      mul(ARMEmitter::Size::i64Bit, TMP1, Index, TMP1);
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, TMP1.R());
-
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
       const auto Dst = GetReg(Node);
       switch (OpSize) {
       case 1:
@@ -716,10 +714,7 @@ DEF_OP(LoadContextIndexed) {
     case 8:
     case 16:
     case 32: {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Stride);
-      mul(ARMEmitter::Size::i64Bit, TMP1, Index, TMP1);
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, TMP1.R());
-
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
       const auto Dst = GetVReg(Node);
 
       switch (OpSize) {
@@ -774,9 +769,7 @@ DEF_OP(StoreContextIndexed) {
     case 2:
     case 4:
     case 8: {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Stride);
-      mul(ARMEmitter::Size::i64Bit, TMP1, Index, TMP1);
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, TMP1.R());
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
       case 1:
@@ -815,9 +808,7 @@ DEF_OP(StoreContextIndexed) {
     case 8:
     case 16:
     case 32: {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Op->Stride);
-      mul(ARMEmitter::Size::i64Bit, TMP1, Index, TMP1);
-      add(ARMEmitter::Size::i64Bit, TMP1, STATE, TMP1.R());
+      add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, FEXCore::ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
       case 1:
@@ -1085,9 +1076,9 @@ FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t
     } else {
       auto RegOffset = GetReg(Offset.ID());
       switch(OffsetType.Val) {
-        case IR::MEM_OFFSET_SXTX.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTX, (int)std::log2(OffsetScale) );
-        case IR::MEM_OFFSET_UXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::UXTW, (int)std::log2(OffsetScale) );
-        case IR::MEM_OFFSET_SXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTW, (int)std::log2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTX.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTX, FEXCore::ilog2(OffsetScale) );
+        case IR::MEM_OFFSET_UXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::UXTW, FEXCore::ilog2(OffsetScale) );
+        case IR::MEM_OFFSET_SXTW.Val: return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale) );
         default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType.Val); break;
       }
     }
