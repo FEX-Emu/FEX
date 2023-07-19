@@ -783,107 +783,78 @@ public:
 
   // SVE Integer Unary Arithmetic - Predicated
   // SVE integer unary operations (predicated)
-  void sxtb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b000, size, pg, zn, zd);
+  void sxtb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEIntegerUnaryPredicated(0b10, 0b000, size, pg, zn, zd);
   }
-  void uxtb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b001, size, pg, zn, zd);
+  void uxtb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEIntegerUnaryPredicated(0b10, 0b001, size, pg, zn, zd);
   }
-  void sxth(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b010, size, pg, zn, zd);
+  void sxth(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEIntegerUnaryPredicated(0b10, 0b010, size, pg, zn, zd);
   }
-  void uxth(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b011, size, pg, zn, zd);
+  void uxth(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEIntegerUnaryPredicated(0b10, 0b011, size, pg, zn, zd);
   }
-  void sxtw(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b100, size, pg, zn, zd);
+  void sxtw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEIntegerUnaryPredicated(0b10, 0b100, size, pg, zn, zd);
   }
-  void uxtw(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid subregsize size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b101, size, pg, zn, zd);
+  void uxtw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit, "Invalid subregsize size");
+    SVEIntegerUnaryPredicated(0b10, 0b101, size, pg, zn, zd);
   }
-  void abs(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b110, size, pg, zn, zd);
+  void abs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b10, 0b110, size, pg, zn, zd);
   }
-  void neg(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'101 << 13;;
-    SVEIntegerUnaryPredicated(Op, 0b111, size, pg, zn, zd);
+  void neg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b10, 0b111, size, pg, zn, zd);
   }
 
   // SVE bitwise unary operations (predicated)
-  void cls(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b000, size, pg, zn, zd);
+  void cls(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b11, 0b000, size, pg, zn, zd);
   }
-  void clz(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b001, size, pg, zn, zd);
+  void clz(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b11, 0b001, size, pg, zn, zd);
   }
-  void cnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b010, size, pg, zn, zd);
+  void cnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b11, 0b010, size, pg, zn, zd);
   }
-  void cnot(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b011, size, pg, zn, zd);
+  void cnot(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b11, 0b011, size, pg, zn, zd);
   }
-  void fabs(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b100, size, pg, zn, zd);
+  void fabs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    SVEIntegerUnaryPredicated(0b11, 0b100, size, pg, zn, zd);
   }
-  void fneg(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b101, size, pg, zn, zd);
+  void fneg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    SVEIntegerUnaryPredicated(0b11, 0b101, size, pg, zn, zd);
   }
-  void not_(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'101 << 13;
-    SVEIntegerUnaryPredicated(Op, 0b110, size, pg, zn, zd);
+  void not_(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEIntegerUnaryPredicated(0b11, 0b110, size, pg, zn, zd);
   }
 
   // SVE Bitwise Logical - Unpredicated
   // SVE bitwise logical operations (unpredicated)
-  void and_(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b00, zm, zn, zd);
+  void and_(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b00, zm, zn, zd);
   }
-  void orr(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b01, zm, zn, zd);
+  void orr(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b01, zm, zn, zd);
   }
-  void mov(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b01, zn, zn, zd);
+  void mov(ZRegister zd, ZRegister zn) {
+    SVEBitwiseLogicalUnpredicated(0b01, zn, zn, zd);
   }
-  void eor(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b10, zm, zn, zd);
+  void eor(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b10, zm, zn, zd);
   }
-  void bic(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'00 << 10;
-    SVEBitwiseLogicalUnpredicated(Op, 0b11, zm, zn, zd);
+  void bic(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEBitwiseLogicalUnpredicated(0b11, zm, zn, zd);
   }
 
   // SVE2 bitwise ternary operations
@@ -3572,10 +3543,14 @@ private:
   }
 
   // SVE bitwise unary operations (predicated)
-  void SVEIntegerUnaryPredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEIntegerUnaryPredicated(uint32_t op0, uint32_t opc, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+
+    uint32_t Instr = 0b0000'0100'0000'0000'1010'0000'0000'0000;
 
     Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= op0 << 19;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
@@ -3584,8 +3559,8 @@ private:
   }
 
   // SVE bitwise logical operations (unpredicated)
-  void SVEBitwiseLogicalUnpredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEBitwiseLogicalUnpredicated(uint32_t opc, ZRegister zm, ZRegister zn, ZRegister zd) {
+    uint32_t Instr = 0b0000'0100'0010'0000'0011'0000'0000'0000;
 
     Instr |= opc << 22;
     Instr |= zm.Idx() << 16;
