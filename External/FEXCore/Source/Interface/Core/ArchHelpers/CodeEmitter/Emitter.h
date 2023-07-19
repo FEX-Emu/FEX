@@ -511,6 +511,20 @@ namespace FEXCore::ARMEmitter {
     SVE_ALL   = 0b11111,
   };
 
+  // Used with SVE FP immediate arithmetic instructions
+  enum class SVEFAddSubImm : uint32_t {
+    _0_5,
+    _1_0,
+  };
+  enum class SVEFMulImm : uint32_t {
+    _0_5,
+    _2_0,
+  };
+  enum class SVEFMaxMinImm : uint32_t {
+    _0_0,
+    _1_0,
+  };
+
   /* This `BackwardLabel` struct used for retaining a location for PC-Relative instructions.
    * This is specifically a label for a target that is logically `below` an instruction that uses it.
    * Which means that a branch would jump backwards.

@@ -3093,7 +3093,61 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic 
   //TEST_SINGLE(fdivr(SubRegSize::i128Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z30, ZReg::z28), "fdivr z30.q, p6/m, z30.q, z28.q");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic with immediate (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(fadd(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),   "fadd z30.h, p6/m, z30.h, #0.5");
+  TEST_SINGLE(fadd(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),   "fadd z30.s, p6/m, z30.s, #0.5");
+  TEST_SINGLE(fadd(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),   "fadd z30.d, p6/m, z30.d, #0.5");
+  TEST_SINGLE(fadd(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),   "fadd z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fadd(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),   "fadd z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fadd(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),   "fadd z30.d, p6/m, z30.d, #1.0");
+
+  TEST_SINGLE(fsub(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),   "fsub z30.h, p6/m, z30.h, #0.5");
+  TEST_SINGLE(fsub(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),   "fsub z30.s, p6/m, z30.s, #0.5");
+  TEST_SINGLE(fsub(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),   "fsub z30.d, p6/m, z30.d, #0.5");
+  TEST_SINGLE(fsub(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),   "fsub z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fsub(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),   "fsub z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fsub(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),   "fsub z30.d, p6/m, z30.d, #1.0");
+
+  TEST_SINGLE(fsubr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),  "fsubr z30.h, p6/m, z30.h, #0.5");
+  TEST_SINGLE(fsubr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),  "fsubr z30.s, p6/m, z30.s, #0.5");
+  TEST_SINGLE(fsubr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_0_5),  "fsubr z30.d, p6/m, z30.d, #0.5");
+  TEST_SINGLE(fsubr(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),  "fsubr z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fsubr(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),  "fsubr z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fsubr(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFAddSubImm::_1_0),  "fsubr z30.d, p6/m, z30.d, #1.0");
+
+  TEST_SINGLE(fmul(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMulImm::_0_5),      "fmul z30.h, p6/m, z30.h, #0.5");
+  TEST_SINGLE(fmul(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMulImm::_0_5),      "fmul z30.s, p6/m, z30.s, #0.5");
+  TEST_SINGLE(fmul(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMulImm::_0_5),      "fmul z30.d, p6/m, z30.d, #0.5");
+  TEST_SINGLE(fmul(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMulImm::_2_0),      "fmul z30.h, p6/m, z30.h, #2.0");
+  TEST_SINGLE(fmul(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMulImm::_2_0),      "fmul z30.s, p6/m, z30.s, #2.0");
+  TEST_SINGLE(fmul(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMulImm::_2_0),      "fmul z30.d, p6/m, z30.d, #2.0");
+
+  TEST_SINGLE(fmaxnm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0), "fmaxnm z30.h, p6/m, z30.h, #0.0");
+  TEST_SINGLE(fmaxnm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0), "fmaxnm z30.s, p6/m, z30.s, #0.0");
+  TEST_SINGLE(fmaxnm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0), "fmaxnm z30.d, p6/m, z30.d, #0.0");
+  TEST_SINGLE(fmaxnm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0), "fmaxnm z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fmaxnm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0), "fmaxnm z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fmaxnm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0), "fmaxnm z30.d, p6/m, z30.d, #1.0");
+
+  TEST_SINGLE(fminnm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0), "fminnm z30.h, p6/m, z30.h, #0.0");
+  TEST_SINGLE(fminnm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0), "fminnm z30.s, p6/m, z30.s, #0.0");
+  TEST_SINGLE(fminnm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0), "fminnm z30.d, p6/m, z30.d, #0.0");
+  TEST_SINGLE(fminnm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0), "fminnm z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fminnm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0), "fminnm z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fminnm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0), "fminnm z30.d, p6/m, z30.d, #1.0");
+
+  TEST_SINGLE(fmax(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0),   "fmax z30.h, p6/m, z30.h, #0.0");
+  TEST_SINGLE(fmax(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0),   "fmax z30.s, p6/m, z30.s, #0.0");
+  TEST_SINGLE(fmax(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0),   "fmax z30.d, p6/m, z30.d, #0.0");
+  TEST_SINGLE(fmax(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0),   "fmax z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fmax(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0),   "fmax z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fmax(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0),   "fmax z30.d, p6/m, z30.d, #1.0");
+
+  TEST_SINGLE(fmin(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0),   "fmin z30.h, p6/m, z30.h, #0.0");
+  TEST_SINGLE(fmin(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0),   "fmin z30.s, p6/m, z30.s, #0.0");
+  TEST_SINGLE(fmin(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_0_0),   "fmin z30.d, p6/m, z30.d, #0.0");
+  TEST_SINGLE(fmin(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0),   "fmin z30.h, p6/m, z30.h, #1.0");
+  TEST_SINGLE(fmin(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0),   "fmin z30.s, p6/m, z30.s, #1.0");
+  TEST_SINGLE(fmin(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), SVEFMaxMinImm::_1_0),   "fmin z30.d, p6/m, z30.d, #1.0");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and Unsized Contiguous") {
   TEST_SINGLE(ld1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),

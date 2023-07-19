@@ -2336,7 +2336,30 @@ public:
   }
 
   // SVE floating-point arithmetic with immediate (predicated)
-  // XXX:
+  void fadd(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFAddSubImm imm) {
+    SVEFPArithWithImmediate(0b000, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fsub(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFAddSubImm imm) {
+    SVEFPArithWithImmediate(0b001, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fmul(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFMulImm imm) {
+    SVEFPArithWithImmediate(0b010, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fsubr(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFAddSubImm imm) {
+    SVEFPArithWithImmediate(0b011, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fmaxnm(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFMaxMinImm imm) {
+    SVEFPArithWithImmediate(0b100, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fminnm(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFMaxMinImm imm) {
+    SVEFPArithWithImmediate(0b101, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fmax(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFMaxMinImm imm) {
+    SVEFPArithWithImmediate(0b110, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
+  void fmin(SubRegSize size, ZRegister zd, PRegisterMerge pg, SVEFMaxMinImm imm) {
+    SVEFPArithWithImmediate(0b111, size, zd, pg, FEXCore::ToUnderlying(imm));
+  }
 
   // SVE Floating Point Unary Operations - Predicated
   // SVE floating-point round to integral value
@@ -3753,6 +3776,20 @@ private:
     Instr |= opc << 10;
     Instr |= zm.Idx() << 16;
     Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEFPArithWithImmediate(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, uint32_t i1) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
+                       "Can't use 8-bit or 128-bit element size");
+
+    uint32_t Instr = 0b0110'0101'0001'1000'1000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= i1 << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }
