@@ -384,7 +384,7 @@ static uint64_t X86JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame,
   }
 
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-  Context::ContextImpl::ThreadAddBlockLink(Thread, GuestRip, (uintptr_t)record, [record, LinkerAddress]{
+  Thread->LookupCache->AddBlockLink(GuestRip, (uintptr_t)record, [record, LinkerAddress]{
     // undo the link
     record[0] = LinkerAddress;
   });
