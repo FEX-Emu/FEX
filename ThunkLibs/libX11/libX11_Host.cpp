@@ -154,29 +154,13 @@ void *libX11_Variadic_u64(uint64_t a_0, size_t count, void **list, void *Func) {
       # Compute the number of elements excluding the terminating nullptr
       subs x10, x1, 1
 
-      b.eq .single%=
-      b.lt .no_single%=
-
-      .load_pair%=:
-      # Copy data from x12 to x11
-      ldp x1, x2, [x12], 16
-      stp x1, x2, [x11], 16
-
-      # Stored two so subtract from the count.
-      sub x10, x10, 2
-      cmp x10, 1
-      b.gt .load_pair%=
-      b.lt .no_single%=
-
       .single%=:
-      # One variable at most
-      # Load the argument from the source.
-      # Then store that and the terminating nullptr.
-      ldr x1, [x12]
-      stp x1, xzr, [x11]
-      b .top_reg_args%=
+      ldr x1, [x12], 8
+      str x1, [x11], 8
+      sub x10, x10, 1
+      cmp x10, 1
+      b.ge .single%=
 
-      .no_single%=:
       # Need to store nullptr
       str xzr, [x11]
 
