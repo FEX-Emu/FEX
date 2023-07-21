@@ -71,8 +71,11 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     }
 
     // Note that the Bfi only considers the bottom bit of the flag, the rest of
-    // the byte is allowed to be garbage. PF relies on this.
-    OrderedNode *Flag = _LoadFlag(FlagOffset);
+    // the byte is allowed to be garbage.
+    OrderedNode *Flag = FlagOffset == FEXCore::X86State::RFLAG_PF_LOC ?
+                        LoadPF() :
+                        _LoadFlag(FlagOffset);
+
     Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
   return Original;
@@ -86,6 +89,22 @@ void OpDispatchBuilder::CalculateOF_Add(uint8_t SrcSize, OrderedNode *Res, Order
   SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
 }
 
+OrderedNode *OpDispatchBuilder::LoadPF() {
+  // Read the stored byte. This is the original 8-bit result, it needs parity calculated.
+  auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
+
+  // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
+  // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
+  auto InputFPR = _VCastFromGPR(4, 4, PFByte);
+
+  // Calculate the popcount.
+  auto Count = _VPopcount(1, 1, InputFPR);
+  auto Parity = _VExtractToGPR(8, 1, Count, 0);
+
+  // Mask off the bottom bit only.
+  return _And(_Constant(1), Parity);
+}
+
 void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res) {
   // We will use the bottom bit of the popcount, set if an odd number of bits are set.
   // But the x86 parity flag is supposed to be set for an even number of bits.
@@ -93,14 +112,10 @@ void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res) {
   // output FPR.
   auto Flipped = _Xor(Res, _Constant(1));
 
-  // Cast the input to a 32-bit FPR. Logically we only need 8-bit, but that would
-  // generate unwanted an ubfx instruction. VPopcount will ignore the upper bits anyway.
-  auto InputFPR = _VCastFromGPR(4, 4, Flipped);
-
-  // Store the popcount. When reading, only the bottom bit will be used.
-  auto Count = _VPopcount(1, 1, InputFPR);
-  auto Parity = _VExtractToGPR(8, 1, Count, 0);
-  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Parity);
+  // To go from the 8-bit value to the 1-bit flag, we need a popcount. That
+  // will happen on load, on the assumption that PF is written much more often
+  // than it's read. Store the value now without the popcount.
+  SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Flipped);
 }
 
 void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {

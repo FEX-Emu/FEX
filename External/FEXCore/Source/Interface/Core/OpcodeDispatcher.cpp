@@ -914,18 +914,12 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
           Flag, ZeroConst, TrueValue, FalseValue);
       break;
     }
-    case 0xA:   // JP - Jump if PF == 1
+    case 0xA: { // JP - Jump if PF == 1
+      SrcCond = _Select(FEXCore::IR::COND_NEQ, LoadPF(), ZeroConst, TrueValue, FalseValue);
+      break;
+    }
     case 0xB: { // JNP - Jump if PF == 0
-      bool invert = OP == (0xB);
-
-      // We must only consider the bottom bit of PF, the rest is garbage.
-      // For JP, mask off the bottom bit. For JNP, mask off the bottom bit
-      // and invert it. In either case, we return true if that is nonzero.
-      auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-      auto Flag = _And(OneConst, PFByte);
-
-      SrcCond = _Select(invert ? FEXCore::IR::COND_EQ : FEXCore::IR::COND_NEQ,
-                        Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = _Select(FEXCore::IR::COND_EQ, LoadPF(), ZeroConst, TrueValue, FalseValue);
       break;
     }
     case 0xC: { // SF <> OF
