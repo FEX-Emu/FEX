@@ -28,11 +28,7 @@ bool LongDivideEliminationPass::IsZeroOp(IREmitter *IREmit, OrderedNodeWrapper A
   auto IROp = IREmit->GetOpHeader(Arg);
   uint64_t Value;
 
-  // XOR based zero
-  if (IROp->Op == OP_XOR) {
-    return IROp->Args[0] == IROp->Args[1];
-  }
-  else if (IREmit->IsValueConstant(Arg, &Value)) {
+  if (IREmit->IsValueConstant(Arg, &Value)) {
     // Zero constant based zero op
     return Value == 0;
   }
@@ -87,8 +83,7 @@ bool LongDivideEliminationPass::Run(IREmitter *IREmit) {
         else if (IROp->Op == OP_LUDIV ||
                  IROp->Op == OP_LUREM) {
           auto Op = IROp->C<IR::IROp_LUDiv>();
-          // Check upper Op to see if it came from a xor zeroing op
-          // XOR: Result = _Xor(Dest, Src);
+          // Check upper Op to see if it came from a zeroing op
           // If it does then it we only need a 64bit UDIV
           if (IsZeroOp(IREmit, Op->Upper)) {
             IREmit->SetWriteCursor(CodeNode);
