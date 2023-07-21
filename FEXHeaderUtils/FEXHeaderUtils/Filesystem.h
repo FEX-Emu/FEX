@@ -33,9 +33,11 @@ namespace FHU::Filesystem {
     return access(Path.c_str(), F_OK) == 0;
   }
 
+#ifndef _WIN32
   inline bool ExistsAt(int FD, const fextl::string &Path) {
     return faccessat(FD, Path.c_str(), F_OK, 0) == 0;
   }
+#endif
 
   enum class CreateDirectoryResult {
     CREATED,
