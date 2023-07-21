@@ -45,6 +45,10 @@ template<> struct fex_gen_type<std::remove_pointer_t<XIOErrorExitHandler>> {}; /
 
 template<> struct fex_gen_type<Bool(Display*, xReply*, char*, int, XPointer)> {}; // XDisplay::async_handlers->handler
 
+template<> struct fex_gen_type<Bool(XIM, XPointer, XPointer)> {}; // XIMProc
+template<> struct fex_gen_type<Bool(XIC, XPointer, XPointer)> {}; // XICProc
+template<> struct fex_gen_type<void(Display*, XPointer, XPointer)> {}; // XIDProc
+
 template<> struct fex_gen_type<int(XImage*)> {};                          // XImage::f.destroy_image
 template<> struct fex_gen_type<unsigned long(XImage*, int, int)> {};      // XImage::f.get_pixel
 template<> struct fex_gen_type<int(XImage*, int, int, unsigned long)> {}; // XImage::f.put_pixel
@@ -653,15 +657,15 @@ template<> struct fex_gen_config<Xutf8DrawImageString> {};
 template<> struct fex_gen_config<XOpenIM> {};
 template<> struct fex_gen_config<XCloseIM> {};
 template<> struct fex_gen_config<XGetIMValues> {
-    using uniform_va_type = void*;
+  using uniform_va_type = void*;
 };
 template<> struct fex_gen_config<XSetIMValues> {
-    using uniform_va_type = void*;
+  using uniform_va_type = void*;
 };
 template<> struct fex_gen_config<XDisplayOfIM> {};
 template<> struct fex_gen_config<XLocaleOfIM> {};
 template<> struct fex_gen_config<XCreateIC> {
-    using uniform_va_type = unsigned long;
+  using uniform_va_type = void*;
 };
 template<> struct fex_gen_config<XDestroyIC> {};
 template<> struct fex_gen_config<XSetICFocus> {};
@@ -670,11 +674,11 @@ template<> struct fex_gen_config<XwcResetIC> {};
 template<> struct fex_gen_config<XmbResetIC> {};
 template<> struct fex_gen_config<Xutf8ResetIC> {};
 template<> struct fex_gen_config<XSetICValues> {
-    using uniform_va_type = unsigned long;
+  using uniform_va_type = void*;
 };
 
 template<> struct fex_gen_config<XGetICValues> {
-    using uniform_va_type = unsigned long;
+  using uniform_va_type = void*;
 };
 
 template<> struct fex_gen_config<XIMOfIC> {};
@@ -683,11 +687,11 @@ template<> struct fex_gen_config<XmbLookupString> {};
 template<> struct fex_gen_config<XwcLookupString> {};
 template<> struct fex_gen_config<Xutf8LookupString> {};
 template<> struct fex_gen_config<XVaCreateNestedList> {
-    using uniform_va_type = void*;
+  using uniform_va_type = void*;
 };
 
-template<> struct fex_gen_config<XRegisterIMInstantiateCallback> {};
-template<> struct fex_gen_config<XUnregisterIMInstantiateCallback> {};
+template<> struct fex_gen_config<XRegisterIMInstantiateCallback> : fexgen::custom_guest_entrypoint {};
+template<> struct fex_gen_config<XUnregisterIMInstantiateCallback>  : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<XInternalConnectionNumbers> {};
 template<> struct fex_gen_config<XProcessInternalConnection> {};
 template<> struct fex_gen_config<XAddConnectionWatch> {};

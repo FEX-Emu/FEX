@@ -5,7 +5,9 @@ desc: Handles callbacks and varargs
 $end_info$
 */
 
+#include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cstdlib>
 #include <stdio.h>
 
@@ -31,299 +33,2154 @@ extern "C" {
 #include <utility>
 
 #include "thunkgen_host_libX11.inl"
+#include "X11Common.h"
 
-#ifdef _M_ARM_64
-// This Variadic asm only works for one signature
-// ({uint32_t,uint64_t} a_0, size_t count, uint64_t *list)
-//
-// Variadic ABI for AArch64 (flat uint64_t):
-// Arguments 0-7 is in registers
-// 8+ stored on to stack
-//
-// The X11 functions we are calling need an additional nullptr passed in.
-// nullptr will be at the end of the list of generated stack items when called through this.
-// We will always generate a variadic frame of `count` objects + 1 for nullptr.
-//
-// Incoming:
-// x0 = XIM
-// x1 = count
-// x2 = array of 64-bit values
-// x3 = Function to call
-//
-// Outgoing:
-// x0: Ptr
+// Walks the array of key:value pairs provided from the guest code side.
+// Finalizing any callback functions that the guest side prepared for us.
+template<typename CallbackType>
+void FinalizeIncomingCallbacks(size_t Count, void **list) {
+  assert(Count % 2 == 0 && "Incoming arguments needs to be in pairs");
+  for (size_t i = 0; i < (Count / 2); ++i) {
+    const char *Key = static_cast<const char*>(list[i * 2]);
+    void** Data = &list[i * 2 + 1];
+    if (!*Data) {
+      continue;
+    }
 
-__attribute__((naked))
-void *libX11_Variadic_u64(uint64_t a_0, size_t count, unsigned long *list, void *Func) {
-  asm volatile(R"(
-    # Move our function to x8, which will be unused
-    mov x8, x3
+    // Check if the key is a callback and needs to be modified.
+    auto KeyIt = std::find(X11::CallbackKeys.begin(), X11::CallbackKeys.end(), Key);
+    if (KeyIt == X11::CallbackKeys.end()) {
+      continue;
+    }
 
-    # Move our list to x9, which will be unused
-    mov x9, x2
-
-    # >6 means use stack callback
-    cmp x1, 6
-    b.gt .stack%=
-
-    # Setup a jump table
-    adr x10, .zero%=
-    adr x11, .jump_table%=
-    ldrb w11, [x11, x1]
-    add x10, x10, x11, lsl 2
-    br x10
-
-    .zero%=:
-      mov x1, 0
-      br x8
-
-    .one%=:
-      ldr x1, [x9, 0]
-      mov x2, #0
-      br x8
-
-    .two%=:
-      ldp x1, x2, [x9, 0]
-      mov x3, 0
-      br x8
-
-    .three%=:
-      ldp x1, x2, [x9, 0]
-      ldr x3, [x9, 16]
-      mov x4, 0
-      br x8
-
-    .four%=:
-      ldp x1, x2, [x9, 0]
-      ldp x3, x4, [x9, 16]
-      mov x5, 0
-      br x8
-
-    .five%=:
-      ldp x1, x2, [x9, 0]
-      ldp x3, x4, [x9, 16]
-      ldr x5, [x9, 32]
-      mov x6, 0
-      br x8
-
-    .six%=:
-      ldp x1, x2, [x9, 0]
-      ldp x3, x4, [x9, 16]
-      ldp x5, x6, [x9, 32]
-      mov x7, 0
-      br x8
-
-    .stack%=:
-      # Store LR and x28
-      stp x28, x30, [sp, -16]!
-
-      # x8 = <arg ptr>
-      # x0 = <arg im>
-      # x1 = <count>
-      # x9 = <list ptr>
-
-      # Stack objects
-      # Count >= 7
-      # Subtract 6 count objects
-      # Leaves us at least 1 (nullptr)
-      sub x1, x1, 6
-
-      # Round up to the nearest pair
-      and x10, x1, 1
-      add x10, x10, x1
-
-      # Multiply by eight to get the size of stack we need to create
-      lsl x10, x10, 3
-
-      # Allocate stack space
-      sub sp, sp, x10
-
-      # Store how much data we added to the stack in our callee saved register we stole
-      mov x28, x10
-
-      # Subtract one member due to nullptr ender
-      sub x10, x1, 1
-
-      # x11 - stack offset
-      mov x11, sp
-
-      # x12 - load offset
-      add x12, x9, (7 * 8)
-
-      cmp x10, 1
-      b.eq .single%=
-      b.lt .no_single%=
-
-      .load_pair%=:
-      ldp x1, x2, [x12], 16
-      stp x1, x2, [x11], 16
-      sub x10, x10, 8
-      cmp x10, 1
-      b.gt .load_pair%=
-      b.lt .no_single%=
-
-      # One variable at most
-      .single%=:
-      ldr x1, [x12]
-      stp x1, xzr, [x11]
-      b .top_reg_args%=
-
-      .no_single%=:
-      # Need to store nullptr
-      str xzr, [x11]
-
-      .top_reg_args%=:
-      ldp x1, x2, [x9, 0]
-      ldp x3, x4, [x9, 16]
-      ldp x5, x6, [x9, 32]
-      ldr x7, [x9, 48]
-
-      # Stack is setup going in to this
-      blr x8
-
-      # Move stack back
-      add sp, sp, x28
-      ldp x28, x30, [sp], 16
-      ret
-
-      .jump_table%=:
-      .byte (.zero%=  - .zero%=) >> 2
-      .byte (.one%=   - .zero%=) >> 2
-      .byte (.two%=   - .zero%=) >> 2
-      .byte (.three%= - .zero%=) >> 2
-      .byte (.four%=  - .zero%=) >> 2
-      .byte (.five%=  - .zero%=) >> 2
-      .byte (.six%=   - .zero%=) >> 2
-  )"
-  ::: "memory"
-  );
+    CallbackType *IncomingCallback = reinterpret_cast<CallbackType*>(*Data);
+    FinalizeHostTrampolineForGuestFunction(IncomingCallback->callback);
+  }
 }
 
-#endif
+_XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XICCallback>(count, list);
 
-_XIC *fexfn_impl_libX11_XCreateIC_internal(XIM a_0, size_t count, unsigned long *list) {
   switch(count) {
-    case 0: return fexldr_ptr_libX11_XCreateIC(a_0, nullptr); break;
-    case 1: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], nullptr); break;
-    case 2: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], nullptr); break;
-    case 3: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], nullptr); break;
-    case 4: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], nullptr); break;
-    case 5: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
-    case 6: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
-    case 7: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
-    case 8: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
+    case 0: return fexldr_ptr_libX11_XCreateIC(a_0, nullptr);
+      break;
+    case 1: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], nullptr);
+      break;
+    case 2: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], nullptr);
+      break;
+    case 3: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], nullptr);
+      break;
+    case 4: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], nullptr);
+      break;
+    case 5: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], nullptr);
+      break;
+    case 6: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr);
+      break;
+    case 7: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr);
+      break;
+    case 8: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr);
+      break;
+    case 9: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], nullptr);
+      break;
+    case 10: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], nullptr);
+      break;
+    case 11: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], nullptr);
+      break;
+    case 12: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], nullptr);
+      break;
+    case 13: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], nullptr);
+      break;
+    case 14: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], nullptr);
+      break;
+    case 15: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], nullptr);
+      break;
+    case 16: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15], nullptr);
+      break;
+    case 17: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], nullptr);
+      break;
+    case 18: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], nullptr);
+      break;
+    case 19: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], nullptr);
+      break;
+    case 20: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], nullptr);
+      break;
+    case 21: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], nullptr);
+      break;
+    case 22: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], nullptr);
+      break;
+    case 23: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], nullptr);
+      break;
+    case 24: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23], nullptr);
+      break;
+    case 25: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], nullptr);
+      break;
+    case 26: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], nullptr);
+      break;
+    case 27: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], nullptr);
+      break;
+    case 28: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], nullptr);
+      break;
+    case 29: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], nullptr);
+      break;
+    case 30: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], nullptr);
+      break;
+    case 31: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], nullptr);
+      break;
+    case 32: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31], nullptr);
+      break;
+    case 33: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], nullptr);
+      break;
+    case 34: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], nullptr);
+      break;
+    case 35: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], nullptr);
+      break;
+    case 36: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], nullptr);
+      break;
+    case 37: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], nullptr);
+      break;
+    case 38: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], nullptr);
+      break;
+    case 39: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], nullptr);
+      break;
+    case 40: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39], nullptr);
+      break;
+    case 41: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], nullptr);
+      break;
+    case 42: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], nullptr);
+      break;
+    case 43: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], nullptr);
+      break;
+    case 44: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], nullptr);
+      break;
+    case 45: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], nullptr);
+      break;
+    case 46: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], nullptr);
+      break;
+    case 47: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], nullptr);
+      break;
+    case 48: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47], nullptr);
+      break;
+    case 49: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], nullptr);
+      break;
+    case 50: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], nullptr);
+      break;
+    case 51: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], nullptr);
+      break;
+    case 52: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], nullptr);
+      break;
+    case 53: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], nullptr);
+      break;
+    case 54: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], nullptr);
+      break;
+    case 55: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], nullptr);
+      break;
+    case 56: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55], nullptr);
+      break;
+    case 57: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], nullptr);
+      break;
+    case 58: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], nullptr);
+      break;
+    case 59: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], nullptr);
+      break;
+    case 60: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], nullptr);
+      break;
+    case 61: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], nullptr);
+      break;
+    case 62: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], nullptr);
+      break;
+    case 63: return fexldr_ptr_libX11_XCreateIC(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], list[62], nullptr);
+      break;
     default:
-#ifdef _M_ARM_64
-      return reinterpret_cast<_XIC*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, list, reinterpret_cast<void*>(fexldr_ptr_libX11_XCreateIC)));
-#else
       fprintf(stderr, "XCreateIC_internal FAILURE\n");
       return nullptr;
-#endif
   }
 }
 
-char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
+char* fexfn_impl_libX11_XGetICValues_internal(XIC a_0, size_t count, void **list) {
   switch(count) {
-    case 0: return fexldr_ptr_libX11_XGetICValues(a_0, nullptr); break;
-    case 1: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], nullptr); break;
-    case 2: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], nullptr); break;
-    case 3: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], nullptr); break;
-    case 4: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], nullptr); break;
-    case 5: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
-    case 6: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
-    case 7: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
-    case 8: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
+    case 0: return fexldr_ptr_libX11_XGetICValues(a_0, nullptr);
+      break;
+    case 1: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], nullptr);
+      break;
+    case 2: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], nullptr);
+      break;
+    case 3: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], nullptr);
+      break;
+    case 4: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], nullptr);
+      break;
+    case 5: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr);
+      break;
+    case 6: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr);
+      break;
+    case 7: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr);
+      break;
+    case 8: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr);
+      break;
+    case 9: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], nullptr);
+      break;
+    case 10: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], nullptr);
+      break;
+    case 11: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], nullptr);
+      break;
+    case 12: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], nullptr);
+      break;
+    case 13: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], nullptr);
+      break;
+    case 14: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], nullptr);
+      break;
+    case 15: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], nullptr);
+      break;
+    case 16: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15], nullptr);
+      break;
+    case 17: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], nullptr);
+      break;
+    case 18: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], nullptr);
+      break;
+    case 19: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], nullptr);
+      break;
+    case 20: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], nullptr);
+      break;
+    case 21: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], nullptr);
+      break;
+    case 22: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], nullptr);
+      break;
+    case 23: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], nullptr);
+      break;
+    case 24: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23], nullptr);
+      break;
+    case 25: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], nullptr);
+      break;
+    case 26: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], nullptr);
+      break;
+    case 27: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], nullptr);
+      break;
+    case 28: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], nullptr);
+      break;
+    case 29: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], nullptr);
+      break;
+    case 30: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], nullptr);
+      break;
+    case 31: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], nullptr);
+      break;
+    case 32: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31], nullptr);
+      break;
+    case 33: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], nullptr);
+      break;
+    case 34: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], nullptr);
+      break;
+    case 35: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], nullptr);
+      break;
+    case 36: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], nullptr);
+      break;
+    case 37: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], nullptr);
+      break;
+    case 38: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], nullptr);
+      break;
+    case 39: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], nullptr);
+      break;
+    case 40: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39], nullptr);
+      break;
+    case 41: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], nullptr);
+      break;
+    case 42: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], nullptr);
+      break;
+    case 43: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], nullptr);
+      break;
+    case 44: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], nullptr);
+      break;
+    case 45: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], nullptr);
+      break;
+    case 46: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], nullptr);
+      break;
+    case 47: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], nullptr);
+      break;
+    case 48: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47], nullptr);
+      break;
+    case 49: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], nullptr);
+      break;
+    case 50: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], nullptr);
+      break;
+    case 51: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], nullptr);
+      break;
+    case 52: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], nullptr);
+      break;
+    case 53: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], nullptr);
+      break;
+    case 54: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], nullptr);
+      break;
+    case 55: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], nullptr);
+      break;
+    case 56: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55], nullptr);
+      break;
+    case 57: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], nullptr);
+      break;
+    case 58: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], nullptr);
+      break;
+    case 59: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], nullptr);
+      break;
+    case 60: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], nullptr);
+      break;
+    case 61: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], nullptr);
+      break;
+    case 62: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], nullptr);
+      break;
+    case 63: return fexldr_ptr_libX11_XGetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], list[62], nullptr);
+      break;
     default:
-#ifdef _M_ARM_64
-      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, list, reinterpret_cast<void*>(fexldr_ptr_libX11_XGetICValues)));
-#else
       fprintf(stderr, "XGetICValues_internal FAILURE\n");
       abort();
-#endif
   }
 }
 
-char* fexfn_impl_libX11_XSetICValues_internal(XIC a_0, size_t count, unsigned long *list) {
+char* fexfn_impl_libX11_XSetICValues_internal(XIC a_0, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XICCallback>(count, list);
+
   switch(count) {
-    case 0: return fexldr_ptr_libX11_XSetICValues(a_0, nullptr); break;
-    case 1: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], nullptr); break;
-    case 2: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], nullptr); break;
-    case 3: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], nullptr); break;
-    case 4: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], nullptr); break;
-    case 5: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
-    case 6: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
-    case 7: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
-    case 8: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
+    case 0: return fexldr_ptr_libX11_XSetICValues(a_0, nullptr);
+      break;
+    case 1: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], nullptr);
+      break;
+    case 2: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], nullptr);
+      break;
+    case 3: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], nullptr);
+      break;
+    case 4: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], nullptr);
+      break;
+    case 5: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr);
+      break;
+    case 6: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr);
+      break;
+    case 7: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr);
+      break;
+    case 8: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr);
+      break;
+    case 9: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], nullptr);
+      break;
+    case 10: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], nullptr);
+      break;
+    case 11: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], nullptr);
+      break;
+    case 12: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], nullptr);
+      break;
+    case 13: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], nullptr);
+      break;
+    case 14: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], nullptr);
+      break;
+    case 15: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], nullptr);
+      break;
+    case 16: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15], nullptr);
+      break;
+    case 17: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], nullptr);
+      break;
+    case 18: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], nullptr);
+      break;
+    case 19: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], nullptr);
+      break;
+    case 20: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], nullptr);
+      break;
+    case 21: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], nullptr);
+      break;
+    case 22: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], nullptr);
+      break;
+    case 23: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], nullptr);
+      break;
+    case 24: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23], nullptr);
+      break;
+    case 25: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], nullptr);
+      break;
+    case 26: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], nullptr);
+      break;
+    case 27: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], nullptr);
+      break;
+    case 28: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], nullptr);
+      break;
+    case 29: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], nullptr);
+      break;
+    case 30: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], nullptr);
+      break;
+    case 31: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], nullptr);
+      break;
+    case 32: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31], nullptr);
+      break;
+    case 33: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], nullptr);
+      break;
+    case 34: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], nullptr);
+      break;
+    case 35: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], nullptr);
+      break;
+    case 36: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], nullptr);
+      break;
+    case 37: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], nullptr);
+      break;
+    case 38: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], nullptr);
+      break;
+    case 39: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], nullptr);
+      break;
+    case 40: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39], nullptr);
+      break;
+    case 41: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], nullptr);
+      break;
+    case 42: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], nullptr);
+      break;
+    case 43: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], nullptr);
+      break;
+    case 44: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], nullptr);
+      break;
+    case 45: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], nullptr);
+      break;
+    case 46: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], nullptr);
+      break;
+    case 47: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], nullptr);
+      break;
+    case 48: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47], nullptr);
+      break;
+    case 49: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], nullptr);
+      break;
+    case 50: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], nullptr);
+      break;
+    case 51: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], nullptr);
+      break;
+    case 52: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], nullptr);
+      break;
+    case 53: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], nullptr);
+      break;
+    case 54: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], nullptr);
+      break;
+    case 55: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], nullptr);
+      break;
+    case 56: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55], nullptr);
+      break;
+    case 57: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], nullptr);
+      break;
+    case 58: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], nullptr);
+      break;
+    case 59: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], nullptr);
+      break;
+    case 60: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], nullptr);
+      break;
+    case 61: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], nullptr);
+      break;
+    case 62: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], nullptr);
+      break;
+    case 63: return fexldr_ptr_libX11_XSetICValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], list[62], nullptr);
+      break;
     default:
-#ifdef _M_ARM_64
-      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, list, reinterpret_cast<void*>(fexldr_ptr_libX11_XSetICValues)));
-#else
       fprintf(stderr, "XSetICValues_internal FAILURE\n");
       abort();
-#endif
   }
 }
 
 char* fexfn_impl_libX11_XGetIMValues_internal(XIM a_0, size_t count, void **list) {
   switch(count) {
-    case 0: return fexldr_ptr_libX11_XGetIMValues(a_0, nullptr); break;
-    case 1: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], nullptr); break;
-    case 2: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], nullptr); break;
-    case 3: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], nullptr); break;
-    case 4: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], nullptr); break;
-    case 5: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
-    case 6: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
-    case 7: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
-    case 8: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
+    case 0: return fexldr_ptr_libX11_XGetIMValues(a_0, nullptr);
+      break;
+    case 1: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], nullptr);
+      break;
+    case 2: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], nullptr);
+      break;
+    case 3: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], nullptr);
+      break;
+    case 4: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], nullptr);
+      break;
+    case 5: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr);
+      break;
+    case 6: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr);
+      break;
+    case 7: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr);
+      break;
+    case 8: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr);
+      break;
+    case 9: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], nullptr);
+      break;
+    case 10: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], nullptr);
+      break;
+    case 11: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], nullptr);
+      break;
+    case 12: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], nullptr);
+      break;
+    case 13: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], nullptr);
+      break;
+    case 14: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], nullptr);
+      break;
+    case 15: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], nullptr);
+      break;
+    case 16: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15], nullptr);
+      break;
+    case 17: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], nullptr);
+      break;
+    case 18: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], nullptr);
+      break;
+    case 19: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], nullptr);
+      break;
+    case 20: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], nullptr);
+      break;
+    case 21: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], nullptr);
+      break;
+    case 22: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], nullptr);
+      break;
+    case 23: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], nullptr);
+      break;
+    case 24: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23], nullptr);
+      break;
+    case 25: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], nullptr);
+      break;
+    case 26: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], nullptr);
+      break;
+    case 27: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], nullptr);
+      break;
+    case 28: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], nullptr);
+      break;
+    case 29: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], nullptr);
+      break;
+    case 30: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], nullptr);
+      break;
+    case 31: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], nullptr);
+      break;
+    case 32: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31], nullptr);
+      break;
+    case 33: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], nullptr);
+      break;
+    case 34: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], nullptr);
+      break;
+    case 35: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], nullptr);
+      break;
+    case 36: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], nullptr);
+      break;
+    case 37: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], nullptr);
+      break;
+    case 38: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], nullptr);
+      break;
+    case 39: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], nullptr);
+      break;
+    case 40: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39], nullptr);
+      break;
+    case 41: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], nullptr);
+      break;
+    case 42: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], nullptr);
+      break;
+    case 43: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], nullptr);
+      break;
+    case 44: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], nullptr);
+      break;
+    case 45: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], nullptr);
+      break;
+    case 46: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], nullptr);
+      break;
+    case 47: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], nullptr);
+      break;
+    case 48: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47], nullptr);
+      break;
+    case 49: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], nullptr);
+      break;
+    case 50: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], nullptr);
+      break;
+    case 51: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], nullptr);
+      break;
+    case 52: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], nullptr);
+      break;
+    case 53: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], nullptr);
+      break;
+    case 54: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], nullptr);
+      break;
+    case 55: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], nullptr);
+      break;
+    case 56: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55], nullptr);
+      break;
+    case 57: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], nullptr);
+      break;
+    case 58: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], nullptr);
+      break;
+    case 59: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], nullptr);
+      break;
+    case 60: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], nullptr);
+      break;
+    case 61: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], nullptr);
+      break;
+    case 62: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], nullptr);
+      break;
+    case 63: return fexldr_ptr_libX11_XGetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], list[62], nullptr);
+      break;
     default:
-#ifdef _M_ARM_64
-      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, reinterpret_cast<unsigned long *>(list), reinterpret_cast<void*>(fexldr_ptr_libX11_XGetIMValues)));
-#else
       fprintf(stderr, "XGetIMValues_internal FAILURE\n");
       abort();
-#endif
   }
 }
 
 char* fexfn_impl_libX11_XSetIMValues_internal(XIM a_0, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XIMCallback>(count, list);
+
   switch(count) {
-    case 0: return fexldr_ptr_libX11_XSetIMValues(a_0, nullptr); break;
-    case 1: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], nullptr); break;
-    case 2: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], nullptr); break;
-    case 3: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], nullptr); break;
-    case 4: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], nullptr); break;
-    case 5: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr); break;
-    case 6: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
-    case 7: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
-    case 8: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
+    case 0: return fexldr_ptr_libX11_XSetIMValues(a_0, nullptr);
+      break;
+    case 1: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], nullptr);
+      break;
+    case 2: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], nullptr);
+      break;
+    case 3: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], nullptr);
+      break;
+    case 4: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], nullptr);
+      break;
+    case 5: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], nullptr);
+      break;
+    case 6: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], nullptr);
+      break;
+    case 7: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr);
+      break;
+    case 8: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr);
+      break;
+    case 9: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], nullptr);
+      break;
+    case 10: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], nullptr);
+      break;
+    case 11: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], nullptr);
+      break;
+    case 12: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], nullptr);
+      break;
+    case 13: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], nullptr);
+      break;
+    case 14: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], nullptr);
+      break;
+    case 15: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], nullptr);
+      break;
+    case 16: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15], nullptr);
+      break;
+    case 17: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], nullptr);
+      break;
+    case 18: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], nullptr);
+      break;
+    case 19: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], nullptr);
+      break;
+    case 20: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], nullptr);
+      break;
+    case 21: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], nullptr);
+      break;
+    case 22: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], nullptr);
+      break;
+    case 23: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], nullptr);
+      break;
+    case 24: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23], nullptr);
+      break;
+    case 25: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], nullptr);
+      break;
+    case 26: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], nullptr);
+      break;
+    case 27: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], nullptr);
+      break;
+    case 28: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], nullptr);
+      break;
+    case 29: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], nullptr);
+      break;
+    case 30: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], nullptr);
+      break;
+    case 31: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], nullptr);
+      break;
+    case 32: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31], nullptr);
+      break;
+    case 33: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], nullptr);
+      break;
+    case 34: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], nullptr);
+      break;
+    case 35: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], nullptr);
+      break;
+    case 36: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], nullptr);
+      break;
+    case 37: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], nullptr);
+      break;
+    case 38: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], nullptr);
+      break;
+    case 39: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], nullptr);
+      break;
+    case 40: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39], nullptr);
+      break;
+    case 41: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], nullptr);
+      break;
+    case 42: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], nullptr);
+      break;
+    case 43: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], nullptr);
+      break;
+    case 44: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], nullptr);
+      break;
+    case 45: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], nullptr);
+      break;
+    case 46: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], nullptr);
+      break;
+    case 47: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], nullptr);
+      break;
+    case 48: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47], nullptr);
+      break;
+    case 49: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], nullptr);
+      break;
+    case 50: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], nullptr);
+      break;
+    case 51: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], nullptr);
+      break;
+    case 52: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], nullptr);
+      break;
+    case 53: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], nullptr);
+      break;
+    case 54: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], nullptr);
+      break;
+    case 55: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], nullptr);
+      break;
+    case 56: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55], nullptr);
+      break;
+    case 57: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], nullptr);
+      break;
+    case 58: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], nullptr);
+      break;
+    case 59: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], nullptr);
+      break;
+    case 60: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], nullptr);
+      break;
+    case 61: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], nullptr);
+      break;
+    case 62: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], nullptr);
+      break;
+    case 63: return fexldr_ptr_libX11_XSetIMValues(a_0, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], list[62], nullptr);
+      break;
     default:
-#ifdef _M_ARM_64
-      return reinterpret_cast<char*>(libX11_Variadic_u64(reinterpret_cast<uint64_t>(a_0), count, reinterpret_cast<unsigned long *>(list), reinterpret_cast<void*>(fexldr_ptr_libX11_XSetIMValues)));
-#else
       fprintf(stderr, "XSetIMValues_internal FAILURE\n");
       abort();
-#endif
   }
 }
 
-XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, size_t count, void** list) {
+XVaNestedList fexfn_impl_libX11_XVaCreateNestedList_internal(int unused_arg, size_t count, void **list) {
+  FinalizeIncomingCallbacks<XIMCallback>(count, list);
+
   switch(count) {
-    case 0: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, nullptr); break;
-    case 1: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], nullptr); break;
-    case 2: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], nullptr); break;
-    case 3: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], nullptr); break;
-    case 4: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], nullptr); break;
-    case 5: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], nullptr); break;
-    case 6: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], nullptr); break;
-    case 7: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr); break;
-    case 8: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr); break;
+    case 0: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, nullptr);
+      break;
+    case 1: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], nullptr);
+      break;
+    case 2: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], nullptr);
+      break;
+    case 3: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], nullptr);
+      break;
+    case 4: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], nullptr);
+      break;
+    case 5: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], nullptr);
+      break;
+    case 6: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], nullptr);
+      break;
+    case 7: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], nullptr);
+      break;
+    case 8: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7], nullptr);
+      break;
+    case 9: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], nullptr);
+      break;
+    case 10: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], nullptr);
+      break;
+    case 11: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], nullptr);
+      break;
+    case 12: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], nullptr);
+      break;
+    case 13: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], nullptr);
+      break;
+    case 14: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], nullptr);
+      break;
+    case 15: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], nullptr);
+      break;
+    case 16: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15], nullptr);
+      break;
+    case 17: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], nullptr);
+      break;
+    case 18: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], nullptr);
+      break;
+    case 19: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], nullptr);
+      break;
+    case 20: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], nullptr);
+      break;
+    case 21: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], nullptr);
+      break;
+    case 22: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], nullptr);
+      break;
+    case 23: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], nullptr);
+      break;
+    case 24: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23], nullptr);
+      break;
+    case 25: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], nullptr);
+      break;
+    case 26: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], nullptr);
+      break;
+    case 27: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], nullptr);
+      break;
+    case 28: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], nullptr);
+      break;
+    case 29: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], nullptr);
+      break;
+    case 30: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], nullptr);
+      break;
+    case 31: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], nullptr);
+      break;
+    case 32: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31], nullptr);
+      break;
+    case 33: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], nullptr);
+      break;
+    case 34: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], nullptr);
+      break;
+    case 35: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], nullptr);
+      break;
+    case 36: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], nullptr);
+      break;
+    case 37: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], nullptr);
+      break;
+    case 38: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], nullptr);
+      break;
+    case 39: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], nullptr);
+      break;
+    case 40: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39], nullptr);
+      break;
+    case 41: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], nullptr);
+      break;
+    case 42: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], nullptr);
+      break;
+    case 43: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], nullptr);
+      break;
+    case 44: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], nullptr);
+      break;
+    case 45: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], nullptr);
+      break;
+    case 46: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], nullptr);
+      break;
+    case 47: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], nullptr);
+      break;
+    case 48: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47], nullptr);
+      break;
+    case 49: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], nullptr);
+      break;
+    case 50: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], nullptr);
+      break;
+    case 51: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], nullptr);
+      break;
+    case 52: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], nullptr);
+      break;
+    case 53: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], nullptr);
+      break;
+    case 54: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], nullptr);
+      break;
+    case 55: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], nullptr);
+      break;
+    case 56: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55], nullptr);
+      break;
+    case 57: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], nullptr);
+      break;
+    case 58: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], nullptr);
+      break;
+    case 59: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], nullptr);
+      break;
+    case 60: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], nullptr);
+      break;
+    case 61: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], nullptr);
+      break;
+    case 62: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], nullptr);
+      break;
+    case 63: return fexldr_ptr_libX11_XVaCreateNestedList(unused_arg, list[0], list[1], list[2], list[3], list[4], list[5], list[6], list[7],
+      list[8], list[9], list[10], list[11], list[12], list[13], list[14], list[15],
+      list[16], list[17], list[18], list[19], list[20], list[21], list[22], list[23],
+      list[24], list[25], list[26], list[27], list[28], list[29], list[30], list[31],
+      list[32], list[33], list[34], list[35], list[36], list[37], list[38], list[39],
+      list[40], list[41], list[42], list[43], list[44], list[45], list[46], list[47],
+      list[48], list[49], list[50], list[51], list[52], list[53], list[54], list[55],
+      list[56], list[57], list[58], list[59], list[60], list[61], list[62], nullptr);
+      break;
     default:
-#ifdef _M_ARM_64
-      return reinterpret_cast<XVaNestedList>(libX11_Variadic_u64(unused_arg, count, reinterpret_cast<unsigned long *>(list), reinterpret_cast<void*>(fexldr_ptr_libX11_XVaCreateNestedList)));
-#else
       fprintf(stderr, "XVaCreateNestedList_internal FAILURE\n");
       abort();
-#endif
   }
 }
 
