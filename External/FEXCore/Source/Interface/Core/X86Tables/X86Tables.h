@@ -138,9 +138,10 @@ struct DecodedOperand {
   }
 
   union TypeUnion {
-    struct {
+    struct GPRType {
       bool HighBits;
       uint8_t GPR;
+      auto operator<=>(const GPRType&) const = default;
     } GPR;
 
     struct {
@@ -155,9 +156,10 @@ struct DecodedOperand {
       } Value;
     } RIPLiteral;
 
-    struct {
+    struct LiteralType {
       uint64_t Value;
       uint8_t Size;
+      auto operator<=>(const LiteralType&) const = default;
     } Literal;
 
     struct {
