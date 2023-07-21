@@ -251,11 +251,8 @@ def parse_ops(ops):
 
 # Print out enum values
 def print_enums():
-    if len(IROps) > 255:
-        ExitError("We have more than uint8_t ops. We have {}. Time to upgrade to uint16_t".format(len(IROps)))
-
     output_file.write("#ifdef IROP_ENUM\n")
-    output_file.write("enum IROps : uint8_t {\n")
+    output_file.write("enum IROps : uint16_t {\n")
 
     for op in IROps:
         output_file.write("\tOP_{},\n" .format(op.Name.upper()))
@@ -282,7 +279,6 @@ def print_ir_structs(defines):
     output_file.write("\tIROps Op;\n\n")
     output_file.write("\tuint8_t Size;\n")
     output_file.write("\tuint8_t ElementSize;\n")
-    output_file.write("\tuint8_t _pad;\n")
 
     output_file.write("\ttemplate<typename T>\n")
     output_file.write("\tT const* C() const { return reinterpret_cast<T const*>(Data); }\n")
