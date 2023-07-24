@@ -140,6 +140,25 @@ DEF_OP(SetRoundingMode) {
   msr(ARMEmitter::SystemRegister::FPCR, TMP1);
 }
 
+DEF_OP(GetNZCV) {
+  auto Dst = GetReg(Node);
+  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
+}
+
+DEF_OP(SetNZCV) {
+  auto Op = IROp->C<IR::IROp_SetNZCV>();
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->NZCV, &Const)) {
+    ccmp(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::r0,
+         (FEXCore::ARMEmitter::StatusFlags)((Const >> 28) & 0xf),
+         ARMEmitter::Condition::CC_NE);
+  } else {
+    auto Src = GetReg(Op->NZCV.ID());
+    msr(ARMEmitter::SystemRegister::NZCV, Src);
+  }
+}
+
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 

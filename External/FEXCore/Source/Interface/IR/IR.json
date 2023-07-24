@@ -217,6 +217,19 @@
                 ],
         "HasSideEffects": true
       },
+
+      "GPR = GetNZCV": {
+        "Desc": ["Gets the current NZCV packed flag register"
+                ],
+        "DestSize": "4"
+      },
+
+      "SetNZCV GPR:$NZCV": {
+        "Desc": ["Sets the current NZCV packed flag register"
+                ],
+        "HasSideEffects": true
+      },
+
       "Print SSA:$Value": {
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",

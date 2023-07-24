@@ -1112,6 +1112,20 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
         }
         break;
       }
+      case OP_SETNZCV:
+      {
+        auto Op = IROp->CW<IR::IROp_SetNZCV>();
+
+        uint64_t Constant{};
+        if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant)) {
+          IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Header.Args[0]));
+
+          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant));
+
+          Changed = true;
+        }
+        break;
+      }
       default:
         break;
     }

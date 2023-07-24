@@ -131,6 +131,12 @@ DEF_OP(SetRoundingMode) {
 #endif
 }
 
+DEF_OP(SetNZCV) {
+}
+
+DEF_OP(GetNZCV) {
+}
+
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
   const uint8_t OpSize = IROp->Size;

@@ -173,6 +173,8 @@ constexpr OpHandlerArray InterpreterOpHandlers = [] {
   REGISTER_OP(PRINT,                  Print);
   REGISTER_OP(GETROUNDINGMODE,        GetRoundingMode);
   REGISTER_OP(SETROUNDINGMODE,        SetRoundingMode);
+  REGISTER_OP(GETNZCV,                GetNZCV);
+  REGISTER_OP(SETNZCV,                SetNZCV);
   REGISTER_OP(INVALIDATEFLAGS,        NoOp);
   REGISTER_OP(PROCESSORID,            ProcessorID);
   REGISTER_OP(RDRAND,                 RDRAND);
