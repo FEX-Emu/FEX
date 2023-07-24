@@ -1081,6 +1081,7 @@ void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
       _Constant(1), Zero);
 
   // Set flags
+  SetNZCV(Zero);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, 0, Src));
 }
@@ -1094,6 +1095,7 @@ void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) 
       _Constant(1), Zero);
 
   // Set flags
+  SetNZCV(Zero);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(ZFResult);
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(_Bfe(1, SrcSize * 8 - 1, Src));
 }
