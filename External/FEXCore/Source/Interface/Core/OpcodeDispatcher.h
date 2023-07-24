@@ -1076,6 +1076,16 @@ private:
     CachedNZCV = Value;
   }
 
+  // If A compare B, set overflow and carry flags. Else, clear them. Sign and zero flags are
+  // undefined.
+  void SelectVC(OrderedNode *A, OrderedNode *B, uint8_t Condition) {
+    auto VCFalse = _Constant(0);
+    auto VCTrue = _Constant((1 << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC)) |
+                            (1 << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)));
+
+    SetNZCV(_Select(Condition, A, B, VCTrue, VCFalse));
+  }
+
   OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
     return _Bfi(4, 1, IndexNZCV(BitOffset), NZCV, Value);
   }

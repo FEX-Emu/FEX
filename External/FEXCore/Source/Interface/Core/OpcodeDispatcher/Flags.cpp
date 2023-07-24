@@ -477,54 +477,36 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
 
-  // PF/AF/ZF/SF
+  // PF/AF
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
   }
 
-  // CF/OF
-  {
-    // CF and OF are set if the result of the operation can't be fit in to the destination register
-    // If the value can fit then the top bits will be zero
+  // SF/ZF undefined.
+  // CF and OF are set if the result of the operation can't be fit in to the destination register
+  // If the value can fit then the top bits will be zero
 
-    auto SignBit = _Sbfe(1, SrcSize * 8 - 1, Res);
-
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, SignBit, Zero, One);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(SelectOp);
-  }
+  auto SignBit = _Sbfe(1, SrcSize * 8 - 1, Res);
+  SelectVC(High, SignBit, FEXCore::IR::COND_NEQ);
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
 
-  // AF/SF/PF/ZF
+  // AF/PF
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Zero);
   }
 
-  // CF/OF
-  {
-    // CF and OF are set if the result of the operation can't be fit in to the destination register
-    // The result register will be all zero if it can't fit due to how multiplication behaves
-
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, Zero, Zero, One);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(SelectOp);
-  }
+  // SF/ZF undefined.
+  // CF and OF are set if the result of the operation can't be fit in to the destination register
+  // The result register will be all zero if it can't fit due to how multiplication behaves
+  SelectVC(High, Zero, FEXCore::IR::COND_NEQ);
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
