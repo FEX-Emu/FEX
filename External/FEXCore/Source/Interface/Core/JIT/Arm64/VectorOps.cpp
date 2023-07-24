@@ -8,6 +8,8 @@ $end_info$
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
+#include <FEXCore/Utils/MathUtils.h>
+
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const *IROp, IR::NodeID Node)
 DEF_OP(VectorZero) {
@@ -2293,40 +2295,47 @@ DEF_OP(VInsElement) {
   const auto OpSize = IROp->Size;
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
-  const auto ElementSize = Op->Header.ElementSize;
+  const uint32_t ElementSize = Op->Header.ElementSize;
 
-  const auto DestIdx = Op->DestIdx;
-  const auto SrcIdx = Op->SrcIdx;
+  const uint32_t DestIdx = Op->DestIdx;
+  const uint32_t SrcIdx = Op->SrcIdx;
 
   const auto Dst = GetVReg(Node);
   const auto SrcVector = GetVReg(Op->SrcVector.ID());
   auto Reg = GetVReg(Op->DestVector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
+    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
+    const auto SubRegSize =
+      ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+      ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+      ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+      ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+
     // We're going to use this to create our predicate register literal.
     // On an SVE 256-bit capable system, the predicate register will be
     // 32-bit in size. We want to set up only the element corresponding
     // to the destination index, since we're going to copy over the equivalent
     // indexed element from the source vector.
-    auto Data = [ElementSize, DestIdx]() -> uint32_t {
+    const auto Data = [ElementSize, DestIdx]() -> uint32_t {
+      const auto Log2ElementSize = FEXCore::ilog2(ElementSize);
+
+      [[maybe_unused]] const auto MaxIndex = (32U >> Log2ElementSize) - 1;
+      LOGMAN_THROW_AA_FMT(DestIdx <= MaxIndex, "DestIdx ({}) out of range. Must be within [0, {}]",
+                          DestIdx, MaxIndex);
+
+      const auto ShiftAmount = DestIdx << Log2ElementSize;
+
       switch (ElementSize) {
         case 1:
-          LOGMAN_THROW_AA_FMT(DestIdx <= 31, "DestIdx out of range: {}", DestIdx);
-          return 1U << DestIdx;
         case 2:
-          LOGMAN_THROW_AA_FMT(DestIdx <= 15, "DestIdx out of range: {}", DestIdx);
-          return 1U << (DestIdx * 2);
         case 4:
-          LOGMAN_THROW_AA_FMT(DestIdx <= 7, "DestIdx out of range: {}", DestIdx);
-          return 1U << (DestIdx * 4);
         case 8:
-          LOGMAN_THROW_AA_FMT(DestIdx <= 3, "DestIdx out of range: {}", DestIdx);
-          return 1U << (DestIdx * 8);
+          return 1U << ShiftAmount;
         case 16:
-          LOGMAN_THROW_AA_FMT(DestIdx <= 1, "DestIdx out of range: {}", DestIdx);
           // Predicates can't be subdivided into the Q format, so we can just set up
           // the predicate to select the two adjacent doublewords.
-          return 0x101U << (DestIdx * 16);
+          return 0x101U << ShiftAmount;
         default:
           FEX_UNREACHABLE;
           return UINT32_MAX;
@@ -2338,13 +2347,6 @@ DEF_OP(VInsElement) {
     ARMEmitter::ForwardLabel DataLocation;
     adr(TMP1, &DataLocation);
     ldr(Predicate, TMP1);
-
-    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-    const auto SubRegSize =
-      ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-      ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-      ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-      ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
 
     // Broadcast our source value across a temporary,
     // then combine with the destination.
@@ -2365,17 +2367,17 @@ DEF_OP(VInsElement) {
     Bind(&PastConstant);
   }
   else {
-    if (Dst.Idx() != Reg.Idx()) {
-      mov(VTMP1.Q(), Reg.Q());
-      Reg = VTMP1;
-    }
-
     LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
     const auto SubRegSize =
       ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+    if (Dst.Idx() != Reg.Idx()) {
+      mov(VTMP1.Q(), Reg.Q());
+      Reg = VTMP1;
+    }
 
     ins(SubRegSize, Reg.Q(), DestIdx, SrcVector.Q(), SrcIdx);
 
