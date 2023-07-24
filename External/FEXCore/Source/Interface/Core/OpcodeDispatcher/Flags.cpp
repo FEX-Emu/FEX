@@ -529,7 +529,6 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
   // AF
   {
     // Undefined
@@ -537,26 +536,11 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
   }
 
-  // SF
-  {
-    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
-  }
-
   CalculatePF(Res);
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
-
-  // CF/OF
-  {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
-  }
+  // CF/OF zero.
+  // ZF/SF normal.
+  SetNZCV(TestNZ(SrcSize, Res));
 }
 
 #define COND_FLAG_SET(cond, flag, newflag) \

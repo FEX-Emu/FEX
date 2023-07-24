@@ -1080,6 +1080,12 @@ private:
     return _Bfi(4, 1, IndexNZCV(BitOffset), NZCV, Value);
   }
 
+  // Test a value with zero, returning an appropriate NZ flag mask.
+  OrderedNode *TestNZ(uint8_t SrcSize, OrderedNode *A) {
+    uint64_t mask = (SrcSize == 8) ? ~0ull : ((1ull << (SrcSize * 8)) - 1);
+    return _Test(A, _Constant(mask));
+  }
+
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
     flagsOp = SelectionFlag::Nothing;
 
