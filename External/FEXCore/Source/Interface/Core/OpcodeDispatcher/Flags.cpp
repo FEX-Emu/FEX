@@ -349,20 +349,10 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
   }
 
-  // SF
-  {
-    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
-  }
-
   CalculatePF(Res);
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
+  // SF/ZF
+  auto NZCV = TestNZ(SrcSize, Res);
 
   // CF
   // Unsigned
@@ -370,7 +360,7 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     auto SelectOpLT = _Select(FEXCore::IR::COND_UGT, Res, Src1, One, Zero);
     auto SelectOpLE = _Select(FEXCore::IR::COND_UGE, Res, Src1, One, Zero);
     auto SelectCF   = _Select(FEXCore::IR::COND_EQ, CF, One, SelectOpLE, SelectOpLT);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectCF);
+    NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_CF_LOC, SelectCF);
   }
 
   // OF
@@ -380,8 +370,10 @@ void OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, OrderedNode *Res, Or
     auto XorOp2 = _Xor(Res, Src1);
     OrderedNode *AndOp1 = _And(XorOp1, XorOp2);
     AndOp1 = _Bfe(1, SrcSize * 8 - 1, AndOp1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(AndOp1);
+    NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_OF_LOC, AndOp1);
   }
+
+  SetNZCV(NZCV);
 }
 
 void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
@@ -395,28 +387,21 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(AFRes);
   }
 
-  // SF
-  {
-    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
-  }
-
   CalculatePF(Res);
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
+  // SF/ZF
+  auto NZCV = TestNZ(SrcSize, Res);
 
   // CF
   if (UpdateCF) {
     auto SelectOp = _Select(FEXCore::IR::COND_ULT,
         Src1, Src2, One, Zero);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
+    NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_CF_LOC, SelectOp);
+  } else {
+    NZCV = PreserveNZCV(NZCV, FEXCore::X86State::RFLAG_CF_LOC);
   }
+
   // OF
   {
     auto XorOp1 = _Xor(Src1, Src2);
@@ -425,8 +410,10 @@ void OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, OrderedNode *Res, Or
 
     FinalAnd = _Bfe(1, SrcSize * 8 - 1, FinalAnd);
 
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(FinalAnd);
+    NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_OF_LOC, FinalAnd);
   }
+
+  SetNZCV(NZCV);
 }
 
 void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, bool UpdateCF) {
