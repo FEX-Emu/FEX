@@ -703,13 +703,6 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   if (Shift == 0) return;
 
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  // CF
-  {
-    // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, Shift-1, Src1));
-  }
 
   CalculatePF(Res);
 
@@ -720,26 +713,23 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
   }
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  // ZF/SF
+  auto NZCV = TestNZ(SrcSize, Res);
+
+  // CF
+  // Extract the last bit shifted in to CF
+  NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_CF_LOC, _Bfe(1, Shift-1, Src1));
+
+  // OF
+  // Only defined when Shift is 1 else undefined
+  // Only is set if the top bit was set to 1 when shifted
+  // So it is set to same value as SF
+  // TestNZ already zeroed, so only worry about preserving.
+  if (Shift != 1) {
+    NZCV = PreserveNZCV(NZCV, FEXCore::X86State::RFLAG_OF_LOC);
   }
 
-  // SF
-  {
-    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignBitOp);
-
-    // OF
-    // Only defined when Shift is 1 else undefined
-    // Only is set if the top bit was set to 1 when shifted
-    // So it is set to same value as SF
-    if (Shift == 1) {
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
-    }
-  }
+  SetNZCV(NZCV);
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
