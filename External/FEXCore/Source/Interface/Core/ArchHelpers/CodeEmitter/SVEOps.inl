@@ -19,24 +19,7 @@
 public:
   // SVE encodings
   void dup(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Index) {
-    const auto size_bytes = 1U << FEXCore::ToUnderlying(size);
-    const auto log2_size_bytes = FEXCore::ilog2(size_bytes);
-
-    // We can index up to 512-bit registers with dup
-    [[maybe_unused]] const auto max_index = (64U >> log2_size_bytes) - 1;
-    LOGMAN_THROW_AA_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].",
-                        Index, max_index);
-
-    // imm2:tsz make up a 7 bit wide field, with each increasing element size
-    // restricting the range of those 7 bits (e.g. B: tsz=xxxx1, H: tsz=xxx10,
-    // S: tsz=xx100. etc). So we can just use the log2 of the element size
-    // to construct the overall immediate and form both imm2 and tsz.
-    const auto imm7 = (Index << (log2_size_bytes + 1)) | (1U << log2_size_bytes);
-    const auto imm2 = imm7 >> 5;
-    const auto tsz = imm7 & 0b11111;
-
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'0010'00 << 10;
-    SVEDup(Op, imm2, tsz, zn, zd);
+    SVEDupIndexed(size, zn, zd, Index);
   }
 
   // TODO: TBL
@@ -3396,9 +3379,24 @@ public:
   }
 private:
   // SVE encodings
-  void SVEDup(uint32_t Op, uint32_t imm2, uint32_t tsz, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEDupIndexed(SubRegSize size, ZRegister zn, ZRegister zd, uint32_t Index) {
+    const auto size_bytes = 1U << FEXCore::ToUnderlying(size);
+    const auto log2_size_bytes = FEXCore::ilog2(size_bytes);
 
+    // We can index up to 512-bit registers with dup
+    [[maybe_unused]] const auto max_index = (64U >> log2_size_bytes) - 1;
+    LOGMAN_THROW_AA_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].",
+                        Index, max_index);
+
+    // imm2:tsz make up a 7 bit wide field, with each increasing element size
+    // restricting the range of those 7 bits (e.g. B: tsz=xxxx1, H: tsz=xxx10,
+    // S: tsz=xx100. etc). So we can just use the log2 of the element size
+    // to construct the overall immediate and form both imm2 and tsz.
+    const auto imm7 = (Index << (log2_size_bytes + 1)) | (1U << log2_size_bytes);
+    const auto imm2 = imm7 >> 5;
+    const auto tsz = imm7 & 0b11111;
+
+    uint32_t Instr = 0b0000'0101'0010'0000'0010'0000'0000'0000;
     Instr |= imm2 << 22;
     Instr |= tsz << 16;
     Instr |= Encode_rn(zn);
