@@ -758,6 +758,12 @@ bool RCLSE::RedundantStoreLoadElimination(FEXCore::IR::IREmitter *IREmit) {
         if (IsWriteAccess(LastAccess)) { // 1 byte so always a full write
           // If the last store matches this load value then we can replace the loaded value with the previous valid one
           IREmit->SetWriteCursor(CodeNode);
+
+          const auto StoreNodeSize = IREmit->GetOpSize(LastNode);
+          if (StoreNodeSize != 1) {
+            // If the last store node size isn't of size 1, then to preserve zero extend semantics, this needs a BFE.
+            LastNode = IREmit->_Bfe(1, 8, 0, LastNode);
+          }
           IREmit->ReplaceAllUsesWith(CodeNode, LastNode);
           RecordAccess(Info, FEXCore::IR::GPRClass, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag, 1, ACCESS_READ, LastNode);
           Changed = true;
