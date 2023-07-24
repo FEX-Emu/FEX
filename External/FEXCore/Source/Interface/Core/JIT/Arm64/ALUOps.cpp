@@ -365,6 +365,27 @@ DEF_OP(Andn) {
   }
 }
 
+DEF_OP(Test) {
+  auto Op = IROp->C<IR::IROp_Test>();
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  const auto Dst = GetReg(Node);
+  const auto ZeroReg = ARMEmitter::Reg::zr;
+  const auto Src1 = GetReg(Op->Src1.ID());
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    ands(EmitSize, ZeroReg, Src1, Const);
+  } else {
+    const auto Src2 = GetReg(Op->Src2.ID());
+    ands(EmitSize, ZeroReg, Src1, Src2);
+  }
+
+  // TODO: Optimize this out
+  mrs(Dst, ARMEmitter::SystemRegister::NZCV);
+}
+
 DEF_OP(Xor) {
   auto Op = IROp->C<IR::IROp_Xor>();
   const uint8_t OpSize = IROp->Size;

@@ -690,6 +690,23 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+    case OP_TEST: {
+      auto Op = IROp->CW<IR::IROp_Test>();
+      uint64_t Constant1{};
+      uint64_t Constant2{};
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        uint64_t Result = (Constant1 & Constant2) & getMask(Op);
+        bool N = Result & (1ull << ((Op->Header.Size * 8) - 1));
+        bool Z = Result == 0;
+        uint32_t NZVC = (N ? (1 << 31) : 0) | (Z ? (1 << 30) : 0);
+
+        IREmit->ReplaceWithConstant(CodeNode, NZVC);
+        Changed = true;
+      }
+    break;
+    }
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
       uint64_t Constant1{};
@@ -1029,6 +1046,7 @@ bool ConstProp::ConstantInlining(IREmitter *IREmit, const IRListView& CurrentIR)
       case OP_OR:
       case OP_XOR:
       case OP_AND:
+      case OP_TEST:
       {
         auto Op = IROp->CW<IR::IROp_Or>();
 

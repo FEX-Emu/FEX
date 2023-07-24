@@ -807,6 +807,9 @@
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
         "DestSize": "std::max<uint8_t>(4, GetOpSize(_Src1))"
       },
+      "GPR = Test GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Determine NZ-- flags from the integer binary AND of the two sources"]
+      },
       "GPR = Lshl u8:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift left"
                 ],

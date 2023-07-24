@@ -859,6 +859,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
         REGISTER_OP(OR,                Or);
         REGISTER_OP(AND,               And);
         REGISTER_OP(ANDN,              Andn);
+        REGISTER_OP(TEST,              Test);
         REGISTER_OP(XOR,               Xor);
         REGISTER_OP(LSHL,              Lshl);
         REGISTER_OP(LSHR,              Lshr);
