@@ -18,40 +18,10 @@
  */
 public:
   // SVE encodings
-  void dup(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, uint32_t Index) {
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'0010'00 << 10;
-    uint32_t imm2{};
-    uint32_t tsz{};
-
-    // We can index up to 512-bit registers with dup
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 64, "Index too large");
-      tsz = 0b00001 | ((Index & 0b1111) << 1);
-      imm2 = Index >> 4;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 32, "Index too large");
-      tsz = 0b00010 | ((Index & 0b111) << 2);
-      imm2 = Index >> 3;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
-      tsz = 0b00100 | ((Index & 0b11) << 3);
-      imm2 = Index >> 2;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
-      tsz = 0b01000 | ((Index & 0b1) << 4);
-      imm2 = Index >> 1;
-    }
-    else if (size == FEXCore::ARMEmitter::SubRegSize::i128Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
-      tsz = 0b10000;
-      imm2 = Index;
-    }
-
-    SVEDup(Op, imm2, tsz, zn, zd);
+  void dup(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Index) {
+    SVEDupIndexed(size, zn, zd, Index);
   }
+
   // TODO: TBL
 
   void sel(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
@@ -3409,9 +3379,24 @@ public:
   }
 private:
   // SVE encodings
-  void SVEDup(uint32_t Op, uint32_t imm2, uint32_t tsz, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEDupIndexed(SubRegSize size, ZRegister zn, ZRegister zd, uint32_t Index) {
+    const auto size_bytes = 1U << FEXCore::ToUnderlying(size);
+    const auto log2_size_bytes = FEXCore::ilog2(size_bytes);
 
+    // We can index up to 512-bit registers with dup
+    [[maybe_unused]] const auto max_index = (64U >> log2_size_bytes) - 1;
+    LOGMAN_THROW_AA_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].",
+                        Index, max_index);
+
+    // imm2:tsz make up a 7 bit wide field, with each increasing element size
+    // restricting the range of those 7 bits (e.g. B: tsz=xxxx1, H: tsz=xxx10,
+    // S: tsz=xx100. etc). So we can just use the log2 of the element size
+    // to construct the overall immediate and form both imm2 and tsz.
+    const auto imm7 = (Index << (log2_size_bytes + 1)) | (1U << log2_size_bytes);
+    const auto imm2 = imm7 >> 5;
+    const auto tsz = imm7 & 0b11111;
+
+    uint32_t Instr = 0b0000'0101'0010'0000'0010'0000'0000'0000;
     Instr |= imm2 << 22;
     Instr |= tsz << 16;
     Instr |= Encode_rn(zn);
