@@ -74,7 +74,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     // the byte is allowed to be garbage.
     OrderedNode *Flag = FlagOffset == FEXCore::X86State::RFLAG_PF_LOC ?
                         LoadPF() :
-                        _LoadFlag(FlagOffset);
+                        GetRFLAG(FlagOffset);
 
     Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
@@ -304,6 +304,11 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
 
   // Done calculating
   CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
+
+  if (CachedNZCV)
+    _SetNZCV(CachedNZCV);
+
+  CachedNZCV = NULL;
 }
 
 void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
