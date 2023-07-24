@@ -3764,28 +3764,14 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs,
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
   if (Size == 8) {
-    OrderedNode *Src1_Low = _VUXTL(Size*2, 1, Src1);
-    OrderedNode *Src2_Low = _VUXTL(Size*2, 1, Src2);
-
-    OrderedNode *SubResult = _VSub(Size*2, 2, Src1_Low, Src2_Low);
-    OrderedNode *AbsResult = _VAbs(Size*2, 2, SubResult);
+    auto AbsResult = _VUABDL(Size * 2, 1, Src1, Src2);
 
     // Now vector-wide add the results for each
     return _VAddV(Size * 2, 2, AbsResult);
   }
 
-
-  OrderedNode *Src1_Low = _VUXTL(Size, 1, Src1);
-  OrderedNode *Src1_High = _VUXTL2(Size, 1, Src1);
-
-  OrderedNode *Src2_Low = _VUXTL(Size, 1, Src2);
-  OrderedNode *Src2_High = _VUXTL2(Size, 1, Src2);
-
-  OrderedNode *SubResult_Low = _VSub(Size, 2, Src1_Low, Src2_Low);
-  OrderedNode *SubResult_High = _VSub(Size, 2, Src1_High, Src2_High);
-
-  OrderedNode *AbsResult_Low = _VAbs(Size, 2, SubResult_Low);
-  OrderedNode *AbsResult_High = _VAbs(Size, 2, SubResult_High);
+  auto AbsResult_Low = _VUABDL(Size, 1, Src1, Src2);
+  auto AbsResult_High = _VUABDL2(Size, 1, Src1, Src2);
 
   OrderedNode *Result_Low = _VAddV(16, 2, AbsResult_Low);
   OrderedNode *Result_High = _VAddV(16, 2, AbsResult_High);
