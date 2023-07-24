@@ -1094,6 +1094,17 @@ private:
     return InsertNZCV(NZCV, BitOffset, GetRFLAG(BitOffset));
   }
 
+  // Test a value with zero, returning an appropriate Z flag mask.
+  // TODO: Use TST for this, it is equivalent and faster.
+  OrderedNode *TestZ(OrderedNode *A) {
+    auto One = _Constant(1);
+    auto Zero = _Constant(0);
+
+    // Lsl(Select(1, 0), x) is actually cheaper than Select(1 << x, 0)
+    auto ZSelect = _Select(FEXCore::IR::COND_EQ, A, Zero, One, Zero);
+    return _Lshl(ZSelect, _Constant(FEXCore::X86State::RFLAG_ZF_LOC));
+  }
+
   // Test a value with zero, returning an appropriate NZ flag mask.
   OrderedNode *TestNZ(uint8_t SrcSize, OrderedNode *A) {
     uint64_t mask = (SrcSize == 8) ? ~0ull : ((1ull << (SrcSize * 8)) - 1);

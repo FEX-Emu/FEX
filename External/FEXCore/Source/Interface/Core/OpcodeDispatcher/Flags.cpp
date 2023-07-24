@@ -1102,16 +1102,8 @@ void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) 
 
 void OpDispatchBuilder::CalculateFlags_BITSELECT(OrderedNode *Src) {
   // OF, SF, AF, PF, CF all undefined
-
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
-
   // ZF is set to 1 if the source was zero
-  auto ZFSelectOp = _Select(FEXCore::IR::COND_EQ,
-      Src, ZeroConst,
-      OneConst, ZeroConst);
-
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFSelectOp);
+  SetNZCV(TestZ(Src));
 }
 
 void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
