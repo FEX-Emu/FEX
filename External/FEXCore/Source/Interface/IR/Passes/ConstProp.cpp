@@ -836,6 +836,26 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
       break;
     }
+    case OP_BFI: {
+      auto Op = IROp->C<IR::IROp_Bfi>();
+      uint64_t ConstantDest{};
+      uint64_t ConstantSrc{};
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &ConstantDest) &&
+          IREmit->IsValueConstant(Op->Header.Args[1], &ConstantSrc)) {
+
+        uint64_t SourceMask = (1ULL << Op->Width) - 1;
+        if (Op->Width == 64)
+          SourceMask = ~0ULL;
+
+        uint64_t NewConstant = ConstantDest & ~(SourceMask << Op->lsb);
+        NewConstant |= (ConstantSrc & SourceMask) << Op->lsb;
+
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      }
+      break;
+    }
     case OP_MUL: {
       auto Op = IROp->C<IR::IROp_Mul>();
       uint64_t Constant1{};
