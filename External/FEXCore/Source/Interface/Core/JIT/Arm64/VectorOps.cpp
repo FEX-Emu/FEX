@@ -2305,6 +2305,13 @@ DEF_OP(VInsElement) {
   auto Reg = GetVReg(Op->DestVector.ID());
 
   if (HostSupportsSVE && Is256Bit) {
+    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
+    const auto SubRegSize =
+      ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
+      ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+      ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+      ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
+
     // We're going to use this to create our predicate register literal.
     // On an SVE 256-bit capable system, the predicate register will be
     // 32-bit in size. We want to set up only the element corresponding
@@ -2341,13 +2348,6 @@ DEF_OP(VInsElement) {
     adr(TMP1, &DataLocation);
     ldr(Predicate, TMP1);
 
-    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-    const auto SubRegSize =
-      ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-      ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-      ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-      ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i128Bit;
-
     // Broadcast our source value across a temporary,
     // then combine with the destination.
     dup(SubRegSize, VTMP2.Z(), SrcVector.Z(), SrcIdx);
@@ -2367,17 +2367,17 @@ DEF_OP(VInsElement) {
     Bind(&PastConstant);
   }
   else {
-    if (Dst.Idx() != Reg.Idx()) {
-      mov(VTMP1.Q(), Reg.Q());
-      Reg = VTMP1;
-    }
-
     LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
     const auto SubRegSize =
       ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
       ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
       ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
       ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+    if (Dst.Idx() != Reg.Idx()) {
+      mov(VTMP1.Q(), Reg.Q());
+      Reg = VTMP1;
+    }
 
     ins(SubRegSize, Reg.Q(), DestIdx, SrcVector.Q(), SrcIdx);
 
