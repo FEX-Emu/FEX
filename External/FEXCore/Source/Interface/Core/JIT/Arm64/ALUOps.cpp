@@ -654,7 +654,10 @@ DEF_OP(LDiv) {
         mov(EmitSize, ARMEmitter::Reg::r2, Divisor);
 
         ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LDIVHandler));
+
+        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
         blr(ARMEmitter::Reg::r3);
+        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
 
         // Move result to its destination register
         mov(EmitSize, Dst, ARMEmitter::Reg::r0);
@@ -718,7 +721,11 @@ DEF_OP(LUDiv) {
         mov(EmitSize, ARMEmitter::Reg::r2, Divisor);
 
         ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUDIVHandler));
+
+        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
         blr(ARMEmitter::Reg::r3);
+        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
         // Move result to its destination register
         mov(EmitSize, Dst, ARMEmitter::Reg::r0);
 
@@ -789,7 +796,11 @@ DEF_OP(LRem) {
         mov(EmitSize, ARMEmitter::Reg::r2, Divisor);
 
         ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREMHandler));
+
+        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
         blr(ARMEmitter::Reg::r3);
+        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
         // Move result to its destination register
         mov(EmitSize, Dst, ARMEmitter::Reg::r0);
 
@@ -854,7 +865,11 @@ DEF_OP(LURem) {
         mov(EmitSize, ARMEmitter::Reg::r2, Divisor);
 
         ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREMHandler));
+
+        str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
         blr(ARMEmitter::Reg::r3);
+        ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+
         // Move result to its destination register
         mov(EmitSize, Dst, ARMEmitter::Reg::r0);
 
