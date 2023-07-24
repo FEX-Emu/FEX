@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace FEXCore::IR {
-enum IROps : uint8_t;
+enum IROps : uint16_t;
 }
 
 namespace FEXCore::CPU {
