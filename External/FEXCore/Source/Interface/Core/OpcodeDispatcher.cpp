@@ -914,18 +914,12 @@ OrderedNode *OpDispatchBuilder::SelectCC(uint8_t OP, OrderedNode *TrueValue, Ord
           Flag, ZeroConst, TrueValue, FalseValue);
       break;
     }
-    case 0xA:   // JP - Jump if PF == 1
+    case 0xA: { // JP - Jump if PF == 1
+      SrcCond = _Select(FEXCore::IR::COND_NEQ, LoadPF(), ZeroConst, TrueValue, FalseValue);
+      break;
+    }
     case 0xB: { // JNP - Jump if PF == 0
-      bool invert = OP == (0xB);
-
-      // We must only consider the bottom bit of PF, the rest is garbage.
-      // For JP, mask off the bottom bit. For JNP, mask off the bottom bit
-      // and invert it. In either case, we return true if that is nonzero.
-      auto PFByte = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
-      auto Flag = _And(OneConst, PFByte);
-
-      SrcCond = _Select(invert ? FEXCore::IR::COND_EQ : FEXCore::IR::COND_NEQ,
-                        Flag, ZeroConst, TrueValue, FalseValue);
+      SrcCond = _Select(FEXCore::IR::COND_EQ, LoadPF(), ZeroConst, TrueValue, FalseValue);
       break;
     }
     case 0xC: { // SF <> OF
@@ -5334,11 +5328,25 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, -1);
 
-    auto ALUOp = _Add(Dest, Src);
-    // Overwrite our IR's op type
-    ALUOp.first->Header.Op = ALUIROp;
+    /* On x86, the canonical way to zero a register is XOR with itself...
+     * because modern x86 detects this pattern in hardware. arm64 does not
+     * detect this pattern, we should do it like the x86 hardware would. On
+     * arm64, "mov x0, #0" is faster than "eor x0, x0, x0". Additionally this
+     * lets more constant folding kick in for flags.
+     */
+    if (ALUIROp == FEXCore::IR::IROps::OP_XOR &&
+        Op->Dest.IsGPR() && Op->Src[0].IsGPR() &&
+        Op->Dest.Data.GPR == Op->Src[0].Data.GPR) {
 
-    Result = ALUOp;
+        Result = _Constant(0);
+    } else {
+        auto ALUOp = _Add(Dest, Src);
+        // Overwrite our IR's op type
+        ALUOp.first->Header.Op = ALUIROp;
+
+        Result = ALUOp;
+    }
+
     StoreResult(GPRClass, Op, Result, -1);
   }
 
