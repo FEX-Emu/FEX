@@ -662,17 +662,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   if (Shift == 0) return;
 
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
-
-  // CF
-  {
-    // Extract the last bit shifted in to CF
-    auto OpSize = SrcSize * 8;
-    if (OpSize < Shift) {
-      Shift &= (OpSize - 1);
-    }
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Bfe(1, OpSize - Shift, Src1));
-  }
 
   CalculatePF(Res);
 
@@ -683,25 +672,30 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
   }
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
+  // ZF/SF
+  auto NZCV = TestNZ(SrcSize, Res);
 
-  // SF
+  // CF
   {
-    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
-
-    // OF
-    // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
-    if (Shift == 1) {
-      auto SourceBit = _Bfe(1, SrcSize * 8 - 1, Src1);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, SignOp));
+    // Extract the last bit shifted in to CF
+    auto OpSize = SrcSize * 8;
+    if (OpSize < Shift) {
+      Shift &= (OpSize - 1);
     }
+    NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_CF_LOC, _Bfe(1, OpSize - Shift, Src1));
   }
+
+  // OF
+  // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
+  if (Shift == 1) {
+    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
+    auto SourceBit = _Bfe(1, SrcSize * 8 - 1, Src1);
+    NZCV = InsertNZCV(NZCV, FEXCore::X86State::RFLAG_OF_LOC, _Xor(SourceBit, SignOp));
+  } else {
+    NZCV = PreserveNZCV(NZCV, FEXCore::X86State::RFLAG_OF_LOC);
+  }
+
+  SetNZCV(NZCV);
 }
 
 void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
