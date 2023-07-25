@@ -6,7 +6,7 @@
 #include <atomic>
 #include <cstdint>
 #include <mutex>
-#include <shared_mutex>
+#include <optional>
 #include <signal.h>
 #ifndef _WIN32
 #include <sys/syscall.h>
@@ -162,38 +162,25 @@ namespace FEXCore {
   };
 #endif
 
-  template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
-  class ScopedDeferredSignalWithMutexBase final {
+  class DeferredSignalRefCountGuard final {
     public:
-
-      ScopedDeferredSignalWithMutexBase(MutexType &_Mutex, FEXCore::Core::InternalThreadState *Thread)
-        : Mutex {&_Mutex}
-        , Thread {Thread} {
+      explicit DeferredSignalRefCountGuard(FEXCore::Core::InternalThreadState *Thread) : Thread(Thread) {
         // Needs to be atomic so that operations can't end up getting reordered around this.
         Thread->CurrentFrame->State.DeferredSignalRefCount.Increment(1);
-        // Lock the mutex
-        (Mutex->*lock_fn)();
       }
 
-      // No copy or assignment possible
-      ScopedDeferredSignalWithMutexBase(const ScopedDeferredSignalWithMutexBase&) = delete;
-      ScopedDeferredSignalWithMutexBase& operator=(ScopedDeferredSignalWithMutexBase&) = delete;
-
-      // Only move
-      ScopedDeferredSignalWithMutexBase(ScopedDeferredSignalWithMutexBase &&rhs)
-        : Mutex {rhs.Mutex}
-        , Thread {rhs.Thread} {
-        rhs.Mutex = nullptr;
+      // Move-only type
+      DeferredSignalRefCountGuard(const DeferredSignalRefCountGuard&) = delete;
+      DeferredSignalRefCountGuard& operator=(DeferredSignalRefCountGuard&) = delete;
+      DeferredSignalRefCountGuard(DeferredSignalRefCountGuard&& rhs) : Thread(rhs.Thread) {
+        rhs.Thread = nullptr;
       }
 
-      ~ScopedDeferredSignalWithMutexBase() {
-        if (Mutex != nullptr) {
-          // Unlock the mutex
-          (Mutex->*unlock_fn)();
-
+      ~DeferredSignalRefCountGuard() {
+        if (Thread) {
 #ifdef _M_X86_64
           // Needs to be atomic so that operations can't end up getting reordered around this.
-          // Without this, the recount and the signal access could get reordered.
+          // Without this, the refcount and the signal access could get reordered.
           auto Result = Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
 
           // X86-64 must do an additional check around the store.
@@ -208,131 +195,68 @@ namespace FEXCore {
         }
       }
     private:
-      MutexType *Mutex;
       FEXCore::Core::InternalThreadState *Thread;
   };
 
-  using ScopedDeferredSignalWithMutex      = ScopedDeferredSignalWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
-  using ScopedDeferredSignalWithSharedLock = ScopedDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
-  using ScopedDeferredSignalWithUniqueLock = ScopedDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock, &std::shared_mutex::unlock>;
-
-  // Forkable variant
-  using ScopedDeferredSignalWithForkableMutex      = ScopedDeferredSignalWithMutexBase<
-    FEXCore::ForkableUniqueMutex,
-    &FEXCore::ForkableUniqueMutex::lock,
-    &FEXCore::ForkableUniqueMutex::unlock>;
-  using ScopedDeferredSignalWithForkableSharedLock = ScopedDeferredSignalWithMutexBase<
-    FEXCore::ForkableSharedMutex,
-    &FEXCore::ForkableSharedMutex::lock_shared,
-    &FEXCore::ForkableSharedMutex::unlock_shared>;
-  using ScopedDeferredSignalWithForkableUniqueLock = ScopedDeferredSignalWithMutexBase<
-    FEXCore::ForkableSharedMutex,
-    &FEXCore::ForkableSharedMutex::lock,
-    &FEXCore::ForkableSharedMutex::unlock>;
-
+#ifndef _WIN32
+  // TODO: Duplicated, unify with ScopedSignalMask
   class ScopedSignalMasker final {
     public:
-      ScopedSignalMasker() = default;
-
-      void Mask(uint64_t Mask) {
-#ifndef _WIN32
+      explicit ScopedSignalMasker(uint64_t Mask) : OriginalMask(0) {
         // Mask all signals, storing the original incoming mask
-        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &OriginalMask, sizeof(OriginalMask));
-#endif
+        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &*OriginalMask, sizeof(*OriginalMask));
       }
 
       // Move-only type
       ScopedSignalMasker(const ScopedSignalMasker&) = delete;
       ScopedSignalMasker& operator=(ScopedSignalMasker&) = delete;
-      ScopedSignalMasker(ScopedSignalMasker &&rhs) = default;
-      ScopedSignalMasker& operator=(ScopedSignalMasker &&) = default;
-
-      void Unmask() {
-#ifndef _WIN32
-        ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &OriginalMask, nullptr, sizeof(OriginalMask));
-#endif
-      }
-    private:
-#ifndef _WIN32
-      uint64_t OriginalMask{};
-#endif
-  };
-
-  template<typename MutexType, void (MutexType::*lock_fn)(), void (MutexType::*unlock_fn)()>
-  class ScopedPotentialDeferredSignalWithMutexBase final {
-    public:
-      ScopedPotentialDeferredSignalWithMutexBase(MutexType &_Mutex, FEXCore::Core::InternalThreadState *Thread, uint64_t Mask = ~0ULL)
-        : Mutex {&_Mutex}
-        , Thread {Thread} {
-        if (Thread) {
-          Thread->CurrentFrame->State.DeferredSignalRefCount.Increment(1);
-        }
-        else {
-          Masker.Mask(Mask);
-        }
-        // Lock the mutex
-        (Mutex->*lock_fn)();
+      ScopedSignalMasker(ScopedSignalMasker&& rhs) : OriginalMask(rhs.OriginalMask) {
+        rhs.OriginalMask.reset();
       }
 
-      // No copy or assignment possible
-      ScopedPotentialDeferredSignalWithMutexBase(const ScopedPotentialDeferredSignalWithMutexBase&) = delete;
-      ScopedPotentialDeferredSignalWithMutexBase& operator=(ScopedPotentialDeferredSignalWithMutexBase&) = delete;
-
-      // Only move
-      ScopedPotentialDeferredSignalWithMutexBase(ScopedPotentialDeferredSignalWithMutexBase &&rhs)
-        : Mutex {rhs.Mutex}
-        , Thread {rhs.Thread} {
-        rhs.Mutex = nullptr;
-      }
-
-      ~ScopedPotentialDeferredSignalWithMutexBase() {
-        if (Mutex != nullptr) {
-          // Unlock the mutex
-          (Mutex->*unlock_fn)();
-
-          if (Thread) {
-#ifdef _M_X86_64
-            // Needs to be atomic so that operations can't end up getting reordered around this.
-            // Without this, the refcount and the signal access could get reordered.
-            auto Result = Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
-
-            // X86-64 must do an additional check around the store.
-            if ((Result - 1) == 0) {
-              // Must happen after the refcount store
-              Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
-            }
-#else
-            Thread->CurrentFrame->State.DeferredSignalRefCount.Decrement(1);
-            Thread->CurrentFrame->State.DeferredSignalFaultAddress->Store(0);
-#endif
-          }
-          else {
-            // Unmask back to the original signal mask
-            Masker.Unmask();
-          }
+      ~ScopedSignalMasker() {
+        if (OriginalMask) {
+          ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &OriginalMask, nullptr, sizeof(*OriginalMask));
         }
       }
     private:
-      MutexType *Mutex;
-      ScopedSignalMasker Masker;
-      FEXCore::Core::InternalThreadState *Thread;
+      std::optional<uint64_t> OriginalMask{};
   };
+#endif
 
-  using ScopedPotentialDeferredSignalWithMutex      = ScopedPotentialDeferredSignalWithMutexBase<std::mutex, &std::mutex::lock, &std::mutex::unlock>;
-  using ScopedPotentialDeferredSignalWithSharedLock = ScopedPotentialDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock_shared, &std::shared_mutex::unlock_shared>;
-  using ScopedPotentialDeferredSignalWithUniqueLock = ScopedPotentialDeferredSignalWithMutexBase<std::shared_mutex, &std::shared_mutex::lock, &std::shared_mutex::unlock>;
+  /**
+   * @brief Produces a wrapper object around a scoped lock of the given mutex
+   * while bumping the Thread's deferred signal refcount while the mutex is
+   * locked.
+   */
+  template<template<typename> class LockType = std::unique_lock, typename MutexType>
+  [[nodiscard]] static auto GuardSignalDeferringSection(MutexType& mutex, FEXCore::Core::InternalThreadState *Thread, uint64_t Mask = ~0ULL) {
+    // Refcount is incremented first, and then the lock is acquired.
+    struct {
+      std::optional<DeferredSignalRefCountGuard> refcount;
+      LockType<MutexType> lock;
+    } scope_guard = { DeferredSignalRefCountGuard { Thread }, LockType<MutexType> { mutex } };
+    return scope_guard;
+  }
 
-  // Forkable variant
-  using ScopedPotentialDeferredSignalWithForkableMutex      = ScopedPotentialDeferredSignalWithMutexBase<
-    FEXCore::ForkableUniqueMutex,
-    &FEXCore::ForkableUniqueMutex::lock,
-    &FEXCore::ForkableUniqueMutex::unlock>;
-  using ScopedPotentialDeferredSignalWithForkableSharedLock = ScopedPotentialDeferredSignalWithMutexBase<
-    FEXCore::ForkableSharedMutex,
-    &FEXCore::ForkableSharedMutex::lock_shared,
-    &FEXCore::ForkableSharedMutex::unlock_shared>;
-  using ScopedPotentialDeferredSignalWithForkableUniqueLock = ScopedPotentialDeferredSignalWithMutexBase<
-    FEXCore::ForkableSharedMutex,
-    &FEXCore::ForkableSharedMutex::lock,
-    &FEXCore::ForkableSharedMutex::unlock>;
+  // Like GuardSignalDeferringSection but falls back to masking signals when Thread is nullptr
+  template<template<typename> class LockType = std::unique_lock, typename MutexType>
+  [[nodiscard]] static auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::Core::InternalThreadState *Thread, uint64_t Mask = ~0ULL) {
+    struct {
+      std::optional<DeferredSignalRefCountGuard> refcount;
+#ifndef _WIN32
+      std::optional<ScopedSignalMasker> mask;
+#endif
+      LockType<MutexType> lock;
+    } scope_guard;
+    if (Thread) {
+      scope_guard.refcount.emplace(Thread);
+    } else {
+#ifndef _WIN32
+      scope_guard.mask.emplace(Mask);
+#endif
+    }
+    scope_guard.lock = LockType<MutexType> { mutex };
+    return scope_guard;
+  }
 }

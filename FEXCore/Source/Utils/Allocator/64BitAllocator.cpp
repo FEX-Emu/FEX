@@ -272,7 +272,7 @@ void *OSAllocator_64Bit::Mmap(void *addr, size_t length, int prot, int flags, in
   size_t NumberOfPages = length / FHU::FEX_PAGE_SIZE;
 
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithForkableMutex lk(AllocationMutex, TLSThread);
+  auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(AllocationMutex, TLSThread);
 
   uint64_t AllocatedOffset{};
   LiveVMARegion *LiveRegion{};
@@ -460,7 +460,7 @@ int OSAllocator_64Bit::Munmap(void *addr, size_t length) {
   }
 
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithForkableMutex lk(AllocationMutex, TLSThread);
+  auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(AllocationMutex, TLSThread);
 
   length = FEXCore::AlignUp(length, FHU::FEX_PAGE_SIZE);
 
@@ -585,7 +585,7 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
 
 OSAllocator_64Bit::~OSAllocator_64Bit() {
   // This needs a mutex to be thread safe
-  FEXCore::ScopedPotentialDeferredSignalWithForkableMutex lk(AllocationMutex, TLSThread);
+  auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(AllocationMutex, TLSThread);
 
   // Walk the pages and deallocate
   // First walk the live regions

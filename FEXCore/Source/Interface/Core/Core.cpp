@@ -1097,7 +1097,7 @@ namespace FEXCore::Context {
     auto Thread = Frame->Thread;
 
     // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
-    ScopedDeferredSignalWithForkableSharedLock lk(CodeInvalidationMutex, Thread);
+    auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
     // Is the code in the cache?
     // The backends only check L1 and L2, not L3
@@ -1280,7 +1280,7 @@ namespace FEXCore::Context {
     // Potential deferred since Thread might not be valid.
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    ScopedPotentialDeferredSignalWithForkableUniqueLock lk(CodeInvalidationMutex, Thread);
+    auto lk = GuardSignalDeferringSectionWithFallback(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
   }
@@ -1289,7 +1289,7 @@ namespace FEXCore::Context {
     // Potential deferred since Thread might not be valid.
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    ScopedPotentialDeferredSignalWithForkableUniqueLock lk(CodeInvalidationMutex, Thread);
+    auto lk = GuardSignalDeferringSectionWithFallback(CodeInvalidationMutex, Thread);
 
     InvalidateGuestCodeRangeInternal(this, Start, Length);
     CallAfter(Start, Length);
@@ -1317,7 +1317,7 @@ namespace FEXCore::Context {
   }
 
   void ContextImpl::ThreadAddBlockLink(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestDestination, uintptr_t HostLink, const std::function<void()> &delinker) {
-    ScopedDeferredSignalWithForkableSharedLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+    auto lk = GuardSignalDeferringSection<std::shared_lock>(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
     Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
   }

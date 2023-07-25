@@ -295,7 +295,7 @@ namespace FEXCore::Context {
     template<auto Fn>
     static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame *Frame, uint64_t *record) {
       auto Thread = Frame->Thread;
-      ScopedDeferredSignalWithForkableSharedLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+      auto lk = GuardSignalDeferringSection<std::shared_lock>(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       return Fn(Frame, record);
     }
@@ -306,7 +306,7 @@ namespace FEXCore::Context {
       auto Thread = Frame->Thread;
 
       LogMan::Throw::AFmt(Thread->ThreadManager.GetTID() == FHU::Syscalls::gettid(), "Must be called from owning thread {}, not {}", Thread->ThreadManager.GetTID(), FHU::Syscalls::gettid());
-      ScopedDeferredSignalWithForkableUniqueLock lk(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+      auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
       ThreadRemoveCodeEntry(Thread, GuestRIP);
     }
