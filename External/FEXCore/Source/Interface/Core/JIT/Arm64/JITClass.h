@@ -248,6 +248,7 @@ private:
   DEF_OP(MulH);
   DEF_OP(UMulH);
   DEF_OP(Or);
+  DEF_OP(Orlshl);
   DEF_OP(And);
   DEF_OP(Andn);
   DEF_OP(Xor);

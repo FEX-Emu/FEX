@@ -35,6 +35,7 @@ namespace CodeSerialize {
 namespace CPU {
   struct CPUBackendFeatures {
     bool SupportsStaticRegisterAllocation = false;
+    bool SupportsShiftedBitwise = false;
   };
 
   class CPUBackend {

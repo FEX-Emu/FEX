@@ -331,6 +331,23 @@ DEF_OP(Or) {
   }
 }
 
+DEF_OP(Orlshl) {
+  auto Op = IROp->C<IR::IROp_Orlshl>();
+  const uint8_t OpSize = IROp->Size;
+  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  const auto Dst = GetReg(Node);
+  const auto Src1 = GetReg(Op->Src1.ID());
+
+  uint64_t Const;
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    orr(EmitSize, Dst, Src1, Const << Op->BitShift);
+  } else {
+    const auto Src2 = GetReg(Op->Src2.ID());
+    orr(EmitSize, Dst, Src1, Src2, ARMEmitter::ShiftType::LSL, Op->BitShift);
+  }
+}
+
 DEF_OP(And) {
   auto Op = IROp->C<IR::IROp_And>();
   const uint8_t OpSize = IROp->Size;

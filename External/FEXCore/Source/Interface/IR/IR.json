@@ -782,6 +782,10 @@
         "Desc": ["Integer binary or"
                 ]
       },
+      "GPR = Orlshl GPR:$Src1, GPR:$Src2, u8:$BitShift": {
+        "Desc": ["Integer binary or with logical shift left"
+                ]
+      },
       "GPR = Xor GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary exclusive or"
                 ]
