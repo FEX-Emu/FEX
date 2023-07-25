@@ -1043,8 +1043,7 @@ private:
 
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
-    flagsOp = SelectionFlag::Nothing;
-    _StoreFlag(Value, BitOffset);
+    SetRFLAG(Value, BitOffset);
   }
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
