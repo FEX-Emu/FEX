@@ -96,69 +96,18 @@ namespace FEXCore {
   };
 #else
   // Windows doesn't support forking, so these can be standard mutexes.
-  class ForkableUniqueMutex final {
+  class ForkableUniqueMutex final : public std::mutex {
     public:
-      ForkableUniqueMutex() = default;
-
-      // Non-moveable
-      ForkableUniqueMutex(const ForkableUniqueMutex&) = delete;
-      ForkableUniqueMutex& operator=(const ForkableUniqueMutex&) = delete;
-      ForkableUniqueMutex(ForkableUniqueMutex &&rhs) = delete;
-      ForkableUniqueMutex& operator=(ForkableUniqueMutex &&) = delete;
-
-      void lock() {
-        Mutex.lock();
-      }
-      void unlock() {
-        Mutex.unlock();
-      }
-      // Initialize the internal pthread object to its default initializer state.
-      // Should only ever be used in the child process when a Linux fork() has occured.
       void StealAndDropActiveLocks() {
         LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
       }
-    private:
-      std::mutex Mutex;
   };
 
-  class ForkableSharedMutex final {
+  class ForkableSharedMutex final : public std::shared_mutex {
     public:
-      ForkableSharedMutex() = default;
-
-      // Non-moveable
-      ForkableSharedMutex(const ForkableSharedMutex&) = delete;
-      ForkableSharedMutex& operator=(const ForkableSharedMutex&) = delete;
-      ForkableSharedMutex(ForkableSharedMutex &&rhs) = delete;
-      ForkableSharedMutex& operator=(ForkableSharedMutex &&) = delete;
-
-      void lock() {
-        Mutex.lock();
-      }
-      void unlock() {
-        Mutex.unlock();
-      }
-      void lock_shared() {
-        Mutex.lock_shared();
-      }
-
-      void unlock_shared() {
-        Mutex.unlock_shared();
-      }
-
-      bool try_lock() {
-        return Mutex.try_lock();
-      }
-
-      bool try_lock_shared() {
-        return Mutex.try_lock_shared();
-      }
-      // Initialize the internal pthread object to its default initializer state.
-      // Should only ever be used in the child process when a Linux fork() has occured.
       void StealAndDropActiveLocks() {
         LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
       }
-    private:
-      std::shared_mutex Mutex;
   };
 #endif
 
