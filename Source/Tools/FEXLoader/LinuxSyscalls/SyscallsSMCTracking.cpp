@@ -16,11 +16,10 @@ $end_info$
 #include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXHeaderUtils/TypeDefines.h>
-#include <FEXHeaderUtils/ScopedSignalMask.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
-#include <FEXCore/Utils/DeferredSignalMutex.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 
 namespace FEX::HLE {
 
@@ -55,7 +54,7 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState *Thread, 
 
   {
     // Can't use the deferred signal lock in the SIGSEGV handler.
-    auto lk = FHU::MaskSignalsAndLockMutex<std::shared_lock>(_SyscallHandler->VMATracking.Mutex);
+    auto lk = FEXCore::MaskSignalsAndLockMutex<std::shared_lock>(_SyscallHandler->VMATracking.Mutex);
 
     auto VMATracking = &_SyscallHandler->VMATracking;
 

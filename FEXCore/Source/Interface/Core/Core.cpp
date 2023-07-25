@@ -9,7 +9,6 @@ $end_info$
 */
 
 #include <cstdint>
-#include "FEXCore/Utils/DeferredSignalMutex.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUID.h"
@@ -45,6 +44,7 @@ $end_info$
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/File.h>
 #include <FEXCore/Utils/LogManager.h>
+#include "FEXCore/Utils/SignalScopeGuards.h"
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/fmt.h>

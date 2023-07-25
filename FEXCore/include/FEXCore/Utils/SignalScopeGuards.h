@@ -111,6 +111,7 @@ namespace FEXCore {
   };
 #endif
 
+  // Helper class to manage deferred signal refcounting within a block scope
   class DeferredSignalRefCountGuard final {
     public:
       explicit DeferredSignalRefCountGuard(FEXCore::Core::InternalThreadState *Thread) : Thread(Thread) {
@@ -148,7 +149,7 @@ namespace FEXCore {
   };
 
 #ifndef _WIN32
-  // TODO: Duplicated, unify with ScopedSignalMask
+  // Helper class to mask POSIX signals within a block scope
   class ScopedSignalMasker final {
     public:
       explicit ScopedSignalMasker(uint64_t Mask) : OriginalMask(0) {
@@ -172,6 +173,33 @@ namespace FEXCore {
       std::optional<uint64_t> OriginalMask{};
   };
 #endif
+
+  /**
+   * @brief Produces a wrapper object around a scoped lock of the given mutex
+   * while ensuring POSIX signals are masked while the mutex is locked
+   *
+   * Use this to prevent reentrancy issues of C++ mutexes with certain signal handlers.
+   * Common examples of such issues are:
+   * - C++ mutexes not unlocking due to a signal handler calling longjmp from within a scope owning the mutex
+   * - The signal handler itself using a mutex that would be re-locked if the handler gets invoked
+   *   again before unlocking
+   *
+   * Ownership of the returned object may be moved, but it is NOT SAFE to move across threads.
+   */
+  template<template<typename> class LockType = std::unique_lock, typename MutexType>
+  [[nodiscard]] static auto MaskSignalsAndLockMutex(MutexType& mutex, uint64_t Mask = ~0ULL) {
+#ifndef _WIN32
+      // Signals are masked first, and then the lock is acquired
+      struct {
+          ScopedSignalMasker mask;
+          LockType<MutexType> lock;
+      } scope_guard { ScopedSignalMasker { Mask }, LockType<MutexType> { mutex } };
+      return scope_guard;
+#else
+      // TODO: Doesn't block signals which may or may not cause issues.
+      return LockType<MutexType> { mutex };
+#endif
+  }
 
   /**
    * @brief Produces a wrapper object around a scoped lock of the given mutex
