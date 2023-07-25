@@ -3775,8 +3775,8 @@ OrderedNode* OpDispatchBuilder::PSADBWOpImpl(OpcodeArgs,
 
   OrderedNode *Result_Low = _VAddV(16, 2, AbsResult_Low);
   OrderedNode *Result_High = _VAddV(16, 2, AbsResult_High);
+  auto Low = _VZip(Size, 8, Result_Low, Result_High);
 
-  OrderedNode *Low = _VInsElement(Size, 8, 1, 0, Result_Low, Result_High);
   if (Is128Bit) {
     return Low;
   }
