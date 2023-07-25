@@ -105,12 +105,21 @@ OrderedNode *OpDispatchBuilder::LoadPF() {
   return _And(_Constant(1), Parity);
 }
 
-void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res) {
+void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res, OrderedNode *condition) {
   // We will use the bottom bit of the popcount, set if an odd number of bits are set.
   // But the x86 parity flag is supposed to be set for an even number of bits.
   // Simply invert any bit of the input GPR and that will invert the bottom bit of the
   // output FPR.
-  auto Flipped = _Xor(Res, _Constant(1));
+  OrderedNode *Flipped = _Xor(Res, _Constant(1));
+
+  // For shifts, we can only update for nonzero shift. If zero, we nop out the flag write by
+  // writing the existing value. Note we call GetRFLAG directly, rather than LoadPF, because
+  // we need the existing /encoded/ value rather than the decoded PF value. In particular,
+  // this does not calculate a popcount.
+  if (condition) {
+    auto OldFlag = GetRFLAG(FEXCore::X86State::RFLAG_PF_LOC);
+    Flipped = _Select(FEXCore::IR::COND_EQ, condition, _Constant(0), OldFlag, Flipped);
+  }
 
   // To go from the 8-bit value to the 1-bit flag, we need a popcount. That
   // will happen on load, on the assumption that PF is written much more often
@@ -118,9 +127,9 @@ void OpDispatchBuilder::CalculatePFUncheckedABI(OrderedNode *Res) {
   SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Flipped);
 }
 
-void OpDispatchBuilder::CalculatePF(OrderedNode *Res) {
+void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
   if (!CTX->Config.ABINoPF) {
-    CalculatePFUncheckedABI(Res);
+    CalculatePFUncheckedABI(Res, condition);
   } else {
     _InvalidateFlags(1UL << FEXCore::X86State::RFLAG_PF_LOC);
   }
@@ -572,7 +581,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
-  CalculatePF(Res);
+  CalculatePF(Res, Src2);
 
   // AF
   {
@@ -615,7 +624,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
-  CalculatePF(Res);
+  CalculatePF(Res, Src2);
 
   // AF
   {
@@ -658,7 +667,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNo
     COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
   }
 
-  CalculatePF(Res);
+  CalculatePF(Res, Src2);
 
   // AF
   {
