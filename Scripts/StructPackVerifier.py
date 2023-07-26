@@ -12,9 +12,13 @@ logger.setLevel(logging.WARNING)
 
 # These defines are temporarily defined since python3-clang doesn't yet support these.
 # Once this tool gets switched over to C++ then this won't be an issue.
+# Type definitions redeclared from `clang/include/clang-c/Index.h`
 
 # Expression that references a C++20 concept.
 CursorKind.CONCEPTSPECIALIZATIONEXPR = CursorKind(153),
+
+# Expression that references a C++20 concept.
+CursorKind.REQUIRESEXPR = CursorKind(154),
 
 # C++2a std::bit_cast expression.
 CursorKind.BUILTINBITCASTEXPR = CursorKind(280)
