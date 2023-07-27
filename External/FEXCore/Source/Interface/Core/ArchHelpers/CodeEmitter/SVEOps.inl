@@ -502,16 +502,13 @@ public:
   // SVE Integer Binary Arithmetic - Predicated
   // SVE integer add/subtract vectors (predicated)
   void add(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0000'0000'0000'0000'0000'0000;
-    SVEAddSubVectorsPredicated(Op, 0b000, size, zd, pg, zn, zm);
+    SVEAddSubVectorsPredicated(0b000, size, zd, pg, zn, zm);
   }
   void sub(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0000'0000'0000'0000'0000'0000;
-    SVEAddSubVectorsPredicated(Op, 0b001, size, zd, pg, zn, zm);
+    SVEAddSubVectorsPredicated(0b001, size, zd, pg, zn, zm);
   }
   void subr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0000'0000'0000'0000'0000'0000;
-    SVEAddSubVectorsPredicated(Op, 0b011, size, zd, pg, zn, zm);
+    SVEAddSubVectorsPredicated(0b011, size, zd, pg, zn, zm);
   }
 
   // SVE integer min/max/difference (predicated)
@@ -3663,11 +3660,11 @@ private:
     dc32(Instr);
   }
 
-  void SVEAddSubVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+  void SVEAddSubVectorsPredicated(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zd and zn must be the same register");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7.Merging(), "Add/Sub operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Add/Sub operation can only use p0-p7 as a governing predicate");
 
-    uint32_t Instr = op;
+    uint32_t Instr = 0b0000'0100'0000'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
