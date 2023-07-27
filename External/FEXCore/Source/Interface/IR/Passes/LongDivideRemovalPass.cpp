@@ -25,7 +25,6 @@ private:
 };
 
 bool LongDivideEliminationPass::IsZeroOp(IREmitter *IREmit, OrderedNodeWrapper Arg) {
-  auto IROp = IREmit->GetOpHeader(Arg);
   uint64_t Value;
 
   if (IREmit->IsValueConstant(Arg, &Value)) {
