@@ -96,7 +96,7 @@ namespace FEXCore::IR {
       void FinalizeAOTIRCache();
       void AOTIRCaptureCacheWriteoutQueue_Flush();
       void AOTIRCaptureCacheWriteoutQueue_Append(const WriteOutFn &fn);
-      void WriteFilesWithCode(Context::AOTIRCodeFileWriterFn Writer);
+      void WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn &Writer);
 
       struct PreGenerateIRFetchResult {
         FEXCore::IR::IRListView *IRList {};
@@ -123,15 +123,15 @@ namespace FEXCore::IR {
 
       // Callbacks
       void SetAOTIRLoader(Context::AOTIRLoaderCBFn CacheReader) {
-        AOTIRLoader = CacheReader;
+        AOTIRLoader = std::move(CacheReader);
       }
 
       void SetAOTIRWriter(Context::AOTIRWriterCBFn CacheWriter) {
-        AOTIRWriter = CacheWriter;
+        AOTIRWriter = std::move(CacheWriter);
       }
 
       void SetAOTIRRenamer(Context::AOTIRRenamerCBFn CacheRenamer) {
-        AOTIRRenamer = CacheRenamer;
+        AOTIRRenamer = std::move(CacheRenamer);
       }
 
     private:

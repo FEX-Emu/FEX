@@ -242,7 +242,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void AOTIRCaptureCache::WriteFilesWithCode(Context::AOTIRCodeFileWriterFn Writer) {
+  void AOTIRCaptureCache::WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn &Writer) {
     std::shared_lock lk(AOTIRCacheLock);
     for( const auto &Entry: AOTIRCache) {
       if (Entry.second.ContainsCode) {

@@ -168,13 +168,13 @@ namespace FEXCore::Context {
       void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) override;
 
       void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) override {
-        IRCaptureCache.SetAOTIRLoader(CacheReader);
+        IRCaptureCache.SetAOTIRLoader(std::move(CacheReader));
       }
       void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) override {
-        IRCaptureCache.SetAOTIRWriter(CacheWriter);
+        IRCaptureCache.SetAOTIRWriter(std::move(CacheWriter));
       }
       void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) override {
-        IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
+        IRCaptureCache.SetAOTIRRenamer(std::move(CacheRenamer));
       }
 
       void FinalizeAOTIRCache() override {
