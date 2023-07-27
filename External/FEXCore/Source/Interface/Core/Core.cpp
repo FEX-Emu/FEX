@@ -1243,7 +1243,7 @@ namespace FEXCore::Context {
     InvalidateGuestCodeRangeInternal(this, Start, Length);
   }
 
-  void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> CallAfter) {
+  void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn CallAfter) {
     // Potential deferred since Thread might not be valid.
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.

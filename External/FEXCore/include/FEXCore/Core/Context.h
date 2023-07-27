@@ -86,6 +86,8 @@ namespace FEXCore::Context {
     void *VDSO_kernel_rt_sigreturn;
   };
 
+  using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
+
   using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState *Thread)>;
   using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter *)>;
 
@@ -270,7 +272,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
       FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) = 0;
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
