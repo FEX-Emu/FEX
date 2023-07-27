@@ -533,42 +533,27 @@ public:
 
   // SVE integer multiply vectors (predicated)
   void mul(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b0, 0b00, size, zd, pg, zn, zm);
   }
   void smulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b0, 0b10, size, zd, pg, zn, zm);
   }
   void umulh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b11, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b0, 0b11, size, zd, pg, zn, zm);
   }
 
   // SVE integer divide vectors (predicated)
   void sdiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "Predicated divide only handles 32-bit or 64-bit elements");
-    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b00, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b1, 0b00, size, zd, pg, zn, zm);
   }
   void udiv(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "Predicated divide only handles 32-bit or 64-bit elements");
-    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b01, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b1, 0b01, size, zd, pg, zn, zm);
   }
   void sdivr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "Predicated divide only handles 32-bit or 64-bit elements");
-    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b10, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b1, 0b10, size, zd, pg, zn, zm);
   }
   void udivr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "Predicated divide only handles 32-bit or 64-bit elements");
-    constexpr uint32_t Op = 0b0000'0100'0001'0100'0000'0000'0000'0000;
-    SVEIntegerMulDivVectorsPredicated(Op, 0b11, size, zd, pg, zn, zm);
+    SVEIntegerMulDivVectorsPredicated(0b1, 0b11, size, zd, pg, zn, zm);
   }
 
   // SVE bitwise logical operations (predicated)
@@ -3661,12 +3646,19 @@ private:
     dc32(Instr);
   }
 
-  void SVEIntegerMulDivVectorsPredicated(uint32_t op, uint32_t opc, SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
+  void SVEIntegerMulDivVectorsPredicated(uint32_t b18, uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zd and zn must be the same register");
-    LOGMAN_THROW_A_FMT(pg <= PReg::p7.Merging(), "Mul/Div operation can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Mul/Div operation can only use p0-p7 as a governing predicate");
 
-    uint32_t Instr = op;
+    // Division instruction
+    if (b18 != 0) {
+      LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                          "Predicated divide only handles 32-bit or 64-bit elements");
+    }
+
+    uint32_t Instr = 0b0000'0100'0001'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= b18 << 18;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
     Instr |= zm.Idx() << 5;
