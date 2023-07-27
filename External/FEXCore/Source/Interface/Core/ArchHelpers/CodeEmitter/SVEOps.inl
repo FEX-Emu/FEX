@@ -163,27 +163,16 @@ public:
   }
 
   // SVE integer compare with unsigned immediate
-  void cmphi(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(imm < 128, "Invalid imm");
+  void cmphi(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, uint32_t imm) {
     SVEIntegerCompareImm(0, 1, imm, size, pg, zn, pd);
   }
-
-  void cmphs(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(imm < 128, "Invalid imm");
+  void cmphs(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, uint32_t imm) {
     SVEIntegerCompareImm(0, 0, imm, size, pg, zn, pd);
   }
-
-  void cmplo(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(imm < 128, "Invalid imm");
+  void cmplo(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, uint32_t imm) {
     SVEIntegerCompareImm(1, 0, imm, size, pg, zn, pd);
   }
-
-  void cmpls(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::ZRegister zn, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(imm < 128, "Invalid imm");
+  void cmpls(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, uint32_t imm) {
     SVEIntegerCompareImm(1, 1, imm, size, pg, zn, pd);
   }
 
@@ -4229,10 +4218,12 @@ private:
     dc32(Instr);
   }
 
-  void SVEIntegerCompareImm(uint32_t lt, uint32_t ne, uint32_t imm7, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::PRegister pd) {
-    constexpr uint32_t Op = 0b0010'0100'0010'0000'0000 << 12;
-    uint32_t Instr = Op;
+  void SVEIntegerCompareImm(uint32_t lt, uint32_t ne, uint32_t imm7, SubRegSize size, PRegister pg, ZRegister zn, PRegister pd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_AA_FMT(imm7 < 128, "Invalid imm ({}). Must be within [0, 128]", imm7);
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0010'0100'0010'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= imm7 << 14;
     Instr |= lt << 13;
