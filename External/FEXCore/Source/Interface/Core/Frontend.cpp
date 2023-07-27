@@ -1026,15 +1026,13 @@ void Decoder::BranchTargetInMultiblockRange() {
 
       // If we are conditional then a target can be the instruction past the conditional instruction
       uint64_t FallthroughRIP = DecodeInst->PC + DecodeInst->InstSize;
-      if (HasBlocks.find(FallthroughRIP) == HasBlocks.end() &&
-          BlocksToDecode.find(FallthroughRIP) == BlocksToDecode.end()) {
-        BlocksToDecode.emplace(FallthroughRIP);
+      if (!HasBlocks.contains(FallthroughRIP)) {
+        BlocksToDecode.insert(FallthroughRIP);
       }
     }
 
-    if (HasBlocks.find(TargetRIP) == HasBlocks.end() &&
-        BlocksToDecode.find(TargetRIP) == BlocksToDecode.end()) {
-      BlocksToDecode.emplace(TargetRIP);
+    if (!HasBlocks.contains(TargetRIP)) {
+      BlocksToDecode.insert(TargetRIP);
     }
   } else {
     if (ExternalBranches) {
