@@ -446,35 +446,23 @@ public:
   }
 
   // SVE floating-point arithmetic (unpredicated)
-  void fadd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'000 << 13;
-    SVEFloatArithmeticUnpredicated(Op, 0b000, size, zm, zn, zd);
+  void fadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticUnpredicated(0b000, size, zm, zn, zd);
   }
-  void fsub(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'000 << 13;
-    SVEFloatArithmeticUnpredicated(Op, 0b001, size, zm, zn, zd);
+  void fsub(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticUnpredicated(0b001, size, zm, zn, zd);
   }
-  void fmul(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'000 << 13;
-    SVEFloatArithmeticUnpredicated(Op, 0b010, size, zm, zn, zd);
+  void fmul(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticUnpredicated(0b010, size, zm, zn, zd);
   }
-  void ftsmul(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'000 << 13;
-    SVEFloatArithmeticUnpredicated(Op, 0b011, size, zm, zn, zd);
+  void ftsmul(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticUnpredicated(0b011, size, zm, zn, zd);
   }
-  void frecps(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'000 << 13;
-    SVEFloatArithmeticUnpredicated(Op, 0b110, size, zm, zn, zd);
+  void frecps(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticUnpredicated(0b110, size, zm, zn, zd);
   }
-  void frsqrts(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit || size == FEXCore::ARMEmitter::SubRegSize::i32Bit || size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid float size");
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'000 << 13;
-    SVEFloatArithmeticUnpredicated(Op, 0b111, size, zm, zn, zd);
+  void frsqrts(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEFloatArithmeticUnpredicated(0b111, size, zm, zn, zd);
   }
 
   // SVE floating-point recursive reduction
@@ -3537,9 +3525,11 @@ private:
   }
 
   // SVE floating-point arithmetic (unpredicated)
-  void SVEFloatArithmeticUnpredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEFloatArithmeticUnpredicated(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Invalid float size");
 
+    uint32_t Instr = 0b0110'0101'0000'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= opc << 10;
