@@ -207,6 +207,15 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer compare with signe
   TEST_SINGLE(cmple(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),  "cmple p6.h, p5/z, z30.h, #15");
   TEST_SINGLE(cmple(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),  "cmple p6.s, p5/z, z30.s, #15");
   TEST_SINGLE(cmple(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),  "cmple p6.d, p5/z, z30.d, #15");
+
+  TEST_SINGLE(cmpne(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, -16),  "cmpne p6.b, p5/z, z30.b, #-16");
+  TEST_SINGLE(cmpne(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, -16), "cmpne p6.h, p5/z, z30.h, #-16");
+  TEST_SINGLE(cmpne(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, -16), "cmpne p6.s, p5/z, z30.s, #-16");
+  TEST_SINGLE(cmpne(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, -16), "cmpne p6.d, p5/z, z30.d, #-16");
+  TEST_SINGLE(cmpne(SubRegSize::i8Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),   "cmpne p6.b, p5/z, z30.b, #15");
+  TEST_SINGLE(cmpne(SubRegSize::i16Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),  "cmpne p6.h, p5/z, z30.h, #15");
+  TEST_SINGLE(cmpne(SubRegSize::i32Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),  "cmpne p6.s, p5/z, z30.s, #15");
+  TEST_SINGLE(cmpne(SubRegSize::i64Bit, PReg::p6, PReg::p5.Zeroing(), ZReg::z30, 15),  "cmpne p6.d, p5/z, z30.d, #15");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate logical operations") {
   TEST_SINGLE(and_(PReg::p6, PReg::p5.Zeroing(), PReg::p4, PReg::p3), "and p6.b, p5/z, p4.b, p3.b");

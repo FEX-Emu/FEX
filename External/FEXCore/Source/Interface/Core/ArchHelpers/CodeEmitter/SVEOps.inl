@@ -203,6 +203,9 @@ public:
   void cmple(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, int32_t imm) {
     SVEIntegerCompareSignedImm(0, 1, 1, imm, size, pg, zn, pd);
   }
+  void cmpne(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, int32_t imm) {
+    SVEIntegerCompareSignedImm(1, 0, 1, imm, size, pg, zn, pd);
+  }
 
   // SVE predicate logical operations
   void and_(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
