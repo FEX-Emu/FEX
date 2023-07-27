@@ -87,8 +87,12 @@ namespace FEXCore::Context {
   };
 
   using CustomCPUFactoryType = std::function<fextl::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
-
   using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
+
+  using AOTIRCodeFileWriterFn = std::function<void(const fextl::string& fileid, const fextl::string& filename)>;
+  using AOTIRLoaderCBFn = std::function<int(const fextl::string&)>;
+  using AOTIRRenamerCBFn = std::function<void(const fextl::string&)>;
+  using AOTIRWriterCBFn = std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)>;
 
   class Context {
     public:
@@ -257,12 +261,12 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) = 0;
       FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
-      FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) = 0;
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;

@@ -167,20 +167,20 @@ namespace FEXCore::Context {
       FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) override;
       void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) override;
 
-      void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) override {
+      void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) override {
         IRCaptureCache.SetAOTIRLoader(CacheReader);
       }
-      void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) override {
+      void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) override {
         IRCaptureCache.SetAOTIRWriter(CacheWriter);
       }
-      void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) override {
+      void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) override {
         IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
       }
 
       void FinalizeAOTIRCache() override {
         IRCaptureCache.FinalizeAOTIRCache();
       }
-      void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) override {
+      void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) override {
         IRCaptureCache.WriteFilesWithCode(Writer);
       }
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
