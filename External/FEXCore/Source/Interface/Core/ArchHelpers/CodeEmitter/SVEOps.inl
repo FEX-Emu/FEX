@@ -557,29 +557,17 @@ public:
   }
 
   // SVE bitwise logical operations (predicated)
-  void orr(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'000 << 13;
-    SVEBitwiseLogicalPredicated(Op, 0b000, size, pg, zm, zd);
+  void orr(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEBitwiseLogicalPredicated(0b000, size, pg, zdn, zm, zd);
   }
-  void eor(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'000 << 13;
-    SVEBitwiseLogicalPredicated(Op, 0b001, size, pg, zm, zd);
+  void eor(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEBitwiseLogicalPredicated(0b001, size, pg, zdn, zm, zd);
   }
-  void and_(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'000 << 13;
-    SVEBitwiseLogicalPredicated(Op, 0b010, size, pg, zm, zd);
+  void and_(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEBitwiseLogicalPredicated(0b010, size, pg, zdn, zm, zd);
   }
-  void bic(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    constexpr uint32_t Op = 0b0000'0100'0001'1000'000 << 13;
-    SVEBitwiseLogicalPredicated(Op, 0b011, size, pg, zm, zd);
+  void bic(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEBitwiseLogicalPredicated(0b011, size, pg, zdn, zm, zd);
   }
 
   // SVE Integer Reduction
@@ -3500,9 +3488,12 @@ private:
   }
 
   // SVE bitwise logical operations (predicated)
-  void SVEBitwiseLogicalPredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEBitwiseLogicalPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zdn, ZRegister zm, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0000'0100'0001'1000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
