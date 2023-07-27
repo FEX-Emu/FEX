@@ -682,9 +682,6 @@ bool Decoder::NormalOpHeader(FEXCore::X86Tables::X86InstInfo const *Info, uint16
     DecodeInst->ModRM = ModRMByte;
     DecodeInst->DecodedModRM = true;
 
-    FEXCore::X86Tables::ModRMDecoded ModRM;
-    ModRM.Hex = DecodeInst->ModRM;
-
     uint16_t X87Op = ((Op - 0xD8) << 8) | ModRMByte;
     return NormalOp(&X87Ops[X87Op], X87Op);
   }
