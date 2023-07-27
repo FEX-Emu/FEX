@@ -206,7 +206,7 @@ namespace FEXCore::IR {
       FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
 
       AOTIRCaptureCacheWriteoutLock.lock();
-      std::function<void()> fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
+      WriteOutFn fn = std::move(AOTIRCaptureCacheWriteoutQueue.front());
       bool MaybeEmpty = false;
       AOTIRCaptureCacheWriteoutQueue.pop();
       MaybeEmpty = AOTIRCaptureCacheWriteoutQueue.size() == 0;
@@ -225,7 +225,7 @@ namespace FEXCore::IR {
     LOGMAN_MSG_A_FMT("Must never get here");
   }
 
-  void AOTIRCaptureCache::AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn) {
+  void AOTIRCaptureCache::AOTIRCaptureCacheWriteoutQueue_Append(const WriteOutFn &fn) {
     bool Flush = false;
 
     {
@@ -242,7 +242,7 @@ namespace FEXCore::IR {
     }
   }
 
-  void AOTIRCaptureCache::WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) {
+  void AOTIRCaptureCache::WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn &Writer) {
     std::shared_lock lk(AOTIRCacheLock);
     for( const auto &Entry: AOTIRCache) {
       if (Entry.second.ContainsCode) {

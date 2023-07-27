@@ -86,9 +86,17 @@ namespace FEXCore::Context {
     void *VDSO_kernel_rt_sigreturn;
   };
 
-  using CustomCPUFactoryType = std::function<fextl::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
+  using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
 
-  using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
+  using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState *Thread)>;
+  using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter *)>;
+
+  using ExitHandler = std::function<void(uint64_t ThreadId, ExitReason)>;
+
+  using AOTIRCodeFileWriterFn = std::function<void(const fextl::string& fileid, const fextl::string& filename)>;
+  using AOTIRLoaderCBFn = std::function<int(const fextl::string&)>;
+  using AOTIRRenamerCBFn = std::function<void(const fextl::string&)>;
+  using AOTIRWriterCBFn = std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)>;
 
   class Context {
     public:
@@ -257,18 +265,18 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) = 0;
       FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) = 0;
 
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
-      FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
       FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) = 0;
-      FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) = 0;
+      FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) = 0;
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
-      FEX_DEFAULT_VISIBILITY virtual CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) = 0;
+      FEX_DEFAULT_VISIBILITY virtual CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr) = 0;
 
       /**
        * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.

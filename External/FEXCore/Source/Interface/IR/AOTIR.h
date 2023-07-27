@@ -89,13 +89,14 @@ namespace FEXCore::IR {
 
   class AOTIRCaptureCache final {
     public:
+      using WriteOutFn = std::function<void()>;
 
       AOTIRCaptureCache(FEXCore::Context::ContextImpl *ctx) : CTX {ctx} {}
 
       void FinalizeAOTIRCache();
       void AOTIRCaptureCacheWriteoutQueue_Flush();
-      void AOTIRCaptureCacheWriteoutQueue_Append(const std::function<void()> &fn);
-      void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer);
+      void AOTIRCaptureCacheWriteoutQueue_Append(const WriteOutFn &fn);
+      void WriteFilesWithCode(const Context::AOTIRCodeFileWriterFn &Writer);
 
       struct PreGenerateIRFetchResult {
         FEXCore::IR::IRListView *IRList {};
@@ -121,16 +122,16 @@ namespace FEXCore::IR {
       void UnloadAOTIRCacheEntry(AOTIRCacheEntry *Entry);
 
       // Callbacks
-      void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) {
-        AOTIRLoader = CacheReader;
+      void SetAOTIRLoader(Context::AOTIRLoaderCBFn CacheReader) {
+        AOTIRLoader = std::move(CacheReader);
       }
 
-      void SetAOTIRWriter(std::function<fextl::unique_ptr<FEXCore::Context::AOTIRWriter>(const fextl::string&)> CacheWriter) {
-        AOTIRWriter = CacheWriter;
+      void SetAOTIRWriter(Context::AOTIRWriterCBFn CacheWriter) {
+        AOTIRWriter = std::move(CacheWriter);
       }
 
-      void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) {
-        AOTIRRenamer = CacheRenamer;
+      void SetAOTIRRenamer(Context::AOTIRRenamerCBFn CacheRenamer) {
+        AOTIRRenamer = std::move(CacheRenamer);
       }
 
     private:
@@ -140,13 +141,13 @@ namespace FEXCore::IR {
       std::shared_mutex AOTIRCaptureCacheWriteoutLock;
       std::atomic<bool> AOTIRCaptureCacheWriteoutFlusing;
 
-      fextl::queue<std::function<void()>> AOTIRCaptureCacheWriteoutQueue;
+      fextl::queue<WriteOutFn> AOTIRCaptureCacheWriteoutQueue;
 
       FEXCore::IR::AOTCacheType AOTIRCache;
 
-      std::function<int(const fextl::string&)> AOTIRLoader;
-      std::function<fextl::unique_ptr<FEXCore::Context::AOTIRWriter>(const fextl::string&)> AOTIRWriter;
-      std::function<void(const fextl::string&)> AOTIRRenamer;
+      Context::AOTIRLoaderCBFn AOTIRLoader;
+      Context::AOTIRWriterCBFn AOTIRWriter;
+      Context::AOTIRRenamerCBFn AOTIRRenamer;
       fextl::unordered_map<fextl::string, FEXCore::IR::AOTIRCaptureCacheEntry> AOTIRCaptureCacheMap;
   };
 }

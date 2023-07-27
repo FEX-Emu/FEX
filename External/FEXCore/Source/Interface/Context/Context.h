@@ -167,29 +167,29 @@ namespace FEXCore::Context {
       FEXCore::IR::AOTIRCacheEntry *LoadAOTIRCacheEntry(const fextl::string& Name) override;
       void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry *Entry) override;
 
-      void SetAOTIRLoader(std::function<int(const fextl::string&)> CacheReader) override {
-        IRCaptureCache.SetAOTIRLoader(CacheReader);
+      void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) override {
+        IRCaptureCache.SetAOTIRLoader(std::move(CacheReader));
       }
-      void SetAOTIRWriter(std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)> CacheWriter) override {
-        IRCaptureCache.SetAOTIRWriter(CacheWriter);
+      void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) override {
+        IRCaptureCache.SetAOTIRWriter(std::move(CacheWriter));
       }
-      void SetAOTIRRenamer(std::function<void(const fextl::string&)> CacheRenamer) override {
-        IRCaptureCache.SetAOTIRRenamer(CacheRenamer);
+      void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) override {
+        IRCaptureCache.SetAOTIRRenamer(std::move(CacheRenamer));
       }
 
       void FinalizeAOTIRCache() override {
         IRCaptureCache.FinalizeAOTIRCache();
       }
-      void WriteFilesWithCode(std::function<void(const fextl::string& fileid, const fextl::string& filename)> Writer) override {
+      void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) override {
         IRCaptureCache.WriteFilesWithCode(Writer);
       }
       void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override;
-      void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, std::function<void(uint64_t start, uint64_t Length)> callback) override;
+      void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) override;
       void MarkMemoryShared() override;
 
       void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
       // returns false if a handler was already registered
-      CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) override;
+      CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
       void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
 
@@ -435,7 +435,7 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;
-    fextl::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
