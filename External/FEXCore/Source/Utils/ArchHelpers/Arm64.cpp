@@ -2060,12 +2060,11 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         LDR |= Size << 30;
         LDR |= AddrReg << 5;
         LDR |= DataReg;
-        PC[-1] = DMB;
         PC[0] = LDR;
-        PC[1] = DMB;
+        PC[1] = DMB_LD; // Back-patch the half-barrier.
         ClearICache(&PC[-1], 16);
-        // Back up one instruction and have another go
-        return std::make_pair(true, -4);
+        // With the instruction modified, now execute again.
+        return std::make_pair(true, 0);
       }
     }
     else if ( (Instr & LDAXR_MASK) == STLR_INST) { // STLR*
@@ -2084,9 +2083,8 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         STR |= Size << 30;
         STR |= AddrReg << 5;
         STR |= DataReg;
-        PC[-1] = DMB;
+        PC[-1] = DMB; // Back-patch the half-barrier.
         PC[0] = STR;
-        PC[1] = DMB;
         ClearICache(&PC[-1], 16);
         // Back up one instruction and have another go
         return std::make_pair(true, -4);
@@ -2111,12 +2109,11 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         LDUR |= AddrReg << 5;
         LDUR |= DataReg;
         LDUR |= Instr & (0b1'1111'1111 << 9);
-        PC[-1] = DMB;
         PC[0] = LDUR;
-        PC[1] = DMB;
+        PC[1] = DMB_LD; // Back-patch the half-barrier.
         ClearICache(&PC[-1], 16);
-        // Back up one instruction and have another go
-        return std::make_pair(true, -4);
+        // With the instruction modified, now execute again.
+        return std::make_pair(true, 0);
       }
     }
     else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
@@ -2138,9 +2135,8 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
         STUR |= AddrReg << 5;
         STUR |= DataReg;
         STUR |= Instr & (0b1'1111'1111 << 9);
-        PC[-1] = DMB;
+        PC[-1] = DMB;  // Back-patch the half-barrier.
         PC[0] = STUR;
-        PC[1] = DMB;
         ClearICache(&PC[-1], 16);
         // Back up one instruction and have another go
         return std::make_pair(true, -4);

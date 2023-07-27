@@ -90,6 +90,9 @@ namespace FEXCore::ArchHelpers::Arm64 {
   constexpr uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
     0b1011'0000'0000; // Inner shareable all
 
+  constexpr uint32_t DMB_LD = 0b1101'0101'0000'0011'0011'0000'1011'1111 |
+    0b1101'0000'0000; // Inner shareable load
+
   inline uint32_t GetRdReg(uint32_t Instr) {
     return (Instr >> RD_OFFSET) & REGISTER_MASK;
   }

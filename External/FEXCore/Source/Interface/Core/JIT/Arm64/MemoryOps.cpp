@@ -1231,8 +1231,6 @@ DEF_OP(LoadMemTSO) {
       ldapurb(Dst, MemReg, Offset);
     }
     else {
-      // Aligned
-      nop();
       switch (OpSize) {
         case 2:
           ldapurh(Dst, MemReg, Offset);
@@ -1247,6 +1245,7 @@ DEF_OP(LoadMemTSO) {
           LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
           break;
       }
+      // Half-barrier once back-patched.
       nop();
     }
   }
@@ -1257,8 +1256,6 @@ DEF_OP(LoadMemTSO) {
       ldaprb(Dst.W(), MemReg);
     }
     else {
-      // Aligned
-      nop();
       switch (OpSize) {
         case 2:
           ldaprh(Dst.W(), MemReg);
@@ -1273,6 +1270,7 @@ DEF_OP(LoadMemTSO) {
           LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
           break;
       }
+      // Half-barrier once back-patched.
       nop();
     }
   }
@@ -1283,8 +1281,6 @@ DEF_OP(LoadMemTSO) {
       ldarb(Dst, MemReg);
     }
     else {
-      // Aligned
-      nop();
       switch (OpSize) {
         case 2:
           ldarh(Dst, MemReg);
@@ -1299,11 +1295,11 @@ DEF_OP(LoadMemTSO) {
           LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
           break;
       }
+      // Half-barrier once back-patched.
       nop();
     }
   }
   else {
-    dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
     const auto Dst = GetVReg(Node);
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
@@ -1331,7 +1327,8 @@ DEF_OP(LoadMemTSO) {
         LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize);
         break;
     }
-    dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
+    // Half-barrier.
+    dmb(FEXCore::ARMEmitter::BarrierScope::ISHLD);
   }
 }
 
@@ -1516,6 +1513,7 @@ DEF_OP(StoreMemTSO) {
       stlurb(Src, MemReg, Offset);
     }
     else {
+      // Half-barrier once back-patched.
       nop();
       switch (OpSize) {
         case 2:
@@ -1531,7 +1529,6 @@ DEF_OP(StoreMemTSO) {
           LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
           break;
       }
-      nop();
     }
   }
   else if (Op->Class == FEXCore::IR::GPRClass) {
@@ -1542,6 +1539,7 @@ DEF_OP(StoreMemTSO) {
       stlrb(Src, MemReg);
     }
     else {
+      // Half-barrier once back-patched.
       nop();
       switch (OpSize) {
         case 2:
@@ -1557,10 +1555,10 @@ DEF_OP(StoreMemTSO) {
           LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
           break;
       }
-      nop();
     }
   }
   else {
+    // Half-Barrier.
     dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
     const auto Src = GetVReg(Op->Value.ID());
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
@@ -1589,7 +1587,6 @@ DEF_OP(StoreMemTSO) {
         LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize);
         break;
     }
-    dmb(FEXCore::ARMEmitter::BarrierScope::ISH);
   }
 }
 
