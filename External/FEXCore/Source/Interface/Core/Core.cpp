@@ -1289,7 +1289,7 @@ namespace FEXCore::Context {
     Thread->LookupCache->Erase(GuestRIP);
   }
 
-  CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator, void *Data) {
+  CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator, void *Data) {
     LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
     std::unique_lock lk(CustomIRMutex);

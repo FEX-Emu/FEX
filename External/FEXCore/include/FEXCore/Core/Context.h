@@ -86,8 +86,10 @@ namespace FEXCore::Context {
     void *VDSO_kernel_rt_sigreturn;
   };
 
-  using CustomCPUFactoryType = std::function<fextl::unique_ptr<FEXCore::CPU::CPUBackend> (FEXCore::Context::Context*, FEXCore::Core::InternalThreadState *Thread)>;
-  using ExitHandler = std::function<void(uint64_t ThreadId, FEXCore::Context::ExitReason)>;
+  using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState *Thread)>;
+  using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter *)>;
+
+  using ExitHandler = std::function<void(uint64_t ThreadId, ExitReason)>;
 
   using AOTIRCodeFileWriterFn = std::function<void(const fextl::string& fileid, const fextl::string& filename)>;
   using AOTIRLoaderCBFn = std::function<int(const fextl::string&)>;
@@ -272,7 +274,7 @@ namespace FEXCore::Context {
       FEX_DEFAULT_VISIBILITY virtual void MarkMemoryShared() = 0;
 
       FEX_DEFAULT_VISIBILITY virtual void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) = 0;
-      FEX_DEFAULT_VISIBILITY virtual CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) = 0;
+      FEX_DEFAULT_VISIBILITY virtual CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr) = 0;
 
       /**
        * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.

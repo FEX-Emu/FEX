@@ -189,7 +189,7 @@ namespace FEXCore::Context {
 
       void ConfigureAOTGen(FEXCore::Core::InternalThreadState *Thread, fextl::set<uint64_t> *ExternalBranches, uint64_t SectionMaxAddress) override;
       // returns false if a handler was already registered
-      CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)> Handler, void *Creator = nullptr, void *Data = nullptr) override;
+      CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void *Creator = nullptr, void *Data = nullptr) override;
 
       void AppendThunkDefinitions(fextl::vector<FEXCore::IR::ThunkDefinition> const& Definitions) override;
 
@@ -435,7 +435,7 @@ namespace FEXCore::Context {
     FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 
     std::shared_mutex CustomIRMutex;
-    fextl::unordered_map<uint64_t, std::tuple<std::function<void(uintptr_t Entrypoint, FEXCore::IR::IREmitter *)>, void *, void *>> CustomIRHandlers;
+    fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void *, void *>> CustomIRHandlers;
     FEXCore::CPU::CPUBackendFeatures BackendFeatures;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
