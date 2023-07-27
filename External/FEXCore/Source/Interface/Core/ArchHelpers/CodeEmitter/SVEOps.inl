@@ -512,35 +512,23 @@ public:
   }
 
   // SVE integer min/max/difference (predicated)
-  void smax(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEIntegerMinMaxDifferencePredicated(0b00, 0, size, pg, zm, zd);
+  void smax(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEIntegerMinMaxDifferencePredicated(0b00, 0, size, pg, zdn, zm, zd);
   }
-  void umax(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEIntegerMinMaxDifferencePredicated(0b00, 1, size, pg, zm, zd);
+  void umax(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEIntegerMinMaxDifferencePredicated(0b00, 1, size, pg, zdn, zm, zd);
   }
-  void smin(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEIntegerMinMaxDifferencePredicated(0b01, 0, size, pg, zm, zd);
+  void smin(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEIntegerMinMaxDifferencePredicated(0b01, 0, size, pg, zdn, zm, zd);
   }
-  void umin(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEIntegerMinMaxDifferencePredicated(0b01, 1, size, pg, zm, zd);
+  void umin(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEIntegerMinMaxDifferencePredicated(0b01, 1, size, pg, zdn, zm, zd);
   }
-  void sabd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEIntegerMinMaxDifferencePredicated(0b10, 0, size, pg, zm, zd);
+  void sabd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEIntegerMinMaxDifferencePredicated(0b10, 0, size, pg, zdn, zm, zd);
   }
-  void uabd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVEIntegerMinMaxDifferencePredicated(0b10, 1, size, pg, zm, zd);
+  void uabd(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zdn, ZRegister zm) {
+    SVEIntegerMinMaxDifferencePredicated(0b10, 1, size, pg, zdn, zm, zd);
   }
 
   // SVE integer multiply vectors (predicated)
@@ -4338,10 +4326,12 @@ private:
     dc32(Instr);
   }
 
-  void SVEIntegerMinMaxDifferencePredicated(uint32_t opc, uint32_t U, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0000'0100'0000'1000'000 << 13;
-    uint32_t Instr = Op;
+  void SVEIntegerMinMaxDifferencePredicated(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zdn, ZRegister zm, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0000'0100'0000'1000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 17;
     Instr |= U << 16;
