@@ -219,95 +219,72 @@ public:
   }
 
   // SVE predicate logical operations
-  void and_(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 0, 0, pm, pg, pn, pd);
+  void and_(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 0, 0, 0, pm, pg, pn, pd);
+  }
+  void ands(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 1, 0, 0, pm, pg, pn, pd);
   }
 
-  void ands(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 1, 0, 0, pm, pg, pn, pd);
+  void mov(PRegister pd, PRegisterMerge pg, PRegister pn) {
+    SVEPredicateLogical(0, 0, 1, 1, pd, pg, pn, pd);
+  }
+  void mov(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPredicateLogical(0, 0, 0, 0, pn, pg, pn, pd);
   }
 
-  void mov(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 1, 1, pd, pg, pn, pd);
+  void movs(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPredicateLogical(0, 1, 0, 0, pn, pg, pn, pd);
+  }
+  void bic(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 0, 0, 1, pm, pg, pn, pd);
+  }
+  void bics(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 1, 0, 1, pm, pg, pn, pd);
   }
 
-  void mov(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 0, 0, pn, pg, pn, pd);
+  void eor(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 0, 1, 0, pm, pg, pn, pd);
+  }
+  void eors(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 1, 1, 0, pm, pg, pn, pd);
   }
 
-  void movs(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 1, 0, 0, pn, pg, pn, pd);
+  void not_(PRegister pd, PRegisterZero pg, PRegister pn) {
+    SVEPredicateLogical(0, 0, 1, 0, pg, pg, pn, pd);
   }
-  void bic(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 0, 1, pm, pg, pn, pd);
+  void sel(PRegister pd, PRegister pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(0, 0, 1, 1, pm, pg, pn, pd);
   }
-  void bics(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 1, 0, 1, pm, pg, pn, pd);
+  void orr(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 0, 0, 0, pm, pg, pn, pd);
   }
-
-  void eor(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 1, 0, pm, pg, pn, pd);
+  void mov(PRegister pd, PRegister pn) {
+    SVEPredicateLogical(1, 0, 0, 0, pn, pn, pn, pd);
   }
-  void eors(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 1, 1, 0, pm, pg, pn, pd);
+  void orn(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 0, 0, 1, pm, pg, pn, pd);
   }
-
-  void not_(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 1, 0, pg, pg, pn, pd);
+  void nor(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 0, 1, 0, pm, pg, pn, pd);
   }
-  void sel(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 0, 0, 1, 1, pm, pg, pn, pd);
+  void nand(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 0, 1, 1, pm, pg, pn, pd);
   }
-  void orr(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 0, 0, 0, pm, pg, pn, pd);
+  void orrs(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 1, 0, 0, pm, pg, pn, pd);
   }
-  void mov(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 0, 0, 0, pn, pn, pn, pd);
+  void movs(PRegister pd, PRegister pn) {
+    SVEPredicateLogical(1, 1, 0, 0, pn, pn, pn, pd);
   }
-  void orn(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 0, 0, 1, pm, pg, pn, pd);
+  void orns(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 1, 0, 1, pm, pg, pn, pd);
   }
-  void nor(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 0, 1, 0, pm, pg, pn, pd);
+  void nors(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 1, 1, 0, pm, pg, pn, pd);
   }
-  void nand(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 0, 1, 1, pm, pg, pn, pd);
-  }
-  void orrs(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 1, 0, 0, pm, pg, pn, pd);
-  }
-  void movs(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegister pn) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 1, 0, 0, pn, pn, pn, pd);
-  }
-  void orns(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 1, 0, 1, pm, pg, pn, pd);
-  }
-  void nors(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 1, 1, 0, pm, pg, pn, pd);
-  }
-  void nands(FEXCore::ARMEmitter::PRegister pd, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pm) {
-    constexpr uint32_t Op = 0b0010'0101'0000'0000'01 << 14;
-    SVEPredicateLogical(Op, 1, 1, 1, 1, pm, pg, pn, pd);
+  void nands(PRegister pd, PRegisterZero pg, PRegister pn, PRegister pm) {
+    SVEPredicateLogical(1, 1, 1, 1, pm, pg, pn, pd);
   }
 
   // XXX:
@@ -3431,9 +3408,9 @@ private:
   }
 
   // SVE predicate logical operations
-  void SVEPredicateLogical(uint32_t Op, uint32_t op, uint32_t S, uint32_t o2, uint32_t o3, FEXCore::ARMEmitter::PRegister pm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::PRegister pn, FEXCore::ARMEmitter::PRegister pd) {
-    uint32_t Instr = Op;
-
+  void SVEPredicateLogical(uint32_t op, uint32_t S, uint32_t o2, uint32_t o3,
+                           PRegister pm, PRegister pg, PRegister pn, PRegister pd) {
+    uint32_t Instr = 0b0010'0101'0000'0000'0100'0000'0000'0000;
     Instr |= op << 23;
     Instr |= S << 22;
     Instr |= pm.Idx() << 16;
