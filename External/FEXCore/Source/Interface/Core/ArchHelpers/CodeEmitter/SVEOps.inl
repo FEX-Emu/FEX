@@ -1459,7 +1459,19 @@ public:
   }
 
   // SVE integer min/max immediate (unpredicated)
-  // XXX:
+  void smax(SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    SVEMinMaxImmediateUnpred(0b000, size, zd, zn, imm);
+  }
+  void umax(SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    SVEMinMaxImmediateUnpred(0b001, size, zd, zn, imm);
+  }
+  void smin(SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    SVEMinMaxImmediateUnpred(0b010, size, zd, zn, imm);
+  }
+  void umin(SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    SVEMinMaxImmediateUnpred(0b011, size, zd, zn, imm);
+  }
+
   // SVE integer multiply immediate (unpredicated)
   // XXX:
 
@@ -3177,6 +3189,29 @@ private:
     Instr |= opc << 16;
     Instr |= shift << 13;
     Instr |= imm << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEMinMaxImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
+
+    const bool is_signed = (opc & 1) == 0;
+    if (is_signed) {
+      LOGMAN_THROW_AA_FMT(imm >= -128 && imm <= 127,
+                          "Invalid immediate ({}). Must be within [-127, 128]", imm);
+    } else {
+      LOGMAN_THROW_AA_FMT(imm >= 0 && imm <= 255,
+                          "Invalid immediate ({}). Must be within [0, 255]", imm);
+    }
+
+    const auto imm8 = static_cast<uint32_t>(imm) & 0xFF;
+
+    uint32_t Instr = 0b0010'0101'0010'1000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= imm8 << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }

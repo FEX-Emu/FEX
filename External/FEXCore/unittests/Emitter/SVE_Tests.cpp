@@ -2160,7 +2160,69 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract immed
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max immediate (unpredicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(smax(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "smax z30.b, z30.b, #0");
+  TEST_SINGLE(smax(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, -128),  "smax z30.b, z30.b, #-128");
+  TEST_SINGLE(smax(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "smax z30.b, z30.b, #127");
+
+  TEST_SINGLE(smax(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "smax z30.h, z30.h, #0");
+  TEST_SINGLE(smax(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, -128),  "smax z30.h, z30.h, #-128");
+  TEST_SINGLE(smax(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "smax z30.h, z30.h, #127");
+
+  TEST_SINGLE(smax(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "smax z30.s, z30.s, #0");
+  TEST_SINGLE(smax(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, -128),  "smax z30.s, z30.s, #-128");
+  TEST_SINGLE(smax(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "smax z30.s, z30.s, #127");
+
+  TEST_SINGLE(smax(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "smax z30.d, z30.d, #0");
+  TEST_SINGLE(smax(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, -128),  "smax z30.d, z30.d, #-128");
+  TEST_SINGLE(smax(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "smax z30.d, z30.d, #127");
+
+  TEST_SINGLE(smin(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "smin z30.b, z30.b, #0");
+  TEST_SINGLE(smin(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, -128),  "smin z30.b, z30.b, #-128");
+  TEST_SINGLE(smin(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "smin z30.b, z30.b, #127");
+
+  TEST_SINGLE(smin(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "smin z30.h, z30.h, #0");
+  TEST_SINGLE(smin(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, -128),  "smin z30.h, z30.h, #-128");
+  TEST_SINGLE(smin(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "smin z30.h, z30.h, #127");
+
+  TEST_SINGLE(smin(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "smin z30.s, z30.s, #0");
+  TEST_SINGLE(smin(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, -128),  "smin z30.s, z30.s, #-128");
+  TEST_SINGLE(smin(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "smin z30.s, z30.s, #127");
+
+  TEST_SINGLE(smin(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "smin z30.d, z30.d, #0");
+  TEST_SINGLE(smin(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, -128),  "smin z30.d, z30.d, #-128");
+  TEST_SINGLE(smin(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "smin z30.d, z30.d, #127");
+
+  TEST_SINGLE(umax(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "umax z30.b, z30.b, #0");
+  TEST_SINGLE(umax(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "umax z30.b, z30.b, #127");
+  TEST_SINGLE(umax(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "umax z30.b, z30.b, #255");
+
+  TEST_SINGLE(umax(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "umax z30.h, z30.h, #0");
+  TEST_SINGLE(umax(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "umax z30.h, z30.h, #127");
+  TEST_SINGLE(umax(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "umax z30.h, z30.h, #255");
+
+  TEST_SINGLE(umax(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "umax z30.s, z30.s, #0");
+  TEST_SINGLE(umax(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "umax z30.s, z30.s, #127");
+  TEST_SINGLE(umax(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "umax z30.s, z30.s, #255");
+
+  TEST_SINGLE(umax(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "umax z30.d, z30.d, #0");
+  TEST_SINGLE(umax(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "umax z30.d, z30.d, #127");
+  TEST_SINGLE(umax(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "umax z30.d, z30.d, #255");
+
+  TEST_SINGLE(umin(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "umin z30.b, z30.b, #0");
+  TEST_SINGLE(umin(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "umin z30.b, z30.b, #127");
+  TEST_SINGLE(umin(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "umin z30.b, z30.b, #255");
+
+  TEST_SINGLE(umin(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "umin z30.h, z30.h, #0");
+  TEST_SINGLE(umin(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "umin z30.h, z30.h, #127");
+  TEST_SINGLE(umin(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "umin z30.h, z30.h, #255");
+
+  TEST_SINGLE(umin(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "umin z30.s, z30.s, #0");
+  TEST_SINGLE(umin(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "umin z30.s, z30.s, #127");
+  TEST_SINGLE(umin(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "umin z30.s, z30.s, #255");
+
+  TEST_SINGLE(umin(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "umin z30.d, z30.d, #0");
+  TEST_SINGLE(umin(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "umin z30.d, z30.d, #127");
+  TEST_SINGLE(umin(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "umin z30.d, z30.d, #255");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply immediate (unpredicated)") {
