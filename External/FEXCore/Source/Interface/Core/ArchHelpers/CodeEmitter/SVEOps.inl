@@ -2191,26 +2191,26 @@ public:
 
   // SVE Floating Point Unary Operations - Predicated
   // SVE floating-point round to integral value
-  void frinti(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b111, size, zd, pg, zn);
+  void frinti(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b111, size, zd, pg, zn);
   }
-  void frintx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b110, size, zd, pg, zn);
+  void frintx(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b110, size, zd, pg, zn);
   }
-  void frinta(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b100, size, zd, pg, zn);
+  void frinta(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b100, size, zd, pg, zn);
   }
-  void frintn(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b000, size, zd, pg, zn);
+  void frintn(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b000, size, zd, pg, zn);
   }
-  void frintz(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b011, size, zd, pg, zn);
+  void frintz(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b011, size, zd, pg, zn);
   }
-  void frintm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b010, size, zd, pg, zn);
+  void frintm(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b010, size, zd, pg, zn);
   }
-  void frintp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b001, size, zd, pg, zn);
+  void frintp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b001, size, zd, pg, zn);
   }
 
   // SVE floating-point convert precision
@@ -2233,7 +2233,6 @@ public:
       size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
     SVEFloatUnary(0b00, size, pg, zn, zd);
   }
-
   void fsqrt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
       size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
@@ -2242,187 +2241,143 @@ public:
   }
 
   // SVE integer convert to floating-point
-  // XXX:
+  void scvtf(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
+    uint32_t opc1, opc2;
+    if (srcsize == SubRegSize::i16Bit) {
+      // Srcsize = fp16, opc2 encodes dst size
+      LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      opc1 = 0b01;
+      opc2 = 0b01;
+    }
+    else if (srcsize == SubRegSize::i32Bit) {
+      // Srcsize = fp32, opc1 encodes dst size
+      opc1 =
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
+
+      opc2 =
+        dstsize == SubRegSize::i64Bit ? 0b00 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b10 :0b00;
+    }
+    else if (srcsize == SubRegSize::i64Bit) {
+      // SrcSize = fp64, opc2 encodes dst size
+      opc1 =
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b11 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
+      opc2 =
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b11 :0b00;
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+    SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 0, pg, zn, zd);
+  }
+  void ucvtf(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
+    uint32_t opc1, opc2;
+    if (srcsize == SubRegSize::i16Bit) {
+      // Srcsize = fp16, opc2 encodes dst size
+      LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      opc1 = 0b01;
+      opc2 = 0b01;
+    }
+    else if (srcsize == SubRegSize::i32Bit) {
+      // Srcsize = fp32, opc1 encodes dst size
+      opc1 =
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
+
+      opc2 =
+        dstsize == SubRegSize::i64Bit ? 0b00 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b10 :0b00;
+    }
+    else if (srcsize == SubRegSize::i64Bit) {
+      // SrcSize = fp64, opc2 encodes dst size
+      opc1 =
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b11 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
+      opc2 =
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b11 :0b00;
+    }
+    else {
+      FEX_UNREACHABLE;
+    }
+    SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 1, pg, zn, zd);
+  }
+
   // SVE floating-point convert to integer
-  void flogb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'1000'101 << 13;
+  void flogb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+      size == SubRegSize::i64Bit ? 0b11 :
+      size == SubRegSize::i32Bit ? 0b10 :
+      size == SubRegSize::i16Bit ? 0b01 : 0b00;
 
-    SVEFloatConvertToInt(Op, 0b00, ConvertedSize, 0, pg, zn, zd);
+    SVEFloatConvertToInt(size, size, 1, 0b00, ConvertedSize, 0, pg, zn, zd);
   }
-
-  void scvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'0000'101 << 13;
+  void fcvtzs(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
     uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      // Srcsize = fp16, opc2 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-      opc1 = 0b01;
-      opc2 = 0b01;
-    }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      // Srcsize = fp32, opc1 encodes dst size
-      opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
-
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :0b00;
-    }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      // SrcSize = fp64, opc2 encodes dst size
-      opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b11 :0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-    SVEFloatConvertToInt(Op, opc1, opc2, 0, pg, zn, zd);
-  }
-  void ucvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'0000'101 << 13;
-    uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
-      // Srcsize = fp16, opc2 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-      opc1 = 0b01;
-      opc2 = 0b01;
-    }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
-      // Srcsize = fp32, opc1 encodes dst size
-      opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
-
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :0b00;
-    }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      // SrcSize = fp64, opc2 encodes dst size
-      opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b11 :0b00;
-    }
-    else {
-      FEX_UNREACHABLE;
-    }
-    SVEFloatConvertToInt(Op, opc1, opc2, 1, pg, zn, zd);
-  }
-  void fcvtzs(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'1000'101 << 13;
-    uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
       opc1 = 0b01;
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 :
+             dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
-      opc1 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 : 0b00;
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+    else if (srcsize == SubRegSize::i64Bit) {
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b00 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
     }
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(Op, opc1, opc2, 0, pg, zn, zd);
+    SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 0, pg, zn, zd);
   }
-  void fcvtzu(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'1000'101 << 13;
+  void fcvtzu(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
     uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
       opc1 = 0b01;
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 :
+             dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
-      opc1 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 : 0b00;
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+    else if (srcsize == SubRegSize::i64Bit) {
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b00 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
     }
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(Op, opc1, opc2, 1, pg, zn, zd);
+    SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 1, pg, zn, zd);
   }
 
   // SVE Floating Point Unary Operations - Unpredicated
@@ -2517,76 +2472,52 @@ public:
   // XXX:
   // SVE load multiple structures (scalar plus immediate)
   void ld2b(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b00, Imm, zt1, pg, rn);
   }
   void ld3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b00, Imm, zt1, pg, rn);
   }
   void ld4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b00, Imm, zt1, pg, rn);
   }
   void ld2h(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b01, Imm, zt1, pg, rn);
   }
   void ld3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b01, Imm, zt1, pg, rn);
   }
   void ld4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b01, Imm, zt1, pg, rn);
   }
   void ld2w(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b10, Imm, zt1, pg, rn);
   }
   void ld3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b10, Imm, zt1, pg, rn);
   }
   void ld4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b10, Imm, zt1, pg, rn);
   }
   void ld2d(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b11, Imm, zt1, pg, rn);
   }
   void ld3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b11, Imm, zt1, pg, rn);
   }
   void ld4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b11, Imm, zt1, pg, rn);
   }
 
   // SVE helper implementations
@@ -2931,133 +2862,116 @@ public:
   // XXX:
   // SVE load and broadcast quadword (scalar plus immediate)
   // XXX:
+
   // SVE contiguous load (scalar plus immediate)
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
-    SVEContiguousLoadImm(Op, 0b0000 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
+  template<SubRegSize size>
+  void ld1b(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousLoadImm(false, 0b0000 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
   }
 
-  void ld1sw(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
-    SVEContiguousLoadImm(Op, 0b0100, Imm, pg, rn, zt);
+  void ld1sw(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousLoadImm(false, 0b0100, Imm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    static_assert(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
-    SVEContiguousLoadImm(Op, 0b0100 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
+  template<SubRegSize size>
+  void ld1h(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadImm(false, 0b0100 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sh(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
+  template<SubRegSize size>
+  void ld1sh(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 1 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0 : -1;
+      size == SubRegSize::i32Bit ? 1 :
+      size == SubRegSize::i64Bit ? 0 : -1;
 
-    SVEContiguousLoadImm(Op, 0b1000 | ConvertedSize, Imm, pg, rn, zt);
+    SVEContiguousLoadImm(false, 0b1000 | ConvertedSize, Imm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
+  template<SubRegSize size>
+  void ld1w(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
 
-    SVEContiguousLoadImm(Op, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
+    SVEContiguousLoadImm(false, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sb(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
+  template<SubRegSize size>
+  void ld1sb(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    static_assert(size == SubRegSize::i16Bit ||
+                  size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
+
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b01 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 : -1;
-    SVEContiguousLoadImm(Op, 0b1100 | ConvertedSize, Imm, pg, rn, zt);
+      size == SubRegSize::i16Bit ? 0b10 :
+      size == SubRegSize::i32Bit ? 0b01 :
+      size == SubRegSize::i64Bit ? 0b00 : -1;
+
+    SVEContiguousLoadImm(false, 0b1100 | ConvertedSize, Imm, pg, rn, zt);
   }
-  void ld1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'101 << 13;
-    SVEContiguousLoadImm(Op, 0b1111, Imm, pg, rn, zt);
+  void ld1d(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousLoadImm(false, 0b1111, Imm, pg, rn, zt);
   }
 
   // SVE contiguous non-fault load (scalar plus immediate)
   // XXX:
   // SVE load and broadcast quadword (scalar plus scalar)
   // XXX:
+
   // SVE contiguous load (scalar plus scalar)
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void ld1b(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  void ld1sw(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0100, rm, pg, rn, zt);
+  void ld1sw(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 0b0100, rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void ld1h(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadStore(0, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sh(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void ld1sh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 1 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0 : -1;
-    SVEContiguousLoadStore(Op, 0b1000 | ConvertedSize, rm, pg, rn, zt);
+      size == SubRegSize::i32Bit ? 1 :
+      size == SubRegSize::i64Bit ? 0 : -1;
+    SVEContiguousLoadStore(0, 0b1000 | ConvertedSize, rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void ld1w(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
-    SVEContiguousLoadStore(Op, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
+    SVEContiguousLoadStore(0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sb(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void ld1sb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i16Bit ||
+                  size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b01 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 : -1;
-    SVEContiguousLoadStore(Op, 0b1100 | ConvertedSize, rm, pg, rn, zt);
+      size == SubRegSize::i16Bit ? 0b10 :
+      size == SubRegSize::i32Bit ? 0b01 :
+      size == SubRegSize::i64Bit ? 0b00 : -1;
+    SVEContiguousLoadStore(0, 0b1100 | ConvertedSize, rm, pg, rn, zt);
   }
 
-  void ld1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b1111, rm, pg, rn, zt);
+  void ld1d(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 0b1111, rm, pg, rn, zt);
   }
 
   // SVE contiguous first-fault load (scalar plus scalar)
@@ -3084,34 +2998,29 @@ public:
   }
 
   // SVE contiguous store (scalar plus scalar)
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void st1b(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(1, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void st1h(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadStore(1, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void st1w(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
 
-    SVEContiguousLoadStore(Op, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+    SVEContiguousLoadStore(1, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
-  void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
-
-    SVEContiguousLoadStore(Op, 0b1111, rm, pg, rn, zt);
+  void st1d(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(1, 0b1111, rm, pg, rn, zt);
   }
 
   // SVE Memory - Non-temporal and Multi-register Store
@@ -3129,111 +3038,79 @@ public:
   // XXX:
   // SVE store multiple structures (scalar plus immediate)
   void st2b(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b00, Imm, zt1, pg, rn);
   }
   void st3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b00, Imm, zt1, pg, rn);
   }
   void st4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b00, Imm, zt1, pg, rn);
   }
   void st2h(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b01, Imm, zt1, pg, rn);
   }
   void st3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b01, Imm, zt1, pg, rn);
   }
   void st4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b01, Imm, zt1, pg, rn);
   }
   void st2w(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b10, Imm, zt1, pg, rn);
   }
   void st3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b10, Imm, zt1, pg, rn);
   }
   void st4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b10, Imm, zt1, pg, rn);
   }
   void st2d(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b11, Imm, zt1, pg, rn);
   }
   void st3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b11, Imm, zt1, pg, rn);
   }
   void st4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b11, Imm, zt1, pg, rn);
   }
 
   // SVE contiguous store (scalar plus immediate)
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'111 << 13;
-    SVEContiguousLoadImm(Op, 0b0000 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
+  template<SubRegSize size>
+  void st1b(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousLoadImm(true, 0b0000 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    static_assert(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'111 << 13;
-    SVEContiguousLoadImm(Op, 0b0100 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
+  template<SubRegSize size>
+  void st1h(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadImm(true, 0b0100 | FEXCore::ToUnderlying(size), Imm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'111 << 13;
+  template<SubRegSize size>
+  void st1w(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
 
-    SVEContiguousLoadImm(Op, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
+    SVEContiguousLoadImm(true, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
   }
 
-  void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -8 && Imm <= 7, "Invalid sized loadstore offset size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'111 << 13;
-    SVEContiguousLoadImm(Op, 0b1111, Imm, pg, rn, zt);
+  void st1d(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousLoadImm(true, 0b1111, Imm, pg, rn, zt);
   }
 private:
   // SVE encodings
@@ -3899,7 +3776,7 @@ private:
   }
 
   // SVE floating-point round to integral value
-  void frintX(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void SVEFloatRoundIntegral(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
     // opc = round mode
     // 0b000 - N - Neaest ties to even
     // 0b001 - P - Towards +inf
@@ -3909,17 +3786,12 @@ private:
     // 0b101 - Unallocated
     // 0b110 - X - Current signalling inexact
     // 0b111 - I - Current
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'101 << 13;
-    SVEFloatRoundIntegral(Op, opc, size, zd, pg, zn);
-  }
 
-  void SVEFloatRoundIntegral(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Unsupported size in {}", __func__);
 
-    uint32_t Instr = Op;
-
+    uint32_t Instr = 0b0110'0101'0000'0000'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
@@ -3929,16 +3801,28 @@ private:
   }
 
   // SVE floating-point convert to integer
-  void SVEFloatConvertToInt(uint32_t Op, uint32_t opc, uint32_t opc2, uint32_t U, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEFloatConvertToInt(SubRegSize dstsize, SubRegSize srcsize, uint32_t b19, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(srcsize == SubRegSize::i16Bit || srcsize == SubRegSize::i32Bit || srcsize == SubRegSize::i64Bit,
+                        "Unsupported src size in {}", __func__);
+    LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit || dstsize == SubRegSize::i32Bit || dstsize == SubRegSize::i64Bit,
+                        "Unsupported dst size in {}", __func__);
 
+    uint32_t Instr = 0b0110'0101'0001'0000'1010'0000'0000'0000;
     Instr |= opc << 22;
+    Instr |= b19 << 19;
     Instr |= opc2 << 17;
     Instr |= U << 16;
     Instr |= pg.Idx() << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);
+  }
+  // SVE integer convert to floating-point
+  // We can implement this in terms of the floating-point to int version above,
+  // since the only difference in encoding is setting bit 19 to 0.
+  void SVEIntegerConvertToFloat(SubRegSize dstsize, SubRegSize srcsize, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
+    SVEFloatConvertToInt(dstsize, srcsize, 0, opc, opc2, U, pg, zn, zd);
   }
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
@@ -4140,34 +4024,58 @@ private:
     dc32(Instr);
   }
 
-  // SVE store multiple structures (scalar plus immediate)
-  void SVEContiguousMultipleStructures(uint32_t Op, uint32_t msz, uint32_t opc, uint32_t imm4, FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn) {
-    uint32_t Instr = Op;
+  // SVE load/store multiple structures (scalar plus immediate)
+  void SVEContiguousMultipleStructures(int32_t num_regs, bool is_store, uint32_t msz, int32_t imm, ZRegister zt, PRegister pg, Register rn) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT((imm % num_regs) == 0, "Offset must be a multiple of {}", num_regs);
 
+    [[maybe_unused]] const auto min_offset = -8 * num_regs;
+    [[maybe_unused]] const auto max_offset = 7 * num_regs;
+    LOGMAN_THROW_AA_FMT(imm >= min_offset && imm <= max_offset,
+                        "Invalid load/store offset ({}). Offset must be a multiple of {} and be within [{}, {}]",
+                        imm, num_regs, min_offset, max_offset);
+
+    const auto imm4 = static_cast<uint32_t>(imm / num_regs) & 0xF;
+    const auto opc = static_cast<uint32_t>(num_regs - 1);
+
+    uint32_t Instr = 0b1010'0100'0000'0000'1110'0000'0000'0000;
     Instr |= msz << 23;
     Instr |= opc << 21;
-    Instr |= (imm4 & 0xF) << 16;
+    Instr |= imm4 << 16;
     Instr |= pg.Idx() << 10;
     Instr |= Encode_rn(rn);
     Instr |= zt.Idx();
+    if (is_store) {
+      Instr |= 0x40100000U;
+    }
     dc32(Instr);
   }
 
-  void SVEContiguousLoadImm(uint32_t Op, uint32_t dtype, uint32_t Imm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::ZRegister zt) {
-    uint32_t Instr = Op;
+  void SVEContiguousLoadImm(bool is_store, uint32_t dtype, int32_t imm, PRegister pg, Register rn, ZRegister zt) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(imm >= -8 && imm <= 7,
+                        "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
+    const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
+
+    uint32_t Instr = 0b1010'0100'0000'0000'1010'0000'0000'0000;
     Instr |= dtype << 21;
-    Instr |= (Imm & 0xF) << 16;
+    Instr |= imm4 << 16;
     Instr |= pg.Idx() << 10;
     Instr |= Encode_rn(rn);
     Instr |= zt.Idx();
+    if (is_store) {
+      Instr |= 0x40004000U;
+    }
     dc32(Instr);
   }
 
   // zt.b, pg/z, xn, xm
-  void SVEContiguousLoadStore(uint32_t Op, uint32_t dtype, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::ZRegister zt) {
-    uint32_t Instr = Op;
+  void SVEContiguousLoadStore(uint32_t b30, uint32_t dtype, Register rm, PRegister pg, Register rn, ZRegister zt) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b1010'0100'0000'0000'0100'0000'0000'0000;
+    Instr |= b30 << 30;
     Instr |= dtype << 21;
     Instr |= Encode_rm(rm);
     Instr |= pg.Idx() << 10;
