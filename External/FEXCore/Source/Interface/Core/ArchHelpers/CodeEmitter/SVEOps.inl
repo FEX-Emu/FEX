@@ -2191,26 +2191,26 @@ public:
 
   // SVE Floating Point Unary Operations - Predicated
   // SVE floating-point round to integral value
-  void frinti(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b111, size, zd, pg, zn);
+  void frinti(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b111, size, zd, pg, zn);
   }
-  void frintx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b110, size, zd, pg, zn);
+  void frintx(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b110, size, zd, pg, zn);
   }
-  void frinta(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b100, size, zd, pg, zn);
+  void frinta(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b100, size, zd, pg, zn);
   }
-  void frintn(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b000, size, zd, pg, zn);
+  void frintn(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b000, size, zd, pg, zn);
   }
-  void frintz(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b011, size, zd, pg, zn);
+  void frintz(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b011, size, zd, pg, zn);
   }
-  void frintm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b010, size, zd, pg, zn);
+  void frintm(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b010, size, zd, pg, zn);
   }
-  void frintp(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    frintX(0b001, size, zd, pg, zn);
+  void frintp(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatRoundIntegral(0b001, size, zd, pg, zn);
   }
 
   // SVE floating-point convert precision
@@ -3899,7 +3899,7 @@ private:
   }
 
   // SVE floating-point round to integral value
-  void frintX(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void SVEFloatRoundIntegral(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
     // opc = round mode
     // 0b000 - N - Neaest ties to even
     // 0b001 - P - Towards +inf
@@ -3909,17 +3909,12 @@ private:
     // 0b101 - Unallocated
     // 0b110 - X - Current signalling inexact
     // 0b111 - I - Current
-    constexpr uint32_t Op = 0b0110'0101'0000'0000'101 << 13;
-    SVEFloatRoundIntegral(Op, opc, size, zd, pg, zn);
-  }
 
-  void SVEFloatRoundIntegral(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                        "Unsupported size in {}", __func__);
 
-    uint32_t Instr = Op;
-
+    uint32_t Instr = 0b0110'0101'0000'0000'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
