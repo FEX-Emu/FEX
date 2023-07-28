@@ -1159,10 +1159,14 @@ private:
   }
 
   OrderedNode *GetRFLAG(unsigned BitOffset) {
-    if (IsNZCV(BitOffset))
-      return _Bfe(1, 1, IndexNZCV(BitOffset), GetNZCV());
-    else
+    if (IsNZCV(BitOffset)) {
+      if (!CachedNZCV || (PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset))))
+        return _Bfe(1, 1, IndexNZCV(BitOffset), GetNZCV());
+      else
+        return _Constant(0);
+    } else {
       return _LoadFlag(BitOffset);
+    }
   }
 
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);
