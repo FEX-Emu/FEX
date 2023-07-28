@@ -146,6 +146,8 @@ if (BUILD_TESTS)
   if (NOT MINGW_BUILD)
     list(APPEND SRCS TestHarnessRunner/HostRunner.cpp)
     list(APPEND LIBS LinuxEmulation)
+  else()
+    list(APPEND SRCS WindowsDummyHandlers.cpp)
   endif()
 
   add_executable(TestHarnessRunner ${SRCS})
