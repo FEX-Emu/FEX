@@ -64,9 +64,22 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   CalculateDeferredFlags();
 
   OrderedNode *Original = _Constant((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask ? 2 : 0);
+
+  // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
+  bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_LOC)) &&
+               (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_LOC)) &&
+               CTX->BackendFeatures.SupportsShiftedBitwise;
+
+
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
     const auto FlagOffset = FlagOffsets[i];
     if (!((1U << FlagOffset) & FlagsMask)) {
+      continue;
+    }
+
+    if (GetNZ && (FlagOffset == FEXCore::X86State::RFLAG_SF_LOC ||
+                  FlagOffset == FEXCore::X86State::RFLAG_ZF_LOC)) {
+      // Already handled
       continue;
     }
 
@@ -81,6 +94,15 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     else
       Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
+
+  // OR in the SF/ZF flags at the end, allowing the lshr to fold with the OR
+  if (GetNZ) {
+    static_assert(FEXCore::X86State::RFLAG_SF_LOC == (FEXCore::X86State::RFLAG_ZF_LOC + 1));
+    auto NZCV = GetNZCV();
+    auto NZ = _And(NZCV, _Constant(0b11u << 30));
+    Original = _Orlshr(Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
+  }
+
   return Original;
 }
 
