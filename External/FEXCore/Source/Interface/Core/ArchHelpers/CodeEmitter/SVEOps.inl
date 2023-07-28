@@ -2241,72 +2241,72 @@ public:
   }
 
   // SVE integer convert to floating-point
-  void scvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
+  void scvtf(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
     uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc1 = 0b01;
       opc2 = 0b01;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
       opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
 
       opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b00 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b10 :0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
+    else if (srcsize == SubRegSize::i64Bit) {
       // SrcSize = fp64, opc2 encodes dst size
       opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b11 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
       opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b11 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b11 :0b00;
     }
     else {
       FEX_UNREACHABLE;
     }
     SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 0, pg, zn, zd);
   }
-  void ucvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
+  void ucvtf(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
     uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc1 = 0b01;
       opc2 = 0b01;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
       opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
 
       opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b00 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b10 :0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
+    else if (srcsize == SubRegSize::i64Bit) {
       // SrcSize = fp64, opc2 encodes dst size
       opc1 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b11 :
+        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
       opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b11 :0b00;
+        dstsize == SubRegSize::i64Bit ? 0b11 :
+        dstsize == SubRegSize::i32Bit ? 0b10 :
+        dstsize == SubRegSize::i16Bit ? 0b11 :0b00;
     }
     else {
       FEX_UNREACHABLE;
@@ -2315,66 +2315,64 @@ public:
   }
 
   // SVE floating-point convert to integer
-  void flogb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+  void flogb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+      size == SubRegSize::i64Bit ? 0b11 :
+      size == SubRegSize::i32Bit ? 0b10 :
+      size == SubRegSize::i16Bit ? 0b01 : 0b00;
 
     SVEFloatConvertToInt(size, size, 1, 0b00, ConvertedSize, 0, pg, zn, zd);
   }
-  void fcvtzs(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
+  void fcvtzs(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
     uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
       opc1 = 0b01;
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 :
+             dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
-      opc1 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 : 0b00;
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+    else if (srcsize == SubRegSize::i64Bit) {
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b00 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
     }
     else {
       FEX_UNREACHABLE;
     }
     SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 0, pg, zn, zd);
   }
-  void fcvtzu(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
+  void fcvtzu(ZRegister zd, SubRegSize dstsize, PRegisterMerge pg, ZRegister zn, SubRegSize srcsize) {
     uint32_t opc1, opc2;
-    if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
+    if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
       opc1 = 0b01;
-      opc2 =
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 :
+             dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit) {
+    else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
-      opc1 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 : 0b00;
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     }
-    else if (srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(dstsize != FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+    else if (srcsize == SubRegSize::i64Bit) {
+      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-        dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b00 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
+             dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
     }
     else {
       FEX_UNREACHABLE;
