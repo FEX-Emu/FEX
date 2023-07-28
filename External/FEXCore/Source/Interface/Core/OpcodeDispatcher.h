@@ -852,6 +852,7 @@ private:
   }
 
   OrderedNode* CachedNZCV = {};
+  uint32_t PossiblySetNZCVBits = 0;
 
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock{false};
@@ -1071,8 +1072,12 @@ private:
   }
 
   OrderedNode *GetNZCV() {
-    if (!CachedNZCV)
+    if (!CachedNZCV) {
       CachedNZCV = _LoadFlag(FEXCore::X86State::RFLAG_NZCV_LOC);
+
+      // We don't know what's set
+      PossiblySetNZCVBits = ~0;
+    }
 
     return CachedNZCV;
   }
@@ -1083,6 +1088,7 @@ private:
 
   void ZeroNZCV() {
     CachedNZCV = _Constant(0);
+    PossiblySetNZCVBits = 0;
   }
 
   void SetN_ZeroZCV(unsigned SrcSize, OrderedNode *Res) {
@@ -1103,6 +1109,7 @@ private:
 
     // Mask off just the N bit, which now equals the sign bit
     CachedNZCV = _And(Shifted, _Constant(1u << NBit));
+    PossiblySetNZCVBits = (1u << NBit);
   }
 
   // TODO: Replace with a TST instruction
@@ -1118,7 +1125,17 @@ private:
   }
 
   OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
-    return _Bfi(4, 1, IndexNZCV(BitOffset), NZCV, Value);
+    unsigned Bit = IndexNZCV(BitOffset);
+
+    uint32_t SetBits = PossiblySetNZCVBits;
+    PossiblySetNZCVBits |= (1u << Bit);
+
+    if (SetBits == 0)
+      return _Lshl(Value, _Constant(Bit));
+    else if (CTX->BackendFeatures.SupportsShiftedBitwise && (SetBits & (1u << Bit)) == 0)
+      return _Orlshl(NZCV, Value, Bit);
+    else
+      return _Bfi(4, 1, Bit, NZCV, Value);
   }
 
   template<unsigned BitOffset>
