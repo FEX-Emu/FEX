@@ -2472,76 +2472,52 @@ public:
   // XXX:
   // SVE load multiple structures (scalar plus immediate)
   void ld2b(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b00, Imm, zt1, pg, rn);
   }
   void ld3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b00, Imm, zt1, pg, rn);
   }
   void ld4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b00, Imm, zt1, pg, rn);
   }
   void ld2h(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b01, Imm, zt1, pg, rn);
   }
   void ld3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b01, Imm, zt1, pg, rn);
   }
   void ld4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b01, Imm, zt1, pg, rn);
   }
   void ld2w(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b10, Imm, zt1, pg, rn);
   }
   void ld3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b10, Imm, zt1, pg, rn);
   }
   void ld4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b10, Imm, zt1, pg, rn);
   }
   void ld2d(ZRegister zt1, ZRegister zt2, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, false, 0b11, Imm, zt1, pg, rn);
   }
   void ld3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, false, 0b11, Imm, zt1, pg, rn);
   }
   void ld4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, false, 0b11, Imm, zt1, pg, rn);
   }
 
   // SVE helper implementations
@@ -3084,76 +3060,52 @@ public:
   // XXX:
   // SVE store multiple structures (scalar plus immediate)
   void st2b(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b00, Imm, zt1, pg, rn);
   }
   void st3b(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b00, Imm, zt1, pg, rn);
   }
   void st4b(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b00, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b00, Imm, zt1, pg, rn);
   }
   void st2h(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b01, Imm, zt1, pg, rn);
   }
   void st3h(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b01, Imm, zt1, pg, rn);
   }
   void st4h(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b01, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b01, Imm, zt1, pg, rn);
   }
   void st2w(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b10, Imm, zt1, pg, rn);
   }
   void st3w(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b10, Imm, zt1, pg, rn);
   }
   void st4w(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b10, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b10, Imm, zt1, pg, rn);
   }
   void st2d(ZRegister zt1, ZRegister zt2, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -16 && Imm <= 14 && ((Imm % 2) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b01, Imm / 2, zt1, pg, rn);
+    SVEContiguousMultipleStructures(2, true, 0b11, Imm, zt1, pg, rn);
   }
   void st3d(ZRegister zt1, ZRegister zt2, ZRegister zt3, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -24 && Imm <= 21 && ((Imm % 3) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b10, Imm / 3, zt1, pg, rn);
+    SVEContiguousMultipleStructures(3, true, 0b11, Imm, zt1, pg, rn);
   }
   void st4d(ZRegister zt1, ZRegister zt2, ZRegister zt3, ZRegister zt4, PRegister pg, Register rn, int32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(Imm >= -32 && Imm <= 28 && ((Imm % 4) == 0), "Invalid sized loadstore offset size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zt1, zt2, zt3, zt4), "Registers need to be contiguous");
-    constexpr uint32_t Op = 0b1110'0100'0001'0000'111 << 13;
-    SVEContiguousMultipleStructures(Op, 0b11, 0b11, Imm / 4, zt1, pg, rn);
+    SVEContiguousMultipleStructures(4, true, 0b11, Imm, zt1, pg, rn);
   }
 
   // SVE contiguous store (scalar plus immediate)
@@ -4102,16 +4054,30 @@ private:
     dc32(Instr);
   }
 
-  // SVE store multiple structures (scalar plus immediate)
-  void SVEContiguousMultipleStructures(uint32_t Op, uint32_t msz, uint32_t opc, uint32_t imm4, FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn) {
-    uint32_t Instr = Op;
+  // SVE load/store multiple structures (scalar plus immediate)
+  void SVEContiguousMultipleStructures(int32_t num_regs, bool is_store, uint32_t msz, int32_t imm, ZRegister zt, PRegister pg, Register rn) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT((imm % num_regs) == 0, "Offset must be a multiple of {}", num_regs);
 
+    [[maybe_unused]] const auto min_offset = -8 * num_regs;
+    [[maybe_unused]] const auto max_offset = 7 * num_regs;
+    LOGMAN_THROW_AA_FMT(imm >= min_offset && imm <= max_offset,
+                        "Invalid load/store offset ({}). Offset must be a multiple of {} and be within [{}, {}]",
+                        imm, num_regs, min_offset, max_offset);
+
+    const auto imm4 = static_cast<uint32_t>(imm / num_regs) & 0xF;
+    const auto opc = static_cast<uint32_t>(num_regs - 1);
+
+    uint32_t Instr = 0b1010'0100'0000'0000'1110'0000'0000'0000;
     Instr |= msz << 23;
     Instr |= opc << 21;
-    Instr |= (imm4 & 0xF) << 16;
+    Instr |= imm4 << 16;
     Instr |= pg.Idx() << 10;
     Instr |= Encode_rn(rn);
     Instr |= zt.Idx();
+    if (is_store) {
+      Instr |= 0x40100000U;
+    }
     dc32(Instr);
   }
 
