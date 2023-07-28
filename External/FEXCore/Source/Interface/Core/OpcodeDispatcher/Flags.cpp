@@ -476,8 +476,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
   {
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
+    ZeroNZCV();
   }
 
   // CF/OF
@@ -502,9 +501,8 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(Zero);
+    ZeroNZCV();
   }
 
   // CF/OF
@@ -964,14 +962,10 @@ void OpDispatchBuilder::CalculateFlags_BEXTR(OrderedNode *Src) {
   //
   // CF and OF are defined as being set to zero
   //
-  SetRFLAG<X86State::RFLAG_CF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_OF_LOC>(Zero);
-
   // Every other flag is considered undefined after a
   // BEXTR instruction, but we opt to reliably clear them.
   //
-  SetRFLAG<X86State::RFLAG_AF_LOC>(Zero);
-  SetRFLAG<X86State::RFLAG_SF_LOC>(Zero);
+  ZeroNZCV();
 
   // PF
   if (CTX->Config.ABINoPF) {
@@ -1072,12 +1066,11 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(OrderedNode *Src) {
       _Constant(1), Zero);
 
   // Set flags
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Zero);
+  ZeroNZCV();
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+
   SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
-  SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
 }
 
 void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result, OrderedNode *Src) {
@@ -1110,16 +1103,12 @@ void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, OrderedNode *Result
                         One, Zero);
     SetRFLAG<X86State::RFLAG_CF_LOC>(CFOp);
   }
-
-  // SF
-  {
-    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Result);
-    SetRFLAG<X86State::RFLAG_SF_LOC>(SignOp);
-  }
 }
 
 void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
   // OF, SF, AF, PF all undefined
+  ZeroNZCV();
+
   auto Zero = _Constant(0);
   auto ZFResult = _Select(FEXCore::IR::COND_EQ,
       Src,  Zero,
@@ -1132,6 +1121,7 @@ void OpDispatchBuilder::CalculateFlags_TZCNT(OrderedNode *Src) {
 
 void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) {
   // OF, SF, AF, PF all undefined
+  ZeroNZCV();
 
   auto Zero = _Constant(0);
   auto ZFResult = _Select(FEXCore::IR::COND_EQ,
@@ -1145,6 +1135,7 @@ void OpDispatchBuilder::CalculateFlags_LZCNT(uint8_t SrcSize, OrderedNode *Src) 
 
 void OpDispatchBuilder::CalculateFlags_BITSELECT(OrderedNode *Src) {
   // OF, SF, AF, PF, CF all undefined
+  ZeroNZCV();
 
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
@@ -1160,11 +1151,9 @@ void OpDispatchBuilder::CalculateFlags_BITSELECT(OrderedNode *Src) {
 void OpDispatchBuilder::CalculateFlags_RDRAND(OrderedNode *Src) {
   // OF, SF, ZF, AF, PF all zero
   // CF is set to the incoming source
+  ZeroNZCV();
 
   auto ZeroConst = _Constant(0);
-  SetRFLAG<X86State::RFLAG_OF_LOC>(ZeroConst);
-  SetRFLAG<X86State::RFLAG_SF_LOC>(ZeroConst);
-  SetRFLAG<X86State::RFLAG_ZF_LOC>(ZeroConst);
   SetRFLAG<X86State::RFLAG_AF_LOC>(ZeroConst);
   SetRFLAG<X86State::RFLAG_PF_LOC>(ZeroConst);
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(Src);

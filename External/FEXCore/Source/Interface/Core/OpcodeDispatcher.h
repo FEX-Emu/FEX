@@ -1081,6 +1081,10 @@ private:
     CachedNZCV = Value;
   }
 
+  void ZeroNZCV() {
+    CachedNZCV = _Constant(0);
+  }
+
   void SetN_ZeroZCV(unsigned SrcSize, OrderedNode *Res) {
     static_assert(IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC) == 31);
 
