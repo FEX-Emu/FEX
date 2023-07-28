@@ -7,7 +7,6 @@
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <tuple>
@@ -35,7 +34,7 @@ class DualIntrusiveAllocator {
     }
 
     [[nodiscard]] void *DataAllocate(size_t Size) {
-      assert(DataCheckSize(Size) &&
+      LOGMAN_THROW_A_FMT(DataCheckSize(Size),
         "Ran out of space in DualIntrusiveAllocator during allocation");
       size_t NewOffset = DataCurrentOffset + Size;
       uintptr_t NewPointer = Data + DataCurrentOffset;
@@ -44,7 +43,7 @@ class DualIntrusiveAllocator {
     }
 
     [[nodiscard]] void *ListAllocate(size_t Size) {
-      assert(ListCheckSize(Size) &&
+      LOGMAN_THROW_A_FMT(ListCheckSize(Size),
         "Ran out of space in DualIntrusiveAllocator during allocation");
       size_t NewOffset = ListCurrentOffset + Size;
       uintptr_t NewPointer = List + ListCurrentOffset;
