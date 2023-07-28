@@ -10,7 +10,6 @@ $end_info$
 #include "Interface/Core/X86Tables/X86Tables.h"
 
 #include <array>
-#include <assert.h>
 #include <algorithm>
 #include <cstring>
 #include <FEXCore/Config/Config.h>
@@ -965,7 +964,7 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
   }
 
   if (DecodeInst->Dest.IsGPR()) {
-    assert(DecodeInst->Dest.Data.GPR.GPR != FEXCore::X86State::REG_INVALID);
+    LOGMAN_THROW_A_FMT(DecodeInst->Dest.Data.GPR.GPR != FEXCore::X86State::REG_INVALID, "Destination GPR was invalid");
   }
 
   return true;

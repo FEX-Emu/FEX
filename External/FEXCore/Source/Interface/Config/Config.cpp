@@ -17,7 +17,6 @@
 #include <FEXHeaderUtils/Filesystem.h>
 
 #include <array>
-#include <assert.h>
 #include <cstdlib>
 #include <functional>
 #include <optional>
@@ -453,7 +452,7 @@ namespace DefaultValues {
     auto Value = FEXCore::Config::Get(Option);
 
     if (!FEXCore::StrConv::Conv(**Value, &Result)) {
-      assert(0 && "Attempted to convert invalid value");
+      LOGMAN_MSG_A_FMT("Attempted to convert invalid value");
     }
     return Result;
   }
