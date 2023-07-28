@@ -63,13 +63,18 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  OrderedNode *Original = _Constant((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask ? 2 : 0);
+  OrderedNode *Original = _Constant(0);
 
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
   bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_LOC)) &&
                (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_LOC)) &&
                CTX->BackendFeatures.SupportsShiftedBitwise;
 
+  // Handle CF first, since it's at bit 0 and hence doesn't need shift or OR.
+  if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_LOC)) {
+    static_assert(FEXCore::X86State::RFLAG_CF_LOC == 0);
+    Original = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
+  }
 
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
     const auto FlagOffset = FlagOffsets[i];
@@ -77,8 +82,9 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
       continue;
     }
 
-    if (GetNZ && (FlagOffset == FEXCore::X86State::RFLAG_SF_LOC ||
-                  FlagOffset == FEXCore::X86State::RFLAG_ZF_LOC)) {
+    if ((GetNZ && (FlagOffset == FEXCore::X86State::RFLAG_SF_LOC ||
+                   FlagOffset == FEXCore::X86State::RFLAG_ZF_LOC)) ||
+        FlagOffset == FEXCore::X86State::RFLAG_CF_LOC) {
       // Already handled
       continue;
     }
@@ -102,6 +108,10 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     auto NZ = _And(NZCV, _Constant(0b11u << 30));
     Original = _Orlshr(Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_LOC);
   }
+
+  // The constant is OR'ed in at the end, to avoid a pointless or xzr, #2.
+  if ((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask)
+    Original = _Or(Original, _Constant(2));
 
   return Original;
 }
