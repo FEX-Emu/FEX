@@ -1436,7 +1436,28 @@ public:
 
   // SVE Integer Wide Immediate - Unpredicated
   // SVE integer add/subtract immediate (unpredicated)
-  // XXX:
+  void add(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b000, size, zd, zn, imm);
+  }
+  void sub(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b001, size, zd, zn, imm);
+  }
+  void subr(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b011, size, zd, zn, imm);
+  }
+  void sqadd(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b100, size, zd, zn, imm);
+  }
+  void uqadd(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b101, size, zd, zn, imm);
+  }
+  void sqsub(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b110, size, zd, zn, imm);
+  }
+  void uqsub(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    SVEAddSubImmediateUnpred(0b111, size, zd, zn, imm);
+  }
+
   // SVE integer min/max immediate (unpredicated)
   // XXX:
   // SVE integer multiply immediate (unpredicated)
@@ -3128,6 +3149,35 @@ private:
     Instr |= tsz << 16;
     Instr |= Encode_rn(zn);
     Instr |= Encode_rd(zd);
+    dc32(Instr);
+  }
+
+  void SVEAddSubImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
+
+    const bool is_uint8_imm = (imm >> 8) == 0;
+    if (size == SubRegSize::i8Bit) {
+      LOGMAN_THROW_AA_FMT(is_uint8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
+    }
+
+    uint32_t shift = 0;
+    if (!is_uint8_imm) {
+      const bool is_uint16_imm = (imm >> 16) == 0;
+
+      LOGMAN_THROW_AA_FMT(is_uint16_imm, "Immediate ({}) must be a 16-bit value within [256, 65280]", imm);
+      LOGMAN_THROW_AA_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
+
+      imm /= 256;
+      shift = 1;
+    }
+
+    uint32_t Instr = 0b0010'0101'0010'0000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= shift << 13;
+    Instr |= imm << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 

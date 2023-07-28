@@ -1983,7 +1983,180 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE pointer conflict compare")
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract immediate (unpredicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(add(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "add z30.b, z30.b, #0");
+  TEST_SINGLE(add(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "add z30.b, z30.b, #127");
+  TEST_SINGLE(add(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "add z30.b, z30.b, #255");
+
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "add z30.h, z30.h, #0");
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "add z30.h, z30.h, #127");
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "add z30.h, z30.h, #255");
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "add z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "add z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(add(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "add z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "add z30.s, z30.s, #0");
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "add z30.s, z30.s, #127");
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "add z30.s, z30.s, #255");
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "add z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "add z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(add(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "add z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "add z30.d, z30.d, #0");
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "add z30.d, z30.d, #127");
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "add z30.d, z30.d, #255");
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "add z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "add z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(add(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "add z30.d, z30.d, #255, lsl #8");
+
+  TEST_SINGLE(sub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "sub z30.b, z30.b, #0");
+  TEST_SINGLE(sub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "sub z30.b, z30.b, #127");
+  TEST_SINGLE(sub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "sub z30.b, z30.b, #255");
+
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "sub z30.h, z30.h, #0");
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "sub z30.h, z30.h, #127");
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "sub z30.h, z30.h, #255");
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "sub z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "sub z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(sub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "sub z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "sub z30.s, z30.s, #0");
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "sub z30.s, z30.s, #127");
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "sub z30.s, z30.s, #255");
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "sub z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "sub z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(sub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "sub z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "sub z30.d, z30.d, #0");
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "sub z30.d, z30.d, #127");
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "sub z30.d, z30.d, #255");
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "sub z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "sub z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(sub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "sub z30.d, z30.d, #255, lsl #8");
+
+  TEST_SINGLE(subr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "subr z30.b, z30.b, #0");
+  TEST_SINGLE(subr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "subr z30.b, z30.b, #127");
+  TEST_SINGLE(subr(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "subr z30.b, z30.b, #255");
+
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "subr z30.h, z30.h, #0");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "subr z30.h, z30.h, #127");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "subr z30.h, z30.h, #255");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "subr z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "subr z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(subr(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "subr z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "subr z30.s, z30.s, #0");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "subr z30.s, z30.s, #127");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "subr z30.s, z30.s, #255");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "subr z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "subr z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(subr(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "subr z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "subr z30.d, z30.d, #0");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "subr z30.d, z30.d, #127");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "subr z30.d, z30.d, #255");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "subr z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "subr z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(subr(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "subr z30.d, z30.d, #255, lsl #8");
+
+  TEST_SINGLE(sqadd(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "sqadd z30.b, z30.b, #0");
+  TEST_SINGLE(sqadd(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "sqadd z30.b, z30.b, #127");
+  TEST_SINGLE(sqadd(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "sqadd z30.b, z30.b, #255");
+
+  TEST_SINGLE(sqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "sqadd z30.h, z30.h, #0");
+  TEST_SINGLE(sqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "sqadd z30.h, z30.h, #127");
+  TEST_SINGLE(sqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "sqadd z30.h, z30.h, #255");
+  TEST_SINGLE(sqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "sqadd z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(sqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "sqadd z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(sqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "sqadd z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(sqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "sqadd z30.s, z30.s, #0");
+  TEST_SINGLE(sqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "sqadd z30.s, z30.s, #127");
+  TEST_SINGLE(sqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "sqadd z30.s, z30.s, #255");
+  TEST_SINGLE(sqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "sqadd z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(sqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "sqadd z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(sqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "sqadd z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(sqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "sqadd z30.d, z30.d, #0");
+  TEST_SINGLE(sqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "sqadd z30.d, z30.d, #127");
+  TEST_SINGLE(sqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "sqadd z30.d, z30.d, #255");
+  TEST_SINGLE(sqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "sqadd z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(sqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "sqadd z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(sqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "sqadd z30.d, z30.d, #255, lsl #8");
+
+  TEST_SINGLE(uqadd(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "uqadd z30.b, z30.b, #0");
+  TEST_SINGLE(uqadd(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "uqadd z30.b, z30.b, #127");
+  TEST_SINGLE(uqadd(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "uqadd z30.b, z30.b, #255");
+
+  TEST_SINGLE(uqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "uqadd z30.h, z30.h, #0");
+  TEST_SINGLE(uqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "uqadd z30.h, z30.h, #127");
+  TEST_SINGLE(uqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "uqadd z30.h, z30.h, #255");
+  TEST_SINGLE(uqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "uqadd z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(uqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "uqadd z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(uqadd(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "uqadd z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(uqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "uqadd z30.s, z30.s, #0");
+  TEST_SINGLE(uqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "uqadd z30.s, z30.s, #127");
+  TEST_SINGLE(uqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "uqadd z30.s, z30.s, #255");
+  TEST_SINGLE(uqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "uqadd z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(uqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "uqadd z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(uqadd(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "uqadd z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(uqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "uqadd z30.d, z30.d, #0");
+  TEST_SINGLE(uqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "uqadd z30.d, z30.d, #127");
+  TEST_SINGLE(uqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "uqadd z30.d, z30.d, #255");
+  TEST_SINGLE(uqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "uqadd z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(uqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "uqadd z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(uqadd(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "uqadd z30.d, z30.d, #255, lsl #8");
+
+  TEST_SINGLE(sqsub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "sqsub z30.b, z30.b, #0");
+  TEST_SINGLE(sqsub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "sqsub z30.b, z30.b, #127");
+  TEST_SINGLE(sqsub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "sqsub z30.b, z30.b, #255");
+
+  TEST_SINGLE(sqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "sqsub z30.h, z30.h, #0");
+  TEST_SINGLE(sqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "sqsub z30.h, z30.h, #127");
+  TEST_SINGLE(sqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "sqsub z30.h, z30.h, #255");
+  TEST_SINGLE(sqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "sqsub z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(sqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "sqsub z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(sqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "sqsub z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(sqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "sqsub z30.s, z30.s, #0");
+  TEST_SINGLE(sqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "sqsub z30.s, z30.s, #127");
+  TEST_SINGLE(sqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "sqsub z30.s, z30.s, #255");
+  TEST_SINGLE(sqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "sqsub z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(sqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "sqsub z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(sqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "sqsub z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(sqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "sqsub z30.d, z30.d, #0");
+  TEST_SINGLE(sqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "sqsub z30.d, z30.d, #127");
+  TEST_SINGLE(sqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "sqsub z30.d, z30.d, #255");
+  TEST_SINGLE(sqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "sqsub z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(sqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "sqsub z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(sqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "sqsub z30.d, z30.d, #255, lsl #8");
+
+  TEST_SINGLE(uqsub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "uqsub z30.b, z30.b, #0");
+  TEST_SINGLE(uqsub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "uqsub z30.b, z30.b, #127");
+  TEST_SINGLE(uqsub(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 255),   "uqsub z30.b, z30.b, #255");
+
+  TEST_SINGLE(uqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "uqsub z30.h, z30.h, #0");
+  TEST_SINGLE(uqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "uqsub z30.h, z30.h, #127");
+  TEST_SINGLE(uqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 255),   "uqsub z30.h, z30.h, #255");
+  TEST_SINGLE(uqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 256),   "uqsub z30.h, z30.h, #1, lsl #8");
+  TEST_SINGLE(uqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 32512), "uqsub z30.h, z30.h, #127, lsl #8");
+  TEST_SINGLE(uqsub(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 65280), "uqsub z30.h, z30.h, #255, lsl #8");
+
+  TEST_SINGLE(uqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "uqsub z30.s, z30.s, #0");
+  TEST_SINGLE(uqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "uqsub z30.s, z30.s, #127");
+  TEST_SINGLE(uqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 255),   "uqsub z30.s, z30.s, #255");
+  TEST_SINGLE(uqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 256),   "uqsub z30.s, z30.s, #1, lsl #8");
+  TEST_SINGLE(uqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 32512), "uqsub z30.s, z30.s, #127, lsl #8");
+  TEST_SINGLE(uqsub(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 65280), "uqsub z30.s, z30.s, #255, lsl #8");
+
+  TEST_SINGLE(uqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "uqsub z30.d, z30.d, #0");
+  TEST_SINGLE(uqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "uqsub z30.d, z30.d, #127");
+  TEST_SINGLE(uqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 255),   "uqsub z30.d, z30.d, #255");
+  TEST_SINGLE(uqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 256),   "uqsub z30.d, z30.d, #1, lsl #8");
+  TEST_SINGLE(uqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 32512), "uqsub z30.d, z30.d, #127, lsl #8");
+  TEST_SINGLE(uqsub(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 65280), "uqsub z30.d, z30.d, #255, lsl #8");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max immediate (unpredicated)") {
