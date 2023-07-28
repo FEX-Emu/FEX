@@ -83,6 +83,10 @@ public:
 
   void StartNewBlock() {
     flagsOp = SelectionFlag::Nothing;
+
+    // If we loaded flags but didn't change them, invalidate the cached copy and move on.
+    // Changes get stored out by CalculateDeferredFlags.
+    CachedNZCV = nullptr;
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {
@@ -834,6 +838,21 @@ private:
   OrderedNode* flagsOpDestSigned{};
   OrderedNode* flagsOpSrcSigned{};
 
+  static bool IsNZCV(unsigned BitOffset) {
+    switch (BitOffset) {
+      case FEXCore::X86State::RFLAG_CF_LOC:
+      case FEXCore::X86State::RFLAG_ZF_LOC:
+      case FEXCore::X86State::RFLAG_SF_LOC:
+      case FEXCore::X86State::RFLAG_OF_LOC:
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  OrderedNode* CachedNZCV = {};
+
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock{false};
   bool DecodeFailure{false};
@@ -1041,6 +1060,31 @@ private:
   [[nodiscard]] uint32_t GetDstBitSize(X86Tables::DecodedOp Op) const;
   [[nodiscard]] uint32_t GetSrcBitSize(X86Tables::DecodedOp Op) const;
 
+  static inline constexpr unsigned IndexNZCV(unsigned BitOffset) {
+    switch (BitOffset) {
+      case FEXCore::X86State::RFLAG_OF_LOC: return 28;
+      case FEXCore::X86State::RFLAG_CF_LOC: return 29;
+      case FEXCore::X86State::RFLAG_ZF_LOC: return 30;
+      case FEXCore::X86State::RFLAG_SF_LOC: return 31;
+      default: FEX_UNREACHABLE;
+    }
+  }
+
+  OrderedNode *GetNZCV() {
+    if (!CachedNZCV)
+      CachedNZCV = _LoadFlag(FEXCore::X86State::RFLAG_NZCV_LOC);
+
+    return CachedNZCV;
+  }
+
+  void SetNZCV(OrderedNode *Value) {
+    CachedNZCV = Value;
+  }
+
+  OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
+    return _Bfi(4, 1, IndexNZCV(BitOffset), NZCV, Value);
+  }
+
   template<unsigned BitOffset>
   void SetRFLAG(OrderedNode *Value) {
     SetRFLAG(Value, BitOffset);
@@ -1048,11 +1092,18 @@ private:
 
   void SetRFLAG(OrderedNode *Value, unsigned BitOffset) {
     flagsOp = SelectionFlag::Nothing;
-    _StoreFlag(Value, BitOffset);
+
+    if (IsNZCV(BitOffset))
+      SetNZCV(InsertNZCV(GetNZCV(), BitOffset, Value));
+    else
+      _StoreFlag(Value, BitOffset);
   }
 
   OrderedNode *GetRFLAG(unsigned BitOffset) {
-    return _LoadFlag(BitOffset);
+    if (IsNZCV(BitOffset))
+      return _Bfe(1, 1, IndexNZCV(BitOffset), GetNZCV());
+    else
+      return _LoadFlag(BitOffset);
   }
 
   OrderedNode *SelectCC(uint8_t OP, OrderedNode *TrueValue, OrderedNode *FalseValue);

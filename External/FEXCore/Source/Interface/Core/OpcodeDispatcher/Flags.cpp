@@ -138,6 +138,10 @@ void OpDispatchBuilder::CalculatePF(OrderedNode *Res, OrderedNode *condition) {
 void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
   if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
     // Nothing to do
+    if (CachedNZCV)
+      _StoreFlag(CachedNZCV, FEXCore::X86State::RFLAG_NZCV_LOC);
+
+    CachedNZCV = nullptr;
     return;
   }
 
@@ -320,6 +324,11 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
 
   // Done calculating
   CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
+
+  if (CachedNZCV)
+    _StoreFlag(CachedNZCV, FEXCore::X86State::RFLAG_NZCV_LOC);
+
+  CachedNZCV = nullptr;
 }
 
 void OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2, OrderedNode *CF) {
