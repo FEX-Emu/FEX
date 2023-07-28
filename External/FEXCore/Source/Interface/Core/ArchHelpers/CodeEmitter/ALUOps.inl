@@ -129,7 +129,9 @@ public:
     constexpr uint32_t Op = 0b0011'0001'0 << 23;
     DataProcessing_AddSub_Imm(Op, s, rd, rn, Imm, LSL12);
   }
-
+  void cmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, uint32_t Imm, bool LSL12 = false) {
+    adds(s, FEXCore::ARMEmitter::Reg::zr, rn, Imm, LSL12);
+  }
   void sub(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t Imm, bool LSL12 = false) {
     constexpr uint32_t Op = 0b0101'0001'0 << 23;
     DataProcessing_AddSub_Imm(Op, s, rd, rn, Imm, LSL12);
@@ -585,6 +587,9 @@ public:
   void adds(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::XRegister rn, FEXCore::ARMEmitter::XRegister rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     adds(ARMEmitter::Size::i64Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
+  void cmn(FEXCore::ARMEmitter::XRegister rn, FEXCore::ARMEmitter::XRegister rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+    adds(ARMEmitter::Size::i64Bit, FEXCore::ARMEmitter::XReg::zr, rn.R(), rm.R(), Shift, amt);
+  }
   void sub(FEXCore::ARMEmitter::XRegister rd, FEXCore::ARMEmitter::XRegister rn, FEXCore::ARMEmitter::XRegister rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     sub(ARMEmitter::Size::i64Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
@@ -606,6 +611,9 @@ public:
   }
   void adds(FEXCore::ARMEmitter::WRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     adds(ARMEmitter::Size::i32Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
+  }
+  void cmn(FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+    adds(ARMEmitter::Size::i32Bit, FEXCore::ARMEmitter::WReg::zr, rn.R(), rm.R(), Shift, amt);
   }
   void sub(FEXCore::ARMEmitter::WRegister rd, FEXCore::ARMEmitter::WRegister rn, FEXCore::ARMEmitter::WRegister rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     sub(ARMEmitter::Size::i32Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
@@ -632,6 +640,9 @@ public:
     LOGMAN_THROW_AA_FMT(Shift != FEXCore::ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b010'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
+  }
+  void cmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+    adds(s, FEXCore::ARMEmitter::Reg::zr, rn, rm, Shift, amt);
   }
   void sub(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     LOGMAN_THROW_AA_FMT(Shift != FEXCore::ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
@@ -663,6 +674,9 @@ public:
   void adds(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
     constexpr uint32_t Op = 0b010'1011'001U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, Option, Shift);
+  }
+  void cmn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
+    adds(s, FEXCore::ARMEmitter::Reg::zr, rn, rm, Option, Shift);
   }
   void sub(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
     constexpr uint32_t Op = 0b100'1011'001U << 21;

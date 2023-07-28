@@ -259,6 +259,18 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Add/subtract immediate") {
   TEST_SINGLE(adds(Size::i64Bit, Reg::r29, Reg::r28, 4095, true), "adds x29, x28, #0xfff000 (16773120)");
   TEST_SINGLE(adds(Size::i64Bit, Reg::r29, Reg::r28, 16773120), "adds x29, x28, #0xfff000 (16773120)");
 
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, 0, false), "cmn w28, #0x0 (0)");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, 4095, false), "cmn w28, #0xfff (4095)");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, 0, true), "cmn w28, #0x0 (0)");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, 4095, true), "cmn w28, #0xfff000 (16773120)");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, 16773120), "cmn w28, #0xfff000 (16773120)");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, 0, false), "cmn x28, #0x0 (0)");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, 4095, false), "cmn x28, #0xfff (4095)");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, 0, true), "cmn x28, #0x0 (0)");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, 4095, true), "cmn x28, #0xfff000 (16773120)");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, 16773120), "cmn x28, #0xfff000 (16773120)");
+
   TEST_SINGLE(sub(Size::i32Bit, Reg::r29, Reg::r28, 0, false), "sub w29, w28, #0x0 (0)");
   TEST_SINGLE(sub(Size::i32Bit, Reg::r29, Reg::r28, 4095, false), "sub w29, w28, #0xfff (4095)");
   TEST_SINGLE(sub(Size::i32Bit, Reg::r29, Reg::r28, 0, true), "sub w29, w28, #0x0 (0)");
@@ -868,6 +880,32 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
     // Unsupported
   }
 
+  {
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28), "cmn x29, x28");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28), "cmn w29, w28");
+
+    // LSL
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28, ShiftType::LSL, 1), "cmn x29, x28, lsl #1");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28, ShiftType::LSL, 1), "cmn w29, w28, lsl #1");
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28, ShiftType::LSL, 63), "cmn x29, x28, lsl #63");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28, ShiftType::LSL, 31), "cmn w29, w28, lsl #31");
+
+    // LSR
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28, ShiftType::LSR, 1), "cmn x29, x28, lsr #1");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28, ShiftType::LSR, 1), "cmn w29, w28, lsr #1");
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28, ShiftType::LSR, 63), "cmn x29, x28, lsr #63");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28, ShiftType::LSR, 31), "cmn w29, w28, lsr #31");
+
+    // ASR
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28, ShiftType::ASR, 1), "cmn x29, x28, asr #1");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28, ShiftType::ASR, 1), "cmn w29, w28, asr #1");
+    TEST_SINGLE(cmn(Size::i64Bit, Reg::r29, Reg::r28, ShiftType::ASR, 63), "cmn x29, x28, asr #63");
+    TEST_SINGLE(cmn(Size::i32Bit, Reg::r29, Reg::r28, ShiftType::ASR, 31), "cmn w29, w28, asr #31");
+
+    // ROR
+    // Unsupported
+  }
+
   // FEX had a bug with this
   TEST_SINGLE(sub(Size::i64Bit, Reg::rsp, Reg::rsp, Reg::r0, ShiftType::LSL, 0), "neg xzr, x0");
 
@@ -1099,7 +1137,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - extended register") {
   TEST_SINGLE(add(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::SXTX, 3), "add x29, x28, x27, sxtx #3");
   TEST_SINGLE(add(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::SXTX, 4), "add x29, x28, x27, sxtx #4");
 
-
   TEST_SINGLE(adds(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::UXTB, 0), "adds w29, w28, w27, uxtb");
   TEST_SINGLE(adds(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::UXTB, 1), "adds w29, w28, w27, uxtb #1");
   TEST_SINGLE(adds(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::UXTB, 2), "adds w29, w28, w27, uxtb #2");
@@ -1195,6 +1232,102 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - extended register") {
   TEST_SINGLE(adds(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::SXTX, 2), "adds x29, x28, x27, sxtx #2");
   TEST_SINGLE(adds(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::SXTX, 3), "adds x29, x28, x27, sxtx #3");
   TEST_SINGLE(adds(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::SXTX, 4), "adds x29, x28, x27, sxtx #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 0), "cmn w28, w27, uxtb");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 1), "cmn w28, w27, uxtb #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 2), "cmn w28, w27, uxtb #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 3), "cmn w28, w27, uxtb #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 4), "cmn w28, w27, uxtb #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 0), "cmn w28, w27, uxth");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 1), "cmn w28, w27, uxth #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 2), "cmn w28, w27, uxth #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 3), "cmn w28, w27, uxth #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 4), "cmn w28, w27, uxth #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 0), "cmn w28, w27");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 1), "cmn w28, w27, lsl #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 2), "cmn w28, w27, lsl #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 3), "cmn w28, w27, lsl #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_32, 4), "cmn w28, w27, lsl #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 0), "cmn w28, x27");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 1), "cmn w28, x27, lsl #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 2), "cmn w28, x27, lsl #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 3), "cmn w28, x27, lsl #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 4), "cmn w28, x27, lsl #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 0), "cmn w28, w27, sxtb");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 1), "cmn w28, w27, sxtb #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 2), "cmn w28, w27, sxtb #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 3), "cmn w28, w27, sxtb #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 4), "cmn w28, w27, sxtb #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 0), "cmn w28, w27, sxth");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 1), "cmn w28, w27, sxth #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 2), "cmn w28, w27, sxth #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 3), "cmn w28, w27, sxth #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 4), "cmn w28, w27, sxth #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 0), "cmn w28, w27, sxtw");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 1), "cmn w28, w27, sxtw #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 2), "cmn w28, w27, sxtw #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 3), "cmn w28, w27, sxtw #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 4), "cmn w28, w27, sxtw #4");
+
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 0), "cmn w28, x27, sxtx");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 1), "cmn w28, x27, sxtx #1");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 2), "cmn w28, x27, sxtx #2");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 3), "cmn w28, x27, sxtx #3");
+  TEST_SINGLE(cmn(Size::i32Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 4), "cmn w28, x27, sxtx #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 0), "cmn x28, w27, uxtb");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 1), "cmn x28, w27, uxtb #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 2), "cmn x28, w27, uxtb #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 3), "cmn x28, w27, uxtb #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTB, 4), "cmn x28, w27, uxtb #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 0), "cmn x28, w27, uxth");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 1), "cmn x28, w27, uxth #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 2), "cmn x28, w27, uxth #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 3), "cmn x28, w27, uxth #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTH, 4), "cmn x28, w27, uxth #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 0), "cmn x28, w27, uxtw");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 1), "cmn x28, w27, uxtw #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 2), "cmn x28, w27, uxtw #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 3), "cmn x28, w27, uxtw #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::UXTW, 4), "cmn x28, w27, uxtw #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 0), "cmn x28, x27");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 1), "cmn x28, x27, lsl #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 2), "cmn x28, x27, lsl #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 3), "cmn x28, x27, lsl #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::LSL_64, 4), "cmn x28, x27, lsl #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 0), "cmn x28, w27, sxtb");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 1), "cmn x28, w27, sxtb #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 2), "cmn x28, w27, sxtb #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 3), "cmn x28, w27, sxtb #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTB, 4), "cmn x28, w27, sxtb #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 0), "cmn x28, w27, sxth");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 1), "cmn x28, w27, sxth #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 2), "cmn x28, w27, sxth #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 3), "cmn x28, w27, sxth #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTH, 4), "cmn x28, w27, sxth #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 0), "cmn x28, w27, sxtw");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 1), "cmn x28, w27, sxtw #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 2), "cmn x28, w27, sxtw #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 3), "cmn x28, w27, sxtw #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTW, 4), "cmn x28, w27, sxtw #4");
+
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 0), "cmn x28, x27, sxtx");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 1), "cmn x28, x27, sxtx #1");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 2), "cmn x28, x27, sxtx #2");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 3), "cmn x28, x27, sxtx #3");
+  TEST_SINGLE(cmn(Size::i64Bit, Reg::r28, Reg::r27, ExtendedType::SXTX, 4), "cmn x28, x27, sxtx #4");
 
   TEST_SINGLE(sub(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::UXTB, 0), "sub w29, w28, w27, uxtb");
   TEST_SINGLE(sub(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, ExtendedType::UXTB, 1), "sub w29, w28, w27, uxtb #1");
