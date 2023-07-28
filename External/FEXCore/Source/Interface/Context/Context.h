@@ -381,6 +381,8 @@ namespace FEXCore::Context {
 
     bool ExitOnHLTEnabled() const { return ExitOnHLT; }
 
+    FEXCore::CPU::CPUBackendFeatures BackendFeatures;
+
   protected:
     void ClearCodeCache(FEXCore::Core::InternalThreadState *Thread);
 
@@ -436,7 +438,6 @@ namespace FEXCore::Context {
 
     std::shared_mutex CustomIRMutex;
     fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void *, void *>> CustomIRHandlers;
-    FEXCore::CPU::CPUBackendFeatures BackendFeatures;
     FEXCore::CPU::DispatcherConfig DispatcherConfig;
   };
 
