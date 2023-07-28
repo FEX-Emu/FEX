@@ -2245,29 +2245,15 @@ public:
   // XXX:
   // SVE floating-point convert to integer
   void flogb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'1000'101 << 13;
     const auto ConvertedSize =
       size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
       size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
       size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
 
-    SVEFloatConvertToInt(Op, 0b00, ConvertedSize, 0, pg, zn, zd);
+    SVEFloatConvertToInt(size, size, 1, 0b00, ConvertedSize, 0, pg, zn, zd);
   }
 
   void scvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'0000'101 << 13;
     uint32_t opc1, opc2;
     if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
@@ -2301,18 +2287,9 @@ public:
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(Op, opc1, opc2, 0, pg, zn, zd);
+    SVEFloatConvertToInt(dstsize, srcsize, 0, opc1, opc2, 0, pg, zn, zd);
   }
   void ucvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'0000'101 << 13;
     uint32_t opc1, opc2;
     if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
@@ -2346,18 +2323,9 @@ public:
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(Op, opc1, opc2, 1, pg, zn, zd);
+    SVEFloatConvertToInt(dstsize, srcsize, 0, opc1, opc2, 1, pg, zn, zd);
   }
   void fcvtzs(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'1000'101 << 13;
     uint32_t opc1, opc2;
     if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
@@ -2384,18 +2352,9 @@ public:
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(Op, opc1, opc2, 0, pg, zn, zd);
+    SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 0, pg, zn, zd);
   }
   void fcvtzu(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
-    LOGMAN_THROW_AA_FMT(dstsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      dstsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    LOGMAN_THROW_AA_FMT(srcsize == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0101'0001'1000'101 << 13;
     uint32_t opc1, opc2;
     if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
@@ -2422,7 +2381,7 @@ public:
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(Op, opc1, opc2, 1, pg, zn, zd);
+    SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 1, pg, zn, zd);
   }
 
   // SVE Floating Point Unary Operations - Unpredicated
@@ -3924,10 +3883,16 @@ private:
   }
 
   // SVE floating-point convert to integer
-  void SVEFloatConvertToInt(uint32_t Op, uint32_t opc, uint32_t opc2, uint32_t U, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEFloatConvertToInt(SubRegSize dstsize, SubRegSize srcsize, uint32_t b19, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(srcsize == SubRegSize::i16Bit || srcsize == SubRegSize::i32Bit || srcsize == SubRegSize::i64Bit,
+                        "Unsupported src size in {}", __func__);
+    LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit || dstsize == SubRegSize::i32Bit || dstsize == SubRegSize::i64Bit,
+                        "Unsupported dst size in {}", __func__);
 
+    uint32_t Instr = 0b0110'0101'0001'0000'1010'0000'0000'0000;
     Instr |= opc << 22;
+    Instr |= b19 << 19;
     Instr |= opc2 << 17;
     Instr |= U << 16;
     Instr |= pg.Idx() << 10;
