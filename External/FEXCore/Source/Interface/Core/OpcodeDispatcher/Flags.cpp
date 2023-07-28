@@ -76,7 +76,10 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
                         LoadPF() :
                         GetRFLAG(FlagOffset);
 
-    Original = _Bfi(4, 1, FlagOffset, Original, Flag);
+    if (CTX->BackendFeatures.SupportsShiftedBitwise)
+      Original = _Orlshl(Original, Flag, FlagOffset);
+    else
+      Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
   return Original;
 }
