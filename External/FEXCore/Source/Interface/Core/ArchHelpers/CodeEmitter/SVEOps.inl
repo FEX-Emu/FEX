@@ -717,29 +717,23 @@ public:
   }
 
   // SVE2 bitwise ternary operations
-  void eor3(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVE2BitwiseTernary(0b00, 0, zm, zk, zd);
+  void eor3(ZRegister zd, ZRegister zdn, ZRegister zm, ZRegister zk) {
+    SVE2BitwiseTernary(0b00, 0, zm, zk, zd, zdn);
   }
-  void bsl(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVE2BitwiseTernary(0b00, 1, zm, zk, zd);
+  void bsl(ZRegister zd, ZRegister zdn, ZRegister zm, ZRegister zk) {
+    SVE2BitwiseTernary(0b00, 1, zm, zk, zd, zdn);
   }
-  void bcax(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVE2BitwiseTernary(0b01, 0, zm, zk, zd);
+  void bcax(ZRegister zd, ZRegister zdn, ZRegister zm, ZRegister zk) {
+    SVE2BitwiseTernary(0b01, 0, zm, zk, zd, zdn);
   }
-  void bsl1n(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVE2BitwiseTernary(0b01, 1, zm, zk, zd);
+  void bsl1n(ZRegister zd, ZRegister zdn, ZRegister zm, ZRegister zk) {
+    SVE2BitwiseTernary(0b01, 1, zm, zk, zd, zdn);
   }
-  void bsl2n(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVE2BitwiseTernary(0b10, 1, zm, zk, zd);
+  void bsl2n(ZRegister zd, ZRegister zdn, ZRegister zm, ZRegister zk) {
+    SVE2BitwiseTernary(0b10, 1, zm, zk, zd, zdn);
   }
-  void nbsl(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zdn, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk) {
-    LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
-    SVE2BitwiseTernary(0b11, 1, zm, zk, zd);
+  void nbsl(ZRegister zd, ZRegister zdn, ZRegister zm, ZRegister zk) {
+    SVE2BitwiseTernary(0b11, 1, zm, zk, zd, zdn);
   }
 
   // SVE Index Generation
@@ -4302,10 +4296,10 @@ private:
     dc32(Instr);
   }
 
-  void SVE2BitwiseTernary(uint32_t opc, uint32_t o2, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zk, FEXCore::ARMEmitter::ZRegister zdn) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'0011'1 << 11;
-    uint32_t Instr = Op;
+  void SVE2BitwiseTernary(uint32_t opc, uint32_t o2, ZRegister zm, ZRegister zk, ZRegister zd, ZRegister zdn) {
+    LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
 
+    uint32_t Instr = 0b0000'0100'0010'0000'0011'1000'0000'0000;
     Instr |= opc << 22;
     Instr |= zm.Idx() << 16;
     Instr |= o2 << 10;
