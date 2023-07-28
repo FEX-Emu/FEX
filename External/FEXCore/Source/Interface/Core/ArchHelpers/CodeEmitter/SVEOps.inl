@@ -115,15 +115,15 @@ public:
 
   // SVE address generation
   // XXX:
+
   // SVE table lookup (three sources)
-  void tbl(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'0011'0 << 11;
-    SVETableLookup(Op, 0, size, zm, zn, zd);
+  void tbl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVETableLookup(0b100, size, zm, zn, zd);
   }
-  void tbx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'0010'1 << 11;
-    SVETableLookup(Op, 1, size, zm, zn, zd);
+  void tbx(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVETableLookup(0b011, size, zm, zn, zd);
   }
+
   // SVE permute vector elements
   void zip1(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
@@ -3355,10 +3355,10 @@ private:
   }
 
   // SVE table lookup (three sources)
-  void SVETableLookup(uint32_t Op, uint32_t op, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    uint32_t Instr = Op;
+  void SVETableLookup(uint32_t op, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
+    uint32_t Instr = 0b0000'0101'0010'0000'0010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= op << 10;
