@@ -26,8 +26,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: Base Encodings") {
   TEST_SINGLE(dup(SubRegSize::i128Bit, ZReg::z30, ZReg::z29, 1), "mov z30.q, z29.q[1]");
   TEST_SINGLE(dup(SubRegSize::i128Bit, ZReg::z30, ZReg::z29, 3), "mov z30.q, z29.q[3]");
 
-  // TODO: TBL
-
   TEST_SINGLE(sel(SubRegSize::i8Bit, ZReg::z30, PReg::p6, ZReg::z29, ZReg::z28),   "sel z30.b, p6, z29.b, z28.b");
   TEST_SINGLE(sel(SubRegSize::i16Bit, ZReg::z30, PReg::p6, ZReg::z29, ZReg::z28),  "sel z30.h, p6, z29.h, z28.h");
   TEST_SINGLE(sel(SubRegSize::i32Bit, ZReg::z30, PReg::p6, ZReg::z29, ZReg::z28),  "sel z30.s, p6, z29.s, z28.s");
@@ -86,6 +84,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE table lookup (three source
   TEST_SINGLE(tbl(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z28),  "tbl z30.s, {z29.s}, z28.s");
   TEST_SINGLE(tbl(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z28),  "tbl z30.d, {z29.d}, z28.d");
   //TEST_SINGLE(tbl(SubRegSize::i128Bit, ZReg::z30, ZReg::z29, ZReg::z28), "tbl z30.q, {z29.q}, z28.q");
+
+  TEST_SINGLE(tbl(SubRegSize::i8Bit,  ZReg::z31, ZReg::z29, ZReg::z30, ZReg::z28), "tbl z31.b, {z29.b, z30.b}, z28.b");
+  TEST_SINGLE(tbl(SubRegSize::i16Bit, ZReg::z31, ZReg::z29, ZReg::z30, ZReg::z28), "tbl z31.h, {z29.h, z30.h}, z28.h");
+  TEST_SINGLE(tbl(SubRegSize::i32Bit, ZReg::z31, ZReg::z29, ZReg::z30, ZReg::z28), "tbl z31.s, {z29.s, z30.s}, z28.s");
+  TEST_SINGLE(tbl(SubRegSize::i64Bit, ZReg::z31, ZReg::z29, ZReg::z30, ZReg::z28), "tbl z31.d, {z29.d, z30.d}, z28.d");
 
   TEST_SINGLE(tbx(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),   "tbx z30.b, z29.b, z28.b");
   TEST_SINGLE(tbx(SubRegSize::i16Bit, ZReg::z30, ZReg::z29, ZReg::z28),  "tbx z30.h, z29.h, z28.h");
