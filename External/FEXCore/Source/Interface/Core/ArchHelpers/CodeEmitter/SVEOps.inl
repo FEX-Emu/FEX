@@ -1473,7 +1473,9 @@ public:
   }
 
   // SVE integer multiply immediate (unpredicated)
-  // XXX:
+  void mul(SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    SVEMultiplyImmediateUnpred(0b000, size, zd, zn, imm);
+  }
 
   // SVE broadcast integer immediate (unpredicated)
   void dup_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
@@ -3209,6 +3211,22 @@ private:
     const auto imm8 = static_cast<uint32_t>(imm) & 0xFF;
 
     uint32_t Instr = 0b0010'0101'0010'1000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= opc << 16;
+    Instr |= imm8 << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEMultiplyImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
+    LOGMAN_THROW_AA_FMT(imm >= -128 && imm <= 127,
+                        "Invalid immediate ({}). Must be within [-127, 128]", imm);
+
+    const auto imm8 = static_cast<uint32_t>(imm) & 0xFF;
+
+    uint32_t Instr = 0b0010'0101'0011'0000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= imm8 << 5;

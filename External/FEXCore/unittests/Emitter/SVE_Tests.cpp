@@ -2226,7 +2226,21 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer min/max immediate 
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply immediate (unpredicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(mul(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 0),     "mul z30.b, z30.b, #0");
+  TEST_SINGLE(mul(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, -128),  "mul z30.b, z30.b, #-128");
+  TEST_SINGLE(mul(SubRegSize::i8Bit,  ZReg::z30, ZReg::z30, 127),   "mul z30.b, z30.b, #127");
+
+  TEST_SINGLE(mul(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 0),     "mul z30.h, z30.h, #0");
+  TEST_SINGLE(mul(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, -128),  "mul z30.h, z30.h, #-128");
+  TEST_SINGLE(mul(SubRegSize::i16Bit, ZReg::z30, ZReg::z30, 127),   "mul z30.h, z30.h, #127");
+
+  TEST_SINGLE(mul(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 0),     "mul z30.s, z30.s, #0");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, -128),  "mul z30.s, z30.s, #-128");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, ZReg::z30, ZReg::z30, 127),   "mul z30.s, z30.s, #127");
+
+  TEST_SINGLE(mul(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 0),     "mul z30.d, z30.d, #0");
+  TEST_SINGLE(mul(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, -128),  "mul z30.d, z30.d, #-128");
+  TEST_SINGLE(mul(SubRegSize::i64Bit, ZReg::z30, ZReg::z30, 127),   "mul z30.d, z30.d, #127");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast integer immediate (unpredicated)") {
