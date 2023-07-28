@@ -190,19 +190,31 @@ DEF_OP(LoadFlag) {
   uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
   ContextPtr += offsetof(FEXCore::Core::CPUState, flags[0]);
   ContextPtr += Op->Flag;
-  uint8_t const *MemData = reinterpret_cast<uint8_t const*>(ContextPtr);
-  GD = *MemData;
+
+  if (Op->Flag == 24 /* NZCV */) {
+    uint32_t const *MemData = reinterpret_cast<uint32_t const*>(ContextPtr);
+    GD = *MemData;
+  } else {
+    uint8_t const *MemData = reinterpret_cast<uint8_t const*>(ContextPtr);
+    GD = *MemData;
+  }
 }
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
-  uint8_t Arg = *GetSrc<uint8_t*>(Data->SSAData, Op->Value);
+  uint32_t Arg = *GetSrc<uint32_t*>(Data->SSAData, Op->Value);
 
   uintptr_t ContextPtr = reinterpret_cast<uintptr_t>(Data->State->CurrentFrame);
   ContextPtr += offsetof(FEXCore::Core::CPUState, flags[0]);
   ContextPtr += Op->Flag;
-  uint8_t *MemData = reinterpret_cast<uint8_t*>(ContextPtr);
-  *MemData = Arg;
+
+  if (Op->Flag == 24 /* NZCV */) {
+    uint32_t *MemData = reinterpret_cast<uint32_t*>(ContextPtr);
+    *MemData = Arg;
+  } else {
+    uint8_t *MemData = reinterpret_cast<uint8_t*>(ContextPtr);
+    *MemData = Arg;
+  }
 }
 
 DEF_OP(LoadMem) {
