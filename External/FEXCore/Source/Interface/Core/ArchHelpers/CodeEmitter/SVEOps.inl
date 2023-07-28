@@ -244,19 +244,18 @@ public:
     SVEPredicateLogical(1, 1, 1, 1, pm, pg, pn, pd);
   }
 
-  // XXX:
   // SVE broadcast predicate element
   // XXX:
+
   // SVE integer clamp
+  // XXX:
 
   // SVE2 character match
   void match(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0100'0101'0010'0000'1000'0000'0000'0000;
-    SVECharacterMatch(Op, 0, size, pd, pg, zn, zm);
+    SVECharacterMatch(0, size, pd, pg, zn, zm);
   }
   void nmatch(SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
-    constexpr uint32_t Op = 0b0100'0101'0010'0000'1000'0000'0000'0000;
-    SVECharacterMatch(Op, 1, size, pd, pg, zn, zm);
+    SVECharacterMatch(1, size, pd, pg, zn, zm);
   }
 
   // SVE floating-point convert precision odd elements
@@ -3525,12 +3524,12 @@ private:
     dc32(Instr);
   }
 
-  void SVECharacterMatch(uint32_t op, uint32_t opc, SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
+  void SVECharacterMatch(uint32_t opc, SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit,
                         "match/nmatch can only use 8-bit or 16-bit element sizes");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7.Zeroing(), "match/nmatch can only use p0-p7 as a governing predicate");
 
-    uint32_t Instr = op;
+    uint32_t Instr = 0b0100'0101'0010'0000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 4;
     Instr |= zm.Idx() << 16;
