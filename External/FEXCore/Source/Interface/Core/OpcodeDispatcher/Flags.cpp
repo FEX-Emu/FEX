@@ -74,7 +74,7 @@ OrderedNode *OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
     // the byte is allowed to be garbage.
     OrderedNode *Flag = FlagOffset == FEXCore::X86State::RFLAG_PF_LOC ?
                         LoadPF() :
-                        _LoadFlag(FlagOffset);
+                        GetRFLAG(FlagOffset);
 
     Original = _Bfi(4, 1, FlagOffset, Original, Flag);
   }
