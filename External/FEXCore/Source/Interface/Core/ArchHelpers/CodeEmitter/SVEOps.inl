@@ -2227,16 +2227,10 @@ public:
   }
 
   // SVE floating-point unary operations
-  void frecpx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+  void frecpx(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEFloatUnary(0b00, size, pg, zn, zd);
   }
-  void fsqrt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+  void fsqrt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
     SVEFloatUnary(0b01, size, pg, zn, zd);
   }
 
@@ -4276,10 +4270,13 @@ private:
     dc32(Instr);
   }
 
-  void SVEFloatUnary(uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0110'0101'0000'1100'101 << 13;
-    uint32_t Instr = Op;
+  void SVEFloatUnary(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit ||
+                        size == SubRegSize::i32Bit ||
+                        size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
 
+    uint32_t Instr = 0b0110'0101'0000'1100'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
     Instr |= pg.Idx() << 10;
