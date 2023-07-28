@@ -22,16 +22,11 @@ public:
     SVEDupIndexed(size, zn, zd, Index);
   }
 
-  void sel(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'11 << 14;
-    SVESel(Op, size, zm, pv, zn, zd);
+  void sel(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zm) {
+    SVESel(size, zm, pv, zn, zd);
   }
-
-  void mov(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pv, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t Op = 0b0000'0101'0010'0000'11 << 14;
-    SVESel(Op, size, zd, pv, zn, zd);
+  void mov(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn) {
+    sel(size, zd, pv, zn, zd);
   }
 
   void histcnt(SubRegSize size, ZRegister zd, PRegisterZero pv, ZRegister zn, ZRegister zm) {
@@ -3297,9 +3292,10 @@ private:
     dc32(Instr);
   }
 
-  void SVESel(uint32_t Op, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVESel(SubRegSize size, ZRegister zm, PRegister pv, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
+    uint32_t Instr = 0b0000'0101'0010'0000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= pv.Idx() << 10;
