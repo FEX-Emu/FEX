@@ -3844,14 +3844,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point unary opera
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer convert to floating-point") {
-  // TODO: Implement in emitter.
-}
-
-TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert to integer") {
-  TEST_SINGLE(flogb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "flogb z30.h, p6/m, z29.h");
-  TEST_SINGLE(flogb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "flogb z30.s, p6/m, z29.s");
-  TEST_SINGLE(flogb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "flogb z30.d, p6/m, z29.d");
-
   TEST_SINGLE(scvtf(ZReg::z30, SubRegSize::i16Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i16Bit), "scvtf z30.h, p6/m, z29.h");
   TEST_SINGLE(scvtf(ZReg::z30, SubRegSize::i16Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i32Bit), "scvtf z30.h, p6/m, z29.s");
   TEST_SINGLE(scvtf(ZReg::z30, SubRegSize::i16Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i64Bit), "scvtf z30.h, p6/m, z29.d");
@@ -3875,6 +3867,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert to 
   //TEST_SINGLE(ucvtf(ZReg::z30, SubRegSize::i64Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i16Bit), "ucvtf z30.d, p6/m, z29.h");
   TEST_SINGLE(ucvtf(ZReg::z30, SubRegSize::i64Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i32Bit), "ucvtf z30.d, p6/m, z29.s");
   TEST_SINGLE(ucvtf(ZReg::z30, SubRegSize::i64Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i64Bit), "ucvtf z30.d, p6/m, z29.d");
+}
+
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point convert to integer") {
+  TEST_SINGLE(flogb(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "flogb z30.h, p6/m, z29.h");
+  TEST_SINGLE(flogb(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "flogb z30.s, p6/m, z29.s");
+  TEST_SINGLE(flogb(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "flogb z30.d, p6/m, z29.d");
 
   TEST_SINGLE(fcvtzs(ZReg::z30, SubRegSize::i16Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i16Bit), "fcvtzs z30.h, p6/m, z29.h");
   //TEST_SINGLE(fcvtzs(ZReg::z30, SubRegSize::i16Bit, PReg::p6.Merging(), ZReg::z29, SubRegSize::i32Bit), "fcvtzs z30.h, p6/m, z29.s");

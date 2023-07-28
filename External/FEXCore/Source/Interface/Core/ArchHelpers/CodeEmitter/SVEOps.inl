@@ -2233,7 +2233,6 @@ public:
       size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
     SVEFloatUnary(0b00, size, pg, zn, zd);
   }
-
   void fsqrt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
       size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
@@ -2242,17 +2241,6 @@ public:
   }
 
   // SVE integer convert to floating-point
-  // XXX:
-  // SVE floating-point convert to integer
-  void flogb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    const auto ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
-
-    SVEFloatConvertToInt(size, size, 1, 0b00, ConvertedSize, 0, pg, zn, zd);
-  }
-
   void scvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
     uint32_t opc1, opc2;
     if (srcsize == FEXCore::ARMEmitter::SubRegSize::i16Bit) {
@@ -2287,7 +2275,7 @@ public:
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(dstsize, srcsize, 0, opc1, opc2, 0, pg, zn, zd);
+    SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 0, pg, zn, zd);
   }
   void ucvtf(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
     uint32_t opc1, opc2;
@@ -2323,7 +2311,17 @@ public:
     else {
       FEX_UNREACHABLE;
     }
-    SVEFloatConvertToInt(dstsize, srcsize, 0, opc1, opc2, 1, pg, zn, zd);
+    SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 1, pg, zn, zd);
+  }
+
+  // SVE floating-point convert to integer
+  void flogb(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
+    const auto ConvertedSize =
+      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 :
+      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
+      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b01 : 0b00;
+
+    SVEFloatConvertToInt(size, size, 1, 0b00, ConvertedSize, 0, pg, zn, zd);
   }
   void fcvtzs(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::SubRegSize dstsize, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::SubRegSize srcsize) {
     uint32_t opc1, opc2;
@@ -3899,6 +3897,12 @@ private:
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);
+  }
+  // SVE integer convert to floating-point
+  // We can implement this in terms of the floating-point to int version above,
+  // since the only difference in encoding is setting bit 19 to 0.
+  void SVEIntegerConvertToFloat(SubRegSize dstsize, SubRegSize srcsize, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
+    SVEFloatConvertToInt(dstsize, srcsize, 0, opc, opc2, U, pg, zn, zd);
   }
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
