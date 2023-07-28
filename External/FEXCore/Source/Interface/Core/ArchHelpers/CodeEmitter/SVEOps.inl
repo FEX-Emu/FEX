@@ -2862,6 +2862,7 @@ public:
   // XXX:
   // SVE load and broadcast quadword (scalar plus immediate)
   // XXX:
+
   // SVE contiguous load (scalar plus immediate)
   template<SubRegSize size>
   void ld1b(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
@@ -2921,62 +2922,56 @@ public:
   // XXX:
   // SVE load and broadcast quadword (scalar plus scalar)
   // XXX:
+
   // SVE contiguous load (scalar plus scalar)
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void ld1b(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  void ld1sw(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0100, rm, pg, rn, zt);
+  void ld1sw(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 0b0100, rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void ld1h(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadStore(0, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sh(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void ld1sh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 1 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0 : -1;
-    SVEContiguousLoadStore(Op, 0b1000 | ConvertedSize, rm, pg, rn, zt);
+      size == SubRegSize::i32Bit ? 1 :
+      size == SubRegSize::i64Bit ? 0 : -1;
+    SVEContiguousLoadStore(0, 0b1000 | ConvertedSize, rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void ld1w(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
-    SVEContiguousLoadStore(Op, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
+    SVEContiguousLoadStore(0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void ld1sb(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void ld1sb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i16Bit ||
+                  size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b01 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b00 : -1;
-    SVEContiguousLoadStore(Op, 0b1100 | ConvertedSize, rm, pg, rn, zt);
+      size == SubRegSize::i16Bit ? 0b10 :
+      size == SubRegSize::i32Bit ? 0b01 :
+      size == SubRegSize::i64Bit ? 0b00 : -1;
+    SVEContiguousLoadStore(0, 0b1100 | ConvertedSize, rm, pg, rn, zt);
   }
 
-  void ld1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegisterZero pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1010'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b1111, rm, pg, rn, zt);
+  void ld1d(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 0b1111, rm, pg, rn, zt);
   }
 
   // SVE contiguous first-fault load (scalar plus scalar)
@@ -3003,34 +2998,29 @@ public:
   }
 
   // SVE contiguous store (scalar plus scalar)
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1b(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void st1b(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(1, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1h(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size != FEXCore::ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
-    SVEContiguousLoadStore(Op, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  template<SubRegSize size>
+  void st1h(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadStore(1, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
-  template<FEXCore::ARMEmitter::SubRegSize size>
-  void st1w(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    static_assert(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-                  size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
+  template<SubRegSize size>
+  void st1w(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
     constexpr uint32_t ConvertedSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 1 : -1;
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
 
-    SVEContiguousLoadStore(Op, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+    SVEContiguousLoadStore(1, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
-  void st1d(FEXCore::ARMEmitter::ZRegister zt, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm) {
-    constexpr uint32_t Op = 0b1110'0100'0000'0000'010 << 13;
-
-    SVEContiguousLoadStore(Op, 0b1111, rm, pg, rn, zt);
+  void st1d(ZRegister zt, PRegister pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(1, 0b1111, rm, pg, rn, zt);
   }
 
   // SVE Memory - Non-temporal and Multi-register Store
@@ -4081,9 +4071,11 @@ private:
   }
 
   // zt.b, pg/z, xn, xm
-  void SVEContiguousLoadStore(uint32_t Op, uint32_t dtype, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::ZRegister zt) {
-    uint32_t Instr = Op;
+  void SVEContiguousLoadStore(uint32_t b30, uint32_t dtype, Register rm, PRegister pg, Register rn, ZRegister zt) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b1010'0100'0000'0000'0100'0000'0000'0000;
+    Instr |= b30 << 30;
     Instr |= dtype << 21;
     Instr |= Encode_rm(rm);
     Instr |= pg.Idx() << 10;
