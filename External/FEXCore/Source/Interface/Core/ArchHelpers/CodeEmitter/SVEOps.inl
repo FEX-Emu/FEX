@@ -259,44 +259,39 @@ public:
   }
 
   // SVE floating-point convert precision odd elements
-  void fcvtxnt(FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    constexpr uint32_t Op = 0b0110'0100'0000'1000'101 << 13;
-    SVEFloatConvertOdd(Op, 0b00, 0b10, pg, zn, zd);
+  void fcvtxnt(ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    SVEFloatConvertOdd(0b00, 0b10, pg, zn, zd);
   }
   ///< Size is destination size
-  void fcvtnt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0100'0000'1000'101 << 13;
+  void fcvtnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit,
+                        "Unsupported size in {}", __func__);
 
     const auto ConvertedDestSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b00 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 : 0b00;
+      size == SubRegSize::i16Bit ? 0b00 :
+      size == SubRegSize::i32Bit ? 0b10 : 0b00;
 
     const auto ConvertedSrcSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i16Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b11 : 0b00;
+      size == SubRegSize::i16Bit ? 0b10 :
+      size == SubRegSize::i32Bit ? 0b11 : 0b00;
 
-    SVEFloatConvertOdd(Op, ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
+    SVEFloatConvertOdd(ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
   }
 
   ///< Size is destination size
-  void fcvtlt(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegisterMerge pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i64Bit ||
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit, "Unsupported size in {}", __func__);
-
-    constexpr uint32_t Op = 0b0110'0100'0000'1000'101 << 13;
+  void fcvtlt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
+                        "Unsupported size in {}", __func__);
 
     const auto ConvertedDestSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b01 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 : 0b00;
+      size == SubRegSize::i32Bit ? 0b01 :
+      size == SubRegSize::i64Bit ? 0b11 : 0b00;
 
     const auto ConvertedSrcSize =
-      size == FEXCore::ARMEmitter::SubRegSize::i32Bit ? 0b10 :
-      size == FEXCore::ARMEmitter::SubRegSize::i64Bit ? 0b11 : 0b00;
+      size == SubRegSize::i32Bit ? 0b10 :
+      size == SubRegSize::i64Bit ? 0b11 : 0b00;
 
-    SVEFloatConvertOdd(Op, ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
+    SVEFloatConvertOdd(ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
   }
 
   // XXX: BFCVTNT
@@ -3375,9 +3370,10 @@ private:
   }
 
   // SVE floating-point convert precision odd elements
-  void SVEFloatConvertOdd(uint32_t Op, uint32_t opc, uint32_t opc2, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEFloatConvertOdd(uint32_t opc, uint32_t opc2, PRegister pg, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0110'0100'0000'1000'1010'0000'0000'0000;
     Instr |= opc << 22;
     Instr |= opc2 << 16;
     Instr |= pg.Idx() << 10;
