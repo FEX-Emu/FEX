@@ -22,8 +22,6 @@ public:
     SVEDupIndexed(size, zn, zd, Index);
   }
 
-  // TODO: TBL
-
   void sel(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::PRegister pv, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
     LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
     constexpr uint32_t Op = 0b0000'0101'0010'0000'11 << 14;
@@ -119,6 +117,10 @@ public:
   // SVE table lookup (three sources)
   void tbl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVETableLookup(0b100, size, zm, zn, zd);
+  }
+  void tbl(SubRegSize size, ZRegister zd, ZRegister zn1, ZRegister zn2, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(AreVectorsSequential(zn1, zn2), "TBL zn1 and zn2 must be sequential");
+    SVETableLookup(0b010, size, zm, zn1, zd);
   }
   void tbx(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     SVETableLookup(0b011, size, zm, zn, zd);
