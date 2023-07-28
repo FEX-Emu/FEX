@@ -94,29 +94,23 @@ public:
   }
 
   // SVE integer add/subtract vectors (unpredicated)
-  void add(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'000 << 13;
-    SVEIntegerAddSubUnpredicated(Op, 0b000, size, zm, zn, zd);
+  void add(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEIntegerAddSubUnpredicated(0b000, size, zm, zn, zd);
   }
-  void sub(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'000 << 13;
-    SVEIntegerAddSubUnpredicated(Op, 0b001, size, zm, zn, zd);
+  void sub(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEIntegerAddSubUnpredicated(0b001, size, zm, zn, zd);
   }
-  void sqadd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'000 << 13;
-    SVEIntegerAddSubUnpredicated(Op, 0b100, size, zm, zn, zd);
+  void sqadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEIntegerAddSubUnpredicated(0b100, size, zm, zn, zd);
   }
-  void uqadd(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'000 << 13;
-    SVEIntegerAddSubUnpredicated(Op, 0b101, size, zm, zn, zd);
+  void uqadd(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEIntegerAddSubUnpredicated(0b101, size, zm, zn, zd);
   }
-  void sqsub(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'000 << 13;
-    SVEIntegerAddSubUnpredicated(Op, 0b110, size, zm, zn, zd);
+  void sqsub(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEIntegerAddSubUnpredicated(0b110, size, zm, zn, zd);
   }
-  void uqsub(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zm) {
-    constexpr uint32_t Op = 0b0000'0100'0010'0000'000 << 13;
-    SVEIntegerAddSubUnpredicated(Op, 0b111, size, zm, zn, zd);
+  void uqsub(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVEIntegerAddSubUnpredicated(0b111, size, zm, zn, zd);
   }
 
   // SVE address generation
@@ -3348,10 +3342,10 @@ private:
   }
 
   // SVE integer add/subtract vectors (unpredicated)
-  void SVEIntegerAddSubUnpredicated(uint32_t Op, uint32_t opc, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zm, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    uint32_t Instr = Op;
+  void SVEIntegerAddSubUnpredicated(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
+    uint32_t Instr = 0b0000'0100'0010'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= opc << 10;
