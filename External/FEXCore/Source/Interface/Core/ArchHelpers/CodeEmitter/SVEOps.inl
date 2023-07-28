@@ -533,12 +533,10 @@ public:
 
   // SVE constructive prefix (predicated)
   template<typename T>
-  requires(std::is_same_v<FEXCore::ARMEmitter::PRegisterZero, T> || std::is_same_v<FEXCore::ARMEmitter::PRegisterMerge, T>)
-  void movprfx(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, T pg, FEXCore::ARMEmitter::ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    constexpr uint32_t M = std::is_same_v<FEXCore::ARMEmitter::PRegisterMerge, T> ? 1 : 0;
-    constexpr uint32_t Op = 0b0000'0100'0001'0000'001 << 13;
-    SVEConstructivePrefixPredicated(Op, 0b00, M, size, pg, zn, zd);
+  requires(std::is_same_v<PRegisterZero, T> || std::is_same_v<PRegisterMerge, T>)
+  void movprfx(SubRegSize size, ZRegister zd, T pg, ZRegister zn) {
+    constexpr uint32_t M = std::is_same_v<PRegisterMerge, T> ? 1 : 0;
+    SVEConstructivePrefixPredicated(0b00, M, size, pg, zn, zd);
   }
 
   // SVE bitwise logical reduction (predicated)
@@ -3299,9 +3297,11 @@ private:
   }
 
   // SVE constructive prefix (predicated)
-  void SVEConstructivePrefixPredicated(uint32_t Op, uint32_t opc, uint32_t M, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::PRegister pg, FEXCore::ARMEmitter::ZRegister zn, FEXCore::ARMEmitter::ZRegister zd) {
-    uint32_t Instr = Op;
+  void SVEConstructivePrefixPredicated(uint32_t opc, uint32_t M, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
+    uint32_t Instr = 0b0000'0100'0001'0000'0010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 17;
     Instr |= M << 16;
