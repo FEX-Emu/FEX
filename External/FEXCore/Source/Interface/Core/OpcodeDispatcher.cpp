@@ -145,6 +145,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_BLOCK_END) {
     // RIP could have been updated after coming back from the Syscall.
     NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
+    CalculateDeferredFlags();
     _ExitFunction(NewRIP);
   }
 }
@@ -178,6 +179,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
+  CalculateDeferredFlags();
 
   // Store the new RIP
   _ExitFunction(NewRIP);
@@ -240,6 +242,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
+  CalculateDeferredFlags();
 
   // Store the new RIP
   _ExitFunction(NewRIP);
@@ -304,6 +307,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RSP, SP);
   }
 
+  CalculateDeferredFlags();
   _ExitFunction(NewRIP);
   BlockSetRIP = true;
 }
@@ -313,6 +317,7 @@ void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
   // Store the new RIP
   _CallbackReturn();
   auto NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
+  CalculateDeferredFlags();
   // This ExitFunction won't actually get hit but needs to exist
   _ExitFunction(NewRIP);
   BlockSetRIP = true;
@@ -810,6 +815,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[0].IsLiteral(), "Had wrong operand type");
   const uint64_t TargetRIP = Op->PC + Op->InstSize + Op->Src[0].Data.Literal.Value;
 
+  CalculateDeferredFlags();
   if (NextRIP != TargetRIP) {
     // Store the RIP
     _ExitFunction(NewRIP); // If we get here then leave the function now
@@ -840,6 +846,7 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   _StoreMem(GPRClass, Size, NewSP, ConstantPCReturn, Size);
 
   // Store the RIP
+  CalculateDeferredFlags();
   _ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
@@ -1124,6 +1131,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     Target &= 0xFFFFFFFFU;
   }
 
+  CalculateDeferredFlags();
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
@@ -1269,6 +1277,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
     SrcCond = _And(SrcCond, ZF);
   }
 
+  CalculateDeferredFlags();
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
@@ -1337,6 +1346,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
     TargetRIP &= 0xFFFFFFFFU;
   }
 
+  CalculateDeferredFlags();
   // This is just an unconditional relative literal jump
   if (Multiblock) {
     auto JumpBlock = JumpTargets.find(TargetRIP);
@@ -1375,6 +1385,7 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   // This uses ModRM to determine its location
   // No way to use this effectively in multiblock
   auto RIPOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, -1);
+  CalculateDeferredFlags();
 
   // Store the new RIP
   _ExitFunction(RIPOffset);
@@ -3407,12 +3418,14 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+  CalculateDeferredFlags();
 
   auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xF)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
 
+  CalculateDeferredFlags();
   _CondJump(Cond, TrueBlock, FalseBlock);
   SetCurrentCodeBlock(FalseBlock);
   {
@@ -3431,6 +3444,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
@@ -3443,6 +3457,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
@@ -3452,6 +3467,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
     auto NewAL = _Add(AL, _Constant(0x60));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
@@ -3470,12 +3486,14 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
 
   SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+  CalculateDeferredFlags();
 
   auto Cond = _Or(AF, _Select(FEXCore::IR::COND_UGT, _And(AL, _Constant(0xf)), _Constant(9), _Constant(1), _Constant(0)));
   auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
   auto TrueBlock = CreateNewCodeBlockAfter(FalseBlock);
   auto EndBlock = CreateNewCodeBlockAfter(TrueBlock);
 
+  CalculateDeferredFlags();
   _CondJump(Cond, TrueBlock, FalseBlock);
   SetCurrentCodeBlock(FalseBlock);
   {
@@ -3494,6 +3512,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     // So Or(CF, _Constant(0)) ill mean CF gets updated to the old value in the true case?
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Or(CF, NewCF));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
@@ -3506,6 +3525,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   SetCurrentCodeBlock(FalseBlock);
   {
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
@@ -3514,6 +3534,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
     auto NewAL = _Sub(AL, _Constant(0x60));
     StoreGPRRegister(X86State::REG_RAX, NewAL, 1);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
@@ -3543,6 +3564,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
@@ -3552,6 +3574,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
@@ -3576,6 +3599,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, NewAX, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(0));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(TrueBlock);
@@ -3586,6 +3610,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(_Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(_Constant(1));
+    CalculateDeferredFlags();
     _Jump(EndBlock);
   }
   SetCurrentCodeBlock(EndBlock);
@@ -4024,6 +4049,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
       OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      CalculateDeferredFlags();
       InternalCondJump = _CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
 
       // Jump back to the start if we have more work to do
@@ -4242,6 +4268,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
       StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
       OrderedNode *ZF = GetRFLAG(FEXCore::X86State::RFLAG_ZF_LOC);
+      CalculateDeferredFlags();
       InternalCondJump = _CondJump(ZF, {REPE ? COND_NEQ : COND_EQ});
 
       // Jump back to the start if we have more work to do
@@ -4675,6 +4702,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   // Set ZF
   SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(ZFResult);
+  CalculateDeferredFlags();
 
   auto CondJump = _CondJump(ZFResult);
 
@@ -4739,6 +4767,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
+    CalculateDeferredFlags();
     _ExitFunction(_EntrypointOffset(Handler.first - Entry, GPRSize));
   }
 }
@@ -5459,6 +5488,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
   if (Op->OP == 0xCE) { // Conditional to only break if Overflow == 1
     auto Flag = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
+    CalculateDeferredFlags();
 
     // If condition doesn't hold then keep going
     auto CondJump = _CondJump(Flag, {COND_EQ});
