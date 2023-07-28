@@ -1112,16 +1112,22 @@ private:
     PossiblySetNZCVBits = (1u << NBit);
   }
 
-  // TODO: Replace with a TST instruction
   void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
-    // N
-    SetN_ZeroZCV(SrcSize, Res);
+    // The TestNZ opcode does this operation natively for 32-bit or 64-bit.
+    // Otherwise we can implement the functionality ourselves with some bit math.
+    if (CTX->BackendFeatures.SupportsFlags && SrcSize >= 4) {
+      CachedNZCV = _TestNZ(SrcSize, Res);
+      PossiblySetNZCVBits = (1u << 31) | (1u << 30);
+    } else {
+      // N
+      SetN_ZeroZCV(SrcSize, Res);
 
-    // Z
-    auto Zero = _Constant(0);
-    auto One = _Constant(1);
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+      // Z
+      auto Zero = _Constant(0);
+      auto One = _Constant(1);
+      auto SelectOp = _Select(FEXCore::IR::COND_EQ, Res, Zero, One, Zero);
+      SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+    }
   }
 
   OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
