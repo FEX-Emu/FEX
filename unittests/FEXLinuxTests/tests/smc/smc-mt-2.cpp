@@ -6,6 +6,7 @@
   - starts secondary thread
   - waits to be signaled from secondary thread
   - modifies the code
+  - signals secondary thread to claim the code is modified
   - waits for secondary thread to exit, while making sure it doesn't run the old code after modification
   - exits
 
@@ -13,6 +14,7 @@
   secondary thread
   - generates some code and runs it once
   - signals main thread to modify the code
+  - waits to be signaled that code was modified
   - calls the to be code and checks if the result is the modified or non modified one
   - exits
 
@@ -29,6 +31,7 @@
 #include <catch2/catch.hpp>
 
 std::atomic<bool> ready_for_modification;
+std::atomic<bool> waiting_for_modification;
 std::atomic<bool> thread_unblocked;
 std::atomic<int> thread_counter;
 
@@ -51,6 +54,9 @@ void *thread(void *) {
   ready_for_modification = true;
   printf("Waiting for code to be modified\n");
 
+  while (!waiting_for_modification)
+    ;
+
   while (fn() == 0xDDCCBBAA)
     thread_counter++;
 
@@ -64,6 +70,7 @@ void RunIteration() {
   printf("Starting Iteration\n");
   code = (char *)mmap(0, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, 0, 0);
   ready_for_modification = false;
+  waiting_for_modification = false;
   thread_unblocked = false;
   thread_counter = 0;
 
@@ -76,6 +83,8 @@ void RunIteration() {
   printf("Modifying code from another thread\n");
 
   code[3] = 0xFE;
+
+  waiting_for_modification = true;
 
   auto counter = thread_counter.load();
 
