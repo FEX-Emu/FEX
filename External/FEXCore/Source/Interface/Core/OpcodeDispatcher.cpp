@@ -2081,7 +2081,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     }
 
     StoreResult(GPRClass, Op, Res, -1);
-    GenerateFlags_ShiftRightImmediate(Op, Res, Dest, Shift);
+    GenerateFlags_ShiftRightDoubleImmediate(Op, Res, Dest, Shift);
   }
   else if (Shift == 0 && Size == 32) {
     // Ensure Zext still occurs

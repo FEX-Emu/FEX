@@ -42,6 +42,7 @@ public:
     TYPE_LSHLI,
     TYPE_LSHR,
     TYPE_LSHRI,
+    TYPE_LSHRDI,
     TYPE_ASHR,
     TYPE_ASHRI,
     TYPE_ROR,
@@ -1173,6 +1174,8 @@ private:
   void CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
   void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift);
   void CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2);
@@ -1391,6 +1394,23 @@ private:
 
     CurrentDeferredFlags = DeferredFlagData {
       .Type = FlagsGenerationType::TYPE_LSHRI,
+      .SrcSize = GetSrcSize(Op),
+      .Res = Res,
+      .Sources = {
+        .OneSrcImmediate = {
+          .Src1 = Src1,
+          .Imm = Shift,
+        },
+      },
+    };
+  }
+
+  void GenerateFlags_ShiftRightDoubleImmediate(FEXCore::X86Tables::DecodedOp Op, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+    // No flags changed if shift is zero.
+    if (Shift == 0) return;
+
+    CurrentDeferredFlags = DeferredFlagData {
+      .Type = FlagsGenerationType::TYPE_LSHRDI,
       .SrcSize = GetSrcSize(Op),
       .Res = Res,
       .Sources = {

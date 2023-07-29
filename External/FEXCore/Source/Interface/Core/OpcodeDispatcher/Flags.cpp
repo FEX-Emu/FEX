@@ -218,6 +218,13 @@ void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
         CurrentDeferredFlags.Sources.OneSrcImmediate.Src1,
         CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
       break;
+    case FlagsGenerationType::TYPE_LSHRDI:
+      CalculateFlags_ShiftRightDoubleImmediate(
+        CurrentDeferredFlags.SrcSize,
+        CurrentDeferredFlags.Res,
+        CurrentDeferredFlags.Sources.OneSrcImmediate.Src1,
+        CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
+      break;
     case FlagsGenerationType::TYPE_ASHR:
       CalculateFlags_SignShiftRight(
         CurrentDeferredFlags.SrcSize,
@@ -786,10 +793,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
-  // No flags changed if shift is zero
-  if (Shift == 0) return;
-
+void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
 
@@ -820,6 +824,13 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Orde
     auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
     SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignBitOp);
   }
+}
+
+void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  // No flags changed if shift is zero
+  if (Shift == 0) return;
+
+  CalculateFlags_ShiftRightImmediateCommon(SrcSize, Res, Src1, Shift);
 
   // OF
   {
@@ -827,6 +838,24 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Orde
     // Is set to the MSB of the original value
     if (Shift == 1) {
       SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Bfe(1, SrcSize * 8 - 1, Src1));
+    }
+  }
+}
+
+void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
+  // No flags changed if shift is zero
+  if (Shift == 0) return;
+
+  CalculateFlags_ShiftRightImmediateCommon(SrcSize, Res, Src1, Shift);
+
+  // OF
+  {
+    // Only defined when Shift is 1 else undefined
+    // Is set if the MSB bit changes.
+    // XOR of Result and Src1
+    if (Shift == 1) {
+      auto val = _Bfe(1, SrcSize * 8 - 1, _Xor(Src1, Res));
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(val);
     }
   }
 }
