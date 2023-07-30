@@ -441,6 +441,18 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Bitfield") {
 
   TEST_SINGLE(asr(Size::i32Bit, Reg::r29, Reg::r28, 17), "asr w29, w28, #17");
   TEST_SINGLE(asr(Size::i64Bit, Reg::r29, Reg::r28, 17), "asr x29, x28, #17");
+
+  TEST_SINGLE(sbfiz(Size::i32Bit, Reg::r29, Reg::r28, 5, 3),  "sbfiz w29, w28, #5, #3");
+  TEST_SINGLE(sbfiz(Size::i32Bit, Reg::r29, Reg::r28, 27, 3), "sbfiz w29, w28, #27, #3");
+
+  TEST_SINGLE(sbfiz(Size::i64Bit, Reg::r29, Reg::r28, 5, 3),  "sbfiz x29, x28, #5, #3");
+  TEST_SINGLE(sbfiz(Size::i64Bit, Reg::r29, Reg::r28, 54, 3), "sbfiz x29, x28, #54, #3");
+
+  TEST_SINGLE(ubfiz(Size::i32Bit, Reg::r29, Reg::r28, 5, 3),  "ubfiz w29, w28, #5, #3");
+  TEST_SINGLE(ubfiz(Size::i32Bit, Reg::r29, Reg::r28, 27, 3), "ubfiz w29, w28, #27, #3");
+
+  TEST_SINGLE(ubfiz(Size::i64Bit, Reg::r29, Reg::r28, 5, 3),  "ubfiz x29, x28, #5, #3");
+  TEST_SINGLE(ubfiz(Size::i64Bit, Reg::r29, Reg::r28, 54, 3), "ubfiz x29, x28, #54, #3");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Extract") {
   TEST_SINGLE(extr(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27, 0), "extr w29, w28, w27, #0");
