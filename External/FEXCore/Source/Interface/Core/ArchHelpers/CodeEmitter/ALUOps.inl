@@ -221,6 +221,10 @@ public:
     eor(s, rd, rn, n, immr, imms);
   }
 
+  void tst(ARMEmitter::Size s, Register rn, uint64_t imm) {
+    ands(s, Reg::zr, rn, imm);
+  }
+
   // Move wide immediate
   void movn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, uint32_t Imm, uint32_t Offset = 0) {
     LOGMAN_THROW_A_FMT((Imm & 0xFFFF0000U) == 0, "Upper bits of move wide not valid");
@@ -565,6 +569,9 @@ public:
   void orr(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b010'1010'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
+  }
+  void tst(ARMEmitter::Size s, Register rn, Register rm, ShiftType shift = ShiftType::LSL, uint32_t amt = 0) {
+    ands(s, Reg::zr, rn, rm, shift, amt);
   }
 
   void orn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {

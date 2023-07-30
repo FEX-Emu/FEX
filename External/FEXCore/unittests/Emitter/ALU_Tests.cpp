@@ -370,6 +370,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Logical immediate") {
   TEST_SINGLE(eor(Size::i32Bit, Reg::r29, Reg::r28, -2), "eor w29, w28, #0xfffffffe");
   TEST_SINGLE(eor(Size::i64Bit, Reg::r29, Reg::r28, 1), "eor x29, x28, #0x1");
   TEST_SINGLE(eor(Size::i64Bit, Reg::r29, Reg::r28, -2), "eor x29, x28, #0xfffffffffffffffe");
+
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, 1),  "tst w28, #0x1");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, -2), "tst w28, #0xfffffffe");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, 1),  "tst x28, #0x1");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, -2), "tst x28, #0xfffffffffffffffe");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Move wide immediate") {
   TEST_SINGLE(movn(Size::i32Bit, Reg::r29, 0x4243, 0), "mov w29, #0xffffbdbc");
@@ -825,6 +830,38 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Logical - shifted register") {
   TEST_SINGLE(eon(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ShiftType::ROR, 0), "eon x29, x28, x27");
   TEST_SINGLE(eon(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ShiftType::ROR, 1), "eon x29, x28, x27, ror #1");
   TEST_SINGLE(eon(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27, ShiftType::ROR, 63), "eon x29, x28, x27, ror #63");
+
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::LSL, 0), "tst w28, w27");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::LSL, 1), "tst w28, w27, lsl #1");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::LSL, 31), "tst w28, w27, lsl #31");
+
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::LSR, 0), "tst w28, w27");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::LSR, 1), "tst w28, w27, lsr #1");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::LSR, 31), "tst w28, w27, lsr #31");
+
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::ASR, 0), "tst w28, w27");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::ASR, 1), "tst w28, w27, asr #1");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::ASR, 31), "tst w28, w27, asr #31");
+
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::ROR, 0), "tst w28, w27");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::ROR, 1), "tst w28, w27, ror #1");
+  TEST_SINGLE(tst(Size::i32Bit, Reg::r28, Reg::r27, ShiftType::ROR, 31), "tst w28, w27, ror #31");
+
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::LSL, 0), "tst x28, x27");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::LSL, 1), "tst x28, x27, lsl #1");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::LSL, 63), "tst x28, x27, lsl #63");
+
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::LSR, 0), "tst x28, x27");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::LSR, 1), "tst x28, x27, lsr #1");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::LSR, 63), "tst x28, x27, lsr #63");
+
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::ASR, 0), "tst x28, x27");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::ASR, 1), "tst x28, x27, asr #1");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::ASR, 63), "tst x28, x27, asr #63");
+
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::ROR, 0), "tst x28, x27");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::ROR, 1), "tst x28, x27, ror #1");
+  TEST_SINGLE(tst(Size::i64Bit, Reg::r28, Reg::r27, ShiftType::ROR, 63), "tst x28, x27, ror #63");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - shifted register") {
