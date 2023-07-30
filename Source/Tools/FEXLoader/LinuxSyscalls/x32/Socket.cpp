@@ -685,6 +685,10 @@ namespace FEX::HLE::x32 {
           return RecvMsg(Arguments[0], reinterpret_cast<struct msghdr32*>(Arguments[1]), Arguments[2]);
           break;
         }
+        case OP_ACCEPT4: {
+          return ::accept4(Arguments[0], reinterpret_cast<struct sockaddr *>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]), Arguments[3]);
+          break;
+        }
         default:
           LOGMAN_MSG_A_FMT("Unsupported socketcall op: {}", call);
           break;
