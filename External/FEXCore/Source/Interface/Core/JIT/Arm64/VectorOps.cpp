@@ -3027,6 +3027,37 @@ DEF_OP(VUABDL) {
   }
 }
 
+DEF_OP(VUABDL2) {
+  const auto Op = IROp->C<IR::IROp_VUABDL2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector1 = GetVReg(Op->Vector1.ID());
+  const auto Vector2 = GetVReg(Op->Vector2.ID());
+
+  LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
+  const auto SubRegSize =
+    ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
+    ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
+    ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
+
+  if (HostSupportsSVE && Is256Bit) {
+    // To mimic the behavior of AdvSIMD UABDL, we need to get the
+    // absolute difference of the even elements (UADBLB), get the
+    // absolute difference of the odd elemenets (UABDLT), then
+    // interleave the results in both vectors together.
+
+    uabdlb(SubRegSize, VTMP1.Z(), Vector1.Z(), Vector2.Z());
+    uabdlt(SubRegSize, VTMP2.Z(), Vector1.Z(), Vector2.Z());
+    zip2(SubRegSize, Dst.Z(), VTMP1.Z(), VTMP2.Z());
+  } else {
+    uabdl2(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+  }
+}
+
 DEF_OP(VTBL1) {
   const auto Op = IROp->C<IR::IROp_VTBL1>();
   const auto OpSize = IROp->Size;

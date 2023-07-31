@@ -4367,6 +4367,93 @@ DEF_OP(VUABDL) {
   }
 }
 
+DEF_OP(VUABDL2) {
+  const auto Op = IROp->C<IR::IROp_VUABDL2>();
+  const auto OpSize = IROp->Size;
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+
+  const auto Dst = GetDst(Node);
+  const auto Vector1 = GetSrc(Op->Vector1.ID());
+  const auto Vector2 = GetSrc(Op->Vector2.ID());
+
+  switch (ElementSize) {
+    case 2: {
+      vpxor(xmm15, xmm15, xmm15);
+      vpxor(xmm14, xmm14, xmm14);
+
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector1), 1);
+        vextracti128(xmm14, ToYMM(Vector2), 1);
+
+        vpxor(xmm12, xmm12, xmm12);
+        vpxor(xmm13, xmm13, xmm13);
+        vpxor(Dst, Dst, Dst);
+
+        // Bottom half
+        vpunpcklbw(xmm13, xmm15, xmm13);
+        vpunpcklbw(xmm12, xmm14, xmm12);
+
+        // Top half
+        vpunpckhbw(xmm15, xmm15, Dst);
+        vpunpckhbw(xmm14, xmm14, Dst);
+
+        // Reinsert
+        vinserti128(ymm13, ymm13, xmm15, 1);
+        vinserti128(ymm12, ymm12, xmm14, 1);
+
+        vpsubw(ToYMM(Dst), ymm12, ymm13);
+        vpabsw(ToYMM(Dst), ToYMM(Dst));
+      } else {
+        vpunpckhbw(xmm15, Vector1, xmm15);
+        vpunpckhbw(xmm14, Vector2, xmm14);
+        vpsubw(Dst, xmm14, xmm15);
+        vpabsw(Dst, Dst);
+      }
+      break;
+    }
+    case 4: {
+      vpxor(xmm15, xmm15, xmm15);
+      vpxor(xmm14, xmm14, xmm14);
+
+      if (Is256Bit) {
+        vextracti128(xmm15, ToYMM(Vector1), 1);
+        vextracti128(xmm14, ToYMM(Vector2), 1);
+
+        vpxor(xmm12, xmm12, xmm12);
+        vpxor(xmm13, xmm13, xmm13);
+        vpxor(Dst, Dst, Dst);
+
+        // Bottom half
+        vpunpcklwd(xmm13, xmm15, xmm13);
+        vpunpcklwd(xmm12, xmm14, xmm12);
+
+        // Top half
+        vpunpckhwd(xmm15, xmm15, Dst);
+        vpunpckhwd(xmm14, xmm14, Dst);
+
+        // Reinsert
+        vinserti128(ymm13, ymm13, xmm15, 1);
+        vinserti128(ymm12, ymm12, xmm14, 1);
+
+        vpsubd(ToYMM(Dst), ymm12, ymm13);
+        vpabsd(ToYMM(Dst), ToYMM(Dst));
+      } else {
+        vpunpckhwd(xmm15, Vector1, xmm15);
+        vpunpckhwd(xmm14, Vector2, xmm14);
+        vpsubd(Dst, xmm14, xmm15);
+        vpabsd(Dst, Dst);
+      }
+      break;
+    }
+    default:
+      LOGMAN_MSG_A_FMT("Unknown Element Size: {}", ElementSize);
+      break;
+  }
+}
+
+
 DEF_OP(VTBL1) {
   const auto Op = IROp->C<IR::IROp_VTBL1>();
   const auto OpSize = IROp->Size;
@@ -4609,6 +4696,7 @@ void X86JITCore::RegisterVectorHandlers() {
   REGISTER_OP(VUMULL2,           VUMull2);
   REGISTER_OP(VSMULL2,           VSMull2);
   REGISTER_OP(VUABDL,            VUABDL);
+  REGISTER_OP(VUABDL2,           VUABDL2);
   REGISTER_OP(VTBL1,             VTBL1);
   REGISTER_OP(VREV64,            VRev64);
 #undef REGISTER_OP

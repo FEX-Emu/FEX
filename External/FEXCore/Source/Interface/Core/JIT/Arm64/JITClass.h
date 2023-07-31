@@ -453,6 +453,7 @@ private:
   DEF_OP(VUMull2);
   DEF_OP(VSMull2);
   DEF_OP(VUABDL);
+  DEF_OP(VUABDL2);
   DEF_OP(VTBL1);
   DEF_OP(VRev64);
 
