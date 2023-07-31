@@ -809,7 +809,16 @@ public:
     ConditionalCompare(Op, 1, 0b01, s, rd, rn, rm, Cond);
   }
   void cneg(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Condition Cond) {
-    csneg(s, rd, rn, rn, static_cast<FEXCore::ARMEmitter::Condition>(FEXCore::ToUnderlying(Cond) ^ FEXCore::ToUnderlying(FEXCore::ARMEmitter::Condition::CC_NE)));
+    csneg(s, rd, rn, rn, InvertCondition(Cond));
+  }
+  void cinc(ARMEmitter::Size s, Register rd, Register rn, Condition cond) {
+    csinc(s, rd, rn, rn, InvertCondition(cond));
+  }
+  void cinv(ARMEmitter::Size s, Register rd, Register rn, Condition cond) {
+    csinv(s, rd, rn, rn, InvertCondition(cond));
+  }
+  void csetm(ARMEmitter::Size s, Register rd, Condition cond) {
+    csinv(s, rd, Reg::zr, Reg::zr, InvertCondition(cond));
   }
 
   // Data processing - 3 source
@@ -865,6 +874,13 @@ public:
   }
 
 private:
+  static constexpr Condition InvertCondition(Condition cond) {
+    // These behave as always, so it makes no sense to allow inverting these.
+    LOGMAN_THROW_AA_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV,
+                        "Cannot invert CC_AL or CC_NV");
+    return static_cast<Condition>(FEXCore::ToUnderlying(cond) ^ 1);
+  }
+
   void and_(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t n, uint32_t immr, uint32_t imms) {
     constexpr uint32_t Op = 0b001'0010'00 << 22;
     DataProcessing_Logical_Imm(Op, s, rd, rn, n, immr, imms);
