@@ -735,6 +735,12 @@ public:
     constexpr uint32_t Op = 0b0111'1010'000U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, FEXCore::ARMEmitter::ExtendedType::UXTB, 0);
   }
+  void ngc(ARMEmitter::Size s, Register rd, Register rm) {
+    sbc(s, rd, Reg::zr, rm);
+  }
+  void ngcs(ARMEmitter::Size s, Register rd, Register rm) {
+    sbcs(s, rd, Reg::zr, rm);
+  }
 
   // Rotate right into flags
   void rmif(XRegister rn, uint32_t shift, uint32_t mask) {
