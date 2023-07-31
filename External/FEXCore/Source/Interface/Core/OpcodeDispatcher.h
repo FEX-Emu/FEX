@@ -1081,6 +1081,38 @@ private:
     CachedNZCV = Value;
   }
 
+  void SetN_ZeroZCV(unsigned SrcSize, OrderedNode *Res) {
+    static_assert(IndexNZCV(FEXCore::X86State::RFLAG_SF_LOC) == 31);
+
+    unsigned NBit = 31;
+    unsigned SignBit = (SrcSize * 8) - 1;
+
+    OrderedNode *Shifted;
+
+    // Shift the sign bit into the N bit
+    if (SignBit > NBit)
+      Shifted = _Ashr(Res, _Constant(SignBit - NBit));
+    else if (SignBit < NBit)
+      Shifted = _Lshl(Res, _Constant(NBit - SignBit));
+    else
+      Shifted = Res;
+
+    // Mask off just the N bit, which now equals the sign bit
+    CachedNZCV = _And(Shifted, _Constant(1u << NBit));
+  }
+
+  // TODO: Replace with a TST instruction
+  void SetNZ_ZeroCV(unsigned SrcSize, OrderedNode *Res) {
+    // N
+    SetN_ZeroZCV(SrcSize, Res);
+
+    // Z
+    auto Zero = _Constant(0);
+    auto One = _Constant(1);
+    auto SelectOp = _Select(FEXCore::IR::COND_EQ, Res, Zero, One, Zero);
+    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
+  }
+
   OrderedNode *InsertNZCV(OrderedNode *NZCV, unsigned BitOffset, OrderedNode *Value) {
     return _Bfi(4, 1, IndexNZCV(BitOffset), NZCV, Value);
   }
