@@ -1690,6 +1690,12 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: AddSub - with carry") {
 
   TEST_SINGLE(sbcs(Size::i32Bit, Reg::r29, Reg::r28, Reg::r27), "sbcs w29, w28, w27");
   TEST_SINGLE(sbcs(Size::i64Bit, Reg::r29, Reg::r28, Reg::r27), "sbcs x29, x28, x27");
+
+  TEST_SINGLE(ngc(Size::i32Bit, Reg::r29, Reg::r27),  "ngc w29, w27");
+  TEST_SINGLE(ngc(Size::i64Bit, Reg::r29, Reg::r27),  "ngc x29, x27");
+
+  TEST_SINGLE(ngcs(Size::i32Bit, Reg::r29, Reg::r27), "ngcs w29, w27");
+  TEST_SINGLE(ngcs(Size::i64Bit, Reg::r29, Reg::r27), "ngcs x29, x27");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: Rotate right into flags") {
   TEST_SINGLE(rmif(XReg::x30, 63, 0b0000), "rmif x30, #63, #nzcv");
