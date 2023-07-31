@@ -315,6 +315,94 @@ namespace FEX::HLE::x32 {
     SYSCALL_ERRNO();
   }
 
+  static uint64_t SendMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) {
+    fextl::vector<iovec> Host_iovec;
+    fextl::vector<struct mmsghdr> HostMmsg(vlen);
+
+    // Walk the iovec and convert them
+    // Calculate controllen at the same time
+    size_t Controllen_size{};
+    for (size_t i = 0; i < vlen; ++i) {
+      msghdr32 &guest = msgvec[i].msg_hdr;
+
+      Controllen_size += guest.msg_controllen * 2;
+      for (size_t j = 0; j < guest.msg_iovlen; ++j) {
+        iovec guest_iov = guest.msg_iov[j];
+        Host_iovec.emplace_back(guest_iov);
+      }
+    }
+
+    fextl::vector<uint8_t> Controllen(Controllen_size);
+
+    size_t current_iov{};
+    size_t current_controllen_offset{};
+    for (size_t i = 0; i < vlen; ++i) {
+      msghdr32 &guest = msgvec[i].msg_hdr;
+      struct msghdr &msg = HostMmsg[i].msg_hdr;
+      msg.msg_name = guest.msg_name;
+      msg.msg_namelen = guest.msg_namelen;
+
+      msg.msg_iov = &Host_iovec.at(current_iov);
+      msg.msg_iovlen = guest.msg_iovlen;
+      current_iov += msg.msg_iovlen;
+
+      if (guest.msg_controllen) {
+        msg.msg_control = &Controllen.at(current_controllen_offset);
+        current_controllen_offset += guest.msg_controllen * 2;
+      }
+      msg.msg_controllen = guest.msg_controllen;
+
+      msg.msg_flags = guest.msg_flags;
+
+      if (msg.msg_controllen) {
+        void *CurrentGuestPtr = guest.msg_control;
+        struct cmsghdr *CurrentHost = reinterpret_cast<struct cmsghdr*>(msg.msg_control);
+
+        for (cmsghdr32 *msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
+            CurrentGuestPtr != 0;
+            msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr)) {
+
+          CurrentHost->cmsg_level = msghdr_guest->cmsg_level;
+          CurrentHost->cmsg_type = msghdr_guest->cmsg_type;
+
+          if (msghdr_guest->cmsg_len) {
+            size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
+            CurrentHost->cmsg_len = msghdr_guest->cmsg_len + SizeIncrease;
+            msg.msg_controllen += SizeIncrease;
+            memcpy(CMSG_DATA(CurrentHost), msghdr_guest->cmsg_data, msghdr_guest->cmsg_len - sizeof(cmsghdr32));
+          }
+
+          // Go to next host
+          CurrentHost = CMSG_NXTHDR(&msg, CurrentHost);
+
+          // Go to next msg
+          if (msghdr_guest->cmsg_len < sizeof(cmsghdr32)) {
+            CurrentGuestPtr = nullptr;
+          }
+          else {
+            CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
+            CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
+            if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(guest.msg_control)) + guest.msg_controllen)) {
+              CurrentGuestPtr = nullptr;
+            }
+          }
+        }
+      }
+
+      HostMmsg[i].msg_len = msgvec[i].msg_len;
+    }
+
+    uint64_t Result = ::sendmmsg(sockfd, HostMmsg.data(), vlen, flags);
+
+    if (Result != -1) {
+      // Update guest msglen
+      for (size_t i = 0; i < Result; ++i) {
+        msgvec[i].msg_len = HostMmsg[i].msg_len;
+      }
+    }
+    SYSCALL_ERRNO();
+  }
+
   static uint64_t SetSockOpt(int sockfd, int level, int optname, compat_ptr<void> optval, int optlen) {
     uint64_t Result{};
 
@@ -689,6 +777,28 @@ namespace FEX::HLE::x32 {
           return ::accept4(Arguments[0], reinterpret_cast<struct sockaddr *>(Arguments[1]), reinterpret_cast<socklen_t*>(Arguments[2]), Arguments[3]);
           break;
         }
+        case OP_RECVMMSG: {
+          timespec32 *timeout_ts = reinterpret_cast<timespec32 *>(Arguments[4]);
+          struct timespec tp64{};
+          struct timespec *timed_ptr{};
+          if (timeout_ts) {
+            tp64 = *timeout_ts;
+            timed_ptr = &tp64;
+          }
+
+          uint64_t Result = RecvMMsg(Arguments[0], Arguments[1], Arguments[2], Arguments[3], timed_ptr);
+
+          if (timeout_ts) {
+            *timeout_ts = tp64;
+          }
+
+          return Result;
+          break;
+        }
+        case OP_SENDMMSG: {
+          return SendMMsg(Arguments[0], reinterpret_cast<mmsghdr_32*>(Arguments[1]), Arguments[2], Arguments[3]);
+          break;
+        }
         default:
           LOGMAN_MSG_A_FMT("Unsupported socketcall op: {}", call);
           break;
@@ -701,91 +811,7 @@ namespace FEX::HLE::x32 {
     });
 
     REGISTER_SYSCALL_IMPL_X32(sendmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) -> uint64_t {
-      fextl::vector<iovec> Host_iovec;
-      fextl::vector<struct mmsghdr> HostMmsg(vlen);
-
-      // Walk the iovec and convert them
-      // Calculate controllen at the same time
-      size_t Controllen_size{};
-      for (size_t i = 0; i < vlen; ++i) {
-        msghdr32 &guest = msgvec[i].msg_hdr;
-
-        Controllen_size += guest.msg_controllen * 2;
-        for (size_t j = 0; j < guest.msg_iovlen; ++j) {
-          iovec guest_iov = guest.msg_iov[j];
-          Host_iovec.emplace_back(guest_iov);
-        }
-      }
-
-      fextl::vector<uint8_t> Controllen(Controllen_size);
-
-      size_t current_iov{};
-      size_t current_controllen_offset{};
-      for (size_t i = 0; i < vlen; ++i) {
-        msghdr32 &guest = msgvec[i].msg_hdr;
-        struct msghdr &msg = HostMmsg[i].msg_hdr;
-        msg.msg_name = guest.msg_name;
-        msg.msg_namelen = guest.msg_namelen;
-
-        msg.msg_iov = &Host_iovec.at(current_iov);
-        msg.msg_iovlen = guest.msg_iovlen;
-        current_iov += msg.msg_iovlen;
-
-        if (guest.msg_controllen) {
-          msg.msg_control = &Controllen.at(current_controllen_offset);
-          current_controllen_offset += guest.msg_controllen * 2;
-        }
-        msg.msg_controllen = guest.msg_controllen;
-
-        msg.msg_flags = guest.msg_flags;
-
-        if (msg.msg_controllen) {
-          void *CurrentGuestPtr = guest.msg_control;
-          struct cmsghdr *CurrentHost = reinterpret_cast<struct cmsghdr*>(msg.msg_control);
-
-          for (cmsghdr32 *msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr);
-              CurrentGuestPtr != 0;
-              msghdr_guest = reinterpret_cast<cmsghdr32*>(CurrentGuestPtr)) {
-
-            CurrentHost->cmsg_level = msghdr_guest->cmsg_level;
-            CurrentHost->cmsg_type = msghdr_guest->cmsg_type;
-
-            if (msghdr_guest->cmsg_len) {
-              size_t SizeIncrease = (CMSG_LEN(0) - sizeof(cmsghdr32));
-              CurrentHost->cmsg_len = msghdr_guest->cmsg_len + SizeIncrease;
-              msg.msg_controllen += SizeIncrease;
-              memcpy(CMSG_DATA(CurrentHost), msghdr_guest->cmsg_data, msghdr_guest->cmsg_len - sizeof(cmsghdr32));
-            }
-
-            // Go to next host
-            CurrentHost = CMSG_NXTHDR(&msg, CurrentHost);
-
-            // Go to next msg
-            if (msghdr_guest->cmsg_len < sizeof(cmsghdr32)) {
-              CurrentGuestPtr = nullptr;
-            }
-            else {
-              CurrentGuestPtr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(CurrentGuestPtr) + msghdr_guest->cmsg_len);
-              CurrentGuestPtr = reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(CurrentGuestPtr) + 3) & ~3ULL);
-              if (CurrentGuestPtr >= reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(static_cast<void*>(guest.msg_control)) + guest.msg_controllen)) {
-                CurrentGuestPtr = nullptr;
-              }
-            }
-          }
-        }
-
-        HostMmsg[i].msg_len = msgvec[i].msg_len;
-      }
-
-      uint64_t Result = ::sendmmsg(sockfd, HostMmsg.data(), vlen, flags);
-
-      if (Result != -1) {
-        // Update guest msglen
-        for (size_t i = 0; i < Result; ++i) {
-          msgvec[i].msg_len = HostMmsg[i].msg_len;
-        }
-      }
-      SYSCALL_ERRNO();
+      return SendMMsg(sockfd, msgvec, vlen, flags);
     });
 
     REGISTER_SYSCALL_IMPL_X32(recvmmsg, [](FEXCore::Core::CpuStateFrame *Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, timespec32 *timeout_ts) -> uint64_t {
