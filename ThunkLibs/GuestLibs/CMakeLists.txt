@@ -63,9 +63,10 @@ function(generate NAME SOURCE_FILE)
 
   file(MAKE_DIRECTORY "${OUTFOLDER}")
 
-  set (BITNESS_FLAGS "")
   if (BITNESS EQUAL 32)
     set (BITNESS_FLAGS "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
+  else()
+    set (BITNESS_FLAGS "--target=x86_64-linux-unknown" "-isystem" "/usr/x86_64-linux-gnu/include/")
   endif()
 
   add_custom_command(
