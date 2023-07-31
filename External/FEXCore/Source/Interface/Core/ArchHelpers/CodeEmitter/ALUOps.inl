@@ -221,6 +221,10 @@ public:
     eor(s, rd, rn, n, immr, imms);
   }
 
+  void tst(ARMEmitter::Size s, Register rn, uint64_t imm) {
+    ands(s, Reg::zr, rn, imm);
+  }
+
   // Move wide immediate
   void movn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, uint32_t Imm, uint32_t Offset = 0) {
     LOGMAN_THROW_A_FMT((Imm & 0xFFFF0000U) == 0, "Upper bits of move wide not valid");
@@ -288,6 +292,9 @@ public:
     LOGMAN_THROW_A_FMT((lsb + width) <= RegSizeInBits(s), "Tried to sbfx a region larger than the register");
     sbfm(s, rd, rn, lsb, lsb + width - 1);
   }
+  void sbfiz(ARMEmitter::Size s, Register rd, Register rn, uint32_t lsb, uint32_t width) {
+    xbfiz_helper(true, s, rd, rn, lsb, width);
+  }
   void asr(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t shift) {
     LOGMAN_THROW_A_FMT(shift <= RegSizeInBits(s), "Tried to asr a region larger than the register");
     sbfm(s, rd, rn, shift, RegSizeInBits(s) - 1);
@@ -306,6 +313,10 @@ public:
   void ubfm(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t immr, uint32_t imms) {
     constexpr uint32_t Op = 0b0101'0011'00 << 22;
     DataProcessing_Logical_Imm(Op, s, rd, rn, s == ARMEmitter::Size::i64Bit, immr, imms);
+  }
+
+  void ubfiz(ARMEmitter::Size s, Register rd, Register rn, uint32_t lsb, uint32_t width) {
+    xbfiz_helper(false, s, rd, rn, lsb, width);
   }
 
   void lsl(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t shift) {
@@ -565,6 +576,9 @@ public:
   void orr(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b010'1010'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
+  }
+  void tst(ARMEmitter::Size s, Register rn, Register rm, ShiftType shift = ShiftType::LSL, uint32_t amt = 0) {
+    ands(s, Reg::zr, rn, rm, shift, amt);
   }
 
   void orn(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, FEXCore::ARMEmitter::ShiftType Shift = FEXCore::ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
@@ -937,6 +951,24 @@ private:
     Instr |= Encode_rd(rd);
 
     dc32(Instr);
+  }
+
+  void xbfiz_helper(bool is_signed, ARMEmitter::Size s, Register rd, Register rn, uint32_t lsb, uint32_t width) {
+    [[maybe_unused]] const auto lsb_p_width = lsb + width;
+    const auto reg_size_bits = RegSizeInBits(s);
+
+    LOGMAN_THROW_AA_FMT(lsb_p_width <= reg_size_bits, "lsb + width ({}) must be <= {}. lsb={}, width={}",
+                        lsb_p_width, reg_size_bits, lsb, width);
+    LOGMAN_THROW_AA_FMT(width >= 1, "xbfiz width must be >= 1");
+
+    const auto immr = (reg_size_bits - lsb) & (reg_size_bits - 1);
+    const auto imms = width - 1;
+
+    if (is_signed) {
+      sbfm(s, rd, rn, immr, imms);
+    } else {
+      ubfm(s, rd, rn, immr, imms);
+    }
   }
 
   void DataProcessing_Extract(uint32_t Op, FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, FEXCore::ARMEmitter::Register rm, uint32_t Imm) {
