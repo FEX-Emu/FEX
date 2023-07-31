@@ -337,9 +337,12 @@ public:
 
   void bfi(FEXCore::ARMEmitter::Size s, FEXCore::ARMEmitter::Register rd, FEXCore::ARMEmitter::Register rn, uint32_t lsb, uint32_t width) {
     const auto RegSize = RegSizeInBits(s);
-    LOGMAN_THROW_A_FMT(width > 0, "bfi needs width > 0");
-    LOGMAN_THROW_A_FMT((lsb + width) <= RegSize, "Tried to bfi a region larger than the register");
+    LOGMAN_THROW_A_FMT(width > 0, "bfc/bfi needs width > 0");
+    LOGMAN_THROW_A_FMT((lsb + width) <= RegSize, "Tried to bfc/bfi a region larger than the register");
     bfm(s, rd, rn, (RegSize - lsb) & (RegSize - 1), width - 1);
+  }
+  void bfc(ARMEmitter::Size s, Register rd, uint32_t lsb, uint32_t width) {
+    bfi(s, rd, Reg::zr, lsb, width);
   }
 
   // Extract
