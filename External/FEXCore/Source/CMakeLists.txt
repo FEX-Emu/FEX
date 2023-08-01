@@ -1,4 +1,4 @@
-set (MAN_DIR ${CMAKE_INSTALL_PREFIX}/share/man CACHE PATH "MAN_DIR")
+set (MAN_DIR share/man CACHE PATH "MAN_DIR")
 
 set (FEXCORE_BASE_SRCS
   Interface/Config/Config.cpp
