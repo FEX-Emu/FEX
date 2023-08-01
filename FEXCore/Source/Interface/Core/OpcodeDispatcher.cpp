@@ -71,11 +71,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     FEXCore::X86State::REG_RSP,
   };
 
-  static constexpr SyscallArray GPRIndexes_Win32 = {
-    FEXCore::X86State::REG_RAX,
-    FEXCore::X86State::REG_RSP,
-  };
-
   SyscallFlags DefaultSyscallFlags = FEXCore::IR::SyscallFlags::DEFAULT;
 
   const auto OSABI = CTX->SyscallHandler->GetOSABI();
@@ -93,8 +88,9 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
     DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
   }
   else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_WIN32) {
-    NumArguments = 2;
-    GPRIndexes = &GPRIndexes_Win32;
+    // Since the whole context is going to be saved at entry anyway, theres no need to do additional work to pass in args
+    NumArguments = 0;
+    GPRIndexes = nullptr;
     DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
   }
   else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
