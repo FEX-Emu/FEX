@@ -589,11 +589,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *R
   CalculatePF(Res, Src2);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    COND_FLAG_SET(Src2, RFLAG_AF_LOC, Zero);
-  }
+  // Undefined
 
   // OF
   {
