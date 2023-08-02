@@ -601,14 +601,22 @@ DEF_OP(LoadFlag) {
   auto Op = IROp->C<IR::IROp_LoadFlag>();
 
   auto Dst = GetDst<RA_64>(Node);
-  movzx(Dst, byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)]);
+
+  if (Op->Flag == 24 /* NZCV */)
+    mov(Dst.cvt32(), dword [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)]);
+  else
+    movzx(Dst, byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)]);
 }
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
 
   mov (rax, GetSrc<RA_64>(Op->Value.ID()));
-  mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
+
+  if (Op->Flag == 24 /* NZCV */)
+    mov(dword [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], eax);
+  else
+    mov(byte [STATE + (offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag)], al);
 }
 
 Xbyak::RegExp X86JITCore::GenerateModRM(Xbyak::Reg Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) const {

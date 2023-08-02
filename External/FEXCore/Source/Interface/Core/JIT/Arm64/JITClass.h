@@ -236,6 +236,7 @@ private:
   DEF_OP(InlineEntrypointOffset);
   DEF_OP(CycleCounter);
   DEF_OP(Add);
+  DEF_OP(TestNZ);
   DEF_OP(Sub);
   DEF_OP(Neg);
   DEF_OP(Abs);
@@ -248,6 +249,8 @@ private:
   DEF_OP(MulH);
   DEF_OP(UMulH);
   DEF_OP(Or);
+  DEF_OP(Orlshl);
+  DEF_OP(Orlshr);
   DEF_OP(And);
   DEF_OP(Andn);
   DEF_OP(Xor);

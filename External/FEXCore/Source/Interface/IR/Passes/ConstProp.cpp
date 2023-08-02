@@ -690,6 +690,20 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       }
     break;
     }
+    case OP_TESTNZ: {
+      auto Op = IROp->CW<IR::IROp_TestNZ>();
+      uint64_t Constant1{};
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1)) {
+        bool N = Constant1 & (1ull << ((Op->Size * 8) - 1));
+        bool Z = Constant1 == 0;
+        uint32_t NZVC = (N ? (1u << 31) : 0) | (Z ? (1u << 30) : 0);
+
+        IREmit->ReplaceWithConstant(CodeNode, NZVC);
+        Changed = true;
+      }
+    break;
+    }
     case OP_OR: {
       auto Op = IROp->CW<IR::IROp_Or>();
       uint64_t Constant1{};
@@ -703,6 +717,32 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       } else if (Op->Header.Args[0].ID() == Op->Header.Args[1].ID()) {
         // OR with same value results in original value
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Header.Args[0]));
+        Changed = true;
+      }
+    break;
+    }
+    case OP_ORLSHL: {
+      auto Op = IROp->CW<IR::IROp_Orlshl>();
+      uint64_t Constant1{};
+      uint64_t Constant2{};
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        uint64_t NewConstant = Constant1 | (Constant2 << Op->BitShift);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
+        Changed = true;
+      }
+    break;
+    }
+    case OP_ORLSHR: {
+      auto Op = IROp->CW<IR::IROp_Orlshr>();
+      uint64_t Constant1{};
+      uint64_t Constant2{};
+
+      if (IREmit->IsValueConstant(Op->Header.Args[0], &Constant1) &&
+          IREmit->IsValueConstant(Op->Header.Args[1], &Constant2)) {
+        uint64_t NewConstant = Constant1 | (Constant2 >> Op->BitShift);
+        IREmit->ReplaceWithConstant(CodeNode, NewConstant);
         Changed = true;
       }
     break;

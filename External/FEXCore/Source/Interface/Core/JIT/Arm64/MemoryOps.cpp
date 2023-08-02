@@ -1051,12 +1051,20 @@ DEF_OP(FillRegister) {
 DEF_OP(LoadFlag) {
   auto Op = IROp->C<IR::IROp_LoadFlag>();
   auto Dst = GetReg(Node);
-  ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
+
+  if (Op->Flag == 24 /* NZCV */)
+    ldr(Dst.W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
+  else
+    ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
 
 DEF_OP(StoreFlag) {
   auto Op = IROp->C<IR::IROp_StoreFlag>();
-  strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
+
+  if (Op->Flag == 24 /* NZCV */)
+    str(GetReg(Op->Value.ID()).W(), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
+  else
+    strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
 
 FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t AccessSize,
