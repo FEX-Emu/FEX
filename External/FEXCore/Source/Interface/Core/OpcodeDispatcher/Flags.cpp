@@ -796,31 +796,22 @@ void OpDispatchBuilder::CalculateFlags_RotateRight(uint8_t SrcSize, OrderedNode 
 
   auto OpSize = SrcSize * 8;
 
+  auto OldNZCV = GetNZCV();
+  auto OldSetNZCVBits = PossiblySetNZCVBits;
+  ZeroCV();
+
   // Extract the last bit shifted in to CF
   auto NewCF = _Bfe(1, OpSize - 1, Res);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
 
-  // CF
-  {
-    auto OldCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    auto CF = _Select(FEXCore::IR::COND_EQ, Src2, Zero, OldCF, NewCF);
+  // OF is set to the XOR of the new CF bit and the most significant bit of the result
+  // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
+  auto NewOF = _Xor(_Bfe(1, OpSize - 2, Res), NewCF);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
 
-    // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CF);
-  }
-
-  // OF
-  {
-    auto OldOF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-
-    // OF is set to the XOR of the new CF bit and the most significant bit of the result
-    // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-    auto NewOF = _Xor(_Bfe(1, OpSize - 2, Res), NewCF);
-
-    // If shift == 0, don't update flags
-    auto OF = _Select(FEXCore::IR::COND_EQ, Src2, Zero, OldOF, NewOF);
-
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
-  }
+  // Now select: if shift == 0, don't update flags
+  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
+  PossiblySetNZCVBits |= OldSetNZCVBits;
 }
 
 void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
@@ -828,33 +819,28 @@ void OpDispatchBuilder::CalculateFlags_RotateLeft(uint8_t SrcSize, OrderedNode *
 
   auto OpSize = SrcSize * 8;
 
+  auto OldNZCV = GetNZCV();
+  auto OldSetNZCVBits = PossiblySetNZCVBits;
+
+  // Ends up faster overall.
+  // XXX: can do much better if we have FlagM (with RMIF).
+  ZeroCV();
+
   // Extract the last bit shifted in to CF
   //auto Size = _Constant(GetSrcSize(Res) * 8);
   //auto ShiftAmt = _Sub(Size, Src2);
   auto NewCF = _Bfe(1, 0, Res);
+  SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(NewCF);
 
-  // CF
-  {
-    auto OldCF = GetRFLAG(FEXCore::X86State::RFLAG_CF_LOC);
-    auto CF = _Select(FEXCore::IR::COND_EQ, Src2, Zero, OldCF, NewCF);
+  // OF is the LSB and MSB XOR'd together.
+  // OF is set to the XOR of the new CF bit and the most significant bit of the result.
+  // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
+  auto NewOF = _Xor(_Bfe(1, OpSize - 1, Res), NewCF);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(NewOF);
 
-    // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(CF);
-  }
-
-  // OF
-  {
-    auto OldOF = GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC);
-    // OF is the LSB and MSB XOR'd together.
-    // OF is set to the XOR of the new CF bit and the most significant bit of the result.
-    // OF is architecturally only defined for 1-bit rotate, which is why this only happens when the shift is one.
-    auto NewOF = _Xor(_Bfe(1, OpSize - 1, Res), NewCF);
-
-    auto OF = _Select(FEXCore::IR::COND_EQ, Src2, Zero, OldOF, NewOF);
-
-    // If shift == 0, don't update flags
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
-  }
+  // Now select: if shift == 0, don't update flags
+  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
+  PossiblySetNZCVBits |= OldSetNZCVBits;
 }
 
 void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
@@ -862,6 +848,10 @@ void OpDispatchBuilder::CalculateFlags_RotateRightImmediate(uint8_t SrcSize, Ord
 
   auto OpSize = SrcSize * 8;
   auto NewCF = _Bfe(1, OpSize - 1, Res);
+
+  // Ends up faster overall. If Shift != 1, OF is undefined so we choose to zero here.
+  // XXX: can do much better if we have FlagM (with RMIF).
+  ZeroCV();
 
   // CF
   {
@@ -886,6 +876,11 @@ void OpDispatchBuilder::CalculateFlags_RotateLeftImmediate(uint8_t SrcSize, Orde
   auto OpSize = SrcSize * 8;
 
   auto NewCF = _Bfe(1, 0, Res);
+
+  // Ends up faster overall. If Shift != 1, OF is undefined so we choose to zero here.
+  // XXX: can do much better if we have FlagM (with RMIF).
+  ZeroCV();
+
   // CF
   {
     // Extract the last bit shifted in to CF
