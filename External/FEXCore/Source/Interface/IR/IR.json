@@ -897,12 +897,15 @@
                 ],
         "DestSize": "8"
       },
-      "GPR = Select CondClass:$Cond, GPR:$Cmp1, GPR:$Cmp2, GPR:$TrueVal, GPR:$FalseVal, u8:$CompareSize": {
+      "GPR = Select CondClass:$Cond, SSA:$Cmp1, SSA:$Cmp2, GPR:$TrueVal, GPR:$FalseVal, u8:$CompareSize": {
         "Desc": ["Ternary selection of GPRs",
                  "op:",
                  "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal"
                 ],
-        "DestSize": "std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(_TrueVal), GetOpSize(_FalseVal)))"
+        "DestSize": "std::max<uint8_t>(4, std::max<uint8_t>(GetOpSize(_TrueVal), GetOpSize(_FalseVal)))",
+        "EmitValidation": [
+          "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
+        ]
       },
       "GPR = Extr GPR:$Upper, GPR:$Lower, u8:$LSB": {
         "Desc": ["Concats the two GPRs to create a value that is the size of the full two GPRs",

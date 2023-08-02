@@ -4690,14 +4690,11 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   OrderedNode *Result_Upper = _ExtractElementPair(CASResult, 1);
 
   // Set ZF if memory result was expected
-  OrderedNode *EOR_Lower = _Xor(Result_Lower, Expected_Lower);
-  OrderedNode *EOR_Upper = _Xor(Result_Upper, Expected_Upper);
-  OrderedNode *Orr_Result = _Or(EOR_Lower, EOR_Upper);
-
   auto OneConst = _Constant(1);
   auto ZeroConst = _Constant(0);
+
   OrderedNode *ZFResult = _Select(FEXCore::IR::COND_EQ,
-    Orr_Result, ZeroConst,
+    CASResult, Expected,
     OneConst, ZeroConst);
 
   // Set ZF

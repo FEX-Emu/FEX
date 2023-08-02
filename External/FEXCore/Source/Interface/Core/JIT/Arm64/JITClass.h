@@ -112,6 +112,7 @@ private:
 
   [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
+  [[nodiscard]] bool IsGPRPair(IR::NodeID Node) const;
 
   [[nodiscard]] FEXCore::ARMEmitter::ExtendedMemOperand GenerateMemOperand(uint8_t AccessSize,
                                               FEXCore::ARMEmitter::Register Base,

@@ -1178,6 +1178,7 @@ DEF_OP(Select) {
   const auto CompareEmitSize = Op->CompareSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
+  auto cc = MapSelectCC(Op->Cond);
 
   if (IsGPR(Op->Cmp1.ID())) {
     const auto Src1 = GetReg(Op->Cmp1.ID());
@@ -1188,15 +1189,20 @@ DEF_OP(Select) {
       const auto Src2 = GetReg(Op->Cmp2.ID());
       cmp(CompareEmitSize, Src1, Src2);
     }
-  } else if (IsFPR(Op->Cmp1.ID())) {
+  }
+  else if (IsGPRPair(Op->Cmp1.ID())) {
+    const auto Src1 = GetRegPair(Op->Cmp1.ID());
+    const auto Src2 = GetRegPair(Op->Cmp2.ID());
+    cmp(EmitSize, Src1.first, Src2.first);
+    ccmp(EmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, cc);
+  }
+  else if (IsFPR(Op->Cmp1.ID())) {
     const auto Src1 = GetVReg(Op->Cmp1.ID());
     const auto Src2 = GetVReg(Op->Cmp2.ID());
     fcmp(Op->CompareSize == 8 ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit, Src1, Src2);
   } else {
     LOGMAN_MSG_A_FMT("Select: Expected GPR or FPR");
   }
-
-  auto cc = MapSelectCC(Op->Cond);
 
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);

@@ -171,6 +171,10 @@ friend class FEXCore::IR::PassManager;
   }
 
   /**  @} */
+  FEXCore::IR::RegisterClassType WalkFindRegClass(OrderedNodeWrapper ssa) {
+     OrderedNode *RealNode = ssa.GetNode(DualListData.ListBegin());
+     return WalkFindRegClass(RealNode);
+  }
 
   bool IsValueConstant(OrderedNodeWrapper ssa, uint64_t *Constant = nullptr) {
      OrderedNode *RealNode = ssa.GetNode(DualListData.ListBegin());
