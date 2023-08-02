@@ -564,11 +564,6 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, OrderedNode *Res
   SetNZ_ZeroCV(SrcSize, Res);
 }
 
-#define COND_FLAG_SET(cond, flag, newflag) \
-auto oldflag = GetRFLAG(FEXCore::X86State::flag);\
-auto newval = _Select(FEXCore::IR::COND_EQ, cond, Zero, oldflag, newflag);\
-SetRFLAG<FEXCore::X86State::flag>(newval);
-
 void OpDispatchBuilder::CalculateFlags_ShiftLeft(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto Zero = _Constant(0);
 
@@ -608,83 +603,63 @@ void OpDispatchBuilder::CalculateFlags_ShiftRight(uint8_t SrcSize, OrderedNode *
   auto Zero = _Constant(0);
   auto One = _Constant(1);
 
+  auto OldNZCV = GetNZCV();
+  uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
+
+  SetNZ_ZeroCV(SrcSize, Res);
+
   // CF
   {
     // Extract the last bit shifted in to CF
     auto ShiftAmt = _Sub(Src2, One);
     auto LastBit = _Bfe(1, 0, _Lshr(Src1, ShiftAmt));
-    COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
 
   CalculatePF(Res, Src2);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    COND_FLAG_SET(Src2, RFLAG_AF_LOC, Zero);
-  }
-
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    COND_FLAG_SET(Src2, RFLAG_ZF_LOC, SelectOp);
-  }
-
-  // SF
-  {
-    auto val =_Bfe(1, SrcSize * 8 - 1, Res);
-    COND_FLAG_SET(Src2, RFLAG_SF_LOC, val);
-  }
+  // Undefined
 
   // OF
   {
     // Only defined when Shift is 1 else undefined
     // OF flag is set if a sign change occurred
     auto val = _Bfe(1, SrcSize * 8 - 1, _Xor(Src1, Res));
-    COND_FLAG_SET(Src2, RFLAG_OF_LOC, val);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(val);
   }
+
+  // Now select between the two
+  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
+  PossiblySetNZCVBits |= OldSetNZCVBits;
 }
 
 void OpDispatchBuilder::CalculateFlags_SignShiftRight(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, OrderedNode *Src2) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
 
+  auto OldNZCV = GetNZCV();
+  uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
+
+  // SF/ZF/OF
+  SetNZ_ZeroCV(SrcSize, Res);
+
   // CF
   {
     // Extract the last bit shifted in to CF
     auto ShiftAmt = _Sub(Src2, One);
     auto LastBit = _Bfe(1, 0, _Lshr(Src1, ShiftAmt));
-    COND_FLAG_SET(Src2, RFLAG_CF_LOC, LastBit);
+    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(LastBit);
   }
 
   CalculatePF(Res, Src2);
 
   // AF
-  {
-    // Undefined
-    // Set to zero anyway
-    COND_FLAG_SET(Src2, RFLAG_AF_LOC, Zero);
-  }
+  // Undefined
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    COND_FLAG_SET(Src2, RFLAG_ZF_LOC, SelectOp);
-  }
-
-  // SF
-  {
-    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    COND_FLAG_SET(Src2, RFLAG_SF_LOC, SignBitOp);
-  }
-
-  // OF
-  {
-    COND_FLAG_SET(Src2, RFLAG_OF_LOC, Zero);
-  }
+  // Now select between the two
+  SetNZCV(_Select(FEXCore::IR::COND_EQ, Src2, Zero, OldNZCV, GetNZCV()));
+  PossiblySetNZCVBits |= OldSetNZCVBits;
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
