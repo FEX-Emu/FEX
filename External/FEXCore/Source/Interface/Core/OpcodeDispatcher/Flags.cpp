@@ -702,8 +702,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
 
   auto Zero = _Constant(0);
 
-  // Stash OF before overwriting it
-  auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
   SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
@@ -732,7 +730,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
     auto OF = _Bfe(1, SrcSize * 8 - 1, Xor);
     SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
   } else {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OldOF);
+    // Undefined, we choose to zero as part of SetNZ_ZeroCV
   }
 }
 
@@ -742,8 +740,6 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
 
   auto Zero = _Constant(0);
 
-  // Stash OF before overwriting it
-  auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
   SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
@@ -762,14 +758,9 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   }
 
   // OF
-  // Only defined when Shift is 1 else undefined
-  // Only is set if the top bit was set to 1 when shifted
-  // So it is set to same value as SF
-  if (Shift == 1) {
-    /* Already zeroed */
-  } else {
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OldOF);
-  }
+  // Only defined when Shift is 1 else undefined. Only is set if the top bit was set to 1 when
+  // shifted So it is set to zero.  In the undefined case we choose to zero as well. Since it was
+  // already zeroed there's nothing to do here.
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
