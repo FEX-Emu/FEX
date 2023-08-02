@@ -92,8 +92,8 @@ DEF_OP(TestNZ) {
   const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
-  const auto ZeroReg = ARMEmitter::Reg::zr;
-  cmn(EmitSize, GetReg(Op->Src1.ID()), ZeroReg);
+  const auto Src = GetReg(Op->Src1.ID());
+  tst(EmitSize, Src, Src);
 
   // TODO: Optimize this out
   mrs(Dst, ARMEmitter::SystemRegister::NZCV);
