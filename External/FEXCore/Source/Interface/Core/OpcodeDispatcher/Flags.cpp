@@ -504,14 +504,12 @@ void OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, OrderedNode *Res, Or
 
 void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, OrderedNode *High) {
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
 
   // PF/AF/ZF/SF
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
-    ZeroNZCV();
   }
 
   // CF/OF
@@ -521,23 +519,22 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, OrderedNode *Res, Or
 
     auto SignBit = _Sbfe(1, SrcSize * 8 - 1, Res);
 
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, SignBit, Zero, One);
+    auto CV = _Constant((1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
+                        (1u << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC)));
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(SelectOp);
+    // Set CV accordingly and zero NZ regardless
+    SetNZCV(_Select(FEXCore::IR::COND_EQ, High, SignBit, Zero, CV));
   }
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
 
   // AF/SF/PF/ZF
   // Undefined
   {
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_LOC>(Zero);
-    ZeroNZCV();
   }
 
   // CF/OF
@@ -545,10 +542,10 @@ void OpDispatchBuilder::CalculateFlags_UMUL(OrderedNode *High) {
     // CF and OF are set if the result of the operation can't be fit in to the destination register
     // The result register will be all zero if it can't fit due to how multiplication behaves
 
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ, High, Zero, Zero, One);
+    auto CV = _Constant((1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_LOC)) |
+                        (1u << IndexNZCV(FEXCore::X86State::RFLAG_OF_LOC)));
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_LOC>(SelectOp);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(SelectOp);
+    SetNZCV(_Select(FEXCore::IR::COND_EQ, High, Zero, Zero, CV));
   }
 }
 
