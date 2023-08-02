@@ -701,7 +701,10 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
   if (Shift == 0) return;
 
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
+
+  // Stash OF before overwriting it
+  auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
+  SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
   {
@@ -722,24 +725,14 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Order
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
   }
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
-
-  // SF
-  {
-    auto SignOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignOp);
-
-    // OF
-    // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
-    if (Shift == 1) {
-      auto SourceBit = _Bfe(1, SrcSize * 8 - 1, Src1);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(_Xor(SourceBit, SignOp));
-    }
+  // OF
+  // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
+  if (Shift == 1) {
+    auto Xor = _Xor(Res, Src1);
+    auto OF = _Bfe(1, SrcSize * 8 - 1, Xor);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OF);
+  } else {
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OldOF);
   }
 }
 
@@ -748,7 +741,10 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   if (Shift == 0) return;
 
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
+
+  // Stash OF before overwriting it
+  auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
+  SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
   {
@@ -765,31 +761,23 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
   }
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
-
-  // SF
-  {
-    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignBitOp);
-
-    // OF
-    // Only defined when Shift is 1 else undefined
-    // Only is set if the top bit was set to 1 when shifted
-    // So it is set to same value as SF
-    if (Shift == 1) {
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(Zero);
-    }
+  // OF
+  // Only defined when Shift is 1 else undefined
+  // Only is set if the top bit was set to 1 when shifted
+  // So it is set to same value as SF
+  if (Shift == 1) {
+    /* Already zeroed */
+  } else {
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OldOF);
   }
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, OrderedNode *Res, OrderedNode *Src1, uint64_t Shift) {
   auto Zero = _Constant(0);
-  auto One = _Constant(1);
+
+  // Stash OF before overwriting it
+  auto OldOF = Shift != 1 ? GetRFLAG(FEXCore::X86State::RFLAG_OF_LOC) : NULL;
+  SetNZ_ZeroCV(SrcSize, Res);
 
   // CF
   {
@@ -806,17 +794,9 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
     SetRFLAG<FEXCore::X86State::RFLAG_AF_LOC>(Zero);
   }
 
-  // ZF
-  {
-    auto SelectOp = _Select(FEXCore::IR::COND_EQ,
-        Res, Zero, One, Zero);
-    SetRFLAG<FEXCore::X86State::RFLAG_ZF_LOC>(SelectOp);
-  }
-
-  // SF
-  {
-    auto SignBitOp = _Bfe(1, SrcSize * 8 - 1, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_SF_LOC>(SignBitOp);
+  // Preserve OF if it won't be written
+  if (Shift != 1) {
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_LOC>(OldOF);
   }
 }
 
