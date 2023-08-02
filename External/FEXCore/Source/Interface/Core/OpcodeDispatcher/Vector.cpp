@@ -3627,36 +3627,19 @@ void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
 template
 void OpDispatchBuilder::VPHSUBOp<4>(OpcodeArgs);
 
-OrderedNode* OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1,
-                                             const X86Tables::DecodedOperand& Src2) {
+OrderedNode* OpDispatchBuilder::PHADDSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1Op,
+                                             const X86Tables::DecodedOperand& Src2Op) {
   const auto Size = GetSrcSize(Op);
+  const uint8_t ElementSize = 2;
 
-  OrderedNode *Src1Node = LoadSource(FPRClass, Op, Src1, Op->Flags, -1);
-  OrderedNode *Src2Node = LoadSource(FPRClass, Op, Src2, Op->Flags, -1);
+  OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
+  OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
-  if (Size == 8) {
-    // Implementation is more efficient for 8byte registers
-    OrderedNode *Src1_Larger = _VSXTL(Size * 2, 2, Src1Node);
-    OrderedNode *Src2_Larger = _VSXTL(Size * 2, 2, Src2Node);
-
-    OrderedNode *AddRes = _VAddP(Size * 2, 4, Src1_Larger, Src2_Larger);
-
-    // Saturate back down to the result
-    return _VSQXTN(Size * 2, 4, AddRes);
-  }
-
-  OrderedNode *Src1_Larger = _VSXTL(Size, 2, Src1Node);
-  OrderedNode *Src1_Larger_H = _VSXTL2(Size, 2, Src1Node);
-
-  OrderedNode *Src2_Larger = _VSXTL(Size, 2, Src2Node);
-  OrderedNode *Src2_Larger_H = _VSXTL2(Size, 2, Src2Node);
-
-  OrderedNode *AddRes_L = _VAddP(Size, 4, Src1_Larger, Src1_Larger_H);
-  OrderedNode *AddRes_H = _VAddP(Size, 4, Src2_Larger, Src2_Larger_H);
+  auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
+  auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
 
   // Saturate back down to the result
-  OrderedNode *Res = _VSQXTN(Size, 4, AddRes_L);
-  return _VSQXTN2(Size, 4, Res, AddRes_H);
+  return _VSQAdd(Size, ElementSize, Even, Odd);
 }
 
 void OpDispatchBuilder::PHADDS(OpcodeArgs) {
@@ -3683,51 +3666,15 @@ OrderedNode* OpDispatchBuilder::PHSUBSOpImpl(OpcodeArgs, const X86Tables::Decode
                                              const X86Tables::DecodedOperand& Src2Op) {
   const auto Size = GetSrcSize(Op);
   const uint8_t ElementSize = 2;
-  const uint8_t NumElements = Size / ElementSize;
 
   OrderedNode *Src1 = LoadSource(FPRClass, Op, Src1Op, Op->Flags, -1);
   OrderedNode *Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags, -1);
 
-  // This is a bit complicated since AArch64 doesn't support a pairwise subtract
-  OrderedNode *Src1_Neg = _VNeg(Size, ElementSize, Src1);
-  OrderedNode *Src2_Neg = _VNeg(Size, ElementSize, Src2);
-
-  // Now we need to swizzle the values
-  OrderedNode *Swizzle_Src1 = Src1;
-  OrderedNode *Swizzle_Src2 = Src2;
-
-  // Odd elements turn in to negated elements
-  for (size_t i = 1; i < NumElements; i += 2) {
-    Swizzle_Src1 = _VInsElement(Size, ElementSize, i, i, Swizzle_Src1, Src1_Neg);
-    Swizzle_Src2 = _VInsElement(Size, ElementSize, i, i, Swizzle_Src2, Src2_Neg);
-  }
-
-  Src1 = Swizzle_Src1;
-  Src2 = Swizzle_Src2;
-
-  if (Size == 8) {
-    // Implementation is more efficient for 8byte registers
-    OrderedNode *Src1_Larger = _VSXTL(Size * 2, 2, Src1);
-    OrderedNode *Src2_Larger = _VSXTL(Size * 2, 2, Src2);
-
-    OrderedNode *AddRes = _VAddP(Size * 2, 4, Src1_Larger, Src2_Larger);
-
-    // Saturate back down to the result
-    return _VSQXTN(Size * 2, 4, AddRes);
-  }
-
-  OrderedNode *Src1_Larger = _VSXTL(Size, 2, Src1);
-  OrderedNode *Src1_Larger_H = _VSXTL2(Size, 2, Src1);
-
-  OrderedNode *Src2_Larger = _VSXTL(Size, 2, Src2);
-  OrderedNode *Src2_Larger_H = _VSXTL2(Size, 2, Src2);
-
-  OrderedNode *AddRes_L = _VAddP(Size, 4, Src1_Larger, Src1_Larger_H);
-  OrderedNode *AddRes_H = _VAddP(Size, 4, Src2_Larger, Src2_Larger_H);
+  auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
+  auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
 
   // Saturate back down to the result
-  OrderedNode *Res = _VSQXTN(Size, 4, AddRes_L);
-  return _VSQXTN2(Size, 4, Res, AddRes_H);
+  return _VSQSub(Size, ElementSize, Even, Odd);
 }
 
 void OpDispatchBuilder::PHSUBS(OpcodeArgs) {
