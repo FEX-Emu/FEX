@@ -1140,7 +1140,28 @@ DEF_OP(Select) {
     } else {
       cmp(GRCMP(Op->Cmp1.ID()), GRCMP(Op->Cmp2.ID()));
     }
-  } else if (IsFPR(Op->Cmp1.ID())) {
+  }
+  else if (IsGPRPair(Op->Cmp1.ID())) {
+    if (Op->CompareSize == 4) {
+      const auto Src1 = GetSrcPair<RA_32>(Op->Cmp1.ID());
+      const auto Src2 = GetSrcPair<RA_32>(Op->Cmp2.ID());
+      mov (TMP1.cvt32(), Src1.first);
+      mov (TMP2.cvt32(), Src1.second);
+      xor_(TMP1.cvt32(), Src2.first);
+      xor_(TMP2.cvt32(), Src2.second);
+      or_(TMP1.cvt32(), TMP2.cvt32());
+    }
+    else {
+      const auto Src1 = GetSrcPair<RA_64>(Op->Cmp1.ID());
+      const auto Src2 = GetSrcPair<RA_64>(Op->Cmp2.ID());
+      mov (TMP1, Src1.first);
+      mov (TMP2, Src1.second);
+      xor_(TMP1, Src2.first);
+      xor_(TMP2, Src2.second);
+      or_(TMP1, TMP2);
+    }
+  }
+  else if (IsFPR(Op->Cmp1.ID())) {
     if (Op->CompareSize  == 4)
       ucomiss(GetSrc(Op->Cmp1.ID()), GetSrc(Op->Cmp2.ID()));
     else

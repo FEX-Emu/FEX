@@ -906,6 +906,11 @@ bool ConstProp::ConstantPropagation(IREmitter *IREmit, const IRListView& Current
       // Fold the select into the CondJump if possible. Could handle more complex cases, too.
       if (Op->Cond.Val == COND_NEQ && IREmit->IsValueConstant(Op->Cmp2, &Constant) && Constant == 0 &&  Select->Op == OP_SELECT) {
 
+        const auto SelectCmpClass = IREmit->WalkFindRegClass(Select->Args[0]);
+        if (SelectCmpClass == GPRPairClass) {
+          // If the comparison class is a GPRPair then don't fold the select since it isn't free.
+          break;
+        }
         uint64_t Constant1{};
         uint64_t Constant2{};
 

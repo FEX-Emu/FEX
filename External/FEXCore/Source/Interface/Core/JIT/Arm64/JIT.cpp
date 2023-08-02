@@ -724,6 +724,12 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
+bool Arm64JITCore::IsGPRPair(IR::NodeID Node) const {
+  auto Class = GetRegClass(Node);
+
+  return Class == IR::GPRPairClass;
+}
+
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
                                 FEXCore::IR::IRListView const *IR,
                                 FEXCore::Core::DebugData *DebugData,

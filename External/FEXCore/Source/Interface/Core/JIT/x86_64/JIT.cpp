@@ -484,11 +484,15 @@ IR::PhysicalRegister X86JITCore::GetPhys(IR::NodeID Node) const {
 }
 
 bool X86JITCore::IsFPR(IR::NodeID Node) const {
-  return RAData->GetNodeRegister(Node).Class == IR::FPRClass.Val;
+  return RAData->GetNodeRegister(Node).Class == IR::FPRClass;
 }
 
 bool X86JITCore::IsGPR(IR::NodeID Node) const {
-  return RAData->GetNodeRegister(Node).Class == IR::GPRClass.Val;
+  return RAData->GetNodeRegister(Node).Class == IR::GPRClass;
+}
+
+bool X86JITCore::IsGPRPair(IR::NodeID Node) const {
+  return RAData->GetNodeRegister(Node).Class == IR::GPRPairClass;
 }
 
 template<uint8_t RAType>

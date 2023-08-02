@@ -350,6 +350,15 @@ namespace FEXCore::CPU {
   template<typename unsigned_type, typename signed_type, typename float_type>
   [[nodiscard]] static bool IsConditionTrue(uint8_t Cond, uint64_t Src1, uint64_t Src2) {
     bool CompResult = false;
+    if constexpr (sizeof(unsigned_type) == 16) {
+      LOGMAN_THROW_A_FMT(Cond != FEXCore::IR::COND_FLU &&
+        Cond != FEXCore::IR::COND_FGE &&
+        Cond != FEXCore::IR::COND_FLEU &&
+        Cond != FEXCore::IR::COND_FGT &&
+        Cond != FEXCore::IR::COND_FU &&
+        Cond != FEXCore::IR::COND_FNU, "Unsupported comparison for 128-bit floats");
+    }
+
     switch (Cond) {
       case FEXCore::IR::COND_EQ:
         CompResult = static_cast<unsigned_type>(Src1) == static_cast<unsigned_type>(Src2);

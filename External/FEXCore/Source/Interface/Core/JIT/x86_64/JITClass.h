@@ -169,6 +169,7 @@ private:
 
   [[nodiscard]] bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]] bool IsGPR(IR::NodeID Node) const;
+  [[nodiscard]] bool IsGPRPair(IR::NodeID Node) const;
 
   template<uint8_t RAType>
   [[nodiscard]] Xbyak::Reg GetSrc(IR::NodeID Node) const;
