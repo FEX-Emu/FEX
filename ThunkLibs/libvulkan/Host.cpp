@@ -4,6 +4,8 @@ tags: thunklibs|Vulkan
 $end_info$
 */
 
+#define VK_USE_64_BIT_PTR_DEFINES 0
+
 #define VK_USE_PLATFORM_XLIB_XRANDR_EXT
 #define VK_USE_PLATFORM_XLIB_KHR
 #define VK_USE_PLATFORM_XCB_KHR
@@ -91,6 +93,7 @@ static void FEXFN_IMPL(vkFreeMemory)(VkDevice a_0, VkDeviceMemory a_1, const VkA
   LDR_PTR(vkFreeMemory)(a_0, a_1, nullptr);
 }
 
+#if 0
 static VkResult FEXFN_IMPL(vkCreateDebugReportCallbackEXT)(VkInstance a_0, const VkDebugReportCallbackCreateInfoEXT* a_1, const VkAllocationCallbacks* a_2, VkDebugReportCallbackEXT* a_3) {
   VkDebugReportCallbackCreateInfoEXT overridden_callback = *a_1;
   overridden_callback.pfnCallback = DummyVkDebugReportCallback;
@@ -102,6 +105,7 @@ static void FEXFN_IMPL(vkDestroyDebugReportCallbackEXT)(VkInstance a_0, VkDebugR
   (void*&)LDR_PTR(vkDestroyDebugReportCallbackEXT) = (void*)LDR_PTR(vkGetInstanceProcAddr)(a_0, "vkDestroyDebugReportCallbackEXT");
   LDR_PTR(vkDestroyDebugReportCallbackEXT)(a_0, a_1, nullptr);
 }
+#endif
 
 static PFN_vkVoidFunction FEXFN_IMPL(vkGetDeviceProcAddr)(VkDevice a_0, const char* a_1) {
   // Just return the host facing function pointer

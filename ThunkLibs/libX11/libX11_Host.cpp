@@ -20,12 +20,20 @@ extern "C" {
 #undef min
 #undef max
 
+#define XTRANS_SEND_FDS 1
+#include <X11/Xtrans/Xtransint.h>
+
 #include <X11/Xutil.h>
+#include <X11/Xregion.h>
 #include <X11/Xresource.h>
 
 #include <X11/Xproto.h>
 
+#include <X11/extensions/extutil.h>
 #include <X11/extensions/XKBstr.h>
+#include <X11/extensions/XKBgeom.h>
+
+#include <X11/Xtrans/Xtransint.h>
 }
 
 #include "common/Host.h"

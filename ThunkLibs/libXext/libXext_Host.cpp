@@ -8,6 +8,7 @@ $end_info$
 
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
+#include <X11/Xregion.h>
 #include <X11/Xutil.h>
 #include <X11/Xproto.h>
 #include <X11/extensions/Xext.h>
@@ -37,6 +38,12 @@ extern "C" {
 #include <X11/extensions/syncconst.h>
 #include <X11/extensions/syncproto.h>
 //#include <X11/extensions/XTest.h>
+
+#define XTRANS_SEND_FDS 1
+#include <X11/Xtrans/Xtransint.h>
+
+#undef min
+#undef max
 
 #include "common/Host.h"
 #include <dlfcn.h>

@@ -7,6 +7,18 @@ struct fex_gen_config {
     unsigned version = 2;
 };
 
+template<typename>
+struct fex_gen_type {};
+
+#ifndef IS_32BIT_THUNK
+// Union types with compatible data layout
+template<> struct fex_gen_type<drmDevice> : fexgen::assume_compatible_data_layout {};
+
+// Anonymous sub-structs
+template<> struct fex_gen_type<drmStatsT> : fexgen::assume_compatible_data_layout {};
+
+#endif
+
 size_t FEX_usable_size(void*);
 void FEX_free_on_host(void*);
 
@@ -14,7 +26,8 @@ template<> struct fex_gen_config<FEX_usable_size> : fexgen::custom_host_impl, fe
 template<> struct fex_gen_config<FEX_free_on_host> : fexgen::custom_host_impl, fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<drmIoctl> {};
 template<> struct fex_gen_config<drmGetHashTable> {};
-template<> struct fex_gen_config<drmGetEntry> {};
+// TODO: returns struct containing a function pointer
+//template<> struct fex_gen_config<drmGetEntry> {};
 template<> struct fex_gen_config<drmAvailable> {};
 template<> struct fex_gen_config<drmOpen> {};
 template<> struct fex_gen_config<drmOpenWithType> {};
@@ -76,7 +89,8 @@ template<> struct fex_gen_config<drmGetContextPrivateMapping> {};
 template<> struct fex_gen_config<drmScatterGatherAlloc> {};
 template<> struct fex_gen_config<drmScatterGatherFree> {};
 template<> struct fex_gen_config<drmWaitVBlank> {};
-template<> struct fex_gen_config<drmSetServerInfo> {};
+// TODO: Needs vtable support
+//template<> struct fex_gen_config<drmSetServerInfo> {};
 template<> struct fex_gen_config<drmError> {};
 template<> struct fex_gen_config<drmMalloc> {};
 template<> struct fex_gen_config<drmFree> {};
@@ -106,7 +120,8 @@ template<> struct fex_gen_config<drmCloseOnce> {};
 template<> struct fex_gen_config<drmSetMaster> {};
 template<> struct fex_gen_config<drmDropMaster> {};
 template<> struct fex_gen_config<drmIsMaster> {};
-template<> struct fex_gen_config<drmHandleEvent> {};
+// TODO: Needs vtable support
+//template<> struct fex_gen_config<drmHandleEvent> {};
 template<> struct fex_gen_config<drmGetDeviceNameFromFd> : fexgen::custom_guest_entrypoint {};
 template<> struct fex_gen_config<drmGetDeviceNameFromFd2> : fexgen::custom_guest_entrypoint {};
 

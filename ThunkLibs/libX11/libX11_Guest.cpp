@@ -14,6 +14,8 @@ extern "C" {
 #include <X11/Xproto.h>
 #include <X11/XKBlib.h>
 
+#include <X11/extensions/extutil.h>
+
 // Include Xlibint.h and undefine some of its macros that clash with the standard library
 #include <X11/Xlibint.h>
 #undef min

@@ -96,7 +96,8 @@ function(add_host_lib NAME GUEST_BITNESS)
   endif()
 endfunction()
 
-set (BITNESS_LIST "32;64")
+#set (BITNESS_LIST "32;64")
+set (BITNESS_LIST "64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   #add_host_lib(fex_malloc_symbols ${GUEST_BITNESS})
 

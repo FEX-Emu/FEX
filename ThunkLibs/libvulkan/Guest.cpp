@@ -4,6 +4,8 @@ tags: thunklibs|Vulkan
 $end_info$
 */
 
+#define VK_USE_64_BIT_PTR_DEFINES 0
+
 #define VK_USE_PLATFORM_XLIB_XRANDR_EXT
 #define VK_USE_PLATFORM_XLIB_KHR
 #define VK_USE_PLATFORM_XCB_KHR

@@ -11,6 +11,15 @@ struct fex_gen_config {
     unsigned version = 1;
 };
 
+template<typename>
+struct fex_gen_type {};
+
+template<> struct fex_gen_type<xcb_connection_t> : fexgen::opaque_type {};
+template<> struct fex_gen_type<xcb_special_event> : fexgen::opaque_type {};
+
+// Union type with consistent data layout across host/x86/x86-64
+template<> struct fex_gen_type<xcb_client_message_data_t> : fexgen::assume_compatible_data_layout {};
+
 void FEX_xcb_init_extension(xcb_connection_t*, xcb_extension_t*);
 size_t FEX_usable_size(void*);
 void FEX_free_on_host(void*);
