@@ -4164,8 +4164,8 @@ private:
   }
 
   // Atomic memory operations
-  template<typename T>
-  void LoadStoreAtomicLSE(SubRegSize s, uint32_t A, uint32_t R, uint32_t o3, uint32_t opc, T rs, T rt, Register rn) {
+  void LoadStoreAtomicLSE(SubRegSize s, uint32_t A, uint32_t R, uint32_t o3, uint32_t opc,
+                          Register rs, Register rt, Register rn) {
     uint32_t Instr = 0b0011'1000'0010'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(s) << 30;
     Instr |= A << 23;
