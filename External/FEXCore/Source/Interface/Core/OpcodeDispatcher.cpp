@@ -674,7 +674,6 @@ void OpDispatchBuilder::POPOp(OpcodeArgs) {
 void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   // 32bit only
   const uint8_t Size = GetSrcSize(Op);
-  const uint8_t GPRSize = 4;
 
   auto Constant = _Constant(Size);
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
@@ -692,32 +691,32 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   OrderedNode *Src{};
   OrderedNode *NewSP = OldSP;
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RDI, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RDI, Src, Size);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RSI, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RSI, Src, Size);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RBP, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RBP, Src, Size);
   NewSP = _Add(NewSP, _Constant(Size * 2));
 
   // Skip SP loading
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RBX, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RBX, Src, Size);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RDX, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RDX, Src, Size);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RCX, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RCX, Src, Size);
   NewSP = _Add(NewSP, Constant);
 
   Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RAX, Src, GPRSize);
+  StoreGPRRegister(X86State::REG_RAX, Src, Size);
   NewSP = _Add(NewSP, Constant);
 
   // Store the new stack pointer
