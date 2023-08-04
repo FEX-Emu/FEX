@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RAX": "0x6",
+    "RAX": "0xFF0006",
     "RCX": "0x5",
     "RDX": "0x4",
     "RSP": "0xE0000020",
@@ -16,7 +16,7 @@
 
 mov esp, 0xe0000020
 
-mov eax, 0xFF
+mov eax, 0xFF0000
 mov ecx, 0xFF
 mov edx, 0xFF
 mov ebx, 0xFF
