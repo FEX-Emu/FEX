@@ -24,36 +24,8 @@
 #include <unistd.h>
 
 namespace Logging {
-  const char *GetCharLevel(uint32_t Level) {
-    switch (Level) {
-    case LogMan::NONE:
-      return "NONE";
-      break;
-    case LogMan::ASSERT:
-      return "ASSERT";
-      break;
-    case LogMan::ERROR:
-      return "ERROR";
-      break;
-    case LogMan::DEBUG:
-      return "DEBUG";
-      break;
-    case LogMan::INFO:
-      return "Info";
-      break;
-    case LogMan::STDOUT:
-      return "STDOUT";
-      break;
-    case LogMan::STDERR:
-      return "STDERR";
-      break;
-    default:
-      return "???";
-      break;
-    }
-  }
   void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
-    const auto Output = fmt::format("[{}] {}\n", GetCharLevel(Level), Message);
+    const auto Output = fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
     write(STDOUT_FILENO, Output.c_str(), Output.size());
   }
 
@@ -63,8 +35,7 @@ namespace Logging {
   }
 
   void ClientMsgHandler(int FD, uint64_t Timestamp, uint32_t PID, uint32_t TID, uint32_t Level, const char* Msg) {
-    auto CharLevel = GetCharLevel(Level);
-    const auto Output = fmt::format("[{}][{}][{}.{}] {}\n", CharLevel, Timestamp, PID, TID, Msg);
+    const auto Output = fmt::format("[{}][{}][{}.{}] {}\n", LogMan::DebugLevelStr(Level), Timestamp, PID, TID, Msg);
     write(STDERR_FILENO, Output.c_str(), Output.size());
   }
 }

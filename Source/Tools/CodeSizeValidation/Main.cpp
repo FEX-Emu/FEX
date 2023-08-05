@@ -202,23 +202,9 @@ namespace CodeSize {
 }
 
 void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
-  const char *CharLevel{nullptr};
+  const char *CharLevel{LogMan::DebugLevelStr(Level)};
 
-  switch (Level) {
-  case LogMan::NONE:
-    CharLevel = "NONE";
-    break;
-  case LogMan::ASSERT:
-    CharLevel = "ASSERT";
-    break;
-  case LogMan::ERROR:
-    CharLevel = "ERROR";
-    break;
-  case LogMan::DEBUG:
-    CharLevel = "DEBUG";
-    break;
-  case LogMan::INFO:
-    CharLevel = "Info";
+  if (Level == LogMan::INFO) {
     // Disassemble information is sent through the Info log level.
     if (!CodeSize::Validation.ParseMessage(Message)) {
       return;
@@ -226,11 +212,8 @@ void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     if (CodeSize::Validation.InfoPrintingDisabled()) {
       return;
     }
-    break;
-  default:
-    CharLevel = "???";
-    break;
   }
+
   fextl::fmt::print("[{}] {}\n", CharLevel, Message);
 }
 
