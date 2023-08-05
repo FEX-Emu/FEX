@@ -2599,11 +2599,23 @@ public:
   void staddl(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 1, 0, 0b000, rs, Reg::zr, rn);
   }
+  void stadda(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b000, rs, Reg::zr, rn);
+  }
+  void staddal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b000, rs, Reg::zr, rn);
+  }
   void stclr(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 0, 0, 0b001, rs, Reg::zr, rn);
   }
   void stclrl(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 1, 0, 0b001, rs, Reg::zr, rn);
+  }
+  void stclra(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b001, rs, Reg::zr, rn);
+  }
+  void stclral(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b001, rs, Reg::zr, rn);
   }
   void stset(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 0, 0, 0b011, rs, Reg::zr, rn);
@@ -2611,11 +2623,71 @@ public:
   void stsetl(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 1, 0, 0b011, rs, Reg::zr, rn);
   }
+  void stseta(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b011, rs, Reg::zr, rn);
+  }
+  void stsetal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b011, rs, Reg::zr, rn);
+  }
   void steor(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 0, 0, 0b010, rs, Reg::zr, rn);
   }
   void steorl(SubRegSize size, Register rs, Register rn) {
     LoadStoreAtomicLSE(size, 0, 1, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void steora(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void steoral(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void stsmax(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmaxl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmaxa(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmaxal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmin(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stsminl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stsmina(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stsminal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stumax(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumaxl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumaxa(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumaxal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumin(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void stuminl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void stumina(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void stuminal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b111, rs, Reg::zr, rn);
   }
   void ldswp(SubRegSize size, Register rs, Register rt, Register rn) {
     LoadStoreAtomicLSE(size, 0, 0, 1, 0b000, rs, rt, rn);
