@@ -1574,45 +1574,165 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register unpri
   }
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Atomic memory operations") {
-  TEST_SINGLE(stadd(SubRegSize::i8Bit, Reg::r30, Reg::r29), "staddb w30, [x29]");
+  TEST_SINGLE(stadd(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddb w30, [x29]");
   TEST_SINGLE(stadd(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddh w30, [x29]");
   TEST_SINGLE(stadd(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stadd w30, [x29]");
   TEST_SINGLE(stadd(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stadd x30, [x29]");
 
-  TEST_SINGLE(staddl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "staddlb w30, [x29]");
+  TEST_SINGLE(staddl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddlb w30, [x29]");
   TEST_SINGLE(staddl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddlh w30, [x29]");
   TEST_SINGLE(staddl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "staddl w30, [x29]");
   TEST_SINGLE(staddl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "staddl x30, [x29]");
 
-  TEST_SINGLE(stclr(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stclrb w30, [x29]");
+  TEST_SINGLE(stadda(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddab w30, [x29]");
+  TEST_SINGLE(stadda(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddah w30, [x29]");
+  TEST_SINGLE(stadda(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stadda w30, [x29]");
+  TEST_SINGLE(stadda(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stadda x30, [x29]");
+
+  TEST_SINGLE(staddal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "staddalb w30, [x29]");
+  TEST_SINGLE(staddal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "staddalh w30, [x29]");
+  TEST_SINGLE(staddal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "staddal w30, [x29]");
+  TEST_SINGLE(staddal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "staddal x30, [x29]");
+
+  TEST_SINGLE(stclr(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclrb w30, [x29]");
   TEST_SINGLE(stclr(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclrh w30, [x29]");
   TEST_SINGLE(stclr(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclr w30, [x29]");
   TEST_SINGLE(stclr(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclr x30, [x29]");
 
-  TEST_SINGLE(stclrl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stclrlb w30, [x29]");
+  TEST_SINGLE(stclrl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclrlb w30, [x29]");
   TEST_SINGLE(stclrl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclrlh w30, [x29]");
   TEST_SINGLE(stclrl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclrl w30, [x29]");
   TEST_SINGLE(stclrl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclrl x30, [x29]");
 
-  TEST_SINGLE(stset(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsetb w30, [x29]");
+  TEST_SINGLE(stclra(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclrab w30, [x29]");
+  TEST_SINGLE(stclra(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclrah w30, [x29]");
+  TEST_SINGLE(stclra(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclra w30, [x29]");
+  TEST_SINGLE(stclra(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclra x30, [x29]");
+
+  TEST_SINGLE(stclral(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stclralb w30, [x29]");
+  TEST_SINGLE(stclral(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stclralh w30, [x29]");
+  TEST_SINGLE(stclral(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stclral w30, [x29]");
+  TEST_SINGLE(stclral(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stclral x30, [x29]");
+
+  TEST_SINGLE(stset(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetb w30, [x29]");
   TEST_SINGLE(stset(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stseth w30, [x29]");
   TEST_SINGLE(stset(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stset w30, [x29]");
   TEST_SINGLE(stset(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stset x30, [x29]");
 
-  TEST_SINGLE(stsetl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "stsetlb w30, [x29]");
+  TEST_SINGLE(stsetl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetlb w30, [x29]");
   TEST_SINGLE(stsetl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsetlh w30, [x29]");
   TEST_SINGLE(stsetl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsetl w30, [x29]");
   TEST_SINGLE(stsetl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsetl x30, [x29]");
 
-  TEST_SINGLE(steor(SubRegSize::i8Bit, Reg::r30, Reg::r29), "steorb w30, [x29]");
+  TEST_SINGLE(stseta(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetab w30, [x29]");
+  TEST_SINGLE(stseta(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsetah w30, [x29]");
+  TEST_SINGLE(stseta(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stseta w30, [x29]");
+  TEST_SINGLE(stseta(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stseta x30, [x29]");
+
+  TEST_SINGLE(stsetal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsetalb w30, [x29]");
+  TEST_SINGLE(stsetal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsetalh w30, [x29]");
+  TEST_SINGLE(stsetal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsetal w30, [x29]");
+  TEST_SINGLE(stsetal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsetal x30, [x29]");
+
+  TEST_SINGLE(steor(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steorb w30, [x29]");
   TEST_SINGLE(steor(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steorh w30, [x29]");
   TEST_SINGLE(steor(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steor w30, [x29]");
   TEST_SINGLE(steor(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steor x30, [x29]");
 
-  TEST_SINGLE(steorl(SubRegSize::i8Bit, Reg::r30, Reg::r29), "steorlb w30, [x29]");
+  TEST_SINGLE(steorl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steorlb w30, [x29]");
   TEST_SINGLE(steorl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steorlh w30, [x29]");
   TEST_SINGLE(steorl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steorl w30, [x29]");
   TEST_SINGLE(steorl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steorl x30, [x29]");
+
+  TEST_SINGLE(steora(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steorab w30, [x29]");
+  TEST_SINGLE(steora(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steorah w30, [x29]");
+  TEST_SINGLE(steora(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steora w30, [x29]");
+  TEST_SINGLE(steora(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steora x30, [x29]");
+
+  TEST_SINGLE(steoral(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "steoralb w30, [x29]");
+  TEST_SINGLE(steoral(SubRegSize::i16Bit, Reg::r30, Reg::r29), "steoralh w30, [x29]");
+  TEST_SINGLE(steoral(SubRegSize::i32Bit, Reg::r30, Reg::r29), "steoral w30, [x29]");
+  TEST_SINGLE(steoral(SubRegSize::i64Bit, Reg::r30, Reg::r29), "steoral x30, [x29]");
+
+  TEST_SINGLE(stsmax(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxb w30, [x29]");
+  TEST_SINGLE(stsmax(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxh w30, [x29]");
+  TEST_SINGLE(stsmax(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmax w30, [x29]");
+  TEST_SINGLE(stsmax(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmax x30, [x29]");
+
+  TEST_SINGLE(stsmaxl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxlb w30, [x29]");
+  TEST_SINGLE(stsmaxl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxlh w30, [x29]");
+  TEST_SINGLE(stsmaxl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmaxl w30, [x29]");
+  TEST_SINGLE(stsmaxl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmaxl x30, [x29]");
+
+  TEST_SINGLE(stsmaxa(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxab w30, [x29]");
+  TEST_SINGLE(stsmaxa(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxah w30, [x29]");
+  TEST_SINGLE(stsmaxa(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmaxa w30, [x29]");
+  TEST_SINGLE(stsmaxa(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmaxa x30, [x29]");
+
+  TEST_SINGLE(stsmaxal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsmaxalb w30, [x29]");
+  TEST_SINGLE(stsmaxal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsmaxalh w30, [x29]");
+  TEST_SINGLE(stsmaxal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmaxal w30, [x29]");
+  TEST_SINGLE(stsmaxal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmaxal x30, [x29]");
+
+  TEST_SINGLE(stsmin(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminb w30, [x29]");
+  TEST_SINGLE(stsmin(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminh w30, [x29]");
+  TEST_SINGLE(stsmin(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmin w30, [x29]");
+  TEST_SINGLE(stsmin(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmin x30, [x29]");
+
+  TEST_SINGLE(stsminl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminlb w30, [x29]");
+  TEST_SINGLE(stsminl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminlh w30, [x29]");
+  TEST_SINGLE(stsminl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsminl w30, [x29]");
+  TEST_SINGLE(stsminl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsminl x30, [x29]");
+
+  TEST_SINGLE(stsmina(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminab w30, [x29]");
+  TEST_SINGLE(stsmina(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminah w30, [x29]");
+  TEST_SINGLE(stsmina(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsmina w30, [x29]");
+  TEST_SINGLE(stsmina(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsmina x30, [x29]");
+
+  TEST_SINGLE(stsminal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stsminalb w30, [x29]");
+  TEST_SINGLE(stsminal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stsminalh w30, [x29]");
+  TEST_SINGLE(stsminal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stsminal w30, [x29]");
+  TEST_SINGLE(stsminal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stsminal x30, [x29]");
+
+  TEST_SINGLE(stumax(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxb w30, [x29]");
+  TEST_SINGLE(stumax(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxh w30, [x29]");
+  TEST_SINGLE(stumax(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumax w30, [x29]");
+  TEST_SINGLE(stumax(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumax x30, [x29]");
+
+  TEST_SINGLE(stumaxl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxlb w30, [x29]");
+  TEST_SINGLE(stumaxl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxlh w30, [x29]");
+  TEST_SINGLE(stumaxl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumaxl w30, [x29]");
+  TEST_SINGLE(stumaxl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumaxl x30, [x29]");
+
+  TEST_SINGLE(stumaxa(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxab w30, [x29]");
+  TEST_SINGLE(stumaxa(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxah w30, [x29]");
+  TEST_SINGLE(stumaxa(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumaxa w30, [x29]");
+  TEST_SINGLE(stumaxa(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumaxa x30, [x29]");
+
+  TEST_SINGLE(stumaxal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stumaxalb w30, [x29]");
+  TEST_SINGLE(stumaxal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stumaxalh w30, [x29]");
+  TEST_SINGLE(stumaxal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumaxal w30, [x29]");
+  TEST_SINGLE(stumaxal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumaxal x30, [x29]");
+
+  TEST_SINGLE(stumin(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminb w30, [x29]");
+  TEST_SINGLE(stumin(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminh w30, [x29]");
+  TEST_SINGLE(stumin(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumin w30, [x29]");
+  TEST_SINGLE(stumin(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumin x30, [x29]");
+
+  TEST_SINGLE(stuminl(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminlb w30, [x29]");
+  TEST_SINGLE(stuminl(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminlh w30, [x29]");
+  TEST_SINGLE(stuminl(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stuminl w30, [x29]");
+  TEST_SINGLE(stuminl(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stuminl x30, [x29]");
+
+  TEST_SINGLE(stumina(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminab w30, [x29]");
+  TEST_SINGLE(stumina(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminah w30, [x29]");
+  TEST_SINGLE(stumina(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stumina w30, [x29]");
+  TEST_SINGLE(stumina(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stumina x30, [x29]");
+
+  TEST_SINGLE(stuminal(SubRegSize::i8Bit,  Reg::r30, Reg::r29), "stuminalb w30, [x29]");
+  TEST_SINGLE(stuminal(SubRegSize::i16Bit, Reg::r30, Reg::r29), "stuminalh w30, [x29]");
+  TEST_SINGLE(stuminal(SubRegSize::i32Bit, Reg::r30, Reg::r29), "stuminal w30, [x29]");
+  TEST_SINGLE(stuminal(SubRegSize::i64Bit, Reg::r30, Reg::r29), "stuminal x30, [x29]");
 
   TEST_SINGLE(ldswp(SubRegSize::i8Bit, Reg::r30, Reg::r28, Reg::r29), "swpb w30, w28, [x29]");
   TEST_SINGLE(ldswp(SubRegSize::i16Bit, Reg::r30, Reg::r28, Reg::r29), "swph w30, w28, [x29]");

@@ -2593,733 +2593,625 @@ public:
     ldXr<IndexType::UNPRIVILEGED>(rt, rn, Imm);
   }
   // Atomic memory operations
-  void stadd(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b000, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void stadd(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b000, rs, Reg::zr, rn);
   }
-  void staddl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b000, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void staddl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b000, rs, Reg::zr, rn);
   }
-  void stclr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b001, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void stadda(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b000, rs, Reg::zr, rn);
   }
-  void stclrl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b001, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void staddal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b000, rs, Reg::zr, rn);
   }
-  void stset(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b011, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void stclr(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b001, rs, Reg::zr, rn);
   }
-  void stsetl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b011, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void stclrl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b001, rs, Reg::zr, rn);
   }
-  void steor(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b010, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void stclra(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b001, rs, Reg::zr, rn);
   }
-  void steorl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b010, rs, FEXCore::ARMEmitter::Reg::zr, rn);
+  void stclral(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b001, rs, Reg::zr, rn);
   }
-  void ldswp(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 1, 0b000, rs, rt, rn);
+  void stset(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b011, rs, Reg::zr, rn);
   }
-  void ldswpl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 1, 0b000, rs, rt, rn);
+  void stsetl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b011, rs, Reg::zr, rn);
   }
-  void ldswpa(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 0, 1, 0b000, rs, rt, rn);
+  void stseta(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b011, rs, Reg::zr, rn);
   }
-  void ldswpal(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 1, 1, 0b000, rs, rt, rn);
+  void stsetal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b011, rs, Reg::zr, rn);
+  }
+  void steor(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void steorl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void steora(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void steoral(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b010, rs, Reg::zr, rn);
+  }
+  void stsmax(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmaxl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmaxa(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmaxal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b100, rs, Reg::zr, rn);
+  }
+  void stsmin(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stsminl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stsmina(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stsminal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b101, rs, Reg::zr, rn);
+  }
+  void stumax(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumaxl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumaxa(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumaxal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b110, rs, Reg::zr, rn);
+  }
+  void stumin(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void stuminl(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void stumina(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void stuminal(SubRegSize size, Register rs, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b111, rs, Reg::zr, rn);
+  }
+  void ldswp(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 1, 0b000, rs, rt, rn);
+  }
+  void ldswpl(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 1, 0b000, rs, rt, rn);
+  }
+  void ldswpa(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 1, 0b000, rs, rt, rn);
+  }
+  void ldswpal(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 1, 0b000, rs, rt, rn);
   }
 
-  void ldadd(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b000, rs, rt, rn);
+  void ldadd(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldadda(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 0, 0, 0b000, rs, rt, rn);
+  void ldadda(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldaddl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b000, rs, rt, rn);
+  void ldaddl(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldaddal(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 1, 0, 0b000, rs, rt, rn);
+  void ldaddal(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclr(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b001, rs, rt, rn);
+  void ldclr(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldclra(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 0, 0, 0b001, rs, rt, rn);
+  void ldclra(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldclrl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b001, rs, rt, rn);
+  void ldclrl(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldclral(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 1, 0, 0b001, rs, rt, rn);
+  void ldclral(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b001, rs, rt, rn);
   }
 
-  void ldset(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b011, rs, rt, rn);
+  void ldset(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldseta(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 0, 0, 0b011, rs, rt, rn);
+  void ldseta(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsetl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b011, rs, rt, rn);
+  void ldsetl(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsetal(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 1, 0, 0b011, rs, rt, rn);
+  void ldsetal(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldeor(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 0, 0, 0b010, rs, rt, rn);
+  void ldeor(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldeora(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 0, 0, 0b010, rs, rt, rn);
+  void ldeora(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldeorl(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 0, 1, 0, 0b010, rs, rt, rn);
+  void ldeorl(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 0, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldeoral(ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, size, 1, 1, 0, 0b010, rs, rt, rn);
+  void ldeoral(SubRegSize size, Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(size, 1, 1, 0, 0b010, rs, rt, rn);
   }
 
 
   // 8-bit
-  void ldaddb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b000, rs, rt, rn);
+  void ldaddb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclrb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b001, rs, rt, rn);
+  void ldclrb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeorb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b010, rs, rt, rn);
+  void ldeorb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldsetb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b011, rs, rt, rn);
+  void ldsetb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b100, rs, rt, rn);
+  void ldsmaxb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsminb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b101, rs, rt, rn);
+  void ldsminb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b110, rs, rt, rn);
+  void ldumaxb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b110, rs, rt, rn);
   }
-  void lduminb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 0, 0b111, rs, rt, rn);
+  void lduminb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswpb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 0, 1, 0b000, rs, rt, rn);
+  void ldswpb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b000, rs, rt, rn);
+  void ldaddlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclrlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b001, rs, rt, rn);
+  void ldclrlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeorlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b010, rs, rt, rn);
+  void ldeorlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b011, rs, rt, rn);
+  void ldsetlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b101, rs, rt, rn);
+  void ldsminlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminlb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 0, 0b111, rs, rt, rn);
+  void lduminlb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswplb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 0, 1, 1, 0b000, rs, rt, rn);
+  void ldswplb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 0, 1, 1, 0b000, rs, rt, rn);
   }
-  void ldaddab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b000, rs, rt, rn);
+  void ldaddab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclrab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b001, rs, rt, rn);
+  void ldclrab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeorab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b010, rs, rt, rn);
+  void ldeorab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldsetab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b011, rs, rt, rn);
+  void ldsetab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b100, rs, rt, rn);
+  void ldsmaxab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsminab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b101, rs, rt, rn);
+  void ldsminab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b110, rs, rt, rn);
+  void ldumaxab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b110, rs, rt, rn);
   }
-  void lduminab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 0, 0b111, rs, rt, rn);
+  void lduminab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswpab(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 1, 0b000, rs, rt, rn);
+  void ldswpab(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b000, rs, rt, rn);
+  void ldaddalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclralb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b001, rs, rt, rn);
+  void ldclralb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeoralb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b010, rs, rt, rn);
+  void ldeoralb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b011, rs, rt, rn);
+  void ldsetalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b101, rs, rt, rn);
+  void ldsminalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 0, 0b111, rs, rt, rn);
+  void lduminalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswpalb(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 1, 1, 0b000, rs, rt, rn);
+  void ldswpalb(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 1, 1, 0b000, rs, rt, rn);
   }
   // 16-bit
-  void ldaddh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b000, rs, rt, rn);
+  void ldaddh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclrh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b001, rs, rt, rn);
+  void ldclrh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeorh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b010, rs, rt, rn);
+  void ldeorh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldseth(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b011, rs, rt, rn);
+  void ldseth(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b100, rs, rt, rn);
+  void ldsmaxh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsminh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b101, rs, rt, rn);
+  void ldsminh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b110, rs, rt, rn);
+  void ldumaxh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b110, rs, rt, rn);
   }
-  void lduminh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 0, 0b111, rs, rt, rn);
+  void lduminh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswph(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 0, 1, 0b000, rs, rt, rn);
+  void ldswph(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b000, rs, rt, rn);
+  void ldaddlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclrlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b001, rs, rt, rn);
+  void ldclrlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeorlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b010, rs, rt, rn);
+  void ldeorlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b011, rs, rt, rn);
+  void ldsetlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b101, rs, rt, rn);
+  void ldsminlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminlh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 0, 0b111, rs, rt, rn);
+  void lduminlh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswplh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 0, 1, 1, 0b000, rs, rt, rn);
+  void ldswplh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 0, 1, 1, 0b000, rs, rt, rn);
   }
-  void ldaddah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b000, rs, rt, rn);
+  void ldaddah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclrah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b001, rs, rt, rn);
+  void ldclrah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeorah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b010, rs, rt, rn);
+  void ldeorah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldsetah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b011, rs, rt, rn);
+  void ldsetah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b100, rs, rt, rn);
+  void ldsmaxah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsminah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b101, rs, rt, rn);
+  void ldsminah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b110, rs, rt, rn);
+  void ldumaxah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b110, rs, rt, rn);
   }
-  void lduminah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 0, 0b111, rs, rt, rn);
+  void lduminah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswpah(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 1, 0b000, rs, rt, rn);
+  void ldswpah(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b000, rs, rt, rn);
+  void ldaddalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclralh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b001, rs, rt, rn);
+  void ldclralh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeoralh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b010, rs, rt, rn);
+  void ldeoralh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b011, rs, rt, rn);
+  void ldsetalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b101, rs, rt, rn);
+  void ldsminalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 0, 0b111, rs, rt, rn);
+  void lduminalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswpalh(FEXCore::ARMEmitter::Register rs, FEXCore::ARMEmitter::Register rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 1, 1, 0b000, rs, rt, rn);
+  void ldswpalh(Register rs, Register rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 1, 1, 0b000, rs, rt, rn);
   }
   // 32-bit
-  void ldadd(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b000, rs, rt, rn);
+  void ldadd(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclr(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b001, rs, rt, rn);
+  void ldclr(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeor(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b010, rs, rt, rn);
+  void ldeor(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldset(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b011, rs, rt, rn);
+  void ldset(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmax(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b100, rs, rt, rn);
+  void ldsmax(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsmin(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b101, rs, rt, rn);
+  void ldsmin(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumax(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b110, rs, rt, rn);
+  void ldumax(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b110, rs, rt, rn);
   }
-  void ldumin(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 0, 0b111, rs, rt, rn);
+  void ldumin(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswp(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 0, 1, 0b000, rs, rt, rn);
+  void ldswp(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b000, rs, rt, rn);
+  void ldaddl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclrl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b001, rs, rt, rn);
+  void ldclrl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeorl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b010, rs, rt, rn);
+  void ldeorl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b011, rs, rt, rn);
+  void ldsetl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b101, rs, rt, rn);
+  void ldsminl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 0, 0b111, rs, rt, rn);
+  void lduminl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswpl(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 0, 1, 1, 0b000, rs, rt, rn);
+  void ldswpl(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 0, 1, 1, 0b000, rs, rt, rn);
   }
-  void ldadda(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b000, rs, rt, rn);
+  void ldadda(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclra(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b001, rs, rt, rn);
+  void ldclra(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeora(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b010, rs, rt, rn);
+  void ldeora(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldseta(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b011, rs, rt, rn);
+  void ldseta(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxa(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b100, rs, rt, rn);
+  void ldsmaxa(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsmina(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b101, rs, rt, rn);
+  void ldsmina(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxa(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b110, rs, rt, rn);
+  void ldumaxa(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b110, rs, rt, rn);
   }
-  void ldumina(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 0, 0b111, rs, rt, rn);
+  void ldumina(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswpa(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 1, 0b000, rs, rt, rn);
+  void ldswpa(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b000, rs, rt, rn);
+  void ldaddal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclral(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b001, rs, rt, rn);
+  void ldclral(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeoral(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b010, rs, rt, rn);
+  void ldeoral(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b011, rs, rt, rn);
+  void ldsetal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b101, rs, rt, rn);
+  void ldsminal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 0, 0b111, rs, rt, rn);
+  void lduminal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswpal(FEXCore::ARMEmitter::WRegister rs, FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 1, 1, 0b000, rs, rt, rn);
+  void ldswpal(WRegister rs, WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 1, 1, 0b000, rs, rt, rn);
   }
   // 64-bit
-  void ldadd(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b000, rs, rt, rn);
+  void ldadd(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclr(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b001, rs, rt, rn);
+  void ldclr(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeor(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b010, rs, rt, rn);
+  void ldeor(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldset(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b011, rs, rt, rn);
+  void ldset(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmax(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b100, rs, rt, rn);
+  void ldsmax(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsmin(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b101, rs, rt, rn);
+  void ldsmin(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumax(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b110, rs, rt, rn);
+  void ldumax(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b110, rs, rt, rn);
   }
-  void ldumin(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 0, 0b111, rs, rt, rn);
+  void ldumin(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswp(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 1, 0b000, rs, rt, rn);
+  void ldswp(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b000, rs, rt, rn);
+  void ldaddl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclrl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b001, rs, rt, rn);
+  void ldclrl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeorl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b010, rs, rt, rn);
+  void ldeorl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b011, rs, rt, rn);
+  void ldsetl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b101, rs, rt, rn);
+  void ldsminl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 0, 0b111, rs, rt, rn);
+  void lduminl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswpl(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 1, 1, 0b000, rs, rt, rn);
+  void ldswpl(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 1, 1, 0b000, rs, rt, rn);
   }
-  void ldadda(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b000, rs, rt, rn);
+  void ldadda(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b000, rs, rt, rn);
   }
-  void ldclra(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b001, rs, rt, rn);
+  void ldclra(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b001, rs, rt, rn);
   }
-  void ldeora(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b010, rs, rt, rn);
+  void ldeora(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b010, rs, rt, rn);
   }
-  void ldseta(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b011, rs, rt, rn);
+  void ldseta(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxa(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b100, rs, rt, rn);
+  void ldsmaxa(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b100, rs, rt, rn);
   }
-  void ldsmina(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b101, rs, rt, rn);
+  void ldsmina(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxa(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b110, rs, rt, rn);
+  void ldumaxa(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b110, rs, rt, rn);
   }
-  void ldumina(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 0, 0b111, rs, rt, rn);
+  void ldumina(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 0, 0b111, rs, rt, rn);
   }
-  void ldswpa(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 1, 0b000, rs, rt, rn);
+  void ldswpa(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 1, 0b000, rs, rt, rn);
   }
-  void ldaddal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b000, rs, rt, rn);
+  void ldaddal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b000, rs, rt, rn);
   }
-  void ldclral(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b001, rs, rt, rn);
+  void ldclral(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b001, rs, rt, rn);
   }
-  void ldeoral(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b010, rs, rt, rn);
+  void ldeoral(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b010, rs, rt, rn);
   }
-  void ldsetal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b011, rs, rt, rn);
+  void ldsetal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b011, rs, rt, rn);
   }
-  void ldsmaxal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b100, rs, rt, rn);
+  void ldsmaxal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b100, rs, rt, rn);
   }
-  void ldsminal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b101, rs, rt, rn);
+  void ldsminal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b101, rs, rt, rn);
   }
-  void ldumaxal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b110, rs, rt, rn);
+  void ldumaxal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b110, rs, rt, rn);
   }
-  void lduminal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 0, 0b111, rs, rt, rn);
+  void lduminal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 0, 0b111, rs, rt, rn);
   }
-  void ldswpal(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 1, 1, 0b000, rs, rt, rn);
+  void ldswpal(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 1, 1, 0b000, rs, rt, rn);
   }
-  void ldaprb(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i8Bit, 1, 0, 1, 0b100, FEXCore::ARMEmitter::WReg::w31, rt, rn);
+  void ldaprb(WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i8Bit, 1, 0, 1, 0b100, WReg::w31, rt, rn);
   }
-  void ldaprh(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i16Bit, 1, 0, 1, 0b100, FEXCore::ARMEmitter::WReg::w31, rt, rn);
+  void ldaprh(WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i16Bit, 1, 0, 1, 0b100, WReg::w31, rt, rn);
   }
-  void ldapr(FEXCore::ARMEmitter::WRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i32Bit, 1, 0, 1, 0b100, FEXCore::ARMEmitter::WReg::w31, rt, rn);
+  void ldapr(WRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i32Bit, 1, 0, 1, 0b100, WReg::w31, rt, rn);
   }
-  void ldapr(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 1, 0, 1, 0b100, FEXCore::ARMEmitter::XReg::x31, rt, rn);
+  void ldapr(XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 1, 0, 1, 0b100, XReg::x31, rt, rn);
   }
-  void st64bv0(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 1, 0b010, rs, rt, rn);
+  void st64bv0(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 1, 0b010, rs, rt, rn);
   }
-  void st64bv(FEXCore::ARMEmitter::XRegister rs, FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 1, 0b011, rs, rt, rn);
+  void st64bv(XRegister rs, XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 1, 0b011, rs, rt, rn);
   }
-  void st64b(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 1, 0b001, FEXCore::ARMEmitter::XReg::x31, rt, rn);
+  void st64b(XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 1, 0b001, XReg::x31, rt, rn);
   }
-  void ld64b(FEXCore::ARMEmitter::XRegister rt, FEXCore::ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0011'1000'0010'0000'0000'00 << 10;
-    LoadStoreAtomicLSE(Op, SubRegSize::i64Bit, 0, 0, 1, 0b101, FEXCore::ARMEmitter::XReg::x31, rt, rn);
+  void ld64b(XRegister rt, Register rn) {
+    LoadStoreAtomicLSE(SubRegSize::i64Bit, 0, 0, 1, 0b101, XReg::x31, rt, rn);
   }
 
   // Loadstore register-register offset
@@ -4344,12 +4236,10 @@ private:
   }
 
   // Atomic memory operations
-  template<typename T>
-  void LoadStoreAtomicLSE(uint32_t Op, FEXCore::ARMEmitter::SubRegSize s, uint32_t A, uint32_t R, uint32_t o3, uint32_t opc, T rs, T rt, FEXCore::ARMEmitter::Register rn) {
-    const uint32_t sz = FEXCore::ToUnderlying(s) << 30;
-    uint32_t Instr = Op;
-
-    Instr |= sz;
+  void LoadStoreAtomicLSE(SubRegSize s, uint32_t A, uint32_t R, uint32_t o3, uint32_t opc,
+                          Register rs, Register rt, Register rn) {
+    uint32_t Instr = 0b0011'1000'0010'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(s) << 30;
     Instr |= A << 23;
     Instr |= R << 22;
     Instr |= Encode_rs(rs);
