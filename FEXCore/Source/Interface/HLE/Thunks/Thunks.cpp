@@ -250,8 +250,8 @@ namespace FEXCore {
          * Otherwise, this may only be used from a guest thread (including
          * synchronous uses from the host-side).
          */
-        static void CallCallback(void *callback, void *arg0, void* arg1, AsyncCallbackState *AsyncWorkerThread) {
-          if (!AsyncWorkerThread) {
+        static void CallCallback(void *callback, void *arg0, void* arg1) {
+          if (true) {
             auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
             if (CTX->Config.Is64BitMode) {
               Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
@@ -276,8 +276,8 @@ namespace FEXCore {
 
             Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
           } else {
-            auto* ActiveThread = AsyncWorkerThread->Thread;
-            auto ThunksHandler = reinterpret_cast<ThunkHandler_impl*>(static_cast<Context::ContextImpl*>(AsyncWorkerThread->Thread->CTX)->ThunkHandler.get());
+            FEXCore::Core::InternalThreadState* ActiveThread = nullptr;
+            auto ThunksHandler = reinterpret_cast<ThunkHandler_impl*>(static_cast<Context::ContextImpl*>(ActiveThread->CTX)->ThunkHandler.get());
 
             std::unique_lock lock(ThunksHandler->AsyncWorkerThreadsMutex);
             ActiveThread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
