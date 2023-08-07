@@ -27,6 +27,9 @@ namespace FEXCore {
   __attribute__((weak))
   HostToGuestTrampolinePtr*
   FinalizeHostTrampolineForGuestFunction(HostToGuestTrampolinePtr*, void* HostPacker);
+
+  __attribute__((weak))
+  void MakeHostTrampolineForGuestFunctionAsyncCallable(HostToGuestTrampolinePtr*, unsigned AsyncWorkerThreadId);
 }
 
 template<typename Fn>
@@ -85,11 +88,13 @@ public:
     init_fn (); \
   }
 
+// Same as TrampolineInstanceInfo in Thunks.cpp
 struct GuestcallInfo {
   uintptr_t HostPacker;
-  void (*CallCallback)(uintptr_t GuestUnpacker, uintptr_t GuestTarget, void* argsrv);
+  void (*CallCallback)(uintptr_t GuestUnpacker, uintptr_t GuestTarget, void* argsrv, uintptr_t AsyncWorkerThread);
   uintptr_t GuestUnpacker;
   uintptr_t GuestTarget;
+  uintptr_t AsyncWorkerThread;
 };
 
 // Helper macro for reading an internal argument passed through the `r11`

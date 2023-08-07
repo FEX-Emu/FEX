@@ -50,7 +50,7 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
     "jmpq *0f(%rip) \n"
     ".align 8 \n"
     "0: \n"
-    ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
+    ".quad 0, 0, 0, 0, 0 \n" // TrampolineInstanceInfo
   );
 #elif defined(_M_ARM_64)
   asm(
@@ -59,10 +59,9 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
     "adr x11, 0f \n"
     "br x16 \n"
     // Manually align to the next 8-byte boundary
-    // NOTE: GCC over-aligns to a full page when using .align directives on ARM (last tested on GCC 11.2)
     "nop \n"
     "0: \n"
-    ".quad 0, 0, 0, 0 \n" // TrampolineInstanceInfo
+    ".quad 0, 0, 0, 0, 0 \n" // TrampolineInstanceInfo
   );
 #else
 #error Unsupported host architecture
@@ -81,6 +80,13 @@ namespace FEXCore {
 
   static thread_local FEXCore::Core::InternalThreadState *Thread;
 
+    struct AsyncCallbackState {
+      FEXCore::Core::InternalThreadState *Thread { nullptr };
+
+      std::mutex m;
+      std::condition_variable var;
+      std::atomic<bool> done { false };
+    };
 
     struct ExportEntry { uint8_t *sha256; ThunkedFunction* Fn; };
 
@@ -89,6 +95,7 @@ namespace FEXCore {
       uintptr_t CallCallback;
       uintptr_t GuestUnpacker;
       uintptr_t GuestTarget;
+      AsyncCallbackState *AsyncWorkerThread;
     };
 
     // Opaque type pointing to an instance of HostToGuestTrampolineTemplate and its
@@ -155,6 +162,16 @@ namespace FEXCore {
                 { 0x9b, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a },
                 &AllocateHostTrampolineForGuestFunction
             },
+            {
+                // TODO: sha256(fex:register_async_worker_thread)
+                { 0x9c, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a },
+                &RegisterAsyncWorkerThread
+            },
+            {
+                // TODO: sha256(fex:unregister_async_worker_thread)
+                { 0x9d, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87, 0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a },
+                &UnregisterAsyncWorkerThread
+            },
         };
 
         // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
@@ -166,6 +183,64 @@ namespace FEXCore {
         uint8_t *HostTrampolineInstanceDataPtr;
         size_t HostTrampolineInstanceDataAvailable = 0;
 
+        std::unordered_map<unsigned, AsyncCallbackState> AsyncWorkerThreads;
+        std::mutex AsyncWorkerThreadsMutex;
+
+        /**
+         * Registers the calling thread as a worker thread for callback
+         * functions that are asynchronously invoked in a host context.
+         *
+         * Such a worker thread must be designated since otherwise there is no
+         * x86 context to run the callback in. Most importantly, this would
+         * prevent TLS from working.
+         *
+         * Before the worker thread shuts down, UnregisterAsyncWorkerThread
+         * must be called.
+         */
+        static void RegisterAsyncWorkerThread(void* argsv) {
+          struct args_t {
+              unsigned id;
+          } args = *reinterpret_cast<args_t*>(argsv);
+
+          auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(static_cast<Context::ContextImpl*>(Thread->CTX)->ThunkHandler.get());
+
+          AsyncCallbackState *WorkerState = nullptr;
+          {
+            // Create and initialize new entry
+            std::unique_lock lock(ThunkHandler->AsyncWorkerThreadsMutex);
+            WorkerState = &ThunkHandler->AsyncWorkerThreads[args.id];
+            WorkerState->Thread = Thread;
+          }
+
+          pthread_setname_np(pthread_self(), "ThunkAsyncWorkerThread");
+
+          // Pause thread until woken up by UnregisterAsyncWorkerThread
+          {
+            std::unique_lock lock(WorkerState->m);
+            WorkerState->var.wait(lock, [WorkerState]() -> bool { return WorkerState->done; });
+            fprintf(stderr, "EXITING ASYNC THUNK WORKER THREAD\n");
+          }
+
+        }
+
+        static void UnregisterAsyncWorkerThread(void* argsv) {
+          struct args_t {
+              unsigned id;
+          } args = *reinterpret_cast<args_t*>(argsv);
+
+          auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(static_cast<Context::ContextImpl*>(Thread->CTX)->ThunkHandler.get());
+
+          std::unique_lock lock(ThunkHandler->AsyncWorkerThreadsMutex);
+
+          auto WorkerState = ThunkHandler->AsyncWorkerThreads.find(args.id);
+
+          {
+            WorkerState->second.done = true;
+            WorkerState->second.var.notify_one();
+          }
+
+          ThunkHandler->AsyncWorkerThreads.erase(WorkerState);
+        }
 
         /**
          * Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback.
@@ -175,7 +250,8 @@ namespace FEXCore {
          * Otherwise, this may only be used from a guest thread (including
          * synchronous uses from the host-side).
          */
-        static void CallCallback(void *callback, void *arg0, void* arg1) {
+        static void CallCallback(void *callback, void *arg0, void* arg1, AsyncCallbackState *AsyncWorkerThread) {
+          if (!AsyncWorkerThread) {
             auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
             if (CTX->Config.Is64BitMode) {
               Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
@@ -199,6 +275,19 @@ namespace FEXCore {
             }
 
             Thread->CTX->HandleCallback(Thread, (uintptr_t)callback);
+          } else {
+            auto* ActiveThread = AsyncWorkerThread->Thread;
+            auto ThunksHandler = reinterpret_cast<ThunkHandler_impl*>(static_cast<Context::ContextImpl*>(AsyncWorkerThread->Thread->CTX)->ThunkHandler.get());
+
+            std::unique_lock lock(ThunksHandler->AsyncWorkerThreadsMutex);
+            ActiveThread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
+            ActiveThread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
+
+            // TODO: Instead of registering new TLS state for this, re-use the TLS state from the asynchronous worker thread
+            static_cast<Context::ContextImpl*>(ActiveThread->CTX)->SignalDelegation->RegisterTLSState(ActiveThread);
+            ActiveThread->CTX->HandleCallback(ActiveThread, (uintptr_t)callback);
+            static_cast<Context::ContextImpl*>(ActiveThread->CTX)->SignalDelegation->UninstallTLSState(ActiveThread);
+          }
         }
 
         /**
@@ -497,10 +586,24 @@ namespace FEXCore {
       }
     }
 
+    FEX_DEFAULT_VISIBILITY
+    void MakeHostTrampolineForGuestFunctionAsyncCallable(HostToGuestTrampolinePtr* TrampolineAddress, unsigned AsyncWorkerThreadId) {
+      if (!TrampolineAddress) {
+        return;
+      }
+
+      auto& Trampoline = GetInstanceInfo(TrampolineAddress);
+
+      LOGMAN_THROW_A_FMT(Trampoline.CallCallback == (uintptr_t)&ThunkHandler_impl::CallCallback,
+                        "Invalid trampoline at {} passed to {}", fmt::ptr(TrampolineAddress), __FUNCTION__);
+
+      auto ThunksHandler = reinterpret_cast<ThunkHandler_impl*>(static_cast<Context::ContextImpl*>(Thread->CTX)->ThunkHandler.get());
+      Trampoline.AsyncWorkerThread = &ThunksHandler->AsyncWorkerThreads.at(AsyncWorkerThreadId);
+    }
+
 #else
     fextl::unique_ptr<ThunkHandler> ThunkHandler::Create() {
       ERROR_AND_DIE_FMT("Unsupported");
     }
 #endif
-
 }
