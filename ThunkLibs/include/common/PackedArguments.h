@@ -113,8 +113,8 @@ T&& operator,(T&& t, Regularize) {
     return std::forward<T>(t);
 }
 
-template<typename Result, typename... Args>
-void Invoke(Result(*func)(Args...), PackedArguments<Result, Args...>& args) {
+template<typename Result, typename... Args, typename Func>
+void Invoke(Func&& func, PackedArguments<Result, Args...>& args) requires(std::is_invocable_r_v<Result, Func, Args...>) {
     constexpr auto NumArgs = sizeof...(Args);
     static_assert(NumArgs <= 19 || NumArgs == 24);
 

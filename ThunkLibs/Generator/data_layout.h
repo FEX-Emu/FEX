@@ -87,6 +87,7 @@ struct FuncPtrInfo {
 };
 
 struct ABI : std::unordered_map<std::string, TypeInfo> {
+    std::unordered_map<std::string, FuncPtrInfo> funcptr_types;
     int pointer_size; // in bytes
 };
 
@@ -113,6 +114,8 @@ public:
             const clang::Type*,
             const std::unordered_map<const clang::Type*, TypeInfo> host_abi,
             std::unordered_map<const clang::Type*, TypeCompatibility>& type_compat);
+
+    FuncPtrInfo LookupGuestFuncPtrInfo(const char* funcptr_id);
 
 protected: // TODO: Should probably be private
     // TODO: Make it clearer that this is the guest ABI

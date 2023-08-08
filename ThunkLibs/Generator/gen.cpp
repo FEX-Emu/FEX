@@ -118,8 +118,8 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
         return ret;
     };
 
-    auto get_sha256 = [this](const std::string& function_name) {
-        std::string sha256_message = libname + ":" + function_name;
+    auto get_sha256 = [this](const std::string& function_name, bool include_libname) {
+        std::string sha256_message = (include_libname ? libname + ":" : "") + function_name;
         std::vector<unsigned char> sha256(SHA256_DIGEST_LENGTH);
         SHA256(reinterpret_cast<const unsigned char*>(sha256_message.data()),
                sha256_message.size(),
@@ -139,18 +139,26 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
         file << "extern \"C\" {\n";
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
-            auto sha256 = get_sha256(function_name);
+            auto sha256 = get_sha256(function_name, true);
             fmt::print( file, "MAKE_THUNK({}, {}, \"{:#02x}\")\n",
                         libname, function_name, fmt::join(sha256, ", "));
         }
         file << "}\n";
 
         // Guest->Host transition points for invoking runtime host-function pointers based on their signature
+        std::vector<std::vector<unsigned char>> sha256s;
         for (auto type_it = funcptr_types.begin(); type_it != funcptr_types.end(); ++type_it) {
-            auto* type = *type_it;
+            auto* type = type_it->second.first;
             std::string funcptr_signature = clang::QualType { type, 0 }.getAsString();
 
-            auto cb_sha256 = get_sha256("fexcallback_" + funcptr_signature);
+            auto cb_sha256 = get_sha256("fexcallback_" + funcptr_signature, false);
+            auto it = std::find(sha256s.begin(), sha256s.end(), cb_sha256);
+            if (it != sha256s.end()) {
+                // TODO: Avoid this ugly way of avoiding duplicates
+                continue;
+            } else {
+                sha256s.push_back(cb_sha256);
+            }
 
             // Thunk used for guest-side calls to host function pointers
             file << "  // " << funcptr_signature << "\n";
@@ -337,18 +345,30 @@ void GenerateThunkLibsAction::EmitOutput(clang::ASTContext& context) {
         file << "static ExportEntry exports[] = {\n";
         for (auto& thunk : thunks) {
             const auto& function_name = thunk.function_name;
-            auto sha256 = get_sha256(function_name);
+            auto sha256 = get_sha256(function_name, true);
             fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&fexfn_unpack_{}_{}}}, // {}:{}\n",
                         fmt::join(sha256, "\\x"), libname, function_name, libname, function_name);
         }
 
         // Endpoints for Guest->Host invocation of runtime host-function pointers
-        for (auto& type : funcptr_types) {
+        for (auto& host_funcptr_entry : funcptr_types) {
+            auto& [type, param_annotations] = host_funcptr_entry.second;
             std::string mangled_name = clang::QualType { type, 0 }.getAsString();
-            auto cb_sha256 = get_sha256("fexcallback_" + mangled_name);
-            fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&CallbackUnpack<{}>::ForIndirectCall}},\n",
-                        fmt::join(cb_sha256, "\\x"), mangled_name);
+            auto info = LookupGuestFuncPtrInfo(host_funcptr_entry.first.c_str());
+
+            std::string annotations;
+            for (int param_idx = 0; param_idx < info.args.size(); ++param_idx) {
+                if (param_idx != 0) {
+                    annotations += ", ";
+                }
+
+                // TODO: Add annotations as needed
+                annotations += "ParameterAnnotations {}";
+            }
+            fmt::print( file, "  {{(uint8_t*)\"\\x{:02x}\", (void(*)(void *))&GuestWrapperForHostFunction<{}({})>::Call<{}>}}, // {}\n",
+                        fmt::join(info.sha256, "\\x"), info.result, fmt::join(info.args, ", "), annotations, host_funcptr_entry.first);
         }
+
         file << "  { nullptr, nullptr }\n";
         file << "};\n";
 

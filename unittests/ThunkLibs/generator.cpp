@@ -270,9 +270,10 @@ SourceWithAST Fixture::run_thunkgen_host(std::string_view prelude, std::string_v
         "  uintptr_t GuestUnpacker;\n"
         "  uintptr_t GuestTarget;\n"
         "};\n"
+        "struct ParameterAnnotations {};\n"
         "template<typename>\n"
-        "struct CallbackUnpack {\n"
-        "  static void ForIndirectCall(void* argsv);\n"
+        "struct GuestWrapperForHostFunction {\n"
+        "  template<ParameterAnnotations...> static void Call(void*);\n"
         "};\n"
         "template<typename F>\n"
         "void FinalizeHostTrampolineForGuestFunction(F*);\n"
@@ -377,7 +378,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(2))),
-            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack"))).bind("funcptr")))))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction"))).bind("funcptr")))))
             )).check_binding("funcptr", +[](const clang::CXXMethodDecl* decl) {
                 auto parent = llvm::cast<clang::ClassTemplateSpecializationDecl>(decl->getParent());
                 return parent->getTemplateArgs().get(0).getAsType().getAsString() == "int (char, char)";
@@ -415,7 +416,7 @@ TEST_CASE_METHOD(Fixture, "FunctionPointerParameter") {
         matches(varDecl(
             hasName("exports"),
             hasType(constantArrayType(hasElementType(asString("struct ExportEntry")), hasSize(3))),
-            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("ForIndirectCall"), ofClass(hasName("CallbackUnpack")))))))
+            hasInitializer(hasDescendant(declRefExpr(to(cxxMethodDecl(hasName("Call"), ofClass(hasName("GuestWrapperForHostFunction")))))))
             )));
 }
 

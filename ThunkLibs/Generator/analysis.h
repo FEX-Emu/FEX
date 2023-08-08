@@ -128,7 +128,8 @@ protected:
     std::vector<ThunkedFunction> thunks;
     std::vector<ThunkedAPIFunction> thunked_api;
 
-    std::unordered_set<const clang::Type*> funcptr_types;
+    // TODO: Rename, since this is now not just per type but also per set of annotations
+    std::unordered_map<std::string, std::pair<const clang::Type*, std::unordered_map<unsigned, ParameterAnnotations>>> funcptr_types;
 
 public: // TODO: Remove, make only RepackedType public
     struct RepackedType {

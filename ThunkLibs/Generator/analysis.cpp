@@ -168,6 +168,8 @@ static ParameterAnnotations GetParameterAnnotations(clang::ASTContext& context, 
 void AnalysisAction::ParseInterface(clang::ASTContext& context) {
     ErrorReporter report_error { context };
 
+    const std::unordered_map<unsigned, ParameterAnnotations> no_param_annotations {};
+
     // TODO: Assert fex_gen_type is not declared at non-global namespaces
     if (auto template_decl = FindClassTemplateDeclByName(*context.getTranslationUnitDecl(), "fex_gen_type")) {
         for (auto* decl : template_decl->specializations()) {
@@ -183,7 +185,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
             {
                 if (type->isFunctionPointerType() || type->isFunctionType()) {
-                    funcptr_types.insert(type.getTypePtr());
+                    funcptr_types["TODO_FUNC_NAME_FOR_ANNOTATED_TYPES_" + type.getAsString()] = std::pair { type.getTypePtr(), no_param_annotations };
                 } else {
                     // TODO: Unify this with the is_opaque path above
                     auto [it, inserted] = types.emplace(context.getCanonicalType(type.getTypePtr()), RepackedType { });
@@ -347,7 +349,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                             data.callbacks.emplace(param_idx, callback);
                             if (!callback.is_stub && !callback.is_guest && !data.custom_host_impl) {
-                                funcptr_types.insert(context.getCanonicalType(funcptr));
+                                funcptr_types[emitted_function->getNameAsString() + "_cb" + std::to_string(param_idx)] = std::pair { context.getCanonicalType(funcptr), no_param_annotations };
                             }
 
                             if (data.callbacks.size() != 1) {
@@ -416,7 +418,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
                     // For indirect calls, register the function signature as a function pointer type
                     if (namespace_info.indirect_guest_calls) {
-                        funcptr_types.insert(context.getCanonicalType(emitted_function->getFunctionType()));
+                        funcptr_types[emitted_function->getNameAsString()] = std::pair { context.getCanonicalType(emitted_function->getFunctionType()), data.param_annotations };
                     }
 
                     thunks.push_back(std::move(data));
