@@ -312,6 +312,14 @@
           "\tblocks: Will enable disassembly of the translated instruction code blocks",
           "\tstats: Will print stats when disassembling the code"
         ]
+      },
+      "ForceSVEWidth": {
+        "Type": "uint32",
+        "Default": "0",
+        "Desc": [
+          "Allows overriding the SVE width in the vixl simulator.",
+          "Useful as a debugging feature."
+        ]
       }
     },
     "Logging": {

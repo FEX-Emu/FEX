@@ -41,8 +41,10 @@ Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::ContextImpl *ctx, const Dispa
 #endif
 {
 #ifdef VIXL_SIMULATOR
+  FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
   // Hardcode a 256-bit vector width if we are running in the simulator.
-  Simulator.SetVectorLengthInBits(256);
+  // Allow the user to override this.
+  Simulator.SetVectorLengthInBits(ForceSVEWidth() ? ForceSVEWidth() : 256);
 #endif
 
   EmitDispatcher();
