@@ -85,6 +85,21 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
 
+    - name: ASM Tests 128-bit
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      env:
+        FEX_HOSTFEATURES: "disableavx"
+        FEX_FORCESVEWIDTH: "128"
+      # Execute the unit tests
+      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+
+    - name: ASM Test 128-bit Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM128bit.log || true
+
     - name: IR Tests
       working-directory: ${{runner.workspace}}/build
       shell: bash
