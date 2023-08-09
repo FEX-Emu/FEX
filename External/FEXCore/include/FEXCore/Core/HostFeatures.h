@@ -24,6 +24,7 @@ class HostFeatures final {
     bool Supports3DNow{};
     bool SupportsSSE4A{};
     bool SupportsAVX{};
+    bool SupportsSVE{};
     bool SupportsSHA{};
     bool SupportsBMI1{};
     bool SupportsBMI2{};

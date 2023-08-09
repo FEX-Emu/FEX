@@ -402,7 +402,7 @@ def print_parse_argloader_options(options):
 
             if (value_type == "strenum"):
                 output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key))
+                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key, op_key))
             elif (value_type == "strarray"):
                 # these need a bit more help
                 output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
@@ -431,7 +431,7 @@ def print_parse_envloader_options(options):
             value_type = op_vals["Type"]
             if (value_type == "strenum"):
                 output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
-                output_argloader.write("Value = FEXCore::Config::EnumParser(FEXCore::Config::{}_EnumPairs, Value);\n".format(op_key, op_key))
+                output_argloader.write("Value = FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value);\n".format(op_key, op_key, op_key))
                 output_argloader.write("}\n")
 
             if ("ArgumentHandler" in op_vals):
@@ -447,7 +447,7 @@ def print_parse_enum_options(options):
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():
             if (op_vals["Type"] == "strenum"):
-                output_argloader.write("enum {} : uint64_t {{\n".format(op_key))
+                output_argloader.write("enum class {} : uint64_t {{\n".format(op_key))
                 Enums = op_vals["Enums"]
                 i = 0
                 # Always have an OFF.
@@ -457,6 +457,8 @@ def print_parse_enum_options(options):
                     i += 1
 
                 output_argloader.write("};\n")
+                output_argloader.write("FEX_DEF_NUM_OPS({})\n".format(op_key))
+
 
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():

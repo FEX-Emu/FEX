@@ -28,7 +28,7 @@ DEF_OP(VInsGPR) {
   const auto DestVector = GetVReg(Op->DestVector.ID());
   const auto Src = GetReg(Op->Src.ID());
 
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     const auto ElementSizeBits = ElementSize * 8;
     const auto Offset = ElementSizeBits * DestIdx;
 
@@ -127,7 +127,7 @@ DEF_OP(VDupFromGPR) {
     ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
     ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
 
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     dup(SubEmitSize, Dst.Z(), Src);
   } else {
     dup(SubEmitSize, Dst.Q(), Src);
@@ -201,7 +201,7 @@ DEF_OP(Vector_SToF) {
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B;
     scvtf(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
@@ -223,7 +223,7 @@ DEF_OP(Vector_FToZS) {
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B;
     fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Vector.Z(), SubEmitSize);
   } else {
@@ -246,7 +246,7 @@ DEF_OP(Vector_FToS) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B;
     frinti(SubEmitSize, Dst.Z(), Mask.Merging(), Vector.Z());
     fcvtzs(Dst.Z(), SubEmitSize, Mask.Merging(), Dst.Z(), SubEmitSize);
@@ -274,7 +274,7 @@ DEF_OP(Vector_FToF) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     // Curiously, FCVTLT and FCVTNT have no bottom variants,
     // and also interesting is that FCVTLT will iterate the
     // source vector by accessing each odd element and storing
@@ -349,7 +349,7 @@ DEF_OP(Vector_FToI) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if (HostSupportsSVE && Is256Bit) {
+  if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     switch (Op->Round) {

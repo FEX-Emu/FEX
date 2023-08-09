@@ -90,8 +90,8 @@ namespace Handler {
     LAYER_TOP,
   };
 
-  template<typename PairTypes>
-  static inline fextl::string EnumParser(PairTypes const &EnumPairs, std::string_view const View) {
+  template<typename PairTypes, typename ArrayPairType>
+  static inline fextl::string EnumParser(ArrayPairType const &EnumPairs, std::string_view const View) {
     uint64_t EnumMask{};
     auto Results = std::from_chars(View.data(), View.data() + View.size(), EnumMask);
     if (Results.ec == std::errc()) {
@@ -104,7 +104,7 @@ namespace Handler {
     std::string_view Option = View.substr(Begin, End);
     while (Option.size() != 0) {
       auto EnumValue = std::find_if(EnumPairs.begin(), EnumPairs.end(),
-        [Option](const DisassembleConfigPair &Value) -> bool {
+        [Option](const PairTypes &Value) -> bool {
           return Value.first == Option;
         });
 

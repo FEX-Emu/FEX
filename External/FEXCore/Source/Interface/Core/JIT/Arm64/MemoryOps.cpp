@@ -162,11 +162,11 @@ DEF_OP(LoadRegister) {
     }
   }
   else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
-                                         : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE
+                                            : Core::CPUState::XMM_SSE_REG_SIZE;
     [[maybe_unused]] const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
-    LOGMAN_THROW_A_FMT(HostSupportsSVE, "Unsupported code path!");
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Unsupported code path!");
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
 
     const auto host = GetVReg(Node);
@@ -244,11 +244,11 @@ DEF_OP(StoreRegister) {
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
-                                         : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE
+                                            : Core::CPUState::XMM_SSE_REG_SIZE;
     [[maybe_unused]] const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
-    LOGMAN_THROW_A_FMT(HostSupportsSVE, "Unsupported code path!");
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Unsupported code path!");
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
 
     const auto host = GetVReg(Op->Value.ID());
@@ -331,8 +331,8 @@ DEF_OP(LoadRegisterSRA) {
     }
   }
   else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
-                                         : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE
+                                            : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "out of range regId");
@@ -340,7 +340,7 @@ DEF_OP(LoadRegisterSRA) {
     const auto guest = StaticFPRegisters[regId];
     const auto host = GetVReg(Node);
 
-    if (HostSupportsSVE) {
+    if (HostSupportsSVE256) {
       const auto regOffs = Op->Offset & 31;
 
       ARMEmitter::ForwardLabel DataLocation;
@@ -517,8 +517,8 @@ DEF_OP(StoreRegisterSRA) {
         break;
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsSVE ? Core::CPUState::XMM_AVX_REG_SIZE
-                                         : Core::CPUState::XMM_SSE_REG_SIZE;
+    const auto regSize = HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE
+                                            : Core::CPUState::XMM_SSE_REG_SIZE;
     const auto regId = (Op->Offset - offsetof(Core::CpuStateFrame, State.xmm.avx.data[0][0])) / regSize;
 
     LOGMAN_THROW_A_FMT(regId < StaticFPRegisters.size(), "regId out of range");
@@ -526,7 +526,7 @@ DEF_OP(StoreRegisterSRA) {
     const auto guest = StaticFPRegisters[regId];
     const auto host = GetVReg(Op->Value.ID());
 
-    if (HostSupportsSVE) {
+    if (HostSupportsSVE256) {
       // 256-bit capable hardware allows us to expand the allowed
       // offsets used, however we cannot use Adv. SIMD's INS instruction
       // at all, since it will zero out the upper lanes of the 256-bit SVE
@@ -1341,7 +1341,7 @@ DEF_OP(LoadMemTSO) {
 }
 
 DEF_OP(VLoadVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE, "Need SVE support in order to use VLoadVectorMasked");
+  LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE support in order to use VLoadVectorMasked");
 
   const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
   const auto OpSize = IROp->Size;
@@ -1391,7 +1391,7 @@ DEF_OP(VLoadVectorMasked) {
 }
 
 DEF_OP(VStoreVectorMasked) {
-  LOGMAN_THROW_A_FMT(HostSupportsSVE, "Need SVE support in order to use VStoreVectorMasked");
+  LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE support in order to use VStoreVectorMasked");
 
   const auto Op = IROp->C<IR::IROp_VStoreVectorMasked>();
   const auto OpSize = IROp->Size;

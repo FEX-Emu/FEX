@@ -54,7 +54,9 @@ public:
 
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-  const bool HostSupportsSVE{};
+
+  const bool HostSupportsSVE128{};
+  const bool HostSupportsSVE256{};
 
   ARMEmitter::BiDirectionalLabel *PendingTargetLabel;
   FEXCore::Context::ContextImpl *CTX;
