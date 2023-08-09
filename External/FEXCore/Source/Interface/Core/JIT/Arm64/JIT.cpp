@@ -763,10 +763,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
 #endif
 
-#ifndef NDEBUG
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, Entry);
-#endif
-
   // AAPCS64
   // r30      = LR
   // r29      = FP
