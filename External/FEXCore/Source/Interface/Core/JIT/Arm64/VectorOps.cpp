@@ -2474,11 +2474,25 @@ DEF_OP(VUShrI) {
     if (HostSupportsSVE && Is256Bit) {
       const auto Mask = PRED_TMP_32B.Merging();
 
-      // SVE LSR is destructive, so lets set up the destination.
-      movprfx(Dst.Z(), Vector.Z());
-      lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+      if (BitShift == 0) {
+        if (Dst.Idx() != Vector.Idx()) {
+          mov(Dst.Z(), Vector.Z());
+        }
+      }
+      else {
+        // SVE LSR is destructive, so lets set up the destination.
+        movprfx(Dst.Z(), Vector.Z());
+        lsr(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+      }
     } else {
-      ushr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+      if (BitShift == 0) {
+        if (Dst.Idx() != Vector.Idx()) {
+          mov(Dst.Q(), Vector.Q());
+        }
+      }
+      else {
+        ushr(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+      }
     }
   }
 }
@@ -2504,11 +2518,25 @@ DEF_OP(VSShrI) {
   if (HostSupportsSVE && Is256Bit) {
     const auto Mask = PRED_TMP_32B.Merging();
 
-    // SVE ASR is destructive, so lets set up the destination.
-    movprfx(Dst.Z(), Vector.Z());
-    asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Shift);
+    if (Shift == 0) {
+      if (Dst.Idx() != Vector.Idx()) {
+        mov(Dst.Z(), Vector.Z());
+      }
+    }
+    else {
+      // SVE ASR is destructive, so lets set up the destination.
+      movprfx(Dst.Z(), Vector.Z());
+      asr(SubRegSize, Dst.Z(), Mask, Dst.Z(), Shift);
+    }
   } else {
-    sshr(SubRegSize, Dst.Q(), Vector.Q(), Shift);
+    if (Shift == 0) {
+      if (Dst.Idx() != Vector.Idx()) {
+        mov(Dst.Q(), Vector.Q());
+      }
+    }
+    else {
+      sshr(SubRegSize, Dst.Q(), Vector.Q(), Shift);
+    }
   }
 }
 
@@ -2537,12 +2565,25 @@ DEF_OP(VShlI) {
     if (HostSupportsSVE && Is256Bit) {
       const auto Mask = PRED_TMP_32B.Merging();
 
-      // SVE LSL is destructive, so lets set up the destination.
-      movprfx(Dst.Z(), Vector.Z());
-
-      lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+      if (BitShift == 0) {
+        if (Dst.Idx() != Vector.Idx()) {
+          mov(Dst.Z(), Vector.Z());
+        }
+      }
+      else {
+        // SVE LSL is destructive, so lets set up the destination.
+        movprfx(Dst.Z(), Vector.Z());
+        lsl(SubRegSize, Dst.Z(), Mask, Dst.Z(), BitShift);
+      }
     } else {
-      shl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+      if (BitShift == 0) {
+        if (Dst.Idx() != Vector.Idx()) {
+          mov(Dst.Q(), Vector.Q());
+        }
+      }
+      else {
+        shl(SubRegSize, Dst.Q(), Vector.Q(), BitShift);
+      }
     }
   }
 }
