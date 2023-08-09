@@ -2662,7 +2662,8 @@ DEF_OP(VSXTL) {
     ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
 
-  if (HostSupportsSVE256 && Is256Bit) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
+      (HostSupportsSVE256 && Is256Bit)) {
     sunpklo(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     sxtl(SubRegSize, Dst.D(), Vector.D());
@@ -2685,7 +2686,8 @@ DEF_OP(VSXTL2) {
     ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
 
-  if (HostSupportsSVE256 && Is256Bit) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
+      (HostSupportsSVE256 && Is256Bit)) {
     sunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     sxtl2(SubRegSize, Dst.Q(), Vector.Q());
@@ -2708,7 +2710,8 @@ DEF_OP(VUXTL) {
     ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
 
-  if (HostSupportsSVE256 && Is256Bit) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
+      (HostSupportsSVE256 && Is256Bit)) {
     uunpklo(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     uxtl(SubRegSize, Dst.D(), Vector.D());
@@ -2717,7 +2720,6 @@ DEF_OP(VUXTL) {
 
 DEF_OP(VUXTL2) {
   const auto Op = IROp->C<IR::IROp_VUXTL2>();
-
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
@@ -2732,7 +2734,8 @@ DEF_OP(VUXTL2) {
     ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
     ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
 
-  if (HostSupportsSVE256 && Is256Bit) {
+  if ((HostSupportsSVE128 && !Is256Bit && !HostSupportsSVE256) ||
+      (HostSupportsSVE256 && Is256Bit)) {
     uunpkhi(SubRegSize, Dst.Z(), Vector.Z());
   } else {
     uxtl2(SubRegSize, Dst.Q(), Vector.Q());
