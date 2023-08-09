@@ -577,7 +577,8 @@ void Arm64JITCore::Op_NoOp(IR::IROp_Header const *IROp, IR::NodeID Node) {
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl *ctx, FEXCore::Core::InternalThreadState *Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , Arm64Emitter(ctx, 0)
-  , HostSupportsSVE{ctx->HostFeatures.SupportsAVX}
+  , HostSupportsSVE128{ctx->HostFeatures.SupportsSVE}
+  , HostSupportsSVE256{ctx->HostFeatures.SupportsAVX}
   , CTX {ctx} {
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");

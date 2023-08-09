@@ -1260,7 +1260,7 @@ DEF_OP(VExtractToGPR) {
     // when acting on larger register sizes.
     PerformMove(Vector, Op->Index);
   } else {
-    LOGMAN_THROW_AA_FMT(HostSupportsSVE,
+    LOGMAN_THROW_AA_FMT(HostSupportsSVE256,
                         "Host doesn't support SVE. Cannot perform 256-bit operation.");
     LOGMAN_THROW_AA_FMT(Is256Bit,
                         "Can't perform 256-bit extraction with op side: {}", OpSize);
