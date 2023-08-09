@@ -29,5 +29,9 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation();
 fextl::unique_ptr<FEXCore::IR::Pass> CreatePhiValidation();
 fextl::unique_ptr<FEXCore::IR::Pass> CreateValueDominanceValidation();
 }
+
+namespace Debug {
+fextl::unique_ptr<FEXCore::IR::Pass> CreateIRDumper();
+}
 }
 

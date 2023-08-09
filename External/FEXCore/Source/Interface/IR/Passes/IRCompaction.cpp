@@ -98,7 +98,8 @@ bool IRCompaction::Run(IREmitter *IREmit) {
 
   // Zero is always zero(invalid)
   OldToNewRemap[0].NodeID.Invalidate();
-  auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->BlockCount);
+  auto LocalHeaderOp = LocalBuilder._IRHeader(OrderedNodeWrapper::WrapOffset(0).GetNode(ListBegin), HeaderOp->OriginalRIP, HeaderOp->BlockCount);
+
   OldToNewRemap[CurrentIR.GetID(HeaderNode).Value].NodeID = LocalIR.GetID(LocalHeaderOp.Node);
 
   {

@@ -133,6 +133,7 @@ set (SRCS
   Interface/IR/Passes/DeadCodeElimination.cpp
   Interface/IR/Passes/DeadContextStoreElimination.cpp
   Interface/IR/Passes/IRCompaction.cpp
+  Interface/IR/Passes/IRDumperPass.cpp
   Interface/IR/Passes/IRValidation.cpp
   Interface/IR/Passes/RAValidation.cpp
   Interface/IR/Passes/LongDivideRemovalPass.cpp
