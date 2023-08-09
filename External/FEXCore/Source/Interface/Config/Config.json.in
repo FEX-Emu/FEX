@@ -56,9 +56,9 @@
         "Default": "FEXCore::Config::HostFeatures::OFF",
         "Enums": {
           "ENABLESVE": "enablesve",
-          "DISABLESVE": "disasblesve",
+          "DISABLESVE": "disablesve",
           "ENABLEAVX": "enableavx",
-          "DISABLEAVX": "disasbleavx",
+          "DISABLEAVX": "disableavx",
           "ENABLEAFP": "enableafp",
           "DISABLEAFP": "disableafp",
           "ENABLELRCPC": "enablelrcpc",
