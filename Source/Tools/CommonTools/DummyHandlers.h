@@ -2,8 +2,7 @@
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 
-#ifdef _WIN32
-namespace FEX::WindowsHandlers {
+namespace FEX::DummyHandlers {
 
 class DummySyscallHandler: public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
   public:
@@ -52,6 +51,5 @@ class DummySignalDelegator final : public FEXCore::SignalDelegator, public FEXCo
 };
 
 fextl::unique_ptr<FEXCore::HLE::SyscallHandler> CreateSyscallHandler();
-fextl::unique_ptr<FEX::WindowsHandlers::DummySignalDelegator> CreateSignalDelegator();
+fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> CreateSignalDelegator();
 }
-#endif

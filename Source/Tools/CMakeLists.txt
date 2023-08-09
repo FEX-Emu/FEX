@@ -1,3 +1,5 @@
+add_subdirectory(CommonTools)
+
 if (NOT MINGW_BUILD)
   if (BUILD_FEXCONFIG)
     add_subdirectory(FEXConfig/)

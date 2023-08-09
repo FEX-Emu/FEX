@@ -6,7 +6,7 @@ $end_info$
 */
 
 #ifdef _WIN32
-#include "WindowsDummyHandlers.h"
+#include "DummyHandlers.h"
 #include "ArchHelpers/WinContext.h"
 #else
 #include "LinuxSyscalls/LinuxAllocator.h"
@@ -140,7 +140,7 @@ namespace LongJumpHandler {
     }, true);
   }
 #else
-  FEX::WindowsHandlers::DummySignalDelegator *Handler;
+  FEX::DummyHandlers::DummySignalDelegator *Handler;
 
   static void LongJumpHandler() {
     longjmp(LongJump, 1);
@@ -189,7 +189,7 @@ namespace LongJumpHandler {
     return EXCEPTION_CONTINUE_SEARCH;
   }
 
-  void RegisterLongJumpHandler(FEX::WindowsHandlers::DummySignalDelegator *Handler) {
+  void RegisterLongJumpHandler(FEX::DummyHandlers::DummySignalDelegator *Handler) {
     // Install VEH handler.
     AddVectoredExceptionHandler(0, VectoredExceptionHandler);
 
