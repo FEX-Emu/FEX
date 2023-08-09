@@ -1149,6 +1149,13 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
 #ifdef VIXL_DISASSEMBLER
+  if (Disassemble() & FEXCore::Config::Disassemble::STATS) {
+    LogMan::Msg::IFmt("RIP: 0x{:x}", Entry);
+    LogMan::Msg::IFmt("Guest Code instructions: {}", HeaderOp->NumHostInstructions);
+    LogMan::Msg::IFmt("Host Code instructions: {}", CodeOnlySize >> 2);
+    LogMan::Msg::IFmt("Blow-up Amt: {}x", double(CodeOnlySize >> 2) / double(HeaderOp->NumHostInstructions));
+  }
+
   if (Disassemble() & FEXCore::Config::Disassemble::BLOCKS) {
     const auto DisasmEnd = reinterpret_cast<const vixl::aarch64::Instruction*>(JITBlockTailLocation);
     Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);

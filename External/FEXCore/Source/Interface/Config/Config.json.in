@@ -284,13 +284,15 @@
         "Default": "FEXCore::Config::Disassemble::OFF",
         "Enums": {
           "DISPATCHER": "dispatcher",
-          "BLOCKS": "blocks"
+          "BLOCKS": "blocks",
+          "STATS": "stats"
         },
         "Desc": [
           "Allows controlling of the vixl disassembler.",
           "\toff: No disassembly will be output",
           "\tdispatcher: Will enable disassembly of the JIT dispatcher loop",
-          "\tblocks: Will enable disassembly of the translated instruction code blocks"
+          "\tblocks: Will enable disassembly of the translated instruction code blocks",
+          "\tstats: Will print stats when disassembling the code"
         ]
       }
     },
