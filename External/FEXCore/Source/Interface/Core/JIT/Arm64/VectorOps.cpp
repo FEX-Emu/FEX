@@ -19,15 +19,15 @@ DEF_OP(VectorZero) {
   const auto Dst = GetVReg(Node);
 
   if (HostSupportsSVE && Is256Bit) {
-    eor(Dst.Z(), Dst.Z(), Dst.Z());
+    mov_imm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), 0);
   } else {
     switch (OpSize) {
       case 8: {
-        eor(Dst.D(), Dst.D(), Dst.D());
+        movi(ARMEmitter::SubRegSize::i64Bit, Dst.D(), 0);
         break;
       }
       case 16: {
-        eor(Dst.Q(), Dst.Q(), Dst.Q());
+        movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
         break;
       }
       default:
@@ -83,19 +83,19 @@ DEF_OP(VMov) {
 
   switch (OpSize) {
     case 1: {
-      eor(VTMP1.Q(), VTMP1.Q(), VTMP1.Q());
+      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
       ins(ARMEmitter::SubRegSize::i8Bit, VTMP1, 0, Source, 0);
       mov(Dst.Q(), VTMP1.Q());
       break;
     }
     case 2: {
-      eor(VTMP1.Q(), VTMP1.Q(), VTMP1.Q());
+      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
       ins(ARMEmitter::SubRegSize::i16Bit, VTMP1, 0, Source, 0);
       mov(Dst.Q(), VTMP1.Q());
       break;
     }
     case 4: {
-      eor(VTMP1.Q(), VTMP1.Q(), VTMP1.Q());
+      movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
       ins(ARMEmitter::SubRegSize::i32Bit, VTMP1, 0, Source, 0);
       mov(Dst.Q(), VTMP1.Q());
       break;
@@ -1573,7 +1573,7 @@ DEF_OP(VCMPEQZ) {
 
     // Ensure no junk is in the temp (important for ensuring
     // non-equal entries remain as zero).
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
+    mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
     // Unlike with VCMPEQ, we can skip needing to bitwise OR the
     // final results, since if our elements are equal to zero,
     // we just need to bitwise NOT them and they're already set
@@ -1653,7 +1653,7 @@ DEF_OP(VCMPGTZ) {
 
     // Ensure no junk is in the temp (important for ensuring
     // non greater-than values remain as zero).
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
+    mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
     cmpgt(SubRegSize.Vector, ComparePred, Mask, Vector.Z(), 0);
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector.Z());
     orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector.Z());
@@ -1691,7 +1691,7 @@ DEF_OP(VCMPLTZ) {
 
     // Ensure no junk is in the temp (important for ensuring
     // non less-than values remain as zero).
-    eor(VTMP1.Z(), VTMP1.Z(), VTMP1.Z());
+    mov_imm(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), 0);
     cmplt(SubRegSize.Vector, ComparePred, Mask, Vector.Z(), 0);
     not_(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), Vector.Z());
     orr(SubRegSize.Vector, VTMP1.Z(), ComparePred.Merging(), VTMP1.Z(), Vector.Z());
@@ -2431,7 +2431,7 @@ DEF_OP(VExtr) {
 
     // Upper bits are all now zero
     UpperBits = VTMP1;
-    eor(VTMP1.Q(), VTMP1.Q(), VTMP1.Q());
+    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
     Index -= OpSize;
   }
 
@@ -2469,7 +2469,7 @@ DEF_OP(VUShrI) {
     ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i8Bit;
 
   if (BitShift >= (ElementSize * 8)) {
-    eor(Dst.D(), Dst.D(), Dst.D());
+    movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
   } else {
     if (HostSupportsSVE && Is256Bit) {
       const auto Mask = PRED_TMP_32B.Merging();
@@ -2532,7 +2532,7 @@ DEF_OP(VShlI) {
 
 
   if (BitShift >= (ElementSize * 8)) {
-    eor(Dst.D(), Dst.D(), Dst.D());
+    movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
   } else {
     if (HostSupportsSVE && Is256Bit) {
       const auto Mask = PRED_TMP_32B.Merging();
