@@ -603,6 +603,8 @@ namespace FEXCore::Context {
       ERROR_AND_DIE_FMT("Unknown core configuration");
       break;
     }
+
+    Thread->PassManager->Finalize();
   }
 
   FEXCore::Core::InternalThreadState* ContextImpl::CreateThread(FEXCore::Core::CPUState *NewThreadState, uint64_t ParentTID) {
@@ -729,30 +731,11 @@ namespace FEXCore::Context {
   }
 
   static void IRDumper(FEXCore::Core::InternalThreadState *Thread, IR::IREmitter *IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
-    FEXCore::File::File FD;
-    const auto DumpIRStr = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR();
-
-    // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
-    if (DumpIRStr =="stderr" || DumpIRStr =="no") {
-      FD = FEXCore::File::File::GetStdERR();
-    }
-    else if (DumpIRStr =="stdout") {
-      FD = FEXCore::File::File::GetStdOUT();
-    }
-    else {
-      const auto fileName = fextl::fmt::format("{}/{:x}{}", DumpIRStr, GuestRIP, RA ? "-post.ir" : "-pre.ir");
-      FD = FEXCore::File::File(fileName.c_str(),
-        FEXCore::File::FileModes::WRITE |
-        FEXCore::File::FileModes::CREATE |
-        FEXCore::File::FileModes::TRUNCATE);
-    }
-
-    if (FD.IsValid()) {
-      fextl::stringstream out;
-      auto NewIR = IREmitter->ViewIR();
-      FEXCore::IR::Dump(&out, &NewIR, RA);
-      fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
-    }
+    FEXCore::File::File FD = FEXCore::File::File::GetStdERR();
+    fextl::stringstream out;
+    auto NewIR = IREmitter->ViewIR();
+    FEXCore::IR::Dump(&out, &NewIR, RA);
+    fextl::fmt::print(FD, "IR-ShouldDump-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
   };
 
   static void ValidateIR(ContextImpl *ctx, IR::IREmitter *IREmitter) {
@@ -920,7 +903,7 @@ namespace FEXCore::Context {
 
     IR::IREmitter *IREmitter = Thread->OpDispatcher.get();
 
-    auto ShouldDump = static_cast<ContextImpl*>(Thread->CTX)->Config.DumpIR() != "no" || Thread->OpDispatcher->ShouldDumpIR();
+    auto ShouldDump = Thread->OpDispatcher->ShouldDumpIR();
     // Debug
     {
       if (ShouldDump) {

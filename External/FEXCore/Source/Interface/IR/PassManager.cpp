@@ -17,6 +17,54 @@ $end_info$
 namespace FEXCore::IR {
 class IREmitter;
 
+void PassManager::Finalize() {
+  if (!PassManagerDumpIR()) {
+    // Not configured to dump any IR, just return.
+    return;
+  }
+
+  auto it = Passes.begin();
+  // Walk the passes and add them where asked.
+  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFORE) {
+    // Insert at the start.
+    it = InsertAt(it, Debug::CreateIRDumper());
+    ++it; // Skip what we inserted.
+  }
+
+  if ((PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) ||
+      (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT)) {
+
+    bool SkipFirstBefore = PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFORE;
+    for (; it != Passes.end();) {
+      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::BEFOREOPT) {
+        if (SkipFirstBefore) {
+          // If we need to skip the first one, then continue.
+          SkipFirstBefore = false;
+          ++it;
+          continue;
+        }
+
+        // Insert before
+        it = InsertAt(it, Debug::CreateIRDumper());
+        ++it; // Skip what we inserted.
+      }
+
+      ++it; // Skip current pass.
+      if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT) {
+        // Insert after
+        it = InsertAt(it, Debug::CreateIRDumper());
+        ++it; // Skip what we inserted.
+      }
+    }
+  }
+  if (PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTER) {
+    if (!(PassManagerDumpIR() & FEXCore::Config::PassManagerDumpIR::AFTEROPT)) {
+      // Insert final IRDumper.
+      it = InsertAt(it, Debug::CreateIRDumper());
+    }
+  }
+}
+
 void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation) {
   FEX_CONFIG_OPT(DisablePasses, O0);
 

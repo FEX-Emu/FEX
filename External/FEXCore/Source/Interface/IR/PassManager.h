@@ -49,8 +49,7 @@ public:
   void AddDefaultPasses(FEXCore::Context::ContextImpl *ctx, bool InlineConstants, bool StaticRegisterAllocation);
   void AddDefaultValidationPasses();
   Pass* InsertPass(fextl::unique_ptr<Pass> Pass, fextl::string Name = "") {
-    Pass->RegisterPassManager(this);
-    auto PassPtr = Passes.emplace_back(std::move(Pass)).get();
+    auto PassPtr = InsertAt(Passes.end(), std::move(Pass))->get();
 
     if (!Name.empty()) {
       NameToPassMaping[Name] = PassPtr;
@@ -83,12 +82,19 @@ public:
     SyscallHandler = Handler;
   }
 
+  void Finalize();
+
 protected:
   ShouldExitHandler ExitHandler;
   FEXCore::HLE::SyscallHandler *SyscallHandler;
 
 private:
-  fextl::vector<fextl::unique_ptr<Pass>> Passes;
+  using PassArrayType = fextl::vector<fextl::unique_ptr<Pass>>;
+  PassArrayType::iterator InsertAt(PassArrayType::iterator pos, fextl::unique_ptr<Pass> Pass) {
+    Pass->RegisterPassManager(this);
+    return Passes.insert(pos, std::move(Pass));
+  }
+  PassArrayType Passes;
   fextl::unordered_map<fextl::string, Pass*> NameToPassMaping;
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -104,6 +110,7 @@ private:
 #endif
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+  FEX_CONFIG_OPT(PassManagerDumpIR, PASSMANAGERDUMPIR);
 };
 }
 

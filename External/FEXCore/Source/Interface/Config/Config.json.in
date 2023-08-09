@@ -198,6 +198,24 @@
           "[no, stdout, stderr, <Folder>]"
         ]
       },
+      "PassManagerDumpIR": {
+        "Type": "strenum",
+        "Default": "FEXCore::Config::PassManagerDumpIR::OFF",
+        "Enums": {
+          "BEFOREOPT": "beforeopt",
+          "AFTEROPT": "afteropt",
+          "BEFORE": "beforepass",
+          "AFTER": "afterpass"
+        },
+        "Desc": [
+          "Allows controlling when FEX dumps its IR.",
+          "\toff: IR dumping will be disabled",
+          "\tbeforeopt: Dump IR before any optimizations",
+          "\tafteropt: Dump IR after all optimizations",
+          "\tbeforepass: Dump IR before every optimization pass",
+          "\tafterpass: Dump IR after every optimization pass"
+        ]
+      },
       "DumpGPRs": {
         "Type": "bool",
         "Default": "false",

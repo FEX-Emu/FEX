@@ -160,7 +160,7 @@
         "HasSideEffects": true,
         "SwitchGen": false
       },
-      "IRHeader SSA:$Blocks, u32:$BlockCount": {
+      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount": {
         "SwitchGen": false
       },
       "CodeBlock SSA:$Begin, SSA:$Last": {
