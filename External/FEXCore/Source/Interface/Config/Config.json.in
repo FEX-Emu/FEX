@@ -51,11 +51,38 @@
           "Allows JIT code to be shared between applications"
         ]
       },
-      "EnableAVX": {
-        "Type": "bool",
-        "Default": "false",
+      "HostFeatures": {
+        "Type": "strenum",
+        "Default": "FEXCore::Config::HostFeatures::OFF",
+        "Enums": {
+          "ENABLESVE": "enablesve",
+          "DISABLESVE": "disasblesve",
+          "ENABLEAVX": "enableavx",
+          "DISABLEAVX": "disasbleavx",
+          "ENABLEAFP": "enableafp",
+          "DISABLEAFP": "disableafp",
+          "ENABLELRCPC": "enablelrcpc",
+          "DISABLELRCPC": "disablelrcpc",
+          "ENABLELRCPC2": "enablelrcpc2",
+          "DISABLELRCPC2": "disablelrcpc2",
+          "ENABLECSSC": "enablecssc",
+          "DISABLECSSC": "disablecssc",
+          "ENABLEPMULL128": "enablepmull128",
+          "DISABLEPMULL128": "disablepmull128",
+          "ENABLERNG": "enablerng",
+          "DISABLERNG": "disablerng"
+        },
         "Desc": [
-          "Determines whether or not we use the expanded register file for AVX or not"
+          "Allows controlling of the CPU features in the JIT.",
+          "\toff: Default CPU features queried from CPU features",
+          "\t{enable,disable}sve: Will force enable or disable sve even if the host doesn't support it",
+          "\t{enable,disable}avx: Will force enable or disable avx even if the host doesn't support it",
+          "\t{enable,disable}afp: Will force enable or disable afp even if the host doesn't support it",
+          "\t{enable,disable}lrcpc: Will force enable or disable lrcpc even if the host doesn't support it",
+          "\t{enable,disable}lrcpc2: Will force enable or disable lrcpc2 even if the host doesn't support it",
+          "\t{enable,disable}cssc: Will force enable or disable cssc even if the host doesn't support it",
+          "\t{enable,disable}pmull128: Will force enable or disable pmull128 even if the host doesn't support it",
+          "\t{enable,disable}rng: Will force enable or disable rng even if the host doesn't support it"
         ]
       }
     },

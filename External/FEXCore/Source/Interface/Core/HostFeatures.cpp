@@ -48,6 +48,95 @@ static uint32_t GetDCZID() {
 }
 #endif
 
+static void OverrideFeatures(HostFeatures *Features) {
+  // Override features if the user has specifically called for it.
+  FEX_CONFIG_OPT(HostFeatures, HOSTFEATURES);
+  if (!HostFeatures()) {
+    // Early exit if no features are overriden.
+    return;
+  }
+
+  const bool DisableAVX = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEAVX;
+  const bool EnableAVX = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAVX;
+  LogMan::Throw::AFmt(!(DisableAVX && EnableAVX), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableSVE = HostFeatures() & FEXCore::Config::HostFeatures::DISABLESVE;
+  const bool EnableSVE = HostFeatures() & FEXCore::Config::HostFeatures::ENABLESVE;
+  LogMan::Throw::AFmt(!(DisableSVE && EnableSVE), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableAFP = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEAFP;
+  const bool EnableAFP = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEAFP;
+  LogMan::Throw::AFmt(!(DisableAFP && EnableAFP), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableLRCPC = HostFeatures() & FEXCore::Config::HostFeatures::DISABLELRCPC;
+  const bool EnableLRCPC = HostFeatures() & FEXCore::Config::HostFeatures::ENABLELRCPC;
+  LogMan::Throw::AFmt(!(DisableLRCPC && EnableLRCPC), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableLRCPC2 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLELRCPC2;
+  const bool EnableLRCPC2 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLELRCPC2;
+  LogMan::Throw::AFmt(!(DisableLRCPC2 && EnableLRCPC2), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableCSSC = HostFeatures() & FEXCore::Config::HostFeatures::DISABLECSSC;
+  const bool EnableCSSC = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECSSC;
+  LogMan::Throw::AFmt(!(DisableCSSC && EnableCSSC), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisablePMULL128 = HostFeatures() & FEXCore::Config::HostFeatures::DISABLEPMULL128;
+  const bool EnablePMULL128 = HostFeatures() & FEXCore::Config::HostFeatures::ENABLEPMULL128;
+  LogMan::Throw::AFmt(!(DisablePMULL128 && EnablePMULL128), "Disabling and Enabling CPU features are mutually exclusive");
+
+  const bool DisableRNG = HostFeatures() & FEXCore::Config::HostFeatures::DISABLERNG;
+  const bool EnableRNG = HostFeatures() & FEXCore::Config::HostFeatures::ENABLERNG;
+  LogMan::Throw::AFmt(!(DisableRNG && EnableRNG), "Disabling and Enabling CPU features are mutually exclusive");
+
+  if (EnableAVX) {
+    Features->SupportsAVX = true;
+  }
+  else if (DisableAVX) {
+    Features->SupportsAVX = false;
+  }
+  if (EnableSVE) {
+    Features->SupportsSVE = true;
+  }
+  else if (DisableSVE) {
+    Features->SupportsSVE = false;
+  }
+  if (EnableAFP) {
+    Features->SupportsFlushInputsToZero = true;
+  }
+  else if (DisableAFP) {
+    Features->SupportsFlushInputsToZero = false;
+  }
+  if (EnableLRCPC) {
+    Features->SupportsRCPC = true;
+  }
+  else if (DisableLRCPC) {
+    Features->SupportsRCPC = false;
+  }
+  if (EnableLRCPC2) {
+    Features->SupportsTSOImm9 = true;
+  }
+  else if (DisableLRCPC2) {
+    Features->SupportsTSOImm9 = false;
+  }
+  if (EnableCSSC) {
+    Features->SupportsCSSC = true;
+  }
+  else if (DisableCSSC) {
+    Features->SupportsCSSC = false;
+  }
+  if (EnablePMULL128) {
+    Features->SupportsPMULL_128Bit = true;
+  }
+  else if (DisablePMULL128) {
+    Features->SupportsPMULL_128Bit = false;
+  }
+  if (EnableRNG) {
+    Features->SupportsRAND = true;
+  }
+  else if (DisableRNG) {
+    Features->SupportsRAND = false;
+  }
+}
 
 HostFeatures::HostFeatures() {
 #if defined(_M_ARM_64) || defined(VIXL_SIMULATOR)
@@ -77,8 +166,10 @@ HostFeatures::HostFeatures() {
   SupportsSSE4A = true;
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
+  SupportsSVE = true;
   SupportsAVX = true;
 #else
+  SupportsSVE = Features.Has(vixl::CPUFeatures::Feature::kSVE);
   SupportsAVX = Features.Has(vixl::CPUFeatures::Feature::kSVE2) &&
                 vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
 #endif
@@ -167,11 +258,6 @@ HostFeatures::HostFeatures() {
     SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
   }
 #endif
-
-  // Disable AVX if the configuration explicitly has disabled it.
-  FEX_CONFIG_OPT(EnableAVX, ENABLEAVX);
-  if (!EnableAVX) {
-    SupportsAVX = false;
-  }
+  OverrideFeatures(this);
 }
 }
