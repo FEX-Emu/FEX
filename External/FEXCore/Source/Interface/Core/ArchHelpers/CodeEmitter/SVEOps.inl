@@ -2137,13 +2137,37 @@ public:
   // XXX:
   // SVE2 crypto constructive binary operations
   // XXX:
-  //
+
   // SVE Floating Point Widening Multiply-Add - Indexed
   // SVE BFloat16 floating-point dot product (indexed)
   // XXX:
+
   // SVE floating-point multiply-add long (indexed)
-  // XXX:
-  //
+  void fmlalb(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(0, 0, 0, dstsize, zda, zn, zm, index);
+  }
+  void fmlalt(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(0, 0, 1, dstsize, zda, zn, zm, index);
+  }
+  void fmlslb(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(0, 1, 0, dstsize, zda, zn, zm, index);
+  }
+  void fmlslt(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(0, 1, 1, dstsize, zda, zn, zm, index);
+  }
+  void bfmlalb(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(1, 0, 0, dstsize, zda, zn, zm, index);
+  }
+  void bfmlalt(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(1, 0, 1, dstsize, zda, zn, zm, index);
+  }
+  void bfmlslb(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(1, 1, 0, dstsize, zda, zn, zm, index);
+  }
+  void bfmlslt(SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    SVEFPMultiplyAddLongIndexed(1, 1, 1, dstsize, zda, zn, zm, index);
+  }
+
   // SVE Floating Point Widening Multiply-Add
   // SVE BFloat16 floating-point dot product
   // XXX:
@@ -4545,6 +4569,24 @@ private:
     Instr |= zn.Idx() << 5;
     Instr |= zda.Idx();
     dc32(Instr);
+  }
+
+  void SVEFPMultiplyAddLongIndexed(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize,
+                                   ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+    LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
+    LOGMAN_THROW_AA_FMT(index <= 7, "Index ({}) must be within [0, 7]", index);
+    LOGMAN_THROW_A_FMT(zm <= ZReg::z7, "zm (z{}) must be within [z0, z7]", zm.Idx());
+
+    uint32_t Inst = 0b0110'0100'1010'0000'0100'0000'0000'0000;
+    Inst |= o2 << 22;
+    Inst |= (index & 0b110) << 18;
+    Inst |= zm.Idx() << 16;
+    Inst |= op << 13;
+    Inst |= (index & 0b001) << 11;
+    Inst |= T << 10;
+    Inst |= zn.Idx() << 5;
+    Inst |= zda.Idx();
+    dc32(Inst);
   }
 
   void SVEFPMatrixMultiplyAccumulate(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
