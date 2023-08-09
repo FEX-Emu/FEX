@@ -1591,7 +1591,10 @@ void OpDispatchBuilder::PSRLI(OpcodeArgs) {
 
   auto Size = GetSrcSize(Op);
 
-  auto Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
+  auto Shift = Dest;
+  if (ShiftConstant != 0) {
+    Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
+  }
   StoreResult(FPRClass, Op, Shift, -1);
 }
 
@@ -1611,7 +1614,11 @@ void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VUShrI(Size, ElementSize, Src, ShiftConstant);
+  OrderedNode *Result = Src;
+
+  if (ShiftConstant != 0) {
+    Result = _VUShrI(Size, ElementSize, Src, ShiftConstant);
+  }
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
@@ -1628,6 +1635,10 @@ void OpDispatchBuilder::VPSRLIOp<8>(OpcodeArgs);
 
 OrderedNode* OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize,
                                           OrderedNode *Src, uint64_t Shift) {
+  if (Shift == 0) {
+    // If zero-shift then just return the source.
+    return Src;
+  }
   const auto Size = GetSrcSize(Op);
   return _VShlI(Size, ElementSize, Src, Shift);
 }
@@ -1639,7 +1650,10 @@ void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
+  OrderedNode *Result = Dest;
+  if (ShiftConstant != 0) {
+    Result = PSLLIImpl(Op, ElementSize, Dest, ShiftConstant);
+  }
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1660,7 +1674,11 @@ void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
   LOGMAN_THROW_A_FMT(Op->Src[1].IsLiteral(), "Src1 needs to be literal here");
   const uint64_t ShiftConstant = Op->Src[1].Data.Literal.Value;
 
-  OrderedNode *Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
+  OrderedNode *Result = Src;
+  if (ShiftConstant != 0) {
+    Result = PSLLIImpl(Op, ElementSize, Src, ShiftConstant);
+  }
+
   if (Is128Bit) {
     Result = _VMov(16, Result);
   }
@@ -1819,9 +1837,12 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  OrderedNode *Result = _VectorZero(Size);
-  if (Shift < Size) {
-    Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
+  OrderedNode *Result = Dest;
+  if (Shift != 0) {
+    Result = _VectorZero(Size);
+    if (Shift < Size) {
+      Result = _VExtr(Size, 1, Dest, Result, Size - Shift);
+    }
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -1835,17 +1856,20 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
 
-  OrderedNode *Result = _VectorZero(DstSize);
-  if (Is128Bit) {
-    if (Shift < DstSize) {
-      Result = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
-    }
-  } else {
-    if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
-      OrderedNode *ResultBottom = _VExtr(16, 1, Src, Result, 16 - Shift);
-      OrderedNode* ResultTop    = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
+  OrderedNode *Result = Src;
+  if (Shift != 0) {
+    Result = _VectorZero(DstSize);
+    if (Is128Bit) {
+      if (Shift < DstSize) {
+        Result = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
+      }
+    } else {
+      if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
+        OrderedNode *ResultBottom = _VExtr(16, 1, Src, Result, 16 - Shift);
+        OrderedNode* ResultTop    = _VExtr(DstSize, 1, Src, Result, DstSize - Shift);
 
-      Result = _VInsElement(DstSize, 16, 1, 0, ResultBottom, ResultTop);
+        Result = _VInsElement(DstSize, 16, 1, 0, ResultBottom, ResultTop);
+      }
     }
   }
   StoreResult(FPRClass, Op, Result, -1);
@@ -1860,7 +1884,10 @@ void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  auto Result = _VSShrI(Size, ElementSize, Dest, Shift);
+  auto Result = Dest;
+  if (Shift != 0) {
+    Result = _VSShrI(Size, ElementSize, Dest, Shift);
+  }
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -1878,7 +1905,10 @@ void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   OrderedNode *Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, -1);
-  OrderedNode *Result = _VSShrI(Size, ElementSize, Src, Shift);
+  OrderedNode *Result = Src;
+  if (Shift != 0) {
+    Result = _VSShrI(Size, ElementSize, Src, Shift);
+  }
 
   if (Is128Bit) {
     Result = _VMov(16, Result);
