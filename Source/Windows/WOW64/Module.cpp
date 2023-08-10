@@ -205,6 +205,36 @@ namespace Context {
     return RtlWow64SetThreadContext(Thread, &TmpWowContext);
   }
 
+  WOW64_CONTEXT ReconstructWowContext(CONTEXT *Context) {
+    WOW64_CONTEXT WowContext{
+      .ContextFlags = WOW64_CONTEXT_ALL,
+    };
+
+    auto *XSave = reinterpret_cast<XSAVE_FORMAT *>(WowContext.ExtendedRegisters);
+    XSave->ControlWord = 0x27f;
+    XSave->MxCsr = 0x1f80;
+
+    const auto &Config = SignalDelegator->GetConfig();
+    auto *Thread = GetTLS().ThreadState();
+    auto &State = Thread->CurrentFrame->State;
+
+    State.rip = CTX->RestoreRIPFromHostPC(Thread, Context->Pc);
+
+    // Spill all SRA GPRs
+    for (size_t i = 0; i < Config.SRAGPRCount; i++) {
+      State.gregs[i] = Context->X[Config.SRAGPRMapping[i]];
+    }
+
+    // Spill all SRA FPRs
+    for (size_t i = 0; i < Config.SRAFPRCount; i++) {
+      memcpy(State.xmm.sse.data[i], &Context->V[Config.SRAFPRMapping[i]], sizeof(__uint128_t));
+    }
+
+    Context::StoreWowContextFromState(Thread, &WowContext);
+
+    return WowContext;
+  }
+
   bool HandleUnalignedAccess(CONTEXT *Context) {
     if (!GetTLS().ThreadState()->CPUBackend->IsAddressInCodeBuffer(Context->Pc)) {
       return false;
@@ -446,6 +476,20 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS *Ptrs) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
     NtContinue(Context, FALSE);
   }
+
+  if (!IsAddressInJit(Context->Pc)) {
+    return STATUS_SUCCESS;
+  }
+
+  LogMan::Msg::DFmt("Reconstructing context");
+
+  WOW64_CONTEXT WowContext = Context::ReconstructWowContext(Context);
+  LogMan::Msg::DFmt("pc: {:X} eip: {:X}", Context->Pc, WowContext.Eip);
+
+  BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
+
+  // Replace the host context with one captured before JIT entry so host code can unwind
+  memcpy(Context, GetTLS().EntryContext(), sizeof(*Context));
 
   return STATUS_SUCCESS;
 }
