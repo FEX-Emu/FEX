@@ -465,6 +465,17 @@ namespace JSON {
 
     return HomeDir;
   }
+#else
+  const char *GetHomeDirectory() {
+    const char *HomeObjectPath = getenv("WINEHOMEDIR");
+    if (!HomeObjectPath) {
+      return nullptr;
+    }
+
+    // Skip over the \??\ prefix in the NT path since we want a DOS path
+    return HomeObjectPath + 4;
+  }
+#endif
 
   fextl::string GetDataDirectory() {
     fextl::string DataDir{};
@@ -537,10 +548,4 @@ namespace JSON {
     FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(false), false);
     FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(true), true);
   }
-#else
-  void InitializeConfigs() {
-    // TODO: Find out how to set this up on WIN32.
-    LogMan::Msg::EFmt("{} Unsupported on WIN32!", __func__);
-  }
-#endif
 }
