@@ -17,7 +17,7 @@
 
 namespace FEXCore::Config {
 namespace Handler {
-  static inline std::string_view CoreHandler(std::string_view Value) {
+  static inline std::optional<fextl::string> CoreHandler(std::string_view Value) {
     if (Value == "irint")
       return "0";
     else if (Value == "irjit")
@@ -29,7 +29,7 @@ namespace Handler {
     return "1";
   }
 
-  static inline std::string_view SMCCheckHandler(std::string_view Value) {
+  static inline std::optional<fextl::string> SMCCheckHandler(std::string_view Value) {
     if (Value == "none")
       return "0";
     else if (Value == "mtrack")
@@ -40,7 +40,7 @@ namespace Handler {
       return "3";
     return "0";
   }
-  static inline std::string_view CacheObjectCodeHandler(std::string_view Value) {
+  static inline std::optional<fextl::string> CacheObjectCodeHandler(std::string_view Value) {
     if (Value == "none")
       return "0";
     else if (Value == "read")
@@ -91,12 +91,12 @@ namespace Handler {
   };
 
   template<typename PairTypes, typename ArrayPairType>
-  static inline fextl::string EnumParser(ArrayPairType const &EnumPairs, std::string_view const View) {
+  static inline std::optional<fextl::string> EnumParser(ArrayPairType const &EnumPairs, std::string_view const View) {
     uint64_t EnumMask{};
     auto Results = std::from_chars(View.data(), View.data() + View.size(), EnumMask);
     if (Results.ec == std::errc()) {
       // If the data is a valid number, just pass it through.
-      return View.data();
+      return std::nullopt;
     }
 
     auto Begin = 0;
@@ -188,13 +188,27 @@ namespace Type {
       return &it->second.front();
     }
 
+    void Set(ConfigOption Option, const char *Data) {
+      OptionMap[Option].emplace_back(fextl::string(Data));
+    }
+
     void Set(ConfigOption Option, std::string_view Data) {
       OptionMap[Option].emplace_back(fextl::string(Data));
     }
 
+    void Set(ConfigOption Option, fextl::string Data) {
+      OptionMap[Option].emplace_back(std::move(Data));
+    }
+
+    void Set(ConfigOption Option, std::optional<fextl::string> Data) {
+      if (Data) {
+        OptionMap[Option].emplace_back(std::move(*Data));
+      }
+    }
+
     void EraseSet(ConfigOption Option, std::string_view Data) {
       Erase(Option);
-      Set(Option, fextl::string(Data));
+      Set(Option, Data);
     }
 
     void Erase(ConfigOption Option) {
