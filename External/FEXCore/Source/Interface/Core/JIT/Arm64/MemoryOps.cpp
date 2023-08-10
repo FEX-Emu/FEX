@@ -1095,17 +1095,6 @@ FEXCore::ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(uint8_t
   FEX_UNREACHABLE;
 }
 
-static auto ConvertExtendedType(IR::MemOffsetType OffsetType) -> ARMEmitter::ExtendedType {
-  switch (OffsetType.Val) {
-    case IR::MEM_OFFSET_SXTX.Val: return ARMEmitter::ExtendedType::SXTX;
-    case IR::MEM_OFFSET_UXTW.Val: return ARMEmitter::ExtendedType::UXTW;
-    case IR::MEM_OFFSET_SXTW.Val: return ARMEmitter::ExtendedType::SXTW;
-
-    default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType.Val); break;
-  }
-  FEX_UNREACHABLE;
-}
-
 FEXCore::ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize,
                                                   FEXCore::ARMEmitter::Register Base,
                                                   IR::OrderedNodeWrapper Offset,
