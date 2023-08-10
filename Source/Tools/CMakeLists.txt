@@ -25,6 +25,8 @@ if (NOT MINGW_BUILD)
   target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 
   target_link_libraries(${NAME} FEXCore Common pthread)
+
+  add_subdirectory(CodeSizeValidation/)
 endif()
 
 add_subdirectory(FEXLoader/)

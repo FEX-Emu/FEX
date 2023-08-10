@@ -1,0 +1,649 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "sgdt [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "GROUP7 0x0F 0x1 /0"
+    },
+    "bt ax, 0": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /4"
+    },
+    "bt eax, 0": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /4"
+    },
+    "bt rax, 0": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /4"
+    },
+    "bt ax, 15": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /4"
+    },
+    "bt eax, 31": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /4"
+    },
+    "bt rax, 63": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /4"
+    },
+    "bts ax, 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /5"
+    },
+    "bts eax, 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /5"
+    },
+    "bts rax, 0": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /5"
+    },
+    "bts ax, 15": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /5"
+    },
+    "bts eax, 31": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /5"
+    },
+    "bts rax, 63": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /5"
+    },
+    "btr ax, 0": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6"
+    },
+    "btr eax, 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6"
+    },
+    "btr rax, 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6"
+    },
+    "btr ax, 15": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6"
+    },
+    "btr eax, 31": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6"
+    },
+    "btr rax, 63": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /6"
+    },
+    "btc ax, 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /7"
+    },
+    "btc eax, 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /7"
+    },
+    "btc rax, 0": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /7"
+    },
+    "btc ax, 15": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /7"
+    },
+    "btc eax, 31": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /7"
+    },
+    "btc rax, 63": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP8 0x0F 0xBA /7"
+    },
+    "cmpxchg8b [rbp]": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /1"
+    },
+    "cmpxchg16b [rbp]": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /1"
+    },
+    "rdrand ax": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /6"
+    },
+    "rdrand eax": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /6"
+    },
+    "rdrand rax": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /6"
+    },
+    "rdseed ax": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /7"
+    },
+    "rdseed eax": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /7"
+    },
+    "rdseed rax": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP9 0x0F 0xC7 /7"
+    },
+    "psrlw mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /2"
+    },
+    "psrlw mm0, 15": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /2"
+    },
+    "psrlw mm0, 16": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /2"
+    },
+    "psrlw xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /2"
+    },
+    "psrlw xmm0, 15": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /2"
+    },
+    "psrlw xmm0, 16": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /2"
+    },
+    "psraw mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /3"
+    },
+    "psraw mm0, 15": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /3"
+    },
+    "psraw mm0, 16": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /3"
+    },
+    "psraw xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /3"
+    },
+    "psraw xmm0, 15": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /3"
+    },
+    "psraw xmm0, 16": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /3"
+    },
+    "psllw mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /6"
+    },
+    "psllw mm0, 15": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /6"
+    },
+    "psllw mm0, 16": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /6"
+    },
+    "psllw xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /6"
+    },
+    "psllw xmm0, 15": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP12 0x0F 0xC7 /6"
+    },
+    "psllw xmm0, 16": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP12 0x0F 0xC7 /6"
+    },
+    "psrld mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /2"
+    },
+    "psrld mm0, 31": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /2"
+    },
+    "psrld mm0, 32": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /2"
+    },
+    "psrld xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /2"
+    },
+    "psrld xmm0, 31": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /2"
+    },
+    "psrld xmm0, 32": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /2"
+    },
+    "psrad mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /3"
+    },
+    "psrad mm0, 31": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /3"
+    },
+    "psrad mm0, 32": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /3"
+    },
+    "psrad xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /3"
+    },
+    "psrad xmm0, 31": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /3"
+    },
+    "psrad xmm0, 32": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /3"
+    },
+    "pslld mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /6"
+    },
+    "pslld mm0, 31": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /6"
+    },
+    "pslld mm0, 32": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /6"
+    },
+    "pslld xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /6"
+    },
+    "pslld xmm0, 31": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP13 0x0F 0xC7 /6"
+    },
+    "pslld xmm0, 32": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP13 0x0F 0xC7 /6"
+    },
+    "psrlq mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /2"
+    },
+    "psrlq mm0, 63": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /2"
+    },
+    "psrlq mm0, 64": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /2"
+    },
+    "psrlq xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /2"
+    },
+    "psrlq xmm0, 63": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP14 0x0F 0xC7 /2"
+    },
+    "psrlq xmm0, 64": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /2"
+    },
+    "psrldq xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /3"
+    },
+    "psrldq xmm0, 15": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /3"
+    },
+    "psrldq xmm0, 16": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /3"
+    },
+    "psllq mm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /6"
+    },
+    "psllq mm0, 63": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "Yes",
+      "Comment": "GROUP14 0x0F 0xC7 /6"
+    },
+    "psllq mm0, 64": {
+      "ExpectedInstructionCount": 3,
+      "Type": "MMX",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /6"
+    },
+    "psllq xmm0, 0": {
+      "ExpectedInstructionCount": 2,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /6"
+    },
+    "psllq xmm0, 63": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "Yes",
+      "Comment": "GROUP14 0x0F 0xC7 /6"
+    },
+    "psllq xmm0, 64": {
+      "ExpectedInstructionCount": 1,
+      "Type": "SSE",
+      "Optimal": "No",
+      "Comment": "GROUP14 0x0F 0xC7 /6"
+    },
+    "fxsave [rax]": {
+      "ExpectedInstructionCount": 73,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /0"
+    },
+    "rdfsbase eax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /0"
+    },
+    "rdfsbase rax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /0"
+    },
+    "fxrstor [rax]": {
+      "ExpectedInstructionCount": 106,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /1"
+    },
+    "rdgsbase eax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /1"
+    },
+    "rdgsbase rax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /1"
+    },
+    "ldmxcsr [rax]": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /2"
+    },
+    "wrfsbase eax": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /2"
+    },
+    "wrfsbase rax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /2"
+    },
+    "stmxcsr [rax]": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /3"
+    },
+    "wrgsbase eax": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /3"
+    },
+    "wrgsbase rax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /3"
+    },
+    "xsave [rax]": {
+      "ExpectedInstructionCount": 86,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /4"
+    },
+    "lfence": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /5"
+    },
+    "xrstor [rax]": {
+      "ExpectedInstructionCount": 198,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /5"
+    },
+    "mfence": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /6"
+    },
+    "clwb [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /6"
+    },
+    "sfence": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "GROUP15 0x0F 0xAE /7"
+    },
+    "clflush [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /7"
+    },
+    "clflushopt [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP15 0x0F 0xAE /7"
+    },
+    "prefetchnta [rax]": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUP16 0x0F 0x18 /0",
+        "NOP implementation"
+      ]
+    },
+    "prefetcht0 [rax]": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUP16 0x0F 0x18 /1",
+        "NOP implementation"
+      ]
+    },
+    "prefetcht1 [rax]": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUP16 0x0F 0x18 /2",
+        "NOP implementation"
+      ]
+    },
+    "prefetcht2 [rax]": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUP16 0x0F 0x18 /3",
+        "NOP implementation"
+      ]
+    },
+    "db 0x0f, 0x18, 0x20;": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUP16 0x0F 0x18 /4",
+        "nop dword [rax]",
+        "NOP implementation"
+      ]
+    },
+    "db 0x0f, 0x0d, 0x00": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUPP 0x0F 0x0D /0",
+        "prefetch_exclusive [rax]",
+        "NOP implementation"
+      ]
+    },
+    "prefetchw [rax]": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUPP 0x0F 0x0D /1",
+        "NOP implementation"
+      ]
+    },
+    "prefetchwt1 [rax]": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": [
+        "GROUPP 0x0F 0x0D /2",
+        "NOP implementation"
+      ]
+    }
+  }
+}

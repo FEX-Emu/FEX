@@ -19,3 +19,4 @@ endif()
 
 add_subdirectory(ASM/)
 add_subdirectory(32Bit_ASM/)
+add_subdirectory(InstructionCountCI/)
