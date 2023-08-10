@@ -35,18 +35,7 @@ namespace FEXCore::CPU {
 constexpr size_t MAX_DISPATCHER_CODE_SIZE = 4096;
 
 Arm64Dispatcher::Arm64Dispatcher(FEXCore::Context::ContextImpl *ctx, const DispatcherConfig &config)
-  : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE)
-#ifdef VIXL_SIMULATOR
-  , Simulator {&Decoder}
-#endif
-{
-#ifdef VIXL_SIMULATOR
-  FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
-  // Hardcode a 256-bit vector width if we are running in the simulator.
-  // Allow the user to override this.
-  Simulator.SetVectorLengthInBits(ForceSVEWidth() ? ForceSVEWidth() : 256);
-#endif
-
+  : FEXCore::CPU::Dispatcher(ctx, config), Arm64Emitter(ctx, MAX_DISPATCHER_CODE_SIZE) {
   EmitDispatcher();
 }
 
@@ -507,7 +496,11 @@ void Arm64Dispatcher::EmitDispatcher() {
 #ifdef VIXL_DISASSEMBLER
   if (Disassemble() & FEXCore::Config::Disassemble::DISPATCHER) {
     const auto DisasmEnd = GetCursorAddress<const vixl::aarch64::Instruction*>();
-    Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
+    for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
+      DisasmDecoder.Decode(PCToDecode);
+      auto Output = Disasm.GetOutput();
+      LogMan::Msg::IFmt("{}", Output);
+    }
   }
 #endif
 }

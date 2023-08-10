@@ -1161,7 +1161,13 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
 
   if (Disassemble() & FEXCore::Config::Disassemble::BLOCKS) {
     const auto DisasmEnd = reinterpret_cast<const vixl::aarch64::Instruction*>(JITBlockTailLocation);
-    Disasm.DisassembleBuffer(DisasmBegin, DisasmEnd);
+    LogMan::Msg::IFmt("Disassemble Begin");
+    for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
+      DisasmDecoder.Decode(PCToDecode);
+      auto Output = Disasm.GetOutput();
+      LogMan::Msg::IFmt("{}", Output);
+    }
+    LogMan::Msg::IFmt("Disassemble End");
   }
 #endif
 
