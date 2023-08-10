@@ -6,7 +6,7 @@
 ;}
 ;%endif
 
-(%1) IRHeader %2, #0
+(%1) IRHeader %2, #0, #0, #0
   (%2) CodeBlock %6, %8, %3
     (%6 i0) BeginBlock %2
     %Value i64 = Constant #0x4142434445464748

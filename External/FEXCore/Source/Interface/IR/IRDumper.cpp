@@ -204,7 +204,9 @@ void Dump(fextl::stringstream *out, IRListView const* IR, IR::RegisterAllocation
   AddIndent();
   *out << "(%0) " << "IRHeader ";
   *out << "%" << HeaderOp->Blocks.ID() << ", ";
-  *out << "#" << std::dec << HeaderOp->BlockCount << std::endl;
+  *out << "#" << std::dec << HeaderOp->OriginalRIP << ", ";
+  *out << "#" << std::dec << HeaderOp->BlockCount << ", ";
+  *out << "#" << std::dec << HeaderOp->NumHostInstructions << std::endl;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     {

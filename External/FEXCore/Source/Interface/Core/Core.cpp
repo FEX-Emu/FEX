@@ -793,9 +793,10 @@ namespace FEXCore::Context {
         }
       });
 
-      auto CodeBlocks = Thread->FrontendDecoder->GetDecodedBlocks();
+      auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+      auto CodeBlocks = &BlockInfo->Blocks;
 
-      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks);
+      Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount);
 
       const uint8_t GPRSize = GetGPRSize();
 

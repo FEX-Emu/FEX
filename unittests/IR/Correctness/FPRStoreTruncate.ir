@@ -19,7 +19,7 @@
 
 
 
-(%1) IRHeader %2, #0
+(%1) IRHeader %2, #0, #0, #0
   (%2) CodeBlock %6, %end, %begin
     (%begin i0) BeginBlock %2
 ; Clear registers
