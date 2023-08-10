@@ -27,6 +27,7 @@ $end_info$
 #include "Common/Config.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
+#include "IntervalList.h"
 
 #include <cstdint>
 #include <type_traits>
@@ -42,7 +43,7 @@ $end_info$
 struct TLS {
   enum class Slot : size_t {
     ENTRY_CONTEXT = WOW64_TLS_MAX_NUMBER,
-    THREAD_STATE = WOW64_TLS_MAX_NUMBER - 2,
+    THREAD_STATE = WOW64_TLS_MAX_NUMBER - 1,
   };
 
   _TEB *TEB;
@@ -252,12 +253,24 @@ namespace Context {
 }
 
 namespace Invalidation {
+  static IntervalList<uint64_t> RWXIntervals;
+  static std::mutex RWXIntervalsLock;
+
   void HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot) {
     const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
     const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
 
     if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
       CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), AlignedBase, AlignedSize);
+    }
+
+    if (Prot & PAGE_EXECUTE_READWRITE) {
+      LogMan::Msg::DFmt("Add SMC interval: {:X} - {:X}", AlignedBase, AlignedBase + AlignedSize);
+      std::scoped_lock Lock(RWXIntervalsLock);
+      RWXIntervals.Insert({AlignedBase, AlignedBase + AlignedSize});
+    } else {
+      std::scoped_lock Lock(RWXIntervalsLock);
+      RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
     }
   }
 
@@ -270,12 +283,65 @@ namespace Invalidation {
     const auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize
                              - reinterpret_cast<uint64_t>(Info.AllocationBase);
     CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), SectionBase, SectionSize);
+
+    if (Free) {
+      std::scoped_lock Lock(RWXIntervalsLock);
+      RWXIntervals.Remove({SectionBase, SectionBase + SectionSize});
+    }
   }
 
   void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free) {
     const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
     const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
     CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), AlignedBase, AlignedSize);
+
+    if (Free) {
+      std::scoped_lock Lock(RWXIntervalsLock);
+      RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
+    }
+  }
+
+  void ReprotectRWXIntervals(uint64_t Address, uint64_t Size) {
+    const auto End = Address + Size;
+    std::scoped_lock Lock(RWXIntervalsLock);
+
+    do {
+      const auto Query = RWXIntervals.Query(Address);
+      if (Query.Enclosed) {
+        void *TmpAddress = reinterpret_cast<void *>(Address);
+        SIZE_T TmpSize = static_cast<SIZE_T>(std::min(End, Address + Query.Size) - Address);
+        ULONG TmpProt;
+        NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READ, &TmpProt);
+      } else if (!Query.Size) {
+        // No more regions past `Address` in the interval list
+        break;
+      }
+
+      Address += Query.Size;
+    } while (Address < End);
+  }
+
+  bool HandleRWXAccessViolation(uint64_t FaultAddress) {
+    const bool NeedsInvalidate = [](uint64_t Address) {
+      std::unique_lock Lock(RWXIntervalsLock);
+      const bool Enclosed = RWXIntervals.Query(Address).Enclosed;
+      // Invalidate just the single faulting page
+      if (!Enclosed)
+        return false;
+
+      ULONG TmpProt;
+      void *TmpAddress = reinterpret_cast<void *>(Address);
+      SIZE_T TmpSize = 1;
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
+      return true;
+    }(FaultAddress);
+
+    if (NeedsInvalidate) {
+      // RWXIntervalsLock cannot be held during invalidation
+      CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), FaultAddress & FHU::FEX_PAGE_MASK, FHU::FEX_PAGE_SIZE);
+      return true;
+    }
+    return false;
   }
 }
 
@@ -307,10 +373,6 @@ public:
     uint64_t ReturnRSP = Frame->State.gregs[FEXCore::X86State::REG_RSP] + 4; // Stack pointer after popping return address
     uint64_t ReturnRAX = 0;
 
-    // APCs/User Callbacks end up calling into the JIT from Wow64SystemService, and since the FEX return stack pointer
-    // is stored in TLS, the reentrant call ends up overwriting the callers stored return stack location. Stash it here
-    // to avoid that breaking returns used in thread suspend
-    const auto StashedStackLocation = Frame->ReturningStackLocation;
     if (Frame->State.rip == (uint64_t)&BridgeInstrs::UnixCall) {
       struct StackLayout {
         unixlib_handle_t Handle;
@@ -320,8 +382,6 @@ public:
 
       ReturnRSP += sizeof(StackLayout);
 
-      // Skip unlocking the JIT context here since the atomic accesses hurt unix call perfomance quite badly
-      // NOTE: this will break suspension if there are any infinitely-blocking unix calls
       ReturnRAX = static_cast<uint64_t>(__wine_unix_call(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
     } else if (Frame->State.rip == (uint64_t)&BridgeInstrs::Syscall) {
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
@@ -337,7 +397,6 @@ public:
       Frame->State.gregs[FEXCore::X86State::REG_RSP] = ReturnRSP;
       Frame->State.rip = ReturnRIP;
     }
-    Frame->ReturningStackLocation = StashedStackLocation;
 
     // NORETURNEDRESULT causes this result to be ignored since we restore all registers back from memory after a syscall anyway
     return 0;
@@ -349,6 +408,10 @@ public:
 
   FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState *Thread, uint64_t GuestAddr) override {
     return {0, 0};
+  }
+
+  void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState *Thread, uint64_t Start, uint64_t Length) override {
+    Invalidation::ReprotectRWXIntervals(Start, Length);
   }
 };
 
@@ -489,16 +552,21 @@ void BTCpuSimulate() {
     GetTLS().EntryContext() = &entry_context;
   }
 
-  while (1) {
-    Context::LockJITContext();
-    CTX->ExecuteThread(GetTLS().ThreadState());
-    Context::UnlockJITContext();
-  }
+  CTX->ExecuteThread(GetTLS().ThreadState());
 }
 
 NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS *Ptrs) {
   auto *Context = Ptrs->ContextRecord;
   const auto *Exception = Ptrs->ExceptionRecord;
+
+  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+    const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
+
+    if (Invalidation::HandleRWXAccessViolation(FaultAddress)) {
+      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
+      NtContinue(Context, FALSE);
+    }
+  }
 
   if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
@@ -527,12 +595,13 @@ void BTCpuFlushInstructionCache2(const void *Address, SIZE_T Size) {
 }
 
 void BTCpuNotifyMemoryAlloc(void *Address, SIZE_T Size, ULONG Type, ULONG Prot) {
-  Invalidation::HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), Size, Prot);
+  Invalidation::HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size),
+                                                   Prot);
 }
 
-void BTCpuNotifyMemoryProtect(void *Address, SIZE_T Size, ULONG NewProt, ULONG *OldProt) {
-  const auto AddressInt = reinterpret_cast<uint64_t>(Address);
-  Invalidation::HandleMemoryProtectionNotification(AddressInt, static_cast<uint64_t>(Size), NewProt);
+void BTCpuNotifyMemoryProtect(void *Address, SIZE_T Size, ULONG NewProt) {
+  Invalidation::HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size),
+                                                   NewProt);
 }
 
 void BTCpuNotifyMemoryFree(void *Address, SIZE_T Size, ULONG FreeType) {
