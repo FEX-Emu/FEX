@@ -85,28 +85,28 @@ namespace FEXCore::Core {
       SSE sse;
     };
 
-    uint64_t rip; ///< Current core's RIP. May not be entirely accurate while JIT is active
-    uint64_t gregs[16];
+    uint64_t rip{}; ///< Current core's RIP. May not be entirely accurate while JIT is active
+    uint64_t gregs[16]{};
     // Raw segment register indexes
-    uint16_t es_idx, cs_idx, ss_idx, ds_idx;
-    uint16_t gs_idx, fs_idx;
+    uint16_t es_idx{}, cs_idx{}, ss_idx{}, ds_idx{};
+    uint16_t gs_idx{}, fs_idx{};
     uint16_t _pad[2];
 
     // Segment registers holding base addresses
-    uint32_t es_cached, cs_cached, ss_cached, ds_cached;
-    uint64_t gs_cached;
-    uint64_t fs_cached;
-    uint64_t InlineJITBlockHeader;
-    XMMRegs xmm;
-    uint8_t flags[48];
-    uint64_t mm[8][2];
+    uint32_t es_cached{}, cs_cached{}, ss_cached{}, ds_cached{};
+    uint64_t gs_cached{};
+    uint64_t fs_cached{};
+    uint64_t InlineJITBlockHeader{};
+    XMMRegs xmm{};
+    uint8_t flags[48]{};
+    uint64_t mm[8][2]{};
 
     // 32bit x86 state
     struct {
       uint32_t base;
-    } gdt[32];
-    uint16_t FCW;
-    uint16_t FTW;
+    } gdt[32]{};
+    uint16_t FCW { 0x37F };
+    uint16_t FTW { 0xFFFF };
 
     uint32_t _pad2[1];
     // Reference counter for FEX's per-thread deferred signals.
@@ -130,21 +130,20 @@ namespace FEXCore::Core {
     static constexpr size_t NUM_XMMS = sizeof(xmm) / XMM_AVX_REG_SIZE;
     static constexpr size_t NUM_MMS = sizeof(mm) / MM_REG_SIZE;
     CPUState() {
+#ifndef NDEBUG
       // Initialize default CPU state
       rip = ~0ULL;
-      memset(gregs, 0, sizeof(gregs));
-
+      // Initialize xmm state with garbage to catch spurious incorrect xmm usage.
       for (auto& xmm : xmm.avx.data) {
         xmm[0] = 0xDEADBEEFULL;
         xmm[1] = 0xBAD0DAD1ULL;
         xmm[2] = 0xDEADCAFEULL;
         xmm[3] = 0xBAD2CAD3ULL;
       }
-      memset(&flags, 0, Core::CPUState::NUM_EFLAG_BITS);
+#endif
+
       flags[1] = 1; ///< Reserved - Always 1.
       flags[9] = 1; ///< Interrupt flag - Always 1.
-      FCW = 0x37F;
-      FTW = 0xFFFF;
     }
   };
   static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
