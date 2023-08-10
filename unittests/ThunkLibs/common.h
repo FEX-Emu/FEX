@@ -42,24 +42,77 @@ public:
     }
 };
 
+enum class GuestABI {
+    X86_32,
+    X86_64,
+};
+
+inline std::ostream& operator<<(std::ostream& os, GuestABI abi) {
+    if (abi == GuestABI::X86_32) {
+        os << "X86_32";
+    } else if (abi == GuestABI::X86_64) {
+        os << "X86_64";
+    }
+    return os;
+}
+
 /**
  * Run the given ToolAction on the input code.
  *
  * The "silent" parameter is used to suppress non-fatal diagnostics in tests that expect failure
  */
-inline void run_tool(clang::tooling::ToolAction& action, std::string_view code, bool silent = false) {
+inline void run_tool(clang::tooling::ToolAction& action, std::string_view code, bool silent = false, std::optional<GuestABI> guest_abi = std::nullopt) {
     const char* memory_filename = "gen_input.cpp";
     auto adjuster = clang::tooling::getClangStripDependencyFileAdjuster();
     std::vector<std::string> args = { "clang-tool", "-fsyntax-only", "-std=c++17", "-Werror", "-I.", memory_filename };
+    if (guest_abi == GuestABI::X86_64) {
+        args.push_back("-target");
+        args.push_back("x86_64-linux-gnu");
+    } else if (guest_abi == GuestABI::X86_32) {
+        args.push_back("-target");
+        args.push_back("i686-linux-gnu");
+    } else {
+        args.push_back("-DHOST");
+    }
 
     // Corresponds to the content of GeneratorInterface.h
     const char* common_header_code = R"(namespace fexgen {
-struct returns_guest_pointer {};
+// function annotations: fex_gen_config<MyFunc>
+struct returns_guest_pointer {}; // TODO: Deprecate in favor of pointer_passthrough
 struct custom_host_impl {};
 struct callback_annotation_base { bool prevent_multiple; };
 struct callback_stub : callback_annotation_base {};
 struct callback_guest : callback_annotation_base {};
+
+// type annotations: fex_gen_config<MyStruct>
+//struct opaque_to_guest {};
+//struct opaque_to_host {};
+
+// If used, fex_custom_repack must be specialized for the annotated struct member
+struct custom_repack {};
+
+// struct member annotations: fex_gen_config<&MyStruct::member>
+struct is_padding_member {};
+
+// function parameter annotations: fex_gen_config<fexgen::annotate_parameter<MyFunc, 2>>
+struct ptr_in {};
+struct ptr_out {};
+struct ptr_inout {};
+struct ptr_pointer_passthrough {};
+struct ptr_is_untyped_address {};
+
+template<auto, int, typename = decltype(nullptr)>
+struct annotate_parameter {};
 } // namespace fexgen
+
+template<typename> struct fex_gen_type {};
+template<auto, int, typename = void> struct fex_gen_param {};
+
+template<typename>
+struct fex_gen_type;
+template<auto>
+struct fex_gen_config;
+
 )";
 
     llvm::IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> overlay_fs(new llvm::vfs::OverlayFileSystem(llvm::vfs::getRealFileSystem()));
@@ -80,6 +133,6 @@ struct callback_guest : callback_annotation_base {};
     }
 }
 
-inline void run_tool(std::unique_ptr<clang::tooling::ToolAction> action, std::string_view code, bool silent = false) {
-    return run_tool(*action, code, silent);
+inline void run_tool(std::unique_ptr<clang::tooling::ToolAction> action, std::string_view code, bool silent = false, std::optional<GuestABI> guest_abi = std::nullopt) {
+    return run_tool(*action, code, silent, guest_abi);
 }
