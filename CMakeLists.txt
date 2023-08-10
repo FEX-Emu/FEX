@@ -236,7 +236,7 @@ if (BUILD_TESTS)
 endif()
 
 add_subdirectory(External/vixl/)
-include_directories(External/vixl/src/)
+include_directories(SYSTEM External/vixl/src/)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # This means we were attempted to get compiled with GCC
