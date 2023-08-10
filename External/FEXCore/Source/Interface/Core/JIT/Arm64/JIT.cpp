@@ -1150,6 +1150,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
 
 #ifdef VIXL_DISASSEMBLER
   if (Disassemble() & FEXCore::Config::Disassemble::STATS) {
+    auto HeaderOp = IR->GetHeader();
+    LOGMAN_THROW_AA_FMT(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+
     LogMan::Msg::IFmt("RIP: 0x{:x}", Entry);
     LogMan::Msg::IFmt("Guest Code instructions: {}", HeaderOp->NumHostInstructions);
     LogMan::Msg::IFmt("Host Code instructions: {}", CodeOnlySize >> 2);

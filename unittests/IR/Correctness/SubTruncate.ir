@@ -16,7 +16,7 @@
 ;}
 ;%endif
 
-(%1) IRHeader %2, #0
+(%1) IRHeader %2, #0, #0, #0
   (%2) CodeBlock %6, %12, %1
     (%Start i0) BeginBlock %2
     %AddrA i64 = Constant #0x1000000

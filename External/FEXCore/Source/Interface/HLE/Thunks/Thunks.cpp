@@ -208,7 +208,7 @@ namespace FEXCore {
             auto Result = Thread->CTX->AddCustomIREntrypoint(
                     args->original_callee,
                     [CTX, GuestThunkEntrypoint = args->target_addr](uintptr_t Entrypoint, FEXCore::IR::IREmitter *emit) {
-                        auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0);
+                        auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0);
                         auto Block = emit->CreateCodeNode();
                         IRHeader.first->Blocks = emit->WrapNode(Block);
                         emit->SetCurrentCodeBlock(Block);

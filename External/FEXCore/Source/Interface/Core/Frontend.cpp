@@ -1087,7 +1087,8 @@ const uint8_t *Decoder::AdjustAddrForSpecialRegion(uint8_t const* _InstStream, u
 
 void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
-  Blocks.clear();
+  BlockInfo.TotalInstructionCount = 0;
+  BlockInfo.Blocks.clear();
   BlocksToDecode.clear();
   HasBlocks.clear();
   // Reset internal state management
@@ -1125,8 +1126,8 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
   while (!BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();
     uint64_t RIPToDecode = *BlockDecodeIt;
-    Blocks.emplace_back();
-    DecodedBlocks &CurrentBlockDecoding = Blocks.back();
+    BlockInfo.Blocks.emplace_back();
+    DecodedBlocks &CurrentBlockDecoding = BlockInfo.Blocks.back();
 
     CurrentBlockDecoding.Entry = RIPToDecode;
 
@@ -1138,7 +1139,6 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
     InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
 
     while (1) {
-
       // MAX_INST_SIZE assumes worst case
       auto OpMinAddress = RIPToDecode + PCOffset;
       auto OpMaxAddress = OpMinAddress + MAX_INST_SIZE;
@@ -1213,6 +1213,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
     // Copy over only the number of instructions we decoded
     CurrentBlockDecoding.NumInstructions = BlockNumberOfInstructions;
     CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer[BlockStartOffset];
+    BlockInfo.TotalInstructionCount += BlockNumberOfInstructions;
   }
 
   for (auto CodePage : CodePages) {
@@ -1220,7 +1221,7 @@ void Decoder::DecodeInstructionsAtEntry(uint8_t const* _InstStream, uint64_t PC,
   }
 
   // sort for better branching
-  std::sort(Blocks.begin(), Blocks.end(), [](const FEXCore::Frontend::Decoder::DecodedBlocks& a, const FEXCore::Frontend::Decoder::DecodedBlocks& b) {
+  std::sort(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(), [](const FEXCore::Frontend::Decoder::DecodedBlocks& a, const FEXCore::Frontend::Decoder::DecodedBlocks& b) {
     return a.Entry < b.Entry;
   });
 }

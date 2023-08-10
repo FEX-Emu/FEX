@@ -537,11 +537,15 @@ class IRParser: public FEXCore::IR::IREmitter {
 
       if (!CheckPrintError(Def, OriginalRIP.first)) return false;
 
-      auto CodeBlockCount = DecodeValue<uint64_t>(Def.Args[1]);
+      auto CodeBlockCount = DecodeValue<uint64_t>(Def.Args[2]);
 
       if (!CheckPrintError(Def, CodeBlockCount.first)) return false;
 
-      IRHeader = _IRHeader(InvalidNode, OriginalRIP.second, CodeBlockCount.second);
+      auto InstructionCount = DecodeValue<uint64_t>(Def.Args[3]);
+
+      if (!CheckPrintError(Def, InstructionCount.first)) return false;
+
+      IRHeader = _IRHeader(InvalidNode, OriginalRIP.second, CodeBlockCount.second, InstructionCount.second);
     }
 
     SetWriteCursor(nullptr); // isolate the header from everything following

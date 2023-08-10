@@ -26,12 +26,17 @@ public:
     bool HasInvalidInstruction{};
   };
 
+  struct DecodedBlockInformation final {
+    uint64_t TotalInstructionCount;
+    fextl::vector<DecodedBlocks> Blocks;
+  };
+
   Decoder(FEXCore::Context::ContextImpl *ctx);
   ~Decoder();
   void DecodeInstructionsAtEntry(uint8_t const* InstStream, uint64_t PC, std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
-  fextl::vector<DecodedBlocks> const *GetDecodedBlocks() const {
-    return &Blocks;
+  DecodedBlockInformation const *GetDecodedBlockInfo() const {
+    return &BlockInfo;
   }
 
   uint64_t DecodedMinAddress {};
@@ -90,7 +95,7 @@ private:
   uint64_t SymbolMinAddress {~0ULL};
   uint64_t SectionMaxAddress {~0ULL};
 
-  fextl::vector<DecodedBlocks> Blocks;
+  DecodedBlockInformation BlockInfo;
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> HasBlocks;
   fextl::set<uint64_t> *ExternalBranches {nullptr};

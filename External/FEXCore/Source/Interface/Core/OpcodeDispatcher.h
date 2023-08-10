@@ -167,7 +167,7 @@ public:
   void SetDumpIR(bool DumpIR) { ShouldDump = DumpIR; }
   bool ShouldDumpIR() const { return ShouldDump; }
 
-  void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks);
+  void BeginFunction(uint64_t RIP, fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks> const *Blocks, uint32_t NumInstructions);
   void Finalize();
 
   // Dispatch builder functions
