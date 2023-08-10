@@ -204,6 +204,21 @@ namespace Context {
     Context::StoreWowContextFromState(TLS.ThreadState(), &TmpWowContext);
     return RtlWow64SetThreadContext(Thread, &TmpWowContext);
   }
+
+  bool HandleUnalignedAccess(CONTEXT *Context) {
+    if (!GetTLS().ThreadState()->CPUBackend->IsAddressInCodeBuffer(Context->Pc)) {
+      return false;
+    }
+
+    FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(ParanoidTSO(), Context->Pc, &Context->X0);
+    if (!Result.first) {
+      return false;
+    }
+
+    Context->Pc += Result.second;
+    return true;
+  }
 }
 
 namespace Logging {
@@ -421,6 +436,18 @@ void BTCpuSimulate() {
     CTX->ExecuteThread(GetTLS().ThreadState());
     Context::UnlockJITContext();
   }
+}
+
+NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS *Ptrs) {
+  auto *Context = Ptrs->ContextRecord;
+  const auto *Exception = Ptrs->ExceptionRecord;
+
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
+    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
+    NtContinue(Context, FALSE);
+  }
+
+  return STATUS_SUCCESS;
 }
 
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
