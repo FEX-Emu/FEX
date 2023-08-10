@@ -73,7 +73,6 @@ namespace FHU::Filesystem {
     return CreateDirectoryResult::ERROR;
   }
 #else
-  // TODO: Should be rewritten using WIN32 specific APIs.
   inline CreateDirectoryResult CreateDirectory(const fextl::string &Path) {
     std::error_code ec;
     if (std::filesystem::exists(Path, ec)) {
@@ -226,7 +225,6 @@ namespace FHU::Filesystem {
     return false;
   }
 #else
-  // TODO: Should be rewritten using WIN32 specific APIs.
   inline bool CopyFile(const fextl::string &From, const fextl::string &To, CopyOptions Options = CopyOptions::NONE) {
     std::filesystem::copy_options options{};
     if (Options == CopyOptions::SKIP_EXISTING) {
@@ -359,7 +357,6 @@ namespace FHU::Filesystem {
     return realpath(Path, Fill);
   }
 #else
-  // TODO: Should be rewritten using WIN32 specific APIs.
   inline char *Absolute(const char *Path, char Fill[PATH_MAX]) {
     std::error_code ec;
     const auto PathAbsolute = std::filesystem::absolute(Path, ec);
