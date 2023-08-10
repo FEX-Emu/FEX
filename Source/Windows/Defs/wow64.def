@@ -1,0 +1,33 @@
+; File generated automatically from wine/dlls/wow64/wow64.spec; do not edit!
+; To generate: winebuild --def -E wine/dlls/wow64/wow64.spec > wow64.def
+
+LIBRARY wow64.dll
+
+EXPORTS
+  Wow64AllocThreadHeap @1 PRIVATE
+  Wow64AllocateHeap @2 PRIVATE
+  Wow64AllocateTemp @3
+  Wow64ApcRoutine @4
+  Wow64CheckIfNXEnabled @5 PRIVATE
+  Wow64EmulateAtlThunk @6 PRIVATE
+  Wow64FreeHeap @7 PRIVATE
+  Wow64FreeThreadHeap @8 PRIVATE
+  Wow64GetWow64ImageOption @9 PRIVATE
+  Wow64IsControlFlowGuardEnforced @10 PRIVATE
+  Wow64IsStackExtentsCheckEnforced @11 PRIVATE
+  Wow64KiUserCallbackDispatcher @12
+  Wow64LdrpInitialize @13
+  Wow64LogPrint @14 PRIVATE
+  Wow64NotifyUnsimulateComplete @15 PRIVATE
+  Wow64PassExceptionToGuest @16
+  Wow64PrepareForDebuggerAttach @17 PRIVATE
+  Wow64PrepareForException @18
+  Wow64RaiseException @19
+  Wow64ShallowThunkAllocObjectAttributes32TO64_FNC @20 PRIVATE
+  Wow64ShallowThunkAllocSecurityQualityOfService32TO64_FNC @21 PRIVATE
+  Wow64ShallowThunkSIZE_T32TO64 @22 PRIVATE
+  Wow64ShallowThunkSIZE_T64TO32 @23 PRIVATE
+  Wow64SuspendLocalThread @24
+  Wow64SystemServiceEx @25
+  Wow64ValidateUserCallTarget @26 PRIVATE
+  Wow64ValidateUserCallTargetFilter @27 PRIVATE
