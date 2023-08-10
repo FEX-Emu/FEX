@@ -3981,7 +3981,7 @@ private:
 
     const auto& op_data = mem_op.MetaType.ScalarVectorType;
     const bool is_scaled = op_data.scale != 0;
-    const auto msize_value = FEXCore::ToUnderlying(msize);
+    [[maybe_unused]] const auto msize_value = FEXCore::ToUnderlying(msize);
 
     LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value,
                        "scale may only be 0 or {}", msize_value);
@@ -4106,7 +4106,7 @@ private:
     const auto msize_value = FEXCore::ToUnderlying(msize);
     const auto msize_bytes = 1U << msize_value;
 
-    const auto imm_limit = (32U << msize_value) - msize_bytes;
+    [[maybe_unused]] const auto imm_limit = (32U << msize_value) - msize_bytes;
     const auto imm = mem_op.MetaType.VectorImmType.Imm;
     const auto imm_to_encode = imm >> msize_value;
 

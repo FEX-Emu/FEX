@@ -687,7 +687,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
 
         uint64_t RemainingSize = DataSpaceMaxSize - NewSizeAligned;
         // We have pages we can unmap
-        auto ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
+        [[maybe_unused]] auto ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(DataSpace + NewSizeAligned), RemainingSize);
         LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
 
         DataSpaceMaxSize = NewSizeAligned;
@@ -708,7 +708,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame *Frame, void *Ad
         if (NewBRK != ~0ULL && NewBRK != (DataSpace + DataSpaceMaxSize)) {
           // Couldn't allocate that the region we wanted
           // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
-          int ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(NewBRK), AllocateNewSize);
+          [[maybe_unused]] int ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(NewBRK), AllocateNewSize);
           LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
           NewBRK = ~0ULL;
         }
