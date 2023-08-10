@@ -13,3 +13,7 @@ endfunction()
 
 build_implib(ntdll)
 build_implib(wow64)
+
+if (_M_ARM_64)
+  add_subdirectory(WOW64)
+endif()

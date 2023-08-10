@@ -1,0 +1,20 @@
+LIBRARY libwow64fex.dll
+
+EXPORTS
+  BTCpuFlushInstructionCache2
+  BTCpuGetBopCode
+  BTCpuGetContext
+  BTCpuIsProcessorFeaturePresent
+  BTCpuNotifyMemoryAlloc
+  BTCpuNotifyMemoryProtect
+  BTCpuNotifyMemoryFree
+  BTCpuNotifyUnmapViewOfSection
+  BTCpuProcessInit
+  BTCpuResetToConsistentState
+  BTCpuSetContext
+  BTCpuSimulate
+  BTCpuSuspendLocalThread
+  BTCpuThreadInit
+  BTCpuThreadTerm
+  BTCpuUpdateProcessorInformation
+  __wine_get_unix_opcode
