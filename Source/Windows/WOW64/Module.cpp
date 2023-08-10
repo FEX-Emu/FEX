@@ -251,6 +251,34 @@ namespace Context {
   }
 }
 
+namespace Invalidation {
+  void HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot) {
+    const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
+    const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
+
+    if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
+      CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), AlignedBase, AlignedSize);
+    }
+  }
+
+  void InvalidateContainingSection(uint64_t Address, bool Free) {
+    MEMORY_BASIC_INFORMATION Info;
+    if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void *>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr))
+      return;
+
+    const auto SectionBase = reinterpret_cast<uint64_t>(Info.AllocationBase);
+    const auto SectionSize = reinterpret_cast<uint64_t>(Info.BaseAddress) + Info.RegionSize
+                             - reinterpret_cast<uint64_t>(Info.AllocationBase);
+    CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), SectionBase, SectionSize);
+  }
+
+  void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free) {
+    const auto AlignedBase = Address & FHU::FEX_PAGE_MASK;
+    const auto AlignedSize = (Address - AlignedBase + Size + FHU::FEX_PAGE_SIZE - 1) & FHU::FEX_PAGE_MASK;
+    CTX->InvalidateGuestCodeRange(GetTLS().ThreadState(), AlignedBase, AlignedSize);
+  }
+}
+
 namespace Logging {
   void MsgHandler(LogMan::DebugLevels Level, char const *Message) {
     const auto Output = fextl::fmt::format("[{}][{:X}] {}\n", LogMan::DebugLevelStr(Level), GetCurrentThreadId(), Message);
@@ -492,6 +520,31 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS *Ptrs) {
   memcpy(Context, GetTLS().EntryContext(), sizeof(*Context));
 
   return STATUS_SUCCESS;
+}
+
+void BTCpuFlushInstructionCache2(const void *Address, SIZE_T Size) {
+  Invalidation::InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+}
+
+void BTCpuNotifyMemoryAlloc(void *Address, SIZE_T Size, ULONG Type, ULONG Prot) {
+  Invalidation::HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), Size, Prot);
+}
+
+void BTCpuNotifyMemoryProtect(void *Address, SIZE_T Size, ULONG NewProt, ULONG *OldProt) {
+  const auto AddressInt = reinterpret_cast<uint64_t>(Address);
+  Invalidation::HandleMemoryProtectionNotification(AddressInt, static_cast<uint64_t>(Size), NewProt);
+}
+
+void BTCpuNotifyMemoryFree(void *Address, SIZE_T Size, ULONG FreeType) {
+  if (!Size) {
+    Invalidation::InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+  } else if (FreeType & MEM_DECOMMIT) {
+    Invalidation::InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+  }
+}
+
+void BTCpuNotifyUnmapViewOfSection(void *Address, ULONG Flags) {
+  Invalidation::InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
 }
 
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
