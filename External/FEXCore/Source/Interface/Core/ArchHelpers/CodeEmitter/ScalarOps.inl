@@ -1013,18 +1013,15 @@ public:
     uint32_t imm5 = 0b0'0000;
     if (size == FEXCore::ARMEmitter::ScalarRegSize::i16Bit) {
       ptype = 0b11;
-      LOGMAN_THROW_A_FMT(vixl::aarch64::Assembler::IsImmFP16(vixl::Float16(Value)), "Invalid float");
-      imm8 = vixl::VFP::FP16ToImm8(vixl::Float16(Value));
+      imm8 = FP16ToImm8(vixl::Float16(Value));
     }
     else if (size == FEXCore::ARMEmitter::ScalarRegSize::i32Bit) {
       ptype = 0b00;
-      LOGMAN_THROW_A_FMT(vixl::VFP::IsImmFP32(Value), "Invalid float");
-      imm8 = vixl::VFP::FP32ToImm8(Value);
+      imm8 = FP32ToImm8(Value);
     }
     else if (size == FEXCore::ARMEmitter::ScalarRegSize::i64Bit) {
       ptype = 0b01;
-      LOGMAN_THROW_A_FMT(vixl::VFP::IsImmFP64(Value), "Invalid float");
-      imm8 = vixl::VFP::FP64ToImm8(Value);
+      imm8 = FP64ToImm8(Value);
     }
     else {
       FEX_UNREACHABLE;
