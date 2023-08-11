@@ -2618,7 +2618,7 @@ public:
   template<SubRegSize size>
   void ldff1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1b scalar plus scalar not yet implemented");
+      ldff1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1b doesn't have a scalar plus immediate variant");
@@ -2693,7 +2693,7 @@ public:
   template<SubRegSize size>
   void ldff1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1h scalar plus scalar not yet implemented");
+      ldff1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1h doesn't have a scalar plus immediate variant");
@@ -2712,7 +2712,7 @@ public:
   template<SubRegSize size>
   void ldff1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1sh scalar plus scalar not yet implemented");
+      ldff1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sh doesn't have a scalar plus immediate variant");
@@ -2750,7 +2750,7 @@ public:
   template<SubRegSize size>
   void ldff1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1w scalar plus scalar not yet implemented");
+      ldff1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1w doesn't have a scalar plus immediate variant");
@@ -2768,7 +2768,7 @@ public:
 
   void ldff1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1sw scalar plus scalar not yet implemented");
+      ldff1sw(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sw doesn't have a scalar plus immediate variant");
@@ -2806,7 +2806,7 @@ public:
   template<SubRegSize size>
   void ldff1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1sb scalar plus scalar not yet implemented");
+      ldff1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sb doesn't have a scalar plus immediate variant");
@@ -2842,7 +2842,7 @@ public:
 
   void ldff1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
-      LOGMAN_THROW_A_FMT(false, "ldff1d scalar plus scalar not yet implemented");
+      ldff1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
     }
     else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1d doesn't have a scalar plus immediate variant");
@@ -3001,17 +3001,17 @@ public:
   // SVE contiguous load (scalar plus scalar)
   template<SubRegSize size>
   void ld1b(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    SVEContiguousLoadStore(0, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
   void ld1sw(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    SVEContiguousLoadStore(0, 0b0100, rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b0100, rm, pg, rn, zt);
   }
 
   template<SubRegSize size>
   void ld1h(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
     static_assert(size != SubRegSize::i8Bit, "Invalid size");
-    SVEContiguousLoadStore(0, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
   template<SubRegSize size>
@@ -3021,7 +3021,7 @@ public:
     constexpr uint32_t ConvertedSize =
       size == SubRegSize::i32Bit ? 1 :
       size == SubRegSize::i64Bit ? 0 : -1;
-    SVEContiguousLoadStore(0, 0b1000 | ConvertedSize, rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b1000 | ConvertedSize, rm, pg, rn, zt);
   }
 
   template<SubRegSize size>
@@ -3031,7 +3031,7 @@ public:
     constexpr uint32_t ConvertedSize =
       size == SubRegSize::i32Bit ? 0 :
       size == SubRegSize::i64Bit ? 1 : -1;
-    SVEContiguousLoadStore(0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
   template<SubRegSize size>
   void ld1sb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
@@ -3042,15 +3042,58 @@ public:
       size == SubRegSize::i16Bit ? 0b10 :
       size == SubRegSize::i32Bit ? 0b01 :
       size == SubRegSize::i64Bit ? 0b00 : -1;
-    SVEContiguousLoadStore(0, 0b1100 | ConvertedSize, rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b1100 | ConvertedSize, rm, pg, rn, zt);
   }
 
   void ld1d(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    SVEContiguousLoadStore(0, 0b1111, rm, pg, rn, zt);
+    SVEContiguousLoadStore(0, 0, 0b1111, rm, pg, rn, zt);
   }
 
   // SVE contiguous first-fault load (scalar plus scalar)
-  // XXX:
+  template<SubRegSize size>
+  void ldff1b(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 1, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  }
+  template<SubRegSize size>
+  void ldff1sb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i16Bit ||
+                  size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize =
+      size == SubRegSize::i16Bit ? 0b10 :
+      size == SubRegSize::i32Bit ? 0b01 :
+      size == SubRegSize::i64Bit ? 0b00 : -1;
+    SVEContiguousLoadStore(0, 1, 0b1100 | ConvertedSize, rm, pg, rn, zt);
+  }
+  template<SubRegSize size>
+  void ldff1h(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size != SubRegSize::i8Bit, "Invalid size");
+    SVEContiguousLoadStore(0, 1, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+  }
+  template<SubRegSize size>
+  void ldff1sh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize =
+      size == SubRegSize::i32Bit ? 1 :
+      size == SubRegSize::i64Bit ? 0 : -1;
+    SVEContiguousLoadStore(0, 1, 0b1000 | ConvertedSize, rm, pg, rn, zt);
+  }
+  template<SubRegSize size>
+  void ldff1w(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    static_assert(size == SubRegSize::i32Bit ||
+                  size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize =
+      size == SubRegSize::i32Bit ? 0 :
+      size == SubRegSize::i64Bit ? 1 : -1;
+    SVEContiguousLoadStore(0, 1, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+  }
+  void ldff1sw(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 1, 0b0100, rm, pg, rn, zt);
+  }
+  void ldff1d(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
+    SVEContiguousLoadStore(0, 1, 0b1111, rm, pg, rn, zt);
+  }
 
   // SVE Memory - 64-bit Gather
   // SVE 64-bit gather prefetch (scalar plus 64-bit scaled offsets)
@@ -3075,13 +3118,13 @@ public:
   // SVE contiguous store (scalar plus scalar)
   template<SubRegSize size>
   void st1b(ZRegister zt, PRegister pg, Register rn, Register rm) {
-    SVEContiguousLoadStore(1, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+    SVEContiguousLoadStore(1, 0, 0b0000 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
   template<SubRegSize size>
   void st1h(ZRegister zt, PRegister pg, Register rn, Register rm) {
     static_assert(size != SubRegSize::i8Bit, "Invalid size");
-    SVEContiguousLoadStore(1, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
+    SVEContiguousLoadStore(1, 0, 0b0100 | FEXCore::ToUnderlying(size), rm, pg, rn, zt);
   }
 
   template<SubRegSize size>
@@ -3092,10 +3135,10 @@ public:
       size == SubRegSize::i32Bit ? 0 :
       size == SubRegSize::i64Bit ? 1 : -1;
 
-    SVEContiguousLoadStore(1, 0b1010 | ConvertedSize, rm, pg, rn, zt);
+    SVEContiguousLoadStore(1, 0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
   void st1d(ZRegister zt, PRegister pg, Register rn, Register rm) {
-    SVEContiguousLoadStore(1, 0b1111, rm, pg, rn, zt);
+    SVEContiguousLoadStore(1, 0, 0b1111, rm, pg, rn, zt);
   }
 
   // SVE Memory - Non-temporal and Multi-register Store
@@ -4216,13 +4259,14 @@ private:
   }
 
   // zt.b, pg/z, xn, xm
-  void SVEContiguousLoadStore(uint32_t b30, uint32_t dtype, Register rm, PRegister pg, Register rn, ZRegister zt) {
+  void SVEContiguousLoadStore(uint32_t b30, uint32_t b13, uint32_t dtype, Register rm, PRegister pg, Register rn, ZRegister zt) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b1010'0100'0000'0000'0100'0000'0000'0000;
     Instr |= b30 << 30;
     Instr |= dtype << 21;
     Instr |= Encode_rm(rm);
+    Instr |= b13 << 13;
     Instr |= pg.Idx() << 10;
     Instr |= Encode_rn(rn);
     Instr |= zt.Idx();
