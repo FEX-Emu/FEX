@@ -224,6 +224,7 @@ namespace FEXCore::ARMEmitter {
         ScalarPlusImm,
         ScalarPlusVector,
         VectorPlusImm,
+        VectorPlusVector,
       };
 
       SVEMemOperand(XRegister rn, XRegister rm = XReg::zr)
@@ -260,6 +261,16 @@ namespace FEXCore::ARMEmitter {
             .Imm = imm,
           }
         } {}
+        SVEMemOperand(ZRegister zn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
+        : rn{Register{zn.Idx()}}
+        , MemType{Type::VectorPlusVector}
+        , MetaType {
+          .VectorVectorType{
+            .zm = zm,
+            .mod = mod,
+            .scale = scale,
+          }
+        } {}
 
       [[nodiscard]] bool IsScalarPlusScalar() const {
         return MemType == Type::ScalarPlusScalar;
@@ -272,6 +283,9 @@ namespace FEXCore::ARMEmitter {
       }
       [[nodiscard]] bool IsVectorPlusImm() const {
         return MemType == Type::VectorPlusImm;
+      }
+      [[nodiscard]] bool IsVectorPlusVector() const {
+        return MemType == Type::VectorPlusVector;
       }
 
       union Data {
@@ -293,6 +307,13 @@ namespace FEXCore::ARMEmitter {
           // rn will be a ZRegister
           uint32_t Imm;
         } VectorImmType;
+
+        struct {
+          // rn will be a ZRegister
+          ZRegister zm;
+          ModType mod;
+          uint8_t scale;
+        } VectorVectorType;
       };
 
       Register rn;

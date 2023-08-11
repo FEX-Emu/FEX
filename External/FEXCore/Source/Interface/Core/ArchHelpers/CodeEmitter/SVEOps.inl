@@ -107,7 +107,9 @@ public:
   }
 
   // SVE address generation
-  // XXX:
+  void adr(SubRegSize size, ZRegister zd, SVEMemOperand op) {
+    SVEAddressGeneration(size, zd, op);
+  }
 
   // SVE table lookup (three sources)
   void tbl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
@@ -3382,6 +3384,45 @@ private:
     Instr |= m << 14;
     Instr |= is_shift << 13;
     Instr |= (static_cast<uint32_t>(new_imm) & 0xFF) << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEAddressGeneration(SubRegSize size, ZRegister zd, SVEMemOperand op) {
+    LOGMAN_THROW_A_FMT(op.IsVectorPlusVector(), "Address generation must use vector plus vector format");
+
+    const auto& mem_op = op.MetaType.VectorVectorType;
+    LOGMAN_THROW_A_FMT(mem_op.scale <= 3, "Scale ({}) must be within [0, 3]", mem_op.scale);
+
+    uint32_t Instr = 0b0000'0100'0010'0000'1010'0000'0000'0000;
+
+    switch (mem_op.mod) {
+    case SVEMemOperand::ModType::MOD_UXTW:
+    case SVEMemOperand::ModType::MOD_SXTW: {
+      LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit, "Unpacked ADR must be using 64-bit elements");
+
+      const auto is_unsigned = mem_op.mod == SVEMemOperand::ModType::MOD_UXTW;
+      if (is_unsigned) {
+        Instr |= 1U << 22;
+      }
+      break;
+    }
+    case SVEMemOperand::ModType::MOD_NONE:
+    case SVEMemOperand::ModType::MOD_LSL: {
+      if (mem_op.mod == SVEMemOperand::ModType::MOD_NONE) {
+        LOGMAN_THROW_AA_FMT(mem_op.scale == 0,
+                            "Cannot scale packed ADR without a modifier");
+      }
+      LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                          "Packed ADR must be using 32-bit or 64-bit elements");
+      Instr |= FEXCore::ToUnderlying(size) << 22;
+      break;
+    }
+    }
+
+    Instr |= mem_op.zm.Idx() << 16;
+    Instr |= mem_op.scale << 10;
+    Instr |= op.rn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }

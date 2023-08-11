@@ -76,7 +76,25 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract vecto
   //TEST_SINGLE(uqsub(SubRegSize::i128Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uqsub z30.q, z29.q, z28.q");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE address generation") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31)), "adr z30.s, [z29.s, z31.s]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31)), "adr z30.d, [z29.d, z31.d]");
+
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)), "adr z30.s, [z29.s, z31.s, lsl #1]");
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)), "adr z30.s, [z29.s, z31.s, lsl #2]");
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 3)), "adr z30.s, [z29.s, z31.s, lsl #3]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)), "adr z30.d, [z29.d, z31.d, lsl #1]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)), "adr z30.d, [z29.d, z31.d, lsl #2]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 3)), "adr z30.d, [z29.d, z31.d, lsl #3]");
+
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)), "adr z30.d, [z29.d, z31.d, uxtw]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)), "adr z30.d, [z29.d, z31.d, uxtw #1]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)), "adr z30.d, [z29.d, z31.d, uxtw #2]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 3)), "adr z30.d, [z29.d, z31.d, uxtw #3]");
+
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)), "adr z30.d, [z29.d, z31.d, sxtw]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)), "adr z30.d, [z29.d, z31.d, sxtw #1]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)), "adr z30.d, [z29.d, z31.d, sxtw #2]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, SVEMemOperand(ZReg::z29, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 3)), "adr z30.d, [z29.d, z31.d, sxtw #3]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE table lookup (three sources)") {
   TEST_SINGLE(tbl(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),   "tbl z30.b, {z29.b}, z28.b");
