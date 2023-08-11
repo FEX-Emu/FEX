@@ -1496,16 +1496,11 @@ public:
   }
 
   // SVE broadcast integer immediate (unpredicated)
-  void dup_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(Value >= -128 && Value <= 127, "Immediate out of range");
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(LSL8 == false, "Can't shift immediate with 8-bit elements");
-    }
-    SVEBroadcastImm(0b00, LSL8, Value, size, zd);
+  void dup_imm(SubRegSize size, ZRegister zd, int32_t Value) {
+    SVEBroadcastImm(0b00, Value, size, zd);
   }
-  void mov_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
-    dup_imm(size, zd, Value, LSL8);
+  void mov_imm(SubRegSize size, ZRegister zd, int32_t Value) {
+    dup_imm(size, zd, Value);
   }
 
   // SVE broadcast floating-point immediate (unpredicated)
@@ -3331,14 +3326,16 @@ private:
     dc32(Instr);
   }
 
-  void SVEBroadcastImm(uint32_t opc, uint32_t sh, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1000'110 << 13;
-    uint32_t Instr = Op;
+  void SVEBroadcastImm(uint32_t opc, int32_t imm, SubRegSize size, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
+    const auto [new_imm, is_shift] = HandleSVESImm8Shift(size, imm);
+
+    uint32_t Instr = 0b0010'0101'0011'1000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 17;
-    Instr |= sh << 13;
-    Instr |= (imm & 0xFF) << 5;
+    Instr |= is_shift << 13;
+    Instr |= (static_cast<uint32_t>(new_imm) & 0xFF) << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }

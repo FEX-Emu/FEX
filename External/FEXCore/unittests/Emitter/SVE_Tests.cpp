@@ -2314,35 +2314,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply immediate
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast integer immediate (unpredicated)") {
-  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -128, false), "mov z30.b, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -128, false), "mov z30.h, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -128, false), "mov z30.s, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -128, false), "mov z30.d, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -128), "mov z30.b, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -128), "mov z30.h, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -128), "mov z30.s, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -128), "mov z30.d, #-128");
 
-  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 127, false), "mov z30.b, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 127, false), "mov z30.h, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 127, false), "mov z30.s, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 127, false), "mov z30.d, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 127), "mov z30.b, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 127), "mov z30.h, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 127), "mov z30.s, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 127), "mov z30.d, #127");
 
-  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -128, true), "mov z30.b, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -128, true), "mov z30.h, #-128, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -128, true), "mov z30.s, #-128, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -128, true), "mov z30.d, #-128, lsl #8");
+  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -32768), "mov z30.b, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -32768), "mov z30.h, #-128, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -32768), "mov z30.s, #-128, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -32768), "mov z30.d, #-128, lsl #8");
 
-  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 127, true), "mov z30.b, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 127, true), "mov z30.h, #127, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 127, true), "mov z30.s, #127, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 127, true), "mov z30.d, #127, lsl #8");
+  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 32512), "mov z30.b, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 32512), "mov z30.h, #127, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 32512), "mov z30.s, #127, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 32512), "mov z30.d, #127, lsl #8");
 
-  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, -128, false), "mov z30.b, #-128");
-  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, -128, false), "mov z30.h, #-128");
-  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, -128, false), "mov z30.s, #-128");
-  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, -128, false), "mov z30.d, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, -128), "mov z30.b, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, -128), "mov z30.h, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, -128), "mov z30.s, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, -128), "mov z30.d, #-128");
 
-  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, 127, false), "mov z30.b, #127");
-  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, 127, false), "mov z30.h, #127");
-  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, 127, false), "mov z30.s, #127");
-  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, 127, false), "mov z30.d, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, 127), "mov z30.b, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, 127), "mov z30.h, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, 127), "mov z30.s, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, 127), "mov z30.d, #127");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast floating-point immediate (predicated)") {
