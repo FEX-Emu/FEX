@@ -4090,7 +4090,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous load (scalar pl
   TEST_SINGLE(ld1b<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1b {z26.s}, p6/z, [x29, x30]");
   TEST_SINGLE(ld1b<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1b {z26.d}, p6/z, [x29, x30]");
 
-  TEST_SINGLE(ld1sw(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sw {z26.d}, p6/z, [x29, x30, lsl #2]");
+  //TEST_SINGLE(ld1sb<SubRegSize::i8Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.b}, p6/z, [x29, x30]");
+  TEST_SINGLE(ld1sb<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.h}, p6/z, [x29, x30]");
+  TEST_SINGLE(ld1sb<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.s}, p6/z, [x29, x30]");
+  TEST_SINGLE(ld1sb<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.d}, p6/z, [x29, x30]");
 
   //TEST_SINGLE(ld1h<SubRegSize::i8Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1h {z26.b}, p6/z, [x29, x30, lsl #1]");
   TEST_SINGLE(ld1h<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1h {z26.h}, p6/z, [x29, x30, lsl #1]");
@@ -4102,12 +4105,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous load (scalar pl
   TEST_SINGLE(ld1sh<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sh {z26.s}, p6/z, [x29, x30, lsl #1]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sh {z26.d}, p6/z, [x29, x30, lsl #1]");
 
-  TEST_SINGLE(ld1sw(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sw {z26.d}, p6/z, [x29, x30, lsl #2]");
+  TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1w {z26.s}, p6/z, [x29, x30, lsl #2]");
+  TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1w {z26.d}, p6/z, [x29, x30, lsl #2]");
 
-  //TEST_SINGLE(ld1sb<SubRegSize::i8Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.b}, p6/z, [x29, x30]");
-  TEST_SINGLE(ld1sb<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.h}, p6/z, [x29, x30]");
-  TEST_SINGLE(ld1sb<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.s}, p6/z, [x29, x30]");
-  TEST_SINGLE(ld1sb<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sb {z26.d}, p6/z, [x29, x30]");
+  TEST_SINGLE(ld1sw(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1sw {z26.d}, p6/z, [x29, x30, lsl #2]");
 
   TEST_SINGLE(ld1d(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1d {z26.d}, p6/z, [x29, x30, lsl #3]");
 }
