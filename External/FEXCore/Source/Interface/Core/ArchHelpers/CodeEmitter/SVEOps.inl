@@ -1043,7 +1043,18 @@ public:
   }
 
   // SVE copy integer immediate (predicated)
-  // XXX:
+  void cpy(SubRegSize size, ZRegister zd, PRegisterZero pg, int32_t imm) {
+    SVEBroadcastIntegerImmPredicated(0, size, zd, pg, imm);
+  }
+  void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, int32_t imm) {
+    SVEBroadcastIntegerImmPredicated(1, size, zd, pg, imm);
+  }
+  void mov_imm(SubRegSize size, ZRegister zd, PRegisterZero pg, int32_t imm) {
+    cpy(size, zd, pg, imm);
+  }
+  void mov_imm(SubRegSize size, ZRegister zd, PRegisterMerge pg, int32_t imm) {
+    cpy(size, zd, pg, imm);
+  }
 
   // SVE Permute Vector - Unpredicated
   void dup(SubRegSize size, ZRegister zd, Register rn) {
@@ -3363,6 +3374,21 @@ private:
     dc32(Instr);
   }
 
+  void SVEBroadcastIntegerImmPredicated(uint32_t m, SubRegSize size, ZRegister zd, PRegister pg, int32_t imm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    const auto [new_imm, is_shift] = HandleSVESImm8Shift(size, imm);
+
+    uint32_t Instr = 0b0000'0101'0001'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= pg.Idx() << 16;
+    Instr |= m << 14;
+    Instr |= is_shift << 13;
+    Instr |= (static_cast<uint32_t>(new_imm) & 0xFF) << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
   void SVESel(SubRegSize size, ZRegister zm, PRegister pv, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
@@ -4978,4 +5004,34 @@ private:
     const auto b5_to_0 = (bits >> 48) & 0x3F;
 
     return static_cast<uint32_t>(sign | expb2 | b5_to_0);
+  }
+
+  // Handling for signed 8-bit immediate shifts (e.g. in cpy/dup)
+  struct HandledSImm8Shift {
+    int32_t imm;
+    uint32_t is_shift;
+  };
+  static constexpr HandledSImm8Shift HandleSVESImm8Shift(SubRegSize size, int32_t imm) {
+    const int32_t imm8_limit = 128;
+    const bool is_int8_imm = -imm8_limit <= imm && imm < imm8_limit;
+    if (size == SubRegSize::i8Bit) {
+      LOGMAN_THROW_AA_FMT(is_int8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
+    }
+
+    uint32_t shift = 0;
+    if (!is_int8_imm) {
+      const int32_t imm16_limit = 32768;
+      const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
+
+      LOGMAN_THROW_AA_FMT(is_int16_imm, "Immediate ({}) must be a 16-bit value within [-32768, 32512]", imm);
+      LOGMAN_THROW_AA_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
+
+      imm /= 256;
+      shift = 1;
+    }
+
+    return {
+      .imm = imm,
+      .is_shift = shift,
+    };
   }
