@@ -3061,8 +3061,6 @@ public:
   // XXX:
   // SVE2 64-bit gather non-temporal load (vector plus scalar)
   // XXX:
-  // SVE 64-bit gather load (vector plus immediate)
-  // XXX:
 
   // SVE Memory - Contiguous Store and Unsized Contiguous
   void str(PRegister pt, XRegister rn, int32_t imm = 0) {
