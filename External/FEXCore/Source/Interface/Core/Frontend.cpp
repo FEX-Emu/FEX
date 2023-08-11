@@ -820,6 +820,15 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
           }
 
           uint16_t LocalOp = (Prefix << 8) | ReadByte();
+
+          bool NoOverlay66 = (FEXCore::X86Tables::H0F38TableOps[LocalOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
+          if (DecodeInst->LastEscapePrefix == 0x66 && NoOverlay66) { // Operand Size
+            // Remove prefix so it doesn't effect calculations.
+            // This is only an escape prefix rather than modifier now
+            DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
+            DecodeFlags::PopOpAddrIf(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
+          }
+
           return NormalOpHeader(&FEXCore::X86Tables::H0F38TableOps[LocalOp], LocalOp);
         break;
         }

@@ -111,7 +111,7 @@ void InitializeH0F38Tables() {
     {OPD(PF_38_66 | PF_38_F2,   0xF0), 1, X86InstInfo{"CRC32",      TYPE_INST, GenFlagsSizes(SIZE_DEF, SIZE_8BIT) | FLAGS_MODRM, 0, nullptr}},
     {OPD(PF_38_66 | PF_38_F2,   0xF1), 1, X86InstInfo{"CRC32",      TYPE_INST, FLAGS_MODRM, 0, nullptr}},
 
-    {OPD(PF_38_66,   0xF6), 1, X86InstInfo{"ADCX",       TYPE_INST, FLAGS_MODRM, 0, nullptr}},
+    {OPD(PF_38_66,   0xF6), 1, X86InstInfo{"ADCX",       TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY66, 0, nullptr}},
     {OPD(PF_38_F3,   0xF6), 1, X86InstInfo{"ADOX",       TYPE_INST, FLAGS_MODRM, 0, nullptr}},
   };
 #undef OPD
