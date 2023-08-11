@@ -1043,7 +1043,18 @@ public:
   }
 
   // SVE copy integer immediate (predicated)
-  // XXX:
+  void cpy(SubRegSize size, ZRegister zd, PRegisterZero pg, int32_t imm) {
+    SVEBroadcastIntegerImmPredicated(0, size, zd, pg, imm);
+  }
+  void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, int32_t imm) {
+    SVEBroadcastIntegerImmPredicated(1, size, zd, pg, imm);
+  }
+  void mov_imm(SubRegSize size, ZRegister zd, PRegisterZero pg, int32_t imm) {
+    cpy(size, zd, pg, imm);
+  }
+  void mov_imm(SubRegSize size, ZRegister zd, PRegisterMerge pg, int32_t imm) {
+    cpy(size, zd, pg, imm);
+  }
 
   // SVE Permute Vector - Unpredicated
   void dup(SubRegSize size, ZRegister zd, Register rn) {
@@ -1485,16 +1496,11 @@ public:
   }
 
   // SVE broadcast integer immediate (unpredicated)
-  void dup_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
-    LOGMAN_THROW_AA_FMT(size != FEXCore::ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(Value >= -128 && Value <= 127, "Immediate out of range");
-    if (size == FEXCore::ARMEmitter::SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(LSL8 == false, "Can't shift immediate with 8-bit elements");
-    }
-    SVEBroadcastImm(0b00, LSL8, Value, size, zd);
+  void dup_imm(SubRegSize size, ZRegister zd, int32_t Value) {
+    SVEBroadcastImm(0b00, Value, size, zd);
   }
-  void mov_imm(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, int32_t Value, bool LSL8 = false) {
-    dup_imm(size, zd, Value, LSL8);
+  void mov_imm(SubRegSize size, ZRegister zd, int32_t Value) {
+    dup_imm(size, zd, Value);
   }
 
   // SVE broadcast floating-point immediate (unpredicated)
@@ -3320,14 +3326,16 @@ private:
     dc32(Instr);
   }
 
-  void SVEBroadcastImm(uint32_t opc, uint32_t sh, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1000'110 << 13;
-    uint32_t Instr = Op;
+  void SVEBroadcastImm(uint32_t opc, int32_t imm, SubRegSize size, ZRegister zd) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
+    const auto [new_imm, is_shift] = HandleSVESImm8Shift(size, imm);
+
+    uint32_t Instr = 0b0010'0101'0011'1000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 17;
-    Instr |= sh << 13;
-    Instr |= (imm & 0xFF) << 5;
+    Instr |= is_shift << 13;
+    Instr |= (static_cast<uint32_t>(new_imm) & 0xFF) << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }
@@ -3359,6 +3367,21 @@ private:
     Instr |= opc << 17;
     Instr |= o2 << 13;
     Instr |= imm << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBroadcastIntegerImmPredicated(uint32_t m, SubRegSize size, ZRegister zd, PRegister pg, int32_t imm) {
+    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+
+    const auto [new_imm, is_shift] = HandleSVESImm8Shift(size, imm);
+
+    uint32_t Instr = 0b0000'0101'0001'0000'0000'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= pg.Idx() << 16;
+    Instr |= m << 14;
+    Instr |= is_shift << 13;
+    Instr |= (static_cast<uint32_t>(new_imm) & 0xFF) << 5;
     Instr |= zd.Idx();
     dc32(Instr);
   }
@@ -4978,4 +5001,34 @@ private:
     const auto b5_to_0 = (bits >> 48) & 0x3F;
 
     return static_cast<uint32_t>(sign | expb2 | b5_to_0);
+  }
+
+  // Handling for signed 8-bit immediate shifts (e.g. in cpy/dup)
+  struct HandledSImm8Shift {
+    int32_t imm;
+    uint32_t is_shift;
+  };
+  static constexpr HandledSImm8Shift HandleSVESImm8Shift(SubRegSize size, int32_t imm) {
+    const int32_t imm8_limit = 128;
+    const bool is_int8_imm = -imm8_limit <= imm && imm < imm8_limit;
+    if (size == SubRegSize::i8Bit) {
+      LOGMAN_THROW_AA_FMT(is_int8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
+    }
+
+    uint32_t shift = 0;
+    if (!is_int8_imm) {
+      const int32_t imm16_limit = 32768;
+      const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
+
+      LOGMAN_THROW_AA_FMT(is_int16_imm, "Immediate ({}) must be a 16-bit value within [-32768, 32512]", imm);
+      LOGMAN_THROW_AA_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
+
+      imm /= 256;
+      shift = 1;
+    }
+
+    return {
+      .imm = imm,
+      .is_shift = shift,
+    };
   }

@@ -1358,7 +1358,77 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Integer Wide Immediate - P
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE copy integer immediate (predicated)") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(cpy(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), -128), "mov z30.b, p6/m, #-128")
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), -128), "mov z30.h, p6/m, #-128");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), -128), "mov z30.s, p6/m, #-128");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), -128), "mov z30.d, p6/m, #-128");
+
+  TEST_SINGLE(cpy(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), 127), "mov z30.b, p6/m, #127");
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 127), "mov z30.h, p6/m, #127");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 127), "mov z30.s, p6/m, #127");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 127), "mov z30.d, p6/m, #127");
+
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), -32768), "mov z30.h, p6/m, #-128, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), -32768), "mov z30.s, p6/m, #-128, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), -32768), "mov z30.d, p6/m, #-128, lsl #8");
+
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 32512), "mov z30.h, p6/m, #127, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 32512), "mov z30.s, p6/m, #127, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 32512), "mov z30.d, p6/m, #127, lsl #8");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), -128), "mov z30.b, p6/m, #-128")
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), -128), "mov z30.h, p6/m, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), -128), "mov z30.s, p6/m, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), -128), "mov z30.d, p6/m, #-128");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Merging(), 127), "mov z30.b, p6/m, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 127), "mov z30.h, p6/m, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 127), "mov z30.s, p6/m, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 127), "mov z30.d, p6/m, #127");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), -32768), "mov z30.h, p6/m, #-128, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), -32768), "mov z30.s, p6/m, #-128, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), -32768), "mov z30.d, p6/m, #-128, lsl #8");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 32512), "mov z30.h, p6/m, #127, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 32512), "mov z30.s, p6/m, #127, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 32512), "mov z30.d, p6/m, #127, lsl #8");
+
+  TEST_SINGLE(cpy(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.b, p6/z, #-128")
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.h, p6/z, #-128");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.s, p6/z, #-128");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.d, p6/z, #-128");
+
+  TEST_SINGLE(cpy(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.b, p6/z, #127");
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.h, p6/z, #127");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.s, p6/z, #127");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.d, p6/z, #127");
+
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), -32768), "mov z30.h, p6/z, #-128, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), -32768), "mov z30.s, p6/z, #-128, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), -32768), "mov z30.d, p6/z, #-128, lsl #8");
+
+  TEST_SINGLE(cpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), 32512), "mov z30.h, p6/z, #127, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), 32512), "mov z30.s, p6/z, #127, lsl #8");
+  TEST_SINGLE(cpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), 32512), "mov z30.d, p6/z, #127, lsl #8");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.b, p6/z, #-128")
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.h, p6/z, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.s, p6/z, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), -128), "mov z30.d, p6/z, #-128");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit,  ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.b, p6/z, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.h, p6/z, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.s, p6/z, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), 127), "mov z30.d, p6/z, #127");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), -32768), "mov z30.h, p6/z, #-128, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), -32768), "mov z30.s, p6/z, #-128, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), -32768), "mov z30.d, p6/z, #-128, lsl #8");
+
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Zeroing(), 32512), "mov z30.h, p6/z, #127, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Zeroing(), 32512), "mov z30.s, p6/z, #127, lsl #8");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Zeroing(), 32512), "mov z30.d, p6/z, #127, lsl #8");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Permute Vector - Unpredicated") {
@@ -2244,35 +2314,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer multiply immediate
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast integer immediate (unpredicated)") {
-  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -128, false), "mov z30.b, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -128, false), "mov z30.h, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -128, false), "mov z30.s, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -128, false), "mov z30.d, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -128), "mov z30.b, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -128), "mov z30.h, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -128), "mov z30.s, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -128), "mov z30.d, #-128");
 
-  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 127, false), "mov z30.b, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 127, false), "mov z30.h, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 127, false), "mov z30.s, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 127, false), "mov z30.d, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 127), "mov z30.b, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 127), "mov z30.h, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 127), "mov z30.s, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 127), "mov z30.d, #127");
 
-  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -128, true), "mov z30.b, #-128");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -128, true), "mov z30.h, #-128, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -128, true), "mov z30.s, #-128, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -128, true), "mov z30.d, #-128, lsl #8");
+  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, -32768), "mov z30.b, #-128");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, -32768), "mov z30.h, #-128, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, -32768), "mov z30.s, #-128, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, -32768), "mov z30.d, #-128, lsl #8");
 
-  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 127, true), "mov z30.b, #127");
-  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 127, true), "mov z30.h, #127, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 127, true), "mov z30.s, #127, lsl #8");
-  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 127, true), "mov z30.d, #127, lsl #8");
+  //TEST_SINGLE(dup_imm(SubRegSize::i8Bit, ZReg::z30, 32512), "mov z30.b, #127");
+  TEST_SINGLE(dup_imm(SubRegSize::i16Bit, ZReg::z30, 32512), "mov z30.h, #127, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i32Bit, ZReg::z30, 32512), "mov z30.s, #127, lsl #8");
+  TEST_SINGLE(dup_imm(SubRegSize::i64Bit, ZReg::z30, 32512), "mov z30.d, #127, lsl #8");
 
-  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, -128, false), "mov z30.b, #-128");
-  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, -128, false), "mov z30.h, #-128");
-  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, -128, false), "mov z30.s, #-128");
-  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, -128, false), "mov z30.d, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, -128), "mov z30.b, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, -128), "mov z30.h, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, -128), "mov z30.s, #-128");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, -128), "mov z30.d, #-128");
 
-  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, 127, false), "mov z30.b, #127");
-  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, 127, false), "mov z30.h, #127");
-  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, 127, false), "mov z30.s, #127");
-  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, 127, false), "mov z30.d, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i8Bit, ZReg::z30, 127), "mov z30.b, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i16Bit, ZReg::z30, 127), "mov z30.h, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i32Bit, ZReg::z30, 127), "mov z30.s, #127");
+  TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, 127), "mov z30.d, #127");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast floating-point immediate (predicated)") {
