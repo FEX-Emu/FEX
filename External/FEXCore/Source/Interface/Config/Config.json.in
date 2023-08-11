@@ -70,7 +70,9 @@
           "ENABLEPMULL128": "enablepmull128",
           "DISABLEPMULL128": "disablepmull128",
           "ENABLERNG": "enablerng",
-          "DISABLERNG": "disablerng"
+          "DISABLERNG": "disablerng",
+          "ENABLECLZERO": "enableclzero",
+          "DISABLECLZERO": "disableclzero"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -82,7 +84,8 @@
           "\t{enable,disable}lrcpc2: Will force enable or disable lrcpc2 even if the host doesn't support it",
           "\t{enable,disable}cssc: Will force enable or disable cssc even if the host doesn't support it",
           "\t{enable,disable}pmull128: Will force enable or disable pmull128 even if the host doesn't support it",
-          "\t{enable,disable}rng: Will force enable or disable rng even if the host doesn't support it"
+          "\t{enable,disable}rng: Will force enable or disable rng even if the host doesn't support it",
+          "\t{enable,disable}clzero: Will force enable or disable clzero even if the host doesn't support it"
         ]
       }
     },

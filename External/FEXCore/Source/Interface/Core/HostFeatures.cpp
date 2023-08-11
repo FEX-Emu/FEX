@@ -88,6 +88,10 @@ static void OverrideFeatures(HostFeatures *Features) {
   const bool EnableRNG = HostFeatures() & FEXCore::Config::HostFeatures::ENABLERNG;
   LogMan::Throw::AFmt(!(DisableRNG && EnableRNG), "Disabling and Enabling CPU features are mutually exclusive");
 
+  const bool DisableCLZERO = HostFeatures() & FEXCore::Config::HostFeatures::DISABLECLZERO;
+  const bool EnableCLZERO = HostFeatures() & FEXCore::Config::HostFeatures::ENABLECLZERO;
+  LogMan::Throw::AFmt(!(DisableCLZERO && EnableCLZERO), "Disabling and Enabling CPU features are mutually exclusive");
+
   if (EnableAVX) {
     Features->SupportsAVX = true;
   }
@@ -135,6 +139,12 @@ static void OverrideFeatures(HostFeatures *Features) {
   }
   else if (DisableRNG) {
     Features->SupportsRAND = false;
+  }
+  if (EnableCLZERO) {
+    Features->SupportsCLZERO = true;
+  }
+  else if (DisableCLZERO) {
+    Features->SupportsCLZERO = false;
   }
 }
 

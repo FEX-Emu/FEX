@@ -388,6 +388,7 @@ int main(int argc, char **argv, char **const envp) {
   enum HostFeatures {
     FEATURE_SVE128 = (1U << 0),
     FEATURE_SVE256 = (1U << 1),
+    FEATURE_CLZERO = (1U << 2),
   };
 
   uint64_t SVEWidth = 0;
@@ -400,12 +401,18 @@ int main(int argc, char **argv, char **const envp) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEAVX);
     SVEWidth = 256;
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_CLZERO) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECLZERO);
+  }
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE128) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVE);
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVE256) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLEAVX);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_CLZERO) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECLZERO);
   }
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_FORCESVEWIDTH, fextl::fmt::format("{}", SVEWidth));

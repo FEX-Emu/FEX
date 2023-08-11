@@ -1,0 +1,29 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "CLZERO"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Instructions": {
+    "xgetbv": {
+      "ExpectedInstructionCount": 48,
+      "Optimal": "No",
+      "Comment": "0xF 0x01 /2 RM-0"
+    },
+    "rdtscp": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "0xF 0x01 /7 RM-1"
+    },
+    "clzero rax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0xF 0x01 /7 RM-4"
+    }
+  }
+}
