@@ -3,6 +3,7 @@
 #include "Interface/Core/ArchHelpers/CodeEmitter/Buffer.h"
 #include "Interface/Core/ArchHelpers/CodeEmitter/Registers.h"
 
+#include <FEXCore/Utils/BitUtils.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -11,6 +12,7 @@
 
 #include <aarch64/assembler-aarch64.h>
 
+#include <array>
 #include <cstdint>
 #include <utility>
 #include <type_traits>

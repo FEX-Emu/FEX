@@ -2275,14 +2275,72 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast integer immediat
   TEST_SINGLE(mov_imm(SubRegSize::i64Bit, ZReg::z30, 127, false), "mov z30.d, #127");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast floating-point immediate (predicated)") {
+  TEST_SINGLE(fcpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), -0.125), "fmov z30.h, p6/m, #0xc0 (-0.1250)");
+  TEST_SINGLE(fcpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), -0.125), "fmov z30.s, p6/m, #0xc0 (-0.1250)");
+  TEST_SINGLE(fcpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), -0.125), "fmov z30.d, p6/m, #0xc0 (-0.1250)");
+
+  TEST_SINGLE(fcpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 0.5), "fmov z30.h, p6/m, #0x60 (0.5000)");
+  TEST_SINGLE(fcpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 0.5), "fmov z30.s, p6/m, #0x60 (0.5000)");
+  TEST_SINGLE(fcpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 0.5), "fmov z30.d, p6/m, #0x60 (0.5000)");
+
+  TEST_SINGLE(fcpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 1.0), "fmov z30.h, p6/m, #0x70 (1.0000)");
+  TEST_SINGLE(fcpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 1.0), "fmov z30.s, p6/m, #0x70 (1.0000)");
+  TEST_SINGLE(fcpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 1.0), "fmov z30.d, p6/m, #0x70 (1.0000)");
+
+  TEST_SINGLE(fcpy(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 31.0), "fmov z30.h, p6/m, #0x3f (31.0000)");
+  TEST_SINGLE(fcpy(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 31.0), "fmov z30.s, p6/m, #0x3f (31.0000)");
+  TEST_SINGLE(fcpy(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 31.0), "fmov z30.d, p6/m, #0x3f (31.0000)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), -0.125), "fmov z30.h, p6/m, #0xc0 (-0.1250)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), -0.125), "fmov z30.s, p6/m, #0xc0 (-0.1250)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), -0.125), "fmov z30.d, p6/m, #0xc0 (-0.1250)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 0.5), "fmov z30.h, p6/m, #0x60 (0.5000)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 0.5), "fmov z30.s, p6/m, #0x60 (0.5000)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 0.5), "fmov z30.d, p6/m, #0x60 (0.5000)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 1.0), "fmov z30.h, p6/m, #0x70 (1.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 1.0), "fmov z30.s, p6/m, #0x70 (1.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 1.0), "fmov z30.d, p6/m, #0x70 (1.0000)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), 31.0), "fmov z30.h, p6/m, #0x3f (31.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), 31.0), "fmov z30.s, p6/m, #0x3f (31.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, PReg::p6.Merging(), 31.0), "fmov z30.d, p6/m, #0x3f (31.0000)");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE broadcast floating-point immediate (unpredicated)") {
+  TEST_SINGLE(fdup(SubRegSize::i16Bit, ZReg::z30, -0.125), "fmov z30.h, #0xc0 (-0.1250)");
+  TEST_SINGLE(fdup(SubRegSize::i32Bit, ZReg::z30, -0.125), "fmov z30.s, #0xc0 (-0.1250)");
+  TEST_SINGLE(fdup(SubRegSize::i64Bit, ZReg::z30, -0.125), "fmov z30.d, #0xc0 (-0.1250)");
+
+  TEST_SINGLE(fdup(SubRegSize::i16Bit, ZReg::z30, 0.5), "fmov z30.h, #0x60 (0.5000)");
+  TEST_SINGLE(fdup(SubRegSize::i32Bit, ZReg::z30, 0.5), "fmov z30.s, #0x60 (0.5000)");
+  TEST_SINGLE(fdup(SubRegSize::i64Bit, ZReg::z30, 0.5), "fmov z30.d, #0x60 (0.5000)");
+
   TEST_SINGLE(fdup(SubRegSize::i16Bit, ZReg::z30, 1.0), "fmov z30.h, #0x70 (1.0000)");
   TEST_SINGLE(fdup(SubRegSize::i32Bit, ZReg::z30, 1.0), "fmov z30.s, #0x70 (1.0000)");
   TEST_SINGLE(fdup(SubRegSize::i64Bit, ZReg::z30, 1.0), "fmov z30.d, #0x70 (1.0000)");
 
+  TEST_SINGLE(fdup(SubRegSize::i16Bit, ZReg::z30, 31.0), "fmov z30.h, #0x3f (31.0000)");
+  TEST_SINGLE(fdup(SubRegSize::i32Bit, ZReg::z30, 31.0), "fmov z30.s, #0x3f (31.0000)");
+  TEST_SINGLE(fdup(SubRegSize::i64Bit, ZReg::z30, 31.0), "fmov z30.d, #0x3f (31.0000)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, -0.125), "fmov z30.h, #0xc0 (-0.1250)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, -0.125), "fmov z30.s, #0xc0 (-0.1250)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, -0.125), "fmov z30.d, #0xc0 (-0.1250)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, 0.5), "fmov z30.h, #0x60 (0.5000)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, 0.5), "fmov z30.s, #0x60 (0.5000)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, 0.5), "fmov z30.d, #0x60 (0.5000)");
+
   TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, 1.0), "fmov z30.h, #0x70 (1.0000)");
   TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, 1.0), "fmov z30.s, #0x70 (1.0000)");
   TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, 1.0), "fmov z30.d, #0x70 (1.0000)");
+
+  TEST_SINGLE(fmov(SubRegSize::i16Bit, ZReg::z30, 31.0), "fmov z30.h, #0x3f (31.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i32Bit, ZReg::z30, 31.0), "fmov z30.s, #0x3f (31.0000)");
+  TEST_SINGLE(fmov(SubRegSize::i64Bit, ZReg::z30, 31.0), "fmov z30.d, #0x3f (31.0000)");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE predicate count") {
