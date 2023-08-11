@@ -4111,6 +4111,30 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous load (scalar pl
 
   TEST_SINGLE(ld1d(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld1d {z26.d}, p6/z, [x29, x30, lsl #3]");
 }
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous first-fault load (scalar plus scalar)") {
+  TEST_SINGLE(ldff1b<SubRegSize::i8Bit>(ZReg::z26,  PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1b {z26.b}, p6/z, [x29, x30]");
+  TEST_SINGLE(ldff1b<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1b {z26.h}, p6/z, [x29, x30]");
+  TEST_SINGLE(ldff1b<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1b {z26.s}, p6/z, [x29, x30]");
+  TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1b {z26.d}, p6/z, [x29, x30]");
+
+  TEST_SINGLE(ldff1sb<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1sb {z26.h}, p6/z, [x29, x30]");
+  TEST_SINGLE(ldff1sb<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1sb {z26.s}, p6/z, [x29, x30]");
+  TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1sb {z26.d}, p6/z, [x29, x30]");
+
+  TEST_SINGLE(ldff1h<SubRegSize::i16Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1h {z26.h}, p6/z, [x29, x30, lsl #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1h {z26.s}, p6/z, [x29, x30, lsl #1]");
+  TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1h {z26.d}, p6/z, [x29, x30, lsl #1]");
+
+  TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1sh {z26.s}, p6/z, [x29, x30, lsl #1]");
+  TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1sh {z26.d}, p6/z, [x29, x30, lsl #1]");
+
+  TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1w {z26.s}, p6/z, [x29, x30, lsl #2]");
+  TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1w {z26.d}, p6/z, [x29, x30, lsl #2]");
+
+  TEST_SINGLE(ldff1sw(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1sw {z26.d}, p6/z, [x29, x30, lsl #2]");
+
+  TEST_SINGLE(ldff1d(ZReg::z26, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ldff1d {z26.d}, p6/z, [x29, x30, lsl #3]");
+}
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point round to integral value") {
   TEST_SINGLE(frinti(SubRegSize::i16Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "frinti z30.h, p6/m, z29.h");
   TEST_SINGLE(frinti(SubRegSize::i32Bit, ZReg::z30, PReg::p6.Merging(), ZReg::z29), "frinti z30.s, p6/m, z29.s");
