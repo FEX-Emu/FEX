@@ -1,0 +1,192 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Comment": [
+    "These 3DNow! instructions are optimal assuming that FEX doesn't SRA MMX registers",
+    "This accounts for the overhead of loading and storing the registers in each instruction",
+    "Could technically save some instructions by using SRA for MMX registers."
+  ],
+  "Instructions": {
+    "pi2fw mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Unknown",
+      "Comment": [
+        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
+        "This lowers throughput from 1 IPC to 1/2IPC",
+        "This instruction implementation might not be correct.",
+        "0x0f 0x0f 0x0c"
+      ]
+    },
+    "pi2fd mm0, mm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
+        "This lowers throughput from 1 IPC to 1/2IPC",
+        "0x0f 0x0f 0x0d"
+      ]
+    },
+    "pf2iw mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Unknown",
+      "Comment": [
+        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
+        "This lowers throughput from 1 IPC to 1/2IPC",
+        "This instruction implementation might not be correct.",
+        "0x0f 0x0f 0x1c"
+      ]
+    },
+    "pf2id mm0, mm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "FPConvert instruction using 128-bit conversion instead of 64-bit.",
+        "This lowers throughput from 1 IPC to 1/2IPC",
+        "0x0f 0x0f 0x1d"
+      ]
+    },
+    "pfrcpv mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0x0f 0x0f 0x86"
+      ]
+    },
+    "pfrsqrtv mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0x0f 0x0f 0x87"
+      ]
+    },
+    "pfnacc mm0, mm1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0x8a"
+    },
+    "pfpnacc mm0, mm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0x8e"
+    },
+    "pfcmpge mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0x90"
+    },
+    "pfmin mm0, mm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x0f 0x94"
+    },
+    "pfrcp mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0x0f 0x0f 0x96"
+      ]
+    },
+    "pfrsqrt mm0, mm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0x0f 0x0f 0x97"
+      ]
+    },
+    "pfsub mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0x9a"
+    },
+    "pfadd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0x9e"
+    },
+    "pfcmpgt mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xa0"
+    },
+    "pfmax mm0, mm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x0f 0xa4"
+    },
+    "pfrcpit1 mm0, mm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xa6"
+    },
+    "pfrcpit1 mm0, mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x0f 0xa6"
+    },
+    "pfrsqit1 mm0, mm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xa7"
+    },
+    "pfrsqit1 mm0, mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x0f 0xa7"
+    },
+    "pfsubr mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xaa"
+    },
+    "pfcmpeq mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xb0"
+    },
+    "pfmul mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xb4"
+    },
+    "pfrcpit2 mm0, mm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xb6"
+    },
+    "pfrcpit2 mm0, mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x0f 0xb6"
+    },
+    "db 0x0f, 0x0f, 0xc1, 0xb7": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": [
+        "nasm doesn't support emitting this instruction",
+        "pmulhrw mm0, mm1",
+        "Might be able to use sqdmulh",
+        "0x0f 0x0f 0xb7"
+      ]
+    },
+    "pswapd mm0, mm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xbb"
+    },
+    "pavgusb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0f 0xbf"
+    }
+  }
+}
