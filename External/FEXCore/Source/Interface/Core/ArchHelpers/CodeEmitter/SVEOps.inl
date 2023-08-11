@@ -1032,9 +1032,16 @@ public:
   // SVE Bitwise Immediate
   // XXX: DUPM
   // SVE bitwise logical with immediate (unpredicated)
+  // XXX:
 
   // SVE Integer Wide Immediate - Predicated
-  // XXX: FCPY
+  void fcpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, float value) {
+    SVEBroadcastFloatImmPredicated(size, zd, pg, value);
+  }
+  void fmov(SubRegSize size, ZRegister zd, PRegisterMerge pg, float value) {
+    fcpy(size, zd, pg, value);
+  }
+
   // SVE copy integer immediate (predicated)
   // XXX:
 
@@ -1495,26 +1502,16 @@ public:
     LOGMAN_THROW_AA_FMT(size == FEXCore::ARMEmitter::SubRegSize::i16Bit ||
                         size == FEXCore::ARMEmitter::SubRegSize::i32Bit ||
                         size == FEXCore::ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
-    uint32_t Imm;
+    uint32_t Imm{};
     if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_A_FMT(vixl::aarch64::Assembler::IsImmFP16(vixl::Float16(Value)), "Invalid float");
-      Imm = vixl::VFP::FP16ToImm8(vixl::Float16(Value));
-    }
-    else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_A_FMT(vixl::VFP::IsImmFP32(Value), "Invalid float");
-      Imm = vixl::VFP::FP32ToImm8(Value);
-
-    }
-    else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_A_FMT(vixl::VFP::IsImmFP64(Value), "Invalid float");
-      Imm = vixl::VFP::FP64ToImm8(Value);
-    }
-    else {
-      LOGMAN_MSG_A_FMT("Invalid subregsize");
-      FEX_UNREACHABLE;
+      Imm = FP16ToImm8(vixl::Float16(Value));
+    } else if (size == SubRegSize::i32Bit) {
+      Imm = FP32ToImm8(Value);
+    } else if (size == SubRegSize::i64Bit) {
+      Imm = FP64ToImm8(Value);
     }
 
-    SVEBroadcastFloatImm(0b00, 0, Imm, size, zd);
+    SVEBroadcastFloatImmUnpredicated(0b00, 0, Imm, size, zd);
   }
   void fmov(FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd, float Value) {
     fdup(size, zd, Value);
@@ -3335,10 +3332,29 @@ private:
     dc32(Instr);
   }
 
-  void SVEBroadcastFloatImm(uint32_t opc, uint32_t o2, uint32_t imm, FEXCore::ARMEmitter::SubRegSize size, FEXCore::ARMEmitter::ZRegister zd) {
-    constexpr uint32_t Op = 0b0010'0101'0011'1001'110 << 13;
-    uint32_t Instr = Op;
+  void SVEBroadcastFloatImmPredicated(SubRegSize size, ZRegister zd, PRegister pg, float value) {
+    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit ||
+                        size == SubRegSize::i32Bit ||
+                        size == SubRegSize::i64Bit, "Unsupported fcpy/fmov size");
+    uint32_t imm{};
+    if (size == SubRegSize::i16Bit) {
+      imm = FP16ToImm8(vixl::Float16(value));
+    } else if (size == SubRegSize::i32Bit) {
+      imm = FP32ToImm8(value);
+    } else if (size == SubRegSize::i64Bit) {
+      imm = FP64ToImm8(value);
+    }
 
+    uint32_t Instr = 0b0000'0101'0001'0000'1100'0000'0000'0000;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= pg.Idx() << 16;
+    Instr |= imm << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVEBroadcastFloatImmUnpredicated(uint32_t opc, uint32_t o2, uint32_t imm, SubRegSize size, ZRegister zd) {
+    uint32_t Instr = 0b0010'0101'0011'1001'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 17;
     Instr |= o2 << 13;
@@ -4875,4 +4891,91 @@ private:
       .tszh = encoded_shift >> 5,
       .tszl_imm3 = encoded_shift & 0b11111,
     };
+  }
+
+  // Alias that returns the equivalently sized unsigned type for a floating-point type T.
+  template <typename T>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, vixl::Float16>)
+  using FloatToEquivalentUInt = std::conditional_t<sizeof(T) == 2, uint16_t,
+                                                   std::conditional_t<sizeof(T) == 4, uint32_t, uint64_t>>;
+
+  // Determines if a floating-point value is capable of being converted
+  // into an 8-bit immediate. See pseudocode definition of VFPExpandImm
+  // in ARM A-profile reference manual for a general overview of how this was derived.
+  template <typename T>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, vixl::Float16>)
+  [[nodiscard, maybe_unused]] static bool IsValidFPValueForImm8(T value) {
+    const uint64_t bits = FEXCore::BitCast<FloatToEquivalentUInt<T>>(value);
+    const uint64_t datasize_idx = FEXCore::ilog2(sizeof(T)) - 1;
+
+    static constexpr std::array mantissa_masks{
+      0x00000000'0000003FULL, // half (bits [5:0])
+      0x00000000'0007FFFFULL, // single (bits [18:0])
+      0x0000FFFF'FFFFFFFFULL, // double (bits [47:0])
+    };
+    const auto mantissa_mask = mantissa_masks[datasize_idx];
+
+    // Relevant mantissa bits must be set to zero
+    if ((bits & mantissa_mask) != 0) {
+      return false;
+    }
+
+    static constexpr std::array exponent_masks{
+      0x00000000'00003000ULL, // half (bits [13:12])
+      0x00000000'3E000000ULL, // single (bits [29:25])
+      0x3FC00000'00000000ULL, // double (bits [61:54])
+    };
+    const auto exponent_mask = exponent_masks[datasize_idx];
+    const auto masked_exponent = bits & exponent_mask;
+
+    // Relevant exponent bits must either be all set or all cleared.
+    if (masked_exponent != 0 && masked_exponent != exponent_mask) {
+      return false;
+    }
+
+    // The two bits before the sign bit must be inverses of each other.
+    const auto datasize = 8ULL * sizeof(T);
+    const auto inverse = bits ^ (bits << 1);
+    const auto inverse_mask = 1ULL << (datasize - 2);
+    if ((inverse & inverse_mask) == 0) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static uint32_t FP16ToImm8(vixl::Float16 value) {
+    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
+                       "Value cannot be encoded into an 8-bit immediate");
+
+    const uint32_t bits = vixl::Float16ToRawbits(value);
+    const uint32_t sign = (bits & 0x8000) >> 8;
+    const uint32_t expb2 = (bits & 0x2000) >> 7;
+    const uint32_t b5_to_0 = (bits >> 6) & 0x3F;
+
+    return sign | expb2 | b5_to_0;
+  }
+
+  static uint32_t FP32ToImm8(float value) {
+    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
+                       "Value ({}) cannot be encoded into an 8-bit immediate", value);
+
+    const auto bits = FEXCore::BitCast<uint32_t>(value);
+    const auto sign = (bits & 0x80000000) >> 24;
+    const auto expb2 = (bits & 0x20000000) >> 23;
+    const auto b5_to_0 = (bits >> 19) & 0x3F;
+
+    return sign | expb2 | b5_to_0;
+  }
+
+  static uint32_t FP64ToImm8(double value) {
+    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
+                       "Value ({}) cannot be encoded into an 8-bit immediate", value);
+
+    const auto bits = FEXCore::BitCast<uint64_t>(value);
+    const auto sign = (bits & 0x80000000'00000000) >> 56;
+    const auto expb2 = (bits & 0x20000000'00000000) >> 55;
+    const auto b5_to_0 = (bits >> 48) & 0x3F;
+
+    return static_cast<uint32_t>(sign | expb2 | b5_to_0);
   }
