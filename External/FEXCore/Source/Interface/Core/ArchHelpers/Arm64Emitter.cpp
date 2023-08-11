@@ -149,7 +149,21 @@ namespace x32 {
 // We want vixl to not allocate a default buffer. Jit and dispatcher will manually create one.
 Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl *ctx, size_t size)
   : Emitter(size ? (uint8_t*)FEXCore::Allocator::VirtualAlloc(size, true) : nullptr, size)
-  , EmitterCTX {ctx} {
+  , EmitterCTX {ctx}
+#ifdef VIXL_SIMULATOR
+  , Simulator {&SimDecoder}
+#endif
+{
+#ifdef VIXL_SIMULATOR
+  FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
+  // Hardcode a 256-bit vector width if we are running in the simulator.
+  // Allow the user to override this.
+  Simulator.SetVectorLengthInBits(ForceSVEWidth() ? ForceSVEWidth() : 256);
+#endif
+#ifdef VIXL_DISASSEMBLER
+  DisasmDecoder.AppendVisitor(&Disasm);
+#endif
+
   CPU.SetUp();
 
   // Number of register available is dependent on what operating mode the proccess is in.

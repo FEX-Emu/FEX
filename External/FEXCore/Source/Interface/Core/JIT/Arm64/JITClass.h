@@ -141,14 +141,6 @@ private:
     uint32_t End;
   };
 
-#if DEBUG
-  vixl::aarch64::Decoder Decoder;
-#endif
-
-#if DEBUG
-  vixl::aarch64::Disassembler Disasm;
-#endif
-
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
   IR::RegisterAllocationPass *RAPass;

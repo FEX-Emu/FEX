@@ -173,8 +173,16 @@ protected:
   }
 
 #endif
+
+#ifdef VIXL_SIMULATOR
+  vixl::aarch64::Decoder SimDecoder;
+  vixl::aarch64::Simulator Simulator;
+#endif
+
 #ifdef VIXL_DISASSEMBLER
-  vixl::aarch64::PrintDisassembler Disasm {stderr};
+  vixl::aarch64::Disassembler Disasm;
+  vixl::aarch64::Decoder DisasmDecoder;
+
   FEX_CONFIG_OPT(Disassemble, DISASSEMBLE);
 #endif
   FEX_CONFIG_OPT(StaticRegisterAllocation, SRA);
