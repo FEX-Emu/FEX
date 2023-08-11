@@ -4896,8 +4896,8 @@ private:
   // Alias that returns the equivalently sized unsigned type for a floating-point type T.
   template <typename T>
   requires(std::is_same_v<T, float> || std::is_same_v<T, double> || std::is_same_v<T, vixl::Float16>)
-  using FloatToEquivalentUInt = std::conditional_t<sizeof(T) == 2, uint16_t,
-                                                   std::conditional_t<sizeof(T) == 4, uint32_t, uint64_t>>;
+  using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, vixl::Float16>, uint16_t,
+                                                   std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>>;
 
   // Determines if a floating-point value is capable of being converted
   // into an 8-bit immediate. See pseudocode definition of VFPExpandImm
