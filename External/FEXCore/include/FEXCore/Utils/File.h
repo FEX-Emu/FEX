@@ -1,5 +1,6 @@
 #pragma once
 #include <FEXCore/fextl/allocator.h>
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/Utils/EnumOperators.h>
 
 #ifndef _WIN32
@@ -79,6 +80,10 @@ namespace FEXCore::File {
         // Some error, match Linux side.
         return -1;
 #endif
+      }
+
+      ssize_t Write(std::string_view const Data) {
+        return Write(Data.data(), Data.size());
       }
 
       /**
