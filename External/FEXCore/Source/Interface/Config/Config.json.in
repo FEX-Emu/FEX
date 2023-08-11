@@ -56,9 +56,9 @@
         "Default": "FEXCore::Config::HostFeatures::OFF",
         "Enums": {
           "ENABLESVE": "enablesve",
-          "DISABLESVE": "disasblesve",
+          "DISABLESVE": "disablesve",
           "ENABLEAVX": "enableavx",
-          "DISABLEAVX": "disasbleavx",
+          "DISABLEAVX": "disableavx",
           "ENABLEAFP": "enableafp",
           "DISABLEAFP": "disableafp",
           "ENABLELRCPC": "enablelrcpc",
@@ -311,6 +311,14 @@
           "\tdispatcher: Will enable disassembly of the JIT dispatcher loop",
           "\tblocks: Will enable disassembly of the translated instruction code blocks",
           "\tstats: Will print stats when disassembling the code"
+        ]
+      },
+      "ForceSVEWidth": {
+        "Type": "uint32",
+        "Default": "0",
+        "Desc": [
+          "Allows overriding the SVE width in the vixl simulator.",
+          "Useful as a debugging feature."
         ]
       }
     },

@@ -211,7 +211,7 @@ namespace JSON {
   }
 
   void EnvLoader::Load() {
-    using EnvMapType = fextl::unordered_map<std::string_view, std::string_view>;
+    using EnvMapType = fextl::unordered_map<std::string_view, fextl::string>;
     EnvMapType EnvMap;
 
     for(const char *const *pvar=envp; pvar && *pvar; pvar++) {
@@ -221,12 +221,18 @@ namespace JSON {
         continue;
 
       std::string_view Key = Var.substr(0,pos);
-      std::string_view Value {Var.substr(pos+1)};
+      std::string_view Value_View {Var.substr(pos+1)};
+      std::optional<fextl::string> Value;
 
 #define ENVLOADER
 #include <FEXCore/Config/ConfigOptions.inl>
 
-      EnvMap[Key] = Value;
+      if (Value) {
+        EnvMap.insert_or_assign(Key, *Value);
+      }
+      else {
+        EnvMap.insert_or_assign(Key, Value_View);
+      }
     }
 
     auto GetVar = [](EnvMapType &EnvMap, const std::string_view id)  -> std::optional<std::string_view> {

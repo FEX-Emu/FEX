@@ -91,15 +91,21 @@ public:
   }
 
   void Load() override {
-    fextl::unordered_map<std::string_view, std::string_view> EnvMap;
+    fextl::unordered_map<std::string_view, std::string> EnvMap;
     for (auto &Option : Env) {
       std::string_view Key = Option.first;
-      std::string_view Value = Option.second;
+      std::string_view Value_View = Option.second;
+      std::optional<fextl::string> Value;
 
 #define ENVLOADER
 #include <FEXCore/Config/ConfigOptions.inl>
 
-      EnvMap.insert_or_assign(Key, Value);
+      if (Value) {
+        EnvMap.insert_or_assign(Key, *Value);
+      }
+      else {
+        EnvMap.insert_or_assign(Key, Value_View);
+      }
     }
 
     auto GetVar = [&](const std::string_view id) -> std::optional<std::string_view> {
