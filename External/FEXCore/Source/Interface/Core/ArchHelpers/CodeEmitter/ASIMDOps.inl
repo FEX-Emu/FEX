@@ -3033,22 +3033,19 @@ public:
     uint32_t o2;
     uint32_t Imm;
     if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_A_FMT(vixl::aarch64::Assembler::IsImmFP16(vixl::Float16(Value)), "Invalid float");
       op = 0;
       o2 = 1;
-      Imm = vixl::VFP::FP16ToImm8(vixl::Float16(Value));
+      Imm = FP16ToImm8(vixl::Float16(Value));
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_A_FMT(vixl::VFP::IsImmFP32(Value), "Invalid float");
       op = 0;
       o2 = 0;
-      Imm = vixl::VFP::FP32ToImm8(Value);
+      Imm = FP32ToImm8(Value);
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_A_FMT(vixl::VFP::IsImmFP64(Value), "Invalid float");
       op = 1;
       o2 = 0;
-      Imm = vixl::VFP::FP64ToImm8(Value);
+      Imm = FP64ToImm8(Value);
     }
     else {
       LOGMAN_MSG_A_FMT("Invalid subregsize");
