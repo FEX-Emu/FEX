@@ -76,7 +76,25 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE integer add/subtract vecto
   //TEST_SINGLE(uqsub(SubRegSize::i128Bit, ZReg::z30, ZReg::z29, ZReg::z28), "uqsub z30.q, z29.q, z28.q");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE address generation") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z31), "adr z30.s, [z29.s, z31.s]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31), "adr z30.d, [z29.d, z31.d]");
+
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_LSL, 1), "adr z30.s, [z29.s, z31.s, lsl #1]");
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_LSL, 2), "adr z30.s, [z29.s, z31.s, lsl #2]");
+  TEST_SINGLE(adr(SubRegSize::i32Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_LSL, 3), "adr z30.s, [z29.s, z31.s, lsl #3]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_LSL, 1), "adr z30.d, [z29.d, z31.d, lsl #1]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_LSL, 2), "adr z30.d, [z29.d, z31.d, lsl #2]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_LSL, 3), "adr z30.d, [z29.d, z31.d, lsl #3]");
+
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_UXTW, 0), "adr z30.d, [z29.d, z31.d, uxtw]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_UXTW, 1), "adr z30.d, [z29.d, z31.d, uxtw #1]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_UXTW, 2), "adr z30.d, [z29.d, z31.d, uxtw #2]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_UXTW, 3), "adr z30.d, [z29.d, z31.d, uxtw #3]");
+
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_SXTW, 0), "adr z30.d, [z29.d, z31.d, sxtw]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_SXTW, 1), "adr z30.d, [z29.d, z31.d, sxtw #1]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_SXTW, 2), "adr z30.d, [z29.d, z31.d, sxtw #2]");
+  TEST_SINGLE(adr(SubRegSize::i64Bit, ZReg::z30, ZReg::z29, ZReg::z31, SVEModType::MOD_SXTW, 3), "adr z30.d, [z29.d, z31.d, sxtw #3]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE table lookup (three sources)") {
   TEST_SINGLE(tbl(SubRegSize::i8Bit, ZReg::z30, ZReg::z29, ZReg::z28),   "tbl z30.b, {z29.b}, z28.b");
@@ -3606,19 +3624,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE floating-point arithmetic 
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and Unsized Contiguous") {
   TEST_SINGLE(ld1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "ld1b {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ld1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "ld1b {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ld1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "ld1b {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "ld1b {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ld1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                        "ld1b {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3631,19 +3649,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                        "ld1b {z30.d}, p6/z, [z31.d, #31]");
 
   TEST_SINGLE(ld1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                         "ld1sb {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ld1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                         "ld1sb {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ld1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                         "ld1sb {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                         "ld1sb {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ld1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                         "ld1sb {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3656,22 +3674,22 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                         "ld1sb {z30.d}, p6/z, [z31.d, #31]");
 
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(),
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                    "ld1d {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(),
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                    "ld1d {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(),
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 3)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 3)),
                    "ld1d {z30.d}, p6/z, [x30, z31.d, uxtw #3]");
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(),
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 3)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 3)),
                    "ld1d {z30.d}, p6/z, [x30, z31.d, sxtw #3]");
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(),
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 3)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 3)),
                    "ld1d {z30.d}, p6/z, [x30, z31.d, lsl #3]");
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(),
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                    "ld1d {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1d(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3680,35 +3698,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                    "ld1d {z30.d}, p6/z, [z31.d, #248]");
 
   TEST_SINGLE(ld1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                        "ld1h {z30.s}, p6/z, [x30, z31.s, uxtw #1]");
   TEST_SINGLE(ld1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                        "ld1h {z30.s}, p6/z, [x30, z31.s, sxtw #1]");
   TEST_SINGLE(ld1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                        "ld1h {z30.d}, p6/z, [x30, z31.d, uxtw #1]");
   TEST_SINGLE(ld1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                        "ld1h {z30.d}, p6/z, [x30, z31.d, sxtw #1]");
   TEST_SINGLE(ld1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 1)),
                                        "ld1h {z30.d}, p6/z, [x30, z31.d, lsl #1]");
   TEST_SINGLE(ld1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                        "ld1h {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "ld1h {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ld1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "ld1h {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ld1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "ld1h {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "ld1h {z30.d}, p6/z, [x30, z31.d, sxtw]");
 
   TEST_SINGLE(ld1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3721,35 +3739,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                        "ld1h {z30.d}, p6/z, [z31.d, #62]");
 
   TEST_SINGLE(ld1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                         "ld1sh {z30.s}, p6/z, [x30, z31.s, uxtw #1]");
   TEST_SINGLE(ld1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                         "ld1sh {z30.s}, p6/z, [x30, z31.s, sxtw #1]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                         "ld1sh {z30.d}, p6/z, [x30, z31.d, uxtw #1]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                         "ld1sh {z30.d}, p6/z, [x30, z31.d, sxtw #1]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 1)),
                                         "ld1sh {z30.d}, p6/z, [x30, z31.d, lsl #1]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                         "ld1sh {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                         "ld1sh {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ld1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                         "ld1sh {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                         "ld1sh {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                        SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                         "ld1sh {z30.d}, p6/z, [x30, z31.d, sxtw]");
 
   TEST_SINGLE(ld1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3762,35 +3780,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                         "ld1sh {z30.d}, p6/z, [z31.d, #62]");
 
   TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                                        "ld1w {z30.s}, p6/z, [x30, z31.s, uxtw #2]");
   TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                                        "ld1w {z30.s}, p6/z, [x30, z31.s, sxtw #2]");
   TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                                        "ld1w {z30.d}, p6/z, [x30, z31.d, uxtw #2]");
   TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                                        "ld1w {z30.d}, p6/z, [x30, z31.d, sxtw #2]");
   TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 2)),
                                        "ld1w {z30.d}, p6/z, [x30, z31.d, lsl #2]");
 
   TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "ld1w {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "ld1w {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "ld1w {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "ld1w {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ld1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                        "ld1w {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3803,22 +3821,22 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                        "ld1w {z30.d}, p6/z, [z31.d, #124]");
 
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(),
-                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                    SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(),
-                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                    SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(),
-                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                    SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d, uxtw #2]");
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(),
-                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                    SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d, sxtw #2]");
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(),
-                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                    SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 2)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d, lsl #2]");
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(),
-                    SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                    SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                     "ld1sw {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ld1sw(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3827,19 +3845,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                     "ld1sw {z30.d}, p6/z, [z31.d, #124]");
 
   TEST_SINGLE(ldff1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                          "ldff1b {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ldff1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                          "ldff1b {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                          "ldff1b {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                          "ldff1b {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ldff1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                          "ldff1b {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3852,19 +3870,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                          "ldff1b {z30.d}, p6/z, [z31.d, #31]");
 
   TEST_SINGLE(ldff1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                           "ldff1sb {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ldff1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                           "ldff1sb {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                           "ldff1sb {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                           "ldff1sb {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ldff1sb<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                           "ldff1sb {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1sb<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3877,22 +3895,22 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                           "ldff1sb {z30.d}, p6/z, [z31.d, #31]");
 
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
-                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                      "ldff1d {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
-                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                      "ldff1d {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
-                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 3)),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 3)),
                      "ldff1d {z30.d}, p6/z, [x30, z31.d, uxtw #3]");
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
-                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 3)),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 3)),
                      "ldff1d {z30.d}, p6/z, [x30, z31.d, sxtw #3]");
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
-                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 3)),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 3)),
                      "ldff1d {z30.d}, p6/z, [x30, z31.d, lsl #3]");
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(),
-                     SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                     SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                      "ldff1d {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1d(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3901,35 +3919,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                      "ldff1d {z30.d}, p6/z, [z31.d, #248]");
 
   TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                          "ldff1h {z30.s}, p6/z, [x30, z31.s, uxtw #1]");
   TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                          "ldff1h {z30.s}, p6/z, [x30, z31.s, sxtw #1]");
   TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                          "ldff1h {z30.d}, p6/z, [x30, z31.d, uxtw #1]");
   TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                          "ldff1h {z30.d}, p6/z, [x30, z31.d, sxtw #1]");
   TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 1)),
                                          "ldff1h {z30.d}, p6/z, [x30, z31.d, lsl #1]");
   TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                          "ldff1h {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                          "ldff1h {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                          "ldff1h {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                          "ldff1h {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                          "ldff1h {z30.d}, p6/z, [x30, z31.d, sxtw]");
 
   TEST_SINGLE(ldff1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3942,35 +3960,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                          "ldff1h {z30.d}, p6/z, [z31.d, #62]");
 
   TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                           "ldff1sh {z30.s}, p6/z, [x30, z31.s, uxtw #1]");
   TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                           "ldff1sh {z30.s}, p6/z, [x30, z31.s, sxtw #1]");
   TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                           "ldff1sh {z30.d}, p6/z, [x30, z31.d, uxtw #1]");
   TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                           "ldff1sh {z30.d}, p6/z, [x30, z31.d, sxtw #1]");
   TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 1)),
                                           "ldff1sh {z30.d}, p6/z, [x30, z31.d, lsl #1]");
   TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                           "ldff1sh {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                           "ldff1sh {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                           "ldff1sh {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                           "ldff1sh {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1sh<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                          SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                           "ldff1sh {z30.d}, p6/z, [x30, z31.d, sxtw]");
 
   TEST_SINGLE(ldff1sh<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -3983,35 +4001,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                           "ldff1sh {z30.d}, p6/z, [z31.d, #62]");
 
   TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                                          "ldff1w {z30.s}, p6/z, [x30, z31.s, uxtw #2]");
   TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                                          "ldff1w {z30.s}, p6/z, [x30, z31.s, sxtw #2]");
   TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                                          "ldff1w {z30.d}, p6/z, [x30, z31.d, uxtw #2]");
   TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                                          "ldff1w {z30.d}, p6/z, [x30, z31.d, sxtw #2]");
   TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 2)),
                                          "ldff1w {z30.d}, p6/z, [x30, z31.d, lsl #2]");
 
   TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                          "ldff1w {z30.s}, p6/z, [x30, z31.s, uxtw]");
   TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                          "ldff1w {z30.s}, p6/z, [x30, z31.s, sxtw]");
   TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                          "ldff1w {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                          "ldff1w {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ldff1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6.Zeroing(),
-                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                         SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                          "ldff1w {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -4024,22 +4042,22 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Memory - 32-bit Gather and
                                          "ldff1w {z30.d}, p6/z, [z31.d, #124]");
 
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
-                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                       "ldff1sw {z30.d}, p6/z, [x30, z31.d, uxtw]");
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
-                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                       "ldff1sw {z30.d}, p6/z, [x30, z31.d, sxtw]");
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
-                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                       "ldff1sw {z30.d}, p6/z, [x30, z31.d, uxtw #2]");
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
-                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                       "ldff1sw {z30.d}, p6/z, [x30, z31.d, sxtw #2]");
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
-                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 2)),
                       "ldff1sw {z30.d}, p6/z, [x30, z31.d, lsl #2]");
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(),
-                      SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                      SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                       "ldff1sw {z30.d}, p6/z, [x30, z31.d]");
 
   TEST_SINGLE(ldff1sw(ZReg::z30, PReg::p6.Zeroing(), SVEMemOperand(ZReg::z31, 0)),
@@ -4559,19 +4577,19 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous store (scalar p
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
   TEST_SINGLE(st1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "st1b {z30.s}, p6, [x30, z31.s, uxtw]");
   TEST_SINGLE(st1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "st1b {z30.s}, p6, [x30, z31.s, sxtw]");
   TEST_SINGLE(st1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "st1b {z30.d}, p6, [x30, z31.d, uxtw]");
   TEST_SINGLE(st1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "st1b {z30.d}, p6, [x30, z31.d, sxtw]");
   TEST_SINGLE(st1b<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                        "st1b {z30.d}, p6, [x30, z31.d]");
 
   TEST_SINGLE(st1b<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
@@ -4584,35 +4602,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
                                        "st1b {z30.d}, p6, [z31.d, #31]");
 
   TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                        "st1h {z30.s}, p6, [x30, z31.s, uxtw #1]");
   TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                        "st1h {z30.s}, p6, [x30, z31.s, sxtw #1]");
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 1)),
                                        "st1h {z30.d}, p6, [x30, z31.d, uxtw #1]");
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 1)),
                                        "st1h {z30.d}, p6, [x30, z31.d, sxtw #1]");
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 1)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 1)),
                                        "st1h {z30.d}, p6, [x30, z31.d, lsl #1]");
 
   TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "st1h {z30.s}, p6, [x30, z31.s, uxtw]");
   TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "st1h {z30.s}, p6, [x30, z31.s, sxtw]");
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "st1h {z30.d}, p6, [x30, z31.d, uxtw]");
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "st1h {z30.d}, p6, [x30, z31.d, sxtw]");
   TEST_SINGLE(st1h<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                        "st1h {z30.d}, p6, [x30, z31.d]");
 
   TEST_SINGLE(st1h<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
@@ -4625,35 +4643,35 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
                                        "st1h {z30.d}, p6, [z31.d, #62]");
 
   TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                                        "st1w {z30.s}, p6, [x30, z31.s, uxtw #2]");
   TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                                        "st1w {z30.s}, p6, [x30, z31.s, sxtw #2]");
   TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 2)),
                                        "st1w {z30.d}, p6, [x30, z31.d, uxtw #2]");
   TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 2)),
                                        "st1w {z30.d}, p6, [x30, z31.d, sxtw #2]");
   TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 2)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 2)),
                                        "st1w {z30.d}, p6, [x30, z31.d, lsl #2]");
 
   TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "st1w {z30.s}, p6, [x30, z31.s, uxtw]");
   TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "st1w {z30.s}, p6, [x30, z31.s, sxtw]");
   TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                                        "st1w {z30.d}, p6, [x30, z31.d, uxtw]");
   TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                                        "st1w {z30.d}, p6, [x30, z31.d, sxtw]");
   TEST_SINGLE(st1w<SubRegSize::i64Bit>(ZReg::z30, PReg::p6,
-                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                                       SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                                        "st1w {z30.d}, p6, [x30, z31.d]");
 
   TEST_SINGLE(st1w<SubRegSize::i32Bit>(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),
@@ -4666,23 +4684,23 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE Scatters") {
                                        "st1w {z30.d}, p6, [z31.d, #124]");
 
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 3)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 3)),
                    "st1d {z30.d}, p6, [x30, z31.d, uxtw #3]");
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 3)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 3)),
                    "st1d {z30.d}, p6, [x30, z31.d, sxtw #3]");
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_LSL, 3)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_LSL, 3)),
                    "st1d {z30.d}, p6, [x30, z31.d, lsl #3]");
 
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_UXTW, 0)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_UXTW, 0)),
                    "st1d {z30.d}, p6, [x30, z31.d, uxtw]");
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_SXTW, 0)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_SXTW, 0)),
                    "st1d {z30.d}, p6, [x30, z31.d, sxtw]");
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6,
-                   SVEMemOperand(XReg::x30, ZReg::z31, SVEMemOperand::ModType::MOD_NONE, 0)),
+                   SVEMemOperand(XReg::x30, ZReg::z31, SVEModType::MOD_NONE, 0)),
                    "st1d {z30.d}, p6, [x30, z31.d]");
 
   TEST_SINGLE(st1d(ZReg::z30, PReg::p6, SVEMemOperand(ZReg::z31, 0)),

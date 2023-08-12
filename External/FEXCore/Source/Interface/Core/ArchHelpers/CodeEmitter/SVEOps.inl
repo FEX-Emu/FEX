@@ -107,7 +107,10 @@ public:
   }
 
   // SVE address generation
-  // XXX:
+  void adr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm,
+           SVEModType mod = SVEModType::MOD_NONE, uint32_t scale = 0) {
+    SVEAddressGeneration(size, zd, zn, zm, mod, scale);
+  }
 
   // SVE table lookup (three sources)
   void tbl(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
@@ -3386,6 +3389,42 @@ private:
     dc32(Instr);
   }
 
+  void SVEAddressGeneration(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, SVEModType mod, uint32_t scale) {
+    LOGMAN_THROW_AA_FMT(scale <= 3, "Scale ({}) must be within [0, 3]", scale);
+
+    uint32_t Instr = 0b0000'0100'0010'0000'1010'0000'0000'0000;
+
+    switch (mod) {
+    case SVEModType::MOD_UXTW:
+    case SVEModType::MOD_SXTW: {
+      LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit, "Unpacked ADR must be using 64-bit elements");
+
+      const auto is_unsigned = mod == SVEModType::MOD_UXTW;
+      if (is_unsigned) {
+        Instr |= 1U << 22;
+      }
+      break;
+    }
+    case SVEModType::MOD_NONE:
+    case SVEModType::MOD_LSL: {
+      if (mod == SVEModType::MOD_NONE) {
+        LOGMAN_THROW_AA_FMT(scale == 0,
+                            "Cannot scale packed ADR without a modifier");
+      }
+      LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                          "Packed ADR must be using 32-bit or 64-bit elements");
+      Instr |= FEXCore::ToUnderlying(size) << 22;
+      break;
+    }
+    }
+
+    Instr |= zm.Idx() << 16;
+    Instr |= scale << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
   void SVESel(SubRegSize size, ZRegister zm, PRegister pv, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
@@ -4073,8 +4112,8 @@ private:
       Instr |= 1U << 30;
 
       const auto mod = op_data.mod;
-      const bool is_lsl = mod == SVEMemOperand::ModType::MOD_LSL;
-      const bool is_none = mod == SVEMemOperand::ModType::MOD_NONE;
+      const bool is_lsl = mod == SVEModType::MOD_LSL;
+      const bool is_none = mod == SVEModType::MOD_NONE;
 
       // LSL and no modifier encodings should be setting bit 22 to 1.
       if (is_lsl || is_none) {
@@ -4090,8 +4129,8 @@ private:
         mod_value = 1;
       }
     } else {
-      LOGMAN_THROW_A_FMT(op_data.mod == SVEMemOperand::ModType::MOD_UXTW ||
-                         op_data.mod == SVEMemOperand::ModType::MOD_SXTW,
+      LOGMAN_THROW_A_FMT(op_data.mod == SVEModType::MOD_UXTW ||
+                         op_data.mod == SVEModType::MOD_SXTW,
                          "mod type for 32-bit lane size may only be UXTW or SXTW");
     }
 
@@ -4126,8 +4165,8 @@ private:
 
     if (esize == SubRegSize::i64Bit) {
       const auto mod = op_data.mod;
-      const bool is_lsl = mod == SVEMemOperand::ModType::MOD_LSL;
-      const bool is_none = mod == SVEMemOperand::ModType::MOD_NONE;
+      const bool is_lsl = mod == SVEModType::MOD_LSL;
+      const bool is_none = mod == SVEModType::MOD_NONE;
 
       if (is_lsl || is_none) {
         if (is_lsl) {
@@ -4158,8 +4197,8 @@ private:
                            "Instruction not allocated.");
       }
 
-      LOGMAN_THROW_A_FMT(op_data.mod == SVEMemOperand::ModType::MOD_UXTW ||
-                         op_data.mod == SVEMemOperand::ModType::MOD_SXTW,
+      LOGMAN_THROW_A_FMT(op_data.mod == SVEModType::MOD_UXTW ||
+                         op_data.mod == SVEModType::MOD_SXTW,
                          "mod type for 32-bit lane size may only be UXTW or SXTW");
 
       // 32-bit scatters need to set bit 22.

@@ -205,20 +205,20 @@ namespace FEXCore::ARMEmitter {
     UNPRIVILEGED,
   };
 
+  // Used with adr and scalar + vector load/store variants to denote
+  // a modifier operation.
+  enum class SVEModType : uint8_t {
+    MOD_UXTW,
+    MOD_SXTW,
+    MOD_LSL,
+    MOD_NONE,
+  };
+
   /* This `SVEMemOperand` class is used for the helper SVE load-store instructions.
    * Load-store instructions are quite expressive, so having a helper that handles these differences is worth it.
    */
   class SVEMemOperand final {
     public:
-      // Used for scalar + vector variants to determine
-      // extension behavior on the index values.
-      enum class ModType : uint8_t {
-        MOD_UXTW,
-        MOD_SXTW,
-        MOD_LSL,
-        MOD_NONE,
-      };
-
       enum class Type {
         ScalarPlusScalar,
         ScalarPlusImm,
@@ -242,7 +242,7 @@ namespace FEXCore::ARMEmitter {
             .Imm = imm,
           }
         } {}
-      SVEMemOperand(XRegister rn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
+      SVEMemOperand(XRegister rn, ZRegister zm, SVEModType mod = SVEModType::MOD_NONE, uint8_t scale = 0)
         : rn{rn}
         , MemType{Type::ScalarPlusVector}
         , MetaType {
@@ -285,7 +285,7 @@ namespace FEXCore::ARMEmitter {
 
         struct {
           ZRegister zm;
-          ModType mod;
+          SVEModType mod;
           uint8_t scale;
         } ScalarVectorType;
 
