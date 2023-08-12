@@ -205,26 +205,25 @@ namespace FEXCore::ARMEmitter {
     UNPRIVILEGED,
   };
 
+  // Used with adr and scalar + vector load/store variants to denote
+  // a modifier operation.
+  enum class SVEModType : uint8_t {
+    MOD_UXTW,
+    MOD_SXTW,
+    MOD_LSL,
+    MOD_NONE,
+  };
+
   /* This `SVEMemOperand` class is used for the helper SVE load-store instructions.
    * Load-store instructions are quite expressive, so having a helper that handles these differences is worth it.
    */
   class SVEMemOperand final {
     public:
-      // Used for scalar + vector variants to determine
-      // extension behavior on the index values.
-      enum class ModType : uint8_t {
-        MOD_UXTW,
-        MOD_SXTW,
-        MOD_LSL,
-        MOD_NONE,
-      };
-
       enum class Type {
         ScalarPlusScalar,
         ScalarPlusImm,
         ScalarPlusVector,
         VectorPlusImm,
-        VectorPlusVector,
       };
 
       SVEMemOperand(XRegister rn, XRegister rm = XReg::zr)
@@ -243,7 +242,7 @@ namespace FEXCore::ARMEmitter {
             .Imm = imm,
           }
         } {}
-      SVEMemOperand(XRegister rn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
+      SVEMemOperand(XRegister rn, ZRegister zm, SVEModType mod = SVEModType::MOD_NONE, uint8_t scale = 0)
         : rn{rn}
         , MemType{Type::ScalarPlusVector}
         , MetaType {
@@ -261,16 +260,6 @@ namespace FEXCore::ARMEmitter {
             .Imm = imm,
           }
         } {}
-        SVEMemOperand(ZRegister zn, ZRegister zm, ModType mod = ModType::MOD_NONE, uint8_t scale = 0)
-        : rn{Register{zn.Idx()}}
-        , MemType{Type::VectorPlusVector}
-        , MetaType {
-          .VectorVectorType{
-            .zm = zm,
-            .mod = mod,
-            .scale = scale,
-          }
-        } {}
 
       [[nodiscard]] bool IsScalarPlusScalar() const {
         return MemType == Type::ScalarPlusScalar;
@@ -284,9 +273,6 @@ namespace FEXCore::ARMEmitter {
       [[nodiscard]] bool IsVectorPlusImm() const {
         return MemType == Type::VectorPlusImm;
       }
-      [[nodiscard]] bool IsVectorPlusVector() const {
-        return MemType == Type::VectorPlusVector;
-      }
 
       union Data {
         struct {
@@ -299,7 +285,7 @@ namespace FEXCore::ARMEmitter {
 
         struct {
           ZRegister zm;
-          ModType mod;
+          SVEModType mod;
           uint8_t scale;
         } ScalarVectorType;
 
@@ -307,13 +293,6 @@ namespace FEXCore::ARMEmitter {
           // rn will be a ZRegister
           uint32_t Imm;
         } VectorImmType;
-
-        struct {
-          // rn will be a ZRegister
-          ZRegister zm;
-          ModType mod;
-          uint8_t scale;
-        } VectorVectorType;
       };
 
       Register rn;
