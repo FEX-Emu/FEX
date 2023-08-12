@@ -11,6 +11,7 @@
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXHeaderUtils/TypeDefines.h>
 
 #include <shared_mutex>
 #include <type_traits>
@@ -115,9 +116,15 @@ namespace FEXCore::Core {
     // Async signals aren't guaranteed to be delivered in any particular order, but FEX treats them as FILO.
     fextl::vector<DeferredSignalState> DeferredSignalFrames;
 
-    // BaseFrameState should always be at the end.
+    // BaseFrameState should always be at the end, directly before the interrupt fault page
     alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState{};
+
+    // Can be reprotected as RO to trigger an interrupt at generated code block entrypoints
+    alignas(FHU::FEX_PAGE_SIZE) uint8_t InterruptFaultPage[FHU::FEX_PAGE_SIZE];
   };
+  static_assert((offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) -
+                 offsetof(FEXCore::Core::InternalThreadState, BaseFrameState)) < 4096,
+		"Fault page is outside of immediate range from CPU state");
   // static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
 }
 

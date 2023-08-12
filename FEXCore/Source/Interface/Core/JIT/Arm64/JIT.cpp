@@ -791,6 +791,13 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry,
   adr(TMP1, &JITCodeHeaderLabel);
   str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
 
+#ifdef _WIN32
+  // Trigger a fault if there are any pending interrupts
+  // Used only for suspend on WIN32 at the moment
+  strb(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) -
+                                    offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
+#endif
+
   if (GDBEnabled) {
     auto GDBSize = CTX->Dispatcher->GenerateGDBPauseCheck(CodeData.BlockEntry, Entry);
     CursorIncrement(GDBSize);
