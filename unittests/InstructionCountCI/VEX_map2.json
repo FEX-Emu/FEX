@@ -1,0 +1,2497 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE256"
+    ],
+    "DisabledHostFeatures": []
+  },
+  "Instructions": {
+    "vpshufb xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x00 128-bit"
+      ]
+    },
+    "vpshufb ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x00 256-bit"
+      ]
+    },
+    "vphaddw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x01 128-bit"
+      ]
+    },
+    "vphaddw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x01 256-bit"
+      ]
+    },
+    "vphaddd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x02 128-bit"
+      ]
+    },
+    "vphaddd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x02 256-bit"
+      ]
+    },
+    "vphaddsw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x03 128-bit"
+      ]
+    },
+    "vphaddsw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x03 256-bit"
+      ]
+    },
+    "vpmaddubsw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x04 128-bit"
+      ]
+    },
+    "vpmaddubsw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 35,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x04 256-bit"
+      ]
+    },
+    "vphsubw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x05 128-bit"
+      ]
+    },
+    "vphsubw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 30,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x05 256-bit"
+      ]
+    },
+    "vphsubd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x06 128-bit"
+      ]
+    },
+    "vphsubd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 30,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x06 256-bit"
+      ]
+    },
+    "vphsubsw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x07 128-bit"
+      ]
+    },
+    "vphsubsw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x07 256-bit"
+      ]
+    },
+    "vpsignb xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x08 128-bit"
+      ]
+    },
+    "vpsignb ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x08 256-bit"
+      ]
+    },
+    "vpsignw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x09 128-bit"
+      ]
+    },
+    "vpsignw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x09 256-bit"
+      ]
+    },
+    "vpsignd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0a 128-bit"
+      ]
+    },
+    "vpsignd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0a 256-bit"
+      ]
+    },
+    "vpmulhrsw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0b 128-bit"
+      ]
+    },
+    "vpmulhrsw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0b 256-bit"
+      ]
+    },
+    "vpermilps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0c 128-bit"
+      ]
+    },
+    "vpermilps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0c 256-bit"
+      ]
+    },
+    "vpermilpd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0d 128-bit"
+      ]
+    },
+    "vpermilpd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 29,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0d 256-bit"
+      ]
+    },
+    "vtestps xmm0, xmm1": {
+      "ExpectedInstructionCount": 29,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0e 128-bit"
+      ]
+    },
+    "vtestps ymm0, ymm1": {
+      "ExpectedInstructionCount": 37,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0e 256-bit"
+      ]
+    },
+    "vtestpd xmm0, xmm1": {
+      "ExpectedInstructionCount": 29,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0f 128-bit"
+      ]
+    },
+    "vtestpd ymm0, ymm1": {
+      "ExpectedInstructionCount": 37,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x0f 256-bit"
+      ]
+    },
+    "vcvtph2ps xmm0, xmm1": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x13 128-bit"
+      ]
+    },
+    "vcvtph2ps ymm0, xmm1": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x13 256-bit"
+      ]
+    },
+    "vpermps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x16 256-bit"
+      ]
+    },
+    "vptest xmm0, xmm1": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x16 128-bit"
+      ]
+    },
+    "vptest ymm0, ymm1": {
+      "ExpectedInstructionCount": 33,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x16 256-bit"
+      ]
+    },
+    "vbroadcastss xmm0, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x18 128-bit"
+      ]
+    },
+    "vbroadcastss ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x18 256-bit"
+      ]
+    },
+    "vbroadcastsd ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x19 256-bit"
+      ]
+    },
+    "vbroadcastf128 ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1a 256-bit"
+      ]
+    },
+    "vpabsb xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1c 128-bit"
+      ]
+    },
+    "vpabsb ymm0, ymm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1c 256-bit"
+      ]
+    },
+    "vpabsw xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1d 128-bit"
+      ]
+    },
+    "vpabsw ymm0, ymm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1d 256-bit"
+      ]
+    },
+    "vpabsd xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1e 128-bit"
+      ]
+    },
+    "vpabsd ymm0, ymm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x1e 256-bit"
+      ]
+    },
+    "vpmovsxbw xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x20 128-bit"
+      ]
+    },
+    "vpmovsxbw ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x20 256-bit"
+      ]
+    },
+    "vpmovsxbd xmm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x21 128-bit"
+      ]
+    },
+    "vpmovsxbd ymm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x21 256-bit"
+      ]
+    },
+    "vpmovsxbq xmm0, xmm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x22 128-bit"
+      ]
+    },
+    "vpmovsxbq ymm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x22 256-bit"
+      ]
+    },
+    "vpmovsxwd xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x23 128-bit"
+      ]
+    },
+    "vpmovsxwd ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x23 256-bit"
+      ]
+    },
+    "vpmovsxwq xmm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x24 128-bit"
+      ]
+    },
+    "vpmovsxwq ymm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x24 256-bit"
+      ]
+    },
+    "vpmovsxdq xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x25 128-bit"
+      ]
+    },
+    "vpmovsxdq ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x25 256-bit"
+      ]
+    },
+    "vpmuldq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x28 128-bit"
+      ]
+    },
+    "vpmuldq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 48,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x28 256-bit"
+      ]
+    },
+    "vpcmpeqq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x29 128-bit"
+      ]
+    },
+    "vpcmpeqq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x29 256-bit"
+      ]
+    },
+    "vmovntdqa xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2a 128-bit"
+      ]
+    },
+    "vmovntdqa ymm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2a 256-bit"
+      ]
+    },
+    "vpackusdw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2b 128-bit"
+      ]
+    },
+    "vpackusdw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2b 256-bit"
+      ]
+    },
+    "vmaskmovps xmm0, xmm1, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2c 128-bit"
+      ]
+    },
+    "vmaskmovps ymm0, ymm1, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2c 256-bit"
+      ]
+    },
+    "vmaskmovpd xmm0, xmm1, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2d 128-bit"
+      ]
+    },
+    "vmaskmovpd ymm0, ymm1, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2d 256-bit"
+      ]
+    },
+    "vmaskmovps [rax], xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2e 128-bit"
+      ]
+    },
+    "vmaskmovps [rax], ymm0, ymm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2e 256-bit"
+      ]
+    },
+    "vmaskmovpd [rax], xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2f 128-bit"
+      ]
+    },
+    "vmaskmovpd [rax], ymm0, ymm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x2f 256-bit"
+      ]
+    },
+    "vpmovzxbw xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x30 128-bit"
+      ]
+    },
+    "vpmovzxbw ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x30 256-bit"
+      ]
+    },
+    "vpmovzxbd xmm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x31 128-bit"
+      ]
+    },
+    "vpmovzxbd ymm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x31 256-bit"
+      ]
+    },
+    "vpmovzxbq xmm0, xmm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x32 128-bit"
+      ]
+    },
+    "vpmovzxbq ymm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x32 256-bit"
+      ]
+    },
+    "vpmovzxwd xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x33 128-bit"
+      ]
+    },
+    "vpmovzxwd ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x33 256-bit"
+      ]
+    },
+    "vpmovzxwq xmm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x34 128-bit"
+      ]
+    },
+    "vpmovzxwq ymm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x34 256-bit"
+      ]
+    },
+    "vpmovzxdq xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x35 128-bit"
+      ]
+    },
+    "vpmovzxdq ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x35 256-bit"
+      ]
+    },
+    "vpermd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x36 256-bit"
+      ]
+    },
+    "vpcmpgtq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x37 128-bit"
+      ]
+    },
+    "vpcmpgtq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x37 256-bit"
+      ]
+    },
+    "vpminsb xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x38 128-bit"
+      ]
+    },
+    "vpminsb ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x38 256-bit"
+      ]
+    },
+    "vpminsd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x39 128-bit"
+      ]
+    },
+    "vpminsd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x39 256-bit"
+      ]
+    },
+    "vpminuw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3a 128-bit"
+      ]
+    },
+    "vpminuw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3a 256-bit"
+      ]
+    },
+    "vpminud xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3b 128-bit"
+      ]
+    },
+    "vpminud ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3b 256-bit"
+      ]
+    },
+    "vpmaxsb xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3c 128-bit"
+      ]
+    },
+    "vpmaxsb ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3c 256-bit"
+      ]
+    },
+    "vpmaxsd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3d 128-bit"
+      ]
+    },
+    "vpmaxsd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3d 256-bit"
+      ]
+    },
+    "vpmaxuw xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3e 128-bit"
+      ]
+    },
+    "vpmaxuw ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3e 256-bit"
+      ]
+    },
+    "vpmaxud xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3f 128-bit"
+      ]
+    },
+    "vpmaxud ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x3f 256-bit"
+      ]
+    },
+    "vpmulld xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x40 128-bit"
+      ]
+    },
+    "vpmulld ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x40 256-bit"
+      ]
+    },
+    "vphminposuw xmm0, xmm1": {
+      "ExpectedInstructionCount": 41,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x41 256-bit"
+      ]
+    },
+    "vpsrlvd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x45 128-bit"
+      ]
+    },
+    "vpsrlvd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x45 256-bit"
+      ]
+    },
+    "vpsrlvq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x45 128-bit"
+      ]
+    },
+    "vpsrlvq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x45 256-bit"
+      ]
+    },
+    "vpsravd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x46 128-bit"
+      ]
+    },
+    "vpsravd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x46 256-bit"
+      ]
+    },
+    "vpsllvd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x47 128-bit"
+      ]
+    },
+    "vpsllvd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x47 256-bit"
+      ]
+    },
+    "vpsllvq xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x47 128-bit"
+      ]
+    },
+    "vpsllvq ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x47 256-bit"
+      ]
+    },
+    "vpbroadcastd xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x58 128-bit"
+      ]
+    },
+    "vpbroadcastd xmm0, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x58 128-bit"
+      ]
+    },
+    "vpbroadcastd ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x58 256-bit"
+      ]
+    },
+    "vpbroadcastd ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x58 256-bit"
+      ]
+    },
+    "vpbroadcastq xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x59 128-bit"
+      ]
+    },
+    "vpbroadcastq xmm0, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x59 128-bit"
+      ]
+    },
+    "vpbroadcastq ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x59 256-bit"
+      ]
+    },
+    "vpbroadcastq ymm0, [rax]": {
+      "ExpectedInstructiqonCount": -1,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x59 256-bit"
+      ],
+      "ExpectedInstructionCount": 3
+    },
+    "vbroadcasti128 ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x5a 256-bit"
+      ]
+    },
+    "vpbroadcastb xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x78 128-bit"
+      ]
+    },
+    "vpbroadcastb xmm0, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x78 128-bit"
+      ]
+    },
+    "vpbroadcastb ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x78 256-bit"
+      ]
+    },
+    "vpbroadcastb ymm0, [rax]": {
+      "ExpectedInstructiqonCount": -1,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x78 256-bit"
+      ],
+      "ExpectedInstructionCount": 3
+    },
+    "vpbroadcastw xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x79 128-bit"
+      ]
+    },
+    "vpbroadcastw xmm0, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x79 128-bit"
+      ]
+    },
+    "vpbroadcastw ymm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x79 256-bit"
+      ]
+    },
+    "vpbroadcastw ymm0, [rax]": {
+      "ExpectedInstructiqonCount": -1,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x79 256-bit"
+      ],
+      "ExpectedInstructionCount": 3
+    },
+    "vpmaskmovd xmm0, xmm1, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8c 128-bit"
+      ]
+    },
+    "vpmaskmovd ymm0, ymm1, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8c 256-bit"
+      ]
+    },
+    "vpmaskmovq xmm0, xmm1, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8c 128-bit"
+      ]
+    },
+    "vpmaskmovq ymm0, ymm1, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8c 256-bit"
+      ]
+    },
+    "vpmaskmovd [rax], xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8e 128-bit"
+      ]
+    },
+    "vpmaskmovd [rax], ymm0, ymm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8e 256-bit"
+      ]
+    },
+    "vpmaskmovq [rax], xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8e 128-bit"
+      ]
+    },
+    "vpmaskmovq [rax], ymm0, ymm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0x8e 256-bit"
+      ]
+    },
+    "vpgatherdd xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdd xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdd xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdd xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdd ymm0, [ymm1*1 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdd ymm0, [ymm1*2 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdd ymm0, [ymm1*4 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdd ymm0, [ymm1*8 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdq xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdq xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdq xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdq xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 128-bit"
+      ]
+    },
+    "vpgatherdq ymm0, [xmm1*1 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdq ymm0, [xmm1*2 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdq ymm0, [xmm1*4 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherdq ymm0, [xmm1*8 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x90 256-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [ymm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [ymm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [ymm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqd xmm0, [ymm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqq xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqq xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqq xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqq xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 128-bit"
+      ]
+    },
+    "vpgatherqq ymm0, [ymm1*1 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqq ymm0, [ymm1*2 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqq ymm0, [ymm1*4 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vpgatherqq ymm0, [ymm1*8 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x91 256-bit"
+      ]
+    },
+    "vgatherdps xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdps xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdps xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdps xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdps ymm0, [ymm1*1 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdps ymm0, [ymm1*2 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdps ymm0, [ymm1*4 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdps ymm0, [ymm1*8 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdpd xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdpd xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdpd xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdpd xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 128-bit"
+      ]
+    },
+    "vgatherdpd ymm0, [xmm1*1 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdpd ymm0, [xmm1*2 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdpd ymm0, [xmm1*4 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherdpd ymm0, [xmm1*8 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x92 256-bit"
+      ]
+    },
+    "vgatherqps xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqps xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqps xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqps xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqps xmm0, [ymm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqps xmm0, [ymm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqps xmm0, [ymm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqps xmm0, [ymm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqpd xmm0, [xmm1*1 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqpd xmm0, [xmm1*2 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqpd xmm0, [xmm1*4 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqpd xmm0, [xmm1*8 + rax], xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 128-bit"
+      ]
+    },
+    "vgatherqpd ymm0, [ymm1*1 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqpd ymm0, [ymm1*2 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqpd ymm0, [ymm1*4 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vgatherqpd ymm0, [ymm1*8 + rax], ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x93 256-bit"
+      ]
+    },
+    "vfmaddsub132ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x96 128-bit"
+      ]
+    },
+    "vfmaddsub132ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x96 256-bit"
+      ]
+    },
+    "vfmaddsub132pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x96 128-bit"
+      ]
+    },
+    "vfmaddsub132pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x96 256-bit"
+      ]
+    },
+    "vfmsubadd132ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x97 128-bit"
+      ]
+    },
+    "vfmsubadd132ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x97 256-bit"
+      ]
+    },
+    "vfmsubadd132pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x97 128-bit"
+      ]
+    },
+    "vfmsubadd132pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x97 256-bit"
+      ]
+    },
+    "vfmadd132ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x98 128-bit"
+      ]
+    },
+    "vfmadd132ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x98 256-bit"
+      ]
+    },
+    "vfmadd132pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x98 128-bit"
+      ]
+    },
+    "vfmadd132pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x98 256-bit"
+      ]
+    },
+    "vfmadd132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x99 128-bit"
+      ]
+    },
+    "vfmadd132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x99 128-bit"
+      ]
+    },
+    "vfmsub132ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9a 128-bit"
+      ]
+    },
+    "vfmsub132ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9a 256-bit"
+      ]
+    },
+    "vfmsub132pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9a 128-bit"
+      ]
+    },
+    "vfmsub132pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9a 256-bit"
+      ]
+    },
+    "vfmsub132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9b 128-bit"
+      ]
+    },
+    "vfmsub132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9b 128-bit"
+      ]
+    },
+    "vfnmadd132ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9c 128-bit"
+      ]
+    },
+    "vfnmadd132ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9c 256-bit"
+      ]
+    },
+    "vfnmadd132pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9c 128-bit"
+      ]
+    },
+    "vfnmadd132pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9c 256-bit"
+      ]
+    },
+    "vfnmadd132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9d 128-bit"
+      ]
+    },
+    "vfnmadd132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9d 128-bit"
+      ]
+    },
+    "vfnmsub132ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9e 128-bit"
+      ]
+    },
+    "vfnmsub132ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9e 256-bit"
+      ]
+    },
+    "vfnmsub132pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9e 128-bit"
+      ]
+    },
+    "vfnmsub132pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9e 256-bit"
+      ]
+    },
+    "vfnmsub132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9f 128-bit"
+      ]
+    },
+    "vfnmsub132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0x9f 128-bit"
+      ]
+    },
+    "vfmadd213ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa8 128-bit"
+      ]
+    },
+    "vfmadd213ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa8 256-bit"
+      ]
+    },
+    "vfmadd213pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa8 128-bit"
+      ]
+    },
+    "vfmadd213pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa8 256-bit"
+      ]
+    },
+    "vfmadd213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa9 128-bit"
+      ]
+    },
+    "vfmadd213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa9 128-bit"
+      ]
+    },
+    "vfmsub213ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xaa 128-bit"
+      ]
+    },
+    "vfmsub213ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xaa 256-bit"
+      ]
+    },
+    "vfmsub213pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xaa 128-bit"
+      ]
+    },
+    "vfmsub213pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xaa 256-bit"
+      ]
+    },
+    "vfmsub213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xab 128-bit"
+      ]
+    },
+    "vfmsub213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xab 128-bit"
+      ]
+    },
+    "vfnmadd213ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xac 128-bit"
+      ]
+    },
+    "vfnmadd213ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xac 256-bit"
+      ]
+    },
+    "vfnmadd213pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xac 128-bit"
+      ]
+    },
+    "vfnmadd213pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xac 256-bit"
+      ]
+    },
+    "vfnmadd213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xad 128-bit"
+      ]
+    },
+    "vfnmadd213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xad 128-bit"
+      ]
+    },
+    "vfnmsub213ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xae 128-bit"
+      ]
+    },
+    "vfnmsub213ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xae 256-bit"
+      ]
+    },
+    "vfnmsub213pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xae 128-bit"
+      ]
+    },
+    "vfnmsub213pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xae 256-bit"
+      ]
+    },
+    "vfnmsub213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xaf 128-bit"
+      ]
+    },
+    "vfnmsub213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xaf 128-bit"
+      ]
+    },
+    "vfmadd231ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb8 128-bit"
+      ]
+    },
+    "vfmadd231ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb8 256-bit"
+      ]
+    },
+    "vfmadd231pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb8 128-bit"
+      ]
+    },
+    "vfmadd231pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb8 256-bit"
+      ]
+    },
+    "vfmadd231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb9 128-bit"
+      ]
+    },
+    "vfmadd231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb9 128-bit"
+      ]
+    },
+    "vfmsub231ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xba 128-bit"
+      ]
+    },
+    "vfmsub231ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xba 256-bit"
+      ]
+    },
+    "vfmsub231pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xba 128-bit"
+      ]
+    },
+    "vfmsub231pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xba 256-bit"
+      ]
+    },
+    "vfmsub231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbb 128-bit"
+      ]
+    },
+    "vfmsub231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbb 128-bit"
+      ]
+    },
+    "vfnmadd231ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbc 128-bit"
+      ]
+    },
+    "vfnmadd231ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbc 256-bit"
+      ]
+    },
+    "vfnmadd231pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbc 128-bit"
+      ]
+    },
+    "vfnmadd231pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbc 256-bit"
+      ]
+    },
+    "vfnmadd231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbd 128-bit"
+      ]
+    },
+    "vfnmadd231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbd 128-bit"
+      ]
+    },
+    "vfnmsub231ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbe 128-bit"
+      ]
+    },
+    "vfnmsub231ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbe 256-bit"
+      ]
+    },
+    "vfnmsub231pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbe 128-bit"
+      ]
+    },
+    "vfnmsub231pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbe 256-bit"
+      ]
+    },
+    "vfnmsub231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbf 128-bit"
+      ]
+    },
+    "vfnmsub231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xbf 128-bit"
+      ]
+    },
+    "vfmaddsub213ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa6 128-bit"
+      ]
+    },
+    "vfmaddsub213ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa6 256-bit"
+      ]
+    },
+    "vfmaddsub213pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa6 128-bit"
+      ]
+    },
+    "vfmaddsub213pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa6 256-bit"
+      ]
+    },
+    "vfmsubadd213ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa7 128-bit"
+      ]
+    },
+    "vfmsubadd213ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa7 256-bit"
+      ]
+    },
+    "vfmsubadd213pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa7 128-bit"
+      ]
+    },
+    "vfmsubadd213pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xa7 256-bit"
+      ]
+    },
+    "vfmaddsub231ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb6 128-bit"
+      ]
+    },
+    "vfmaddsub231ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb6 256-bit"
+      ]
+    },
+    "vfmaddsub231pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb6 128-bit"
+      ]
+    },
+    "vfmaddsub231pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb6 256-bit"
+      ]
+    },
+    "vfmsubadd231ps xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb7 128-bit"
+      ]
+    },
+    "vfmsubadd231ps ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb7 256-bit"
+      ]
+    },
+    "vfmsubadd231pd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb7 128-bit"
+      ]
+    },
+    "vfmsubadd231pd ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xb7 256-bit"
+      ]
+    },
+    "vaesimc xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0xdb 128-bit"
+      ]
+    },
+    "vaesenc xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0xdc 128-bit"
+      ]
+    },
+    "vaesenc ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xdc 256-bit"
+      ]
+    },
+    "vaesenclast xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0xdd 128-bit"
+      ]
+    },
+    "vaesenclast ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xdd 256-bit"
+      ]
+    },
+    "vaesdec xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0xde 128-bit"
+      ]
+    },
+    "vaesdec ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xde 256-bit"
+      ]
+    },
+    "vaesdeclast xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0xdf 128-bit"
+      ]
+    },
+    "vaesdeclast ymm0, ymm1, ymm2": {
+      "ExpectedInstructionCount": -1,
+      "Optimal": "Unknown",
+      "Skip": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xdf 256-bit"
+      ]
+    },
+    "andn eax, ebx, ecx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b00 0xf2 32-bit"
+      ]
+    },
+    "andn rax, rbx, rcx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b00 0xf2 64-bit"
+      ]
+    },
+    "bzhi eax, ebx, ecx": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b00 0xf5 32-bit"
+      ]
+    },
+    "bzhi rax, rbx, rcx": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b00 0xf5 64-bit"
+      ]
+    },
+    "pext eax, ebx, ecx": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b10 0xf5 32-bit"
+      ]
+    },
+    "pext rax, rbx, rcx": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b10 0xf5 64-bit"
+      ]
+    },
+    "pdep eax, ebx, ecx": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b11 0xf5 32-bit"
+      ]
+    },
+    "pdep rax, rbx, rcx": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b11 0xf5 64-bit"
+      ]
+    },
+    "mulx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b11 0xf6 32-bit"
+      ]
+    },
+    "mulx rax, rbx, rcx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b11 0xf6 64-bit"
+      ]
+    },
+    "bextr eax, ebx, ecx": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b00 0xf7 32-bit"
+      ]
+    },
+    "bextr rax, rbx, rcx": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b00 0xf7 64-bit"
+      ]
+    },
+    "shlx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b01 0xf7 32-bit"
+      ]
+    },
+    "shlx rax, rbx, rcx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b01 0xf7 64-bit"
+      ]
+    },
+    "sarx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b10 0xf7 32-bit"
+      ]
+    },
+    "sarx rax, rbx, rcx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b10 0xf7 64-bit"
+      ]
+    },
+    "shrx eax, ebx, ecx": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": [
+        "Map 2 0b11 0xf7 32-bit"
+      ]
+    },
+    "shrx rax, rbx, rcx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": [
+        "Map 2 0b11 0xf7 64-bit"
+      ]
+    }
+  }
+}

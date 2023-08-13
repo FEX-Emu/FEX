@@ -92,6 +92,10 @@ def parse_json_data(json_data, output_binary_path):
                 if items["Optimal"].upper() == "YES":
                     Optimal = 1
 
+        if ("Skip" in items):
+                if items["Skip"].upper() == "YES":
+                    continue
+
         TestName = base64.b64encode(key.encode("ascii")).decode("ascii")
         tmp_asm = "/tmp/{}.asm".format(TestName)
         tmp_asm_out = "/tmp/{}.asm.o".format(TestName)
