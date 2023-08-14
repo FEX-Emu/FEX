@@ -1,0 +1,876 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Comment": [
+    "Instructions in this table that are marked optimal don't have their flag calculation part of this assumption",
+    "Flags calculation can dramatically change an instruction's lengths so this is mostly ignored here."
+  ],
+  "Instructions": {
+    "add al, 1": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /0"
+    },
+    "or al, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /1"
+    },
+    "adc al, 1": {
+      "ExpectedInstructionCount": 32,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /2"
+    },
+    "sbb al, 1": {
+      "ExpectedInstructionCount": 32,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /3"
+    },
+    "and al, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /4"
+    },
+    "sub al, 1": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /5"
+    },
+    "xor al, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /6"
+    },
+    "cmp al, 1": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x80 /7"
+    },
+    "add ax, 256": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /0"
+    },
+    "add eax, 256": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /0"
+    },
+    "add rax, 256": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "Yes",
+      "Comment": "GROUP1 0x81 /0"
+    },
+    "or eax, 256": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /1"
+    },
+    "or rax, 256": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /1"
+    },
+    "adc eax, 256": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /2"
+    },
+    "adc rax, 256": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /2"
+    },
+    "sbb eax, 256": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /3"
+    },
+    "sbb rax, 256": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /3"
+    },
+    "and eax, 256": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /4"
+    },
+    "and rax, 256": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /4"
+    },
+    "sub eax, 256": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /5"
+    },
+    "sub rax, 256": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "Yes",
+      "Comment": "GROUP1 0x81 /5"
+    },
+    "xor eax, 256": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /6"
+    },
+    "xor rax, 256": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /6"
+    },
+    "cmp eax, 256": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x81 /7"
+    },
+    "cmp rax, 256": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "Yes",
+      "Comment": "GROUP1 0x81 /7"
+    },
+    "add ax, 1": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /0"
+    },
+    "add eax, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /0"
+    },
+    "add rax, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "Yes",
+      "Comment": "GROUP1 0x83 /0"
+    },
+    "or eax, 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /1"
+    },
+    "or rax, 1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /1"
+    },
+    "adc eax, 1": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /2"
+    },
+    "adc rax, 1": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /2"
+    },
+    "sbb eax, 1": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /3"
+    },
+    "sbb rax, 1": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /3"
+    },
+    "and eax, 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /4"
+    },
+    "and rax, 1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /4"
+    },
+    "sub eax, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /5"
+    },
+    "sub rax, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /5"
+    },
+    "xor eax, 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /6"
+    },
+    "xor rax, 1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /6"
+    },
+    "cmp eax, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /7"
+    },
+    "cmp rax, 1": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "GROUP1 0x83 /7"
+    },
+    "rol al, 2": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /0"
+    },
+    "ror al, 2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /1"
+    },
+    "rcl al, 2": {
+      "ExpectedInstructionCount": 31,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /2"
+    },
+    "rcr al, 2": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /3"
+    },
+    "shl al, 2": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /4"
+    },
+    "shr al, 2": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /5"
+    },
+    "sar al, 2": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC0 /7"
+    },
+    "rol ax, 2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /0"
+    },
+    "rol eax, 2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /0"
+    },
+    "rol rax, 2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xC1 /0"
+    },
+    "ror ax, 2": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /1"
+    },
+    "ror eax, 2": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /1"
+    },
+    "ror rax, 2": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xC1 /1"
+    },
+    "rcl ax, 2": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /2"
+    },
+    "rcl eax, 2": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /2"
+    },
+    "rcl rax, 2": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /2"
+    },
+    "rcr ax, 2": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /3"
+    },
+    "rcr eax, 2": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /3"
+    },
+    "rcr rax, 2": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /3"
+    },
+    "shl ax, 2": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /4"
+    },
+    "shl eax, 2": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /4"
+    },
+    "shl rax, 2": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xC1 /4"
+    },
+    "shr ax, 2": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /5"
+    },
+    "shr eax, 2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /5"
+    },
+    "shr rax, 2": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xC1 /5"
+    },
+    "sar ax, 2": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /7"
+    },
+    "sar eax, 2": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xC1 /7"
+    },
+    "sar rax, 2": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xC1 /7"
+    },
+    "rol al, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /0"
+    },
+    "ror al, 1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /1"
+    },
+    "rcl al, 1": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /2"
+    },
+    "rcr al, 1": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /3"
+    },
+    "shl al, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /4"
+    },
+    "shr al, 1": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /5"
+    },
+    "sar al, 1": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd0 /7"
+    },
+    "rol ax, 1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /0"
+    },
+    "rol eax, 1": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /0"
+    },
+    "rol rax, 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd1 /0"
+    },
+    "ror ax, 1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /1"
+    },
+    "ror eax, 1": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /1"
+    },
+    "ror rax, 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd1 /1"
+    },
+    "rcl ax, 1": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /2"
+    },
+    "rcl eax, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /2"
+    },
+    "rcl rax, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /2"
+    },
+    "rcr ax, 1": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /3"
+    },
+    "rcr eax, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /3"
+    },
+    "rcr rax, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /3"
+    },
+    "shl ax, 1": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /4"
+    },
+    "shl eax, 1": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /4"
+    },
+    "shl rax, 1": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd1 /4"
+    },
+    "shr ax, 1": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /5"
+    },
+    "shr eax, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /5"
+    },
+    "shr rax, 1": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd1 /5"
+    },
+    "sar ax, 1": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /7"
+    },
+    "sar eax, 1": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd1 /7"
+    },
+    "sar rax, 1": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd1 /7"
+    },
+    "rol al, cl": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /0"
+    },
+    "ror al, cl": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /1"
+    },
+    "rcl al, cl": {
+      "ExpectedInstructionCount": 39,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /2"
+    },
+    "rcr al, cl": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /3"
+    },
+    "shl al, cl": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /4"
+    },
+    "shr al, cl": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /5"
+    },
+    "sar al, cl": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd2 /7"
+    },
+    "rol ax, cl": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /0"
+    },
+    "rol eax, cl": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /0"
+    },
+    "rol rax, cl": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /0"
+    },
+    "ror ax, cl": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /1"
+    },
+    "ror eax, cl": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /1"
+    },
+    "ror rax, cl": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /1"
+    },
+    "rcl ax, cl": {
+      "ExpectedInstructionCount": 35,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /2"
+    },
+    "rcl eax, cl": {
+      "ExpectedInstructionCount": 34,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /2"
+    },
+    "rcl rax, cl": {
+      "ExpectedInstructionCount": 32,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /2"
+    },
+    "rcr ax, cl": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /3"
+    },
+    "rcr eax, cl": {
+      "ExpectedInstructionCount": 37,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /3"
+    },
+    "rcr rax, cl": {
+      "ExpectedInstructionCount": 33,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /3"
+    },
+    "shl ax, cl": {
+      "ExpectedInstructionCount": 27,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /4"
+    },
+    "shl eax, cl": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /4"
+    },
+    "shl rax, cl": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd3 /4"
+    },
+    "shr ax, cl": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /5"
+    },
+    "shr eax, cl": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /5"
+    },
+    "shr rax, cl": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd3 /5"
+    },
+    "sar ax, cl": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /7"
+    },
+    "sar eax, cl": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xd3 /7"
+    },
+    "sar rax, cl": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "Yes",
+      "Comment": "GROUP2 0xd3 /7"
+    },
+    "test bl, 1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /0"
+    },
+    "not bl": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /2"
+    },
+    "neg bl": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /3"
+    },
+    "mul bl": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /4"
+    },
+    "imul bl": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /5"
+    },
+    "div bl": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /6"
+    },
+    "idiv bl": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf6 /7"
+    },
+    "test bx, 1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /0"
+    },
+    "test ebx, 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /0"
+    },
+    "test rbx, 1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /0"
+    },
+    "not bx": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /1"
+    },
+    "not ebx": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /1"
+    },
+    "not rbx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /1"
+    },
+    "neg bx": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /2"
+    },
+    "neg ebx": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /2"
+    },
+    "neg rbx": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /2"
+    },
+    "mul bx": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /3"
+    },
+    "mul ebx": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /3"
+    },
+    "mul rbx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /3"
+    },
+    "imul bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /5"
+    },
+    "imul ebx": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /5"
+    },
+    "imul rbx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /5"
+    },
+    "div bx": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /6"
+    },
+    "div ebx": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /6"
+    },
+    "div rbx": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /6"
+    },
+    "idiv bx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /7"
+    },
+    "idiv ebx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /7"
+    },
+    "idiv rbx": {
+      "ExpectedInstructionCount": 28,
+      "Optimal": "No",
+      "Comment": "GROUP2 0xf7 /7"
+    },
+    "inc al": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP3 0xfe /0"
+    },
+    "dec al": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP3 0xfe /1"
+    },
+    "inc ax": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP4 0xfe /0"
+    },
+    "inc eax": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP4 0xfe /0"
+    },
+    "inc rax": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "Yes",
+      "Comment": "GROUP4 0xfe /0"
+    },
+    "dec ax": {
+      "ExpectedInstructionCount": 24,
+      "Optimal": "No",
+      "Comment": "GROUP4 0xfe /1"
+    },
+    "dec eax": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "No",
+      "Comment": "GROUP4 0xfe /1"
+    },
+    "dec rax": {
+      "ExpectedInstructionCount": 19,
+      "Optimal": "Yes",
+      "Comment": "GROUP4 0xfe /1"
+    },
+    "push ax": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "GROUP4 0xff /6"
+    },
+    "push rax": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "GROUP4 0xff /6"
+    },
+    "mov byte [rax], 0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "GROUP11 0xc6 /0"
+    },
+    "mov word [rax], 0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "GROUP11 0xc7 /0"
+    },
+    "mov dword [rax], 0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "GROUP11 0xc7 /0"
+    },
+    "mov qword [rax], 0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "GROUP11 0xc7 /0"
+    },
+    "mov byte [rax], 1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "GROUP11 0xc6 /0"
+    },
+    "mov word [rax], 1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "GROUP11 0xc7 /0"
+    },
+    "mov dword [rax], 1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "GROUP11 0xc7 /0"
+    },
+    "mov qword [rax], 1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "GROUP11 0xc7 /0"
+    }
+  }
+}
