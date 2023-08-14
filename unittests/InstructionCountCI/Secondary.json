@@ -1,0 +1,1574 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256"
+    ]
+  },
+  "Comment": [
+    "MMX instructions are defined as optimal without SRA being used for these instructions.",
+    "Could remove a bunch of instructions if those are under SRA",
+    "Vector shifts by vector elements can be optimized with SVE wide element shifts",
+    "Vector multiply returning high can be optimized with SVE"
+  ],
+  "Instructions": {
+    "femms": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x0b"
+    },
+    "movups xmm0, [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x10"
+    },
+    "movups [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x11"
+    },
+    "movlps xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x12"
+    },
+    "movlps [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x13"
+    },
+    "unpcklps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x14"
+    },
+    "unpckhps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x15"
+    },
+    "movhps xmm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x16"
+    },
+    "movlhps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x16"
+    },
+    "movhps [rax], xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x17"
+    },
+    "nop": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x19"
+    },
+    "movaps xmm0, [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x28"
+    },
+    "movaps [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x29"
+    },
+    "cvtpi2ps xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0x0f 0x2a"
+      ]
+    },
+    "cvtpi2ps xmm0, mm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "With AFP mode FEX can remove an insert after the operation.",
+        "0x0f 0x2a"
+      ]
+    },
+    "movntps [rax], xmm0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x2b"
+    },
+    "cvttps2pi mm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x2c"
+    },
+    "cvttps2pi mm0, xmm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0x2c"
+    },
+    "cvtps2pi mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x2d"
+    },
+    "cvtps2pi mm0, xmm0": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "0x0f 0x2d"
+    },
+    "ucomiss xmm0, xmm1": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "0x0f 0x2e"
+    },
+    "comiss xmm0, xmm1": {
+      "ExpectedInstructionCount": 23,
+      "Optimal": "No",
+      "Comment": "0x0f 0x2f"
+    },
+    "rdtsc": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x31"
+    },
+    "cmovo ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x40"
+    },
+    "cmovo eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x40"
+    },
+    "cmovo rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x40"
+    },
+    "cmovno ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x41"
+    },
+    "cmovno eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x41"
+    },
+    "cmovno rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x41"
+    },
+    "cmovb ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x42"
+    },
+    "cmovb eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x42"
+    },
+    "cmovb rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0x42"
+    },
+    "cmovnb ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x43"
+    },
+    "cmovnb eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x43"
+    },
+    "cmovnb rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x43"
+    },
+    "cmovz ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x44"
+    },
+    "cmovz eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x44"
+    },
+    "cmovz rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x44"
+    },
+    "cmovnz ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x45"
+    },
+    "cmovnz eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x45"
+    },
+    "cmovnz rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x45"
+    },
+    "cmovbe ax, bx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x46"
+    },
+    "cmovbe eax, ebx": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0x46"
+    },
+    "cmovbe rax, rbx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x46"
+    },
+    "cmovnbe ax, bx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x47"
+    },
+    "cmovnbe eax, ebx": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0x47"
+    },
+    "cmovnbe rax, rbx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x47"
+    },
+    "cmovs ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x48"
+    },
+    "cmovs eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x48"
+    },
+    "cmovs rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x48"
+    },
+    "cmovns ax, bx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x49"
+    },
+    "cmovns eax, ebx": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x49"
+    },
+    "cmovns rax, rbx": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x49"
+    },
+    "cmovpe ax, bx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4a"
+    },
+    "cmovpe eax, ebx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4a"
+    },
+    "cmovpe rax, rbx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4a"
+    },
+    "cmovnp ax, bx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4b"
+    },
+    "cmovnp eax, ebx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4b"
+    },
+    "cmovnp rax, rbx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4b"
+    },
+    "cmovl ax, bx": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4c"
+    },
+    "cmovl eax, ebx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4c"
+    },
+    "cmovl rax, rbx": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x4c"
+    },
+    "cmovnl ax, bx": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4d"
+    },
+    "cmovnl eax, ebx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4d"
+    },
+    "cmovnl rax, rbx": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x4d"
+    },
+    "cmovle ax, bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4e"
+    },
+    "cmovle eax, ebx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4e"
+    },
+    "cmovle rax, rbx": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4e"
+    },
+    "cmovnle ax, bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4f"
+    },
+    "cmovnle eax, ebx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4f"
+    },
+    "cmovnle rax, rbx": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0x4f"
+    },
+    "movmskps eax, xmm0": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "0x0f 0x50"
+    },
+    "movmskps rax, xmm0": {
+      "ExpectedInstructionCount": 16,
+      "Optimal": "No",
+      "Comment": "0x0f 0x50"
+    },
+    "sqrtps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x51"
+    },
+    "rsqrtps xmm0, xmm1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0x0f 0x52"
+      ]
+    },
+    "rcpps xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "FEAT_FPRES could make this more optimal",
+        "0x0f 0x53"
+      ]
+    },
+    "andps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x54"
+    },
+    "andnps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x55"
+    },
+    "orps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x56"
+    },
+    "xorps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x57"
+    },
+    "addps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x58"
+    },
+    "mulps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x59"
+    },
+    "cvtps2pd xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x5a"
+    },
+    "cvtdq2ps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x5b"
+    },
+    "subps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x5c"
+    },
+    "minps xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "0x0f 0x5d"
+    },
+    "divps xmm0, xmm1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x5e"
+    },
+    "maxps xmm0, xmm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "No",
+      "Comment": "0x0f 0x5f"
+    },
+    "punpcklbw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x60"
+    },
+    "punpcklbw mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x60"
+    },
+    "punpcklwd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x61"
+    },
+    "punpcklwd mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x61"
+    },
+    "punpckldq mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x62"
+    },
+    "punpckldq mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x62"
+    },
+    "packsswb mm0, mm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x63"
+    },
+    "packsswb mm0, [rax]": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x63"
+    },
+    "pcmpgtb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x64"
+    },
+    "pcmpgtw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x65"
+    },
+    "pcmpgtd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x66"
+    },
+    "punpckhbw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x68"
+    },
+    "punpckhbw mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x68"
+    },
+    "punpckhwd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x69"
+    },
+    "punpckhwd mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x69"
+    },
+    "punpckhdq mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x6a"
+    },
+    "punpckhdq mm0, [rax]": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x6a"
+    },
+    "packssdw mm0, mm1": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x6b"
+    },
+    "movd mm0, eax": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0x6e"
+    },
+    "movd mm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0x6e"
+    },
+    "movq mm0, mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x6f"
+    },
+    "movq mm0, mm1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x6f"
+    },
+    "movq mm0, [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x6f"
+    },
+    "pshufw mm0, mm1, 0": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x70"
+    },
+    "pshufw mm0, [rax], 0": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x70"
+    },
+    "pshufw mm0, mm1, 1": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x70"
+    },
+    "pshufw mm0, [rax], 1": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x70"
+    },
+    "pshufw mm0, mm1, 0xff": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x70"
+    },
+    "pshufw mm0, [rax], 0xff": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0x70"
+    },
+    "pcmpeqb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x74"
+    },
+    "pcmpeqw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x75"
+    },
+    "pcmpeqd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x76"
+    },
+    "emms": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x77"
+    },
+    "movd eax, mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0x7e"
+    },
+    "movd [rax], mm0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0x7e"
+    },
+    "db 0x0f, 0x7f, 0xc1": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": [
+        "movq mm0, mm1",
+        "Manual encoded since nasm would encode 0x6f version",
+        "0x0f 0x7f"
+      ]
+    },
+    "movq [rax], mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x7f"
+    },
+    "seto al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x90"
+    },
+    "setno al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x91"
+    },
+    "setb al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x92"
+    },
+    "setnb al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x93"
+    },
+    "setz al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x94"
+    },
+    "setnz al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x95"
+    },
+    "setbe al": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x96"
+    },
+    "setnbe al": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0x97"
+    },
+    "sets al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x98"
+    },
+    "setns al": {
+      "ExpectedInstructionCount": 6,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x99"
+    },
+    "setpe al": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x9a"
+    },
+    "setnp al": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0x9b"
+    },
+    "setl al": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x9c"
+    },
+    "setnl al": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0x9d"
+    },
+    "setle al": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "0x0f 0x9e"
+    },
+    "setnle al": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "0x0f 0x9f"
+    },
+    "push fs": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa0"
+    },
+    "pop fs": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa1"
+    },
+    "bt ax, bx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa3"
+    },
+    "bt [rax], bx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa3"
+    },
+    "bt eax, ebx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa3"
+    },
+    "bt [rax], ebx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa3"
+    },
+    "bt rax, rbx": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa3"
+    },
+    "bt [rax], rbx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa3"
+    },
+    "shld ax, bx, 0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xac"
+    },
+    "shld ax, bx, 1": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld ax, bx, 15": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld ax, bx, 16": {
+      "ExpectedInstructionCount": 17,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld ax, bx, 31": {
+      "ExpectedInstructionCount": 18,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld eax, ebx, 0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xac"
+    },
+    "shld eax, ebx, 1": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld eax, ebx, 15": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld eax, ebx, 16": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld eax, ebx, 31": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld rax, rbx, 0": {
+      "ExpectedInstructionCount": 0,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xac"
+    },
+    "shld rax, rbx, 1": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld rax, rbx, 15": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld rax, rbx, 32": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld rax, rbx, 63": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xac"
+    },
+    "shld ax, bx, cl": {
+      "ExpectedInstructionCount": 36,
+      "Optimal": "No",
+      "Comment": "0x0f 0xad"
+    },
+    "shld eax, ebx, cl": {
+      "ExpectedInstructionCount": 33,
+      "Optimal": "No",
+      "Comment": "0x0f 0xad"
+    },
+    "shld rax, rbx, cl": {
+      "ExpectedInstructionCount": 31,
+      "Optimal": "No",
+      "Comment": "0x0f 0xad"
+    },
+    "push gs": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa8"
+    },
+    "pop gs": {
+      "ExpectedInstructionCount": 7,
+      "Optimal": "No",
+      "Comment": "0x0f 0xa9"
+    },
+    "bts ax, bx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xab"
+    },
+    "bts [rax], bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xab"
+    },
+    "bts eax, ebx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xab"
+    },
+    "bts [rax], ebx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xab"
+    },
+    "bts rax, rbx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xab"
+    },
+    "bts [rax], rbx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xab"
+    },
+    "imul ax, bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xaf"
+    },
+    "imul eax, ebx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xaf"
+    },
+    "imul rax, rbx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xaf"
+    },
+    "cmpxchg al, bl": {
+      "ExpectedInstructionCount": 31,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb0"
+    },
+    "cmpxchg [rax], bl": {
+      "ExpectedInstructionCount": 28,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb0"
+    },
+    "cmpxchg ax, bx": {
+      "ExpectedInstructionCount": 31,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb1"
+    },
+    "cmpxchg [rax], bx": {
+      "ExpectedInstructionCount": 28,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb1"
+    },
+    "cmpxchg eax, ebx": {
+      "ExpectedInstructionCount": 30,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb1"
+    },
+    "cmpxchg [rax], ebx": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb1"
+    },
+    "cmpxchg rax, rbx": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb1"
+    },
+    "cmpxchg [rax], rbx": {
+      "ExpectedInstructionCount": 22,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb1"
+    },
+    "btr ax, bx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb3"
+    },
+    "btr [rax], bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb3"
+    },
+    "btr eax, ebx": {
+      "ExpectedInstructionCount": 13,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb3"
+    },
+    "btr [rax], ebx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb3"
+    },
+    "btr rax, rbx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb3"
+    },
+    "btr [rax], rbx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xb3"
+    },
+    "movzx ax, bl": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb6"
+    },
+    "movzx ax, byte [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb6"
+    },
+    "movzx eax, bl": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb6"
+    },
+    "movzx eax, byte [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb6"
+    },
+    "movzx rax, bl": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb6"
+    },
+    "movzx rax, byte [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb6"
+    },
+    "movzx eax, bx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb7"
+    },
+    "movzx eax, word [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb7"
+    },
+    "movzx rax, bx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb7"
+    },
+    "movzx rax, word [rax]": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xb7"
+    },
+    "btc ax, bx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbb"
+    },
+    "btc [rax], bx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbb"
+    },
+    "btc eax, ebx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbb"
+    },
+    "btc [rax], ebx": {
+      "ExpectedInstructionCount": 15,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbb"
+    },
+    "btc rax, rbx": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbb"
+    },
+    "btc [rax], rbx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbb"
+    },
+    "bsf ax, bx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbc"
+    },
+    "bsf eax, ebx": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbc"
+    },
+    "bsf rax, rbx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbc"
+    },
+    "bsr ax, bx": {
+      "ExpectedInstructionCount": 14,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbd"
+    },
+    "bsr eax, ebx": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbd"
+    },
+    "bsr rax, rbx": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbd"
+    },
+    "movsx ax, bl": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbe"
+    },
+    "movsx ax, byte [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbe"
+    },
+    "movsx eax, bl": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbe"
+    },
+    "movsx eax, byte [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbe"
+    },
+    "movsx rax, bl": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbe"
+    },
+    "movsx rax, byte [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xbe"
+    },
+    "movsx eax, bx": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbf"
+    },
+    "movsx eax, word [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbf"
+    },
+    "movsx rax, bx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0xbf"
+    },
+    "movsx rax, word [rax]": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xbf"
+    },
+    "xadd al, bl": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc0"
+    },
+    "xadd [rax], bl": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc0"
+    },
+    "xadd ax, bx": {
+      "ExpectedInstructionCount": 26,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc1"
+    },
+    "xadd [rax], bx": {
+      "ExpectedInstructionCount": 25,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc1"
+    },
+    "xadd eax, ebx": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc1"
+    },
+    "xadd [rax], ebx": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc1"
+    },
+    "xadd rax, rbx": {
+      "ExpectedInstructionCount": 21,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc1"
+    },
+    "xadd [rax], rbx": {
+      "ExpectedInstructionCount": 20,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc1"
+    },
+    "cmpps xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 1": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 2": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 3": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 4": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 5": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 6": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "cmpps xmm0, xmm1, 7": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc2"
+    },
+    "movnti [rax], ebx": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc3"
+    },
+    "movnti [rax], rbx": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc3"
+    },
+    "pinsrw mm0, eax, 0": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, eax, 1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, eax, 2": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, eax, 3": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, eax, 4": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, [rax], 0": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, [rax], 1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, [rax], 2": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, [rax], 3": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pinsrw mm0, [rax], 4": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc4"
+    },
+    "pextrw eax, mm0, 0": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc5"
+    },
+    "pextrw eax, mm0, 1": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc5"
+    },
+    "pextrw eax, mm0, 2": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc5"
+    },
+    "pextrw eax, mm0, 3": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc5"
+    },
+    "pextrw eax, mm0, 4": {
+      "ExpectedInstructionCount": 3,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc5"
+    },
+    "shufps xmm0, xmm1, 0": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6"
+    },
+    "shufps xmm0, [rax], 0": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6"
+    },
+    "shufps xmm0, xmm1, 1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6"
+    },
+    "shufps xmm0, [rax], 1": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6"
+    },
+    "shufps xmm0, xmm1, 0xFF": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6"
+    },
+    "shufps xmm0, [rax], 0xFF": {
+      "ExpectedInstructionCount": 9,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc6"
+    },
+    "bswap eax": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "No",
+      "Comment": "0x0f 0xc8"
+    },
+    "bswap rax": {
+      "ExpectedInstructionCount": 1,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xc8"
+    },
+    "psrlw mm0, mm1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xd1"
+    },
+    "psrld mm0, mm1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xd2"
+    },
+    "psrlq mm0, mm1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xd3"
+    },
+    "paddq mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xd4"
+    },
+    "pmullw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xd5"
+    },
+    "pmovmskb eax, mm0": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xd7"
+    },
+    "psubusb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xd8"
+    },
+    "psubusw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xd9"
+    },
+    "pminub mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xda"
+    },
+    "pand mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xdb"
+    },
+    "paddusb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xdc"
+    },
+    "paddusw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xdd"
+    },
+    "pmaxub mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xde"
+    },
+    "pandn mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xdf"
+    },
+    "pavgb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe0"
+    },
+    "psraw mm0, mm1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xe1"
+    },
+    "psrad mm0, mm1": {
+      "ExpectedInstructionCount": 12,
+      "Optimal": "No",
+      "Comment": "0x0f 0xe2"
+    },
+    "pavgw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe3"
+    },
+    "pmulhuw mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe4"
+    },
+    "pmulhw mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe5"
+    },
+    "movntq [rax], mm0": {
+      "ExpectedInstructionCount": 2,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe7"
+    },
+    "psubsb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe8"
+    },
+    "psubsw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xe9"
+    },
+    "pminsw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xea"
+    },
+    "por mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xeb"
+    },
+    "paddsb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xec"
+    },
+    "paddsw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xed"
+    },
+    "pmaxsw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xee"
+    },
+    "pxor mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xef"
+    },
+    "psllw mm0, mm1": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf1"
+    },
+    "pslld mm0, mm1": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf2"
+    },
+    "psllq mm0, mm1": {
+      "ExpectedInstructionCount": 11,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf3"
+    },
+    "pmuludq mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xf4"
+    },
+    "pmaddwd mm0, mm1": {
+      "ExpectedInstructionCount": 10,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf5"
+    },
+    "psadbw mm0, mm1": {
+      "ExpectedInstructionCount": 5,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xf6"
+    },
+    "maskmovq mm0, mm1": {
+      "ExpectedInstructionCount": 8,
+      "Optimal": "No",
+      "Comment": "0x0f 0xf7"
+    },
+    "psubb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xf8"
+    },
+    "psubw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xf9"
+    },
+    "psubd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xfa"
+    },
+    "psubq mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xfb"
+    },
+    "paddb mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xfc"
+    },
+    "paddw mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xfd"
+    },
+    "paddd mm0, mm1": {
+      "ExpectedInstructionCount": 4,
+      "Optimal": "Yes",
+      "Comment": "0x0f 0xfe"
+    }
+  }
+}
