@@ -391,10 +391,9 @@ bool ConstProp::ZextAndMaskingElimination(IREmitter *IREmit, const IRListView& C
     case OP_AND: {
       // if AND's arguments are imms, they are masking
       for (int i = 0; i < IR::GetArgs(IROp->Op); i++) {
-        auto mask = getMask(IROp);
         uint64_t imm = 0;
-        if (IREmit->IsValueConstant(IROp->Args[i^1], &imm))
-          mask = imm;
+        if (!IREmit->IsValueConstant(IROp->Args[i^1], &imm))
+          continue;
 
         auto newArg = RemoveUselessMasking(IREmit, IROp->Args[i], imm);
 
