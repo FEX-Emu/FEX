@@ -412,6 +412,15 @@ namespace DefaultValues {
       }
     }
 
+    if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_DUMPIR) &&
+        !FEXCore::Config::Exists(FEXCore::Config::CONFIG_PASSMANAGERDUMPIR)) {
+      // If DumpIR is set but no PassManagerDumpIR configuration is set, then default to `afteropt`
+      FEX_CONFIG_OPT(PathName, DUMPIR);
+      if (PathName() != "no") {
+        EraseSet(FEXCore::Config::ConfigOption::CONFIG_PASSMANAGERDUMPIR, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::PassManagerDumpIR::AFTEROPT)));
+      }
+    }
+
     if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_SINGLESTEP)) {
       // Single stepping also enforces single instruction size blocks
       Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, "1");
